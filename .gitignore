@@ -1,0 +1,23 @@
+# Visual Studio cache/options directory
+.vs/
+
+# User-specific files
+PromiseModelOnline.Api/*.user
+PromiseModelOnline.Auth/*.user
+PromiseModelOnline.Client/*.user
+PromiseModelOnline.Api.Tests/*.user
+PromiseModelOnline.Client.Tests/*.user
+
+# Generated with debug and execute
+PromiseModelOnline.Api/bin
+PromiseModelOnline.Api/obj
+
+PromiseModelOnline.Auth/bin
+PromiseModelOnline.Auth/obj
+
+PromiseModelOnline.Client/bin
+PromiseModelOnline.Client/obj
+
+/PromiseModelOnline
+/bin
+/obj

@@ -1,0 +1,23 @@
+name: PromiseModelOnline
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+  workflow_dispatch:
+jobs:
+  BuildAndTest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+              
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+          
+      - name: Build and Run App Containers
+        shell: bash
+        run: docker compose up -d

@@ -1,0 +1,66 @@
+services:
+  promisemodelonline.client:
+    image: ${DOCKER_REGISTRY-}promisemodelonlineclient
+    container_name: promisemodelonlineclient
+    hostname: localhost
+    ports:
+      - "9000:9000/tcp"
+    depends_on:
+      - promisemodelonline.api
+    build:
+      context: .
+      dockerfile: PromiseModelOnline.Client/Dockerfile
+
+  promisemodelonline.api:
+    image: ${DOCKER_REGISTRY-}promisemodelonlineapi
+    container_name: promisemodelonlineapi
+    ports:
+      - "8000:8000/tcp"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8000
+    depends_on:
+      - promisemodelonline.auth
+    networks:
+      - promisemodelonline-net
+    build:
+      context: .
+      dockerfile: PromiseModelOnline.Api/Dockerfile
+    
+  promisemodelonline.auth:
+    image: ${DOCKER_REGISTRY-}promisemodelonlineauth
+    container_name: promisemodelonlineauth
+    ports:
+      - "8060:8060/tcp"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8060
+    depends_on:
+      - sqlpreview
+    networks:
+      - promisemodelonline-net
+    build:
+      context: .
+      dockerfile: PromiseModelOnline.Auth/Dockerfile
+
+  sqlpreview:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: sqlpreview
+    networks:
+      - promisemodelonline-net
+    ports:
+      - 1433:1433/tcp
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+networks:
+  promisemodelonline-net:
+    driver: bridge
+
+volumes:
+  mssql-data:
+    name: mssqldata
+    driver: local

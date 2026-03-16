@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+  <Project Path="PromiseModelOnline.Api/PromiseModelOnline.Api.csproj" />
+  <Project Path="PromiseModelOnline.Auth/PromiseModelOnline.Auth.csproj" />
+</Solution>
