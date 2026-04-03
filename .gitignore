@@ -11,6 +11,9 @@ PromiseModelOnline.Client/*.user
 PromiseModelOnline.Api.Tests/*.user
 PromiseModelOnline.Client.Tests/*.user
 
+# Build outputs and intermediate objects
+**/bin/
+**/obj/
 # Generated with debug and execute
 PromiseModelOnline.Api/bin
 PromiseModelOnline.Api/obj
