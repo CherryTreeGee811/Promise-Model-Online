@@ -1,6 +1,9 @@
 # Visual Studio cache/options directory
 .vs/
 
+# JetBrains cache/options directory
+.idea/
+
 # User-specific files
 PromiseModelOnline.Api/*.user
 PromiseModelOnline.Auth/*.user
