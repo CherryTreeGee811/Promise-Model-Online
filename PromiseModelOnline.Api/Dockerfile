@@ -25,4 +25,11 @@ RUN dotnet publish "./PromiseModelOnline.Api.csproj" -c $BUILD_CONFIGURATION -o 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Copy SSL certificate and key into the image
+COPY PromiseModelOnline.Api/cert.pem /app/cert.pem
+COPY PromiseModelOnline.Api/key.pem /app/key.pem
+USER root
+RUN chown app:app /app/cert.pem /app/key.pem
+RUN chmod 600 /app/cert.pem /app/key.pem
+USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Api.dll"]

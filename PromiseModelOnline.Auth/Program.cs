@@ -1,4 +1,5 @@
 using Microsoft.OpenApi;
+using System.Security.Cryptography.X509Certificates;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,16 @@ builder.Services.AddCors(options =>
             .WithMethods("GET", "POST", "OPTIONS")
             .WithHeaders(AllowedHeaders);
         });
+});
+
+// Configure Kestrel to use SSL with PEM files
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8060, listenOptions =>
+    {
+        var cert = X509Certificate2.CreateFromPemFile("cert.pem", "key.pem");
+        listenOptions.UseHttps(cert);
+    });
 });
 
 builder.Services.AddControllers();
