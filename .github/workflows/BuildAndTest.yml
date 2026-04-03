@@ -32,27 +32,24 @@ jobs:
       - name: Add API CI TLS/SSL CERT & KEY
         shell: bash
         run: |
-          mkdir -p PromiseModelOnline.API
-          cat > PromiseModelOnline.API/cert.pem <<'PEM'
+          mkdir -p PromiseModelOnline.Api
+          cat > PromiseModelOnline.Api/cert.pem <<'PEM'
           ${{ vars.API_CI_CERT }}
           PEM
-          cat > PromiseModelOnline.APIEOF' > PromiseModelOnline.API/cert.pem
-          ${{ vars.API_CI_CERT }}
-          EOF
-              cat <<'EOF' > PromiseModelOnline.API/key.pem
+          cat > PromiseModelOnline.Api/key.pem <<'PEM'
           ${{ secrets.API_CI_KEY }}
-          EOF
+          PEM
           
       - name: Add AUTH CI TLS/SSL CERT & KEY
         shell: bash
         run: |
-          mkdir -p PromiseModelOnline.AUTH
-          cat <<'EOF' > PromiseModelOnline.AUTH/cert.pem
+          mkdir -p PromiseModelOnline.Auth
+          cat > PromiseModelOnline.Auth/cert.pem <<'PEM'
           ${{ vars.AUTH_CI_CERT }}
-          EOF
-              cat <<'EOF' > PromiseModelOnline.AUTH/key.pem
+          PEM
+          cat > PromiseModelOnline.Auth/key.pem <<'PEM'
           ${{ secrets.AUTH_CI_KEY }}
-          EOF
+          PEM
       
       - name: Build and Run App Containers
         shell: bash
