@@ -1,9 +1,14 @@
 using Microsoft.OpenApi;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.EntityFrameworkCore;
+using PromiseModelOnline.Api.Models;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 var AllowedHeaders = new[] { "Content-Type", "Accept", "Accept-Language", "Authorization" };
+
+var connectionString = builder.Configuration.GetConnectionString("MSSQL")
+                       ?? throw new InvalidOperationException("Connection string not found.");
 
 builder.Services.AddCors(options =>
 {
@@ -16,6 +21,8 @@ builder.Services.AddCors(options =>
             .WithHeaders(AllowedHeaders);
         });
 });
+
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
 // Configure Kestrel to use SSL with PEM files
 builder.WebHost.ConfigureKestrel(options =>
