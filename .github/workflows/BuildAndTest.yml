@@ -21,3 +21,15 @@ jobs:
       - name: Build and Run App Containers
         shell: bash
         run: docker compose up -d
+
+      - name: Push Docker Images to DockerHub
+        if: ${{ github.ref == 'refs/heads/main' }}
+        shell: bash
+        run: |
+          docker tag promisemodelonlineapi cherrytree811/promisemodelonlineapi:latest
+          docker tag promisemodelonlineclient cherrytree811/promisemodelonlineclient:latest
+          docker tag promisemodelonlineauth cherrytree811/promisemodelonlineauth:latest
+          docker login -u cherrytree811 -p ${{ secrets.DOCKER_CRED }}
+          docker push cherrytree811/promisemodelonlineapi:latest
+          docker push cherrytree811/promisemodelonlineclient:latest
+          docker push cherrytree811/promisemodelonlineauth:latest
