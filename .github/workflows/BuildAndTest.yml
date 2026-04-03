@@ -17,7 +17,25 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
-          
+      
+      - name: Add Client CI TLS/SSL CERT & KEY
+        shell: bash
+        run: |
+          echo ${{ vars.CLIENT_CI_CERT }} > PromiseModelOnline.Client/cert.pem
+          echo ${{ secrets.CLIENT_CI_KEY }} > PromiseModelOnline.Client/key.pem
+
+      - name: Add API CI TLS/SSL CERT & KEY
+        shell: bash
+        run: |
+          echo ${{ vars.API_CI_CERT }} > PromiseModelOnline.API/cert.pem
+          echo ${{ secrets.API_CI_KEY }} > PromiseModelOnline.API/key.pem
+
+      - name: Add AUTH CI TLS/SSL CERT & KEY
+        shell: bash
+        run: |
+          echo ${{ vars.AUTH_CI_CERT }} > PromiseModelOnline.AUTH/cert.pem
+          echo ${{ secrets.AUTH_CI_KEY }} > PromiseModelOnline.AUTH/key.pem
+      
       - name: Build and Run App Containers
         shell: bash
         run: docker compose up -d
