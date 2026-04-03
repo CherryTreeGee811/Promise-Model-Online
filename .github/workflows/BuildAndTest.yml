@@ -21,20 +21,38 @@ jobs:
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
         run: |
-          echo ${{ vars.CLIENT_CI_CERT }} > PromiseModelOnline.Client/cert.pem
-          echo ${{ secrets.CLIENT_CI_KEY }} > PromiseModelOnline.Client/key.pem
-
+          mkdir -p PromiseModelOnline.Client
+          cat > PromiseModelOnline.Client/cert.pem <<'PEM'
+          ${{ vars.CLIENT_CI_CERT }}
+          PEM
+          cat > PromiseModelOnline.Client/key.pem <<'PEM'
+          ${{ secrets.CLIENT_CI_KEY }}
+          PEM
+      
       - name: Add API CI TLS/SSL CERT & KEY
         shell: bash
         run: |
-          echo ${{ vars.API_CI_CERT }} > PromiseModelOnline.API/cert.pem
-          echo ${{ secrets.API_CI_KEY }} > PromiseModelOnline.API/key.pem
-
+          mkdir -p PromiseModelOnline.API
+          cat > PromiseModelOnline.API/cert.pem <<'PEM'
+          ${{ vars.API_CI_CERT }}
+          PEM
+          cat > PromiseModelOnline.APIEOF' > PromiseModelOnline.API/cert.pem
+          ${{ vars.API_CI_CERT }}
+          EOF
+              cat <<'EOF' > PromiseModelOnline.API/key.pem
+          ${{ secrets.API_CI_KEY }}
+          EOF
+          
       - name: Add AUTH CI TLS/SSL CERT & KEY
         shell: bash
         run: |
-          echo ${{ vars.AUTH_CI_CERT }} > PromiseModelOnline.AUTH/cert.pem
-          echo ${{ secrets.AUTH_CI_KEY }} > PromiseModelOnline.AUTH/key.pem
+          mkdir -p PromiseModelOnline.AUTH
+          cat <<'EOF' > PromiseModelOnline.AUTH/cert.pem
+          ${{ vars.AUTH_CI_CERT }}
+          EOF
+              cat <<'EOF' > PromiseModelOnline.AUTH/key.pem
+          ${{ secrets.AUTH_CI_KEY }}
+          EOF
       
       - name: Build and Run App Containers
         shell: bash
