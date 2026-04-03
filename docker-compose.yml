@@ -18,7 +18,7 @@ services:
       - "8000:8000/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8000
+      - ASPNETCORE_URLS=https://+:8000
     depends_on:
       - promisemodelonline.auth
     networks:
