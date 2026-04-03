@@ -31,6 +31,11 @@ COPY PromiseModelOnline.Client/nginx.conf /etc/nginx/nginx.conf
 # Copy default configuration
 COPY PromiseModelOnline.Client/default.conf /etc/nginx/conf.d/default.conf
 
+# Copy SSL certificate and key into the image
+COPY PromiseModelOnline.Client/cert.pem /app/cert.pem
+COPY PromiseModelOnline.Client/key.pem /app/key.pem
+RUN chmod 600 /app/key.pem && chmod 644 /app/cert.pem
+
 USER appuser
 
 # Expose the port Nginx will run on
