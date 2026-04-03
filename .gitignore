@@ -24,3 +24,9 @@ PromiseModelOnline.Client/obj
 /PromiseModelOnline
 /bin
 /obj
+PromiseModelOnline.Api/cert.pem
+PromiseModelOnline.Api/key.pem
+PromiseModelOnline.Client/cert.pem
+PromiseModelOnline.Client/key.pem
+PromiseModelOnline.Auth/cert.pem
+PromiseModelOnline.Auth/key.pem

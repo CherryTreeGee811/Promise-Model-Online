@@ -34,7 +34,7 @@ services:
       - "8060:8060/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8060
+      - ASPNETCORE_URLS=https://+:8060
     depends_on:
       - sqlpreview
     networks:
