@@ -52,8 +52,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Notification_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -74,8 +73,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Projects_Users_OwnerId",
                         column: x => x.OwnerId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -95,14 +93,12 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Permissions_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Permissions_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -127,8 +123,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Promises_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Promises_Users_OwnerId",
                         column: x => x.OwnerId,
@@ -157,8 +152,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Strides_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -183,8 +177,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Epics_Promises_ProductPromiseId",
                         column: x => x.ProductPromiseId,
                         principalTable: "Promises",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Epics_Users_OwnerId",
                         column: x => x.OwnerId,
@@ -214,8 +207,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Journeys_Epics_EpicId",
                         column: x => x.EpicId,
                         principalTable: "Epics",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Journeys_Users_OwnerId",
                         column: x => x.OwnerId,
@@ -245,8 +237,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Flows_Journeys_JourneyId",
                         column: x => x.JourneyId,
                         principalTable: "Journeys",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Flows_Users_OwnerId",
                         column: x => x.OwnerId,
@@ -283,8 +274,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Moments_Flows_FlowId",
                         column: x => x.FlowId,
                         principalTable: "Flows",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Moments_Strides_AssignedStrideId",
                         column: x => x.AssignedStrideId,
@@ -351,8 +341,7 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_Comments_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -372,14 +361,12 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_MomentAssignments_Moments_MomentId",
                         column: x => x.MomentId,
                         principalTable: "Moments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MomentAssignments_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -404,14 +391,12 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_BugReworkTasks_Comments_SourceCommentId",
                         column: x => x.SourceCommentId,
                         principalTable: "Comments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_BugReworkTasks_Moments_MomentId",
                         column: x => x.MomentId,
                         principalTable: "Moments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_BugReworkTasks_Users_AssignedToId",
                         column: x => x.AssignedToId,
@@ -435,14 +420,12 @@ namespace PromiseModelOnline.Api.Migrations
                         name: "FK_CommentMention_Comments_CommentId",
                         column: x => x.CommentId,
                         principalTable: "Comments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_CommentMention_Users_MentionedUserId",
                         column: x => x.MentionedUserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(

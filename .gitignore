@@ -10,30 +10,16 @@ PromiseModelOnline.Auth/*.user
 PromiseModelOnline.Client/*.user
 PromiseModelOnline.Api.Tests/*.user
 PromiseModelOnline.Client.Tests/*.user
+query
 
 # Build outputs and intermediate objects
 **/bin/
 **/obj/
-# Generated with debug and execute
-PromiseModelOnline.Api/bin
-PromiseModelOnline.Api/obj
-
-PromiseModelOnline.Auth/bin
-PromiseModelOnline.Auth/obj
-
-PromiseModelOnline.Client/bin
-PromiseModelOnline.Client/obj
-
-/PromiseModelOnline
-/bin
-/obj
-PromiseModelOnline.Api/cert.pem
-PromiseModelOnline.Api/key.pem
-PromiseModelOnline.Client/cert.pem
-PromiseModelOnline.Client/key.pem
-PromiseModelOnline.Auth/cert.pem
-PromiseModelOnline.Auth/key.pem
-
 
 # macOS exclusion files.
 *.DS_Store
+
+# SSL certificates (if any)
+PromiseModelOnline.Api/*.pem
+PromiseModelOnline.Client/*.pem
+PromiseModelOnline.Auth/*.pem

@@ -9,6 +9,17 @@ public class ApplicationDbContext : DbContext
         : base(options)
     {
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // SQL Server disallows multiple cascade paths; keep all relationships as NO ACTION.
+        foreach (var foreignKey in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
+        {
+            foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
+        }
+    }
     
     public DbSet<Promise> Promises { get; set; }
     public DbSet<BugReworkTask> BugReworkTasks { get; set; }

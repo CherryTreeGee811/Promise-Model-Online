@@ -12,7 +12,7 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260403230543_Initial")]
+    [Migration("20260404185304_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -613,18 +613,19 @@ namespace PromiseModelOnline.Api.Migrations
                 {
                     b.HasOne("PromiseModelOnline.Api.Models.User", "AssignedTo")
                         .WithMany()
-                        .HasForeignKey("AssignedToId");
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Moment", "Moment")
                         .WithMany("BugReworkTasks")
                         .HasForeignKey("MomentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("PromiseModelOnline.Api.Models.Comment", "SourceComment")
                         .WithMany()
                         .HasForeignKey("SourceCommentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("AssignedTo");
@@ -638,32 +639,38 @@ namespace PromiseModelOnline.Api.Migrations
                 {
                     b.HasOne("PromiseModelOnline.Api.Models.Epic", "Epic")
                         .WithMany("Comments")
-                        .HasForeignKey("EpicId");
+                        .HasForeignKey("EpicId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Flow", "Flow")
                         .WithMany("Comments")
-                        .HasForeignKey("FlowId");
+                        .HasForeignKey("FlowId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Journey", "Journey")
                         .WithMany("Comments")
-                        .HasForeignKey("JourneyId");
+                        .HasForeignKey("JourneyId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Moment", "Moment")
                         .WithMany("Comments")
-                        .HasForeignKey("MomentId");
+                        .HasForeignKey("MomentId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Comment", "ParentComment")
                         .WithMany("Replies")
-                        .HasForeignKey("ParentCommentId");
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Promise", "ProductPromise")
                         .WithMany("Comments")
-                        .HasForeignKey("ProductPromiseId");
+                        .HasForeignKey("ProductPromiseId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.User", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Epic");
@@ -686,13 +693,13 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.Comment", "Comment")
                         .WithMany("Mentions")
                         .HasForeignKey("CommentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("PromiseModelOnline.Api.Models.User", "MentionedUser")
                         .WithMany()
                         .HasForeignKey("MentionedUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Comment");
@@ -704,12 +711,13 @@ namespace PromiseModelOnline.Api.Migrations
                 {
                     b.HasOne("PromiseModelOnline.Api.Models.User", "Owner")
                         .WithMany()
-                        .HasForeignKey("OwnerId");
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Promise", "ProductPromise")
                         .WithMany("Epics")
                         .HasForeignKey("ProductPromiseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Owner");
@@ -722,12 +730,13 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.Journey", "Journey")
                         .WithMany("Flows")
                         .HasForeignKey("JourneyId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("PromiseModelOnline.Api.Models.User", "Owner")
                         .WithMany()
-                        .HasForeignKey("OwnerId");
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Journey");
 
@@ -739,12 +748,13 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.Epic", "Epic")
                         .WithMany("Journeys")
                         .HasForeignKey("EpicId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("PromiseModelOnline.Api.Models.User", "Owner")
                         .WithMany()
-                        .HasForeignKey("OwnerId");
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Epic");
 
@@ -755,17 +765,19 @@ namespace PromiseModelOnline.Api.Migrations
                 {
                     b.HasOne("PromiseModelOnline.Api.Models.Stride", "AssignedStride")
                         .WithMany("Moments")
-                        .HasForeignKey("AssignedStrideId");
+                        .HasForeignKey("AssignedStrideId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Flow", "Flow")
                         .WithMany("Moments")
                         .HasForeignKey("FlowId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("PromiseModelOnline.Api.Models.User", "Owner")
                         .WithMany()
-                        .HasForeignKey("OwnerId");
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedStride");
 
@@ -779,13 +791,13 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.Moment", "Moment")
                         .WithMany()
                         .HasForeignKey("MomentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("PromiseModelOnline.Api.Models.User", "User")
                         .WithMany("MomentAssignments")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Moment");
@@ -798,7 +810,7 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.User", "User")
                         .WithMany("Notifications")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -809,13 +821,13 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.Project", "Project")
                         .WithMany("Permissions")
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("PromiseModelOnline.Api.Models.User", "User")
                         .WithMany("Permissions")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Project");
@@ -828,7 +840,7 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.User", "Owner")
                         .WithMany("OwnedProjects")
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Owner");
@@ -838,12 +850,13 @@ namespace PromiseModelOnline.Api.Migrations
                 {
                     b.HasOne("PromiseModelOnline.Api.Models.User", "Owner")
                         .WithMany()
-                        .HasForeignKey("OwnerId");
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PromiseModelOnline.Api.Models.Project", "Project")
                         .WithMany("ProductPromises")
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Owner");
@@ -856,7 +869,7 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasOne("PromiseModelOnline.Api.Models.Project", "Project")
                         .WithMany("Strides")
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Project");
