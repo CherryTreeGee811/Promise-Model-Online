@@ -2,6 +2,7 @@ using Microsoft.OpenApi;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Services;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
@@ -42,6 +43,18 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("PromiseHierarchySeeder");
+
+    logger.LogInformation("Applying database migrations...");
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Running Promise hierarchy seed...");
+    await PromiseHierarchySeeder.SeedAsync(db, app.Environment.ContentRootPath, logger);
+    logger.LogInformation("Migration and seed startup step complete.");
+}
 
 app.UseCors(MyAllowSpecificOrigins);
 
