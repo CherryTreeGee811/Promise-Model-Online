@@ -24,6 +24,12 @@ PromiseModelOnline.Auth/obj
 PromiseModelOnline.Client/bin
 PromiseModelOnline.Client/obj
 
+PromiseModelOnline.Api.Tests/bin
+PromiseModelOnline.Api.Tests/obj
+
+PromiseModelOnline.Client.Tests/bin
+PromiseModelOnline.Client.Tests/obj
+
 /PromiseModelOnline
 /bin
 /obj
