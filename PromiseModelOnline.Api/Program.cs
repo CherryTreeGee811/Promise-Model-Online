@@ -1,8 +1,13 @@
 using Microsoft.OpenApi;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Services;
+using PromiseModelOnline.Api.Repositories.Interfaces;
+using PromiseModelOnline.Api.Repositories.Implementations;
+using PromiseModelOnline.Api.Services.Interfaces;
+using PromiseModelOnline.Api.Services.Implementations;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +23,7 @@ builder.Services.AddCors(options =>
         {
             policy
             .AllowAnyOrigin()
-            .WithMethods("GET", "POST", "OPTIONS")
+            .WithMethods("GET", "POST", "OPTIONS", "PUT", "DELETE")
             .WithHeaders(AllowedHeaders);
         });
 });
@@ -35,7 +40,32 @@ builder.WebHost.ConfigureKestrel(options =>
     });
 });
 
-builder.Services.AddControllers();
+// Configure JSON serialization to avoid circular reference issues
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
+
+// Register repositories
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IPromiseRepository, PromiseRepository>();
+builder.Services.AddScoped<IEpicRepository, EpicRepository>();
+builder.Services.AddScoped<IJourneyRepository, JourneyRepository>();
+builder.Services.AddScoped<IFlowRepository, FlowRepository>();
+builder.Services.AddScoped<IMomentRepository, MomentRepository>();
+
+// Register services
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IPromiseService, PromiseService>();
+builder.Services.AddScoped<IEpicService, EpicService>();
+builder.Services.AddScoped<IJourneyService, JourneyService>();
+builder.Services.AddScoped<IFlowService, FlowService>();
+builder.Services.AddScoped<IMomentService, MomentService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

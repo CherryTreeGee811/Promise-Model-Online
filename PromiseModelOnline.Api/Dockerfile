@@ -25,6 +25,8 @@ RUN dotnet publish "./PromiseModelOnline.Api.csproj" -c $BUILD_CONFIGURATION -o 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Include seed data files used by PromiseHierarchySeeder in container startup.
+COPY pmo_pm /app/pmo_pm
 # Copy SSL certificate and key into the image
 COPY PromiseModelOnline.Api/cert.pem /app/cert.pem
 COPY PromiseModelOnline.Api/key.pem /app/key.pem
