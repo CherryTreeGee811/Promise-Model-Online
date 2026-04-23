@@ -20,7 +20,7 @@ jobs:
 
       - name: Run API tests
         shell: bash
-        run: dotnet test PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj
+        run: dotnet test --logger "console;verbosity=normal" PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj
       
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
