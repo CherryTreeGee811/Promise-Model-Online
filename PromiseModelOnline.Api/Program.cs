@@ -1,9 +1,15 @@
 using Microsoft.OpenApi;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.EntityFrameworkCore;
+using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Services;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 var AllowedHeaders = new[] { "Content-Type", "Accept", "Accept-Language", "Authorization" };
+
+var connectionString = builder.Configuration.GetConnectionString("MSSQL")
+                       ?? throw new InvalidOperationException("Connection string not found.");
 
 builder.Services.AddCors(options =>
 {
@@ -16,6 +22,8 @@ builder.Services.AddCors(options =>
             .WithHeaders(AllowedHeaders);
         });
 });
+
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
 // Configure Kestrel to use SSL with PEM files
 builder.WebHost.ConfigureKestrel(options =>
@@ -35,6 +43,18 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("PromiseHierarchySeeder");
+
+    logger.LogInformation("Applying database migrations...");
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Running Promise hierarchy seed...");
+    await PromiseHierarchySeeder.SeedAsync(db, app.Environment.ContentRootPath, logger);
+    logger.LogInformation("Migration and seed startup step complete.");
+}
 
 app.UseCors(MyAllowSpecificOrigins);
 
