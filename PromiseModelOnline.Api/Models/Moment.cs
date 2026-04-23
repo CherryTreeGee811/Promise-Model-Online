@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using PMO.Core.Models;
 using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.Models;
@@ -65,6 +66,7 @@ public class Moment
     [ForeignKey("AssignedStrideId")]
     public Stride? AssignedStride { get; set; }
 
+    public ICollection<MomentTask> Tasks { get; set; } = new List<MomentTask>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<BugReworkTask> BugReworkTasks { get; set; } = new List<BugReworkTask>();
 }
