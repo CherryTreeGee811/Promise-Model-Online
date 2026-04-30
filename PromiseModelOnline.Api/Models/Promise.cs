@@ -16,7 +16,7 @@ public class Promise
     public string? Description { get; set; }
         
     public int ProjectId { get; set; }
-        
+    
     public int? OwnerId { get; set; }
         
     public int DisplayOrder { get; set; } = 0;
@@ -38,5 +38,6 @@ public class Promise
     public User? Owner { get; set; }
         
     public ICollection<Epic> Epics { get; set; } = new List<Epic>();
+    
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }
