@@ -77,7 +77,7 @@ namespace PromiseModelOnline.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Permissions",
+                name: "Permission",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -88,14 +88,14 @@ namespace PromiseModelOnline.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Permissions", x => x.Id);
+                    table.PrimaryKey("PK_Permission", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Permissions_Projects_ProjectId",
+                        name: "FK_Permission_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Permissions_Users_UserId",
+                        name: "FK_Permission_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id");
@@ -288,7 +288,7 @@ namespace PromiseModelOnline.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Comments",
+                name: "Comment",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -306,46 +306,46 @@ namespace PromiseModelOnline.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Comments", x => x.Id);
+                    table.PrimaryKey("PK_Comment", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Comments_Comments_ParentCommentId",
+                        name: "FK_Comment_Comment_ParentCommentId",
                         column: x => x.ParentCommentId,
-                        principalTable: "Comments",
+                        principalTable: "Comment",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Comments_Epics_EpicId",
+                        name: "FK_Comment_Epics_EpicId",
                         column: x => x.EpicId,
                         principalTable: "Epics",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Comments_Flows_FlowId",
+                        name: "FK_Comment_Flows_FlowId",
                         column: x => x.FlowId,
                         principalTable: "Flows",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Comments_Journeys_JourneyId",
+                        name: "FK_Comment_Journeys_JourneyId",
                         column: x => x.JourneyId,
                         principalTable: "Journeys",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Comments_Moments_MomentId",
+                        name: "FK_Comment_Moments_MomentId",
                         column: x => x.MomentId,
                         principalTable: "Moments",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Comments_Promises_ProductPromiseId",
+                        name: "FK_Comment_Promises_ProductPromiseId",
                         column: x => x.ProductPromiseId,
                         principalTable: "Promises",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Comments_Users_UserId",
+                        name: "FK_Comment_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "MomentAssignments",
+                name: "MomentAssignment",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -356,21 +356,49 @@ namespace PromiseModelOnline.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MomentAssignments", x => x.Id);
+                    table.PrimaryKey("PK_MomentAssignment", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MomentAssignments_Moments_MomentId",
+                        name: "FK_MomentAssignment_Moments_MomentId",
                         column: x => x.MomentId,
                         principalTable: "Moments",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MomentAssignments_Users_UserId",
+                        name: "FK_MomentAssignment_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "BugReworkTasks",
+                name: "MomentTask",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    MomentId = table.Column<int>(type: "int", nullable: false),
+                    OwnerId = table.Column<int>(type: "int", nullable: true),
+                    IsCompleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MomentTask", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MomentTask_Moments_MomentId",
+                        column: x => x.MomentId,
+                        principalTable: "Moments",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MomentTask_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BugReworkTask",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -386,19 +414,19 @@ namespace PromiseModelOnline.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BugReworkTasks", x => x.Id);
+                    table.PrimaryKey("PK_BugReworkTask", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_BugReworkTasks_Comments_SourceCommentId",
+                        name: "FK_BugReworkTask_Comment_SourceCommentId",
                         column: x => x.SourceCommentId,
-                        principalTable: "Comments",
+                        principalTable: "Comment",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_BugReworkTasks_Moments_MomentId",
+                        name: "FK_BugReworkTask_Moments_MomentId",
                         column: x => x.MomentId,
                         principalTable: "Moments",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_BugReworkTasks_Users_AssignedToId",
+                        name: "FK_BugReworkTask_Users_AssignedToId",
                         column: x => x.AssignedToId,
                         principalTable: "Users",
                         principalColumn: "Id");
@@ -417,9 +445,9 @@ namespace PromiseModelOnline.Api.Migrations
                 {
                     table.PrimaryKey("PK_CommentMention", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CommentMention_Comments_CommentId",
+                        name: "FK_CommentMention_Comment_CommentId",
                         column: x => x.CommentId,
-                        principalTable: "Comments",
+                        principalTable: "Comment",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_CommentMention_Users_MentionedUserId",
@@ -429,19 +457,54 @@ namespace PromiseModelOnline.Api.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_BugReworkTasks_AssignedToId",
-                table: "BugReworkTasks",
+                name: "IX_BugReworkTask_AssignedToId",
+                table: "BugReworkTask",
                 column: "AssignedToId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BugReworkTasks_MomentId",
-                table: "BugReworkTasks",
+                name: "IX_BugReworkTask_MomentId",
+                table: "BugReworkTask",
                 column: "MomentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BugReworkTasks_SourceCommentId",
-                table: "BugReworkTasks",
+                name: "IX_BugReworkTask_SourceCommentId",
+                table: "BugReworkTask",
                 column: "SourceCommentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comment_EpicId",
+                table: "Comment",
+                column: "EpicId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comment_FlowId",
+                table: "Comment",
+                column: "FlowId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comment_JourneyId",
+                table: "Comment",
+                column: "JourneyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comment_MomentId",
+                table: "Comment",
+                column: "MomentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comment_ParentCommentId",
+                table: "Comment",
+                column: "ParentCommentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comment_ProductPromiseId",
+                table: "Comment",
+                column: "ProductPromiseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comment_UserId",
+                table: "Comment",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommentMention_CommentId",
@@ -452,41 +515,6 @@ namespace PromiseModelOnline.Api.Migrations
                 name: "IX_CommentMention_MentionedUserId",
                 table: "CommentMention",
                 column: "MentionedUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_EpicId",
-                table: "Comments",
-                column: "EpicId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_FlowId",
-                table: "Comments",
-                column: "FlowId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_JourneyId",
-                table: "Comments",
-                column: "JourneyId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_MomentId",
-                table: "Comments",
-                column: "MomentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_ParentCommentId",
-                table: "Comments",
-                column: "ParentCommentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_ProductPromiseId",
-                table: "Comments",
-                column: "ProductPromiseId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_UserId",
-                table: "Comments",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Epics_OwnerId",
@@ -519,13 +547,13 @@ namespace PromiseModelOnline.Api.Migrations
                 column: "OwnerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MomentAssignments_MomentId",
-                table: "MomentAssignments",
+                name: "IX_MomentAssignment_MomentId",
+                table: "MomentAssignment",
                 column: "MomentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MomentAssignments_UserId",
-                table: "MomentAssignments",
+                name: "IX_MomentAssignment_UserId",
+                table: "MomentAssignment",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -544,18 +572,28 @@ namespace PromiseModelOnline.Api.Migrations
                 column: "OwnerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MomentTask_MomentId",
+                table: "MomentTask",
+                column: "MomentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MomentTask_OwnerId",
+                table: "MomentTask",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Notification_UserId",
                 table: "Notification",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Permissions_ProjectId",
-                table: "Permissions",
+                name: "IX_Permission_ProjectId",
+                table: "Permission",
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Permissions_UserId",
-                table: "Permissions",
+                name: "IX_Permission_UserId",
+                table: "Permission",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -583,22 +621,25 @@ namespace PromiseModelOnline.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "BugReworkTasks");
+                name: "BugReworkTask");
 
             migrationBuilder.DropTable(
                 name: "CommentMention");
 
             migrationBuilder.DropTable(
-                name: "MomentAssignments");
+                name: "MomentAssignment");
+
+            migrationBuilder.DropTable(
+                name: "MomentTask");
 
             migrationBuilder.DropTable(
                 name: "Notification");
 
             migrationBuilder.DropTable(
-                name: "Permissions");
+                name: "Permission");
 
             migrationBuilder.DropTable(
-                name: "Comments");
+                name: "Comment");
 
             migrationBuilder.DropTable(
                 name: "Moments");

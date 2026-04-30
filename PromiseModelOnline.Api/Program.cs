@@ -1,15 +1,13 @@
 using Microsoft.OpenApi;
+using PromiseModelOnline.Api.Extensions;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.EntityFrameworkCore;
-using PromiseModelOnline.Api.Models;
-using PromiseModelOnline.Api.Services;
+using PromiseModelOnline.Api.DAL;
+using PromiseModelOnline.Api.DAL.Interfaces;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 var AllowedHeaders = new[] { "Content-Type", "Accept", "Accept-Language", "Authorization" };
-
-var connectionString = builder.Configuration.GetConnectionString("MSSQL")
-                       ?? throw new InvalidOperationException("Connection string not found.");
 
 builder.Services.AddCors(options =>
 {
@@ -18,12 +16,10 @@ builder.Services.AddCors(options =>
         {
             policy
             .AllowAnyOrigin()
-            .WithMethods("GET", "POST", "OPTIONS")
+            .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .WithHeaders(AllowedHeaders);
         });
 });
-
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
 // Configure Kestrel to use SSL with PEM files
 builder.WebHost.ConfigureKestrel(options =>
@@ -35,6 +31,7 @@ builder.WebHost.ConfigureKestrel(options =>
     });
 });
 
+builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -43,16 +40,15 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+app.ApplyMigrations();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("PromiseHierarchySeeder");
 
-    logger.LogInformation("Applying database migrations...");
-    await db.Database.MigrateAsync();
     logger.LogInformation("Running Promise hierarchy seed...");
-    await PromiseHierarchySeeder.SeedAsync(db, app.Environment.ContentRootPath, logger);
+    await PromiseHierarchySeeder.SeedAsync(dbContext, app.Environment.ContentRootPath, logger);
     logger.LogInformation("Migration and seed startup step complete.");
 }
 

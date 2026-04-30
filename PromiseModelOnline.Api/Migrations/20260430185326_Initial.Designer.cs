@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.DAL;
 
 #nullable disable
 
 namespace PromiseModelOnline.Api.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(PromiseModelOnlineContext))]
+    [Migration("20260430185326_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,6 +24,43 @@ namespace PromiseModelOnline.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("PMO.Core.Models.MomentTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MomentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OwnerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MomentId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("MomentTask");
+                });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.BugReworkTask", b =>
                 {
@@ -65,7 +105,7 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("SourceCommentId");
 
-                    b.ToTable("BugReworkTasks");
+                    b.ToTable("BugReworkTask");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Comment", b =>
@@ -124,7 +164,7 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Comments");
+                    b.ToTable("Comment");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.CommentMention", b =>
@@ -381,7 +421,7 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MomentAssignments");
+                    b.ToTable("MomentAssignment");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Notification", b =>
@@ -453,7 +493,7 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permission");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Project", b =>
@@ -604,6 +644,24 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("PMO.Core.Models.MomentTask", b =>
+                {
+                    b.HasOne("PromiseModelOnline.Api.Models.Moment", "Moment")
+                        .WithMany("Tasks")
+                        .HasForeignKey("MomentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PromiseModelOnline.Api.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Moment");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.BugReworkTask", b =>
@@ -905,6 +963,8 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Navigation("BugReworkTasks");
 
                     b.Navigation("Comments");
+
+                    b.Navigation("Tasks");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Project", b =>

@@ -67,6 +67,8 @@ public class Moment
     public Stride? AssignedStride { get; set; }
 
     public ICollection<MomentTask> Tasks { get; set; } = new List<MomentTask>();
+
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+    
     public ICollection<BugReworkTask> BugReworkTasks { get; set; } = new List<BugReworkTask>();
 }

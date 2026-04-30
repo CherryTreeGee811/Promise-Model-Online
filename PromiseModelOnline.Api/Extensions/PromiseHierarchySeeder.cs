@@ -1,9 +1,10 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Services;
+namespace PromiseModelOnline.Api.Extensions;
 
 public static class PromiseHierarchySeeder
 {
@@ -12,7 +13,7 @@ public static class PromiseHierarchySeeder
     private const string SeedOwnerPasswordHash = "seed-not-for-login";
     private const string TargetProjectName = "Promise Model Online";
 
-    public static async Task SeedAsync(ApplicationDbContext db, string contentRootPath, ILogger logger)
+    public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath, ILogger logger)
     {
         var owner = await EnsureSeedOwnerAsync(db);
         var project = await EnsureProjectAsync(db, owner.Id);
@@ -31,23 +32,23 @@ public static class PromiseHierarchySeeder
         var flowLookup = await SeedFlowsAsync(db, flowRows, journeyLookup);
         var summary = await SeedMomentsAsync(db, momentRows, flowLookup);
 
-        // logger.LogInformation(
-        //     "Promise hierarchy seed complete. ProjectId: {ProjectId}, Products: {ProductsInserted}/{ProductsTotal}, Epics: {EpicsInserted}/{EpicsTotal}, Journeys: {JourneysInserted}/{JourneysTotal}, Flows: {FlowsInserted}/{FlowsTotal}, Moments: {MomentsInserted}/{MomentsTotal}",
-        //     project.Id,
-        //     productLookup.Inserted,
-        //     productLookup.Total,
-        //     epicLookup.Inserted,
-        //     epicLookup.Total,
-        //     journeyLookup.Inserted,
-        //     journeyLookup.Total,
-        //     flowLookup.Inserted,
-        //     flowLookup.Total,
-        //     summary.Inserted,
-        //     summary.Total
-        // );
+        logger?.LogInformation(
+            "Promise hierarchy seed complete. ProjectId: {ProjectId}, Products: {ProductsInserted}/{ProductsTotal}, Epics: {EpicsInserted}/{EpicsTotal}, Journeys: {JourneysInserted}/{JourneysTotal}, Flows: {FlowsInserted}/{FlowsTotal}, Moments: {MomentsInserted}/{MomentsTotal}",
+            project.Id,
+            productLookup.Inserted,
+            productLookup.Total,
+            epicLookup.Inserted,
+            epicLookup.Total,
+            journeyLookup.Inserted,
+            journeyLookup.Total,
+            flowLookup.Inserted,
+            flowLookup.Total,
+            summary.Inserted,
+            summary.Total
+        );
     }
 
-    private static async Task<User> EnsureSeedOwnerAsync(ApplicationDbContext db)
+    private static async Task<User> EnsureSeedOwnerAsync(PromiseModelOnlineContext db)
     {
         var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == SeedOwnerEmail);
         if (existing != null)
@@ -60,7 +61,8 @@ public static class PromiseHierarchySeeder
             Email = SeedOwnerEmail,
             Name = SeedOwnerName,
             PasswordHash = SeedOwnerPasswordHash,
-            Role = UserRole.Professional
+            Role = UserRole.Professional,
+            CreatedAt = DateTime.UtcNow
         };
 
         db.Users.Add(owner);
@@ -68,7 +70,7 @@ public static class PromiseHierarchySeeder
         return owner;
     }
 
-    private static async Task<Project> EnsureProjectAsync(ApplicationDbContext db, int ownerId)
+    private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
     {
         var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == TargetProjectName);
         if (existing != null)
@@ -86,7 +88,8 @@ public static class PromiseHierarchySeeder
         {
             Name = TargetProjectName,
             Description = "Seeded from Promise Model tracker CSV sheets.",
-            OwnerId = ownerId
+            OwnerId = ownerId,
+            CreatedAt = DateTime.UtcNow
         };
 
         db.Projects.Add(project);
@@ -94,7 +97,7 @@ public static class PromiseHierarchySeeder
         return project;
     }
 
-    private static async Task<SeedLookup> SeedProductsAsync(ApplicationDbContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows)
+    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise ID")) && !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise Statement")))
@@ -117,15 +120,16 @@ public static class PromiseHierarchySeeder
             var row = seededRows[i];
             var sourceId = GetValue(row, "Product Promise ID");
             var statement = GetValue(row, "Product Promise Statement");
+            var key = new StatementOrder(statement, i + 1);
 
-            var key = new StatementOrder(statement, i);
             if (!existingByStatementAndOrder.TryGetValue(key, out var promise))
             {
                 promise = new Promise
                 {
-                    ProjectId = projectId,
                     Statement = statement,
-                    DisplayOrder = i
+                    ProjectId = projectId,
+                    DisplayOrder = i + 1,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 db.Promises.Add(promise);
@@ -140,7 +144,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, seededRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedEpicsAsync(ApplicationDbContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products)
+    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Epic Promise ID"))
@@ -173,16 +177,17 @@ public static class PromiseHierarchySeeder
             var parentSourceId = GetValue(row, "Parent Product ID");
             var statement = GetValue(row, "Epic Promise Statement");
 
-            var productPromiseId = products.IdBySourceId[parentSourceId];
-            var key = new ParentStatement(productPromiseId, statement, i);
+            var productId = products.IdBySourceId[parentSourceId];
+            var key = new ParentStatement(productId, statement, i + 1);
 
             if (!existingByParentAndStatement.TryGetValue(key, out var epic))
             {
                 epic = new Epic
                 {
-                    ProductPromiseId = productPromiseId,
+                    ProductPromiseId = productId,
                     Statement = statement,
-                    DisplayOrder = i
+                    DisplayOrder = i + 1,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 db.Epics.Add(epic);
@@ -197,7 +202,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedJourneysAsync(ApplicationDbContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics)
+    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Journey Promise ID"))
@@ -231,7 +236,7 @@ public static class PromiseHierarchySeeder
             var statement = GetValue(row, "Journey Promise Statement");
 
             var epicId = epics.IdBySourceId[parentSourceId];
-            var key = new ParentStatement(epicId, statement, i);
+            var key = new ParentStatement(epicId, statement, i + 1);
 
             if (!existingByParentAndStatement.TryGetValue(key, out var journey))
             {
@@ -239,7 +244,8 @@ public static class PromiseHierarchySeeder
                 {
                     EpicId = epicId,
                     Statement = statement,
-                    DisplayOrder = i
+                    DisplayOrder = i + 1,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 db.Journeys.Add(journey);
@@ -254,7 +260,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedFlowsAsync(ApplicationDbContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys)
+    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Flow Promise ID"))
@@ -288,7 +294,7 @@ public static class PromiseHierarchySeeder
             var statement = GetValue(row, "Flow Promise Statement");
 
             var journeyId = journeys.IdBySourceId[parentSourceId];
-            var key = new ParentStatement(journeyId, statement, i);
+            var key = new ParentStatement(journeyId, statement, i + 1);
 
             if (!existingByParentAndStatement.TryGetValue(key, out var flow))
             {
@@ -296,7 +302,8 @@ public static class PromiseHierarchySeeder
                 {
                     JourneyId = journeyId,
                     Statement = statement,
-                    DisplayOrder = i
+                    DisplayOrder = i + 1,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 db.Flows.Add(flow);
@@ -311,7 +318,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<InsertSummary> SeedMomentsAsync(ApplicationDbContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup flows)
+    private static async Task<InsertSummary> SeedMomentsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup flows)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise ID"))
@@ -343,7 +350,7 @@ public static class PromiseHierarchySeeder
             var statement = GetValue(row, "Moment Promise Statement");
             var flowId = flows.IdBySourceId[parentSourceId];
 
-            var key = new ParentStatement(flowId, statement, i);
+            var key = new ParentStatement(flowId, statement, i + 1);
             if (existingByParentAndStatement.ContainsKey(key))
             {
                 continue;
@@ -355,7 +362,8 @@ public static class PromiseHierarchySeeder
                 Statement = statement,
                 Type = MomentType.Story,
                 Status = MomentStatus.Todo,
-                DisplayOrder = i
+                DisplayOrder = i + 1,
+                CreatedAt = DateTime.UtcNow
             };
 
             db.Moments.Add(moment);
@@ -482,4 +490,5 @@ public static class PromiseHierarchySeeder
     private readonly record struct SeedLookup(Dictionary<string, int> IdBySourceId, int Inserted, int Total);
 
     private readonly record struct InsertSummary(int Inserted, int Total);
+
 }

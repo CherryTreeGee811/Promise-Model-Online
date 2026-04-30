@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PromiseModelOnline.Api.Models;
+
 public class Project
 {
     [Key]
@@ -21,7 +22,10 @@ public class Project
     // Navigation properties
     [ForeignKey("OwnerId")]
     public User Owner { get; set; } = null!;
+
     public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
+
     public ICollection<Promise> ProductPromises { get; set; } = new List<Promise>();
+    
     public ICollection<Stride> Strides { get; set; } = new List<Stride>();
 }
