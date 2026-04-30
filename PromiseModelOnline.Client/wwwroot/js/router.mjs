@@ -1,4 +1,5 @@
 import { loadHomePage } from './home.mjs';
+import { loadNavTemplate } from './navigation/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -67,11 +68,19 @@ export function loadTemplate(templateName, contentDiv) {
 */
 export function routeHandler(navContentDiv, contentDiv) {
     const path = window.location.pathname;
+    loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
         case path == '/':
             loadTemplate("home.html", contentDiv).then(() => {
                 return loadHomePage();
+            });
+            break;
+        case path == '/login':
+            loadTemplate("login.html", contentDiv).then(() => {
+                return loadLoginForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading login form js:', error);
             });
             break;
         default:
