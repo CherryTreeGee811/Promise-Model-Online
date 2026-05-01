@@ -1,13 +1,17 @@
 using Microsoft.OpenApi;
 using PromiseModelOnline.Api.Extensions;
 using System.Security.Cryptography.X509Certificates;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
-var AllowedHeaders = new[] { "Content-Type", "Accept", "Accept-Language", "Authorization" };
+var config = builder.Configuration;
 
 builder.Services.AddCors(options =>
 {
@@ -17,19 +21,50 @@ builder.Services.AddCors(options =>
             policy
             .AllowAnyOrigin()
             .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .WithHeaders(AllowedHeaders);
+            .AllowAnyHeader();
         });
 });
 
-// Configure Kestrel to use SSL with PEM files
-builder.WebHost.ConfigureKestrel(options =>
+// Configure Kestrel to use SSL with PEM files when available; otherwise fall back to HTTP
+var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
+var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
+if (File.Exists(certPath) && File.Exists(keyPath))
 {
-    options.ListenAnyIP(8000, listenOptions =>
+    builder.WebHost.ConfigureKestrel(options =>
     {
-        var cert = X509Certificate2.CreateFromPemFile("cert.pem", "key.pem");
-        listenOptions.UseHttps(cert);
+        options.ListenAnyIP(8000, listenOptions =>
+        {
+            var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+            listenOptions.UseHttps(cert);
+        });
     });
+}
+else
+{
+    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://+:8000";
+    if (urls.Contains("https://")) urls = urls.Replace("https://", "http://");
+    builder.WebHost.UseUrls(urls);
+}
+
+builder.Services.AddAuthentication(x => 
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(x => {
+    x.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = config["JwtSettings:Issuer"],
+        ValidAudience = config["JwtSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey
+            (Encoding.UTF8.GetBytes(config["JwtSettings:Key"]!)),
+    };
 });
+builder.Services.AddAuthorization();
 
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers();
@@ -66,6 +101,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

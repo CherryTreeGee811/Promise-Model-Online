@@ -7,6 +7,7 @@ using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Mappers;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace PromiseModelOnline.Api.Extensions
 {
@@ -21,6 +22,11 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
             services.AddScoped(typeof(IGenericMapper<,>), typeof(GenericMapper<,>));
+            services.AddHttpClient<ILoginRepository, LoginRepository>(client =>
+            {
+                client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
         }
     }
 }
