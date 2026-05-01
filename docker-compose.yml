@@ -19,6 +19,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8000
+      - JwtSettings__Key=${JWT__KEY:-my-development-secret-ABCDEFGHIJKLMNOPQRSTUV}
+      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
+      - JwtSettings__Audience=promisemodelonline.api
     depends_on:
       - promisemodelonline.auth
     networks:
@@ -35,6 +38,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8060
+      - JwtSettings__Key=${JWT__KEY:-my-development-secret-ABCDEFGHIJKLMNOPQRSTUV}
+      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
+      - JwtSettings__Audience=promisemodelonline.api
     depends_on:
       - sqlpreview
     networks:

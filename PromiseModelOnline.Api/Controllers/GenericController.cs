@@ -14,7 +14,7 @@ namespace PromiseModelOnline.Api.Controllers
     /// <typeparam name="TDto">The DTO type for transport.</typeparam>
     [ApiController]
     [Route("api/[controller]")]
-    public class GenericController<TEntity, TDto> : ControllerBase
+    public abstract class GenericController<TEntity, TDto> : ControllerBase
         where TEntity : class
         where TDto : class
     {

@@ -1,5 +1,6 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate } from './navigation/router.mjs';
+import { loadLoginForm } from './login.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
