@@ -12,7 +12,7 @@ using PromiseModelOnline.Api.DAL;
 namespace PromiseModelOnline.Api.Migrations
 {
     [DbContext(typeof(PromiseModelOnlineContext))]
-    [Migration("20260430185326_Initial")]
+    [Migration("20260501205004_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -635,7 +635,6 @@ namespace PromiseModelOnline.Api.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Role")

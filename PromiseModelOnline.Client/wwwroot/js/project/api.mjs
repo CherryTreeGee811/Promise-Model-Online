@@ -1,40 +1,34 @@
-// API base URL for login.
-export const base = "https://localhost:8000";
+import { getAccessTokenFromCookie } from '../token-parser.mjs';
+import { baseUrl } from '../api.mjs';
 
-export function getToken(username, password) {
-    const login_url = `${base}/auth/login`
-    const body = JSON.stringify({
-        username: `${username}`,
-        password: `${password}`
-    });
 
-    return fetch(login_url, {
-        method: 'POST',
+export function getAllProjects() {
+    const url = `${baseUrl}/projects`;
+    const accessToken = getAccessTokenFromCookie();
+
+    return fetch(url, {
         mode: 'cors',
+        method: 'GET',
         headers: {
+            'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
             'Accept-Language': 'en-CA',
-        },
-        body: body,
+        }
     })
         .then(response => {
             if (response.ok) {
                 if (response.status === 204) {
-                    return true;
+                    return null;
                 } else {
                     return response.json();
                 }
             } else if (response.status == 401) {
-                document.getElementById("login-link").click();
+                const loginLinkElem = document.getElementById("login-link");
+                loginLinkElem.style.display = "block";
+                loginLinkElem.ariaHidden = false;
+                loginLinkElem.click();
             } else {
                 throw new Error(`HTTP error! status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            if (data && data.accessToken && data.refreshToken) {
-                document.cookie = `accessToken=${data.accessToken}; path=/; SameSite=Strict;`;
-                document.cookie = `refreshToken=${data.refreshToken}; path=/; SameSite=Strict;`;
             }
         })
         .catch(error => {
@@ -42,27 +36,31 @@ export function getToken(username, password) {
         });
 }
 
-export function requestLogout(token) {
-    const logout_url = `${base}/auth/logout`
+export function deleteProject(projectId) {
+    const url = `${baseUrl}/projects/${projectId}`;
+    const accessToken = getAccessTokenFromCookie();
 
-    return fetch(logout_url, {
-        method: 'POST',
+    return fetch(url, {
         mode: 'cors',
+        method: 'DELETE',
         headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
-        },
+        }
     })
         .then(response => {
             if (response.ok) {
                 if (response.status === 204) {
-                    return true;
+                    return null;
                 } else {
                     return response.json();
                 }
             } else if (response.status == 401) {
-                document.getElementById("login-link").click();
+                const loginLinkElem = document.getElementById("login-link");
+                loginLinkElem.style.display = "block";
+                loginLinkElem.ariaHidden = false;
+                loginLinkElem.click();
             } else {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

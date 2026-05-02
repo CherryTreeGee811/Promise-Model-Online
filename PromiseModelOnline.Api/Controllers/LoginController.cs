@@ -22,8 +22,8 @@ namespace PromiseModelOnline.Api.Controllers
         {
             try
             {
-                var token = await _loginRepository.LoginAsync(userLogin);
-                return Ok(new { token });
+                var tokenResponse = await _loginRepository.LoginAsync(userLogin);
+                return Ok(tokenResponse);
             }
             catch (UnauthorizedAccessException)
             {

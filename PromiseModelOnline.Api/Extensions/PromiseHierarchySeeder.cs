@@ -13,12 +13,53 @@ public static class PromiseHierarchySeeder
     private const string SeedOwnerPasswordHash = "seed-not-for-login";
     private const string TargetProjectName = "Promise Model Online";
 
-    public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath, ILogger logger)
+    public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath, ILogger logger, PromiseModelOnline.Api.DAL.Interfaces.IAuthClient authClient)
     {
+        // Ensure seed user exists in Auth service first
+        var seedUserName = "seed.promise-model-online";
+        var seedEmail = SeedOwnerEmail;
+        // generate a random password for provisioning; not stored in API DB
+        var seedPassword = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!aA1";
+
+        try
+        {
+            var ok = await authClient.EnsureSeedUserAsync(seedUserName, seedEmail, seedPassword);
+            if (!ok)
+            {
+                logger?.LogWarning("Could not ensure seed user exists in Auth service.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Exception while ensuring seed user in Auth service.");
+        }
+
         var owner = await EnsureSeedOwnerAsync(db);
-        var project = await EnsureProjectAsync(db, owner.Id);
 
         var pmoPmDir = ResolvePmoPmDirectory(contentRootPath);
+
+        // Read projects CSV and ensure projects exist. One project may be linked to the seeded promises.
+        var projectsCsvPath = Path.Combine(pmoPmDir, "Projects.csv");
+        var projectRows = File.Exists(projectsCsvPath) ? ReadCsvRows(projectsCsvPath) : new List<Dictionary<string, string>>();
+
+        Project? linkedProject = null;
+        foreach (var prow in projectRows)
+        {
+            var sourceId = GetValue(prow, "Project ID");
+            var name = GetValue(prow, "Project Name");
+            var desc = GetValue(prow, "Description");
+            var ownerEmail = GetValue(prow, "Owner Email");
+            var linked = GetValue(prow, "LinkedToSeeder").Equals("yes", StringComparison.OrdinalIgnoreCase);
+
+            var created = await EnsureProjectByNameAsync(db, owner.Id, name, desc);
+            if (linked)
+            {
+                linkedProject = created;
+            }
+        }
+
+        // Fallback: ensure the original TargetProject exists if no Projects.csv or no linked project found
+        var project = linkedProject ?? await EnsureProjectAsync(db, owner.Id);
 
         var productRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Products.csv"));
         var epicRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Epics.csv"));
@@ -60,7 +101,7 @@ public static class PromiseHierarchySeeder
         {
             Email = SeedOwnerEmail,
             Name = SeedOwnerName,
-            PasswordHash = SeedOwnerPasswordHash,
+            PasswordHash = null,
             Role = UserRole.Professional,
             CreatedAt = DateTime.UtcNow
         };
@@ -88,6 +129,39 @@ public static class PromiseHierarchySeeder
         {
             Name = TargetProjectName,
             Description = "Seeded from Promise Model tracker CSV sheets.",
+            OwnerId = ownerId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        db.Projects.Add(project);
+        await db.SaveChangesAsync();
+        return project;
+    }
+
+    private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Project name is required", nameof(name));
+        }
+
+        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == name);
+        if (existing != null)
+        {
+            if (existing.OwnerId != ownerId || existing.Description != description)
+            {
+                existing.OwnerId = ownerId;
+                existing.Description = description ?? existing.Description;
+                await db.SaveChangesAsync();
+            }
+
+            return existing;
+        }
+
+        var project = new Project
+        {
+            Name = name,
+            Description = description ?? string.Empty,
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow
         };

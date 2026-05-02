@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using System.Threading;
 using System.Threading.Tasks;
+using PromiseModelOnline.Auth.Models;
 
 namespace PromiseModelOnline.Auth.DAL.Interfaces
 {
@@ -11,6 +12,8 @@ namespace PromiseModelOnline.Auth.DAL.Interfaces
     public interface IAuthorizationDbContext
     {
         DbSet<IdentityUser> Users { get; set; }
+
+        DbSet<RefreshToken> RefreshTokens { get; set; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

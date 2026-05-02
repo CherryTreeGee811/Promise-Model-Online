@@ -3,24 +3,26 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.DAL
 {
-    public class LoginRepository(
-            HttpClient httpClient
-        ) : ILoginRepository
+    public class LoginRepository : ILoginRepository
     {
-        private readonly HttpClient _httpClient = httpClient;
+        private readonly HttpClient _httpClient;
 
-        public async Task<string> LoginAsync(UserLogin userLogin)
+        public LoginRepository(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
+
+        public async Task<TokenResponse> LoginAsync(UserLogin userLogin)
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("https://promisemodelonline.auth:8060/auth/login", userLogin);
+                var response = await _httpClient.PostAsJsonAsync("auth/login", userLogin);
                 response.EnsureSuccessStatusCode();
                 var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
-                return tokenResponse?.Token ?? string.Empty;
+                return tokenResponse ?? new TokenResponse();
             }
             catch (HttpRequestException httpEx)
             {
-                // Log HttpRequestException for debugging
                 Console.WriteLine(httpEx);
                 throw new Exception("Error communicating with authentication service.");
             }
