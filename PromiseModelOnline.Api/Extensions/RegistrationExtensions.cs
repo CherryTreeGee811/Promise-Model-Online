@@ -26,6 +26,28 @@ namespace PromiseModelOnline.Api.Extensions
             {
                 client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);
                 client.Timeout = TimeSpan.FromSeconds(10);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler();
+                // Bypass SSL validation
+                handler.ServerCertificateCustomValidationCallback = 
+                    (sender, cert, chain, sslPolicyErrors) => true;
+                return handler;
+            });
+
+            // Auth client used for provisioning seed users
+            services.AddHttpClient<PromiseModelOnline.Api.DAL.Interfaces.IAuthClient, PromiseModelOnline.Api.DAL.AuthClient>(client =>
+            {
+                client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);
+                client.Timeout = TimeSpan.FromSeconds(10);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback =
+                    (sender, cert, chain, sslPolicyErrors) => true;
+                return handler;
             });
         }
     }

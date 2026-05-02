@@ -83,7 +83,8 @@ using (var scope = app.Services.CreateScope())
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("PromiseHierarchySeeder");
 
     logger.LogInformation("Running Promise hierarchy seed...");
-    await PromiseHierarchySeeder.SeedAsync(dbContext, app.Environment.ContentRootPath, logger);
+    var authClient = scope.ServiceProvider.GetRequiredService<PromiseModelOnline.Api.DAL.Interfaces.IAuthClient>();
+    await PromiseHierarchySeeder.SeedAsync(dbContext, app.Environment.ContentRootPath, logger, authClient);
     logger.LogInformation("Migration and seed startup step complete.");
 }
 

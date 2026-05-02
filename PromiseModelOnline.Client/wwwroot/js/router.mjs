@@ -84,6 +84,13 @@ export function routeHandler(navContentDiv, contentDiv) {
                 console.error('Error loading login form js:', error);
             });
             break;
+        case path == '/projects':
+            loadTemplate("authenticated/projects.html", contentDiv).then(() => {
+                return loadProjectListPage(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading project list js:', error);
+            });
+            break;
         default:
             contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
     }

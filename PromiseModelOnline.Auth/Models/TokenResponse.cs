@@ -1,13 +1,13 @@
 using System.Text.Json.Serialization;
 
-namespace PromiseModelOnline.Api.Models
+namespace PromiseModelOnline.Auth.Models
 {
     public class TokenResponse
     {
         [JsonPropertyName("accessToken")]
-        public string? AccessToken { get; set; }
+        public string AccessToken { get; set; } = null!;
 
         [JsonPropertyName("refreshToken")]
-        public string? RefreshToken { get; set; }
+        public string RefreshToken { get; set; } = null!;
     }
 }

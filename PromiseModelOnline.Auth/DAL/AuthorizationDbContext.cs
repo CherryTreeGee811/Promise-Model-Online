@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Auth.DAL.Interfaces;
+using PromiseModelOnline.Auth.Models;
 
 namespace PromiseModelOnline.Auth.DAL
 {
@@ -17,5 +18,7 @@ namespace PromiseModelOnline.Auth.DAL
 
         // Expose EF Core DbSet directly (keep EF coupling as requested)
         public new DbSet<IdentityUser> Users { get; set; } = null!;
+        
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     }
 }

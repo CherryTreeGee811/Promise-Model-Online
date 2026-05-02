@@ -12,7 +12,17 @@ function initGeneralLinkListeners(navContentDiv, contentDiv) {
 
 
 function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
-    // Do nothing for now
+    document.getElementById("logout-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        window.history.pushState({}, '', '/logout');
+        routeHandler(navContentDiv, contentDiv);
+    });
+
+    document.getElementById("projects-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        window.history.pushState({}, '', '/projects');
+        routeHandler(navContentDiv, contentDiv);
+    });
 }
 
 
