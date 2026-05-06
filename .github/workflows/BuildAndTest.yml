@@ -51,6 +51,16 @@ jobs:
           ${{ secrets.AUTH_CI_KEY }}
           PEM
       
+      - name: Run API Tests
+        shell: bash
+        run: |
+          mkdir -p AuthTestResults
+          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./AuthTestResults \
+            --os linux \
+            --verbosity minimal
+
       - name: Build and Run App Containers
         shell: bash
         run: docker compose up -d
