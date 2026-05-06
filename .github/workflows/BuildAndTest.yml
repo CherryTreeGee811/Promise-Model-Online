@@ -51,7 +51,7 @@ jobs:
           ${{ secrets.AUTH_CI_KEY }}
           PEM
       
-      - name: Run API Tests
+      - name: Run Auth Tests
         shell: bash
         run: |
           mkdir -p AuthTestResults
