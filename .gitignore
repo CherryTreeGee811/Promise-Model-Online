@@ -15,9 +15,6 @@ query
 # Build outputs and intermediate objects
 **/bin/
 **/obj/
-# Generated with debug and execute
-PromiseModelOnline.Api/bin
-PromiseModelOnline.Api/obj
 
 # macOS exclusion files.
 *.DS_Store
