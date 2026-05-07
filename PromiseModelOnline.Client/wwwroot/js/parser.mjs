@@ -59,6 +59,20 @@ export function getNameFromToken(token) {
     }
 }
 
+export function getRefreshTokenFromCookie() {
+    const name = 'refreshToken=';
+    const decodedCookies = decodeURIComponent(document.cookie);
+    const cookiesArray = decodedCookies.split('; ');
+
+    for (let i = 0; i < cookiesArray.length; i++) {
+        if (cookiesArray[i].startsWith(name)) {
+            return cookiesArray[i].substring(name.length);
+        }
+    }
+
+    return null;
+}
+
 export function deleteTokenCookies() {
     document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";

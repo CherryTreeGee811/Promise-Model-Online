@@ -2,6 +2,8 @@ import { loadHomePage } from './home.mjs';
 import { loadNavTemplate } from './navigation/router.mjs';
 import { loadLoginForm } from './login.mjs';
 import { loadRegistrationForm } from './register.mjs';
+import { deleteTokenCookies, getRefreshTokenFromCookie } from './parser.mjs';
+import { requestLogout } from './api.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -69,7 +71,46 @@ export function loadTemplate(templateName, contentDiv) {
 * @returns {void} This function does not return a value.
 */
 export function routeHandler(navContentDiv, contentDiv) {
-    const path = window.location.pathname;
+    let path = window.location.pathname;
+    
+    // Handle logout
+    if (path === '/logout') {
+        const refreshToken = getRefreshTokenFromCookie();
+        if (refreshToken) {
+            requestLogout(refreshToken)
+                .then(() => {
+                    deleteTokenCookies();
+                    window.history.replaceState({}, '', '/');
+                    path = '/';
+                    loadNavTemplate(navContentDiv, contentDiv);
+                    loadTemplate("home.html", contentDiv).then(() => {
+                        return loadHomePage();
+                    });
+                })
+                .catch((error) => {
+                    console.error('Logout failed:', error);
+                    // Still clear cookies and redirect even if API call fails
+                    deleteTokenCookies();
+                    window.history.replaceState({}, '', '/');
+                    path = '/';
+                    loadNavTemplate(navContentDiv, contentDiv);
+                    loadTemplate("home.html", contentDiv).then(() => {
+                        return loadHomePage();
+                    });
+                });
+        } else {
+            // No refresh token, just redirect
+            deleteTokenCookies();
+            window.history.replaceState({}, '', '/');
+            path = '/';
+            loadNavTemplate(navContentDiv, contentDiv);
+            loadTemplate("home.html", contentDiv).then(() => {
+                return loadHomePage();
+            });
+        }
+        return;
+    }
+    
     loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
