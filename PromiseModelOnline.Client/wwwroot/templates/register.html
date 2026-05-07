@@ -1,16 +1,18 @@
-<div class="form-container">
+<h1 id="form-title">Register</h1>
+
+<div class="form-div">
     <h1>Create Account</h1>
     <form id="register-form">
-        <label for="username-input">Username:</label>
+        <label id="username-label" for="username-input">Username:</label>
         <input id="username-input" type="text" name="username" required placeholder="Enter your username">
         
-        <label for="email-input">Email:</label>
+        <label id="email-label" for="email-input">Email:</label>
         <input id="email-input" type="email" name="email" required placeholder="Enter your email">
         
-        <label for="password-input">Password:</label>
+        <label id="password-label" for="password-input">Password:</label>
         <input id="password-input" type="password" name="password" required placeholder="Enter your password">
         
-        <input id="register-btn" type="button" value="Register">
+        <input id="register-btn" name="register-btn" type="button" value="Register">
     </form>
 
     <p id="error-text"></p>
