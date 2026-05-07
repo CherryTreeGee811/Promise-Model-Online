@@ -32,6 +32,12 @@ function initAnonymousLinkListeners(navContentDiv, contentDiv) {
         window.history.pushState({}, '', '/login');
         routeHandler(navContentDiv, contentDiv);
     });
+
+    document.getElementById("register-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        window.history.pushState({}, '', '/register');
+        routeHandler(navContentDiv, contentDiv);
+    });
 }
 
 

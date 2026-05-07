@@ -71,3 +71,45 @@ export function requestLogout(token) {
             throw error;
         });
 }
+
+export function registerUser(username, email, password) {
+    const register_url = `${base}/auth/register`;
+    const body = JSON.stringify({
+        userName: username,
+        email: email,
+        password: password
+    });
+
+    return fetch(register_url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': 'en-CA',
+        },
+        body: body,
+    })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else if (response.status === 409) {
+                return response.json().then(data => {
+                    const error = new Error(data.message || "Username or email already exists.");
+                    error.statusCode = 409;
+                    throw error;
+                });
+            } else if (response.status === 400) {
+                return response.json().then(data => {
+                    const error = new Error(data.message || "Invalid registration data.");
+                    error.statusCode = 400;
+                    throw error;
+                });
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            throw error;
+        });
+}

@@ -1,6 +1,7 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate } from './navigation/router.mjs';
 import { loadLoginForm } from './login.mjs';
+import { loadRegistrationForm } from './register.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -89,6 +90,13 @@ export function routeHandler(navContentDiv, contentDiv) {
                 return loadProjectListPage(navContentDiv, contentDiv);
             }).catch((error) => {
                 console.error('Error loading project list js:', error);
+            });
+            break;
+        case path == '/register':
+            loadTemplate("register.html", contentDiv).then(() => {
+                return loadRegistrationForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading registration form js:', error);
             });
             break;
         default:
