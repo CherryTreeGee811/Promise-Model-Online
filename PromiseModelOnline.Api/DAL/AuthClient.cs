@@ -1,6 +1,9 @@
 using PromiseModelOnline.Api.DAL.Interfaces;
+using PromiseModelOnline.Api.Models;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
+using System.Net;
+using System.Security;
 
 namespace PromiseModelOnline.Api.DAL;
 
@@ -15,19 +18,33 @@ public class AuthClient : IAuthClient
         _config = config;
     }
 
-    public async Task<bool> EnsureSeedUserAsync(string userName, string email, string password)
+    public async Task<TokenResponse> LoginAsync(UserLogin userLogin)
     {
-        var req = new
+        try
         {
-            UserName = userName,
-            Email = email,
-            Password = password
-        };
+            var response = await _http.PostAsJsonAsync("auth/login", userLogin);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedAccessException("Invalid username or password");
+            }
+
+            response.EnsureSuccessStatusCode();
+            return (await response.Content.ReadFromJsonAsync<TokenResponse>()) ?? new TokenResponse();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine(httpEx);
+            throw new Exception("Error communicating with authentication service.");
+        }
+    }
+
+    public async Task<RegisterResponse?> RegisterAsync(RegisterRequest request)
+    {
         var registrationKey = _config["Auth:RegistrationKey"];
         var message = new HttpRequestMessage(HttpMethod.Post, "auth/register")
         {
-            Content = JsonContent.Create(req)
+            Content = JsonContent.Create(request)
         };
 
         if (!string.IsNullOrEmpty(registrationKey))
@@ -35,18 +52,174 @@ public class AuthClient : IAuthClient
             message.Headers.Add("X-Registration-Key", registrationKey);
         }
 
-        var resp = await _http.SendAsync(message);
-        if (resp.IsSuccessStatusCode)
+        try
         {
-            return true;
+            var resp = await _http.SendAsync(message);
+            if (resp.IsSuccessStatusCode)
+            {
+                return await resp.Content.ReadFromJsonAsync<RegisterResponse>();
+            }
+
+            if (resp.StatusCode == HttpStatusCode.BadRequest)
+            {
+                throw new ArgumentException("Bad request");
+            }
+
+            if (resp.StatusCode == HttpStatusCode.Forbidden)
+            {
+                throw new SecurityException("Forbidden");
+            }
+
+            if (resp.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                return null;
+            }
+
+            resp.EnsureSuccessStatusCode();
+            return null;
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine(httpEx);
+            throw new Exception("Error communicating with authentication service.");
+        }
+    }
+
+    public async Task<TokenResponse> RefreshAsync(RefreshRequest request)
+    {
+        try
+        {
+            var response = await _http.PostAsJsonAsync("auth/refresh", request);
+
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                throw new ArgumentException("Bad request");
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedAccessException("Invalid or expired refresh token");
+            }
+
+            response.EnsureSuccessStatusCode();
+            return (await response.Content.ReadFromJsonAsync<TokenResponse>()) ?? new TokenResponse();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine(httpEx);
+            throw new Exception("Error communicating with authentication service.");
+        }
+    }
+
+    public async Task LogoutAsync(LogoutRequest? request)
+    {
+        try
+        {
+            var response = await _http.PostAsJsonAsync("auth/logout", request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine(httpEx);
+            throw new Exception("Error communicating with authentication service.");
+        }
+    }
+
+    public async Task ChangePasswordAsync(ChangePasswordRequest request, string authorizationHeader)
+    {
+        if (string.IsNullOrWhiteSpace(authorizationHeader))
+        {
+            throw new UnauthorizedAccessException("Unauthorized");
         }
 
-        // 409 Conflict means already exists
-        if (resp.StatusCode == System.Net.HttpStatusCode.Conflict)
+        var message = new HttpRequestMessage(HttpMethod.Post, "auth/change-password")
         {
-            return true;
+            Content = JsonContent.Create(request)
+        };
+
+        message.Headers.TryAddWithoutValidation("Authorization", authorizationHeader);
+
+        try
+        {
+            var resp = await _http.SendAsync(message);
+            if (resp.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+
+            if (resp.StatusCode == HttpStatusCode.BadRequest)
+            {
+                throw new ArgumentException("Bad request");
+            }
+
+            resp.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine(httpEx);
+            throw new Exception("Error communicating with authentication service.");
+        }
+    }
+
+    public async Task DeleteAccountAsync(DeleteAccountRequest request, string authorizationHeader)
+    {
+        if (string.IsNullOrWhiteSpace(authorizationHeader))
+        {
+            throw new UnauthorizedAccessException("Unauthorized");
         }
 
-        return false;
+        var message = new HttpRequestMessage(HttpMethod.Post, "auth/delete-account")
+        {
+            Content = JsonContent.Create(request)
+        };
+
+        message.Headers.TryAddWithoutValidation("Authorization", authorizationHeader);
+
+        try
+        {
+            var resp = await _http.SendAsync(message);
+            if (resp.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+
+            if (resp.StatusCode == HttpStatusCode.BadRequest)
+            {
+                throw new ArgumentException("Bad request");
+            }
+
+            resp.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine(httpEx);
+            throw new Exception("Error communicating with authentication service.");
+        }
+    }
+
+    public async Task<bool> EnsureSeedUserAsync(string userName, string email, string password)
+    {
+        var req = new RegisterRequest
+        {
+            UserName = userName,
+            Email = email,
+            Password = password
+        };
+
+        try
+        {
+            var result = await RegisterAsync(req);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
