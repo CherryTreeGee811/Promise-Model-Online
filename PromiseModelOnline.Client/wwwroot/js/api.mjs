@@ -113,3 +113,49 @@ export function registerUser(username, email, password) {
             throw error;
         });
 }
+
+import { getAccessTokenFromCookie } from './parser.mjs';
+
+export function changePassword(oldPassword, newPassword) {
+    const change_url = `${base}/auth/change-password`;
+    const token = getAccessTokenFromCookie();
+
+    const body = JSON.stringify({
+        oldPassword: oldPassword,
+        newPassword: newPassword
+    });
+
+    return fetch(change_url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': 'en-CA',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: body,
+    })
+        .then(response => {
+            if (response.ok) {
+                if (response.status === 204) {
+                    return true;
+                } else {
+                    return response.json();
+                }
+            } else if (response.status === 401) {
+                document.getElementById("login-link").click();
+            } else if (response.status === 400) {
+                return response.json().then(data => {
+                    const error = new Error(data.message || "Invalid request.");
+                    error.statusCode = 400;
+                    throw error;
+                });
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            throw error;
+        });
+}

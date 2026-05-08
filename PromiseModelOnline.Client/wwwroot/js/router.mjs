@@ -2,7 +2,8 @@ import { loadHomePage } from './home.mjs';
 import { loadNavTemplate } from './navigation/router.mjs';
 import { loadLoginForm } from './login.mjs';
 import { loadRegistrationForm } from './register.mjs';
-import { deleteTokenCookies, getRefreshTokenFromCookie } from './parser.mjs';
+import { loadChangePasswordForm } from './change-password.mjs';
+import { deleteTokenCookies, getRefreshTokenFromCookie, getAccessTokenFromCookie } from './parser.mjs';
 import { requestLogout } from './api.mjs';
 
 /**
@@ -138,6 +139,23 @@ export function routeHandler(navContentDiv, contentDiv) {
                 return loadRegistrationForm(navContentDiv, contentDiv);
             }).catch((error) => {
                 console.error('Error loading registration form js:', error);
+            });
+            break;
+        case path == '/change-password':
+            // Protect route: require authentication
+            if (!getAccessTokenFromCookie()) {
+                window.history.pushState({}, '', '/login');
+                loadNavTemplate(navContentDiv, contentDiv);
+                loadTemplate("login.html", contentDiv).then(() => {
+                    return loadLoginForm(navContentDiv, contentDiv);
+                });
+                break;
+            }
+
+            loadTemplate("change-password.html", contentDiv).then(() => {
+                return loadChangePasswordForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading change password form js:', error);
             });
             break;
         default:

@@ -23,6 +23,15 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
         window.history.pushState({}, '', '/projects');
         routeHandler(navContentDiv, contentDiv);
     });
+
+    const changeLink = document.getElementById("change-password-link");
+    if (changeLink) {
+        changeLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.history.pushState({}, '', '/change-password');
+            routeHandler(navContentDiv, contentDiv);
+        });
+    }
 }
 
 
