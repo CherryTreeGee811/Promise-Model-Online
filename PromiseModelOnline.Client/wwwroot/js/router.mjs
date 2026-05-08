@@ -5,6 +5,7 @@ import { loadRegistrationForm } from './register.mjs';
 import { loadChangePasswordForm } from './change-password.mjs';
 import { deleteTokenCookies, getRefreshTokenFromCookie, getAccessTokenFromCookie } from './parser.mjs';
 import { requestLogout } from './api.mjs';
+import { handleProjectRoutes } from './projects/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -127,12 +128,8 @@ export function routeHandler(navContentDiv, contentDiv) {
                 console.error('Error loading login form js:', error);
             });
             break;
-        case path == '/projects':
-            loadTemplate("authenticated/projects.html", contentDiv).then(() => {
-                return loadProjectListPage(navContentDiv, contentDiv);
-            }).catch((error) => {
-                console.error('Error loading project list js:', error);
-            });
+        case path.startsWith('/projects'):
+            handleProjectRoutes(path, navContentDiv, contentDiv);
             break;
         case path == '/register':
             loadTemplate("register.html", contentDiv).then(() => {

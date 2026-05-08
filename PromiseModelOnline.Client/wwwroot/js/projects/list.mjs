@@ -17,8 +17,8 @@ export function loadProjectList(navContentDiv, contentDiv) {
         projects.forEach(project => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${project.Id ?? ''}</td>
-                <td>${project.Name ?? ''}</td>
+                <td>${project.id ?? ''}</td>
+                <td>${project.name ?? ''}</td>
                 <td>
                     <a href="/projects/edit?id=${project.Id}" 
                         class="edit-btn" project-id="${project.Id}">Edit</a>

@@ -1,9 +1,9 @@
-import { getAccessTokenFromCookie } from '../token-parser.mjs';
-import { baseUrl } from '../api.mjs';
+import { getAccessTokenFromCookie } from '../parser.mjs';
+import { base } from '../api.mjs';
 
 
 export function getAllProjects() {
-    const url = `${baseUrl}/projects`;
+    const url = `${base}/api/projects`;
     const accessToken = getAccessTokenFromCookie();
 
     return fetch(url, {
