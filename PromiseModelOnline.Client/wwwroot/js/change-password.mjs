@@ -48,7 +48,7 @@ function manageChangeSubmission(navContentDiv, contentDiv) {
         return;
     }
 
-    changePassword(currentPassword, newPassword)
+    changePassword(currentPassword, newPassword, confirmPassword)
         .then(() => {
             successContainer.textContent = "Password changed successfully. Signing out...";
             successContainer.style.display = "block";

@@ -116,13 +116,14 @@ export function registerUser(username, email, password) {
 
 import { getAccessTokenFromCookie } from './parser.mjs';
 
-export function changePassword(oldPassword, newPassword) {
+export function changePassword(currentPassword, newPassword, confirmPassword) {
     const change_url = `${base}/auth/change-password`;
     const token = getAccessTokenFromCookie();
 
     const body = JSON.stringify({
-        oldPassword: oldPassword,
-        newPassword: newPassword
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword
     });
 
     return fetch(change_url, {
