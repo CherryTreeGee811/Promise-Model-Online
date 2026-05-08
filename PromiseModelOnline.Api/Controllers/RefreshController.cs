@@ -7,27 +7,31 @@ namespace PromiseModelOnline.Api.Controllers
 {
     [Route("auth")]
     [ApiController]
-    public class LoginController : ControllerBase
+    public class RefreshController : ControllerBase
     {
         private readonly IAuthClient _authClient;
 
-        public LoginController(IAuthClient authClient)
+        public RefreshController(IAuthClient authClient)
         {
             _authClient = authClient;
         }
 
-        [HttpPost("login")]
+        [HttpPost("refresh")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] UserLogin userLogin)
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {
             try
             {
-                var tokenResponse = await _authClient.LoginAsync(userLogin);
+                var tokenResponse = await _authClient.RefreshAsync(request);
                 return Ok(tokenResponse);
+            }
+            catch (ArgumentException)
+            {
+                return BadRequest("Bad request");
             }
             catch (UnauthorizedAccessException)
             {
-                return Unauthorized("Invalid username or password");
+                return Unauthorized("Invalid or expired refresh token");
             }
             catch (Exception)
             {

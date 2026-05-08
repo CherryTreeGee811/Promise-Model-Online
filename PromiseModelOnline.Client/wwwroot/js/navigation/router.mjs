@@ -23,6 +23,15 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
         window.history.pushState({}, '', '/projects');
         routeHandler(navContentDiv, contentDiv);
     });
+
+    const changeLink = document.getElementById("change-password-link");
+    if (changeLink) {
+        changeLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.history.pushState({}, '', '/change-password');
+            routeHandler(navContentDiv, contentDiv);
+        });
+    }
 }
 
 
@@ -30,6 +39,12 @@ function initAnonymousLinkListeners(navContentDiv, contentDiv) {
     document.getElementById("login-link").addEventListener("click", (e) => {
         e.preventDefault();
         window.history.pushState({}, '', '/login');
+        routeHandler(navContentDiv, contentDiv);
+    });
+
+    document.getElementById("register-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        window.history.pushState({}, '', '/register');
         routeHandler(navContentDiv, contentDiv);
     });
 }

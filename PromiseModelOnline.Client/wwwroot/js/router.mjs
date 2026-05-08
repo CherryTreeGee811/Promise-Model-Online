@@ -1,6 +1,11 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate } from './navigation/router.mjs';
 import { loadLoginForm } from './login.mjs';
+import { loadRegistrationForm } from './register.mjs';
+import { loadChangePasswordForm } from './change-password.mjs';
+import { deleteTokenCookies, getRefreshTokenFromCookie, getAccessTokenFromCookie } from './parser.mjs';
+import { requestLogout } from './api.mjs';
+import { handleProjectRoutes } from './projects/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -68,7 +73,46 @@ export function loadTemplate(templateName, contentDiv) {
 * @returns {void} This function does not return a value.
 */
 export function routeHandler(navContentDiv, contentDiv) {
-    const path = window.location.pathname;
+    let path = window.location.pathname;
+    
+    // Handle logout
+    if (path === '/logout') {
+        const refreshToken = getRefreshTokenFromCookie();
+        if (refreshToken) {
+            requestLogout(refreshToken)
+                .then(() => {
+                    deleteTokenCookies();
+                    window.history.replaceState({}, '', '/');
+                    path = '/';
+                    loadNavTemplate(navContentDiv, contentDiv);
+                    loadTemplate("home.html", contentDiv).then(() => {
+                        return loadHomePage();
+                    });
+                })
+                .catch((error) => {
+                    console.error('Logout failed:', error);
+                    // Still clear cookies and redirect even if API call fails
+                    deleteTokenCookies();
+                    window.history.replaceState({}, '', '/');
+                    path = '/';
+                    loadNavTemplate(navContentDiv, contentDiv);
+                    loadTemplate("home.html", contentDiv).then(() => {
+                        return loadHomePage();
+                    });
+                });
+        } else {
+            // No refresh token, just redirect
+            deleteTokenCookies();
+            window.history.replaceState({}, '', '/');
+            path = '/';
+            loadNavTemplate(navContentDiv, contentDiv);
+            loadTemplate("home.html", contentDiv).then(() => {
+                return loadHomePage();
+            });
+        }
+        return;
+    }
+    
     loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
@@ -84,11 +128,31 @@ export function routeHandler(navContentDiv, contentDiv) {
                 console.error('Error loading login form js:', error);
             });
             break;
-        case path == '/projects':
-            loadTemplate("authenticated/projects.html", contentDiv).then(() => {
-                return loadProjectListPage(navContentDiv, contentDiv);
+        case path.startsWith('/projects'):
+            handleProjectRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path == '/register':
+            loadTemplate("register.html", contentDiv).then(() => {
+                return loadRegistrationForm(navContentDiv, contentDiv);
             }).catch((error) => {
-                console.error('Error loading project list js:', error);
+                console.error('Error loading registration form js:', error);
+            });
+            break;
+        case path == '/change-password':
+            // Protect route: require authentication
+            if (!getAccessTokenFromCookie()) {
+                window.history.pushState({}, '', '/login');
+                loadNavTemplate(navContentDiv, contentDiv);
+                loadTemplate("login.html", contentDiv).then(() => {
+                    return loadLoginForm(navContentDiv, contentDiv);
+                });
+                break;
+            }
+
+            loadTemplate("change-password.html", contentDiv).then(() => {
+                return loadChangePasswordForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading change password form js:', error);
             });
             break;
         default:

@@ -71,3 +71,92 @@ export function requestLogout(token) {
             throw error;
         });
 }
+
+export function registerUser(username, email, password) {
+    const register_url = `${base}/auth/register`;
+    const body = JSON.stringify({
+        userName: username,
+        email: email,
+        password: password
+    });
+
+    return fetch(register_url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': 'en-CA',
+        },
+        body: body,
+    })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else if (response.status === 409) {
+                return response.json().then(data => {
+                    const error = new Error(data.message || "Username or email already exists.");
+                    error.statusCode = 409;
+                    throw error;
+                });
+            } else if (response.status === 400) {
+                return response.json().then(data => {
+                    const error = new Error(data.message || "Invalid registration data.");
+                    error.statusCode = 400;
+                    throw error;
+                });
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            throw error;
+        });
+}
+
+import { getAccessTokenFromCookie } from './parser.mjs';
+
+export function changePassword(currentPassword, newPassword, confirmPassword) {
+    const change_url = `${base}/auth/change-password`;
+    const token = getAccessTokenFromCookie();
+
+    const body = JSON.stringify({
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword
+    });
+
+    return fetch(change_url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': 'en-CA',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: body,
+    })
+        .then(response => {
+            if (response.ok) {
+                if (response.status === 204) {
+                    return true;
+                } else {
+                    return response.json();
+                }
+            } else if (response.status === 401) {
+                document.getElementById("login-link").click();
+            } else if (response.status === 400) {
+                return response.json().then(data => {
+                    const error = new Error(data.message || "Invalid request.");
+                    error.statusCode = 400;
+                    throw error;
+                });
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            throw error;
+        });
+}

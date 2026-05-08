@@ -7,27 +7,27 @@ namespace PromiseModelOnline.Api.Controllers
 {
     [Route("auth")]
     [ApiController]
-    public class LoginController : ControllerBase
+    public class LogoutController : ControllerBase
     {
         private readonly IAuthClient _authClient;
 
-        public LoginController(IAuthClient authClient)
+        public LogoutController(IAuthClient authClient)
         {
             _authClient = authClient;
         }
 
-        [HttpPost("login")]
+        [HttpPost("logout")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] UserLogin userLogin)
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
         {
             try
             {
-                var tokenResponse = await _authClient.LoginAsync(userLogin);
-                return Ok(tokenResponse);
+                await _authClient.LogoutAsync(request);
+                return Ok();
             }
             catch (UnauthorizedAccessException)
             {
-                return Unauthorized("Invalid username or password");
+                return Unauthorized("Invalid refresh token");
             }
             catch (Exception)
             {
