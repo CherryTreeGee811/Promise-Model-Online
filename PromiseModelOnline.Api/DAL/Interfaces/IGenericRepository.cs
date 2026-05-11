@@ -25,13 +25,6 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         Task<T?> GetByIdAsync(object id);
 
         /// <summary>
-        /// Asynchronously finds entities matching the given predicate.
-        /// </summary>
-        /// <param name="predicate">The filter expression.</param>
-        /// <returns>A collection of matching entities.</returns>
-        Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
-
-        /// <summary>
         /// Asynchronously adds a new entity to the repository.
         /// </summary>
         /// <param name="entity">The entity to add.</param>
@@ -44,10 +37,10 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         void Update(T entity);
 
         /// <summary>
-        /// Removes an entity from the repository.
+        /// Deletes an entity by its primary key.
+        /// Returns true if the entity was found and deleted; otherwise false.
         /// </summary>
-        /// <param name="entity">The entity to remove.</param>
-        void Remove(T entity);
+        Task<bool> DeleteByIdAsync(object id);
         
         /// <summary>
         /// Asynchronously saves all changes made in the context to the database.

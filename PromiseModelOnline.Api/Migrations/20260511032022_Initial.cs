@@ -77,6 +77,26 @@ namespace PromiseModelOnline.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Iterations",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    ProjectId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Iterations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Iterations_Projects_ProjectId",
+                        column: x => x.ProjectId,
+                        principalTable: "Projects",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Permission",
                 columns: table => new
                 {
@@ -138,16 +158,22 @@ namespace PromiseModelOnline.Api.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    ProjectId = table.Column<int>(type: "int", nullable: false),
+                    IterationId = table.Column<int>(type: "int", nullable: true),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DurationDays = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ProjectId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Strides", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Strides_Iterations_IterationId",
+                        column: x => x.IterationId,
+                        principalTable: "Iterations",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Strides_Projects_ProjectId",
                         column: x => x.ProjectId,
@@ -537,6 +563,11 @@ namespace PromiseModelOnline.Api.Migrations
                 column: "OwnerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Iterations_ProjectId",
+                table: "Iterations",
+                column: "ProjectId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Journeys_EpicId",
                 table: "Journeys",
                 column: "EpicId");
@@ -612,6 +643,11 @@ namespace PromiseModelOnline.Api.Migrations
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Strides_IterationId",
+                table: "Strides",
+                column: "IterationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Strides_ProjectId",
                 table: "Strides",
                 column: "ProjectId");
@@ -652,6 +688,9 @@ namespace PromiseModelOnline.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "Journeys");
+
+            migrationBuilder.DropTable(
+                name: "Iterations");
 
             migrationBuilder.DropTable(
                 name: "Epics");

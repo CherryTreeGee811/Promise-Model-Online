@@ -1,5 +1,6 @@
 using Microsoft.OpenApi;
 using PromiseModelOnline.Api.Extensions;
+using System.Text.Json.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
@@ -67,11 +68,28 @@ builder.Services.AddAuthentication(x =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Promise Model Online API", Version = "v1" });
+builder.Services.AddSwaggerGen(c =>{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter your JWT token",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    // Use the new overload that takes a document parameter
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
 });
 
 var app = builder.Build();
@@ -93,11 +111,19 @@ app.UseCors(MyAllowSpecificOrigins);
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Promise Model Online API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api Server");
         c.RoutePrefix = string.Empty;
+        var registrationKey = app.Configuration["Auth:RegistrationKey"];
+
+        if (!string.IsNullOrEmpty(registrationKey))
+        {
+            // Escape single quotes so the JavaScript string is valid
+            var escapedKey = registrationKey.Replace("'", "\\'");
+            c.UseRequestInterceptor($"(req) => {{ req.headers['X-Registration-Key'] = '{escapedKey}'; return req; }}");
+        }
     });
 }
 

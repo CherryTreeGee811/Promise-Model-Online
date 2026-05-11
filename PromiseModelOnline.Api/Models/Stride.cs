@@ -12,21 +12,20 @@ public class Stride
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
         
-    public int ProjectId { get; set; }
-        
+    public int? IterationId { get; set; }
+
     public DateTime StartDate { get; set; }
         
     public DateTime EndDate { get; set; }
         
-    public int DurationDays { get; set; } = 14; // Default 2 weeks
+    public int DurationDays { get; set; } = 14;
         
     public bool IsActive { get; set; } = true;
         
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        
-    // Navigation properties
-    [ForeignKey("ProjectId")]
-    public Project Project { get; set; } = null!;
-        
+    
+    [ForeignKey(nameof(IterationId))]
+    public Iteration? Iteration { get; set; }
+
     public ICollection<Moment> Moments { get; set; } = new List<Moment>();
 }

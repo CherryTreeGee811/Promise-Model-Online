@@ -12,7 +12,7 @@ using PromiseModelOnline.Api.DAL;
 namespace PromiseModelOnline.Api.Migrations
 {
     [DbContext(typeof(PromiseModelOnlineContext))]
-    [Migration("20260501205004_Initial")]
+    [Migration("20260511032022_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -280,6 +280,32 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Flows");
+                });
+
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.Iteration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("Iterations");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Journey", b =>
@@ -592,18 +618,23 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("IterationId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int>("ProjectId")
+                    b.Property<int?>("ProjectId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IterationId");
 
                     b.HasIndex("ProjectId");
 
@@ -797,6 +828,17 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.Iteration", b =>
+                {
+                    b.HasOne("PromiseModelOnline.Api.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Journey", b =>
                 {
                     b.HasOne("PromiseModelOnline.Api.Models.Epic", "Epic")
@@ -920,13 +962,17 @@ namespace PromiseModelOnline.Api.Migrations
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Stride", b =>
                 {
-                    b.HasOne("PromiseModelOnline.Api.Models.Project", "Project")
+                    b.HasOne("PromiseModelOnline.Api.Models.Iteration", "Iteration")
+                        .WithMany("Strides")
+                        .HasForeignKey("IterationId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("PromiseModelOnline.Api.Models.Project", null)
                         .WithMany("Strides")
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
-                    b.Navigation("Project");
+                    b.Navigation("Iteration");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Comment", b =>
@@ -948,6 +994,11 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Moments");
+                });
+
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.Iteration", b =>
+                {
+                    b.Navigation("Strides");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Journey", b =>
