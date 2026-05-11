@@ -10,166 +10,210 @@ public static class PromiseHierarchySeeder
 {
     private const string SeedOwnerEmail = "seed.promise-model-online@local";
     private const string SeedOwnerName = "Promise Model Online Seed User";
-    private const string SeedOwnerPasswordHash = "seed-not-for-login";
     private const string TargetProjectName = "Promise Model Online";
 
-    public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath, ILogger logger, PromiseModelOnline.Api.DAL.Interfaces.IAuthClient authClient)
+    public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath,
+        ILogger logger, PromiseModelOnline.Api.DAL.Interfaces.IAuthClient authClient)
     {
-        // Ensure seed user exists in Auth service first
+        // --- 0. Ensure seed user in Auth service ---
         var seedUserName = "seed.promise-model-online";
         var seedEmail = SeedOwnerEmail;
-        // generate a random password for provisioning; not stored in API DB
         var seedPassword = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!aA1";
-
         try
         {
-            var ok = await authClient.EnsureSeedUserAsync(seedUserName, seedEmail, seedPassword);
-            if (!ok)
-            {
-                logger?.LogWarning("Could not ensure seed user exists in Auth service.");
-            }
+            await authClient.EnsureSeedUserAsync(seedUserName, seedEmail, seedPassword);
         }
         catch (Exception ex)
         {
-            logger?.LogWarning(ex, "Exception while ensuring seed user in Auth service.");
+            logger?.LogWarning(ex, "Could not ensure seed user in Auth service – continuing anyway.");
         }
 
         var owner = await EnsureSeedOwnerAsync(db);
-
         var pmoPmDir = ResolvePmoPmDirectory(contentRootPath);
 
-        // Read projects CSV and ensure projects exist. One project may be linked to the seeded promises.
+        // --- 1. Projects ---
         var projectsCsvPath = Path.Combine(pmoPmDir, "Projects.csv");
-        var projectRows = File.Exists(projectsCsvPath) ? ReadCsvRows(projectsCsvPath) : new List<Dictionary<string, string>>();
-
+        var projectRows = File.Exists(projectsCsvPath) ? ReadCsvRows(projectsCsvPath) : new();
+        var projectIdBySourceId = new Dictionary<string, int>();
         Project? linkedProject = null;
+
         foreach (var prow in projectRows)
         {
             var sourceId = GetValue(prow, "Project ID");
             var name = GetValue(prow, "Project Name");
             var desc = GetValue(prow, "Description");
-            var ownerEmail = GetValue(prow, "Owner Email");
             var linked = GetValue(prow, "LinkedToSeeder").Equals("yes", StringComparison.OrdinalIgnoreCase);
 
             var created = await EnsureProjectByNameAsync(db, owner.Id, name, desc);
-            if (linked)
-            {
-                linkedProject = created;
-            }
+            projectIdBySourceId[sourceId] = created.Id;
+            if (linked) linkedProject = created;
         }
 
-        // Fallback: ensure the original TargetProject exists if no Projects.csv or no linked project found
         var project = linkedProject ?? await EnsureProjectAsync(db, owner.Id);
+        if (!projectIdBySourceId.ContainsKey("PRJ-001"))
+            projectIdBySourceId["PRJ-001"] = project.Id;
 
+        // --- 2. Iterations (predefined IDs) ---
+        await SeedIterationsAsync(db, pmoPmDir, projectIdBySourceId);
+
+        // --- 3. Strides (predefined IDs, referencing iterations) ---
+        await SeedStridesAsync(db, pmoPmDir);
+
+        // --- 4. Promise hierarchy (Products, Epics, Journeys, Flows) ---
         var productRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Products.csv"));
-        var epicRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Epics.csv"));
+        var epicRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Epics.csv"));
         var journeyRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Journeys.csv"));
-        var flowRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Flows.csv"));
-        var momentRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Moments.csv"));
+        var flowRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Flows.csv"));
+        var momentRows  = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Moments.csv"));
 
-        var productLookup = await SeedProductsAsync(db, project.Id, productRows);
-        var epicLookup = await SeedEpicsAsync(db, epicRows, productLookup);
-        var journeyLookup = await SeedJourneysAsync(db, journeyRows, epicLookup);
-        var flowLookup = await SeedFlowsAsync(db, flowRows, journeyLookup);
-        var summary = await SeedMomentsAsync(db, momentRows, flowLookup);
+        var productLookup  = await SeedProductsAsync(db, project.Id, productRows);
+        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup);
+        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup);
+        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup);
+        var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup);
 
         logger?.LogInformation(
             "Promise hierarchy seed complete. ProjectId: {ProjectId}, Products: {ProductsInserted}/{ProductsTotal}, Epics: {EpicsInserted}/{EpicsTotal}, Journeys: {JourneysInserted}/{JourneysTotal}, Flows: {FlowsInserted}/{FlowsTotal}, Moments: {MomentsInserted}/{MomentsTotal}",
             project.Id,
-            productLookup.Inserted,
-            productLookup.Total,
-            epicLookup.Inserted,
-            epicLookup.Total,
-            journeyLookup.Inserted,
-            journeyLookup.Total,
-            flowLookup.Inserted,
-            flowLookup.Total,
-            summary.Inserted,
-            summary.Total
+            productLookup.Inserted, productLookup.Total,
+            epicLookup.Inserted, epicLookup.Total,
+            journeyLookup.Inserted, journeyLookup.Total,
+            flowLookup.Inserted, flowLookup.Total,
+            inserted, total
         );
     }
 
-    private static async Task<User> EnsureSeedOwnerAsync(PromiseModelOnlineContext db)
+    // -----------------------------------------------
+    //  Seed iterations with predefined IDs
+    // -----------------------------------------------
+    private static async Task SeedIterationsAsync(PromiseModelOnlineContext db, string pmoPmDir,
+        Dictionary<string, int> projectIdBySourceId)
     {
-        var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == SeedOwnerEmail);
-        if (existing != null)
+        var path = Path.Combine(pmoPmDir, "Iterations.csv");
+        if (!File.Exists(path)) return;
+
+        var rows = ReadCsvRows(path);
+        foreach (var row in rows)
         {
-            return existing;
+            var iterationId = int.Parse(GetValue(row, "Iteration ID"));
+            var projectSourceId = GetValue(row, "Project Source ID");
+            var name = GetValue(row, "Iteration Name");
+
+            if (!projectIdBySourceId.TryGetValue(projectSourceId, out var projectId)) continue;
+            if (await db.Iterations.AnyAsync(i => i.Id == iterationId)) continue;
+
+            // Use raw SQL to keep IDENTITY_INSERT active for this single insert
+            var sql = @"
+                SET IDENTITY_INSERT Iterations ON;
+                INSERT INTO Iterations (Id, Name, ProjectId, CreatedAt)
+                VALUES ({0}, {1}, {2}, {3});
+                SET IDENTITY_INSERT Iterations OFF;";
+
+            await db.Database.ExecuteSqlRawAsync(sql,
+                iterationId,
+                name,
+                projectId,
+                DateTime.UtcNow);
         }
-
-        var owner = new User
-        {
-            Email = SeedOwnerEmail,
-            Name = SeedOwnerName,
-            PasswordHash = null,
-            Role = UserRole.Professional,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        db.Users.Add(owner);
-        await db.SaveChangesAsync();
-        return owner;
     }
 
-    private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
+    // -----------------------------------------------
+    //  Seed strides with predefined IDs
+    // -----------------------------------------------
+    private static async Task SeedStridesAsync(PromiseModelOnlineContext db, string pmoPmDir)
     {
-        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == TargetProjectName);
-        if (existing != null)
-        {
-            if (existing.OwnerId != ownerId)
-            {
-                existing.OwnerId = ownerId;
-                await db.SaveChangesAsync();
-            }
+        var path = Path.Combine(pmoPmDir, "Strides.csv");
+        if (!File.Exists(path)) return;
 
-            return existing;
+        var rows = ReadCsvRows(path);
+        foreach (var row in rows)
+        {
+            var strideId = int.Parse(GetValue(row, "Stride ID"));
+            var name = GetValue(row, "Stride Name");
+            var iterationId = int.Parse(GetValue(row, "Iteration ID"));
+            var offsetStr = GetValue(row, "Start Date Offset");
+            var durationStr = GetValue(row, "Duration Days");
+
+            if (await db.Strides.AnyAsync(s => s.Id == strideId)) continue;
+
+            var offset = int.TryParse(offsetStr, out var o) ? o : 0;
+            var duration = int.TryParse(durationStr, out var d) ? d : 14;
+            var startDate = DateTime.UtcNow.AddDays(offset);
+            var endDate = startDate.AddDays(duration);
+            var isActive = offset == 0;
+
+            var sql = @"
+                SET IDENTITY_INSERT Strides ON;
+                INSERT INTO Strides (Id, Name, IterationId, StartDate, EndDate, DurationDays, IsActive, CreatedAt)
+                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});
+                SET IDENTITY_INSERT Strides OFF;";
+
+            await db.Database.ExecuteSqlRawAsync(sql,
+                strideId,
+                name,
+                iterationId,
+                startDate,
+                endDate,
+                duration,
+                isActive,
+                DateTime.UtcNow);
         }
-
-        var project = new Project
-        {
-            Name = TargetProjectName,
-            Description = "Seeded from Promise Model tracker CSV sheets.",
-            OwnerId = ownerId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        db.Projects.Add(project);
-        await db.SaveChangesAsync();
-        return project;
     }
 
-    private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
+    // -----------------------------------------------
+    //  Seed moments with predefined IDs + stride assignment
+    // -----------------------------------------------
+    private static async Task<(int Inserted, int Total)> SeedMomentsWithIdsAsync(
+    PromiseModelOnlineContext db,
+    IReadOnlyList<Dictionary<string, string>> rows,
+    SeedLookup flows)
     {
-        if (string.IsNullOrWhiteSpace(name))
+        var validRows = rows
+            .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise ID"))
+                    && !string.IsNullOrWhiteSpace(GetValue(r, "Parent Flow ID"))
+                    && !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise Statement")))
+            .ToList();
+
+        var inserted = 0;
+        foreach (var row in validRows)
         {
-            throw new ArgumentException("Project name is required", nameof(name));
+            var momentId = int.Parse(GetValue(row, "Moment ID"));
+            if (await db.Moments.AnyAsync(m => m.Id == momentId)) continue;
+
+            var flowSourceId = GetValue(row, "Parent Flow ID");
+            if (!flows.IdBySourceId.TryGetValue(flowSourceId, out var flowId)) continue;
+
+            var statement = GetValue(row, "Moment Promise Statement");
+            var strideIdStr = GetValue(row, "Assigned Stride ID");
+
+            // Backlog moments have empty stride ID → NULL
+            int? strideId = string.IsNullOrWhiteSpace(strideIdStr)
+                ? (int?)null
+                : int.Parse(strideIdStr);
+
+            var sql = @"
+                SET IDENTITY_INSERT Moments ON;
+                INSERT INTO Moments (Id, FlowId, Statement, Type, Status, DisplayOrder, CreatedAt, AssignedStrideId, StatusColor, IsZombie)
+                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, 0);
+                SET IDENTITY_INSERT Moments OFF;";
+
+            await db.Database.ExecuteSqlRawAsync(sql,
+                momentId,
+                flowId,
+                statement,
+                (int)MomentType.Story,
+                (int)MomentStatus.Todo,
+                momentId,
+                DateTime.UtcNow,
+                strideId,
+                "red");
+
+            inserted++;
         }
-
-        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == name);
-        if (existing != null)
-        {
-            if (existing.OwnerId != ownerId || existing.Description != description)
-            {
-                existing.OwnerId = ownerId;
-                existing.Description = description ?? existing.Description;
-                await db.SaveChangesAsync();
-            }
-
-            return existing;
-        }
-
-        var project = new Project
-        {
-            Name = name,
-            Description = description ?? string.Empty,
-            OwnerId = ownerId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        db.Projects.Add(project);
-        await db.SaveChangesAsync();
-        return project;
+        return (inserted, validRows.Count);
     }
+
+    // ======================== Existing Promise Hierarchy Seeders =========================
 
     private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows)
     {
@@ -392,86 +436,89 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<InsertSummary> SeedMomentsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup flows)
+    // ======================== Helpers =============================
+
+    private static async Task<User> EnsureSeedOwnerAsync(PromiseModelOnlineContext db)
     {
-        var seededRows = rows
-            .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise ID"))
-                && !string.IsNullOrWhiteSpace(GetValue(r, "Parent Flow ID"))
-                && !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise Statement")))
-            .OrderBy(r => GetValue(r, "Moment Promise ID"), StringComparer.Ordinal)
-            .ToList();
+        var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == SeedOwnerEmail);
+        if (existing != null) return existing;
 
-        var validRows = seededRows
-            .Where(r => flows.IdBySourceId.ContainsKey(GetValue(r, "Parent Flow ID")))
-            .ToList();
-
-        var flowIds = flows.IdBySourceId.Values.ToHashSet();
-
-        var existing = await db.Moments
-            .Where(m => flowIds.Contains(m.FlowId))
-            .ToListAsync();
-
-        var existingByParentAndStatement = existing
-            .GroupBy(m => new ParentStatement(m.FlowId, m.Statement, m.DisplayOrder))
-            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Id).First());
-
-        var inserted = 0;
-
-        for (var i = 0; i < validRows.Count; i++)
+        var owner = new User
         {
-            var row = validRows[i];
-            var parentSourceId = GetValue(row, "Parent Flow ID");
-            var statement = GetValue(row, "Moment Promise Statement");
-            var flowId = flows.IdBySourceId[parentSourceId];
+            Email = SeedOwnerEmail,
+            Name = SeedOwnerName,
+            Role = UserRole.Professional,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Users.Add(owner);
+        await db.SaveChangesAsync();
+        return owner;
+    }
 
-            var key = new ParentStatement(flowId, statement, i + 1);
-            if (existingByParentAndStatement.ContainsKey(key))
+    private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
+    {
+        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == TargetProjectName);
+        if (existing != null)
+        {
+            if (existing.OwnerId != ownerId)
             {
-                continue;
+                existing.OwnerId = ownerId;
+                await db.SaveChangesAsync();
             }
-
-            var moment = new Moment
-            {
-                FlowId = flowId,
-                Statement = statement,
-                Type = MomentType.Story,
-                Status = MomentStatus.Todo,
-                DisplayOrder = i + 1,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            db.Moments.Add(moment);
-            await db.SaveChangesAsync();
-            inserted++;
-            existingByParentAndStatement[key] = moment;
+            return existing;
         }
 
-        return new InsertSummary(inserted, validRows.Count);
+        var project = new Project
+        {
+            Name = TargetProjectName,
+            Description = "Seeded from Promise Model tracker CSV sheets.",
+            OwnerId = ownerId,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Projects.Add(project);
+        await db.SaveChangesAsync();
+        return project;
+    }
+
+    private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
+    {
+        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == name);
+        if (existing != null)
+        {
+            if (existing.OwnerId != ownerId || existing.Description != description)
+            {
+                existing.OwnerId = ownerId;
+                existing.Description = description ?? existing.Description;
+                await db.SaveChangesAsync();
+            }
+            return existing;
+        }
+
+        var project = new Project
+        {
+            Name = name,
+            Description = description ?? string.Empty,
+            OwnerId = ownerId,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Projects.Add(project);
+        await db.SaveChangesAsync();
+        return project;
     }
 
     private static string ResolvePmoPmDirectory(string contentRootPath)
     {
         var direct = Path.Combine(contentRootPath, "pmo_pm");
-        if (Directory.Exists(direct))
-        {
-            return direct;
-        }
+        if (Directory.Exists(direct)) return direct;
 
         var sibling = Path.Combine(contentRootPath, "..", "pmo_pm");
-        if (Directory.Exists(sibling))
-        {
-            return Path.GetFullPath(sibling);
-        }
+        if (Directory.Exists(sibling)) return Path.GetFullPath(sibling);
 
         var current = new DirectoryInfo(contentRootPath);
         while (current != null)
         {
             var candidate = Path.Combine(current.FullName, "pmo_pm");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-
+            if (Directory.Exists(candidate)) return candidate;
             current = current.Parent;
         }
 
@@ -480,39 +527,21 @@ public static class PromiseHierarchySeeder
 
     private static List<Dictionary<string, string>> ReadCsvRows(string path)
     {
-        if (!File.Exists(path))
-        {
-            throw new FileNotFoundException("Required seed CSV file is missing.", path);
-        }
-
         var lines = File.ReadAllLines(path);
-        if (lines.Length == 0)
-        {
-            return new List<Dictionary<string, string>>();
-        }
+        if (lines.Length == 0) return new();
 
         var headers = ParseCsvLine(lines[0]);
         var rows = new List<Dictionary<string, string>>();
 
         for (var i = 1; i < lines.Length; i++)
         {
-            if (string.IsNullOrWhiteSpace(lines[i]))
-            {
-                continue;
-            }
-
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
             var fields = ParseCsvLine(lines[i]);
             var row = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
             for (var c = 0; c < headers.Count; c++)
-            {
-                var value = c < fields.Count ? fields[c] : string.Empty;
-                row[headers[c]] = value;
-            }
-
+                row[headers[c]] = c < fields.Count ? fields[c] : string.Empty;
             rows.Add(row);
         }
-
         return rows;
     }
 
@@ -533,36 +562,25 @@ public static class PromiseHierarchySeeder
                     i++;
                     continue;
                 }
-
                 inQuotes = !inQuotes;
                 continue;
             }
-
             if (ch == ',' && !inQuotes)
             {
                 values.Add(sb.ToString());
                 sb.Clear();
                 continue;
             }
-
             sb.Append(ch);
         }
-
         values.Add(sb.ToString());
         return values;
     }
 
     private static string GetValue(IReadOnlyDictionary<string, string> row, string key)
-    {
-        return row.TryGetValue(key, out var value) ? value : string.Empty;
-    }
+        => row.TryGetValue(key, out var value) ? value : string.Empty;
 
     private readonly record struct StatementOrder(string Statement, int DisplayOrder);
-
     private readonly record struct ParentStatement(int ParentId, string Statement, int DisplayOrder);
-
     private readonly record struct SeedLookup(Dictionary<string, int> IdBySourceId, int Inserted, int Total);
-
-    private readonly record struct InsertSummary(int Inserted, int Total);
-
 }

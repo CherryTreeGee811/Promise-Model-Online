@@ -6,6 +6,11 @@ import { loadChangePasswordForm } from './change-password.mjs';
 import { deleteTokenCookies, getRefreshTokenFromCookie, getAccessTokenFromCookie } from './parser.mjs';
 import { requestLogout } from './api.mjs';
 import { handleProjectRoutes } from './projects/router.mjs';
+import { handleMomentRoutes } from './moments/router.mjs';
+import { handleFlowRoutes } from './flows/router.mjs';
+import { handleJourneyRoutes } from './journeys/router.mjs';
+import { handleEpicRoutes } from './epics/router.mjs';
+import { handlePromiseRoutes } from './promises/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -130,6 +135,21 @@ export function routeHandler(navContentDiv, contentDiv) {
             break;
         case path.startsWith('/projects'):
             handleProjectRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/moments/'):
+            handleMomentRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/flows/'):
+            handleFlowRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/journeys/'):
+            handleJourneyRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/epics/'):
+            handleEpicRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/promises/'):
+            handlePromiseRoutes(path, navContentDiv, contentDiv);
             break;
         case path == '/register':
             loadTemplate("register.html", contentDiv).then(() => {

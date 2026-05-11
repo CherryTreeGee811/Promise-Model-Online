@@ -104,13 +104,12 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{id}")]
         public virtual async Task<IActionResult> Delete(int id)
         {
-            var entity = await _service.GetByIdAsync(id);
-            if (entity == null)
+            var deleted = await _service.DeleteByIdAsync(id);
+            if (!deleted)
                 return NotFound();
-            await _service.RemoveAsync(entity);
             return NoContent();
         }
-
+        
         /// <summary>
         /// Gets the entity's id value using reflection. Override for custom logic.
         /// </summary>

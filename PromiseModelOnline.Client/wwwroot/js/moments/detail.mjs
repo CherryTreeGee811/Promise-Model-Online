@@ -1,0 +1,58 @@
+import { getMomentById } from './api.mjs';
+
+export function loadMomentDetail(momentId, contentDiv) {
+    const detailDiv = document.getElementById('moment-detail-content');
+    const errorEl = document.getElementById('error-text');
+    const loadingEl = document.getElementById('loading-text');
+
+    loadingEl.textContent = 'Loading moment...';
+    errorEl.textContent = '';
+
+    getMomentById(momentId)
+        .then(moment => {
+            loadingEl.textContent = '';
+            detailDiv.innerHTML = `
+                <div class="moment-detail-card">
+                    <h2>${escapeHtml(moment.statement)}</h2>
+                    <table class="detail-table">
+                        <tr><th>ID</th><td>${moment.id}</td></tr>
+                        <tr><th>Type</th><td>${moment.type}</td></tr>
+                        <tr><th>Status</th><td>${moment.status}</td></tr>
+                        <tr><th>Effort Estimate</th><td>${moment.effortEstimate ?? '–'}</td></tr>
+                        <tr>
+                            <th>Assigned Stride</th>
+                            <td>${moment.assignedStrideId ?? 'Backlog'}</td>
+                        </tr>
+                        <tr>
+                            <th>Flow</th>
+                            <td>
+                                <a href="/flows/${moment.flowId}" class="detail-link">Flow ${moment.flowId}</a>
+                            </td>
+                        </tr>
+                        <tr><th>Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
+                        <tr><th>Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+                    </table>
+                    <button id="back-link" class="back-btn">← Back</button>
+                </div>
+            `;
+
+            // Back button event
+            const backLink = document.getElementById('back-link');
+            if (backLink) {
+                backLink.addEventListener('click', (e) => {
+                    window.history.back();
+                });
+            }
+        })
+        .catch(err => {
+            loadingEl.textContent = '';
+            errorEl.textContent = 'Failed to load moment details.';
+            console.error(err);
+        });
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+}

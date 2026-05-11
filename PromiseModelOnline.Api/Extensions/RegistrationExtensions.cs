@@ -22,7 +22,19 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
             services.AddScoped(typeof(IGenericMapper<,>), typeof(GenericMapper<,>));
-            services.AddHttpClient<PromiseModelOnline.Api.DAL.Interfaces.IAuthClient, PromiseModelOnline.Api.DAL.AuthClient>(client =>
+            services.AddScoped<IEpicRepository, EpicRepository>();
+            services.AddScoped<IEpicService, EpicService>();
+            services.AddScoped<IJourneyRepository, JourneyRepository>();
+            services.AddScoped<IJourneyService, JourneyService>();
+            services.AddScoped<IFlowRepository, FlowRepository>();
+            services.AddScoped<IFlowService, FlowService>();
+            services.AddScoped<IMomentRepository, MomentRepository>();
+            services.AddScoped<IMomentService, MomentService>();
+            services.AddScoped<IStrideRepository, StrideRepository>();
+            services.AddScoped<IStrideService, StrideService>();
+            services.AddScoped<IIterationRepository, IterationRepository>();
+            services.AddScoped<IIterationService, IterationService>();
+            services.AddHttpClient<IAuthClient, AuthClient>(client =>
             {
                 client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);
                 client.Timeout = TimeSpan.FromSeconds(10);

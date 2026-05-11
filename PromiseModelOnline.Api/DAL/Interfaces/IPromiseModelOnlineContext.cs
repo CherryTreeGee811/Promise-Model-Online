@@ -44,6 +44,11 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         DbSet<Stride> Strides { get; set; }
 
         /// <summary>
+        /// Gets or sets the DbSet for iteration records.
+        /// </summary>
+        DbSet<Iteration> Iterations { get; set; }
+
+        /// <summary>
         /// Gets or sets the DbSet for user records.
         /// </summary>
         DbSet<User> Users { get; set; }
