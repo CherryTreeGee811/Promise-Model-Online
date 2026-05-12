@@ -43,6 +43,10 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped<IPermissionRepository, PermissionRepository>();
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<IGenericMapper<Permission, PermissionDTO>, PermissionMapper>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<IProjectService, ProjectService>();
             services.AddHttpClient<IAuthClient, AuthClient>(client =>
             {
                 client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);

@@ -9,5 +9,6 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         Task<IEnumerable<Permission>> GetPermissionsByProjectAsync(int projectId);
         Task<IEnumerable<Permission>> GetPendingInvitationsForUserAsync(int userId);
         Task<Permission?> GetByUserAndProjectAsync(int userId, int projectId);
+        Task<IEnumerable<int>> GetProjectIdsForUserAsync(int userId);
     }
 }

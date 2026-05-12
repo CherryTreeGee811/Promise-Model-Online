@@ -1,6 +1,7 @@
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
@@ -16,15 +17,18 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly ICommentRepository _commentRepo;
         private readonly IUserRepository _userRepo;
         private readonly IGenericMapper<Comment, CommentDTO> _mapper;
+        private readonly INotificationService _notificationService;
 
         public CommentService(
             ICommentRepository commentRepo,
             IUserRepository userRepo,
-            IGenericMapper<Comment, CommentDTO> mapper)
+            IGenericMapper<Comment, CommentDTO> mapper,
+            INotificationService notificationService)
         {
             _commentRepo = commentRepo;
             _userRepo = userRepo;
             _mapper = mapper;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<CommentDTO>> GetCommentsAsync(string parentType, int parentId)
@@ -43,7 +47,6 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 ParentCommentId = dto.ParentCommentId
             };
 
-            // Set the correct foreign key
             switch (dto.ParentType.ToLower())
             {
                 case "promise":  comment.ProductPromiseId = dto.ParentId; break;
@@ -56,7 +59,6 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
             await _commentRepo.AddCommentAsync(comment);
 
-            // Handle @mentions
             var mentions = Regex.Matches(dto.Text, @"@(\w+)")
                                 .Select(m => m.Groups[1].Value)
                                 .Distinct();
@@ -71,10 +73,16 @@ namespace PromiseModelOnline.Api.BusinessLogic
                         CommentId = comment.Id,
                         MentionedUserId = mentionedUser.Id
                     });
+
+                    await _notificationService.CreateNotificationAsync(
+                        mentionedUser.Id,
+                        NotificationType.Mention,
+                        $"You were mentioned in a comment by user {userId}",
+                        $"/moments/{dto.ParentId}?type={dto.ParentType}"
+                    );
                 }
             }
 
-            // Reload and map
             var createdComments = await _commentRepo.GetCommentsForEntityAsync(dto.ParentType, dto.ParentId);
             var created = createdComments.First(c => c.Id == comment.Id);
             return _mapper.Map(created, null!);

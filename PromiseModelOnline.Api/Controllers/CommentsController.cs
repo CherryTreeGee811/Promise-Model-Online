@@ -40,12 +40,13 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
         {
-            // Use the email claim, which is reliably present in your JWT
-            var email = User.FindFirst("emails")?.Value;
+            // Try the standard claim type first, then fall back to the raw string
+            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                    ?? User.FindFirst("email")?.Value;
+
             if (string.IsNullOrEmpty(email))
                 return Unauthorized("Missing email claim");
 
-            // Find or create the local API user (no credentials stored)
             var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
 
             try

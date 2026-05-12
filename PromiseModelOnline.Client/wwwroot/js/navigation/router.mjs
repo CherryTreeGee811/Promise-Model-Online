@@ -1,6 +1,6 @@
 import { routeHandler } from '../router.mjs';
 import { getAccessTokenFromCookie } from '../parser.mjs';
-
+import { startNotificationPolling } from '../notifications/badge.mjs';
 
 function initGeneralLinkListeners(navContentDiv, contentDiv) {
     document.getElementById("home-link").addEventListener("click", (e) => {
@@ -9,7 +9,6 @@ function initGeneralLinkListeners(navContentDiv, contentDiv) {
         routeHandler(navContentDiv, contentDiv);
     });
 }
-
 
 function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
     document.getElementById("logout-link").addEventListener("click", (e) => {
@@ -34,7 +33,6 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
     }
 }
 
-
 function initAnonymousLinkListeners(navContentDiv, contentDiv) {
     document.getElementById("login-link").addEventListener("click", (e) => {
         e.preventDefault();
@@ -48,7 +46,6 @@ function initAnonymousLinkListeners(navContentDiv, contentDiv) {
         routeHandler(navContentDiv, contentDiv);
     });
 }
-
 
 export function loadNavTemplate(navContentDiv, contentDiv) {
     let templateName = "anonymous.html";
@@ -66,6 +63,7 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
         })
         .then(html => {
             navContentDiv.innerHTML = html;
+            startNotificationPolling();
             initNavLinkListeners(templateName, navContentDiv, contentDiv);
             return Promise.resolve();
         })
@@ -74,7 +72,6 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
             return Promise.reject(error);
         });
 }
-
 
 function initNavLinkListeners(templateName, navContentDiv, contentDiv) {
     initGeneralLinkListeners(navContentDiv, contentDiv);

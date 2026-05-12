@@ -33,5 +33,14 @@ namespace PromiseModelOnline.Api.DAL
             return await _dbSet
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.ProjectId == projectId);
         }
+
+        public async Task<IEnumerable<int>> GetProjectIdsForUserAsync(int userId)
+        {
+            return await _dbSet
+                .Where(p => p.UserId == userId)
+                .Select(p => p.ProjectId)
+                .Distinct()
+                .ToListAsync();
+        }
     }
 }
