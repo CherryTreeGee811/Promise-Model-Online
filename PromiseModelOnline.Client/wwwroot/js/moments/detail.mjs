@@ -1,4 +1,5 @@
 import { getMomentById } from './api.mjs';
+import { loadComments } from '../comments/comments.mjs';
 
 export function loadMomentDetail(momentId, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
@@ -32,6 +33,7 @@ export function loadMomentDetail(momentId, contentDiv) {
                         <tr><th>Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
                         <tr><th>Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
+                    <div id="moment-comments"></div>
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
@@ -39,10 +41,14 @@ export function loadMomentDetail(momentId, contentDiv) {
             // Back button event
             const backLink = document.getElementById('back-link');
             if (backLink) {
-                backLink.addEventListener('click', (e) => {
+                backLink.addEventListener('click', () => {
                     window.history.back();
                 });
             }
+
+            // Comments
+            const commentsContainer = document.getElementById('moment-comments');
+            loadComments(commentsContainer, 'Moment', momentId);
         })
         .catch(err => {
             loadingEl.textContent = '';

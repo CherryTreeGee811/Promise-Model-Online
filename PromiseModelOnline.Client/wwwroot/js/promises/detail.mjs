@@ -1,4 +1,5 @@
 import { getPromiseById, getEpicsByPromise } from './api.mjs';
+import { loadComments } from '../comments/comments.mjs';
 
 export function loadPromiseDetail(promiseId, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
@@ -27,6 +28,11 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
+            
+            const commentsContainer = document.createElement('div');
+            commentsContainer.id = 'comments-section';
+            detailDiv.appendChild(commentsContainer);
+            loadComments(commentsContainer, 'Promise', promiseId);
 
             loadingEl.textContent = '';
 

@@ -2,6 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DAL;
+using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
@@ -34,6 +36,13 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped<IStrideService, StrideService>();
             services.AddScoped<IIterationRepository, IterationRepository>();
             services.AddScoped<IIterationService, IterationService>();
+            services.AddScoped<ICommentRepository, CommentRepository>();
+            services.AddScoped<ICommentService, CommentService>();
+            services.AddScoped<IGenericMapper<Comment, CommentDTO>, CommentMapper>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IPermissionRepository, PermissionRepository>();
+            services.AddScoped<IPermissionService, PermissionService>();
+            services.AddScoped<IGenericMapper<Permission, PermissionDTO>, PermissionMapper>();
             services.AddHttpClient<IAuthClient, AuthClient>(client =>
             {
                 client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);

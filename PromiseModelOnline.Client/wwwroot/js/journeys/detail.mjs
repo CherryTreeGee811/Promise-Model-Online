@@ -1,4 +1,5 @@
 import { getJourneyById, getFlowsByJourney } from './api.mjs';
+import { loadComments } from '../comments/comments.mjs';
 
 export function loadJourneyDetail(journeyId, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
@@ -32,6 +33,7 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                     <div id="journey-flows-list">
                         <p>Loading flows...</p>
                     </div>
+                    <div id="journey-comments"></div>
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
@@ -70,10 +72,13 @@ export function loadJourneyDetail(journeyId, contentDiv) {
 
             const backLink = document.getElementById('back-link');
             if (backLink) {
-                backLink.addEventListener('click', (e) => {
+                backLink.addEventListener('click', () => {
                     window.history.back();
                 });
             }
+
+            const commentsContainer = document.getElementById('journey-comments');
+            loadComments(commentsContainer, 'Journey', journeyId);
         })
         .catch(err => {
             loadingEl.textContent = '';

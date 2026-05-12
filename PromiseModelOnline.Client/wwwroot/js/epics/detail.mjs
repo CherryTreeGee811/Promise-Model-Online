@@ -1,17 +1,17 @@
 import { getEpicById, getJourneysByEpic } from './api.mjs';
 import { getPromiseById } from '../promises/api.mjs';
+import { loadComments } from '../comments/comments.mjs';
 
 export function loadEpicDetail(epicId, contentDiv) {
     const detailDiv = document.getElementById('epic-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
-    loadingEl.textContent = 'Loading epic...';
+    loadingEl.textContent = 'Loading epic…';
     errorEl.textContent = '';
 
     getEpicById(epicId)
         .then(epic => {
-            // Build the detail card (parent promise will be loaded async)
             detailDiv.innerHTML = `
                 <div class="epic-detail-card">
                     <h2>${escapeHtml(epic.statement)}</h2>
@@ -29,8 +29,9 @@ export function loadEpicDetail(epicId, contentDiv) {
                     </table>
                     <h3>Journeys</h3>
                     <div id="epic-journeys-list">
-                        <p>Loading journeys...</p>
+                        <p>Loading journeys…</p>
                     </div>
+                    <div id="epic-comments"></div>
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
@@ -83,10 +84,14 @@ export function loadEpicDetail(epicId, contentDiv) {
             // Back button
             const backLink = document.getElementById('back-link');
             if (backLink) {
-                backLink.addEventListener('click', (e) => {
+                backLink.addEventListener('click', () => {
                     window.history.back();
                 });
             }
+
+            // Comments
+            const commentsContainer = document.getElementById('epic-comments');
+            loadComments(commentsContainer, 'Epic', epicId);
         })
         .catch(err => {
             loadingEl.textContent = '';

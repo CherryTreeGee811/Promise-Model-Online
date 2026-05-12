@@ -1,4 +1,5 @@
 import { getFlowById, getMomentsByFlow } from './api.mjs';
+import { loadComments } from '../comments/comments.mjs';
 
 export function loadFlowDetail(flowId, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
@@ -32,6 +33,7 @@ export function loadFlowDetail(flowId, contentDiv) {
                     <div id="flow-moments-list">
                         <p>Loading moments...</p>
                     </div>
+                    <div id="flow-comments"></div>
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
@@ -76,10 +78,14 @@ export function loadFlowDetail(flowId, contentDiv) {
             // Back button event
             const backLink = document.getElementById('back-link');
             if (backLink) {
-                backLink.addEventListener('click', (e) => {
+                backLink.addEventListener('click', () => {
                     window.history.back();
                 });
             }
+
+            // Comments
+            const commentsContainer = document.getElementById('flow-comments');
+            loadComments(commentsContainer, 'Flow', flowId);
         })
         .catch(err => {
             loadingEl.textContent = '';

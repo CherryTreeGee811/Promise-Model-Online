@@ -20,6 +20,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
                     <a href="/projects/${project.id}/strides" class="view-btn">View</a>
                     <a href="/projects/edit?id=${project.id}" class="edit-btn" project-id="${project.id}">Edit</a>
                     <button class="delete-btn" project-id="${project.id}">Delete</button>
+                    <a href="/projects/${project.id}/share" class="share-btn">Share</a>
                 </td>
             `;
             tableBody.appendChild(row);

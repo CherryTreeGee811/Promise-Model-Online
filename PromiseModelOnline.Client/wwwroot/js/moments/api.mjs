@@ -29,3 +29,49 @@ export function getMomentById(momentId) {
         return response.json();
     });
 }
+
+/**
+ * Move a moment to a different stride or to the backlog.
+ * @param {number} momentId
+ * @param {number|null} targetStrideId – null moves to backlog
+ * @returns {Promise<object>} the updated MomentDTO
+ */
+export async function moveMomentToStride(momentId, targetStrideId) {
+    const url = `${base}/api/moments/${momentId}/stride-assignment`;
+    const token = getAccessTokenFromCookie();
+    const response = await fetch(url, {
+        method: 'PUT',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ strideId: targetStrideId })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}
+
+/**
+ * Update a moment's status.
+ * @param {number} momentId
+ * @param {string} newStatus – "Todo", "InProgress", "Blocked", "Done"
+ * @returns {Promise<object>} the updated MomentDTO
+ */
+export async function updateMomentStatus(momentId, newStatus) {
+    const url = `${base}/api/moments/${momentId}/status`;
+    const token = getAccessTokenFromCookie();
+    const response = await fetch(url, {
+        method: 'PUT',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ newStatus })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}

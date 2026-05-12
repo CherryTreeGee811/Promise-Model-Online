@@ -69,3 +69,30 @@ export function deleteProject(projectId) {
             throw error;
         });
 }
+
+export async function getProjectPermissions(projectId) {
+    const url = `${base}/api/permissions?projectId=${projectId}`;
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+export async function inviteUserToProject(userEmail, projectId, level) {
+    const url = `${base}/api/permissions`;
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ userEmail, projectId, level })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+export async function revokePermission(permissionId) {
+    const url = `${base}/api/permissions/${permissionId}`;
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
