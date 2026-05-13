@@ -1,6 +1,16 @@
 import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration } from './api.mjs';
-import { moveMomentToStride, updateMomentStatus } from '../moments/api.mjs';
+import { moveMomentToStride, updateMomentStatus, updateMomentEstimate } from '../moments/api.mjs'; // ← updated import
 
+/* ---------- T‑shirt size to numeric mapping ---------- */
+const estimateValues = {
+    XS: 1, S: 2, M: 3, L: 5, XL: 8, XXL: 13, XXXL: 21
+};
+
+function totalEffort(moments) {
+    return moments.reduce((sum, m) => sum + (estimateValues[m.effortEstimate] || 0), 0);
+}
+
+/* ---------- Main export ---------- */
 export function loadStridesList(projectId, navContentDiv, contentDiv) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
@@ -54,11 +64,13 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             results.forEach(({ stride, moments }) => {
                 const card = document.createElement('div');
                 card.className = 'stride-card';
+                const effTotal = totalEffort(moments);
                 card.innerHTML = `
                     <div class="stride-header">
                         <h3>${escapeHtml(stride.name)}</h3>
                         <span class="stride-dates">${formatDate(stride.startDate)} – ${formatDate(stride.endDate)}</span>
                         <span class="stride-duration">(${stride.durationDays} days)</span>
+                        <span class="stride-total-effort">Total Effort: ${effTotal}</span>
                     </div>
                     <div class="stride-moments">
                         ${moments.length === 0
@@ -70,7 +82,18 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                         <td>${escapeHtml(m.statement)}</td>
                                         <td>${m.type}</td>
                                         <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                        <td>${m.effortEstimate ?? '–'}</td>
+                                        <td>
+                                            <select class="estimate-dropdown" data-moment-id="${m.id}">
+                                                <option value="">–</option>
+                                                <option value="XS" ${m.effortEstimate === 'XS' ? 'selected' : ''}>XS</option>
+                                                <option value="S"  ${m.effortEstimate === 'S'  ? 'selected' : ''}>S</option>
+                                                <option value="M"  ${m.effortEstimate === 'M'  ? 'selected' : ''}>M</option>
+                                                <option value="L"  ${m.effortEstimate === 'L'  ? 'selected' : ''}>L</option>
+                                                <option value="XL" ${m.effortEstimate === 'XL' ? 'selected' : ''}>XL</option>
+                                                <option value="XXL"${m.effortEstimate === 'XXL'? 'selected' : ''}>XXL</option>
+                                                <option value="XXXL"${m.effortEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
+                                            </select>
+                                        </td>
                                         <td>
                                             <select class="status-dropdown" data-moment-id="${m.id}">
                                                 <option value="Todo" ${m.status === 'Todo' ? 'selected' : ''}>Todo</option>
@@ -90,7 +113,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 strideBoard.appendChild(card);
             });
 
-            // Render Backlog
+            // Render Backlog (unchanged)
             if (backlogSection) {
                 if (!backlogMoments || backlogMoments.length === 0) {
                     backlogSection.innerHTML = '<h2>Backlog</h2><p class="no-items">No unassigned moments.</p>';
@@ -126,8 +149,9 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
         });
 }
 
+/* ---------- Event listeners ---------- */
 function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
-    // Status dropdown changes
+    // Status dropdown
     document.querySelectorAll('.status-dropdown').forEach(dropdown => {
         dropdown.addEventListener('change', async () => {
             const momentId = parseInt(dropdown.dataset.momentId, 10);
@@ -142,7 +166,22 @@ function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
         });
     });
 
-    // Move to Backlog buttons
+    // Estimate dropdown
+    document.querySelectorAll('.estimate-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const estimate = dropdown.value === '' ? null : dropdown.value;
+            try {
+                await updateMomentEstimate(momentId, estimate);
+                loadStridesList(projectId, navContentDiv, contentDiv);
+            } catch (err) {
+                alert('Failed to update estimate');
+                console.error(err);
+            }
+        });
+    });
+
+    // Move to Backlog
     document.querySelectorAll('.move-to-backlog-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const momentId = parseInt(btn.dataset.momentId, 10);
@@ -176,6 +215,7 @@ function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
     });
 }
 
+/* ---------- Helpers ---------- */
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

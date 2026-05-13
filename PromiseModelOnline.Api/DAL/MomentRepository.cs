@@ -44,5 +44,12 @@ namespace PromiseModelOnline.Api.DAL
         {
             return await FindAsync(m => m.OwnerId == ownerId);
         }
+
+        public async Task<IEnumerable<Moment>> GetMomentsByPromiseIdAsync(int promiseId)
+        {
+            return await _dbSet
+                .Where(m => m.Flow.Journey.Epic.ProductPromiseId == promiseId)
+                .ToListAsync();
+        }
     }
 }

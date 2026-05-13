@@ -114,5 +114,24 @@ namespace PromiseModelOnline.Api.Controllers
             // Requires user ID mapping; return 501 Not Implemented for now.
             return StatusCode(501, "This endpoint is not yet available.");
         }
+
+        /// <summary>
+        /// Updates the T‑shirt size estimate for a moment (partial update).
+        /// </summary>
+        [HttpPatch("{id}/estimate")]
+        public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(
+            int id,
+            [FromBody] UpdateMomentEstimateRequest request)
+        {
+            try
+            {
+                var moment = await _momentService.UpdateMomentEstimateAsync(id, request.Estimate);
+                return Ok(_mapper.Map(moment, _service));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
     }
 }

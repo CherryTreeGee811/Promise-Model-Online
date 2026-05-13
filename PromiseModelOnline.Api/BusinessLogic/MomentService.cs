@@ -104,5 +104,37 @@ namespace PromiseModelOnline.Api.BusinessLogic
             await _momentRepository.SaveChangesAsync();
             return moment;
         }
+
+        public async Task<Moment> UpdateMomentEstimateAsync(int momentId, Estimate? estimate)
+        {
+            var moment = await _momentRepository.GetByIdAsync(momentId)
+                        ?? throw new KeyNotFoundException($"Moment with ID {momentId} not found.");
+            moment.EffortEstimate = estimate;
+            moment.UpdatedAt = DateTime.UtcNow;
+            _momentRepository.Update(moment);
+            await _momentRepository.SaveChangesAsync();
+            return moment;
+        }
+
+        public async Task<int> GetTotalEffortForPromiseAsync(int promiseId)
+        {
+            var moments = await _momentRepository.GetMomentsByPromiseIdAsync(promiseId);
+            return moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
+        }
+
+        private static int EstimateToNumeric(Estimate? estimate)
+        {
+            return estimate switch
+            {
+                Estimate.XS => 1,
+                Estimate.S => 2,
+                Estimate.M => 3,
+                Estimate.L => 5,
+                Estimate.XL => 8,
+                Estimate.XXL => 13,
+                Estimate.XXXL => 21,
+                _ => 0
+            };
+        }
     }
 }

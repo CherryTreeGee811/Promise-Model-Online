@@ -75,3 +75,20 @@ export async function updateMomentStatus(momentId, newStatus) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
 }
+
+export async function updateMomentEstimate(momentId, estimate) {
+    const url = `${base}/api/moments/${momentId}/estimate`;
+    const token = getAccessTokenFromCookie();
+    const response = await fetch(url, {
+        method: 'PATCH',   // ← changed from PUT to PATCH
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ estimate })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}

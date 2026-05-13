@@ -11,6 +11,15 @@ function initGeneralLinkListeners(navContentDiv, contentDiv) {
 }
 
 function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
+    const notificationLink = document.getElementById("notifications-link");
+    if (notificationLink) {
+        notificationLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.history.pushState({}, '', '/notifications');
+            routeHandler(navContentDiv, contentDiv);
+        });
+    }
+    
     document.getElementById("logout-link").addEventListener("click", (e) => {
         e.preventDefault();
         window.history.pushState({}, '', '/logout');

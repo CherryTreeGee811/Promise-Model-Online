@@ -518,3 +518,16 @@ input[type=button]:hover, input[type=submit]:hover {
     margin-left: 6px;
     font-weight: bold;
 }
+
+.unread {
+    font-weight: bold;
+    background-color: #f0f8ff;
+}
+.mark-read-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}

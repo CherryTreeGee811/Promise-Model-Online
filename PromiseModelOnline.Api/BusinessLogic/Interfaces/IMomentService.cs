@@ -12,8 +12,9 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
         Task<IEnumerable<Moment>> GetMomentsByStrideAsync(int strideId);
         Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false);
         Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId);
-
         Task<Moment> AssignMomentToStrideAsync(int momentId, int? strideId);
         Task<Moment> UpdateMomentStatusAsync(int momentId, MomentStatus newStatus);
+        Task<Moment> UpdateMomentEstimateAsync(int momentId, Estimate? estimate);
+        Task<int> GetTotalEffortForPromiseAsync(int promiseId);
     }
 }
