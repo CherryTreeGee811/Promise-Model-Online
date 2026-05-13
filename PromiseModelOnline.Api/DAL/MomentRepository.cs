@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL
@@ -22,7 +23,6 @@ namespace PromiseModelOnline.Api.DAL
 
         public async Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false)
         {
-            // First, get all stride IDs that belong to this iteration
             var strideIds = await _context.Set<Stride>()
                 .Where(s => s.IterationId == iterationId)
                 .Select(s => s.Id)
@@ -31,7 +31,6 @@ namespace PromiseModelOnline.Api.DAL
             if (strideIds.Count == 0)
                 return Enumerable.Empty<Moment>();
 
-            // Then, find moments assigned to those strides
             var query = _dbSet.Where(m => strideIds.Contains(m.AssignedStrideId.Value));
 
             if (unassignedOnly)

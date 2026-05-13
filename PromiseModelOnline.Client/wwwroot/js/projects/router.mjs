@@ -15,6 +15,7 @@ export function handleProjectRoutes(path, navContentDiv, contentDiv) {
         return;
     }
 
+    // Match /projects/{id}/share
     const shareMatch = path.match(/^\/projects\/(\d+)\/share$/);
     if (shareMatch) {
         loadTemplate('projects/share.html', contentDiv)

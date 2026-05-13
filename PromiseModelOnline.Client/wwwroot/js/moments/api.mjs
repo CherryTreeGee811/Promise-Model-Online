@@ -80,7 +80,7 @@ export async function updateMomentEstimate(momentId, estimate) {
     const url = `${base}/api/moments/${momentId}/estimate`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PATCH',   // ← changed from PUT to PATCH
+        method: 'PATCH',
         mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,

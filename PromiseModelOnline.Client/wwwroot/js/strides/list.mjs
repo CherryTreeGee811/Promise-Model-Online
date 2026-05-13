@@ -1,5 +1,5 @@
 import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration } from './api.mjs';
-import { moveMomentToStride, updateMomentStatus, updateMomentEstimate } from '../moments/api.mjs'; // ← updated import
+import { moveMomentToStride, updateMomentStatus, updateMomentEstimate } from '../moments/api.mjs';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues = {
