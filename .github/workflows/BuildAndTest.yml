@@ -59,7 +59,7 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --os linux \
-            --verbosity minimal
+            --logger "console;verbosity=normal"
 
       - name: Build and Run App Containers
         shell: bash
