@@ -8,30 +8,28 @@ namespace PromiseModelOnline.Api.Extensions;
 
 public static class PromiseHierarchySeeder
 {
-    private const string SeedOwnerEmail = "seed.promise-model-online@local";
-    private const string SeedOwnerName = "Promise Model Online Seed User";
-    private const string TargetProjectName = "Promise Model Online";
+    private const string TestUserEmail = "pmo@gmail.com";
+    private const string TestUserName = "pmo_test";
 
     public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath,
         ILogger logger, PromiseModelOnline.Api.DAL.Interfaces.IAuthClient authClient)
     {
-        // --- 0. Ensure seed user in Auth service ---
-        var seedUserName = "seed.promise-model-online";
-        var seedEmail = SeedOwnerEmail;
-        var seedPassword = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!aA1";
+        // --- 0. Ensure test user exists in Auth service (optional) ---
         try
         {
-            await authClient.EnsureSeedUserAsync(seedUserName, seedEmail, seedPassword);
+            await authClient.EnsureSeedUserAsync(TestUserName, TestUserEmail,
+                Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!aA1");
         }
         catch (Exception ex)
         {
-            logger?.LogWarning(ex, "Could not ensure seed user in Auth service – continuing anyway.");
+            logger?.LogWarning(ex, "Could not ensure test user in Auth service – continuing anyway.");
         }
 
-        var owner = await EnsureSeedOwnerAsync(db);
+        // --- 1. Ensure test user exists in API database ---
+        var owner = await EnsureTestUserAsync(db);
         var pmoPmDir = ResolvePmoPmDirectory(contentRootPath);
 
-        // --- 1. Projects ---
+        // --- 2. Projects ---
         var projectsCsvPath = Path.Combine(pmoPmDir, "Projects.csv");
         var projectRows = File.Exists(projectsCsvPath) ? ReadCsvRows(projectsCsvPath) : new();
         var projectIdBySourceId = new Dictionary<string, int>();
@@ -53,13 +51,13 @@ public static class PromiseHierarchySeeder
         if (!projectIdBySourceId.ContainsKey("PRJ-001"))
             projectIdBySourceId["PRJ-001"] = project.Id;
 
-        // --- 2. Iterations (predefined IDs) ---
+        // --- 3. Iterations (predefined IDs) ---
         await SeedIterationsAsync(db, pmoPmDir, projectIdBySourceId);
 
-        // --- 3. Strides (predefined IDs, referencing iterations) ---
+        // --- 4. Strides (predefined IDs, referencing iterations) ---
         await SeedStridesAsync(db, pmoPmDir);
 
-        // --- 4. Promise hierarchy (Products, Epics, Journeys, Flows) ---
+        // --- 5. Promise hierarchy (Products, Epics, Journeys, Flows) ---
         var productRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Products.csv"));
         var epicRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Epics.csv"));
         var journeyRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Journeys.csv"));
@@ -102,7 +100,6 @@ public static class PromiseHierarchySeeder
             if (!projectIdBySourceId.TryGetValue(projectSourceId, out var projectId)) continue;
             if (await db.Iterations.AnyAsync(i => i.Id == iterationId)) continue;
 
-            // Use raw SQL to keep IDENTITY_INSERT active for this single insert
             var sql = @"
                 SET IDENTITY_INSERT Iterations ON;
                 INSERT INTO Iterations (Id, Name, ProjectId, CreatedAt)
@@ -164,9 +161,9 @@ public static class PromiseHierarchySeeder
     //  Seed moments with predefined IDs + stride assignment
     // -----------------------------------------------
     private static async Task<(int Inserted, int Total)> SeedMomentsWithIdsAsync(
-    PromiseModelOnlineContext db,
-    IReadOnlyList<Dictionary<string, string>> rows,
-    SeedLookup flows)
+        PromiseModelOnlineContext db,
+        IReadOnlyList<Dictionary<string, string>> rows,
+        SeedLookup flows)
     {
         var validRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise ID"))
@@ -186,7 +183,6 @@ public static class PromiseHierarchySeeder
             var statement = GetValue(row, "Moment Promise Statement");
             var strideIdStr = GetValue(row, "Assigned Stride ID");
 
-            // Backlog moments have empty stride ID → NULL
             int? strideId = string.IsNullOrWhiteSpace(strideIdStr)
                 ? (int?)null
                 : int.Parse(strideIdStr);
@@ -438,26 +434,26 @@ public static class PromiseHierarchySeeder
 
     // ======================== Helpers =============================
 
-    private static async Task<User> EnsureSeedOwnerAsync(PromiseModelOnlineContext db)
+    private static async Task<User> EnsureTestUserAsync(PromiseModelOnlineContext db)
     {
-        var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == SeedOwnerEmail);
+        var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == TestUserEmail);
         if (existing != null) return existing;
 
-        var owner = new User
+        var user = new User
         {
-            Email = SeedOwnerEmail,
-            Name = SeedOwnerName,
+            Email = TestUserEmail,
+            Name = TestUserName,
             Role = UserRole.Professional,
             CreatedAt = DateTime.UtcNow
         };
-        db.Users.Add(owner);
+        db.Users.Add(user);
         await db.SaveChangesAsync();
-        return owner;
+        return user;
     }
 
     private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
     {
-        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == TargetProjectName);
+        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == "Promise Model Online");
         if (existing != null)
         {
             if (existing.OwnerId != ownerId)
@@ -470,7 +466,7 @@ public static class PromiseHierarchySeeder
 
         var project = new Project
         {
-            Name = TargetProjectName,
+            Name = "Promise Model Online",
             Description = "Seeded from Promise Model tracker CSV sheets.",
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow
