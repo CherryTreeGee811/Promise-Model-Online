@@ -1,5 +1,16 @@
 import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration } from './api.mjs';
+import { moveMomentToStride, updateMomentStatus, updateMomentEstimate } from '../moments/api.mjs';
 
+/* ---------- T‑shirt size to numeric mapping ---------- */
+const estimateValues = {
+    XS: 1, S: 2, M: 3, L: 5, XL: 8, XXL: 13, XXXL: 21
+};
+
+function totalEffort(moments) {
+    return moments.reduce((sum, m) => sum + (estimateValues[m.effortEstimate] || 0), 0);
+}
+
+/* ---------- Main export ---------- */
 export function loadStridesList(projectId, navContentDiv, contentDiv) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
@@ -12,7 +23,6 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
     strideBoard.innerHTML = '';
     if (backlogSection) backlogSection.innerHTML = '';
 
-    // Step 1: Get iterations, find the latest one
     getIterationsByProject(projectId)
         .then(iterations => {
             if (!iterations || iterations.length === 0) {
@@ -20,123 +30,117 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 errorEl.textContent = 'No iterations found for this project.';
                 return;
             }
-
-            // Sort by ID descending to get the latest
             iterations.sort((a, b) => b.id - a.id);
             const latestIteration = iterations[0];
-
             projectTitle.innerHTML = `<h2>Project ID: ${projectId} – ${escapeHtml(latestIteration.name)}</h2>`;
 
-            // Step 2: Fetch strides and backlog moments for the latest iteration
             return Promise.all([
                 getStridesByIteration(latestIteration.id),
-                getMomentsByIteration(latestIteration.id, true) // unassigned
+                getMomentsByIteration(latestIteration.id, true)
             ]).then(([strides, backlogMoments]) => ({ strides, backlogMoments }));
         })
         .then(data => {
             if (!data) return;
-
             const { strides, backlogMoments } = data;
             loadingEl.textContent = '';
 
             if (!strides || strides.length === 0) {
                 strideBoard.innerHTML = '<p>No strides found for this iteration.</p>';
             } else {
-                // Fetch moments for each stride
-                const stridePromises = strides.map(stride => {
-                    return getMomentsByStride(stride.id)
+                const stridePromises = strides.map(stride =>
+                    getMomentsByStride(stride.id)
                         .then(moments => ({ stride, moments }))
-                        .catch(() => ({ stride, moments: [] }));
-                });
-
-                return Promise.all(stridePromises).then(results => ({ results, backlogMoments }));
+                        .catch(() => ({ stride, moments: [] }))
+                );
+                return Promise.all(stridePromises).then(results => ({ results, backlogMoments, strides }));
             }
-            return { results: [], backlogMoments };
+            return { results: [], backlogMoments, strides: [] };
         })
         .then(data => {
             if (!data) return;
-
-            const { results, backlogMoments } = data;
+            const { results, backlogMoments, strides: allStrides } = data;
 
             // Render stride cards
             results.forEach(({ stride, moments }) => {
                 const card = document.createElement('div');
                 card.className = 'stride-card';
+                const effTotal = totalEffort(moments);
                 card.innerHTML = `
                     <div class="stride-header">
                         <h3>${escapeHtml(stride.name)}</h3>
                         <span class="stride-dates">${formatDate(stride.startDate)} – ${formatDate(stride.endDate)}</span>
                         <span class="stride-duration">(${stride.durationDays} days)</span>
+                        <span class="stride-total-effort">Total Effort: ${effTotal}</span>
                     </div>
                     <div class="stride-moments">
-                        ${moments.length === 0 
+                        ${moments.length === 0
                             ? '<p class="no-items">No moments assigned.</p>'
-                            : `<table class="promisemodel-table">
-                                <thead>
+                            : `<table class="promisemodel-table"><thead><tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead><tbody>
+                                ${moments.map(m => `
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Statement</th>
-                                        <th>Type</th>
-                                        <th>Status</th>
-                                        <th>Effort</th>
-                                        <th>Actions</th>
+                                        <td>${m.id}</td>
+                                        <td>${escapeHtml(m.statement)}</td>
+                                        <td>${m.type}</td>
+                                        <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                        <td>
+                                            <select class="estimate-dropdown" data-moment-id="${m.id}">
+                                                <option value="">–</option>
+                                                <option value="XS" ${m.effortEstimate === 'XS' ? 'selected' : ''}>XS</option>
+                                                <option value="S"  ${m.effortEstimate === 'S'  ? 'selected' : ''}>S</option>
+                                                <option value="M"  ${m.effortEstimate === 'M'  ? 'selected' : ''}>M</option>
+                                                <option value="L"  ${m.effortEstimate === 'L'  ? 'selected' : ''}>L</option>
+                                                <option value="XL" ${m.effortEstimate === 'XL' ? 'selected' : ''}>XL</option>
+                                                <option value="XXL"${m.effortEstimate === 'XXL'? 'selected' : ''}>XXL</option>
+                                                <option value="XXXL"${m.effortEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="status-dropdown" data-moment-id="${m.id}">
+                                                <option value="Todo" ${m.status === 'Todo' ? 'selected' : ''}>Todo</option>
+                                                <option value="InProgress" ${m.status === 'InProgress' ? 'selected' : ''}>InProgress</option>
+                                                <option value="Blocked" ${m.status === 'Blocked' ? 'selected' : ''}>Blocked</option>
+                                                <option value="Done" ${m.status === 'Done' ? 'selected' : ''}>Done</option>
+                                            </select>
+                                            <button class="move-to-backlog-btn" data-moment-id="${m.id}">Backlog</button>
+                                            <a href="/moments/${m.id}" class="view-btn">View</a>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    ${moments.map(m => `
-                                        <tr>
-                                            <td>${m.id}</td>
-                                            <td>${escapeHtml(m.statement)}</td>
-                                            <td>${m.type}</td>
-                                            <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                            <td>${m.effortEstimate ?? '–'}</td>
-                                            <td><a href="/moments/${m.id}" class="view-btn">View</a></td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>`
+                                `).join('')}
+                            </tbody></table>`
                         }
                     </div>
                 `;
                 strideBoard.appendChild(card);
             });
 
-            // Render Backlog
+            // Render Backlog (unchanged)
             if (backlogSection) {
                 if (!backlogMoments || backlogMoments.length === 0) {
                     backlogSection.innerHTML = '<h2>Backlog</h2><p class="no-items">No unassigned moments.</p>';
                 } else {
-                    backlogSection.innerHTML = `
-                        <h2>Backlog</h2>
-                        <div class="backlog-card">
-                            <table class="promisemodel-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Statement</th>
-                                        <th>Type</th>
-                                        <th>Status</th>
-                                        <th>Effort</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${backlogMoments.map(m => `
-                                        <tr>
-                                            <td>${m.id}</td>
-                                            <td>${escapeHtml(m.statement)}</td>
-                                            <td>${m.type}</td>
-                                            <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                            <td>${m.effortEstimate ?? '–'}</td>
-                                            <td><a href="/moments/${m.id}" class="view-btn">View</a></td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    backlogSection.innerHTML = `<h2>Backlog</h2><div class="backlog-card"><table class="promisemodel-table"><thead><tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead><tbody>
+                        ${backlogMoments.map(m => `
+                            <tr>
+                                <td>${m.id}</td>
+                                <td>${escapeHtml(m.statement)}</td>
+                                <td>${m.type}</td>
+                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                <td>${m.effortEstimate ?? '–'}</td>
+                                <td>
+                                    <select class="backlog-target-stride" data-moment-id="${m.id}">
+                                        ${allStrides.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+                                    </select>
+                                    <button class="move-to-stride-from-backlog-btn" data-moment-id="${m.id}">Move</button>
+                                    <a href="/moments/${m.id}" class="view-btn">View</a>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody></table></div>`;
                 }
             }
+
+            // Attach planning event listeners
+            attachPlanningListeners(projectId, navContentDiv, contentDiv);
         })
         .catch(err => {
             loadingEl.textContent = '';
@@ -145,6 +149,73 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
         });
 }
 
+/* ---------- Event listeners ---------- */
+function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
+    // Status dropdown
+    document.querySelectorAll('.status-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const newStatus = dropdown.value;
+            try {
+                await updateMomentStatus(momentId, newStatus);
+                loadStridesList(projectId, navContentDiv, contentDiv);
+            } catch (err) {
+                alert('Failed to update status');
+                console.error(err);
+            }
+        });
+    });
+
+    // Estimate dropdown
+    document.querySelectorAll('.estimate-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const estimate = dropdown.value === '' ? null : dropdown.value;
+            try {
+                await updateMomentEstimate(momentId, estimate);
+                loadStridesList(projectId, navContentDiv, contentDiv);
+            } catch (err) {
+                alert('Failed to update estimate');
+                console.error(err);
+            }
+        });
+    });
+
+    // Move to Backlog
+    document.querySelectorAll('.move-to-backlog-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const momentId = parseInt(btn.dataset.momentId, 10);
+            if (!confirm('Move this moment to the backlog?')) return;
+            try {
+                await moveMomentToStride(momentId, null);
+                loadStridesList(projectId, navContentDiv, contentDiv);
+            } catch (err) {
+                alert('Failed to move moment');
+                console.error(err);
+            }
+        });
+    });
+
+    // Move from Backlog to Stride
+    document.querySelectorAll('.move-to-stride-from-backlog-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const momentId = parseInt(btn.dataset.momentId, 10);
+            const select = document.querySelector(`.backlog-target-stride[data-moment-id="${momentId}"]`);
+            const targetStrideId = select ? parseInt(select.value, 10) : null;
+            if (!targetStrideId) return;
+            if (!confirm(`Move this moment to the selected stride?`)) return;
+            try {
+                await moveMomentToStride(momentId, targetStrideId);
+                loadStridesList(projectId, navContentDiv, contentDiv);
+            } catch (err) {
+                alert('Failed to move moment');
+                console.error(err);
+            }
+        });
+    });
+}
+
+/* ---------- Helpers ---------- */
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

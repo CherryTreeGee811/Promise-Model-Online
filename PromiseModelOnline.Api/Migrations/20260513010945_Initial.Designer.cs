@@ -12,7 +12,7 @@ using PromiseModelOnline.Api.DAL;
 namespace PromiseModelOnline.Api.Migrations
 {
     [DbContext(typeof(PromiseModelOnlineContext))]
-    [Migration("20260511032022_Initial")]
+    [Migration("20260513010945_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -468,20 +468,17 @@ namespace PromiseModelOnline.Api.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Link")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("ReferenceId")
                         .HasColumnType("int");
 
                     b.Property<string>("ReferenceType")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -508,6 +505,9 @@ namespace PromiseModelOnline.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<int>("UserId")
@@ -664,9 +664,6 @@ namespace PromiseModelOnline.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Role")
                         .HasColumnType("int");
@@ -903,13 +900,11 @@ namespace PromiseModelOnline.Api.Migrations
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Notification", b =>
                 {
-                    b.HasOne("PromiseModelOnline.Api.Models.User", "User")
+                    b.HasOne("PromiseModelOnline.Api.Models.User", null)
                         .WithMany("Notifications")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Permission", b =>

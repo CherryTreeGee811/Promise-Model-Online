@@ -11,6 +11,7 @@ import { handleFlowRoutes } from './flows/router.mjs';
 import { handleJourneyRoutes } from './journeys/router.mjs';
 import { handleEpicRoutes } from './epics/router.mjs';
 import { handlePromiseRoutes } from './promises/router.mjs';
+import { handleNotificationsRoutes } from './notifications/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -157,6 +158,9 @@ export function routeHandler(navContentDiv, contentDiv) {
             }).catch((error) => {
                 console.error('Error loading registration form js:', error);
             });
+            break;
+        case path === '/notifications':
+            handleNotificationsRoutes(path, navContentDiv, contentDiv);
             break;
         case path == '/change-password':
             // Protect route: require authentication

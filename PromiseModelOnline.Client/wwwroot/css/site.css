@@ -496,3 +496,39 @@ input[type=button]:hover, input[type=submit]:hover {
     margin: 2px 0;
   }
 }
+
+/* ---- Additional components from feature/promises ---- */
+.comments-list { margin-top: 1rem; }
+.comment-item { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
+.comment-meta { font-size: 0.9rem; color: #555; }
+.comment-text { margin: 0.25rem 0; }
+.comment-mentions { font-size: 0.85rem; color: #076678; }
+.comment-replies { margin-left: 2rem; border-left: 2px solid #ccc; padding-left: 1rem; }
+.mention { background: #e0e0e0; padding: 0 4px; border-radius: 3px; color: #1a1a1a; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+.share-btn { background-color:#3498db; color:#fff; padding:6px 16px; border-radius:6px; font-size:0.85rem; font-weight:600; text-decoration:none; display:inline-block; margin-left:4px; }
+.share-btn:hover { background-color:#2980b9; }
+.revoke-btn { background:#c62828; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; }
+
+.badge {
+    background: #e74c3c;
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    margin-left: 6px;
+    font-weight: bold;
+}
+
+.unread {
+    font-weight: bold;
+    background-color: #f0f8ff;
+}
+.mark-read-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}

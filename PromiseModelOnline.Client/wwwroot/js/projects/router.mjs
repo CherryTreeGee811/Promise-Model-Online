@@ -1,6 +1,7 @@
 import { loadTemplate } from '../router.mjs';
 import { loadProjectList } from './list.mjs';
 import { loadStridesPage } from '../strides/router.mjs';
+import { loadSharePage } from './share.mjs';
 
 export function handleProjectRoutes(path, navContentDiv, contentDiv) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -11,6 +12,15 @@ export function handleProjectRoutes(path, navContentDiv, contentDiv) {
     if (stridesMatch) {
         const projectId = stridesMatch[1];
         loadStridesPage(projectId, navContentDiv, contentDiv);
+        return;
+    }
+
+    // Match /projects/{id}/share
+    const shareMatch = path.match(/^\/projects\/(\d+)\/share$/);
+    if (shareMatch) {
+        loadTemplate('projects/share.html', contentDiv)
+            .then(() => loadSharePage(shareMatch[1], contentDiv))
+            .catch(err => { contentDiv.innerHTML = '<h1>Error loading share page</h1>'; });
         return;
     }
 

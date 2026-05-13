@@ -1,4 +1,5 @@
 import { getPromiseById, getEpicsByPromise } from './api.mjs';
+import { loadComments } from '../comments/comments.mjs';
 
 export function loadPromiseDetail(promiseId, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
@@ -24,6 +25,7 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                     <div id="promise-epics-list">
                         <p>Loading epics…</p>
                     </div>
+                    <div id="promise-comments"></div>
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
@@ -61,6 +63,10 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                 .catch(() => {
                     epicsList.innerHTML = '<p class="error">Failed to load epics.</p>';
                 });
+
+            // Comments section
+            const commentsContainer = document.getElementById('promise-comments');
+            loadComments(commentsContainer, 'Promise', promiseId);
 
             const backLink = document.getElementById('back-link');
             if (backLink) {

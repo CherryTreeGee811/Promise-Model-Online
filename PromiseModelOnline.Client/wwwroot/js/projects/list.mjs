@@ -20,6 +20,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
                     <a href="/projects/${project.id}/strides" class="view-btn">View</a>
                     <a href="/projects/edit?id=${project.id}" class="edit-btn" project-id="${project.id}">Edit</a>
                     <button class="delete-btn" project-id="${project.id}">Delete</button>
+                    <a href="/projects/${project.id}/share" class="share-btn">Share</a>
                 </td>
             `;
             tableBody.appendChild(row);
@@ -30,7 +31,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
                 e.preventDefault();
                 const projectId = deleteBtn.getAttribute('project-id');
                 deleteProject(projectId).then(() => {
-                    // Reload the list after deleting an project
+                    // Reload the list after deleting the project
                     loadProjectList();
                 }).catch(() => {
                     errorTextElement.textContent = "Failed to delete project. Please try again.";
