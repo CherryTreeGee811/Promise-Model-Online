@@ -11,5 +11,7 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false);
         Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId);
         Task<IEnumerable<Moment>> GetMomentsByPromiseIdAsync(int promiseId);
+        Task<int?> GetProjectIdForMomentAsync(int momentId);
+        Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId);
     }
 }

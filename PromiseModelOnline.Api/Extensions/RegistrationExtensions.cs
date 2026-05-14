@@ -47,6 +47,9 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<IProjectService, ProjectService>();
+            services.AddStrideAutomation();
+            services.AddScoped<IReactionRepository, ReactionRepository>();
+            services.AddScoped<IReactionService, ReactionService>();
             services.AddHttpClient<IAuthClient, AuthClient>(client =>
             {
                 client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);

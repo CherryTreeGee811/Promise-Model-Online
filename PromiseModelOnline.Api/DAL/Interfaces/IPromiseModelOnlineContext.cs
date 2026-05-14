@@ -52,5 +52,10 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         /// Gets or sets the DbSet for user records.
         /// </summary>
         DbSet<User> Users { get; set; }
+
+        /// <summary>
+        /// Gets or sets the DbSet for reaction records.
+        /// </summary>
+        DbSet<Reaction> Reactions { get; set; }
     }
 }

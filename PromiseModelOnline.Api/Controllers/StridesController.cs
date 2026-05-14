@@ -14,13 +14,16 @@ namespace PromiseModelOnline.Api.Controllers
     public class StridesController : GenericController<Stride, StrideDTO>
     {
         private readonly IStrideService _strideService;
+        private readonly IMomentService _momentService;
 
         public StridesController(
-            IStrideService service,
-            IGenericMapper<Stride, StrideDTO> mapper)
-            : base(service, mapper)
+            IStrideService strideService,
+            IGenericMapper<Stride, StrideDTO> mapper,
+            IMomentService momentService)
+            : base(strideService, mapper)
         {
-            _strideService = service;
+            _strideService = strideService;
+            _momentService = momentService;
         }
 
         [HttpGet]
@@ -39,6 +42,33 @@ namespace PromiseModelOnline.Api.Controllers
                 result.Add(_mapper.Map(stride, _service));
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Move unfinished moments from this stride to the next stride.
+        /// </summary>
+        [HttpPost("{id}/progress")]
+        public async Task<IActionResult> ProgressStride(int id)
+        {
+            await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Send deadline notifications for all strides ending in 3 days.
+        /// </summary>
+        [HttpPost("send-deadline-notifications")]
+        public async Task<IActionResult> SendDeadlineNotifications()
+        {
+            await _strideService.SendDeadlineNotificationsAsync();
+            return NoContent();
+        }
+
+        [HttpGet("{id}/burndown")]
+        public async Task<ActionResult<List<BurndownPointDTO>>> GetBurndown(int id)
+        {
+            var points = await _momentService.GetStrideBurndownAsync(id);
+            return Ok(points);
         }
     }
 }

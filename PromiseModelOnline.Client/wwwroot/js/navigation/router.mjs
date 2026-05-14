@@ -46,6 +46,15 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
             routeHandler(navContentDiv, contentDiv);
         });
     }
+
+    const invLink = document.getElementById("invitations-link");
+    if (invLink) {
+        invLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.history.pushState({}, '', '/invitations');
+            routeHandler(navContentDiv, contentDiv);
+        });
+    }
 }
 
 function initAnonymousLinkListeners(navContentDiv, contentDiv) {

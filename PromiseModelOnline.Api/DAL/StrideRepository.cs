@@ -13,5 +13,10 @@ namespace PromiseModelOnline.Api.DAL
         {
             return await FindAsync(s => s.IterationId == iterationId);
         }
+
+        public async Task<IEnumerable<Stride>> GetStridesEndingOnAsync(DateTime date)
+        {
+            return await FindAsync(s => s.EndDate.Date == date.Date);
+        }
     }
 }

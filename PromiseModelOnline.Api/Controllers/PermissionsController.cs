@@ -85,6 +85,31 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        [HttpGet("pending")]
+        public async Task<ActionResult<IEnumerable<PendingInvitationDTO>>> GetPendingInvitations()
+        {
+            var userId = await GetCurrentUserIdByEmailAsync();
+            if (userId is null) return Unauthorized();
+
+            var invitations = await _permissionService.GetPendingInvitationsForUserAsync(userId.Value);
+            return Ok(invitations);
+        }
+
+        /// <summary>
+        /// Returns the current user's permission level for the given project, or 204 if none.
+        /// </summary>
+        [HttpGet("{id}/my-permission")]
+        public async Task<ActionResult<string>> GetMyPermission(int id)
+        {
+            var userId = await GetCurrentUserIdByEmailAsync();
+            if (userId is null) return Unauthorized();
+
+            var level = await _permissionService.GetUserPermissionAsync(userId.Value, id);
+            if (level is null) return NoContent();
+
+            return Ok(level.ToString());
+        }
+
         private async Task<int?> GetCurrentUserIdByEmailAsync()
         {
             // Try common claim types for email

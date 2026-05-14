@@ -4,6 +4,7 @@ using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.DAL
 {
@@ -49,6 +50,19 @@ namespace PromiseModelOnline.Api.DAL
             return await _dbSet
                 .Where(m => m.Flow.Journey.Epic.ProductPromiseId == promiseId)
                 .ToListAsync();
+        }
+
+        public async Task<int?> GetProjectIdForMomentAsync(int momentId)
+        {
+            return await _dbSet
+                .Where(m => m.Id == momentId)
+                .Select(m => m.Flow.Journey.Epic.ProductPromise.ProjectId)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId)
+        {
+            return await FindAsync(m => m.AssignedStrideId == strideId && m.Status != MomentStatus.Done);
         }
     }
 }

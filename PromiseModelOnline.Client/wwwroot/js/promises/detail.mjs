@@ -67,6 +67,11 @@ export function loadPromiseDetail(promiseId, contentDiv) {
             // Comments section
             const commentsContainer = document.getElementById('promise-comments');
             loadComments(commentsContainer, 'Promise', promiseId);
+            
+            const reactionsContainer = document.createElement('div');
+            reactionsContainer.id = 'reactions-section';
+            detailDiv.appendChild(reactionsContainer);
+            loadReactions(reactionsContainer, 'Promise', promiseId);
 
             const backLink = document.getElementById('back-link');
             if (backLink) {
