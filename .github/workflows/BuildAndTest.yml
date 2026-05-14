@@ -61,6 +61,16 @@ jobs:
             --os linux \
             --logger "console;verbosity=normal"
 
+      - name: Run API Tests
+        shell: bash
+        run: |
+          mkdir -p ApiTestResults
+          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ApiTestResults \
+            --os linux \
+            --logger "console;verbosity=normal"
+
       - name: Build and Run App Containers
         shell: bash
         run: docker compose up -d

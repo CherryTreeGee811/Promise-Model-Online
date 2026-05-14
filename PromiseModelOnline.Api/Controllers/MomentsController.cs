@@ -146,7 +146,7 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         /// <summary>
-        /// Assigns a specific user as the owner of the moment.
+        /// Assigns a specific user as the owner of the moment, or clears the owner when UserId is null.
         /// Requires Edit permission on the project.
         /// </summary>
         [HttpPut("{id}/owner")]
