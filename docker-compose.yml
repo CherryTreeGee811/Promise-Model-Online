@@ -85,7 +85,10 @@ services:
       PMO_AUTH_DB_PASSWORD: ${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!}
     volumes:
       - ./db/init/run-init.sh:/init/run-init.sh:ro
-    entrypoint: ["/bin/sh", "/init/run-init.sh"]
+    entrypoint:
+      - /bin/sh
+      - -c
+      - set -e; tr -d '\r' < /init/run-init.sh > /tmp/run-init.lf && /bin/sh /tmp/run-init.lf
     restart: "no"
 
 networks:

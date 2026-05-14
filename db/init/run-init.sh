@@ -1,5 +1,4 @@
 #!/bin/sh
-set -eu
 
 SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
 API_USER=${PMO_API_DB_USER:-pmo_api}
