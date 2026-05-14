@@ -27,7 +27,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CommentDTO>>> GetComments(
-            [FromQuery] string type,
+            [FromQuery] string? type,
             [FromQuery] int parentId)
         {
             if (string.IsNullOrEmpty(type) || parentId <= 0)
@@ -49,10 +49,9 @@ namespace PromiseModelOnline.Api.Controllers
             // Extract the username claim so the local user gets a readable name
             var username = User.FindFirst("nameid")?.Value;
 
-            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
-
             try
             {
+                var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
                 var comment = await _commentService.CreateCommentAsync(dto, user.Id);
                 return CreatedAtAction(nameof(GetComments),
                     new { type = dto.ParentType, parentId = dto.ParentId }, comment);
