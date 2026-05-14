@@ -108,9 +108,9 @@ export async function getMyTasks() {
 }
 
 /**
- * Assigns a new owner to a moment.
+ * Assigns a new owner to a moment, or clears the owner when userId is null.
  * @param {number} momentId
- * @param {number} userId
+ * @param {number|null} userId
  * @returns {Promise<object>} the updated MomentDTO
  */
 export async function updateMomentOwner(momentId, userId) {
