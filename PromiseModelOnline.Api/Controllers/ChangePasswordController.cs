@@ -28,7 +28,7 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Unauthorized("Unauthorized");
+                return Unauthorized();
             }
             catch (ArgumentException)
             {
