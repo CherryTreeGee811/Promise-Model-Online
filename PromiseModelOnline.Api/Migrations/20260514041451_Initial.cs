@@ -76,6 +76,28 @@ namespace PromiseModelOnline.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Reactions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    Emote = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    StackItemType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    StackItemId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reactions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Reactions_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Iterations",
                 columns: table => new
                 {
@@ -643,6 +665,11 @@ namespace PromiseModelOnline.Api.Migrations
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Reactions_UserId",
+                table: "Reactions",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Strides_IterationId",
                 table: "Strides",
                 column: "IterationId");
@@ -673,6 +700,9 @@ namespace PromiseModelOnline.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "Permission");
+
+            migrationBuilder.DropTable(
+                name: "Reactions");
 
             migrationBuilder.DropTable(
                 name: "Comment");

@@ -1,6 +1,5 @@
-import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers } from './api.mjs';
+import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride, getStrideBurndown } from './api.mjs';
 import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
-import { getMyPermission } from './api.mjs';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues = {
@@ -71,7 +70,9 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                         <h3>${escapeHtml(stride.name)}</h3>
                         <span class="stride-dates">${formatDate(stride.startDate)} – ${formatDate(stride.endDate)}</span>
                         <span class="stride-duration">(${stride.durationDays} days)</span>
+                        <span class="stride-countdown" data-end-date="${stride.endDate}"></span>
                         <span class="stride-total-effort">Total Effort: ${effTotal}</span>
+                        <button class="progress-stride-btn" data-stride-id="${stride.id}" style="display:none;">Progress</button>
                     </div>
                     <div class="stride-moments">
                         ${moments.length === 0
@@ -130,6 +131,21 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     </div>
                 `;
                 strideBoard.appendChild(card);
+
+                // --- Burndown chart ---
+                const canvas = document.createElement('canvas');
+                canvas.className = 'burndown-canvas';
+                canvas.width = 400;
+                canvas.height = 200;
+                card.appendChild(canvas);
+
+                getStrideBurndown(stride.id)
+                    .then(points => {
+                        if (points && points.length > 0) {
+                            drawBurndownChart(canvas, points);
+                        }
+                    })
+                    .catch(err => console.error('Failed to load burndown', err));
             });
 
             // Render Backlog
@@ -172,15 +188,21 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 })
                 .catch(err => console.error('Failed to load project members', err));
 
-            // Fetch current user's permission and disable write controls if not Edit
+            // Fetch permission and update UI
             getMyPermission(projectId)
                 .then(level => {
                     if (level !== 'Edit') {
                         document.querySelectorAll('.status-dropdown, .estimate-dropdown, .owner-dropdown, .move-to-backlog-btn, .move-to-stride-from-backlog-btn')
                             .forEach(el => el.disabled = true);
+                    } else {
+                        // Show progress buttons for Edit users
+                        document.querySelectorAll('.progress-stride-btn').forEach(btn => btn.style.display = 'inline-block');
                     }
                 })
                 .catch(err => console.error('Failed to get permission', err));
+
+            // Update countdowns
+            updateCountdowns();
 
             // Attach planning event listeners
             attachPlanningListeners(projectId, navContentDiv, contentDiv);
@@ -271,6 +293,80 @@ function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
             }
         });
     });
+
+    // Progress Stride button
+    document.querySelectorAll('.progress-stride-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const strideId = parseInt(btn.dataset.strideId, 10);
+            if (!confirm('Move all unfinished moments to the next stride?')) return;
+            try {
+                await progressStride(strideId);
+                loadStridesList(projectId, navContentDiv, contentDiv);
+            } catch (err) {
+                alert('Failed to progress stride');
+                console.error(err);
+            }
+        });
+    });
+}
+
+/* ---------- Burndown drawing ---------- */
+function drawBurndownChart(canvas, points) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const pad = 30;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const maxEffort = Math.max(...points.map(p => Math.max(p.remainingEffort, p.idealRemaining)), 1);
+
+    // Axes
+    ctx.beginPath();
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.moveTo(pad, pad);
+    ctx.lineTo(pad, h - pad);
+    ctx.lineTo(w - pad, h - pad);
+    ctx.stroke();
+
+    // Ideal line (dashed)
+    ctx.beginPath();
+    ctx.strokeStyle = '#3498db';
+    ctx.setLineDash([5, 3]);
+    ctx.lineWidth = 2;
+    points.forEach((p, i) => {
+        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+        const y = h - pad - (p.idealRemaining / maxEffort) * (h - pad * 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Actual line
+    ctx.beginPath();
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 2;
+    points.forEach((p, i) => {
+        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+        const y = h - pad - (p.remainingEffort / maxEffort) * (h - pad * 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#333';
+    ctx.font = '10px Arial';
+    const firstDate = points[0]?.date ? new Date(points[0].date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : '';
+    const lastDate = points[points.length - 1]?.date ? new Date(points[points.length - 1].date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : '';
+    ctx.fillText(firstDate, pad, h - pad + 15);
+    ctx.fillText(lastDate, w - pad - 40, h - pad + 15);
+    ctx.save();
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Effort', -h / 2, 15);
+    ctx.restore();
 }
 
 /* ---------- Helpers ---------- */
@@ -284,4 +380,25 @@ function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function updateCountdowns() {
+    document.querySelectorAll('.stride-countdown').forEach(el => {
+        const endDate = new Date(el.dataset.endDate);
+        const now = new Date();
+        const diffDays = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) {
+            el.textContent = 'Ended';
+            el.style.color = '#e74c3c';
+        } else if (diffDays === 0) {
+            el.textContent = 'Ends today';
+            el.style.color = '#e67e22';
+        } else if (diffDays <= 3) {
+            el.textContent = `${diffDays} day${diffDays > 1 ? 's' : ''} left`;
+            el.style.color = '#e67e22';
+        } else {
+            el.textContent = `${diffDays} days left`;
+            el.style.color = '#2ecc71';
+        }
+    });
 }

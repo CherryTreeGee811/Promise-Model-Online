@@ -166,3 +166,36 @@ export async function getMyPermission(projectId) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.text();   // returns "Edit", "Comment", "View", or null
 }
+
+/**
+ * Progress a stride: move unfinished moments to the next stride.
+ */
+export async function progressStride(strideId) {
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(`${base}/api/strides/${strideId}/progress`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+/**
+ * Send deadline notifications for all strides ending in 3 days.
+ */
+export async function sendDeadlineNotifications() {
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(`${base}/api/strides/send-deadline-notifications`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+export async function getStrideBurndown(strideId) {
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(`${base}/api/strides/${strideId}/burndown`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}

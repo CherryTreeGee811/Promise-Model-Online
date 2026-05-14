@@ -56,10 +56,15 @@ namespace PromiseModelOnline.Api.DAL
         /// </summary>
         public DbSet<Iteration> Iterations { get; set; } = null!;
 
-         /// <summary>
+        /// <summary>
         /// Gets or sets the DbSet for user records.
         /// </summary>
         public DbSet<User> Users { get; set; } = null!;
+
+        /// <summary>
+        /// Gets or sets the DbSet for reaction records.
+        /// </summary>
+        public DbSet<Reaction> Reactions { get; set; } = null!;
 
         /// <summary>
         /// Configures the model and seeds initial data for the database.

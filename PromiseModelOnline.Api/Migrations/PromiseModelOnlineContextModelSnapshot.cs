@@ -595,6 +595,40 @@ namespace PromiseModelOnline.Api.Migrations
                     b.ToTable("Promises");
                 });
 
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.Reaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Emote")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("StackItemId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StackItemType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reactions");
+                });
+
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Stride", b =>
                 {
                     b.Property<int>("Id")
@@ -950,6 +984,17 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Navigation("Owner");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.Reaction", b =>
+                {
+                    b.HasOne("PromiseModelOnline.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Stride", b =>
