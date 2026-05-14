@@ -52,7 +52,11 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped<IReactionService, ReactionService>();
             services.AddHttpClient<IAuthClient, AuthClient>(client =>
             {
-                client.BaseAddress = new Uri(configuration["JwtSettings:Issuer"]);
+                var issuer = configuration["JwtSettings:Issuer"];
+                if (!string.IsNullOrEmpty(issuer))
+                {
+                    client.BaseAddress = new Uri(issuer);
+                }
                 client.Timeout = TimeSpan.FromSeconds(10);
             })
             .ConfigurePrimaryHttpMessageHandler(() =>

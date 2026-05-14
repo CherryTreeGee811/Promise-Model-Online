@@ -193,7 +193,7 @@ public static class PromiseHierarchySeeder
                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, 0);
                 SET IDENTITY_INSERT Moments OFF;";
 
-            await db.Database.ExecuteSqlRawAsync(sql,
+            var parameters = new object[] {
                 momentId,
                 flowId,
                 statement,
@@ -202,7 +202,9 @@ public static class PromiseHierarchySeeder
                 momentId,
                 DateTime.UtcNow,
                 strideId,
-                "red");
+                "red"
+            };
+            await db.Database.ExecuteSqlRawAsync(sql, parameters);
 
             inserted++;
         }

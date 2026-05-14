@@ -32,7 +32,7 @@ namespace PromiseModelOnline.Api.DAL
             if (strideIds.Count == 0)
                 return Enumerable.Empty<Moment>();
 
-            var query = _dbSet.Where(m => strideIds.Contains(m.AssignedStrideId.Value));
+            var query = _dbSet.Where(m => m.AssignedStrideId.HasValue && strideIds.Contains(m.AssignedStrideId.Value));
 
             if (unassignedOnly)
                 query = _dbSet.Where(m => m.AssignedStrideId == null);

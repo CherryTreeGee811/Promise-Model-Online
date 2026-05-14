@@ -60,7 +60,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult!.Value as List<JourneyDTO>;
+            var dtos = okResult?.Value as List<JourneyDTO>;
             Assert.That(dtos, Is.Not.Null);
             Assert.That(dtos!.Count, Is.EqualTo(3));
             Assert.That(dtos[0].Id, Is.EqualTo(1));
@@ -99,7 +99,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult!.Value as List<JourneyDTO>;
+            var dtos = okResult?.Value as List<JourneyDTO>;
             Assert.That(dtos, Is.Not.Null);
             Assert.That(dtos!.Count, Is.EqualTo(2));
             Assert.That(dtos[0].EpicId, Is.EqualTo(10));
@@ -138,7 +138,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult!.Value as List<JourneyDTO>;
+            var dtos = okResult?.Value as List<JourneyDTO>;
             Assert.That(dtos, Is.Not.Null);
             Assert.That(dtos!.Count, Is.EqualTo(2));
             _mockJourneyService.Verify(s => s.GetAllAsync(), Times.Once);
@@ -175,7 +175,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult!.Value as List<JourneyDTO>;
+            var dtos = okResult?.Value as List<JourneyDTO>;
             Assert.That(dtos, Is.Not.Null);
             Assert.That(dtos!.Count, Is.EqualTo(1));
             _mockJourneyService.Verify(s => s.GetAllAsync(), Times.Once);
@@ -209,7 +209,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult!.Value as List<JourneyDTO>;
+            var dtos = okResult?.Value as List<JourneyDTO>;
             Assert.That(dtos, Is.Not.Null);
             Assert.That(dtos!.Count, Is.EqualTo(0));
             _mockJourneyService.Verify(s => s.GetJourneysByEpicAsync(epicId), Times.Once);
@@ -237,9 +237,9 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dto = okResult!.Value as JourneyDTO;
+            var dto = okResult?.Value as JourneyDTO;
             Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.Id, Is.EqualTo(journeyId));
+            Assert.That(dto?.Id, Is.EqualTo(journeyId));
             Assert.That(dto.Statement, Is.EqualTo("Test Journey"));
         }
 
@@ -275,11 +275,11 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
             var createdResult = result.Result as CreatedAtActionResult;
             Assert.That(createdResult, Is.Not.Null);
-            Assert.That(createdResult!.ActionName, Is.EqualTo(nameof(JourneysController.GetById)));
+            Assert.That(createdResult?.ActionName, Is.EqualTo(nameof(JourneysController.GetById)));
             Assert.That(createdResult.RouteValues["id"], Is.EqualTo(1));
-            var dto = createdResult.Value as JourneyDTO;
+            var dto = createdResult?.Value as JourneyDTO;
             Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.Id, Is.EqualTo(1));
+            Assert.That(dto?.Id, Is.EqualTo(1));
         }
 
         [Test]
