@@ -4,9 +4,11 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -15,13 +17,16 @@ namespace PromiseModelOnline.Api.Controllers
     public class MomentsController : GenericController<Moment, MomentDTO>
     {
         private readonly IMomentService _momentService;
+        private readonly IUserRepository _userRepository;
 
         public MomentsController(
             IMomentService service,
-            IGenericMapper<Moment, MomentDTO> mapper)
+            IGenericMapper<Moment, MomentDTO> mapper,
+            IUserRepository userRepository)
             : base(service, mapper)
         {
             _momentService = service;
+            _userRepository = userRepository;
         }
 
         /// <summary>
@@ -106,16 +111,6 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         /// <summary>
-        /// Returns moments assigned to the current user. (Not yet implemented)
-        /// </summary>
-        [HttpGet("assigned-to-me")]
-        public ActionResult<IEnumerable<MomentDTO>> GetMyAssignedMoments()
-        {
-            // Requires user ID mapping; return 501 Not Implemented for now.
-            return StatusCode(501, "This endpoint is not yet available.");
-        }
-
-        /// <summary>
         /// Updates the T‑shirt size estimate for a moment (partial update).
         /// </summary>
         [HttpPatch("{id}/estimate")]
@@ -132,6 +127,56 @@ namespace PromiseModelOnline.Api.Controllers
             {
                 return NotFound(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Assigns a specific user as the owner of the moment.
+        /// </summary>
+        [HttpPut("{id}/owner")]
+        public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(
+            int id,
+            [FromBody] UpdateMomentOwnerRequest request)
+        {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null) return Unauthorized();
+
+            try
+            {
+                var moment = await _momentService.AssignOwnerAsync(id, request.UserId);
+                return Ok(_mapper.Map(moment, _service));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Returns all moments assigned to the currently authenticated user.
+        /// </summary>
+        [HttpGet("assigned-to-me")]
+        public async Task<ActionResult<IEnumerable<MomentDTO>>> GetMyAssignedMoments()
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null)
+                return Unauthorized();
+
+            var moments = await _momentService.GetMomentsByOwnerIdAsync(user.Id);
+            var result = new List<MomentDTO>();
+            foreach (var m in moments)
+                result.Add(_mapper.Map(m, _service));
+
+            return Ok(result);
+        }
+
+        private async Task<User?> GetCurrentUserAsync()
+        {
+            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                     ?? User.FindFirst("email")?.Value;
+            if (string.IsNullOrEmpty(email)) return null;
+
+            var username = User.FindFirst("nameid")?.Value;
+            return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }
     }
 }

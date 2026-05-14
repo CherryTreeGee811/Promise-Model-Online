@@ -107,6 +107,17 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
         }
 
+        public async Task<Moment> AssignOwnerAsync(int momentId, int userId)
+        {
+            var moment = await _momentRepository.GetByIdAsync(momentId)
+                        ?? throw new KeyNotFoundException($"Moment with ID {momentId} not found.");
+            moment.OwnerId = userId;
+            moment.UpdatedAt = DateTime.UtcNow;
+            _momentRepository.Update(moment);
+            await _momentRepository.SaveChangesAsync();
+            return moment;
+        }
+
         private static int EstimateToNumeric(Estimate? estimate)
         {
             return estimate switch

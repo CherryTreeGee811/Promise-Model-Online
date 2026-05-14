@@ -59,7 +59,8 @@ namespace PromiseModelOnline.Api.Controllers
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             if (string.IsNullOrEmpty(email)) return null;
 
-            var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
+            var username = User.FindFirst("nameid")?.Value;
+            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
             return user.Id;
         }
     }

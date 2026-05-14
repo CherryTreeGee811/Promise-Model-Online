@@ -20,16 +20,27 @@ namespace PromiseModelOnline.Api.DAL
         public async Task<IEnumerable<User>> FindByEmailAsync(string email)
             => await FindAsync(u => u.Email == email);
 
-        public async Task<User> GetOrCreateUserByEmailAsync(string email)
+        public async Task<User> GetOrCreateUserByEmailAsync(string email, string? username = null)
         {
             var users = await FindByEmailAsync(email);
             var existing = users.FirstOrDefault();
-            if (existing is not null) return existing;
+
+            if (existing is not null)
+            {
+                // Update name if we now have a real username and the stored name is still an email
+                if (!string.IsNullOrEmpty(username) && existing.Name == existing.Email)
+                {
+                    existing.Name = username;
+                    Update(existing);
+                    await SaveChangesAsync();
+                }
+                return existing;
+            }
 
             var user = new User
             {
                 Email = email,
-                Name = email,   // use email as display name until we get a better one
+                Name = username ?? (email?.Contains('@') == true ? email.Split('@')[0] : email),
                 Role = UserRole.Professional,
                 CreatedAt = DateTime.UtcNow
             };

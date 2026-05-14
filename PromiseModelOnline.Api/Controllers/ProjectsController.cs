@@ -45,13 +45,27 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Returns the project owner plus all users who have any permission on this project.
+        /// </summary>
+        [HttpGet("{id}/members")]
+        public async Task<ActionResult<IEnumerable<ProjectMemberDTO>>> GetMembers(int id)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null) return Unauthorized();
+
+            var members = await _projectService.GetProjectMembersAsync(id);
+            return Ok(members);
+        }
+
         private async Task<User?> GetCurrentUserAsync()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value
                      ?? User.FindFirst("email")?.Value;
             if (string.IsNullOrEmpty(email)) return null;
 
-            return await _userRepository.GetOrCreateUserByEmailAsync(email);
+            var username = User.FindFirst("nameid")?.Value;
+            return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }
     }
 }
