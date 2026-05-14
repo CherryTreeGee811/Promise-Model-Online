@@ -132,5 +132,8 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 _ => 0
             };
         }
+
+        public async Task<int?> GetProjectIdForMomentAsync(int momentId)
+            => await _momentRepository.GetProjectIdForMomentAsync(momentId);
     }
 }

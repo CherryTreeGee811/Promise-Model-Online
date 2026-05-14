@@ -1,5 +1,6 @@
 import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers } from './api.mjs';
 import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
+import { getMyPermission } from './api.mjs';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues = {
@@ -170,6 +171,16 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     });
                 })
                 .catch(err => console.error('Failed to load project members', err));
+
+            // Fetch current user's permission and disable write controls if not Edit
+            getMyPermission(projectId)
+                .then(level => {
+                    if (level !== 'Edit') {
+                        document.querySelectorAll('.status-dropdown, .estimate-dropdown, .owner-dropdown, .move-to-backlog-btn, .move-to-stride-from-backlog-btn')
+                            .forEach(el => el.disabled = true);
+                    }
+                })
+                .catch(err => console.error('Failed to get permission', err));
 
             // Attach planning event listeners
             attachPlanningListeners(projectId, navContentDiv, contentDiv);

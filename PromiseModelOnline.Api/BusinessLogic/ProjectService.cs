@@ -1,6 +1,7 @@
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
@@ -60,9 +61,9 @@ namespace PromiseModelOnline.Api.BusinessLogic
                     Email = owner.Email
                 });
 
-            // Invited / active permissions
+            // Only active permissions (invitation accepted)
             var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId);
-            foreach (var perm in permissions)
+            foreach (var perm in permissions.Where(p => p.Status == PermissionStatus.Active))
             {
                 if (members.All(m => m.UserId != perm.UserId))
                 {

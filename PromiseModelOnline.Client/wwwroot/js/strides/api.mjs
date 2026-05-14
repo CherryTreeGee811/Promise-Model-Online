@@ -156,3 +156,13 @@ export async function updateMomentOwner(momentId, userId) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
 }
+
+export async function getMyPermission(projectId) {
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(`${base}/api/projects/${projectId}/my-permission`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+    });
+    if (res.status === 204) return null;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();   // returns "Edit", "Comment", "View", or null
+}

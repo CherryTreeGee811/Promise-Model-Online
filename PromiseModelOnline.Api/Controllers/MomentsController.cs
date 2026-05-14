@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -18,15 +19,18 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IMomentService _momentService;
         private readonly IUserRepository _userRepository;
+        private readonly IPermissionService _permissionService;
 
         public MomentsController(
             IMomentService service,
             IGenericMapper<Moment, MomentDTO> mapper,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IPermissionService permissionService)
             : base(service, mapper)
         {
             _momentService = service;
             _userRepository = userRepository;
+            _permissionService = permissionService;
         }
 
         /// <summary>
@@ -70,12 +74,16 @@ namespace PromiseModelOnline.Api.Controllers
 
         /// <summary>
         /// Assign a moment to a stride or move it to the backlog (strideId = null).
+        /// Requires Edit permission on the project.
         /// </summary>
         [HttpPut("{id}/stride-assignment")]
         public async Task<ActionResult<MomentDTO>> AssignMomentToStride(
             int id,
             [FromBody] UpdateMomentStrideAssignmentRequest request)
         {
+            if (!await UserCanEditMomentAsync(id))
+                return Forbid();
+
             try
             {
                 var moment = await _momentService.AssignMomentToStrideAsync(id, request.StrideId);
@@ -93,12 +101,16 @@ namespace PromiseModelOnline.Api.Controllers
 
         /// <summary>
         /// Update the status of a moment.
+        /// Requires Edit permission on the project.
         /// </summary>
         [HttpPut("{id}/status")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(
             int id,
             [FromBody] UpdateMomentStatusRequest request)
         {
+            if (!await UserCanEditMomentAsync(id))
+                return Forbid();
+
             try
             {
                 var moment = await _momentService.UpdateMomentStatusAsync(id, request.NewStatus);
@@ -112,12 +124,16 @@ namespace PromiseModelOnline.Api.Controllers
 
         /// <summary>
         /// Updates the T‑shirt size estimate for a moment (partial update).
+        /// Requires Edit permission on the project.
         /// </summary>
         [HttpPatch("{id}/estimate")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(
             int id,
             [FromBody] UpdateMomentEstimateRequest request)
         {
+            if (!await UserCanEditMomentAsync(id))
+                return Forbid();
+
             try
             {
                 var moment = await _momentService.UpdateMomentEstimateAsync(id, request.Estimate);
@@ -131,14 +147,15 @@ namespace PromiseModelOnline.Api.Controllers
 
         /// <summary>
         /// Assigns a specific user as the owner of the moment.
+        /// Requires Edit permission on the project.
         /// </summary>
         [HttpPut("{id}/owner")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(
             int id,
             [FromBody] UpdateMomentOwnerRequest request)
         {
-            var currentUser = await GetCurrentUserAsync();
-            if (currentUser is null) return Unauthorized();
+            if (!await UserCanEditMomentAsync(id))
+                return Forbid();
 
             try
             {
@@ -177,6 +194,21 @@ namespace PromiseModelOnline.Api.Controllers
 
             var username = User.FindFirst("nameid")?.Value;
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        }
+
+        /// <summary>
+        /// Returns true if the current user has Edit permission on the moment's project.
+        /// </summary>
+        private async Task<bool> UserCanEditMomentAsync(int momentId)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null) return false;
+
+            var projectId = await _momentService.GetProjectIdForMomentAsync(momentId);
+            if (projectId is null) return false;
+
+            var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value);
+            return level == PermissionLevel.Edit;
         }
     }
 }

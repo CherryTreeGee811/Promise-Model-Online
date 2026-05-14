@@ -50,26 +50,28 @@ export function requestLogout(token) {
         mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
         },
+        body: JSON.stringify({})   // <-- send an empty JSON body
     })
-        .then(response => {
-            if (response.ok) {
-                if (response.status === 204) {
-                    return true;
-                } else {
-                    return response.json();
-                }
-            } else if (response.status == 401) {
-                document.getElementById("login-link").click();
+    .then(response => {
+        if (response.ok) {
+            if (response.status === 204) {
+                return true;
             } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
             }
-        })
-        .catch(error => {
-            throw error;
-        });
+        } else if (response.status == 401) {
+            document.getElementById("login-link").click();
+        } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+    })
+    .catch(error => {
+        throw error;
+    });
 }
 
 export function registerUser(username, email, password) {

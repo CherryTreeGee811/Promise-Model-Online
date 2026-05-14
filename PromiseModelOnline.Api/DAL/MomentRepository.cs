@@ -50,5 +50,13 @@ namespace PromiseModelOnline.Api.DAL
                 .Where(m => m.Flow.Journey.Epic.ProductPromiseId == promiseId)
                 .ToListAsync();
         }
+
+        public async Task<int?> GetProjectIdForMomentAsync(int momentId)
+        {
+            return await _dbSet
+                .Where(m => m.Id == momentId)
+                .Select(m => m.Flow.Journey.Epic.ProductPromise.ProjectId)
+                .FirstOrDefaultAsync();
+        }
     }
 }

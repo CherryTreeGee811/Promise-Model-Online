@@ -6,5 +6,6 @@ public enum NotificationType
     Feedback,
     Deadline,
     Mention,
-    StrideEnding
+    StrideEnding,
+    Invitation
 }
