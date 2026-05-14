@@ -1,12 +1,10 @@
 import { loadTemplate } from '../router.mjs';
 import { loadMomentDetail } from './detail.mjs';
+import { loadMyTasksPage } from './my-tasks.mjs';
 
-/**
- * Handles routes under /moments/...
- * Currently supports viewing a single moment: /moments/{id}
- */
 export function handleMomentRoutes(path, navContentDiv, contentDiv) {
-    const segments = path.split('/').filter(Boolean); // e.g. ["moments", "42"]
+    // Match /moments/{id}
+    const segments = path.split('/').filter(Boolean);
     if (segments.length === 2 && segments[0] === 'moments') {
         const momentId = segments[1];
         loadTemplate('moments/detail.html', contentDiv)
@@ -15,7 +13,19 @@ export function handleMomentRoutes(path, navContentDiv, contentDiv) {
                 console.error('Error loading moment detail:', err);
                 contentDiv.innerHTML = '<h1>Error loading moment</h1>';
             });
-    } else {
-        contentDiv.innerHTML = '<h1>404 Not Found</h1>';
+        return;
     }
+
+    // Match /moments/my-tasks
+    if (path === '/moments/my-tasks') {
+        loadTemplate('moments/my-tasks.html', contentDiv)
+            .then(() => loadMyTasksPage(contentDiv))
+            .catch(err => {
+                console.error('Error loading my tasks:', err);
+                contentDiv.innerHTML = '<h1>Error loading my tasks</h1>';
+            });
+        return;
+    }
+
+    contentDiv.innerHTML = '<h1>404 Not Found</h1>';
 }

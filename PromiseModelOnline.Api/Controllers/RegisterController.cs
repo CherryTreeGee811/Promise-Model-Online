@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Security;
+using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -11,10 +12,13 @@ namespace PromiseModelOnline.Api.Controllers
     public class RegisterController : ControllerBase
     {
         private readonly IAuthClient _authClient;
+        private readonly IUserRepository _userRepository;
 
-        public RegisterController(IAuthClient authClient)
+        public RegisterController(IAuthClient authClient,
+                                  IUserRepository userRepository)
         {
             _authClient = authClient;
+            _userRepository = userRepository;
         }
 
         [HttpPost("register")]
@@ -25,9 +29,10 @@ namespace PromiseModelOnline.Api.Controllers
             {
                 var resp = await _authClient.RegisterAsync(request);
                 if (resp == null)
-                {
                     return Conflict("User already exists");
-                }
+
+                // Create/update the local user record with the real username
+                await _userRepository.GetOrCreateUserByEmailAsync(request.Email, request.UserName);
 
                 return Created(string.Empty, resp);
             }
@@ -39,7 +44,7 @@ namespace PromiseModelOnline.Api.Controllers
             {
                 return Forbid();
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 return StatusCode(500, "Internal server error");
             }

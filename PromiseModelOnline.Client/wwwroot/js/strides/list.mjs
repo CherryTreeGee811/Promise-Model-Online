@@ -1,5 +1,5 @@
-import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration } from './api.mjs';
-import { moveMomentToStride, updateMomentStatus, updateMomentEstimate } from '../moments/api.mjs';
+import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers } from './api.mjs';
+import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues = {
@@ -75,45 +75,63 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     <div class="stride-moments">
                         ${moments.length === 0
                             ? '<p class="no-items">No moments assigned.</p>'
-                            : `<table class="promisemodel-table"><thead><tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead><tbody>
-                                ${moments.map(m => `
+                            : `<table class="promisemodel-table">
+                                <thead>
                                     <tr>
-                                        <td>${m.id}</td>
-                                        <td>${escapeHtml(m.statement)}</td>
-                                        <td>${m.type}</td>
-                                        <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                        <td>
-                                            <select class="estimate-dropdown" data-moment-id="${m.id}">
-                                                <option value="">–</option>
-                                                <option value="XS" ${m.effortEstimate === 'XS' ? 'selected' : ''}>XS</option>
-                                                <option value="S"  ${m.effortEstimate === 'S'  ? 'selected' : ''}>S</option>
-                                                <option value="M"  ${m.effortEstimate === 'M'  ? 'selected' : ''}>M</option>
-                                                <option value="L"  ${m.effortEstimate === 'L'  ? 'selected' : ''}>L</option>
-                                                <option value="XL" ${m.effortEstimate === 'XL' ? 'selected' : ''}>XL</option>
-                                                <option value="XXL"${m.effortEstimate === 'XXL'? 'selected' : ''}>XXL</option>
-                                                <option value="XXXL"${m.effortEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select class="status-dropdown" data-moment-id="${m.id}">
-                                                <option value="Todo" ${m.status === 'Todo' ? 'selected' : ''}>Todo</option>
-                                                <option value="InProgress" ${m.status === 'InProgress' ? 'selected' : ''}>InProgress</option>
-                                                <option value="Blocked" ${m.status === 'Blocked' ? 'selected' : ''}>Blocked</option>
-                                                <option value="Done" ${m.status === 'Done' ? 'selected' : ''}>Done</option>
-                                            </select>
-                                            <button class="move-to-backlog-btn" data-moment-id="${m.id}">Backlog</button>
-                                            <a href="/moments/${m.id}" class="view-btn">View</a>
-                                        </td>
+                                        <th>ID</th>
+                                        <th>Statement</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Effort</th>
+                                        <th>Owner</th>
+                                        <th>Actions</th>
                                     </tr>
-                                `).join('')}
-                            </tbody></table>`
+                                </thead>
+                                <tbody>
+                                    ${moments.map(m => `
+                                        <tr>
+                                            <td>${m.id}</td>
+                                            <td>${escapeHtml(m.statement)}</td>
+                                            <td>${m.type}</td>
+                                            <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                            <td>
+                                                <select class="estimate-dropdown" data-moment-id="${m.id}">
+                                                    <option value="">–</option>
+                                                    <option value="XS" ${m.effortEstimate === 'XS' ? 'selected' : ''}>XS</option>
+                                                    <option value="S"  ${m.effortEstimate === 'S'  ? 'selected' : ''}>S</option>
+                                                    <option value="M"  ${m.effortEstimate === 'M'  ? 'selected' : ''}>M</option>
+                                                    <option value="L"  ${m.effortEstimate === 'L'  ? 'selected' : ''}>L</option>
+                                                    <option value="XL" ${m.effortEstimate === 'XL' ? 'selected' : ''}>XL</option>
+                                                    <option value="XXL"${m.effortEstimate === 'XXL'? 'selected' : ''}>XXL</option>
+                                                    <option value="XXXL"${m.effortEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="owner-dropdown" data-moment-id="${m.id}" data-owner-id="${m.ownerId ?? ''}">
+                                                    <option value="">Unassigned</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="status-dropdown" data-moment-id="${m.id}">
+                                                    <option value="Todo" ${m.status === 'Todo' ? 'selected' : ''}>Todo</option>
+                                                    <option value="InProgress" ${m.status === 'InProgress' ? 'selected' : ''}>InProgress</option>
+                                                    <option value="Blocked" ${m.status === 'Blocked' ? 'selected' : ''}>Blocked</option>
+                                                    <option value="Done" ${m.status === 'Done' ? 'selected' : ''}>Done</option>
+                                                </select>
+                                                <button class="move-to-backlog-btn" data-moment-id="${m.id}">Backlog</button>
+                                                <a href="/moments/${m.id}" class="view-btn">View</a>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>`
                         }
                     </div>
                 `;
                 strideBoard.appendChild(card);
             });
 
-            // Render Backlog (unchanged)
+            // Render Backlog
             if (backlogSection) {
                 if (!backlogMoments || backlogMoments.length === 0) {
                     backlogSection.innerHTML = '<h2>Backlog</h2><p class="no-items">No unassigned moments.</p>';
@@ -138,6 +156,20 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     </tbody></table></div>`;
                 }
             }
+
+            // Load project members and populate owner dropdowns
+            getProjectMembers(projectId)
+                .then(members => {
+                    document.querySelectorAll('.owner-dropdown').forEach(dropdown => {
+                        const currentOwnerId = dropdown.getAttribute('data-owner-id');
+                        dropdown.innerHTML = '<option value="">Unassigned</option>' +
+                            members.map(m => `<option value="${m.userId}">${escapeHtml(m.userName)}</option>`).join('');
+                        if (currentOwnerId) {
+                            dropdown.value = currentOwnerId;
+                        }
+                    });
+                })
+                .catch(err => console.error('Failed to load project members', err));
 
             // Attach planning event listeners
             attachPlanningListeners(projectId, navContentDiv, contentDiv);
@@ -176,6 +208,21 @@ function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
                 loadStridesList(projectId, navContentDiv, contentDiv);
             } catch (err) {
                 alert('Failed to update estimate');
+                console.error(err);
+            }
+        });
+    });
+
+    // Owner dropdown
+    document.querySelectorAll('.owner-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const newOwnerId = dropdown.value ? parseInt(dropdown.value, 10) : null;
+            try {
+                await updateMomentOwner(momentId, newOwnerId);
+                loadStridesList(projectId, navContentDiv, contentDiv);
+            } catch (err) {
+                alert('Failed to update owner');
                 console.error(err);
             }
         });

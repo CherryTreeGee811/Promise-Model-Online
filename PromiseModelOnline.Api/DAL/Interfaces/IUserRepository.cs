@@ -10,6 +10,6 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
 
         Task<IEnumerable<User>> FindByEmailAsync(string email);
 
-        Task<User> GetOrCreateUserByEmailAsync(string email);
+        Task<User> GetOrCreateUserByEmailAsync(string email, string? username = null);
     }
 }

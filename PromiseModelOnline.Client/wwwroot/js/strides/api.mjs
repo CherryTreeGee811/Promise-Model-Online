@@ -125,3 +125,34 @@ export function getMomentsByIteration(iterationId, unassigned = false) {
         }
     });
 }
+
+/**
+ * Fetches members of a project (owner + invited users).
+ */
+export async function getProjectMembers(projectId) {
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(`${base}/api/projects/${projectId}/members`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+/**
+ * Assigns a new owner to a moment.
+ */
+export async function updateMomentOwner(momentId, userId) {
+    const url = `${base}/api/moments/${momentId}/owner`;
+    const token = getAccessTokenFromCookie();
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ userId })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}

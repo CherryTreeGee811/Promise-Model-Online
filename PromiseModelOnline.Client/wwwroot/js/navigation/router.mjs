@@ -19,6 +19,12 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
             routeHandler(navContentDiv, contentDiv);
         });
     }
+   
+    document.getElementById("my-tasks-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        window.history.pushState({}, '', '/moments/my-tasks');
+        routeHandler(navContentDiv, contentDiv);
+    });
     
     document.getElementById("logout-link").addEventListener("click", (e) => {
         e.preventDefault();

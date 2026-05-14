@@ -87,23 +87,18 @@ namespace PromiseModelOnline.Api.Controllers
 
         private async Task<int?> GetCurrentUserIdByEmailAsync()
         {
-            // Debug: log all claims to see what we actually have
-            foreach (var claim in User.Claims)
-                Console.WriteLine($"Claim: {claim.Type} = {claim.Value}");
-
             // Try common claim types for email
             var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-                    ?? User.FindFirst("email")?.Value
-                    ?? User.FindFirst("emails")?.Value;
+                     ?? User.FindFirst("email")?.Value
+                     ?? User.FindFirst("emails")?.Value;
 
             if (string.IsNullOrEmpty(email))
-            {
-                Console.WriteLine("No email claim found in token.");
                 return null;
-            }
 
-            Console.WriteLine($"Email resolved: {email}");
-            var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
+            // Extract username for consistent display name
+            var username = User.FindFirst("nameid")?.Value;
+
+            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
             return user.Id;
         }
     }

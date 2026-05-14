@@ -92,3 +92,39 @@ export async function updateMomentEstimate(momentId, estimate) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
 }
+
+export async function getMyTasks() {
+    const token = getAccessTokenFromCookie();
+    if (!token) return [];
+    const url = `${base}/api/moments/assigned-to-me`;
+    const res = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+        }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+/**
+ * Assigns a new owner to a moment.
+ * @param {number} momentId
+ * @param {number} userId
+ * @returns {Promise<object>} the updated MomentDTO
+ */
+export async function updateMomentOwner(momentId, userId) {
+    const url = `${base}/api/moments/${momentId}/owner`;
+    const token = getAccessTokenFromCookie();
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ userId })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}
