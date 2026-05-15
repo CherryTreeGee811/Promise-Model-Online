@@ -63,12 +63,5 @@ namespace PromiseModelOnline.Api.Controllers
             await _strideService.SendDeadlineNotificationsAsync();
             return NoContent();
         }
-
-        [HttpGet("{id}/burndown")]
-        public async Task<ActionResult<List<BurndownPointDTO>>> GetBurndown(int id)
-        {
-            var points = await _momentService.GetStrideBurndownAsync(id);
-            return Ok(points);
-        }
     }
 }

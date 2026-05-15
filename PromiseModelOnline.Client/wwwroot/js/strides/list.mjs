@@ -34,6 +34,11 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             const latestIteration = iterations[0];
             projectTitle.innerHTML = `<h2>Project ID: ${projectId} – ${escapeHtml(latestIteration.name)}</h2>`;
 
+            const historyLink = document.getElementById('iteration-history-link');
+            if (historyLink) {
+                historyLink.href = `/projects/${projectId}/iterations`;
+            }
+            
             return Promise.all([
                 getStridesByIteration(latestIteration.id),
                 getMomentsByIteration(latestIteration.id, true)

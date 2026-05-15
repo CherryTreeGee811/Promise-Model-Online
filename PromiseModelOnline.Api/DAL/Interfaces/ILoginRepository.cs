@@ -1,1 +1,0 @@
-namespace PromiseModelOnline.Api.DAL.Interfaces;

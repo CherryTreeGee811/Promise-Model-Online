@@ -541,6 +541,7 @@ input[type=button]:hover, input[type=submit]:hover {
     justify-content: space-between;
     align-items: center;
 }
+
 .emote-btn {
     background: none;
     border: none;
@@ -548,9 +549,19 @@ input[type=button]:hover, input[type=submit]:hover {
     cursor: pointer;
     padding: 0 4px;
 }
+
 .emote-btn:hover {
     transform: scale(1.3);
 }
+
 .reactions-summary {
     font-size: 1.1rem;
+}
+
+#project-title {
+  margin-bottom: 1.5rem;
+}
+
+.hidden {
+    display: none !important;
 }
