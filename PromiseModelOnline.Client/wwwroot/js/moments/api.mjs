@@ -40,7 +40,7 @@ export async function moveMomentToStride(momentId, targetStrideId) {
     const url = `${base}/api/moments/${momentId}/stride-assignment`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -63,7 +63,7 @@ export async function updateMomentStatus(momentId, newStatus) {
     const url = `${base}/api/moments/${momentId}/status`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -117,7 +117,7 @@ export async function updateMomentOwner(momentId, userId) {
     const url = `${base}/api/moments/${momentId}/owner`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

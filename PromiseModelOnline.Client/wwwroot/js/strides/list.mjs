@@ -6,6 +6,313 @@ const estimateValues = {
     XS: 1, S: 2, M: 3, L: 5, XL: 8, XXL: 13, XXXL: 21
 };
 
+let cachedMembers = [];
+let cachedAllStrides = [];
+let cachedCanEdit = null;
+
+function preserveScroll(action) {
+    const y = window.scrollY;
+    action();
+    window.scrollTo(0, y);
+}
+
+function estimateDropdownHtml(momentId, currentEstimate, disabledAttr) {
+    return `
+        <select class="estimate-dropdown" data-moment-id="${momentId}" ${disabledAttr}>
+            <option value="">–</option>
+            <option value="XS" ${currentEstimate === 'XS' ? 'selected' : ''}>XS</option>
+            <option value="S"  ${currentEstimate === 'S'  ? 'selected' : ''}>S</option>
+            <option value="M"  ${currentEstimate === 'M'  ? 'selected' : ''}>M</option>
+            <option value="L"  ${currentEstimate === 'L'  ? 'selected' : ''}>L</option>
+            <option value="XL" ${currentEstimate === 'XL' ? 'selected' : ''}>XL</option>
+            <option value="XXL"${currentEstimate === 'XXL'? 'selected' : ''}>XXL</option>
+            <option value="XXXL"${currentEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
+        </select>
+    `.trim();
+}
+
+function ownerDropdownHtml(momentId, ownerId, disabledAttr) {
+    const optionsHtml = ['<option value="">Unassigned</option>']
+        .concat((cachedMembers || []).map(m => `<option value="${m.userId}">${escapeHtml(m.userName)}</option>`))
+        .join('');
+
+    return `
+        <select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}" ${disabledAttr}>
+            ${optionsHtml}
+        </select>
+    `.trim();
+}
+
+function statusDropdownHtml(momentId, status, disabledAttr) {
+    return `
+        <select class="status-dropdown" data-moment-id="${momentId}" ${disabledAttr}>
+            <option value="Todo" ${status === 'Todo' ? 'selected' : ''}>Todo</option>
+            <option value="InProgress" ${status === 'InProgress' ? 'selected' : ''}>InProgress</option>
+            <option value="Blocked" ${status === 'Blocked' ? 'selected' : ''}>Blocked</option>
+            <option value="Done" ${status === 'Done' ? 'selected' : ''}>Done</option>
+        </select>
+    `.trim();
+}
+
+function updateStatusBadge(row, newStatus) {
+    const badge = row?.querySelector('.status-badge');
+    if (!badge) return;
+
+    const safeStatus = newStatus ?? '';
+    badge.textContent = safeStatus;
+
+    // Replace any existing status-* class.
+    const classes = Array.from(badge.classList);
+    classes.filter(c => c.startsWith('status-') && c !== 'status-badge').forEach(c => badge.classList.remove(c));
+    badge.classList.add(`status-${String(safeStatus).toLowerCase()}`);
+}
+
+function findMomentRow(momentId) {
+    return document.querySelector(`tr[data-moment-id="${momentId}"]`);
+}
+
+function ensureBacklogTbody() {
+    const backlogSection = document.getElementById('backlog-section');
+    if (!backlogSection) return null;
+
+    let tbody = backlogSection.querySelector('table.promisemodel-table tbody');
+    if (tbody) return tbody;
+
+    backlogSection.innerHTML = `
+        <h2>Backlog</h2>
+        <div class="backlog-card">
+            <table class="promisemodel-table">
+                <thead>
+                    <tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `;
+    return backlogSection.querySelector('table.promisemodel-table tbody');
+}
+
+function backlogStrideOptionsHtml() {
+    // Prefer cloning from existing backlog selects to avoid depending on cachedAllStrides.
+    const existing = document.querySelector('.backlog-target-stride');
+    if (existing) return existing.innerHTML;
+
+    return (cachedAllStrides || [])
+        .map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`)
+        .join('');
+}
+
+function createBacklogRow(moment) {
+    const disabledAttr = (cachedCanEdit === false) ? 'disabled' : '';
+    const tr = document.createElement('tr');
+    tr.dataset.momentId = moment.id;
+    tr.innerHTML = `
+        <td>${moment.id}</td>
+        <td>${escapeHtml(moment.statement)}</td>
+        <td>${moment.type}</td>
+        <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
+        <td>${moment.effortEstimate ?? '–'}</td>
+        <td>
+            <select class="backlog-target-stride" data-moment-id="${moment.id}" ${disabledAttr}>
+                ${backlogStrideOptionsHtml()}
+            </select>
+            <button class="move-to-stride-from-backlog-btn" data-moment-id="${moment.id}" ${disabledAttr}>Move</button>
+            <a href="/moments/${moment.id}" class="view-btn">View</a>
+        </td>
+    `;
+    return tr;
+}
+
+function ensureStrideTbody(strideId) {
+    const card = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
+    if (!card) return null;
+
+    let tbody = card.querySelector('table.promisemodel-table tbody');
+    if (tbody) return tbody;
+
+    const container = card.querySelector('.stride-moments');
+    if (!container) return null;
+
+    container.innerHTML = `
+        <table class="promisemodel-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Statement</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Effort</th>
+                    <th>Owner</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    `;
+    return card.querySelector('table.promisemodel-table tbody');
+}
+
+function createStrideRow(moment) {
+    const disabledAttr = (cachedCanEdit === false) ? 'disabled' : '';
+    const tr = document.createElement('tr');
+    tr.dataset.momentId = moment.id;
+    tr.innerHTML = `
+        <td>${moment.id}</td>
+        <td>${escapeHtml(moment.statement)}</td>
+        <td>${moment.type}</td>
+        <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
+        <td>${estimateDropdownHtml(moment.id, moment.effortEstimate, disabledAttr)}</td>
+        <td>${ownerDropdownHtml(moment.id, moment.ownerId, disabledAttr)}</td>
+        <td>
+            ${statusDropdownHtml(moment.id, moment.status, disabledAttr)}
+            <button class="move-to-backlog-btn" data-moment-id="${moment.id}" ${disabledAttr}>Backlog</button>
+            <a href="/moments/${moment.id}" class="view-btn">View</a>
+        </td>
+    `;
+
+    // Ensure the owner select reflects ownerId.
+    const ownerSelect = tr.querySelector('.owner-dropdown');
+    if (ownerSelect) ownerSelect.value = moment.ownerId ?? '';
+    return tr;
+}
+
+function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
+    // Status dropdown
+    root.querySelectorAll?.('.status-dropdown')?.forEach(dropdown => {
+        if (dropdown.dataset.bound === '1') return;
+        dropdown.dataset.bound = '1';
+
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const previous = dropdown.dataset.previousValue ?? dropdown.value;
+            const newStatus = dropdown.value;
+
+            try {
+                const updated = await updateMomentStatus(momentId, newStatus);
+                const row = findMomentRow(momentId);
+                updateStatusBadge(row, updated.status);
+            } catch (err) {
+                dropdown.value = previous;
+                alert('Failed to update status');
+                console.error(err);
+            }
+        });
+
+        dropdown.addEventListener('focus', () => {
+            dropdown.dataset.previousValue = dropdown.value;
+        });
+    });
+
+    // Estimate dropdown
+    root.querySelectorAll?.('.estimate-dropdown')?.forEach(dropdown => {
+        if (dropdown.dataset.bound === '1') return;
+        dropdown.dataset.bound = '1';
+
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const previous = dropdown.dataset.previousValue ?? dropdown.value;
+            const estimate = dropdown.value === '' ? null : dropdown.value;
+            try {
+                await updateMomentEstimate(momentId, estimate);
+            } catch (err) {
+                dropdown.value = previous;
+                alert('Failed to update estimate');
+                console.error(err);
+            }
+        });
+
+        dropdown.addEventListener('focus', () => {
+            dropdown.dataset.previousValue = dropdown.value;
+        });
+    });
+
+    // Owner dropdown
+    root.querySelectorAll?.('.owner-dropdown')?.forEach(dropdown => {
+        if (dropdown.dataset.bound === '1') return;
+        dropdown.dataset.bound = '1';
+
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const previous = dropdown.dataset.previousValue ?? dropdown.value;
+            const newOwnerId = dropdown.value ? parseInt(dropdown.value, 10) : null;
+            try {
+                const updated = await updateMomentOwner(momentId, newOwnerId);
+                dropdown.setAttribute('data-owner-id', updated.ownerId ?? '');
+                dropdown.value = updated.ownerId ?? '';
+            } catch (err) {
+                dropdown.value = previous;
+                alert('Failed to update owner');
+                console.error(err);
+            }
+        });
+
+        dropdown.addEventListener('focus', () => {
+            dropdown.dataset.previousValue = dropdown.value;
+        });
+    });
+
+    // Move to Backlog
+    root.querySelectorAll?.('.move-to-backlog-btn')?.forEach(btn => {
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async () => {
+            const momentId = parseInt(btn.dataset.momentId, 10);
+            if (!confirm('Move this moment to the backlog?')) return;
+
+            try {
+                const updated = await moveMomentToStride(momentId, null);
+                preserveScroll(() => {
+                    const row = findMomentRow(momentId);
+                    row?.remove();
+
+                    const backlogTbody = ensureBacklogTbody();
+                    if (backlogTbody) {
+                        const backlogRow = createBacklogRow(updated);
+                        backlogTbody.appendChild(backlogRow);
+                        bindInlineMomentControls(backlogRow, projectId, navContentDiv, contentDiv);
+                    }
+                });
+            } catch (err) {
+                alert('Failed to move moment');
+                console.error(err);
+            }
+        });
+    });
+
+    // Move from Backlog to Stride
+    root.querySelectorAll?.('.move-to-stride-from-backlog-btn')?.forEach(btn => {
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async () => {
+            const momentId = parseInt(btn.dataset.momentId, 10);
+            const select = document.querySelector(`.backlog-target-stride[data-moment-id="${momentId}"]`);
+            const targetStrideId = select ? parseInt(select.value, 10) : null;
+            if (!targetStrideId) return;
+            if (!confirm('Move this moment to the selected stride?')) return;
+
+            try {
+                const updated = await moveMomentToStride(momentId, targetStrideId);
+                preserveScroll(() => {
+                    const row = findMomentRow(momentId);
+                    row?.remove();
+
+                    const strideTbody = ensureStrideTbody(targetStrideId);
+                    if (strideTbody) {
+                        const strideRow = createStrideRow(updated);
+                        strideTbody.appendChild(strideRow);
+                        bindInlineMomentControls(strideRow, projectId, navContentDiv, contentDiv);
+                    }
+                });
+            } catch (err) {
+                alert('Failed to move moment');
+                console.error(err);
+            }
+        });
+    });
+}
+
 function totalEffort(moments) {
     return moments.reduce((sum, m) => sum + (estimateValues[m.effortEstimate] || 0), 0);
 }
@@ -69,6 +376,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             results.forEach(({ stride, moments }) => {
                 const card = document.createElement('div');
                 card.className = 'stride-card';
+                card.dataset.strideId = stride.id;
                 const effTotal = totalEffort(moments);
                 card.innerHTML = `
                     <div class="stride-header">
@@ -96,7 +404,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                 </thead>
                                 <tbody>
                                     ${moments.map(m => `
-                                        <tr>
+                                        <tr data-moment-id="${m.id}">
                                             <td>${m.id}</td>
                                             <td>${escapeHtml(m.statement)}</td>
                                             <td>${m.type}</td>
@@ -160,7 +468,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 } else {
                     backlogSection.innerHTML = `<h2>Backlog</h2><div class="backlog-card"><table class="promisemodel-table"><thead><tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead><tbody>
                         ${backlogMoments.map(m => `
-                            <tr>
+                            <tr data-moment-id="${m.id}">
                                 <td>${m.id}</td>
                                 <td>${escapeHtml(m.statement)}</td>
                                 <td>${m.type}</td>
@@ -182,6 +490,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             // Load project members and populate owner dropdowns
             getProjectMembers(projectId)
                 .then(members => {
+                    cachedMembers = Array.isArray(members) ? members : [];
                     document.querySelectorAll('.owner-dropdown').forEach(dropdown => {
                         const currentOwnerId = dropdown.getAttribute('data-owner-id');
                         dropdown.innerHTML = '<option value="">Unassigned</option>' +
@@ -196,6 +505,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             // Fetch permission and update UI
             getMyPermission(projectId)
                 .then(level => {
+                    cachedCanEdit = (level === 'Edit');
                     if (level !== 'Edit') {
                         document.querySelectorAll('.status-dropdown, .estimate-dropdown, .owner-dropdown, .move-to-backlog-btn, .move-to-stride-from-backlog-btn')
                             .forEach(el => el.disabled = true);
@@ -209,7 +519,10 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             // Update countdowns
             updateCountdowns();
 
-            // Attach planning event listeners
+            // Cache stride list for backlog move dropdowns (no refetch needed for later DOM inserts)
+            cachedAllStrides = Array.isArray(allStrides) ? allStrides : [];
+
+            // Attach planning event listeners (inline updates only; no full reload)
             attachPlanningListeners(projectId, navContentDiv, contentDiv);
         })
         .catch(err => {
@@ -221,86 +534,12 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
 /* ---------- Event listeners ---------- */
 function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
-    // Status dropdown
-    document.querySelectorAll('.status-dropdown').forEach(dropdown => {
-        dropdown.addEventListener('change', async () => {
-            const momentId = parseInt(dropdown.dataset.momentId, 10);
-            const newStatus = dropdown.value;
-            try {
-                await updateMomentStatus(momentId, newStatus);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to update status');
-                console.error(err);
-            }
-        });
-    });
-
-    // Estimate dropdown
-    document.querySelectorAll('.estimate-dropdown').forEach(dropdown => {
-        dropdown.addEventListener('change', async () => {
-            const momentId = parseInt(dropdown.dataset.momentId, 10);
-            const estimate = dropdown.value === '' ? null : dropdown.value;
-            try {
-                await updateMomentEstimate(momentId, estimate);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to update estimate');
-                console.error(err);
-            }
-        });
-    });
-
-    // Owner dropdown
-    document.querySelectorAll('.owner-dropdown').forEach(dropdown => {
-        dropdown.addEventListener('change', async () => {
-            const momentId = parseInt(dropdown.dataset.momentId, 10);
-            const newOwnerId = dropdown.value ? parseInt(dropdown.value, 10) : null;
-            try {
-                await updateMomentOwner(momentId, newOwnerId);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to update owner');
-                console.error(err);
-            }
-        });
-    });
-
-    // Move to Backlog
-    document.querySelectorAll('.move-to-backlog-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const momentId = parseInt(btn.dataset.momentId, 10);
-            if (!confirm('Move this moment to the backlog?')) return;
-            try {
-                await moveMomentToStride(momentId, null);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to move moment');
-                console.error(err);
-            }
-        });
-    });
-
-    // Move from Backlog to Stride
-    document.querySelectorAll('.move-to-stride-from-backlog-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const momentId = parseInt(btn.dataset.momentId, 10);
-            const select = document.querySelector(`.backlog-target-stride[data-moment-id="${momentId}"]`);
-            const targetStrideId = select ? parseInt(select.value, 10) : null;
-            if (!targetStrideId) return;
-            if (!confirm(`Move this moment to the selected stride?`)) return;
-            try {
-                await moveMomentToStride(momentId, targetStrideId);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to move moment');
-                console.error(err);
-            }
-        });
-    });
+    bindInlineMomentControls(document, projectId, navContentDiv, contentDiv);
 
     // Progress Stride button
     document.querySelectorAll('.progress-stride-btn').forEach(btn => {
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
         btn.addEventListener('click', async () => {
             const strideId = parseInt(btn.dataset.strideId, 10);
             if (!confirm('Move all unfinished moments to the next stride?')) return;
