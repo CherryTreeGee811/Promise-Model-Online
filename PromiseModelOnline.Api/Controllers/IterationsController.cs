@@ -14,16 +14,13 @@ namespace PromiseModelOnline.Api.Controllers
     public class IterationsController : GenericController<Iteration, IterationDTO>
     {
         private readonly IIterationService _iterationService;
-        private readonly IMomentService _momentService;
 
         public IterationsController(
             IIterationService service,
-            IGenericMapper<Iteration, IterationDTO> mapper,
-            IMomentService momentService)
+            IGenericMapper<Iteration, IterationDTO> mapper)
             : base(service, mapper)
         {
             _iterationService = service;
-            _momentService = momentService;
         }
 
         [HttpGet]
@@ -42,13 +39,6 @@ namespace PromiseModelOnline.Api.Controllers
                 result.Add(_mapper.Map(iter, _service));
 
             return Ok(result);
-        }
-
-        [HttpGet("{id}/burndown")]
-        public async Task<ActionResult<List<BurndownPointDTO>>> GetIterationBurndown(int id)
-        {
-            var points = await _momentService.GetIterationBurndownAsync(id);
-            return Ok(points);
         }
     }
 }

@@ -124,6 +124,21 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return moment;
         }
 
+        private static int EstimateToNumeric(Estimate? estimate)
+        {
+            return estimate switch
+            {
+                Estimate.XS => 1,
+                Estimate.S => 2,
+                Estimate.M => 3,
+                Estimate.L => 5,
+                Estimate.XL => 8,
+                Estimate.XXL => 13,
+                Estimate.XXXL => 21,
+                _ => 0
+            };
+        }
+
         public async Task<int?> GetProjectIdForMomentAsync(int momentId)
             => await _momentRepository.GetProjectIdForMomentAsync(momentId);
 
@@ -135,6 +150,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
             var currentStride = await _strideRepository.GetByIdAsync(strideId);
             if (currentStride is null || currentStride.IterationId is null) return;
 
+            // Get all strides in the same iteration, ordered by StartDate
             var iterationStrides = (await _strideService.GetStridesByIterationAsync(currentStride.IterationId.Value))
                                     .OrderBy(s => s.StartDate).ToList();
 
@@ -148,6 +164,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 }
             }
 
+            // If no next stride in this iteration, find the next iteration
             if (nextStride is null)
             {
                 var currentIteration = await _iterationRepository.GetByIdAsync(currentStride.IterationId.Value);
@@ -177,44 +194,33 @@ namespace PromiseModelOnline.Api.BusinessLogic
             await _momentRepository.SaveChangesAsync();
         }
 
-        // ---------------------------------------------------------------
-        //  Burndown (iteration only)
-        // ---------------------------------------------------------------
-
-        private static int EstimateToNumeric(Estimate? estimate)
+        public async Task<List<BurndownPointDTO>> GetStrideBurndownAsync(int strideId)
         {
-            return estimate switch
-            {
-                Estimate.XS => 1,
-                Estimate.S => 2,
-                Estimate.M => 3,
-                Estimate.L => 5,
-                Estimate.XL => 8,
-                Estimate.XXL => 13,
-                Estimate.XXXL => 21,
-                _ => 0
-            };
-        }
+            var moments = await _momentRepository.GetMomentsByStrideAsync(strideId);
+            var momentsList = moments.ToList();
 
-        private async Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
-        {
-            var result = new List<BurndownPointDTO>();
-            if (moments.Count == 0) return result;
+            if (!momentsList.Any())
+                return new List<BurndownPointDTO>();
 
-            var startDate = moments.Min(m => m.CreatedAt).Date;
+            // Determine date range: stride start → today (or stride end if ended)
+            var stride = await _strideRepository.GetByIdAsync(strideId);
+            var startDate = stride!.StartDate.Date;
+            var endDate = stride.EndDate.Date;
             var today = DateTime.UtcNow.Date;
 
-            var latestCompleted = moments.Where(m => m.CompletedAt.HasValue)
-                                         .Max(m => (DateTime?)m.CompletedAt.Value.Date);
-            var endDate = latestCompleted > today ? latestCompleted.Value : today;
+            var chartEnd = today < endDate ? today : endDate; // don't go past today
 
-            var initialEffort = moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
+            // Compute initial total effort
+            var initialEffort = momentsList.Sum(m => EstimateToNumeric(m.EffortEstimate));
             var totalDays = (endDate - startDate).Days;
-            if (totalDays <= 0) totalDays = 1;
+            if (totalDays <= 0) totalDays = 1; // avoid division by zero
 
-            for (var date = startDate; date <= endDate; date = date.AddDays(1))
+            var points = new List<BurndownPointDTO>();
+
+            for (var date = startDate; date <= chartEnd; date = date.AddDays(1))
             {
-                var remaining = moments
+                // Remaining effort = sum of effort for moments NOT completed by this date
+                var remaining = momentsList
                     .Where(m => m.CompletedAt == null || m.CompletedAt.Value.Date > date)
                     .Sum(m => EstimateToNumeric(m.EffortEstimate));
 
@@ -222,22 +228,15 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 var idealRemaining = initialEffort - (initialEffort * dayNumber / totalDays);
                 if (idealRemaining < 0) idealRemaining = 0;
 
-                result.Add(new BurndownPointDTO
+                points.Add(new BurndownPointDTO
                 {
                     Date = date,
                     RemainingEffort = remaining,
                     IdealRemaining = idealRemaining
                 });
             }
-            return result;
-        }
 
-        public async Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId)
-        {
-            var assigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: false);
-            var unassigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: true);
-            var allMoments = assigned.Concat(unassigned).GroupBy(m => m.Id).Select(g => g.First()).ToList();
-            return await ComputeBurndownAsync(allMoments);
+            return points;
         }
     }
 }

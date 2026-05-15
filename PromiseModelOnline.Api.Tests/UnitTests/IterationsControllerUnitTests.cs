@@ -17,7 +17,6 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IIterationService> _mockIterationService = null!;
         private Mock<IGenericMapper<Iteration, IterationDTO>> _mockMapper = null!;
-        private Mock<IMomentService> _momentServiceMock = null!;
         private IterationsController _controller = null!;
 
         [SetUp]
@@ -25,14 +24,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockIterationService = new Mock<IIterationService>();
             _mockMapper = new Mock<IGenericMapper<Iteration, IterationDTO>>();
-            _momentServiceMock = new Mock<IMomentService>();
-
-            _controller = new IterationsController(
-                _mockIterationService.Object,
-                _mockMapper.Object,
-                _momentServiceMock.Object
-            );
-            _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+            _controller = new IterationsController(_mockIterationService.Object, _mockMapper.Object);
         }
 
         [Test]

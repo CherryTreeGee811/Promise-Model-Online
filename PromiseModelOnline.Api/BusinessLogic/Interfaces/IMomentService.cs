@@ -19,6 +19,6 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
         Task<Moment> AssignOwnerAsync(int momentId, int? userId);
         Task<int?> GetProjectIdForMomentAsync(int momentId);
         Task MoveUnfinishedMomentsToNextStrideAsync(int strideId);
-        Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId);
+        Task<List<BurndownPointDTO>> GetStrideBurndownAsync(int strideId);
     }
 }

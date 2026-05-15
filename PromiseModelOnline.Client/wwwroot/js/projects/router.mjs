@@ -24,17 +24,6 @@ export function handleProjectRoutes(path, navContentDiv, contentDiv) {
         return;
     }
 
-    // Match /projects/{id}/iterations  <-- NEW
-    const iterationsMatch = path.match(/^\/projects\/(\d+)\/iterations$/);
-    if (iterationsMatch) {
-        import('../iterations/list.mjs').then(module => {
-            loadTemplate('iterations/list.html', contentDiv)
-                .then(() => module.loadIterationHistory(iterationsMatch[1]))
-                .catch(err => { contentDiv.innerHTML = '<h1>Error loading iterations</h1>'; });
-        });
-        return;
-    }
-
     switch (path) {
         case '/projects':
             loadTemplate("projects/list.html", contentDiv).then(() => {
