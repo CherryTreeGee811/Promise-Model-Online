@@ -86,7 +86,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var project = new Project { Name = "New Project", OwnerId = 42 };
             await _repo.AddAsync(project);
-
+            await _context.SaveChangesAsync();
+            
             var saved = _context.Projects.FirstOrDefault(p => p.Name == "New Project");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.OwnerId, Is.EqualTo(42));

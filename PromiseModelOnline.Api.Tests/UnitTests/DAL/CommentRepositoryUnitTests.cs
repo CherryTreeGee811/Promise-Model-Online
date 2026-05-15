@@ -35,9 +35,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task AddCommentAsync_PersistsComment()
         {
             var comment = new Comment { Text = "Hello", UserId = 1, CreatedAt = DateTime.UtcNow };
-
-            await _repo.AddCommentAsync(comment);
-
+            await _repo.AddCommentAsync(comment); // already saves
             var saved = await _context.Set<Comment>().FirstOrDefaultAsync(c => c.Text == "Hello");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.Text, Is.EqualTo("Hello"));
@@ -47,9 +45,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task AddMentionAsync_PersistsMention()
         {
             var mention = new CommentMention { CommentId = 10, MentionedUserId = 20 };
-
             await _repo.AddMentionAsync(mention);
-
             var saved = await _context.Set<CommentMention>().FirstOrDefaultAsync(m => m.CommentId == 10);
             Assert.That(saved, Is.Not.Null);
         }
@@ -58,59 +54,96 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetCommentsForEntityAsync_ReturnsTopLevelCommentsOnly()
         {
             var parentId = 5;
-            var parentType = "moment";
+            var user = new User { Id = 1, Email = "a@a.com", Name = "A" };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-            var topLevel = new Comment { Id = 1, Text = "Top", MomentId = parentId, CreatedAt = DateTime.UtcNow.AddDays(-1) };
-            var reply = new Comment { Id = 2, Text = "Reply", MomentId = parentId, ParentCommentId = 1, CreatedAt = DateTime.UtcNow };
+            var topLevel = new Comment
+            {
+                Text = "Top",
+                MomentId = parentId,
+                UserId = user.Id,
+                CreatedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            var reply = new Comment
+            {
+                Text = "Reply",
+                MomentId = parentId,
+                UserId = user.Id,
+                ParentCommentId = null,        // will be updated after save
+                CreatedAt = DateTime.UtcNow
+            };
 
             _context.Set<Comment>().AddRange(topLevel, reply);
             await _context.SaveChangesAsync();
 
-            var result = await _repo.GetCommentsForEntityAsync(parentType, parentId);
-            var comments = result.ToList();
+            // now link the reply to the topLevel (IDs are generated)
+            reply.ParentCommentId = topLevel.Id;
+            await _context.SaveChangesAsync();
 
+            var result = await _repo.GetCommentsForEntityAsync("moment", parentId);
+            var comments = result.ToList();
             Assert.That(comments.Count, Is.EqualTo(1));
-            Assert.That(comments[0].Id, Is.EqualTo(1));
+            Assert.That(comments[0].Id, Is.EqualTo(topLevel.Id));
         }
 
         [Test]
         public async Task GetCommentsForEntityAsync_ReturnsCommentsOrderedByDate()
         {
             var parentId = 10;
-            var parentType = "epic";
-
-            var c1 = new Comment { Id = 1, Text = "Older", EpicId = parentId, CreatedAt = new DateTime(2025, 1, 1) };
-            var c2 = new Comment { Id = 2, Text = "Newer", EpicId = parentId, CreatedAt = new DateTime(2025, 6, 1) };
-
-            _context.Set<Comment>().AddRange(c1, c2);
+            var user = new User { Id = 2, Email = "b@b.com", Name = "B" };
+            _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            var result = await _repo.GetCommentsForEntityAsync(parentType, parentId);
-            var comments = result.ToList();
+            var older = new Comment
+            {
+                Text = "Older",
+                EpicId = parentId,
+                UserId = user.Id,
+                CreatedAt = new DateTime(2025, 1, 1)
+            };
+            var newer = new Comment
+            {
+                Text = "Newer",
+                EpicId = parentId,
+                UserId = user.Id,
+                CreatedAt = new DateTime(2025, 6, 1)
+            };
 
+            _context.Set<Comment>().AddRange(older, newer);
+            await _context.SaveChangesAsync();
+
+            var result = await _repo.GetCommentsForEntityAsync("epic", parentId);
+            var comments = result.ToList();
             Assert.That(comments.Count, Is.EqualTo(2));
-            Assert.That(comments[0].Id, Is.EqualTo(1)); // older first
-            Assert.That(comments[1].Id, Is.EqualTo(2));
+            Assert.That(comments[0].Id, Is.EqualTo(older.Id));   // older first
+            Assert.That(comments[1].Id, Is.EqualTo(newer.Id));
         }
 
         [Test]
         public async Task GetCommentsForEntityAsync_IncludesUserAndMentions()
         {
             var user = new User { Id = 1, Name = "Alice", Email = "alice@example.com" };
+            var mentioned = new User { Id = 2, Name = "Bob", Email = "bob@example.com" };
             var parentId = 15;
-            var parentType = "promise";
-
-            var comment = new Comment { Id = 1, Text = "Mention @bob", ProductPromiseId = parentId, UserId = 1, User = user, CreatedAt = DateTime.UtcNow };
-            var mention = new CommentMention { Id = 1, CommentId = 1, MentionedUserId = 2, MentionedUser = new User { Id = 2, Name = "Bob", Email = "bob@example.com" } };
+            var comment = new Comment
+            {
+                Id = 1,
+                Text = "Mention @bob",
+                ProductPromiseId = parentId,
+                UserId = 1,
+                User = user,
+                CreatedAt = DateTime.UtcNow
+            };
+            var mention = new CommentMention { Id = 1, CommentId = 1, MentionedUserId = 2, MentionedUser = mentioned };
             comment.Mentions = new List<CommentMention> { mention };
 
-            _context.Set<User>().AddRange(user, mention.MentionedUser);
+            _context.Set<User>().AddRange(user, mentioned);
             _context.Set<Comment>().Add(comment);
             await _context.SaveChangesAsync();
 
-            var result = await _repo.GetCommentsForEntityAsync(parentType, parentId);
+            var result = await _repo.GetCommentsForEntityAsync("promise", parentId);
             var comments = result.ToList();
-
             Assert.That(comments.Count, Is.EqualTo(1));
             Assert.That(comments[0].User, Is.Not.Null);
             Assert.That(comments[0].User!.Name, Is.EqualTo("Alice"));

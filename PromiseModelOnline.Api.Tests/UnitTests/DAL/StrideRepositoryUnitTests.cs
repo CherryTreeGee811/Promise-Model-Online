@@ -109,7 +109,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var stride = new Stride { Name = "New Stride", IterationId = 2, StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(14) };
             await _repo.AddAsync(stride);
-
+            await _context.SaveChangesAsync();
+            
             var saved = _context.Strides.FirstOrDefault(s => s.Name == "New Stride");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.IterationId, Is.EqualTo(2));

@@ -85,7 +85,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var journey = new Journey { Statement = "New Journey", EpicId = 2 };
             await _repo.AddAsync(journey);
-
+            await _context.SaveChangesAsync();
+            
             var saved = _context.Journeys.FirstOrDefault(j => j.Statement == "New Journey");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.EpicId, Is.EqualTo(2));

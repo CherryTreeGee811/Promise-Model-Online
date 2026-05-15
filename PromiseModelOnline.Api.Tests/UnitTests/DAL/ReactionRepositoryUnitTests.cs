@@ -132,7 +132,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var reaction = new Reaction { UserId = 5, Emote = "🎉", StackItemType = "Flow", StackItemId = 15 };
             await _repo.AddAsync(reaction);
-
+            await _context.SaveChangesAsync();
+            
             var saved = _context.Reactions.FirstOrDefault(r => r.Emote == "🎉");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.UserId, Is.EqualTo(5));

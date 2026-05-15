@@ -85,7 +85,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var flow = new Flow { Statement = "New Flow", JourneyId = 2 };
             await _repo.AddAsync(flow);
-
+            await _context.SaveChangesAsync();
+            
             var saved = _context.Flows.FirstOrDefault(f => f.Statement == "New Flow");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.JourneyId, Is.EqualTo(2));

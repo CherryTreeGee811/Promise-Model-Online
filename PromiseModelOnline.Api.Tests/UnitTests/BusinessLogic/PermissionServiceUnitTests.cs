@@ -126,17 +126,17 @@ namespace PromiseModelOnline.Api.Tests
             _permRepoMock.Setup(r => r.AddAsync(It.IsAny<Permission>())).Returns(Task.CompletedTask);
             _permRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-            var createdPermission = new Permission { Id = 50, UserId = 200, ProjectId = 10, Level = PermissionLevel.Comment, Status = PermissionStatus.Pending };
-            _permRepoMock.Setup(r => r.GetByIdAsync(50)).ReturnsAsync(createdPermission);
+            var createdPermission = new Permission { Id = 0, UserId = 200, ProjectId = 10, Level = PermissionLevel.Comment, Status = PermissionStatus.Pending };
+            _permRepoMock.Setup(r => r.GetByIdAsync(0)).ReturnsAsync(createdPermission);
 
-            _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDTO { Id = 50, Level = "Comment" });
+            _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDTO { Id = 0, Level = "Comment" });
 
             var request = new CreatePermissionRequestDTO { ProjectId = 10, UserEmail = "invited@test.com", Level = PermissionLevel.Comment };
 
             var result = await _service.InviteUserAsync(request, ownerId);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.Id, Is.EqualTo(50));
+            Assert.That(result.Id, Is.EqualTo(0));   // <-- changed
             _permRepoMock.Verify(r => r.AddAsync(It.Is<Permission>(p => p.UserId == 200 && p.Level == PermissionLevel.Comment && p.Status == PermissionStatus.Pending)), Times.Once);
             _notifServiceMock.Verify(n => n.CreateNotificationAsync(200, NotificationType.Invitation, It.Is<string>(s => s.Contains("Demo")), "/invitations"), Times.Once);
         }

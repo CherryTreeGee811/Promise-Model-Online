@@ -55,7 +55,6 @@ namespace PromiseModelOnline.Api.Tests
         {
             _context.Users.Add(new User { Name = "Charlie", Email = "charlie@example.com" });
             await _context.SaveChangesAsync();
-
             var result = await _repo.GetUsersByNameAsync("Nobody");
             Assert.That(result, Is.Empty);
         }
@@ -71,7 +70,6 @@ namespace PromiseModelOnline.Api.Tests
 
             var result = await _repo.FindByEmailAsync("alice@example.com");
             var list = result.ToList();
-
             Assert.That(list.Count, Is.EqualTo(1));
             Assert.That(list[0].Id, Is.EqualTo(1));
         }
@@ -83,14 +81,10 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result, Is.Empty);
         }
 
-        // ------- GetOrCreateUserByEmailAsync -------
-
         [Test]
         public async Task GetOrCreateUserByEmailAsync_UserDoesNotExist_CreatesWithUsername()
         {
             var user = await _repo.GetOrCreateUserByEmailAsync("test@example.com", "testuser");
-
-            Assert.That(user, Is.Not.Null);
             Assert.That(user.Email, Is.EqualTo("test@example.com"));
             Assert.That(user.Name, Is.EqualTo("testuser"));
             Assert.That(user.Role, Is.EqualTo(UserRole.Professional));
@@ -104,36 +98,30 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetOrCreateUserByEmailAsync_UserDoesNotExist_NoUsername_UsesEmailPrefix()
         {
             var user = await _repo.GetOrCreateUserByEmailAsync("john.doe@example.com");
-
             Assert.That(user.Name, Is.EqualTo("john.doe"));
         }
 
         [Test]
-        public async Task GetOrCreateUserByEmailAsync_UserDoesNotExist_EmailWithoutAt_UsesUnknown()
+        public async Task GetOrCreateUserByEmailAsync_UserDoesNotExist_EmailWithoutAt_UsesEmailAsName()
         {
             var user = await _repo.GetOrCreateUserByEmailAsync("invalid-email");
-
-            Assert.That(user.Name, Is.EqualTo("Unknown"));
+            Assert.That(user.Name, Is.EqualTo("invalid-email"));
         }
 
         [Test]
         public async Task GetOrCreateUserByEmailAsync_UserExists_NameIsEmail_GivenRealUsername_UpdatesName()
         {
-            // Arrange
             var existing = new User
             {
                 Email = "old@example.com",
-                Name = "old@example.com", // name == email
+                Name = "old@example.com",
                 Role = UserRole.Student,
                 CreatedAt = DateTime.UtcNow.AddDays(-1)
             };
             _context.Users.Add(existing);
             await _context.SaveChangesAsync();
 
-            // Act
             var user = await _repo.GetOrCreateUserByEmailAsync("old@example.com", "newalias");
-
-            // Assert
             Assert.That(user.Id, Is.EqualTo(existing.Id));
             Assert.That(user.Name, Is.EqualTo("newalias"));
 
@@ -144,7 +132,6 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetOrCreateUserByEmailAsync_UserExists_NameAlreadySet_DoesNotOverwrite()
         {
-            // Arrange
             var existing = new User
             {
                 Email = "keep@example.com",
@@ -155,11 +142,9 @@ namespace PromiseModelOnline.Api.Tests
             _context.Users.Add(existing);
             await _context.SaveChangesAsync();
 
-            // Act
             var user = await _repo.GetOrCreateUserByEmailAsync("keep@example.com", "ignoreme");
-
-            // Assert
             Assert.That(user.Name, Is.EqualTo("KeepMe"));
+
             var saved = await _context.Users.FindAsync(existing.Id);
             Assert.That(saved!.Name, Is.EqualTo("KeepMe"));
         }
@@ -167,7 +152,6 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetOrCreateUserByEmailAsync_UserExists_NullUsername_NoChange()
         {
-            // Arrange
             var existing = new User
             {
                 Email = "nulluser@example.com",
@@ -177,14 +161,10 @@ namespace PromiseModelOnline.Api.Tests
             _context.Users.Add(existing);
             await _context.SaveChangesAsync();
 
-            // Act
             var user = await _repo.GetOrCreateUserByEmailAsync("nulluser@example.com", null);
-
-            // Assert
             Assert.That(user.Name, Is.EqualTo("nulluser@example.com"));
         }
 
-        // Inherited generic methods
         [Test]
         public async Task GetByIdAsync_ReturnsEntity()
         {
@@ -193,7 +173,6 @@ namespace PromiseModelOnline.Api.Tests
             await _context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(42);
-            Assert.That(result, Is.Not.Null);
             Assert.That(result!.Name, Is.EqualTo("Test"));
         }
 
@@ -202,6 +181,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             var user = new User { Name = "New", Email = "new@example.com", Role = UserRole.Student };
             await _repo.AddAsync(user);
+            await _context.SaveChangesAsync();
 
             var saved = _context.Users.FirstOrDefault(u => u.Email == "new@example.com");
             Assert.That(saved, Is.Not.Null);

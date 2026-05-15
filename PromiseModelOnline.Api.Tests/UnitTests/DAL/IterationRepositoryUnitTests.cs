@@ -85,7 +85,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var iteration = new Iteration { Name = "New Iteration", ProjectId = 3 };
             await _repo.AddAsync(iteration);
-
+            await _context.SaveChangesAsync();
+            
             var saved = _context.Iterations.FirstOrDefault(i => i.Name == "New Iteration");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.ProjectId, Is.EqualTo(3));

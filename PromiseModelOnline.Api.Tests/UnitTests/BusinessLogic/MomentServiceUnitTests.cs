@@ -64,8 +64,8 @@ namespace PromiseModelOnline.Api.Tests
             // Arrange
             var moments = new List<Moment>
             {
-                new Moment { Id = 1, CreatedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc), EffortEstimate = null },
-                new Moment { Id = 2, CreatedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc), EffortEstimate = null }
+                new Moment { Id = 1, CreatedAt = DateTime.UtcNow.AddDays(-10), EffortEstimate = null },
+                new Moment { Id = 2, CreatedAt = DateTime.UtcNow.AddDays(-10), EffortEstimate = null }
             };
 
             _momentRepoMock.Setup(r => r.GetMomentsByIterationAsync(1, false)).ReturnsAsync(moments);
@@ -88,8 +88,8 @@ namespace PromiseModelOnline.Api.Tests
             // Arrange
             var moments = new List<Moment>
             {
-                new Moment { Id = 1, CreatedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc), EffortEstimate = Estimate.M },
-                new Moment { Id = 2, CreatedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc), EffortEstimate = Estimate.S }
+                new Moment { Id = 1, CreatedAt = DateTime.UtcNow.AddDays(-10), EffortEstimate = Estimate.M },
+                new Moment { Id = 2, CreatedAt = DateTime.UtcNow.AddDays(-10), EffortEstimate = Estimate.S }
             };
             _momentRepoMock.Setup(r => r.GetMomentsByIterationAsync(1, false)).ReturnsAsync(moments);
             _momentRepoMock.Setup(r => r.GetMomentsByIterationAsync(1, true)).ReturnsAsync(new List<Moment>());
@@ -135,8 +135,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetIterationBurndownAsync_IdealLineStartsAtTotalEffortAndEndsAtZero()
         {
-            // Arrange: one moment with estimate, no completions, so ideal line should slope from total to 0 over the date range
-            var moment = new Moment { Id = 1, CreatedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc), EffortEstimate = Estimate.XL };
+            var moment = new Moment { Id = 1, CreatedAt = DateTime.UtcNow.AddDays(-10), EffortEstimate = Estimate.XL };
             _momentRepoMock.Setup(r => r.GetMomentsByIterationAsync(1, false)).ReturnsAsync(new List<Moment> { moment });
             _momentRepoMock.Setup(r => r.GetMomentsByIterationAsync(1, true)).ReturnsAsync(new List<Moment>());
 

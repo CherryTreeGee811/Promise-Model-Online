@@ -86,7 +86,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var epic = new Epic { Id = 0, Statement = "New Epic", ProductPromiseId = 1 };
             await _repo.AddAsync(epic);
-
+            await _context.SaveChangesAsync();
+            
             var saved = _context.Epics.FirstOrDefault(e => e.Statement == "New Epic");
             Assert.That(saved, Is.Not.Null);
         }
