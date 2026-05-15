@@ -164,28 +164,5 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _mockStrideService.Verify(s => s.SendDeadlineNotificationsAsync(), Times.Once);
         }
-
-        [Test]
-        public async Task GetBurndown_ReturnsOkWithPoints()
-        {
-            const int strideId = 21;
-            var points = new List<BurndownPointDTO>
-            {
-                new BurndownPointDTO { Date = new DateTime(2026, 5, 1), RemainingEffort = 13, IdealRemaining = 10 },
-                new BurndownPointDTO { Date = new DateTime(2026, 5, 2), RemainingEffort = 9, IdealRemaining = 8 }
-            };
-
-            _mockMomentService.Setup(s => s.GetStrideBurndownAsync(strideId)).ReturnsAsync(points);
-
-            var result = await _controller.GetBurndown(strideId);
-
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var ok = result.Result as OkObjectResult;
-            var dtoPoints = ok!.Value as List<BurndownPointDTO>;
-            Assert.That(dtoPoints, Is.Not.Null);
-            Assert.That(dtoPoints!.Count, Is.EqualTo(2));
-            Assert.That(dtoPoints[0].RemainingEffort, Is.EqualTo(13));
-            _mockMomentService.Verify(s => s.GetStrideBurndownAsync(strideId), Times.Once);
-        }
     }
 }

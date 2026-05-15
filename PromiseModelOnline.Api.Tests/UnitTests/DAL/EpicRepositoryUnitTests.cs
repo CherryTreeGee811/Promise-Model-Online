@@ -48,7 +48,7 @@ namespace PromiseModelOnline.Api.Tests
 
             Assert.That(list.Count, Is.EqualTo(2));
             Assert.That(list.All(e => e.ProductPromiseId == 10), Is.True);
-            CollectionAssert.AreEquivalent(new[] { 1, 3 }, list.Select(e => e.Id));
+            Assert.That(list.Select(e => e.Id), Is.EquivalentTo(new[] { 1, 3 }));(new[] { 1, 3 }, list.Select(e => e.Id));
         }
 
         [Test]

@@ -9,6 +9,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 
 namespace PromiseModelOnline.Api.Tests
 {
