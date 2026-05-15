@@ -48,7 +48,7 @@ namespace PromiseModelOnline.Api.Tests
 
             Assert.That(list.Count, Is.EqualTo(2));
             Assert.That(list.All(s => s.IterationId == 10), Is.True);
-            Assert.That(list.Select(e => e.Id), Is.EquivalentTo(new[] { 1, 3 }));(new[] { 1, 2 }, list.Select(s => s.Id));
+            Assert.That(list.Select(s => s.Id), Is.EquivalentTo(new[] { 1, 2 }));
         }
 
         [Test]
