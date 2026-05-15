@@ -76,7 +76,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Assign a moment to a stride or move it to the backlog (strideId = null).
         /// Requires Edit permission on the project.
         /// </summary>
-        [HttpPut("{id}/stride-assignment")]
+        [HttpPatch("{id}/stride-assignment")]
         public async Task<ActionResult<MomentDTO>> AssignMomentToStride(
             int id,
             [FromBody] UpdateMomentStrideAssignmentRequest request)
@@ -103,7 +103,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Update the status of a moment.
         /// Requires Edit permission on the project.
         /// </summary>
-        [HttpPut("{id}/status")]
+        [HttpPatch("{id}/status")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(
             int id,
             [FromBody] UpdateMomentStatusRequest request)
@@ -149,7 +149,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Assigns a specific user as the owner of the moment, or clears the owner when UserId is null.
         /// Requires Edit permission on the project.
         /// </summary>
-        [HttpPut("{id}/owner")]
+        [HttpPatch("{id}/owner")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(
             int id,
             [FromBody] UpdateMomentOwnerRequest request)
