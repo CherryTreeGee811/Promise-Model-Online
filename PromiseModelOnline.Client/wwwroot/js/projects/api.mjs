@@ -37,7 +37,7 @@ export function getAllProjects() {
 }
 
 export function deleteProject(projectId) {
-    const url = `${baseUrl}/projects/${projectId}`;
+    const url = `${base}/api/projects/${projectId}`;
     const accessToken = getAccessTokenFromCookie();
 
     return fetch(url, {

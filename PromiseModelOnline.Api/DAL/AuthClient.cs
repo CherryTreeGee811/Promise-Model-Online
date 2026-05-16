@@ -22,7 +22,7 @@ public class AuthClient : IAuthClient
     {
         try
         {
-            var response = await _http.PostAsJsonAsync("auth/login", userLogin);
+            var response = await _http.PostAsJsonAsync("api/sessions", userLogin);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -42,7 +42,7 @@ public class AuthClient : IAuthClient
     public async Task<RegisterResponse?> RegisterAsync(RegisterRequest request)
     {
         var registrationKey = _config["Auth:RegistrationKey"];
-        var message = new HttpRequestMessage(HttpMethod.Post, "auth/register")
+        var message = new HttpRequestMessage(HttpMethod.Post, "api/users")
         {
             Content = JsonContent.Create(request)
         };
@@ -89,7 +89,7 @@ public class AuthClient : IAuthClient
     {
         try
         {
-            var response = await _http.PostAsJsonAsync("auth/refresh", request);
+            var response = await _http.PostAsJsonAsync("api/access-tokens", request);
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
             {
@@ -111,11 +111,17 @@ public class AuthClient : IAuthClient
         }
     }
 
-    public async Task LogoutAsync(LogoutRequest? request)
+    public async Task LogoutAsync(LogoutRequest? request, string authorizationHeader)
     {
         try
         {
-            var response = await _http.PostAsJsonAsync("auth/logout", request);
+            var message = new HttpRequestMessage(HttpMethod.Delete, "api/sessions/current")
+            {
+                Content = JsonContent.Create(request)
+            };
+
+            message.Headers.TryAddWithoutValidation("Authorization", authorizationHeader);
+            var response = await _http.SendAsync(message);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -138,7 +144,7 @@ public class AuthClient : IAuthClient
             throw new UnauthorizedAccessException("Unauthorized");
         }
 
-        var message = new HttpRequestMessage(HttpMethod.Post, "auth/change-password")
+        var message = new HttpRequestMessage(HttpMethod.Patch, "api/users/me")
         {
             Content = JsonContent.Create(request)
         };
@@ -174,7 +180,7 @@ public class AuthClient : IAuthClient
             throw new UnauthorizedAccessException("Unauthorized");
         }
 
-        var message = new HttpRequestMessage(HttpMethod.Post, "auth/delete-account")
+        var message = new HttpRequestMessage(HttpMethod.Delete, "api/users/me")
         {
             Content = JsonContent.Create(request)
         };

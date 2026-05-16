@@ -19,6 +19,7 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IProjectService> _mockProjectService = null!;
         private Mock<IGenericMapper<Project, ProjectDTO>> _mockMapper = null!;
         private Mock<IUserRepository> _mockUserRepo = null!;
+        private Mock<IPermissionService> _mockPermissionService = null!;
         private ProjectsController _controller = null!;
 
         [SetUp]
@@ -27,11 +28,12 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService = new Mock<IProjectService>();
             _mockMapper = new Mock<IGenericMapper<Project, ProjectDTO>>();
             _mockUserRepo = new Mock<IUserRepository>();
+            _mockPermissionService = new Mock<IPermissionService>();
         }
 
         private void InitControllerWithUser(string? email, string? nameid = null)
         {
-            _controller = new ProjectsController(_mockProjectService.Object, _mockMapper.Object, _mockUserRepo.Object);
+            _controller = new ProjectsController(_mockProjectService.Object, _mockMapper.Object, _mockUserRepo.Object, _mockPermissionService.Object);
             var claims = new List<Claim>();
             if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
             if (nameid is not null) claims.Add(new Claim("nameid", nameid));

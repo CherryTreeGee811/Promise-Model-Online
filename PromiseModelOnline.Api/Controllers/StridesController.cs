@@ -4,8 +4,10 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -15,15 +17,18 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IStrideService _strideService;
         private readonly IMomentService _momentService;
+        private readonly ILogger<StridesController> _logger;
 
         public StridesController(
             IStrideService strideService,
             IGenericMapper<Stride, StrideDTO> mapper,
-            IMomentService momentService)
+            IMomentService momentService,
+            ILogger<StridesController> logger)
             : base(strideService, mapper)
         {
             _strideService = strideService;
             _momentService = momentService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -45,23 +50,50 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         /// <summary>
-        /// Move unfinished moments from this stride to the next stride.
+        /// Partially updates a stride.
         /// </summary>
-        [HttpPost("{id}/progress")]
-        public async Task<IActionResult> ProgressStride(int id)
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDTO request)
         {
-            await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
-            return NoContent();
+            try
+            {
+                await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
+
+                _logger.LogInformation(
+                    "Progressed unfinished moments for stride {StrideId} via PATCH",
+                    id
+                );
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to update stride {StrideId}",
+                    id
+                );
+
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
-        /// Send deadline notifications for all strides ending in 3 days.
+        /// Moves unfinished moments from this stride to the next stride.
         /// </summary>
-        [HttpPost("send-deadline-notifications")]
-        public async Task<IActionResult> SendDeadlineNotifications()
+        [HttpPost("{id}/progress")]
+        public async Task<ActionResult> ProgressStride(int id)
         {
-            await _strideService.SendDeadlineNotificationsAsync();
-            return NoContent();
+            try
+            {
+                await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

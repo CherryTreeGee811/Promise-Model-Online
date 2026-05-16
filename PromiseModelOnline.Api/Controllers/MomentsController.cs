@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -20,17 +21,20 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IMomentService _momentService;
         private readonly IUserRepository _userRepository;
         private readonly IPermissionService _permissionService;
+        private readonly ILogger<MomentsController> _logger;
 
         public MomentsController(
             IMomentService service,
             IGenericMapper<Moment, MomentDTO> mapper,
             IUserRepository userRepository,
-            IPermissionService permissionService)
+            IPermissionService permissionService,
+            ILogger<MomentsController> logger)
             : base(service, mapper)
         {
             _momentService = service;
             _userRepository = userRepository;
             _permissionService = permissionService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -84,9 +88,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.AssignMomentToStrideAsync(id, request.StrideId);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { StrideId = request.StrideId });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)
@@ -111,9 +132,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.UpdateMomentStatusAsync(id, request.NewStatus);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { NewStatus = request.NewStatus.ToString() });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)
@@ -134,9 +172,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.UpdateMomentEstimateAsync(id, request.Estimate);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { Estimate = request.Estimate?.ToString() });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)
@@ -157,9 +212,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.AssignOwnerAsync(id, request.UserId);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { OwnerUserId = request.UserId });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)

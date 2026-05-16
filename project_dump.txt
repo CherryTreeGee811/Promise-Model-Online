@@ -436,6 +436,684 @@ PromiseModelOnline.Auth/*.pem
 }
 
 
+===== FILE: LICENSE =====
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+                            Preamble
+
+  The GNU General Public License is a free, copyleft license for
+software and other kinds of works.
+
+  The licenses for most software and other practical works are designed
+to take away your freedom to share and change the works.  By contrast,
+the GNU General Public License is intended to guarantee your freedom to
+share and change all versions of a program--to make sure it remains free
+software for all its users.  We, the Free Software Foundation, use the
+GNU General Public License for most of our software; it applies also to
+any other work released this way by its authors.  You can apply it to
+your programs, too.
+
+  When we speak of free software, we are referring to freedom, not
+price.  Our General Public Licenses are designed to make sure that you
+have the freedom to distribute copies of free software (and charge for
+them if you wish), that you receive source code or can get it if you
+want it, that you can change the software or use pieces of it in new
+free programs, and that you know you can do these things.
+
+  To protect your rights, we need to prevent others from denying you
+these rights or asking you to surrender the rights.  Therefore, you have
+certain responsibilities if you distribute copies of the software, or if
+you modify it: responsibilities to respect the freedom of others.
+
+  For example, if you distribute copies of such a program, whether
+gratis or for a fee, you must pass on to the recipients the same
+freedoms that you received.  You must make sure that they, too, receive
+or can get the source code.  And you must show them these terms so they
+know their rights.
+
+  Developers that use the GNU GPL protect your rights with two steps:
+(1) assert copyright on the software, and (2) offer you this License
+giving you legal permission to copy, distribute and/or modify it.
+
+  For the developers' and authors' protection, the GPL clearly explains
+that there is no warranty for this free software.  For both users' and
+authors' sake, the GPL requires that modified versions be marked as
+changed, so that their problems will not be attributed erroneously to
+authors of previous versions.
+
+  Some devices are designed to deny users access to install or run
+modified versions of the software inside them, although the manufacturer
+can do so.  This is fundamentally incompatible with the aim of
+protecting users' freedom to change the software.  The systematic
+pattern of such abuse occurs in the area of products for individuals to
+use, which is precisely where it is most unacceptable.  Therefore, we
+have designed this version of the GPL to prohibit the practice for those
+products.  If such problems arise substantially in other domains, we
+stand ready to extend this provision to those domains in future versions
+of the GPL, as needed to protect the freedom of users.
+
+  Finally, every program is threatened constantly by software patents.
+States should not allow patents to restrict development and use of
+software on general-purpose computers, but in those that do, we wish to
+avoid the special danger that patents applied to a free program could
+make it effectively proprietary.  To prevent this, the GPL assures that
+patents cannot be used to render the program non-free.
+
+  The precise terms and conditions for copying, distribution and
+modification follow.
+
+                       TERMS AND CONDITIONS
+
+  0. Definitions.
+
+  "This License" refers to version 3 of the GNU General Public License.
+
+  "Copyright" also means copyright-like laws that apply to other kinds of
+works, such as semiconductor masks.
+
+  "The Program" refers to any copyrightable work licensed under this
+License.  Each licensee is addressed as "you".  "Licensees" and
+"recipients" may be individuals or organizations.
+
+  To "modify" a work means to copy from or adapt all or part of the work
+in a fashion requiring copyright permission, other than the making of an
+exact copy.  The resulting work is called a "modified version" of the
+earlier work or a work "based on" the earlier work.
+
+  A "covered work" means either the unmodified Program or a work based
+on the Program.
+
+  To "propagate" a work means to do anything with it that, without
+permission, would make you directly or secondarily liable for
+infringement under applicable copyright law, except executing it on a
+computer or modifying a private copy.  Propagation includes copying,
+distribution (with or without modification), making available to the
+public, and in some countries other activities as well.
+
+  To "convey" a work means any kind of propagation that enables other
+parties to make or receive copies.  Mere interaction with a user through
+a computer network, with no transfer of a copy, is not conveying.
+
+  An interactive user interface displays "Appropriate Legal Notices"
+to the extent that it includes a convenient and prominently visible
+feature that (1) displays an appropriate copyright notice, and (2)
+tells the user that there is no warranty for the work (except to the
+extent that warranties are provided), that licensees may convey the
+work under this License, and how to view a copy of this License.  If
+the interface presents a list of user commands or options, such as a
+menu, a prominent item in the list meets this criterion.
+
+  1. Source Code.
+
+  The "source code" for a work means the preferred form of the work
+for making modifications to it.  "Object code" means any non-source
+form of a work.
+
+  A "Standard Interface" means an interface that either is an official
+standard defined by a recognized standards body, or, in the case of
+interfaces specified for a particular programming language, one that
+is widely used among developers working in that language.
+
+  The "System Libraries" of an executable work include anything, other
+than the work as a whole, that (a) is included in the normal form of
+packaging a Major Component, but which is not part of that Major
+Component, and (b) serves only to enable use of the work with that
+Major Component, or to implement a Standard Interface for which an
+implementation is available to the public in source code form.  A
+"Major Component", in this context, means a major essential component
+(kernel, window system, and so on) of the specific operating system
+(if any) on which the executable work runs, or a compiler used to
+produce the work, or an object code interpreter used to run it.
+
+  The "Corresponding Source" for a work in object code form means all
+the source code needed to generate, install, and (for an executable
+work) run the object code and to modify the work, including scripts to
+control those activities.  However, it does not include the work's
+System Libraries, or general-purpose tools or generally available free
+programs which are used unmodified in performing those activities but
+which are not part of the work.  For example, Corresponding Source
+includes interface definition files associated with source files for
+the work, and the source code for shared libraries and dynamically
+linked subprograms that the work is specifically designed to require,
+such as by intimate data communication or control flow between those
+subprograms and other parts of the work.
+
+  The Corresponding Source need not include anything that users
+can regenerate automatically from other parts of the Corresponding
+Source.
+
+  The Corresponding Source for a work in source code form is that
+same work.
+
+  2. Basic Permissions.
+
+  All rights granted under this License are granted for the term of
+copyright on the Program, and are irrevocable provided the stated
+conditions are met.  This License explicitly affirms your unlimited
+permission to run the unmodified Program.  The output from running a
+covered work is covered by this License only if the output, given its
+content, constitutes a covered work.  This License acknowledges your
+rights of fair use or other equivalent, as provided by copyright law.
+
+  You may make, run and propagate covered works that you do not
+convey, without conditions so long as your license otherwise remains
+in force.  You may convey covered works to others for the sole purpose
+of having them make modifications exclusively for you, or provide you
+with facilities for running those works, provided that you comply with
+the terms of this License in conveying all material for which you do
+not control copyright.  Those thus making or running the covered works
+for you must do so exclusively on your behalf, under your direction
+and control, on terms that prohibit them from making any copies of
+your copyrighted material outside their relationship with you.
+
+  Conveying under any other circumstances is permitted solely under
+the conditions stated below.  Sublicensing is not allowed; section 10
+makes it unnecessary.
+
+  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
+
+  No covered work shall be deemed part of an effective technological
+measure under any applicable law fulfilling obligations under article
+11 of the WIPO copyright treaty adopted on 20 December 1996, or
+similar laws prohibiting or restricting circumvention of such
+measures.
+
+  When you convey a covered work, you waive any legal power to forbid
+circumvention of technological measures to the extent such circumvention
+is effected by exercising rights under this License with respect to
+the covered work, and you disclaim any intention to limit operation or
+modification of the work as a means of enforcing, against the work's
+users, your or third parties' legal rights to forbid circumvention of
+technological measures.
+
+  4. Conveying Verbatim Copies.
+
+  You may convey verbatim copies of the Program's source code as you
+receive it, in any medium, provided that you conspicuously and
+appropriately publish on each copy an appropriate copyright notice;
+keep intact all notices stating that this License and any
+non-permissive terms added in accord with section 7 apply to the code;
+keep intact all notices of the absence of any warranty; and give all
+recipients a copy of this License along with the Program.
+
+  You may charge any price or no price for each copy that you convey,
+and you may offer support or warranty protection for a fee.
+
+  5. Conveying Modified Source Versions.
+
+  You may convey a work based on the Program, or the modifications to
+produce it from the Program, in the form of source code under the
+terms of section 4, provided that you also meet all of these conditions:
+
+    a) The work must carry prominent notices stating that you modified
+    it, and giving a relevant date.
+
+    b) The work must carry prominent notices stating that it is
+    released under this License and any conditions added under section
+    7.  This requirement modifies the requirement in section 4 to
+    "keep intact all notices".
+
+    c) You must license the entire work, as a whole, under this
+    License to anyone who comes into possession of a copy.  This
+    License will therefore apply, along with any applicable section 7
+    additional terms, to the whole of the work, and all its parts,
+    regardless of how they are packaged.  This License gives no
+    permission to license the work in any other way, but it does not
+    invalidate such permission if you have separately received it.
+
+    d) If the work has interactive user interfaces, each must display
+    Appropriate Legal Notices; however, if the Program has interactive
+    interfaces that do not display Appropriate Legal Notices, your
+    work need not make them do so.
+
+  A compilation of a covered work with other separate and independent
+works, which are not by their nature extensions of the covered work,
+and which are not combined with it such as to form a larger program,
+in or on a volume of a storage or distribution medium, is called an
+"aggregate" if the compilation and its resulting copyright are not
+used to limit the access or legal rights of the compilation's users
+beyond what the individual works permit.  Inclusion of a covered work
+in an aggregate does not cause this License to apply to the other
+parts of the aggregate.
+
+  6. Conveying Non-Source Forms.
+
+  You may convey a covered work in object code form under the terms
+of sections 4 and 5, provided that you also convey the
+machine-readable Corresponding Source under the terms of this License,
+in one of these ways:
+
+    a) Convey the object code in, or embodied in, a physical product
+    (including a physical distribution medium), accompanied by the
+    Corresponding Source fixed on a durable physical medium
+    customarily used for software interchange.
+
+    b) Convey the object code in, or embodied in, a physical product
+    (including a physical distribution medium), accompanied by a
+    written offer, valid for at least three years and valid for as
+    long as you offer spare parts or customer support for that product
+    model, to give anyone who possesses the object code either (1) a
+    copy of the Corresponding Source for all the software in the
+    product that is covered by this License, on a durable physical
+    medium customarily used for software interchange, for a price no
+    more than your reasonable cost of physically performing this
+    conveying of source, or (2) access to copy the
+    Corresponding Source from a network server at no charge.
+
+    c) Convey individual copies of the object code with a copy of the
+    written offer to provide the Corresponding Source.  This
+    alternative is allowed only occasionally and noncommercially, and
+    only if you received the object code with such an offer, in accord
+    with subsection 6b.
+
+    d) Convey the object code by offering access from a designated
+    place (gratis or for a charge), and offer equivalent access to the
+    Corresponding Source in the same way through the same place at no
+    further charge.  You need not require recipients to copy the
+    Corresponding Source along with the object code.  If the place to
+    copy the object code is a network server, the Corresponding Source
+    may be on a different server (operated by you or a third party)
+    that supports equivalent copying facilities, provided you maintain
+    clear directions next to the object code saying where to find the
+    Corresponding Source.  Regardless of what server hosts the
+    Corresponding Source, you remain obligated to ensure that it is
+    available for as long as needed to satisfy these requirements.
+
+    e) Convey the object code using peer-to-peer transmission, provided
+    you inform other peers where the object code and Corresponding
+    Source of the work are being offered to the general public at no
+    charge under subsection 6d.
+
+  A separable portion of the object code, whose source code is excluded
+from the Corresponding Source as a System Library, need not be
+included in conveying the object code work.
+
+  A "User Product" is either (1) a "consumer product", which means any
+tangible personal property which is normally used for personal, family,
+or household purposes, or (2) anything designed or sold for incorporation
+into a dwelling.  In determining whether a product is a consumer product,
+doubtful cases shall be resolved in favor of coverage.  For a particular
+product received by a particular user, "normally used" refers to a
+typical or common use of that class of product, regardless of the status
+of the particular user or of the way in which the particular user
+actually uses, or expects or is expected to use, the product.  A product
+is a consumer product regardless of whether the product has substantial
+commercial, industrial or non-consumer uses, unless such uses represent
+the only significant mode of use of the product.
+
+  "Installation Information" for a User Product means any methods,
+procedures, authorization keys, or other information required to install
+and execute modified versions of a covered work in that User Product from
+a modified version of its Corresponding Source.  The information must
+suffice to ensure that the continued functioning of the modified object
+code is in no case prevented or interfered with solely because
+modification has been made.
+
+  If you convey an object code work under this section in, or with, or
+specifically for use in, a User Product, and the conveying occurs as
+part of a transaction in which the right of possession and use of the
+User Product is transferred to the recipient in perpetuity or for a
+fixed term (regardless of how the transaction is characterized), the
+Corresponding Source conveyed under this section must be accompanied
+by the Installation Information.  But this requirement does not apply
+if neither you nor any third party retains the ability to install
+modified object code on the User Product (for example, the work has
+been installed in ROM).
+
+  The requirement to provide Installation Information does not include a
+requirement to continue to provide support service, warranty, or updates
+for a work that has been modified or installed by the recipient, or for
+the User Product in which it has been modified or installed.  Access to a
+network may be denied when the modification itself materially and
+adversely affects the operation of the network or violates the rules and
+protocols for communication across the network.
+
+  Corresponding Source conveyed, and Installation Information provided,
+in accord with this section must be in a format that is publicly
+documented (and with an implementation available to the public in
+source code form), and must require no special password or key for
+unpacking, reading or copying.
+
+  7. Additional Terms.
+
+  "Additional permissions" are terms that supplement the terms of this
+License by making exceptions from one or more of its conditions.
+Additional permissions that are applicable to the entire Program shall
+be treated as though they were included in this License, to the extent
+that they are valid under applicable law.  If additional permissions
+apply only to part of the Program, that part may be used separately
+under those permissions, but the entire Program remains governed by
+this License without regard to the additional permissions.
+
+  When you convey a copy of a covered work, you may at your option
+remove any additional permissions from that copy, or from any part of
+it.  (Additional permissions may be written to require their own
+removal in certain cases when you modify the work.)  You may place
+additional permissions on material, added by you to a covered work,
+for which you have or can give appropriate copyright permission.
+
+  Notwithstanding any other provision of this License, for material you
+add to a covered work, you may (if authorized by the copyright holders of
+that material) supplement the terms of this License with terms:
+
+    a) Disclaiming warranty or limiting liability differently from the
+    terms of sections 15 and 16 of this License; or
+
+    b) Requiring preservation of specified reasonable legal notices or
+    author attributions in that material or in the Appropriate Legal
+    Notices displayed by works containing it; or
+
+    c) Prohibiting misrepresentation of the origin of that material, or
+    requiring that modified versions of such material be marked in
+    reasonable ways as different from the original version; or
+
+    d) Limiting the use for publicity purposes of names of licensors or
+    authors of the material; or
+
+    e) Declining to grant rights under trademark law for use of some
+    trade names, trademarks, or service marks; or
+
+    f) Requiring indemnification of licensors and authors of that
+    material by anyone who conveys the material (or modified versions of
+    it) with contractual assumptions of liability to the recipient, for
+    any liability that these contractual assumptions directly impose on
+    those licensors and authors.
+
+  All other non-permissive additional terms are considered "further
+restrictions" within the meaning of section 10.  If the Program as you
+received it, or any part of it, contains a notice stating that it is
+governed by this License along with a term that is a further
+restriction, you may remove that term.  If a license document contains
+a further restriction but permits relicensing or conveying under this
+License, you may add to a covered work material governed by the terms
+of that license document, provided that the further restriction does
+not survive such relicensing or conveying.
+
+  If you add terms to a covered work in accord with this section, you
+must place, in the relevant source files, a statement of the
+additional terms that apply to those files, or a notice indicating
+where to find the applicable terms.
+
+  Additional terms, permissive or non-permissive, may be stated in the
+form of a separately written license, or stated as exceptions;
+the above requirements apply either way.
+
+  8. Termination.
+
+  You may not propagate or modify a covered work except as expressly
+provided under this License.  Any attempt otherwise to propagate or
+modify it is void, and will automatically terminate your rights under
+this License (including any patent licenses granted under the third
+paragraph of section 11).
+
+  However, if you cease all violation of this License, then your
+license from a particular copyright holder is reinstated (a)
+provisionally, unless and until the copyright holder explicitly and
+finally terminates your license, and (b) permanently, if the copyright
+holder fails to notify you of the violation by some reasonable means
+prior to 60 days after the cessation.
+
+  Moreover, your license from a particular copyright holder is
+reinstated permanently if the copyright holder notifies you of the
+violation by some reasonable means, this is the first time you have
+received notice of violation of this License (for any work) from that
+copyright holder, and you cure the violation prior to 30 days after
+your receipt of the notice.
+
+  Termination of your rights under this section does not terminate the
+licenses of parties who have received copies or rights from you under
+this License.  If your rights have been terminated and not permanently
+reinstated, you do not qualify to receive new licenses for the same
+material under section 10.
+
+  9. Acceptance Not Required for Having Copies.
+
+  You are not required to accept this License in order to receive or
+run a copy of the Program.  Ancillary propagation of a covered work
+occurring solely as a consequence of using peer-to-peer transmission
+to receive a copy likewise does not require acceptance.  However,
+nothing other than this License grants you permission to propagate or
+modify any covered work.  These actions infringe copyright if you do
+not accept this License.  Therefore, by modifying or propagating a
+covered work, you indicate your acceptance of this License to do so.
+
+  10. Automatic Licensing of Downstream Recipients.
+
+  Each time you convey a covered work, the recipient automatically
+receives a license from the original licensors, to run, modify and
+propagate that work, subject to this License.  You are not responsible
+for enforcing compliance by third parties with this License.
+
+  An "entity transaction" is a transaction transferring control of an
+organization, or substantially all assets of one, or subdividing an
+organization, or merging organizations.  If propagation of a covered
+work results from an entity transaction, each party to that
+transaction who receives a copy of the work also receives whatever
+licenses to the work the party's predecessor in interest had or could
+give under the previous paragraph, plus a right to possession of the
+Corresponding Source of the work from the predecessor in interest, if
+the predecessor has it or can get it with reasonable efforts.
+
+  You may not impose any further restrictions on the exercise of the
+rights granted or affirmed under this License.  For example, you may
+not impose a license fee, royalty, or other charge for exercise of
+rights granted under this License, and you may not initiate litigation
+(including a cross-claim or counterclaim in a lawsuit) alleging that
+any patent claim is infringed by making, using, selling, offering for
+sale, or importing the Program or any portion of it.
+
+  11. Patents.
+
+  A "contributor" is a copyright holder who authorizes use under this
+License of the Program or a work on which the Program is based.  The
+work thus licensed is called the contributor's "contributor version".
+
+  A contributor's "essential patent claims" are all patent claims
+owned or controlled by the contributor, whether already acquired or
+hereafter acquired, that would be infringed by some manner, permitted
+by this License, of making, using, or selling its contributor version,
+but do not include claims that would be infringed only as a
+consequence of further modification of the contributor version.  For
+purposes of this definition, "control" includes the right to grant
+patent sublicenses in a manner consistent with the requirements of
+this License.
+
+  Each contributor grants you a non-exclusive, worldwide, royalty-free
+patent license under the contributor's essential patent claims, to
+make, use, sell, offer for sale, import and otherwise run, modify and
+propagate the contents of its contributor version.
+
+  In the following three paragraphs, a "patent license" is any express
+agreement or commitment, however denominated, not to enforce a patent
+(such as an express permission to practice a patent or covenant not to
+sue for patent infringement).  To "grant" such a patent license to a
+party means to make such an agreement or commitment not to enforce a
+patent against the party.
+
+  If you convey a covered work, knowingly relying on a patent license,
+and the Corresponding Source of the work is not available for anyone
+to copy, free of charge and under the terms of this License, through a
+publicly available network server or other readily accessible means,
+then you must either (1) cause the Corresponding Source to be so
+available, or (2) arrange to deprive yourself of the benefit of the
+patent license for this particular work, or (3) arrange, in a manner
+consistent with the requirements of this License, to extend the patent
+license to downstream recipients.  "Knowingly relying" means you have
+actual knowledge that, but for the patent license, your conveying the
+covered work in a country, or your recipient's use of the covered work
+in a country, would infringe one or more identifiable patents in that
+country that you have reason to believe are valid.
+
+  If, pursuant to or in connection with a single transaction or
+arrangement, you convey, or propagate by procuring conveyance of, a
+covered work, and grant a patent license to some of the parties
+receiving the covered work authorizing them to use, propagate, modify
+or convey a specific copy of the covered work, then the patent license
+you grant is automatically extended to all recipients of the covered
+work and works based on it.
+
+  A patent license is "discriminatory" if it does not include within
+the scope of its coverage, prohibits the exercise of, or is
+conditioned on the non-exercise of one or more of the rights that are
+specifically granted under this License.  You may not convey a covered
+work if you are a party to an arrangement with a third party that is
+in the business of distributing software, under which you make payment
+to the third party based on the extent of your activity of conveying
+the work, and under which the third party grants, to any of the
+parties who would receive the covered work from you, a discriminatory
+patent license (a) in connection with copies of the covered work
+conveyed by you (or copies made from those copies), or (b) primarily
+for and in connection with specific products or compilations that
+contain the covered work, unless you entered into that arrangement,
+or that patent license was granted, prior to 28 March 2007.
+
+  Nothing in this License shall be construed as excluding or limiting
+any implied license or other defenses to infringement that may
+otherwise be available to you under applicable patent law.
+
+  12. No Surrender of Others' Freedom.
+
+  If conditions are imposed on you (whether by court order, agreement or
+otherwise) that contradict the conditions of this License, they do not
+excuse you from the conditions of this License.  If you cannot convey a
+covered work so as to satisfy simultaneously your obligations under this
+License and any other pertinent obligations, then as a consequence you may
+not convey it at all.  For example, if you agree to terms that obligate you
+to collect a royalty for further conveying from those to whom you convey
+the Program, the only way you could satisfy both those terms and this
+License would be to refrain entirely from conveying the Program.
+
+  13. Use with the GNU Affero General Public License.
+
+  Notwithstanding any other provision of this License, you have
+permission to link or combine any covered work with a work licensed
+under version 3 of the GNU Affero General Public License into a single
+combined work, and to convey the resulting work.  The terms of this
+License will continue to apply to the part which is the covered work,
+but the special requirements of the GNU Affero General Public License,
+section 13, concerning interaction through a network will apply to the
+combination as such.
+
+  14. Revised Versions of this License.
+
+  The Free Software Foundation may publish revised and/or new versions of
+the GNU General Public License from time to time.  Such new versions will
+be similar in spirit to the present version, but may differ in detail to
+address new problems or concerns.
+
+  Each version is given a distinguishing version number.  If the
+Program specifies that a certain numbered version of the GNU General
+Public License "or any later version" applies to it, you have the
+option of following the terms and conditions either of that numbered
+version or of any later version published by the Free Software
+Foundation.  If the Program does not specify a version number of the
+GNU General Public License, you may choose any version ever published
+by the Free Software Foundation.
+
+  If the Program specifies that a proxy can decide which future
+versions of the GNU General Public License can be used, that proxy's
+public statement of acceptance of a version permanently authorizes you
+to choose that version for the Program.
+
+  Later license versions may give you additional or different
+permissions.  However, no additional obligations are imposed on any
+author or copyright holder as a result of your choosing to follow a
+later version.
+
+  15. Disclaimer of Warranty.
+
+  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+  16. Limitation of Liability.
+
+  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
+THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
+DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
+PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
+EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
+
+  17. Interpretation of Sections 15 and 16.
+
+  If the disclaimer of warranty and limitation of liability provided
+above cannot be given local legal effect according to their terms,
+reviewing courts shall apply local law that most closely approximates
+an absolute waiver of all civil liability in connection with the
+Program, unless a warranty or assumption of liability accompanies a
+copy of the Program in return for a fee.
+
+                     END OF TERMS AND CONDITIONS
+
+            How to Apply These Terms to Your New Programs
+
+  If you develop a new program, and you want it to be of the greatest
+possible use to the public, the best way to achieve this is to make it
+free software which everyone can redistribute and change under these terms.
+
+  To do so, attach the following notices to the program.  It is safest
+to attach them to the start of each source file to most effectively
+state the exclusion of warranty; and each file should have at least
+the "copyright" line and a pointer to where the full notice is found.
+
+    <one line to give the program's name and a brief idea of what it does.>
+    Copyright (C) <year>  <name of author>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Also add information on how to contact you by electronic and paper mail.
+
+  If the program does terminal interaction, make it output a short
+notice like this when it starts in an interactive mode:
+
+    <program>  Copyright (C) <year>  <name of author>
+    This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
+    This is free software, and you are welcome to redistribute it
+    under certain conditions; type `show c' for details.
+
+The hypothetical commands `show w' and `show c' should show the appropriate
+parts of the General Public License.  Of course, your program's commands
+might be different; for a GUI interface, you would use an "about box".
+
+  You should also get your employer (if you work as a programmer) or school,
+if any, to sign a "copyright disclaimer" for the program, if necessary.
+For more information on this, and how to apply and follow the GNU GPL, see
+<https://www.gnu.org/licenses/>.
+
+  The GNU General Public License does not permit incorporating your program
+into proprietary programs.  If your program is a subroutine library, you
+may consider it more useful to permit linking proprietary applications with
+the library.  If this is what you want to do, use the GNU Lesser General
+Public License instead of this License.  But first, please read
+<https://www.gnu.org/licenses/why-not-lgpl.html>.
+
+
+
 ===== FILE: openssl-local.cnf =====
 [req]
 distinguished_name = dn
@@ -1544,7 +2222,8 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
     public interface IReactionService
     {
         Task<IEnumerable<ReactionDTO>> GetReactionsAsync(string stackItemType, int stackItemId);
-        Task<ReactionDTO> UpsertReactionAsync(CreateReactionRequest request, int userId);
+        Task<ReactionDTO> CreateReactionAsync(CreateReactionRequest request, int userId);
+        Task<ReactionDTO> UpdateReactionAsync(int reactionId, UpdateReactionRequestDTO request, int userId);
         Task RemoveReactionAsync(int reactionId, int userId);
     }
 }
@@ -1820,8 +2499,14 @@ namespace PromiseModelOnline.Api.BusinessLogic
             var startDate = moments.Min(m => m.CreatedAt).Date;
             var today = DateTime.UtcNow.Date;
 
-            var latestCompleted = moments.Where(m => m.CompletedAt.HasValue)
-                                         .Max(m => (DateTime?)m.CompletedAt.Value.Date);
+            var completedDates = moments
+                .Where(m => m.CompletedAt.HasValue)
+                .Select(m => m.CompletedAt!.Value.Date)
+                .ToList();
+
+            DateTime? latestCompleted = completedDates.Count > 0
+                ? completedDates.Max()
+                : null;
             var endDate = latestCompleted > today ? latestCompleted.Value : today;
 
             var initialEffort = moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
@@ -2193,17 +2878,11 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return reactions.Select(r => _mapper.Map(r, null!));
         }
 
-        public async Task<ReactionDTO> UpsertReactionAsync(CreateReactionRequest request, int userId)
+        public async Task<ReactionDTO> CreateReactionAsync(CreateReactionRequest request, int userId)
         {
-            // If user already reacted, update emote; otherwise create new.
             var existing = await _reactionRepo.GetUserReactionAsync(userId, request.StackItemType, request.StackItemId);
             if (existing is not null)
-            {
-                existing.Emote = request.Emote;
-                _reactionRepo.Update(existing);
-                await _reactionRepo.SaveChangesAsync();
-                return _mapper.Map(existing, null!);
-            }
+                throw new InvalidOperationException("Reaction already exists for this user and item.");
 
             var reaction = new Reaction
             {
@@ -2216,6 +2895,21 @@ namespace PromiseModelOnline.Api.BusinessLogic
             await _reactionRepo.AddAsync(reaction);
             await _reactionRepo.SaveChangesAsync();
             return _mapper.Map(reaction, null!);
+        }
+
+        public async Task<ReactionDTO> UpdateReactionAsync(int reactionId, UpdateReactionRequestDTO request, int userId)
+        {
+            var existing = await _reactionRepo.GetByIdAsync(reactionId);
+            if (existing is null || existing.UserId != userId)
+                throw new InvalidOperationException("Reaction not found or not yours.");
+
+            if (string.IsNullOrWhiteSpace(request?.Emote))
+                throw new InvalidOperationException("Emote is required.");
+
+            existing.Emote = request.Emote;
+            _reactionRepo.Update(existing);
+            await _reactionRepo.SaveChangesAsync();
+            return _mapper.Map(existing, null!);
         }
 
         public async Task RemoveReactionAsync(int reactionId, int userId)
@@ -2294,28 +2988,41 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
+using System;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/users/me")]
     [ApiController]
     [Authorize]
     public class ChangePasswordController : ControllerBase
     {
         private readonly IAuthClient _authClient;
+        private readonly ILogger<ChangePasswordController> _logger;
 
-        public ChangePasswordController(IAuthClient authClient)
+        public ChangePasswordController(IAuthClient authClient, ILogger<ChangePasswordController> logger)
         {
             _authClient = authClient;
+            _logger = logger;
         }
 
-        [HttpPost("change-password")]
+        [HttpPatch]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             try
             {
                 var authorizationHeader = Request.Headers["Authorization"].ToString();
                 await _authClient.ChangePasswordAsync(request, authorizationHeader);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated password at {UtcTimestamp}",
+                    jwtSub,
+                    DateTime.UtcNow);
+
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
@@ -2404,6 +3111,41 @@ namespace PromiseModelOnline.Api.Controllers
 }
 
 
+===== FILE: PromiseModelOnline.Api/Controllers/DeadlineNotificationRunsController.cs =====
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using System.Threading.Tasks;
+
+namespace PromiseModelOnline.Api.Controllers
+{
+    /// <summary>
+    /// Represents a run/batch that generates deadline notifications.
+    /// Creating a run triggers generation of deadline notifications.
+    /// </summary>
+    [Authorize]
+    [Route("api/deadline-notification-runs")]
+    [ApiController]
+    public class DeadlineNotificationRunsController : ControllerBase
+    {
+        private readonly IStrideService _strideService;
+
+        public DeadlineNotificationRunsController(IStrideService strideService)
+        {
+            _strideService = strideService;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create()
+        {
+            await _strideService.SendDeadlineNotificationsAsync();
+            return NoContent();
+        }
+    }
+}
+
+
+
 ===== FILE: PromiseModelOnline.Api/Controllers/DeleteAccountController.cs =====
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -2412,7 +3154,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/users/me")]
     [ApiController]
     [Authorize]
     public class DeleteAccountController : ControllerBase
@@ -2424,7 +3166,7 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("delete-account")]
+        [HttpDelete]
         public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
         {
             try
@@ -2806,7 +3548,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/sessions")]
     [ApiController]
     public class LoginController : ControllerBase
     {
@@ -2817,7 +3559,7 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("login")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] UserLogin userLogin)
         {
@@ -2847,7 +3589,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/sessions/current")]
     [ApiController]
     public class LogoutController : ControllerBase
     {
@@ -2858,14 +3600,15 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("logout")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        [HttpDelete]
+        [Authorize]
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest? request)
         {
             try
             {
-                await _authClient.LogoutAsync(request);
-                return Ok();
+                var authorizationHeader = Request.Headers["Authorization"].ToString();
+                await _authClient.LogoutAsync(request, authorizationHeader);
+                return NoContent();
             }
             catch (UnauthorizedAccessException)
             {
@@ -2894,6 +3637,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -2904,17 +3648,20 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IMomentService _momentService;
         private readonly IUserRepository _userRepository;
         private readonly IPermissionService _permissionService;
+        private readonly ILogger<MomentsController> _logger;
 
         public MomentsController(
             IMomentService service,
             IGenericMapper<Moment, MomentDTO> mapper,
             IUserRepository userRepository,
-            IPermissionService permissionService)
+            IPermissionService permissionService,
+            ILogger<MomentsController> logger)
             : base(service, mapper)
         {
             _momentService = service;
             _userRepository = userRepository;
             _permissionService = permissionService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -2960,7 +3707,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Assign a moment to a stride or move it to the backlog (strideId = null).
         /// Requires Edit permission on the project.
         /// </summary>
-        [HttpPut("{id}/stride-assignment")]
+        [HttpPatch("{id}/stride-assignment")]
         public async Task<ActionResult<MomentDTO>> AssignMomentToStride(
             int id,
             [FromBody] UpdateMomentStrideAssignmentRequest request)
@@ -2968,9 +3715,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.AssignMomentToStrideAsync(id, request.StrideId);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { StrideId = request.StrideId });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)
@@ -2987,7 +3751,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Update the status of a moment.
         /// Requires Edit permission on the project.
         /// </summary>
-        [HttpPut("{id}/status")]
+        [HttpPatch("{id}/status")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(
             int id,
             [FromBody] UpdateMomentStatusRequest request)
@@ -2995,9 +3759,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.UpdateMomentStatusAsync(id, request.NewStatus);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { NewStatus = request.NewStatus.ToString() });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)
@@ -3018,9 +3799,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.UpdateMomentEstimateAsync(id, request.Estimate);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { Estimate = request.Estimate?.ToString() });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)
@@ -3033,7 +3831,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Assigns a specific user as the owner of the moment, or clears the owner when UserId is null.
         /// Requires Edit permission on the project.
         /// </summary>
-        [HttpPut("{id}/owner")]
+        [HttpPatch("{id}/owner")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(
             int id,
             [FromBody] UpdateMomentOwnerRequest request)
@@ -3041,9 +3839,26 @@ namespace PromiseModelOnline.Api.Controllers
             if (!await UserCanEditMomentAsync(id))
                 return Forbid();
 
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
             try
             {
                 var moment = await _momentService.AssignOwnerAsync(id, request.UserId);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { OwnerUserId = request.UserId });
+
                 return Ok(_mapper.Map(moment, _service));
             }
             catch (KeyNotFoundException ex)
@@ -3104,10 +3919,12 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -3117,12 +3934,15 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
+        private readonly ILogger<NotificationsController> _logger;
 
         public NotificationsController(INotificationService notificationService,
-                                       IUserRepository userRepository)
+                                       IUserRepository userRepository,
+                                       ILogger<NotificationsController> logger)
         {
             _notificationService = notificationService;
             _userRepository = userRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -3135,23 +3955,95 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(notifications);
         }
 
-        [HttpPut("{id}/read")]
-        public async Task<IActionResult> MarkAsRead(int id)
+        /// <summary>
+        /// Partially updates a notification (currently supports setting read state).
+        /// </summary>
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdateNotification(int id, [FromBody] UpdateNotificationRequestDTO request)
         {
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId is null) return Unauthorized();
 
-            await _notificationService.MarkAsReadAsync(id, userId.Value);
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                await _notificationService.MarkAsReadAsync(id, userId.Value);
+            }
+            catch (InvalidOperationException)
+            {
+                return NotFound();
+            }
+
+            _logger.LogInformation(
+                "User {UserId} updated Notification {NotificationId} at {UtcTimestamp}: {Changes}",
+                userId.Value,
+                id,
+                DateTime.UtcNow,
+                new { IsRead = true });
+
             return NoContent();
         }
 
-        [HttpPut("read-all")]
-        public async Task<IActionResult> MarkAllAsRead()
+        /// <summary>
+        /// Partially updates the current user's notifications (currently supports setting all to read).
+        /// </summary>
+        [HttpPatch]
+        public async Task<IActionResult> UpdateNotifications([FromBody] UpdateNotificationsRequestDTO request)
         {
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId is null) return Unauthorized();
 
-            await _notificationService.MarkAllAsReadAsync(userId.Value);
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            if (request.ApplyToAll == true && request.NotificationIds is not null)
+                return BadRequest("Cannot specify both ApplyToAll and NotificationIds");
+
+            var applyToAll = request.ApplyToAll == true;
+            var ids = request.NotificationIds?.Distinct().ToArray();
+
+            if (!applyToAll && (ids is null || ids.Length == 0))
+                return BadRequest("Must provide NotificationIds if not applying to all");
+
+            if (applyToAll)
+            {
+                await _notificationService.MarkAllAsReadAsync(userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} updated Notifications at {UtcTimestamp}: {Details}",
+                    userId.Value,
+                    DateTime.UtcNow,
+                    new { ApplyToAll = true, Changes = new { IsRead = true } });
+
+                return NoContent();
+            }
+
+            foreach (var id in ids!)
+            {
+                try
+                {
+                    await _notificationService.MarkAsReadAsync(id, userId.Value);
+                }
+                catch (InvalidOperationException)
+                {
+                    return NotFound($"Notification {id} not found.");
+                }
+            }
+
+            _logger.LogInformation(
+                "User {UserId} updated Notifications at {UtcTimestamp}: {Details}",
+                userId.Value,
+                DateTime.UtcNow,
+                new { ApplyToAll = false, NotificationIds = ids, Changes = new { IsRead = true } });
+
             return NoContent();
         }
 
@@ -3174,10 +4066,12 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -3187,12 +4081,15 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IPermissionService _permissionService;
         private readonly IUserRepository _userRepository;
+        private readonly ILogger<PermissionsController> _logger;
 
         public PermissionsController(IPermissionService permissionService,
-                                     IUserRepository userRepository)
+                                     IUserRepository userRepository,
+                                     ILogger<PermissionsController> logger)
         {
             _permissionService = permissionService;
             _userRepository = userRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -3213,25 +4110,15 @@ namespace PromiseModelOnline.Api.Controllers
             try
             {
                 var result = await _permissionService.InviteUserAsync(request, userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} created Permission invitation {PermissionId} at {UtcTimestamp}: {Details}",
+                    userId.Value,
+                    result.Id,
+                    DateTime.UtcNow,
+                    new { request.ProjectId, request.UserEmail, request.Level });
+
                 return CreatedAtAction(nameof(GetPermissions), new { projectId = request.ProjectId }, result);
-            }
-            catch (System.Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost("accept")]
-        public async Task<ActionResult<PermissionDTO>> AcceptInvitation(
-            [FromBody] AcceptInvitationRequestDTO request)
-        {
-            var userId = await GetCurrentUserIdByEmailAsync();
-            if (userId == null) return Unauthorized();
-
-            try
-            {
-                var result = await _permissionService.AcceptInvitationAsync(request.PermissionId, userId.Value);
-                return Ok(result);
             }
             catch (System.Exception ex)
             {
@@ -3250,7 +4137,7 @@ namespace PromiseModelOnline.Api.Controllers
                 await _permissionService.RemovePermissionAsync(id, userId.Value);
                 return NoContent();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -3296,6 +4183,28 @@ namespace PromiseModelOnline.Api.Controllers
 
             var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
             return user.Id;
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<ActionResult<PermissionDTO>> UpdatePermissionStatus(
+            int id,
+            [FromBody] UpdatePermissionRequestDTO request)
+        {
+            var userId = await GetCurrentUserIdByEmailAsync();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                // ✅ IMPORTANT: capture result
+                var acceptedPermission = await _permissionService.AcceptInvitationAsync(id, userId.Value);
+
+                // ✅ RETURN Ok(...) NOT NoContent
+                return Ok(acceptedPermission);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
@@ -3420,10 +4329,12 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -3433,12 +4344,15 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IReactionService _reactionService;
         private readonly IUserRepository _userRepository;
+        private readonly ILogger<ReactionsController> _logger;
 
         public ReactionsController(IReactionService reactionService,
-                                   IUserRepository userRepository)
+                                   IUserRepository userRepository,
+                                   ILogger<ReactionsController> logger)
         {
             _reactionService = reactionService;
             _userRepository = userRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -3450,29 +4364,99 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(reactions);
         }
 
+        /// <summary>
+        /// Creates a new reaction resource for the current user.
+        /// </summary>
         [HttpPost]
-        public async Task<ActionResult<ReactionDTO>> UpsertReaction([FromBody] CreateReactionRequest request)
-        {
-            var userId = await GetCurrentUserIdAsync();
-            if (userId is null) return Unauthorized();
-
-            var result = await _reactionService.UpsertReactionAsync(request, userId.Value);
-            return Ok(result);
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReaction(int id)
+        public async Task<ActionResult<ReactionDTO>> CreateReaction([FromBody] CreateReactionRequest request)
         {
             var userId = await GetCurrentUserIdAsync();
             if (userId is null) return Unauthorized();
 
             try
             {
+                var result = await _reactionService.CreateReactionAsync(request, userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} created Reaction {ReactionId} at {UtcTimestamp}: {Details}",
+                    userId.Value,
+                    result.Id,
+                    DateTime.UtcNow,
+                    new { result.StackItemType, result.StackItemId, result.Emote });
+
+                return CreatedAtAction(nameof(GetReactions), new { type = request.StackItemType, itemId = request.StackItemId }, result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Partially updates an existing reaction resource (emote only).
+        /// </summary>
+        [HttpPatch("{id}")]
+        public async Task<ActionResult<ReactionDTO>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDTO request)
+        {
+            var userId = await GetCurrentUserIdAsync();
+            if (userId is null) return Unauthorized();
+
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var result = await _reactionService.UpdateReactionAsync(id, request, userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} updated Reaction {ReactionId} at {UtcTimestamp}: {Changes}",
+                    userId.Value,
+                    id,
+                    DateTime.UtcNow,
+                    new { request.Emote });
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                    return NotFound(ex.Message);
+
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteReaction(int id)
+        {
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
                 await _reactionService.RemoveReactionAsync(id, userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} deleted reaction {ReactionId}",
+                    userId.Value,
+                    id
+                );
+
                 return NoContent();
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
+                
+                _logger.LogWarning(
+                        ex,
+                        "Failed to delete reaction {ReactionId} by user {UserId}",
+                        id,
+                        userId.Value
+                );
+
                 return BadRequest("Cannot remove reaction.");
             }
         }
@@ -3499,7 +4483,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/access-tokens")]
     [ApiController]
     public class RefreshController : ControllerBase
     {
@@ -3510,7 +4494,7 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("refresh")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {
@@ -3547,7 +4531,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/users")]
     [ApiController]
     public class RegisterController : ControllerBase
     {
@@ -3561,7 +4545,7 @@ namespace PromiseModelOnline.Api.Controllers
             _userRepository = userRepository;
         }
 
-        [HttpPost("register")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -3600,8 +4584,10 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -3611,15 +4597,18 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IStrideService _strideService;
         private readonly IMomentService _momentService;
+        private readonly ILogger<StridesController> _logger;
 
         public StridesController(
             IStrideService strideService,
             IGenericMapper<Stride, StrideDTO> mapper,
-            IMomentService momentService)
+            IMomentService momentService,
+            ILogger<StridesController> logger)
             : base(strideService, mapper)
         {
             _strideService = strideService;
             _momentService = momentService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -3641,23 +4630,50 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         /// <summary>
-        /// Move unfinished moments from this stride to the next stride.
+        /// Partially updates a stride.
         /// </summary>
-        [HttpPost("{id}/progress")]
-        public async Task<IActionResult> ProgressStride(int id)
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDTO request)
         {
-            await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
-            return NoContent();
+            try
+            {
+                await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
+
+                _logger.LogInformation(
+                    "Progressed unfinished moments for stride {StrideId} via PATCH",
+                    id
+                );
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to update stride {StrideId}",
+                    id
+                );
+
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
-        /// Send deadline notifications for all strides ending in 3 days.
+        /// Moves unfinished moments from this stride to the next stride.
         /// </summary>
-        [HttpPost("send-deadline-notifications")]
-        public async Task<IActionResult> SendDeadlineNotifications()
+        [HttpPost("{id}/progress")]
+        public async Task<ActionResult> ProgressStride(int id)
         {
-            await _strideService.SendDeadlineNotificationsAsync();
-            return NoContent();
+            try
+            {
+                await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
@@ -3688,7 +4704,7 @@ public class AuthClient : IAuthClient
     {
         try
         {
-            var response = await _http.PostAsJsonAsync("auth/login", userLogin);
+            var response = await _http.PostAsJsonAsync("api/sessions", userLogin);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -3708,7 +4724,7 @@ public class AuthClient : IAuthClient
     public async Task<RegisterResponse?> RegisterAsync(RegisterRequest request)
     {
         var registrationKey = _config["Auth:RegistrationKey"];
-        var message = new HttpRequestMessage(HttpMethod.Post, "auth/register")
+        var message = new HttpRequestMessage(HttpMethod.Post, "api/users")
         {
             Content = JsonContent.Create(request)
         };
@@ -3755,7 +4771,7 @@ public class AuthClient : IAuthClient
     {
         try
         {
-            var response = await _http.PostAsJsonAsync("auth/refresh", request);
+            var response = await _http.PostAsJsonAsync("api/access-tokens", request);
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
             {
@@ -3777,11 +4793,17 @@ public class AuthClient : IAuthClient
         }
     }
 
-    public async Task LogoutAsync(LogoutRequest? request)
+    public async Task LogoutAsync(LogoutRequest? request, string authorizationHeader)
     {
         try
         {
-            var response = await _http.PostAsJsonAsync("auth/logout", request);
+            var message = new HttpRequestMessage(HttpMethod.Delete, "api/sessions/current")
+            {
+                Content = JsonContent.Create(request)
+            };
+
+            message.Headers.TryAddWithoutValidation("Authorization", authorizationHeader);
+            var response = await _http.SendAsync(message);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -3804,7 +4826,7 @@ public class AuthClient : IAuthClient
             throw new UnauthorizedAccessException("Unauthorized");
         }
 
-        var message = new HttpRequestMessage(HttpMethod.Post, "auth/change-password")
+        var message = new HttpRequestMessage(HttpMethod.Patch, "api/users/me")
         {
             Content = JsonContent.Create(request)
         };
@@ -3840,7 +4862,7 @@ public class AuthClient : IAuthClient
             throw new UnauthorizedAccessException("Unauthorized");
         }
 
-        var message = new HttpRequestMessage(HttpMethod.Post, "auth/delete-account")
+        var message = new HttpRequestMessage(HttpMethod.Delete, "api/users/me")
         {
             Content = JsonContent.Create(request)
         };
@@ -4056,7 +5078,7 @@ public interface IAuthClient
 
     Task<PromiseModelOnline.Api.Models.TokenResponse> RefreshAsync(PromiseModelOnline.Api.Models.RefreshRequest request);
 
-    Task LogoutAsync(PromiseModelOnline.Api.Models.LogoutRequest? request);
+    Task LogoutAsync(PromiseModelOnline.Api.Models.LogoutRequest? request, string authorizationHeader);
 
     Task ChangePasswordAsync(PromiseModelOnline.Api.Models.ChangePasswordRequest request, string authorizationHeader);
 
@@ -5124,49 +6146,271 @@ public class StrideDTO
 
 ===== FILE: PromiseModelOnline.Api/DTOs/UpdateMomentEstimateRequest.cs =====
 using PromiseModelOnline.Api.Enums;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-public class UpdateMomentEstimateRequest
+public class UpdateMomentEstimateRequest : IValidatableObject
 {
     public Estimate? Estimate { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Estimate is null)
+            yield return new ValidationResult(
+                "Estimate is required.",
+                new[] { nameof(Estimate) });
+        else if (!System.Enum.IsDefined(typeof(Estimate), Estimate.Value))
+            yield return new ValidationResult(
+                "Estimate is not a valid value.",
+                new[] { nameof(Estimate) });
+    }
 }
 
 
 ===== FILE: PromiseModelOnline.Api/DTOs/UpdateMomentOwnerRequest.cs =====
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
 namespace PromiseModelOnline.Api.DTOs;
 
-public class UpdateMomentOwnerRequest
+public class UpdateMomentOwnerRequest : IValidatableObject
 {
     public int? UserId { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (UserId is not null && UserId <= 0)
+            yield return new ValidationResult(
+                "UserId must be a positive integer when provided.",
+                new[] { nameof(UserId) });
+    }
 }
 
 
 ===== FILE: PromiseModelOnline.Api/DTOs/UpdateMomentStatusRequest.cs =====
 using PromiseModelOnline.Api.Enums;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>
 /// Request body for changing a moment's status.
 /// </summary>
-public class UpdateMomentStatusRequest
+public class UpdateMomentStatusRequest : IValidatableObject
 {
     public MomentStatus NewStatus { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (!System.Enum.IsDefined(typeof(MomentStatus), NewStatus))
+            yield return new ValidationResult(
+                "NewStatus is not a valid MomentStatus value.",
+                new[] { nameof(NewStatus) });
+    }
 }
 
 
 ===== FILE: PromiseModelOnline.Api/DTOs/UpdateMomentStrideAssignmentRequest.cs =====
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
 namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>
 /// Request body for changing a moment's stride assignment.
 /// Set <see cref="StrideId"/> to null to move the moment back to the backlog.
 /// </summary>
-public class UpdateMomentStrideAssignmentRequest
+public class UpdateMomentStrideAssignmentRequest : IValidatableObject
 {
     public int? StrideId { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (StrideId is not null && StrideId <= 0)
+            yield return new ValidationResult(
+                "StrideId must be a positive integer when provided.",
+                new[] { nameof(StrideId) });
+    }
 }
+
+
+===== FILE: PromiseModelOnline.Api/DTOs/UpdateNotificationRequestDTO.cs =====
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace PromiseModelOnline.Api.DTOs;
+
+/// <summary>
+/// Partial update payload for a single notification.
+/// </summary>
+public class UpdateNotificationRequestDTO : IValidatableObject
+{
+    public bool? IsRead { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (IsRead is null)
+            yield return new ValidationResult(
+                "At least one updatable field is required.",
+                new[] { nameof(IsRead) });
+        else if (IsRead != true)
+            yield return new ValidationResult(
+                "Only setting IsRead=true is supported.",
+                new[] { nameof(IsRead) });
+    }
+}
+
+
+
+===== FILE: PromiseModelOnline.Api/DTOs/UpdateNotificationsRequestDTO.cs =====
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+
+namespace PromiseModelOnline.Api.DTOs;
+
+/// <summary>
+/// Partial update payload for a user's notification collection.
+/// Currently supports setting all notifications to read.
+/// </summary>
+public class UpdateNotificationsRequestDTO : IValidatableObject
+{
+    public bool? IsRead { get; set; }
+
+    /// <summary>
+    /// When true, applies the change to all of the current user's notifications.
+    /// </summary>
+    public bool? ApplyToAll { get; set; }
+
+    /// <summary>
+    /// When provided, applies the change to the specified notification ids.
+    /// Use this instead of ApplyToAll for targeted bulk updates.
+    /// </summary>
+    public int[]? NotificationIds { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (IsRead is null)
+            yield return new ValidationResult(
+                "At least one updatable field is required.",
+                new[] { nameof(IsRead) });
+        else if (IsRead != true)
+            yield return new ValidationResult(
+                "Only setting IsRead=true is supported.",
+                new[] { nameof(IsRead) });
+
+        if (ApplyToAll == true && NotificationIds is not null)
+            yield return new ValidationResult(
+                "Cannot specify both ApplyToAll and NotificationIds",
+                new[] { nameof(ApplyToAll), nameof(NotificationIds) });
+
+        if (ApplyToAll != true && (NotificationIds is null || NotificationIds.Length == 0))
+            yield return new ValidationResult(
+                "Must provide NotificationIds if not applying to all",
+                new[] { nameof(NotificationIds) });
+
+        if (NotificationIds is not null && NotificationIds.Any(id => id <= 0))
+            yield return new ValidationResult(
+                "NotificationIds must contain only positive integers.",
+                new[] { nameof(NotificationIds) });
+    }
+}
+
+
+
+===== FILE: PromiseModelOnline.Api/DTOs/UpdatePermissionRequestDTO.cs =====
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace PromiseModelOnline.Api.DTOs;
+
+/// <summary>
+/// Partial update payload for a permission invitation (e.g., accept an invite).
+/// </summary>
+public class UpdatePermissionRequestDTO : IValidatableObject
+{
+    public string? Status { get; set; }
+    public string? Level { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (string.IsNullOrWhiteSpace(Status))
+            yield return new ValidationResult(
+                "Status is required.",
+                new[] { nameof(Status) });
+
+        if (!string.IsNullOrWhiteSpace(Level))
+            yield return new ValidationResult(
+                "Level cannot be updated via this endpoint.",
+                new[] { nameof(Level) });
+
+        var normalizedStatus = Status?.Trim();
+        if (!string.IsNullOrWhiteSpace(normalizedStatus)
+            && !string.Equals(normalizedStatus, "Active", System.StringComparison.OrdinalIgnoreCase))
+            yield return new ValidationResult(
+                "Only Status='Active' is supported.",
+                new[] { nameof(Status) });
+    }
+}
+
+
+
+===== FILE: PromiseModelOnline.Api/DTOs/UpdateReactionRequestDTO.cs =====
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace PromiseModelOnline.Api.DTOs;
+
+/// <summary>
+/// Partial update payload for a reaction.
+/// </summary>
+public class UpdateReactionRequestDTO : IValidatableObject
+{
+    public string? Emote { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (string.IsNullOrWhiteSpace(Emote))
+            yield return new ValidationResult(
+                "Emote is required.",
+                new[] { nameof(Emote) });
+    }
+}
+
+
+
+===== FILE: PromiseModelOnline.Api/DTOs/UpdateStrideRequestDTO.cs =====
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace PromiseModelOnline.Api.DTOs;
+
+/// <summary>
+/// Partial update payload for a stride.
+/// </summary>
+public class UpdateStrideRequestDTO : IValidatableObject
+{
+    /// <summary>
+    /// When true, progresses the stride by moving unfinished moments to the next stride.
+    /// </summary>
+    public bool? ProgressUnfinishedMoments { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (ProgressUnfinishedMoments is null)
+            yield return new ValidationResult(
+                "At least one updatable field is required.",
+                new[] { nameof(ProgressUnfinishedMoments) });
+        else if (ProgressUnfinishedMoments != true)
+            yield return new ValidationResult(
+                "Only setting ProgressUnfinishedMoments=true is supported.",
+                new[] { nameof(ProgressUnfinishedMoments) });
+    }
+}
+
 
 
 ===== FILE: PromiseModelOnline.Api/Enums/BugReworkStatus.cs =====
@@ -5472,9 +6716,12 @@ public static class PromiseHierarchySeeder
             var statement = GetValue(row, "Moment Promise Statement");
             var strideIdStr = GetValue(row, "Assigned Stride ID");
 
-            int? strideId = string.IsNullOrWhiteSpace(strideIdStr)
-                ? (int?)null
-                : int.Parse(strideIdStr);
+            int? strideId = null;
+            if (!string.IsNullOrWhiteSpace(strideIdStr) &&
+                int.TryParse(strideIdStr, out var parsedStrideId))
+            {
+                strideId = parsedStrideId;
+            }
 
             var sql = @"
                 SET IDENTITY_INSERT Moments ON;
@@ -5482,7 +6729,10 @@ public static class PromiseHierarchySeeder
                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, 0);
                 SET IDENTITY_INSERT Moments OFF;";
 
-            var parameters = new object[] {
+            object? strideParam = strideId.HasValue ? strideId.Value : DBNull.Value;
+
+            var parameters = new object[]
+            {
                 momentId,
                 flowId,
                 statement,
@@ -5490,7 +6740,7 @@ public static class PromiseHierarchySeeder
                 (int)MomentStatus.Todo,
                 momentId,
                 DateTime.UtcNow,
-                strideId,
+                strideParam,
                 "red"
             };
             await db.Database.ExecuteSqlRawAsync(sql, parameters);
@@ -6034,6 +7284,88 @@ internal class StrideAutomationService : IHostedService, IDisposable
 
     public void Dispose() => _timer?.Dispose();
 }
+
+
+===== FILE: PromiseModelOnline.Api/Filters/AuditLoggingActionFilter.cs =====
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+
+namespace PromiseModelOnline.Api.Filters;
+
+public sealed class AuditLoggingActionFilter : IAsyncActionFilter
+{
+    private static readonly HashSet<string> MutatingMethods = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE"
+    };
+
+    private readonly ILogger<AuditLoggingActionFilter> _logger;
+
+    public AuditLoggingActionFilter(ILogger<AuditLoggingActionFilter> logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        var request = context.HttpContext.Request;
+        if (!MutatingMethods.Contains(request.Method))
+        {
+            await next();
+            return;
+        }
+
+        var utcTimestamp = DateTime.UtcNow;
+
+        var user = context.HttpContext.User;
+        var jwtSub = user.FindFirst("sub")?.Value
+                 ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = user.FindFirst(ClaimTypes.Email)?.Value
+              ?? user.FindFirst("email")?.Value;
+
+        var controller = context.RouteData.Values.TryGetValue("controller", out var controllerObj)
+            ? controllerObj?.ToString()
+            : null;
+        var action = context.RouteData.Values.TryGetValue("action", out var actionObj)
+            ? actionObj?.ToString()
+            : null;
+
+        var routeValues = context.RouteData.Values
+            .Where(kvp => !string.Equals(kvp.Key, "controller", StringComparison.OrdinalIgnoreCase)
+                          && !string.Equals(kvp.Key, "action", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString());
+
+        var executed = await next();
+
+        if (executed.Exception is not null && !executed.ExceptionHandled)
+            return;
+
+        var statusCode = executed.HttpContext.Response.StatusCode;
+        if (statusCode < 200 || statusCode >= 300)
+            return;
+
+        _logger.LogInformation(
+            "Audit: {Method} {Path} {StatusCode} Controller={Controller} Action={Action} RouteValues={RouteValues} JwtSub={JwtSub} Email={Email} Utc={UtcTimestamp}",
+            request.Method,
+            request.Path.Value,
+            statusCode,
+            controller,
+            action,
+            routeValues,
+            jwtSub,
+            email,
+            utcTimestamp);
+    }
+}
+
 
 
 ===== FILE: PromiseModelOnline.Api/key.pem =====
@@ -9153,10 +10485,12 @@ public class BugReworkTask
 
 ===== FILE: PromiseModelOnline.Api/Models/ChangePasswordRequest.cs =====
 using System.Text.Json.Serialization;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.Models;
 
-public class ChangePasswordRequest
+public class ChangePasswordRequest : IValidatableObject
 {
     [JsonPropertyName("currentPassword")]
     public string CurrentPassword { get; set; } = string.Empty;
@@ -9166,6 +10500,31 @@ public class ChangePasswordRequest
 
     [JsonPropertyName("confirmPassword")]
     public string ConfirmPassword { get; set; } = string.Empty;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (string.IsNullOrWhiteSpace(CurrentPassword))
+            yield return new ValidationResult(
+                "CurrentPassword is required.",
+                new[] { nameof(CurrentPassword) });
+
+        if (string.IsNullOrWhiteSpace(NewPassword))
+            yield return new ValidationResult(
+                "NewPassword is required.",
+                new[] { nameof(NewPassword) });
+
+        if (string.IsNullOrWhiteSpace(ConfirmPassword))
+            yield return new ValidationResult(
+                "ConfirmPassword is required.",
+                new[] { nameof(ConfirmPassword) });
+
+        if (!string.IsNullOrWhiteSpace(NewPassword)
+            && !string.IsNullOrWhiteSpace(ConfirmPassword)
+            && !string.Equals(NewPassword, ConfirmPassword, System.StringComparison.Ordinal))
+            yield return new ValidationResult(
+                "NewPassword and ConfirmPassword must match.",
+                new[] { nameof(NewPassword), nameof(ConfirmPassword) });
+    }
 }
 
 
@@ -9891,6 +11250,7 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
+using PromiseModelOnline.Api.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -9953,7 +11313,10 @@ builder.Services.AddAuthentication(x =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<AuditLoggingActionFilter>();
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -11956,20 +13319,20 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
 
-        #region UpsertReactionAsync Tests
+        #region CreateReactionAsync / UpdateReactionAsync Tests
 
         [Test]
-        public async Task UpsertReactionAsync_ExistingReaction_UpdatesEmote()
+        public async Task UpdateReactionAsync_ExistingReaction_UpdatesEmote()
         {
             var existing = new Reaction { Id = 1, UserId = 10, Emote = "👍", StackItemType = "Moment", StackItemId = 5 };
-            _reactionRepoMock.Setup(r => r.GetUserReactionAsync(10, "Moment", 5)).ReturnsAsync(existing);
+            _reactionRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existing);
             _reactionRepoMock.Setup(r => r.Update(It.IsAny<Reaction>()));
             _reactionRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
             _mapperMock.Setup(m => m.Map(existing, null!)).Returns(new ReactionDTO { Id = 1, Emote = "👎" });
 
-            var request = new CreateReactionRequest { Emote = "👎", StackItemType = "Moment", StackItemId = 5 };
-            var result = await _service.UpsertReactionAsync(request, 10);
+            var request = new UpdateReactionRequestDTO { Emote = "👎" };
+            var result = await _service.UpdateReactionAsync(1, request, 10);
 
             Assert.That(result.Emote, Is.EqualTo("👎"));
             Assert.That(existing.Emote, Is.EqualTo("👎"));
@@ -11979,7 +13342,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpsertReactionAsync_NoExistingReaction_CreatesNew()
+        public async Task CreateReactionAsync_NoExistingReaction_CreatesNew()
         {
             _reactionRepoMock.Setup(r => r.GetUserReactionAsync(20, "Epic", 3)).ReturnsAsync((Reaction?)null);
             _reactionRepoMock.Setup(r => r.AddAsync(It.IsAny<Reaction>())).Returns(Task.CompletedTask);
@@ -12000,7 +13363,7 @@ namespace PromiseModelOnline.Api.Tests
                        });
 
             var request = new CreateReactionRequest { Emote = "🚀", StackItemType = "Epic", StackItemId = 3 };
-            var result = await _service.UpsertReactionAsync(request, 20);
+            var result = await _service.CreateReactionAsync(request, 20);
 
             Assert.That(result.Emote, Is.EqualTo("🚀"));
             Assert.That(savedReaction, Is.Not.Null);
@@ -12250,6 +13613,7 @@ namespace PromiseModelOnline.Api.Tests
 ===== FILE: PromiseModelOnline.Api.Tests/UnitTests/Controllers/ChangePasswordControllerUnitTests.cs =====
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Controllers;
@@ -12267,7 +13631,7 @@ namespace PromiseModelOnline.Api.Tests
         public void SetUp()
         {
             _authClientMock = new Mock<IAuthClient>();
-            _controller = new ChangePasswordController(_authClientMock.Object);
+            _controller = new ChangePasswordController(_authClientMock.Object, NullLogger<ChangePasswordController>.Instance);
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()
@@ -12911,6 +14275,53 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         #endregion
+    }
+}
+
+
+
+===== FILE: PromiseModelOnline.Api.Tests/UnitTests/Controllers/DeadlineNotificationRunsControllerUnitTests.cs =====
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
+using NUnit.Framework;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.Controllers;
+using System.Threading.Tasks;
+
+namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
+{
+    [TestFixture]
+    public class DeadlineNotificationRunsControllerUnitTests
+    {
+        private Mock<IStrideService> _strideServiceMock = null!;
+        private DeadlineNotificationRunsController _controller = null!;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _strideServiceMock = new Mock<IStrideService>();
+            _controller = new DeadlineNotificationRunsController(_strideServiceMock.Object)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext()
+                }
+            };
+        }
+
+        [Test]
+        public async Task Create_ReturnsNoContentAndCallsService()
+        {
+            _strideServiceMock
+                .Setup(s => s.SendDeadlineNotificationsAsync())
+                .Returns(Task.CompletedTask);
+
+            var result = await _controller.Create();
+
+            Assert.That(result, Is.InstanceOf<NoContentResult>());
+            _strideServiceMock.Verify(s => s.SendDeadlineNotificationsAsync(), Times.Once);
+        }
     }
 }
 
@@ -14629,6 +16040,7 @@ namespace PromiseModelOnline.Api.Tests
 
 ===== FILE: PromiseModelOnline.Api.Tests/UnitTests/Controllers/LogoutControllerUnitTests.cs =====
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Controllers;
@@ -14646,24 +16058,34 @@ namespace PromiseModelOnline.Api.Tests
         public void SetUp()
         {
             _authClientMock = new Mock<IAuthClient>();
-            _controller = new LogoutController(_authClientMock.Object);
+            _controller = new LogoutController(_authClientMock.Object)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext()
+                }
+            };
+
+            _controller.ControllerContext.HttpContext.Request.Headers.Authorization = "Bearer test-access-token";
         }
 
         [Test]
-        public async Task Logout_WhenAuthServiceSucceeds_ReturnsOk()
+        public async Task Logout_WhenAuthServiceSucceeds_ReturnsNoContent()
         {
             var request = new LogoutRequest
             {
                 RefreshToken = "valid-refresh-token-123"
             };
 
-            _authClientMock.Setup(x => x.LogoutAsync(request)).Returns(Task.CompletedTask);
+            _authClientMock
+                .Setup(x => x.LogoutAsync(request, "Bearer test-access-token"))
+                .Returns(Task.CompletedTask);
 
             var result = await _controller.Logout(request);
 
-            Assert.That(result, Is.InstanceOf<OkResult>());
+            Assert.That(result, Is.InstanceOf<NoContentResult>());
 
-            _authClientMock.Verify(x => x.LogoutAsync(request), Times.Once);
+            _authClientMock.Verify(x => x.LogoutAsync(request, "Bearer test-access-token"), Times.Once);
         }
 
         [Test]
@@ -14674,7 +16096,9 @@ namespace PromiseModelOnline.Api.Tests
                 RefreshToken = "invalid-refresh-token"
             };
 
-            _authClientMock.Setup(x => x.LogoutAsync(request)).ThrowsAsync(new UnauthorizedAccessException());
+            _authClientMock
+                .Setup(x => x.LogoutAsync(request, "Bearer test-access-token"))
+                .ThrowsAsync(new UnauthorizedAccessException());
 
             var result = await _controller.Logout(request);
 
@@ -14683,7 +16107,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(unauthorized, Is.Not.Null);
             Assert.That(unauthorized!.Value, Is.EqualTo("Invalid refresh token"));
 
-            _authClientMock.Verify(x => x.LogoutAsync(request), Times.Once);
+            _authClientMock.Verify(x => x.LogoutAsync(request, "Bearer test-access-token"), Times.Once);
         }
 
         [Test]
@@ -14694,7 +16118,9 @@ namespace PromiseModelOnline.Api.Tests
                 RefreshToken = "valid-refresh-token"
             };
 
-            _authClientMock.Setup(x => x.LogoutAsync(request)).ThrowsAsync(new System.Exception("Database connection failed"));
+            _authClientMock
+                .Setup(x => x.LogoutAsync(request, "Bearer test-access-token"))
+                .ThrowsAsync(new System.Exception("Database connection failed"));
 
             var result = await _controller.Logout(request);
 
@@ -14704,13 +16130,15 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(objectResult!.StatusCode, Is.EqualTo(500));
             Assert.That(objectResult.Value, Is.EqualTo("Internal server error"));
 
-            _authClientMock.Verify(x => x.LogoutAsync(request), Times.Once);
+            _authClientMock.Verify(x => x.LogoutAsync(request, "Bearer test-access-token"), Times.Once);
         }
 
         [Test]
         public async Task Logout_WhenRequestIsNull_ReturnsServerError()
         {
-            _authClientMock.Setup(x => x.LogoutAsync(null!)).ThrowsAsync(new ArgumentNullException(nameof(LogoutRequest)));
+            _authClientMock
+                .Setup(x => x.LogoutAsync(null, "Bearer test-access-token"))
+                .ThrowsAsync(new ArgumentNullException(nameof(LogoutRequest)));
 
             var result = await _controller.Logout(null!);
 
@@ -14719,7 +16147,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(objectResult, Is.Not.Null);
             Assert.That(objectResult!.StatusCode, Is.EqualTo(500));
 
-            _authClientMock.Verify(x => x.LogoutAsync(null!), Times.Once);
+            _authClientMock.Verify(x => x.LogoutAsync(null, "Bearer test-access-token"), Times.Once);
         }
     }
 }
@@ -14732,6 +16160,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -14764,7 +16193,8 @@ namespace PromiseModelOnline.Api.Tests
                 _mockMomentService.Object,
                 _mockMapper.Object,
                 _mockUserRepo.Object,
-                _mockPermissionService.Object);
+                _mockPermissionService.Object,
+                NullLogger<MomentsController>.Instance);
             _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
         }
 
@@ -14774,7 +16204,8 @@ namespace PromiseModelOnline.Api.Tests
                 _mockMomentService.Object,
                 _mockMapper.Object,
                 _mockUserRepo.Object,
-                _mockPermissionService.Object);
+                _mockPermissionService.Object,
+                NullLogger<MomentsController>.Instance);
 
             var claims = new List<Claim>();
             if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
@@ -15103,6 +16534,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -15124,7 +16556,10 @@ namespace PromiseModelOnline.Api.Tests
         {
             _notificationServiceMock = new Mock<INotificationService>();
             _userRepositoryMock = new Mock<IUserRepository>();
-            _controller = new NotificationsController(_notificationServiceMock.Object, _userRepositoryMock.Object);
+            _controller = new NotificationsController(
+                _notificationServiceMock.Object,
+                _userRepositoryMock.Object,
+                NullLogger<NotificationsController>.Instance);
         }
 
         private void SetCurrentUser(string? email, string? nameId = null)
@@ -15192,7 +16627,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task MarkAsRead_WithAuthenticatedUser_ReturnsNoContent()
+        public async Task UpdateNotification_SetRead_WithAuthenticatedUser_ReturnsNoContent()
         {
             var currentUser = new User { Id = 21, Email = "reader@example.com", Name = "Reader" };
 
@@ -15205,25 +16640,25 @@ namespace PromiseModelOnline.Api.Tests
 
             SetCurrentUser("reader@example.com");
 
-            var result = await _controller.MarkAsRead(9);
+            var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
 
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _notificationServiceMock.Verify(s => s.MarkAsReadAsync(9, currentUser.Id), Times.Once);
         }
 
         [Test]
-        public async Task MarkAsRead_MissingEmail_ReturnsUnauthorized()
+        public async Task UpdateNotification_MissingEmail_ReturnsUnauthorized()
         {
             SetCurrentUser(null);
 
-            var result = await _controller.MarkAsRead(9);
+            var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
 
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
             _notificationServiceMock.Verify(s => s.MarkAsReadAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]
-        public async Task MarkAllAsRead_WithAuthenticatedUser_ReturnsNoContent()
+        public async Task UpdateNotifications_SetAllRead_WithAuthenticatedUser_ReturnsNoContent()
         {
             var currentUser = new User { Id = 33, Email = "reader@example.com", Name = "Reader" };
 
@@ -15236,7 +16671,7 @@ namespace PromiseModelOnline.Api.Tests
 
             SetCurrentUser("reader@example.com", "reader-name");
 
-            var result = await _controller.MarkAllAsRead();
+            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
 
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _notificationServiceMock.Verify(s => s.MarkAllAsReadAsync(currentUser.Id), Times.Once);
@@ -15244,11 +16679,38 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task MarkAllAsRead_MissingEmail_ReturnsUnauthorized()
+        public async Task UpdateNotifications_ByIds_WithAuthenticatedUser_ReturnsNoContent()
+        {
+            var currentUser = new User { Id = 33, Email = "reader@example.com", Name = "Reader" };
+
+            _userRepositoryMock
+                .Setup(r => r.GetOrCreateUserByEmailAsync("reader@example.com", "reader-name"))
+                .ReturnsAsync(currentUser);
+
+            _notificationServiceMock
+                .Setup(s => s.MarkAsReadAsync(It.IsAny<int>(), currentUser.Id))
+                .Returns(Task.CompletedTask);
+
+            SetCurrentUser("reader@example.com", "reader-name");
+
+            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO
+            {
+                IsRead = true,
+                NotificationIds = new[] { 1, 2, 2 }
+            });
+
+            Assert.That(result, Is.InstanceOf<NoContentResult>());
+            _notificationServiceMock.Verify(s => s.MarkAsReadAsync(1, currentUser.Id), Times.Once);
+            _notificationServiceMock.Verify(s => s.MarkAsReadAsync(2, currentUser.Id), Times.Once);
+            _notificationServiceMock.Verify(s => s.MarkAllAsReadAsync(It.IsAny<int>()), Times.Never);
+        }
+
+        [Test]
+        public async Task UpdateNotifications_MissingEmail_ReturnsUnauthorized()
         {
             SetCurrentUser(null);
 
-            var result = await _controller.MarkAllAsRead();
+            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
 
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
             _notificationServiceMock.Verify(s => s.MarkAllAsReadAsync(It.IsAny<int>()), Times.Never);
@@ -15263,6 +16725,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -15285,7 +16748,10 @@ namespace PromiseModelOnline.Api.Tests
         {
             _permissionServiceMock = new Mock<IPermissionService>();
             _userRepositoryMock = new Mock<IUserRepository>();
-            _controller = new PermissionsController(_permissionServiceMock.Object, _userRepositoryMock.Object);
+            _controller = new PermissionsController(
+                _permissionServiceMock.Object,
+                _userRepositoryMock.Object,
+                NullLogger<PermissionsController>.Instance);
         }
 
         private void SetCurrentUser(string? email, string? nameId = null)
@@ -15421,13 +16887,14 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task AcceptInvitation_WithAuthenticatedUser_ReturnsOkWithPermission()
+        public async Task UpdatePermission_AcceptInvitation_WithAuthenticatedUser_ReturnsOkWithPermission()
         {
-            var request = new AcceptInvitationRequestDTO { PermissionId = 55 };
+            const int permissionId = 55;
+            var request = new UpdatePermissionRequestDTO { Status = "Active" };
             var currentUser = new User { Id = 9, Email = "member@example.com", Name = "Member" };
             var acceptedPermission = new PermissionDTO
             {
-                Id = 55,
+                Id = permissionId,
                 UserId = 9,
                 UserName = "Member",
                 ProjectId = 42,
@@ -15439,49 +16906,50 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(r => r.GetOrCreateUserByEmailAsync("member@example.com", null))
                 .ReturnsAsync(currentUser);
             _permissionServiceMock
-                .Setup(s => s.AcceptInvitationAsync(request.PermissionId, currentUser.Id))
+                .Setup(s => s.AcceptInvitationAsync(permissionId, currentUser.Id))
                 .ReturnsAsync(acceptedPermission);
 
             SetCurrentUser("member@example.com");
 
-            var result = await _controller.AcceptInvitation(request);
+            var result = await _controller.UpdatePermissionStatus(permissionId, request);
 
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
             Assert.That(okResult!.Value, Is.SameAs(acceptedPermission));
-            _permissionServiceMock.Verify(s => s.AcceptInvitationAsync(request.PermissionId, currentUser.Id), Times.Once);
+            _permissionServiceMock.Verify(s => s.AcceptInvitationAsync(permissionId, currentUser.Id), Times.Once);
         }
 
         [Test]
-        public async Task AcceptInvitation_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task UpdatePermission_WhenNoEmailClaim_ReturnsUnauthorized()
         {
-            var request = new AcceptInvitationRequestDTO { PermissionId = 55 };
+            var request = new UpdatePermissionRequestDTO { Status = "Active" };
 
             SetCurrentUser(null);
 
-            var result = await _controller.AcceptInvitation(request);
+            var result = await _controller.UpdatePermissionStatus(55, request);
 
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
             _permissionServiceMock.Verify(s => s.AcceptInvitationAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]
-        public async Task AcceptInvitation_WhenServiceThrows_ReturnsBadRequest()
+        public async Task UpdatePermission_WhenServiceThrows_ReturnsBadRequest()
         {
-            var request = new AcceptInvitationRequestDTO { PermissionId = 55 };
+            const int permissionId = 55;
+            var request = new UpdatePermissionRequestDTO { Status = "Active" };
             var currentUser = new User { Id = 9, Email = "member@example.com", Name = "Member" };
 
             _userRepositoryMock
                 .Setup(r => r.GetOrCreateUserByEmailAsync("member@example.com", null))
                 .ReturnsAsync(currentUser);
             _permissionServiceMock
-                .Setup(s => s.AcceptInvitationAsync(request.PermissionId, currentUser.Id))
+                .Setup(s => s.AcceptInvitationAsync(permissionId, currentUser.Id))
                 .ThrowsAsync(new System.Exception("accept failed"));
 
             SetCurrentUser("member@example.com");
 
-            var result = await _controller.AcceptInvitation(request);
+            var result = await _controller.UpdatePermissionStatus(permissionId, request);
 
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
@@ -15887,6 +17355,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -15912,7 +17381,10 @@ namespace PromiseModelOnline.Api.Tests
 
         private void InitControllerWithUser(string? email, string? nameid = null)
         {
-            _controller = new ReactionsController(_reactionServiceMock.Object, _userRepositoryMock.Object);
+            _controller = new ReactionsController(
+                _reactionServiceMock.Object,
+                _userRepositoryMock.Object,
+                NullLogger<ReactionsController>.Instance);
 
             var claims = new List<Claim>();
             if (email is not null)
@@ -15977,7 +17449,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpsertReaction_WithAuthenticatedUser_ReturnsOkWithReaction()
+        public async Task CreateReaction_WithAuthenticatedUser_ReturnsCreatedWithReaction()
         {
             var request = new CreateReactionRequest
             {
@@ -16002,23 +17474,23 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null))
                 .ReturnsAsync(currentUser);
             _reactionServiceMock
-                .Setup(s => s.UpsertReactionAsync(request, currentUser.Id))
+                .Setup(s => s.CreateReactionAsync(request, currentUser.Id))
                 .ReturnsAsync(createdReaction);
 
             InitControllerWithUser("user@example.com");
 
-            var result = await _controller.UpsertReaction(request);
+            var result = await _controller.CreateReaction(request);
 
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            Assert.That(okResult!.Value, Is.SameAs(createdReaction));
+            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+            var created = result.Result as CreatedAtActionResult;
+            Assert.That(created, Is.Not.Null);
+            Assert.That(created!.Value, Is.SameAs(createdReaction));
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync("user@example.com", null), Times.Once);
-            _reactionServiceMock.Verify(s => s.UpsertReactionAsync(request, currentUser.Id), Times.Once);
+            _reactionServiceMock.Verify(s => s.CreateReactionAsync(request, currentUser.Id), Times.Once);
         }
 
         [Test]
-        public async Task UpsertReaction_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task CreateReaction_WhenNoEmailClaim_ReturnsUnauthorized()
         {
             var request = new CreateReactionRequest
             {
@@ -16029,11 +17501,11 @@ namespace PromiseModelOnline.Api.Tests
 
             InitControllerWithUser(null);
 
-            var result = await _controller.UpsertReaction(request);
+            var result = await _controller.CreateReaction(request);
 
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()), Times.Never);
-            _reactionServiceMock.Verify(s => s.UpsertReactionAsync(It.IsAny<CreateReactionRequest>(), It.IsAny<int>()), Times.Never);
+            _reactionServiceMock.Verify(s => s.CreateReactionAsync(It.IsAny<CreateReactionRequest>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]
@@ -16244,6 +17716,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -16267,7 +17740,11 @@ namespace PromiseModelOnline.Api.Tests
             _mockStrideService = new Mock<IStrideService>();
             _mockMapper = new Mock<IGenericMapper<Stride, StrideDTO>>();
             _mockMomentService = new Mock<IMomentService>();
-            _controller = new StridesController(_mockStrideService.Object, _mockMapper.Object, _mockMomentService.Object);
+            _controller = new StridesController(
+                _mockStrideService.Object,
+                _mockMapper.Object,
+                _mockMomentService.Object,
+                NullLogger<StridesController>.Instance);
             _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
         }
 
@@ -16379,7 +17856,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task ProgressStride_ReturnsNoContentAndMovesMoments()
+        public async Task UpdateStride_ProgressUnfinishedMoments_ReturnsNoContentAndMovesMoments()
         {
             const int strideId = 12;
 
@@ -16387,24 +17864,12 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
                 .Returns(Task.CompletedTask);
 
-            var result = await _controller.ProgressStride(strideId);
+            var result = await _controller.UpdateStride(strideId, new UpdateStrideRequestDTO { ProgressUnfinishedMoments = true });
 
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _mockMomentService.Verify(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId), Times.Once);
         }
 
-        [Test]
-        public async Task SendDeadlineNotifications_ReturnsNoContentAndCallsService()
-        {
-            _mockStrideService
-                .Setup(s => s.SendDeadlineNotificationsAsync())
-                .Returns(Task.CompletedTask);
-
-            var result = await _controller.SendDeadlineNotifications();
-
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockStrideService.Verify(s => s.SendDeadlineNotificationsAsync(), Times.Once);
-        }
     }
 }
 
@@ -17937,7 +19402,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/users/me")]
 public class ChangePasswordController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -17949,7 +19414,7 @@ public class ChangePasswordController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("change-password")]
+    [HttpPatch]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest? request)
     {
@@ -18019,7 +19484,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/users/me")]
 public class DeleteAccountController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -18031,7 +19496,7 @@ public class DeleteAccountController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("delete-account")]
+    [HttpDelete]
     [Authorize]
     public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest? request)
     {
@@ -18119,7 +19584,7 @@ using System.Security.Cryptography;
 namespace PromiseModelOnline.Auth.Controllers
 {
     [ApiController]
-    [Route("auth/")]
+    [Route("api")]
     public class LoginController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -18134,7 +19599,7 @@ namespace PromiseModelOnline.Auth.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("login")]
+        [HttpPost("sessions")]
         public async Task<IActionResult> Login([FromBody] UserLogin userLogin)
         {
             if (string.IsNullOrEmpty(userLogin?.UserName) || string.IsNullOrEmpty(userLogin?.Password))
@@ -18173,7 +19638,7 @@ namespace PromiseModelOnline.Auth.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("refresh")]
+        [HttpPost("access-tokens")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {
             if (request == null || string.IsNullOrEmpty(request.RefreshToken))
@@ -18277,7 +19742,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/sessions/current")]
 public class LogoutController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -18290,7 +19755,7 @@ public class LogoutController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("logout")]
+    [HttpDelete]
     [Authorize]   // Requires a valid access token in the Authorization header
     public async Task<IActionResult> Logout([FromBody] LogoutRequest? request)
     {
@@ -18338,7 +19803,7 @@ using System.Linq;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/users")]
 public class RegisterController : ControllerBase
 {
     private readonly IConfiguration _config;
@@ -18352,7 +19817,7 @@ public class RegisterController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost("register")]
+    [HttpPost]
     public async Task<IActionResult> Register([FromBody] RegisterRequest req)
     {
         // Require a registration key for automated provisioning
@@ -21802,7 +23267,7 @@ input[type=button]:hover, input[type=submit]:hover {
 export const base = "https://localhost:8000";
 
 export function getToken(username, password) {
-    const login_url = `${base}/auth/login`
+    const login_url = `${base}/api/sessions`
     const body = JSON.stringify({
         username: `${username}`,
         password: `${password}`
@@ -21843,18 +23308,19 @@ export function getToken(username, password) {
 }
 
 export function requestLogout(token) {
-    const logout_url = `${base}/auth/logout`
+    const logout_url = `${base}/api/sessions/current`
+    const accessToken = getAccessTokenFromCookie();
 
     return fetch(logout_url, {
-        method: 'POST',
+        method: 'DELETE',
         mode: 'cors',
         headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
         },
-        body: JSON.stringify({})   // <-- send an empty JSON body
+        body: JSON.stringify({ refreshToken: token })
     })
     .then(response => {
         if (response.ok) {
@@ -21875,7 +23341,7 @@ export function requestLogout(token) {
 }
 
 export function registerUser(username, email, password) {
-    const register_url = `${base}/auth/register`;
+    const register_url = `${base}/api/users`;
     const body = JSON.stringify({
         userName: username,
         email: email,
@@ -21919,7 +23385,7 @@ export function registerUser(username, email, password) {
 import { getAccessTokenFromCookie } from './parser.mjs';
 
 export function changePassword(currentPassword, newPassword, confirmPassword) {
-    const change_url = `${base}/auth/change-password`;
+    const change_url = `${base}/api/users/me`;
     const token = getAccessTokenFromCookie();
 
     const body = JSON.stringify({
@@ -21929,7 +23395,7 @@ export function changePassword(currentPassword, newPassword, confirmPassword) {
     });
 
     return fetch(change_url, {
-        method: 'POST',
+        method: 'PATCH',
         mode: 'cors',
         headers: {
             'Accept': 'application/json',
@@ -22118,10 +23584,11 @@ export function loadComments(container, parentType, parentId) {
         const text = textarea.value.trim();
         if (!text) return;
         try {
-            await postComment(parentType, parentId, text);
-            const updated = await getComments(parentType, parentId);
-            renderComments(commentsList, updated);
+            const y = window.scrollY;
+            const created = await postComment(parentType, parentId, text);
+            appendComment(commentsList, created);
             textarea.value = '';
+            window.scrollTo(0, y);
         } catch (err) {
             alert('Failed to post comment.');
             console.error(err);
@@ -22135,23 +23602,32 @@ function renderComments(container, comments) {
         container.innerHTML = '<p class="no-items">No comments yet.</p>';
         return;
     }
-    comments.forEach(comment => {
-        const div = document.createElement('div');
-        div.className = 'comment-item';
-        div.innerHTML = `
-            <div class="comment-meta">
-                <strong>${escapeHtml(comment.userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
+    comments.forEach(comment => container.appendChild(createCommentElement(comment)));
+}
+
+function appendComment(container, comment) {
+    // Remove empty state without re-rendering the entire list.
+    const empty = container.querySelector('.no-items');
+    if (empty) empty.remove();
+    container.appendChild(createCommentElement(comment));
+}
+
+function createCommentElement(comment) {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    div.innerHTML = `
+        <div class="comment-meta">
+            <strong>${escapeHtml(comment.userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
+        </div>
+        <div class="comment-text">${formatCommentText(comment.text)}</div>
+        ${comment.mentionedUsers && comment.mentionedUsers.length ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
+        ${comment.replies && comment.replies.length ? `<div class="comment-replies">${comment.replies.map(r => `
+            <div class="comment-item reply">
+                <strong>${escapeHtml(r.userName)}</strong>: ${escapeHtml(r.text)}
             </div>
-            <div class="comment-text">${formatCommentText(comment.text)}</div>
-            ${comment.mentionedUsers && comment.mentionedUsers.length ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
-            ${comment.replies && comment.replies.length ? `<div class="comment-replies">${comment.replies.map(r => `
-                <div class="comment-item reply">
-                    <strong>${escapeHtml(r.userName)}</strong>: ${escapeHtml(r.text)}
-                </div>
-            `).join('')}</div>` : ''}
-        `;
-        container.appendChild(div);
-    });
+        `).join('')}</div>` : ''}
+    `;
+    return div;
 }
 
 function formatCommentText(text) {
@@ -22548,14 +24024,14 @@ export async function getPendingInvitations() {
 
 export async function acceptInvitation(permissionId) {
     const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/permissions/accept`, {
-        method: 'POST',
+    const res = await fetch(`${base}/api/permissions/${permissionId}`, {
+        method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
-        body: JSON.stringify({ permissionId })
+        body: JSON.stringify({ status: 'Active' })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
@@ -22608,7 +24084,16 @@ export function loadInvitationsPage(contentDiv) {
                     const id = parseInt(btn.dataset.permissionId, 10);
                     try {
                         await acceptInvitation(id);
-                        refresh(); // reload list
+                        // Inline DOM update (no full list reload)
+                        const y = window.scrollY;
+                        const row = btn.closest('tr');
+                        row?.remove();
+
+                        const remaining = listDiv.querySelectorAll('tbody tr').length;
+                        if (remaining === 0) {
+                            listDiv.innerHTML = '<p class="no-items">No pending invitations.</p>';
+                        }
+                        window.scrollTo(0, y);
                     } catch (err) {
                         alert('Failed to accept invitation');
                         console.error(err);
@@ -23069,7 +24554,7 @@ export async function moveMomentToStride(momentId, targetStrideId) {
     const url = `${base}/api/moments/${momentId}/stride-assignment`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -23092,7 +24577,7 @@ export async function updateMomentStatus(momentId, newStatus) {
     const url = `${base}/api/moments/${momentId}/status`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -23146,7 +24631,7 @@ export async function updateMomentOwner(momentId, userId) {
     const url = `${base}/api/moments/${momentId}/owner`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -23484,125 +24969,274 @@ export async function fetchAllNotifications() {
 
 export async function markNotificationAsRead(id) {
     const token = getAccessTokenFromCookie();
-    await fetch(`${base}/api/notifications/${id}/read`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+    await fetch(`${base}/api/notifications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true })
     });
 }
 
 export async function markAllNotificationsAsRead() {
     const token = getAccessTokenFromCookie();
-    await fetch(`${base}/api/notifications/read-all`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+    await fetch(`${base}/api/notifications`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true, applyToAll: true })
     });
 }
 
 
 ===== FILE: PromiseModelOnline.Client/wwwroot/js/notifications/badge.mjs =====
 import { fetchUnreadNotifications } from './api.mjs';
+import { startNotificationPolling as startUnreadPolling } from './poller.mjs';
 
-/**
- * Updates the notification badge count.
- */
-export async function updateNotificationBadge() {
+const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
+let started = false;
+
+function setBadgeCount(count) {
     const badge = document.getElementById('notification-badge');
     if (!badge) return;
 
-    try {
-        const notifications = await fetchUnreadNotifications();
-        const count = Array.isArray(notifications) ? notifications.length : 0;
-
-        if (count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'inline';
-        } else {
-            badge.style.display = 'none';
-        }
-    } catch {
+    const safeCount = Number.isFinite(count) ? count : 0;
+    if (safeCount > 0) {
+        badge.textContent = String(safeCount);
+        badge.style.display = 'inline';
+    } else {
         badge.style.display = 'none';
     }
 }
 
 /**
- * Starts polling for notification counts every 30 seconds.
+ * Fetches unread notifications and updates the badge (notification endpoints only).
+ */
+export async function updateNotificationBadge() {
+    try {
+        const notifications = await fetchUnreadNotifications();
+        setBadgeCount(Array.isArray(notifications) ? notifications.length : 0);
+    } catch {
+        setBadgeCount(0);
+    }
+}
+
+/**
+ * Starts background polling for unread notifications.
+ * Updates only the badge and (if present) the notifications list.
  */
 export function startNotificationPolling() {
+    if (started) return;
+    started = true;
+
+    // Immediate badge update; then background polling.
     updateNotificationBadge();
-    setInterval(updateNotificationBadge, 30_000);
+    startUnreadPolling((notifications) => {
+        setBadgeCount(Array.isArray(notifications) ? notifications.length : 0);
+
+        // Let the notifications page update itself without navigation/reload.
+        window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
+            detail: { notifications: Array.isArray(notifications) ? notifications : [] }
+        }));
+    });
+}
+
+export function getUnreadNotificationsEventName() {
+    return NOTIFICATIONS_EVENT;
 }
 
 
 ===== FILE: PromiseModelOnline.Client/wwwroot/js/notifications/list.mjs =====
-import { fetchUnreadNotifications, fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
-import { updateNotificationBadge } from './badge.mjs';   // ← NEW
+import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
+import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.mjs';
 
-export function loadNotificationsPage(contentDiv) {
+let liveListenerRegistered = false;
+
+function setBadgeCount(count) {
+    const badge = document.getElementById('notification-badge');
+    if (!badge) return;
+    const safeCount = Number.isFinite(count) ? count : 0;
+    if (safeCount > 0) {
+        badge.textContent = String(safeCount);
+        badge.style.display = 'inline';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function decrementBadgeIfVisible() {
+    const badge = document.getElementById('notification-badge');
+    if (!badge || badge.style.display === 'none') return;
+    const current = parseInt(badge.textContent || '0', 10);
+    if (!Number.isFinite(current) || current <= 0) {
+        setBadgeCount(0);
+        return;
+    }
+    setBadgeCount(current - 1);
+}
+
+function markRowRead(row) {
+    if (!row) return;
+    const wasUnread = row.classList.contains('unread');
+    row.classList.remove('unread');
+
+    const actionsCell = row.querySelector('td[data-actions="1"]');
+    if (actionsCell) {
+        actionsCell.textContent = '✓ Read';
+    }
+
+    if (wasUnread) decrementBadgeIfVisible();
+}
+
+function renderNotificationsInto(listDiv, notifications) {
+    if (!listDiv) return;
+
+    if (!notifications || notifications.length === 0) {
+        listDiv.innerHTML = '<p class="no-items">No notifications yet.</p>';
+        return;
+    }
+
+    listDiv.innerHTML = `
+        <button id="mark-all-read" class="view-btn">Mark All as Read</button>
+        <table class="promisemodel-table">
+            <thead><tr><th>Message</th><th>Type</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody>
+                ${notifications.map(n => `
+                    <tr class="${n.isRead ? '' : 'unread'}" data-notification-id="${n.id}">
+                        <td>${escapeHtml(n.message)}</td>
+                        <td>${n.type}</td>
+                        <td>${new Date(n.createdAt).toLocaleString('en-CA')}</td>
+                        <td data-actions="1">
+                            ${!n.isRead ? `<button class="mark-read-btn" data-id="${n.id}">Read</button>` : '✓ Read'}
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+    // Mark all as read
+    document.getElementById('mark-all-read')?.addEventListener('click', async () => {
+        try {
+            await markAllNotificationsAsRead();
+            const y = window.scrollY;
+            listDiv.querySelectorAll('tbody tr').forEach(tr => {
+                tr.classList.remove('unread');
+                const actionsCell = tr.querySelector('td[data-actions="1"]');
+                if (actionsCell) actionsCell.textContent = '✓ Read';
+            });
+            setBadgeCount(0);
+            window.scrollTo(0, y);
+        } catch (err) {
+            alert('Failed to mark all as read');
+            console.error(err);
+        }
+    });
+
+    // Individual mark read
+    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = parseInt(btn.dataset.id, 10);
+            try {
+                await markNotificationAsRead(id);
+                const y = window.scrollY;
+                const row = listDiv.querySelector(`tr[data-notification-id="${id}"]`);
+                markRowRead(row);
+                window.scrollTo(0, y);
+            } catch (err) {
+                alert('Failed to mark notification as read');
+                console.error(err);
+            }
+        });
+    });
+}
+
+async function refreshNotificationsPage() {
     const listDiv = document.getElementById('notifications-list');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
+    if (!listDiv || !errorEl || !loadingEl) return;
 
-    function renderNotifications(notifications) {
-        if (!notifications || notifications.length === 0) {
-            listDiv.innerHTML = '<p class="no-items">No notifications yet.</p>';
-            return;
-        }
+    loadingEl.textContent = 'Loading notifications…';
+    errorEl.textContent = '';
+    try {
+        const notifications = await fetchAllNotifications();
+        loadingEl.textContent = '';
+        renderNotificationsInto(listDiv, notifications);
+        updateNotificationBadge();
+    } catch {
+        loadingEl.textContent = '';
+        errorEl.textContent = 'Failed to load notifications.';
+    }
+}
 
-        listDiv.innerHTML = `
-            <button id="mark-all-read" class="view-btn">Mark All as Read</button>
-            <table class="promisemodel-table">
-                <thead><tr><th>Message</th><th>Type</th><th>Date</th><th>Actions</th></tr></thead>
-                <tbody>
-                    ${notifications.map(n => `
-                        <tr class="${n.isRead ? '' : 'unread'}">
-                            <td>${escapeHtml(n.message)}</td>
-                            <td>${n.type}</td>
-                            <td>${new Date(n.createdAt).toLocaleString('en-CA')}</td>
-                            <td>
-                                ${!n.isRead ? `<button class="mark-read-btn" data-id="${n.id}">Read</button>` : '✓ Read'}
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-
-        // Mark all as read
-        document.getElementById('mark-all-read').addEventListener('click', async () => {
-            await markAllNotificationsAsRead();
-            refresh();                                 // refresh already calls updateNotificationBadge
-        });
-
-        // Individual mark read
-        document.querySelectorAll('.mark-read-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = parseInt(btn.dataset.id, 10);
-                await markNotificationAsRead(id);
-                refresh(); 
-            });
+export function loadNotificationsPage(contentDiv) {
+    // Live updates from background polling (no manual refresh required).
+    if (!liveListenerRegistered) {
+        liveListenerRegistered = true;
+        const eventName = getUnreadNotificationsEventName();
+        window.addEventListener(eventName, (e) => {
+            const currentListDiv = document.getElementById('notifications-list');
+            if (!currentListDiv) return;
+            const notifications = e?.detail?.notifications;
+            renderNotificationsInto(currentListDiv, Array.isArray(notifications) ? notifications : []);
         });
     }
 
-    async function refresh() {
-        loadingEl.textContent = 'Loading notifications…';
-        try {
-            const notifications = await fetchAllNotifications();
-            loadingEl.textContent = '';
-            renderNotifications(notifications);
-            updateNotificationBadge();
-        } catch (err) {
-            loadingEl.textContent = '';
-            errorEl.textContent = 'Failed to load notifications.';
-        }
-    }
-
-    refresh();
+    refreshNotificationsPage();
 }
 
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m]));
+}
+
+
+===== FILE: PromiseModelOnline.Client/wwwroot/js/notifications/poller.mjs =====
+import { fetchUnreadNotifications } from "./api.mjs";
+
+let intervalId = null;
+let lastSignature = null;
+
+function signature(notifications) {
+    if (!Array.isArray(notifications) || notifications.length === 0) return "";
+    // Stable signature for change detection (order-insensitive).
+    return notifications
+        .map(n => n?.id)
+        .filter(id => typeof id === 'number')
+        .sort((a, b) => a - b)
+        .join(',');
+}
+
+async function pollOnce(onChange) {
+    try {
+        const notifications = await fetchUnreadNotifications();
+        const sig = signature(notifications);
+
+        if (sig !== lastSignature) {
+            lastSignature = sig;
+            onChange(Array.isArray(notifications) ? notifications : []);
+        }
+    } catch (err) {
+        console.warn("Notification poll failed", err);
+    }
+}
+
+/**
+ * Starts unread-notification polling. Safe to call multiple times.
+ * Calls onChange whenever the unread set changes.
+ */
+export function startNotificationPolling(onChange, intervalMs = 15000) {
+    if (intervalId) return;
+    if (typeof onChange !== 'function') throw new Error('onChange callback is required');
+
+    pollOnce(onChange);
+    intervalId = setInterval(() => pollOnce(onChange), intervalMs);
+}
+
+export function stopNotificationPolling() {
+    if (!intervalId) return;
+    clearInterval(intervalId);
+    intervalId = null;
+    lastSignature = null;
 }
 
 
@@ -23679,6 +25313,8 @@ export function getNameFromToken(token) {
         return (
             payload['name'] ||
             payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+            payload['nameid'] ||
+            payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
             null
         );
     } catch (e) {
@@ -23746,7 +25382,7 @@ export function getAllProjects() {
 }
 
 export function deleteProject(projectId) {
-    const url = `${baseUrl}/projects/${projectId}`;
+    const url = `${base}/api/projects/${projectId}`;
     const accessToken = getAccessTokenFromCookie();
 
     return fetch(url, {
@@ -23841,8 +25477,11 @@ export function loadProjectList(navContentDiv, contentDiv) {
                 e.preventDefault();
                 const projectId = deleteBtn.getAttribute('project-id');
                 deleteProject(projectId).then(() => {
-                    // Reload the list after deleting the project
-                    loadProjectList();
+                    // Inline DOM update (no full list reload)
+                    const y = window.scrollY;
+                    deleteBtn.closest('tr')?.remove();
+                    if (successTextElement) successTextElement.textContent = 'Project deleted.';
+                    window.scrollTo(0, y);
                 }).catch(() => {
                     errorTextElement.textContent = "Failed to delete project. Please try again.";
                 });
@@ -23931,6 +25570,26 @@ export function loadSharePage(projectId, contentDiv) {
     const successEl = document.getElementById('success-text');
     const section = document.getElementById('permissions-section');
 
+    function bindRevokeButton(btn) {
+        if (!btn || btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', async () => {
+            const id = parseInt(btn.dataset.permissionId);
+            if (!Number.isFinite(id)) return;
+            if (!confirm('Revoke this permission?')) return;
+            try {
+                await revokePermission(id);
+                const y = window.scrollY;
+                btn.closest('tr')?.remove();
+                successEl.textContent = 'Permission revoked.';
+                window.scrollTo(0, y);
+            } catch (err) {
+                errorEl.textContent = 'Failed to revoke permission.';
+                console.error(err);
+            }
+        });
+    }
+
     async function refreshPermissions() {
         try {
             const permissions = await getProjectPermissions(projectId);
@@ -23941,7 +25600,7 @@ export function loadSharePage(projectId, contentDiv) {
                 <table class="promisemodel-table">
                     <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>${permissions.map(p => `
-                        <tr>
+                        <tr data-permission-id="${p.id}">
                             <td>${escapeHtml(p.userName)}</td>
                             <td>${p.level}</td>
                             <td>${p.status}</td>
@@ -23963,13 +25622,7 @@ export function loadSharePage(projectId, contentDiv) {
                 </form>`;
 
             document.querySelectorAll('.revoke-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const id = parseInt(btn.dataset.permissionId);
-                    if (confirm('Revoke this permission?')) {
-                        await revokePermission(id);
-                        refreshPermissions();
-                    }
-                });
+                bindRevokeButton(btn);
             });
             document.getElementById('invite-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -23977,9 +25630,24 @@ export function loadSharePage(projectId, contentDiv) {
                 const level = document.getElementById('invite-level').value;
                 if (!email) return;
                 try {
-                    await inviteUserToProject(email, projectId, level);
+                    const created = await inviteUserToProject(email, projectId, level);
+                    const tbody = section.querySelector('table.promisemodel-table tbody');
+                    if (tbody && created) {
+                        const y = window.scrollY;
+                        const row = document.createElement('tr');
+                        row.dataset.permissionId = created.id;
+                        row.innerHTML = `
+                            <td>${escapeHtml(created.userName)}</td>
+                            <td>${created.level}</td>
+                            <td>${created.status}</td>
+                            <td><button class="revoke-btn" data-permission-id="${created.id}">Revoke</button></td>
+                        `;
+                        tbody.appendChild(row);
+                        bindRevokeButton(row.querySelector('.revoke-btn'));
+                        window.scrollTo(0, y);
+                    }
                     successEl.textContent = 'Invitation sent.';
-                    refreshPermissions();
+                    document.getElementById('invite-email').value = '';
                 } catch (err) {
                     errorEl.textContent = 'Failed to invite user: ' + err.message;
                 }
@@ -24179,7 +25847,7 @@ export async function getReactions(parentType, parentId) {
     return res.json();
 }
 
-export async function upsertReaction(parentType, parentId, emote) {
+export async function createReaction(parentType, parentId, emote) {
     const token = getAccessTokenFromCookie();
     const res = await fetch(`${base}/api/reactions`, {
         method: 'POST',
@@ -24189,6 +25857,21 @@ export async function upsertReaction(parentType, parentId, emote) {
             'Accept': 'application/json'
         },
         body: JSON.stringify({ emote, stackItemType: parentType, stackItemId: parentId })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+export async function updateReaction(reactionId, emote) {
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(`${base}/api/reactions/${reactionId}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ emote })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
@@ -24205,7 +25888,8 @@ export async function deleteReaction(reactionId) {
 
 
 ===== FILE: PromiseModelOnline.Client/wwwroot/js/reactions/reactions.mjs =====
-import { getReactions, upsertReaction, deleteReaction } from './api.mjs';
+import { getReactions, createReaction, updateReaction, deleteReaction } from './api.mjs';
+import { getAccessTokenFromCookie, getNameFromToken } from '../parser.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 
@@ -24222,13 +25906,37 @@ export function loadReactions(container, parentType, parentId) {
     const summaryEl = container.querySelector('#reactions-summary');
     const buttons = container.querySelectorAll('.emote-btn');
 
+    const token = getAccessTokenFromCookie();
+    const myUserName = getNameFromToken(token);
+
+    const state = {
+        counts: {},
+        myReactionId: null,
+        myEmote: null,
+    };
+
+    function renderSummary() {
+        const items = EMOTE_SET
+            .filter(e => state.counts[e])
+            .map(e => `${e} ${state.counts[e]}`);
+        summaryEl.textContent = items.join(' ') || 'No reactions yet.';
+    }
+
     async function refresh() {
         try {
             const reactions = await getReactions(parentType, parentId);
-            const counts = {};
-            reactions.forEach(r => counts[r.emote] = (counts[r.emote] || 0) + 1);
-            const items = EMOTE_SET.filter(e => counts[e]).map(e => `${e} ${counts[e]}`);
-            summaryEl.textContent = items.join(' ') || 'No reactions yet.';
+            state.counts = {};
+            (reactions || []).forEach(r => {
+                state.counts[r.emote] = (state.counts[r.emote] || 0) + 1;
+            });
+
+            if (myUserName) {
+                const mine = (reactions || []).find(r => String(r.userName) === String(myUserName));
+                state.myReactionId = mine?.id ?? null;
+                state.myEmote = mine?.emote ?? null;
+            }
+
+            renderSummary();
         } catch (err) {
             summaryEl.textContent = 'Failed to load reactions.';
         }
@@ -24240,8 +25948,25 @@ export function loadReactions(container, parentType, parentId) {
         btn.addEventListener('click', async () => {
             const emote = btn.dataset.emote;
             try {
-                await upsertReaction(parentType, parentId, emote);
-                refresh();
+                const y = window.scrollY;
+                const updated = state.myReactionId
+                    ? await updateReaction(state.myReactionId, emote)
+                    : await createReaction(parentType, parentId, emote);
+
+                const previous = state.myEmote;
+                const next = updated?.emote ?? emote;
+
+                if (previous && previous !== next) {
+                    state.counts[previous] = Math.max(0, (state.counts[previous] || 0) - 1);
+                }
+                if (!previous || previous !== next) {
+                    state.counts[next] = (state.counts[next] || 0) + 1;
+                }
+
+                state.myReactionId = updated?.id ?? state.myReactionId;
+                state.myEmote = next;
+                renderSummary();
+                window.scrollTo(0, y);
             } catch (err) {
                 alert('Failed to react');
             }
@@ -24679,7 +26404,7 @@ export async function updateMomentOwner(momentId, userId) {
     const url = `${base}/api/moments/${momentId}/owner`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -24706,9 +26431,10 @@ export async function getMyPermission(projectId) {
  */
 export async function progressStride(strideId) {
     const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/strides/${strideId}/progress`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${base}/api/strides/${strideId}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progressUnfinishedMoments: true })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
@@ -24718,7 +26444,7 @@ export async function progressStride(strideId) {
  */
 export async function sendDeadlineNotifications() {
     const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/strides/send-deadline-notifications`, {
+    const res = await fetch(`${base}/api/deadline-notification-runs`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -24743,6 +26469,407 @@ import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMom
 const estimateValues = {
     XS: 1, S: 2, M: 3, L: 5, XL: 8, XXL: 13, XXXL: 21
 };
+
+let cachedMembers = [];
+let cachedAllStrides = [];
+let cachedCanEdit = null;
+
+function preserveScroll(action) {
+    const y = window.scrollY;
+    const result = action();
+    window.scrollTo(0, y);
+    return result;
+}
+
+function getStrideStartDateValue(stride) {
+    const d = new Date(stride?.startDate);
+    return Number.isFinite(d?.getTime?.()) ? d.getTime() : 0;
+}
+
+function findNextStrideIdInIteration(currentStrideId) {
+    const strides = Array.isArray(cachedAllStrides) ? [...cachedAllStrides] : [];
+    strides.sort((a, b) => getStrideStartDateValue(a) - getStrideStartDateValue(b));
+    const idx = strides.findIndex(s => String(s?.id) === String(currentStrideId));
+    if (idx < 0) return null;
+    const next = strides[idx + 1];
+    return next?.id ?? null;
+}
+
+function isRowDone(row) {
+    const status = (row?.querySelector?.('.status-dropdown')?.value
+        ?? row?.querySelector?.('.status-badge')?.textContent
+        ?? '').trim();
+    return status === 'Done';
+}
+
+function removeNoItemsPlaceholder(card) {
+    const noItems = card?.querySelector?.('.stride-moments .no-items');
+    if (noItems) noItems.remove();
+}
+
+function ensureNoItemsPlaceholder(card) {
+    if (!card) return;
+    const momentsContainer = card.querySelector('.stride-moments');
+    if (!momentsContainer) return;
+
+    const rowCount = card.querySelectorAll('table.promisemodel-table tbody tr[data-moment-id]').length;
+    if (rowCount > 0) return;
+
+    // If there is a table but no rows, show the empty state.
+    momentsContainer.innerHTML = '<p class="no-items">No moments assigned.</p>';
+}
+
+function updateStrideTotalEffortFromDom(card) {
+    const totalEl = card?.querySelector?.('.stride-total-effort');
+    if (!totalEl) return;
+
+    let total = 0;
+    card.querySelectorAll('table.promisemodel-table tbody tr[data-moment-id]').forEach(row => {
+        const estimate = row.querySelector('.estimate-dropdown')?.value;
+        total += estimateValues[estimate] ?? 0;
+    });
+
+    totalEl.textContent = `Total Effort: ${total}`;
+}
+
+function progressStrideDomUpdate(strideId) {
+    const currentCard = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
+    if (!currentCard) return { moved: 0, targetVisible: false };
+
+    const nextStrideId = findNextStrideIdInIteration(strideId);
+    const targetCard = nextStrideId ? document.querySelector(`.stride-card[data-stride-id="${nextStrideId}"]`) : null;
+
+    const unfinishedRows = Array.from(currentCard.querySelectorAll('tr[data-moment-id]'))
+        .filter(row => !isRowDone(row));
+
+    if (unfinishedRows.length === 0) {
+        updateStrideTotalEffortFromDom(currentCard);
+        ensureNoItemsPlaceholder(currentCard);
+        return { moved: 0, targetVisible: Boolean(targetCard) };
+    }
+
+    // If the next stride card isn't visible on this page (e.g., next iteration),
+    // we can still remove rows from the current stride to reflect the backend move.
+    if (!targetCard) {
+        unfinishedRows.forEach(r => r.remove());
+        updateStrideTotalEffortFromDom(currentCard);
+        ensureNoItemsPlaceholder(currentCard);
+        return { moved: unfinishedRows.length, targetVisible: false };
+    }
+
+    removeNoItemsPlaceholder(targetCard);
+    const targetTbody = ensureStrideTbody(nextStrideId);
+    if (!targetTbody) {
+        unfinishedRows.forEach(r => r.remove());
+        updateStrideTotalEffortFromDom(currentCard);
+        ensureNoItemsPlaceholder(currentCard);
+        return { moved: unfinishedRows.length, targetVisible: false };
+    }
+
+    unfinishedRows.forEach(row => targetTbody.appendChild(row));
+    updateStrideTotalEffortFromDom(currentCard);
+    updateStrideTotalEffortFromDom(targetCard);
+    ensureNoItemsPlaceholder(currentCard);
+
+    return { moved: unfinishedRows.length, targetVisible: true };
+}
+
+function estimateDropdownHtml(momentId, currentEstimate, disabledAttr) {
+    return `
+        <select class="estimate-dropdown" data-moment-id="${momentId}" ${disabledAttr}>
+            <option value="">–</option>
+            <option value="XS" ${currentEstimate === 'XS' ? 'selected' : ''}>XS</option>
+            <option value="S"  ${currentEstimate === 'S'  ? 'selected' : ''}>S</option>
+            <option value="M"  ${currentEstimate === 'M'  ? 'selected' : ''}>M</option>
+            <option value="L"  ${currentEstimate === 'L'  ? 'selected' : ''}>L</option>
+            <option value="XL" ${currentEstimate === 'XL' ? 'selected' : ''}>XL</option>
+            <option value="XXL"${currentEstimate === 'XXL'? 'selected' : ''}>XXL</option>
+            <option value="XXXL"${currentEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
+        </select>
+    `.trim();
+}
+
+function ownerDropdownHtml(momentId, ownerId, disabledAttr) {
+    const optionsHtml = ['<option value="">Unassigned</option>']
+        .concat((cachedMembers || []).map(m => `<option value="${m.userId}">${escapeHtml(m.userName)}</option>`))
+        .join('');
+
+    return `
+        <select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}" ${disabledAttr}>
+            ${optionsHtml}
+        </select>
+    `.trim();
+}
+
+function statusDropdownHtml(momentId, status, disabledAttr) {
+    return `
+        <select class="status-dropdown" data-moment-id="${momentId}" ${disabledAttr}>
+            <option value="Todo" ${status === 'Todo' ? 'selected' : ''}>Todo</option>
+            <option value="InProgress" ${status === 'InProgress' ? 'selected' : ''}>InProgress</option>
+            <option value="Blocked" ${status === 'Blocked' ? 'selected' : ''}>Blocked</option>
+            <option value="Done" ${status === 'Done' ? 'selected' : ''}>Done</option>
+        </select>
+    `.trim();
+}
+
+function updateStatusBadge(row, newStatus) {
+    const badge = row?.querySelector('.status-badge');
+    if (!badge) return;
+
+    const safeStatus = newStatus ?? '';
+    badge.textContent = safeStatus;
+
+    // Replace any existing status-* class.
+    const classes = Array.from(badge.classList);
+    classes.filter(c => c.startsWith('status-') && c !== 'status-badge').forEach(c => badge.classList.remove(c));
+    badge.classList.add(`status-${String(safeStatus).toLowerCase()}`);
+}
+
+function findMomentRow(momentId) {
+    return document.querySelector(`tr[data-moment-id="${momentId}"]`);
+}
+
+function ensureBacklogTbody() {
+    const backlogSection = document.getElementById('backlog-section');
+    if (!backlogSection) return null;
+
+    let tbody = backlogSection.querySelector('table.promisemodel-table tbody');
+    if (tbody) return tbody;
+
+    backlogSection.innerHTML = `
+        <h2>Backlog</h2>
+        <div class="backlog-card">
+            <table class="promisemodel-table">
+                <thead>
+                    <tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `;
+    return backlogSection.querySelector('table.promisemodel-table tbody');
+}
+
+function backlogStrideOptionsHtml() {
+    // Prefer cloning from existing backlog selects to avoid depending on cachedAllStrides.
+    const existing = document.querySelector('.backlog-target-stride');
+    if (existing) return existing.innerHTML;
+
+    return (cachedAllStrides || [])
+        .map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`)
+        .join('');
+}
+
+function createBacklogRow(moment) {
+    const disabledAttr = (cachedCanEdit === false) ? 'disabled' : '';
+    const tr = document.createElement('tr');
+    tr.dataset.momentId = moment.id;
+    tr.innerHTML = `
+        <td>${moment.id}</td>
+        <td>${escapeHtml(moment.statement)}</td>
+        <td>${moment.type}</td>
+        <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
+        <td>${moment.effortEstimate ?? '–'}</td>
+        <td>
+            <select class="backlog-target-stride" data-moment-id="${moment.id}" ${disabledAttr}>
+                ${backlogStrideOptionsHtml()}
+            </select>
+            <button class="move-to-stride-from-backlog-btn" data-moment-id="${moment.id}" ${disabledAttr}>Move</button>
+            <a href="/moments/${moment.id}" class="view-btn">View</a>
+        </td>
+    `;
+    return tr;
+}
+
+function ensureStrideTbody(strideId) {
+    const card = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
+    if (!card) return null;
+
+    let tbody = card.querySelector('table.promisemodel-table tbody');
+    if (tbody) return tbody;
+
+    const container = card.querySelector('.stride-moments');
+    if (!container) return null;
+
+    container.innerHTML = `
+        <table class="promisemodel-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Statement</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Effort</th>
+                    <th>Owner</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    `;
+    return card.querySelector('table.promisemodel-table tbody');
+}
+
+function createStrideRow(moment) {
+    const disabledAttr = (cachedCanEdit === false) ? 'disabled' : '';
+    const tr = document.createElement('tr');
+    tr.dataset.momentId = moment.id;
+    tr.innerHTML = `
+        <td>${moment.id}</td>
+        <td>${escapeHtml(moment.statement)}</td>
+        <td>${moment.type}</td>
+        <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
+        <td>${estimateDropdownHtml(moment.id, moment.effortEstimate, disabledAttr)}</td>
+        <td>${ownerDropdownHtml(moment.id, moment.ownerId, disabledAttr)}</td>
+        <td>
+            ${statusDropdownHtml(moment.id, moment.status, disabledAttr)}
+            <button class="move-to-backlog-btn" data-moment-id="${moment.id}" ${disabledAttr}>Backlog</button>
+            <a href="/moments/${moment.id}" class="view-btn">View</a>
+        </td>
+    `;
+
+    // Ensure the owner select reflects ownerId.
+    const ownerSelect = tr.querySelector('.owner-dropdown');
+    if (ownerSelect) ownerSelect.value = moment.ownerId ?? '';
+    return tr;
+}
+
+function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
+    // Status dropdown
+    root.querySelectorAll?.('.status-dropdown')?.forEach(dropdown => {
+        if (dropdown.dataset.bound === '1') return;
+        dropdown.dataset.bound = '1';
+
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const previous = dropdown.dataset.previousValue ?? dropdown.value;
+            const newStatus = dropdown.value;
+
+            try {
+                const updated = await updateMomentStatus(momentId, newStatus);
+                const row = findMomentRow(momentId);
+                updateStatusBadge(row, updated.status);
+            } catch (err) {
+                dropdown.value = previous;
+                alert('Failed to update status');
+                console.error(err);
+            }
+        });
+
+        dropdown.addEventListener('focus', () => {
+            dropdown.dataset.previousValue = dropdown.value;
+        });
+    });
+
+    // Estimate dropdown
+    root.querySelectorAll?.('.estimate-dropdown')?.forEach(dropdown => {
+        if (dropdown.dataset.bound === '1') return;
+        dropdown.dataset.bound = '1';
+
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const previous = dropdown.dataset.previousValue ?? dropdown.value;
+            const estimate = dropdown.value === '' ? null : dropdown.value;
+            try {
+                await updateMomentEstimate(momentId, estimate);
+            } catch (err) {
+                dropdown.value = previous;
+                alert('Failed to update estimate');
+                console.error(err);
+            }
+        });
+
+        dropdown.addEventListener('focus', () => {
+            dropdown.dataset.previousValue = dropdown.value;
+        });
+    });
+
+    // Owner dropdown
+    root.querySelectorAll?.('.owner-dropdown')?.forEach(dropdown => {
+        if (dropdown.dataset.bound === '1') return;
+        dropdown.dataset.bound = '1';
+
+        dropdown.addEventListener('change', async () => {
+            const momentId = parseInt(dropdown.dataset.momentId, 10);
+            const previous = dropdown.dataset.previousValue ?? dropdown.value;
+            const newOwnerId = dropdown.value ? parseInt(dropdown.value, 10) : null;
+            try {
+                const updated = await updateMomentOwner(momentId, newOwnerId);
+                dropdown.setAttribute('data-owner-id', updated.ownerId ?? '');
+                dropdown.value = updated.ownerId ?? '';
+            } catch (err) {
+                dropdown.value = previous;
+                alert('Failed to update owner');
+                console.error(err);
+            }
+        });
+
+        dropdown.addEventListener('focus', () => {
+            dropdown.dataset.previousValue = dropdown.value;
+        });
+    });
+
+    // Move to Backlog
+    root.querySelectorAll?.('.move-to-backlog-btn')?.forEach(btn => {
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async () => {
+            const momentId = parseInt(btn.dataset.momentId, 10);
+            if (!confirm('Move this moment to the backlog?')) return;
+
+            try {
+                const updated = await moveMomentToStride(momentId, null);
+                preserveScroll(() => {
+                    const row = findMomentRow(momentId);
+                    row?.remove();
+
+                    const backlogTbody = ensureBacklogTbody();
+                    if (backlogTbody) {
+                        const backlogRow = createBacklogRow(updated);
+                        backlogTbody.appendChild(backlogRow);
+                        bindInlineMomentControls(backlogRow, projectId, navContentDiv, contentDiv);
+                    }
+                });
+            } catch (err) {
+                alert('Failed to move moment');
+                console.error(err);
+            }
+        });
+    });
+
+    // Move from Backlog to Stride
+    root.querySelectorAll?.('.move-to-stride-from-backlog-btn')?.forEach(btn => {
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async () => {
+            const momentId = parseInt(btn.dataset.momentId, 10);
+            const select = document.querySelector(`.backlog-target-stride[data-moment-id="${momentId}"]`);
+            const targetStrideId = select ? parseInt(select.value, 10) : null;
+            if (!targetStrideId) return;
+            if (!confirm('Move this moment to the selected stride?')) return;
+
+            try {
+                const updated = await moveMomentToStride(momentId, targetStrideId);
+                preserveScroll(() => {
+                    const row = findMomentRow(momentId);
+                    row?.remove();
+
+                    const strideTbody = ensureStrideTbody(targetStrideId);
+                    if (strideTbody) {
+                        const strideRow = createStrideRow(updated);
+                        strideTbody.appendChild(strideRow);
+                        bindInlineMomentControls(strideRow, projectId, navContentDiv, contentDiv);
+                    }
+                });
+            } catch (err) {
+                alert('Failed to move moment');
+                console.error(err);
+            }
+        });
+    });
+}
 
 function totalEffort(moments) {
     return moments.reduce((sum, m) => sum + (estimateValues[m.effortEstimate] || 0), 0);
@@ -24807,6 +26934,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             results.forEach(({ stride, moments }) => {
                 const card = document.createElement('div');
                 card.className = 'stride-card';
+                card.dataset.strideId = stride.id;
                 const effTotal = totalEffort(moments);
                 card.innerHTML = `
                     <div class="stride-header">
@@ -24834,7 +26962,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                 </thead>
                                 <tbody>
                                     ${moments.map(m => `
-                                        <tr>
+                                        <tr data-moment-id="${m.id}">
                                             <td>${m.id}</td>
                                             <td>${escapeHtml(m.statement)}</td>
                                             <td>${m.type}</td>
@@ -24898,7 +27026,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 } else {
                     backlogSection.innerHTML = `<h2>Backlog</h2><div class="backlog-card"><table class="promisemodel-table"><thead><tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead><tbody>
                         ${backlogMoments.map(m => `
-                            <tr>
+                            <tr data-moment-id="${m.id}">
                                 <td>${m.id}</td>
                                 <td>${escapeHtml(m.statement)}</td>
                                 <td>${m.type}</td>
@@ -24920,6 +27048,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             // Load project members and populate owner dropdowns
             getProjectMembers(projectId)
                 .then(members => {
+                    cachedMembers = Array.isArray(members) ? members : [];
                     document.querySelectorAll('.owner-dropdown').forEach(dropdown => {
                         const currentOwnerId = dropdown.getAttribute('data-owner-id');
                         dropdown.innerHTML = '<option value="">Unassigned</option>' +
@@ -24934,6 +27063,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             // Fetch permission and update UI
             getMyPermission(projectId)
                 .then(level => {
+                    cachedCanEdit = (level === 'Edit');
                     if (level !== 'Edit') {
                         document.querySelectorAll('.status-dropdown, .estimate-dropdown, .owner-dropdown, .move-to-backlog-btn, .move-to-stride-from-backlog-btn')
                             .forEach(el => el.disabled = true);
@@ -24947,7 +27077,10 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             // Update countdowns
             updateCountdowns();
 
-            // Attach planning event listeners
+            // Cache stride list for backlog move dropdowns (no refetch needed for later DOM inserts)
+            cachedAllStrides = Array.isArray(allStrides) ? allStrides : [];
+
+            // Attach planning event listeners (inline updates only; no full reload)
             attachPlanningListeners(projectId, navContentDiv, contentDiv);
         })
         .catch(err => {
@@ -24959,92 +27092,30 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
 /* ---------- Event listeners ---------- */
 function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
-    // Status dropdown
-    document.querySelectorAll('.status-dropdown').forEach(dropdown => {
-        dropdown.addEventListener('change', async () => {
-            const momentId = parseInt(dropdown.dataset.momentId, 10);
-            const newStatus = dropdown.value;
-            try {
-                await updateMomentStatus(momentId, newStatus);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to update status');
-                console.error(err);
-            }
-        });
-    });
-
-    // Estimate dropdown
-    document.querySelectorAll('.estimate-dropdown').forEach(dropdown => {
-        dropdown.addEventListener('change', async () => {
-            const momentId = parseInt(dropdown.dataset.momentId, 10);
-            const estimate = dropdown.value === '' ? null : dropdown.value;
-            try {
-                await updateMomentEstimate(momentId, estimate);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to update estimate');
-                console.error(err);
-            }
-        });
-    });
-
-    // Owner dropdown
-    document.querySelectorAll('.owner-dropdown').forEach(dropdown => {
-        dropdown.addEventListener('change', async () => {
-            const momentId = parseInt(dropdown.dataset.momentId, 10);
-            const newOwnerId = dropdown.value ? parseInt(dropdown.value, 10) : null;
-            try {
-                await updateMomentOwner(momentId, newOwnerId);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to update owner');
-                console.error(err);
-            }
-        });
-    });
-
-    // Move to Backlog
-    document.querySelectorAll('.move-to-backlog-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const momentId = parseInt(btn.dataset.momentId, 10);
-            if (!confirm('Move this moment to the backlog?')) return;
-            try {
-                await moveMomentToStride(momentId, null);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to move moment');
-                console.error(err);
-            }
-        });
-    });
-
-    // Move from Backlog to Stride
-    document.querySelectorAll('.move-to-stride-from-backlog-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const momentId = parseInt(btn.dataset.momentId, 10);
-            const select = document.querySelector(`.backlog-target-stride[data-moment-id="${momentId}"]`);
-            const targetStrideId = select ? parseInt(select.value, 10) : null;
-            if (!targetStrideId) return;
-            if (!confirm(`Move this moment to the selected stride?`)) return;
-            try {
-                await moveMomentToStride(momentId, targetStrideId);
-                loadStridesList(projectId, navContentDiv, contentDiv);
-            } catch (err) {
-                alert('Failed to move moment');
-                console.error(err);
-            }
-        });
-    });
+    bindInlineMomentControls(document, projectId, navContentDiv, contentDiv);
 
     // Progress Stride button
     document.querySelectorAll('.progress-stride-btn').forEach(btn => {
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
         btn.addEventListener('click', async () => {
             const strideId = parseInt(btn.dataset.strideId, 10);
             if (!confirm('Move all unfinished moments to the next stride?')) return;
             try {
                 await progressStride(strideId);
-                loadStridesList(projectId, navContentDiv, contentDiv);
+                const successEl = document.getElementById('success-text');
+                if (successEl) successEl.textContent = '';
+
+                const { moved, targetVisible } = preserveScroll(() => progressStrideDomUpdate(strideId));
+                if (successEl) {
+                    if (moved === 0) {
+                        successEl.textContent = 'Stride progressed. No unfinished moments to move.';
+                    } else if (targetVisible) {
+                        successEl.textContent = `Stride progressed. Moved ${moved} moment(s) to the next stride.`;
+                    } else {
+                        successEl.textContent = `Stride progressed. Moved ${moved} moment(s) to the next stride (not shown on this page).`;
+                    }
+                }
             } catch (err) {
                 alert('Failed to progress stride');
                 console.error(err);
@@ -25589,8 +27660,7 @@ EndGlobal
 
 
 ===== FILE: README.md =====
-��#   P r o m i s e - M o d e l - O n l i n e 
- 
+��#   P r o m i s e - M o d e l - O n l i n e  
  
 
 

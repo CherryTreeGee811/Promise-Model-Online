@@ -6,6 +6,26 @@ export function loadSharePage(projectId, contentDiv) {
     const successEl = document.getElementById('success-text');
     const section = document.getElementById('permissions-section');
 
+    function bindRevokeButton(btn) {
+        if (!btn || btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', async () => {
+            const id = parseInt(btn.dataset.permissionId);
+            if (!Number.isFinite(id)) return;
+            if (!confirm('Revoke this permission?')) return;
+            try {
+                await revokePermission(id);
+                const y = window.scrollY;
+                btn.closest('tr')?.remove();
+                successEl.textContent = 'Permission revoked.';
+                window.scrollTo(0, y);
+            } catch (err) {
+                errorEl.textContent = 'Failed to revoke permission.';
+                console.error(err);
+            }
+        });
+    }
+
     async function refreshPermissions() {
         try {
             const permissions = await getProjectPermissions(projectId);
@@ -16,7 +36,7 @@ export function loadSharePage(projectId, contentDiv) {
                 <table class="promisemodel-table">
                     <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>${permissions.map(p => `
-                        <tr>
+                        <tr data-permission-id="${p.id}">
                             <td>${escapeHtml(p.userName)}</td>
                             <td>${p.level}</td>
                             <td>${p.status}</td>
@@ -38,13 +58,7 @@ export function loadSharePage(projectId, contentDiv) {
                 </form>`;
 
             document.querySelectorAll('.revoke-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const id = parseInt(btn.dataset.permissionId);
-                    if (confirm('Revoke this permission?')) {
-                        await revokePermission(id);
-                        refreshPermissions();
-                    }
-                });
+                bindRevokeButton(btn);
             });
             document.getElementById('invite-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -52,9 +66,24 @@ export function loadSharePage(projectId, contentDiv) {
                 const level = document.getElementById('invite-level').value;
                 if (!email) return;
                 try {
-                    await inviteUserToProject(email, projectId, level);
+                    const created = await inviteUserToProject(email, projectId, level);
+                    const tbody = section.querySelector('table.promisemodel-table tbody');
+                    if (tbody && created) {
+                        const y = window.scrollY;
+                        const row = document.createElement('tr');
+                        row.dataset.permissionId = created.id;
+                        row.innerHTML = `
+                            <td>${escapeHtml(created.userName)}</td>
+                            <td>${created.level}</td>
+                            <td>${created.status}</td>
+                            <td><button class="revoke-btn" data-permission-id="${created.id}">Revoke</button></td>
+                        `;
+                        tbody.appendChild(row);
+                        bindRevokeButton(row.querySelector('.revoke-btn'));
+                        window.scrollTo(0, y);
+                    }
                     successEl.textContent = 'Invitation sent.';
-                    refreshPermissions();
+                    document.getElementById('invite-email').value = '';
                 } catch (err) {
                     errorEl.textContent = 'Failed to invite user: ' + err.message;
                 }

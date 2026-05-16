@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Controllers;
@@ -17,7 +18,7 @@ namespace PromiseModelOnline.Api.Tests
         public void SetUp()
         {
             _authClientMock = new Mock<IAuthClient>();
-            _controller = new ChangePasswordController(_authClientMock.Object);
+            _controller = new ChangePasswordController(_authClientMock.Object, NullLogger<ChangePasswordController>.Instance);
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()

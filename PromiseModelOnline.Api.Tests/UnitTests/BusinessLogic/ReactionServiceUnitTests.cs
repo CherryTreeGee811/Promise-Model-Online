@@ -68,20 +68,20 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
 
-        #region UpsertReactionAsync Tests
+        #region CreateReactionAsync / UpdateReactionAsync Tests
 
         [Test]
-        public async Task UpsertReactionAsync_ExistingReaction_UpdatesEmote()
+        public async Task UpdateReactionAsync_ExistingReaction_UpdatesEmote()
         {
             var existing = new Reaction { Id = 1, UserId = 10, Emote = "👍", StackItemType = "Moment", StackItemId = 5 };
-            _reactionRepoMock.Setup(r => r.GetUserReactionAsync(10, "Moment", 5)).ReturnsAsync(existing);
+            _reactionRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existing);
             _reactionRepoMock.Setup(r => r.Update(It.IsAny<Reaction>()));
             _reactionRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
             _mapperMock.Setup(m => m.Map(existing, null!)).Returns(new ReactionDTO { Id = 1, Emote = "👎" });
 
-            var request = new CreateReactionRequest { Emote = "👎", StackItemType = "Moment", StackItemId = 5 };
-            var result = await _service.UpsertReactionAsync(request, 10);
+            var request = new UpdateReactionRequestDTO { Emote = "👎" };
+            var result = await _service.UpdateReactionAsync(1, request, 10);
 
             Assert.That(result.Emote, Is.EqualTo("👎"));
             Assert.That(existing.Emote, Is.EqualTo("👎"));
@@ -91,7 +91,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpsertReactionAsync_NoExistingReaction_CreatesNew()
+        public async Task CreateReactionAsync_NoExistingReaction_CreatesNew()
         {
             _reactionRepoMock.Setup(r => r.GetUserReactionAsync(20, "Epic", 3)).ReturnsAsync((Reaction?)null);
             _reactionRepoMock.Setup(r => r.AddAsync(It.IsAny<Reaction>())).Returns(Task.CompletedTask);
@@ -112,7 +112,7 @@ namespace PromiseModelOnline.Api.Tests
                        });
 
             var request = new CreateReactionRequest { Emote = "🚀", StackItemType = "Epic", StackItemId = 3 };
-            var result = await _service.UpsertReactionAsync(request, 20);
+            var result = await _service.CreateReactionAsync(request, 20);
 
             Assert.That(result.Emote, Is.EqualTo("🚀"));
             Assert.That(savedReaction, Is.Not.Null);

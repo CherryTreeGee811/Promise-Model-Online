@@ -5,7 +5,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/access-tokens")]
     [ApiController]
     public class RefreshController : ControllerBase
     {
@@ -16,7 +16,7 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("refresh")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {

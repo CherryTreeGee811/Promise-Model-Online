@@ -204,8 +204,14 @@ namespace PromiseModelOnline.Api.BusinessLogic
             var startDate = moments.Min(m => m.CreatedAt).Date;
             var today = DateTime.UtcNow.Date;
 
-            var latestCompleted = moments.Where(m => m.CompletedAt.HasValue)
-                                         .Max(m => (DateTime?)m.CompletedAt.Value.Date);
+            var completedDates = moments
+                .Where(m => m.CompletedAt.HasValue)
+                .Select(m => m.CompletedAt!.Value.Date)
+                .ToList();
+
+            DateTime? latestCompleted = completedDates.Count > 0
+                ? completedDates.Max()
+                : null;
             var endDate = latestCompleted > today ? latestCompleted.Value : today;
 
             var initialEffort = moments.Sum(m => EstimateToNumeric(m.EffortEstimate));

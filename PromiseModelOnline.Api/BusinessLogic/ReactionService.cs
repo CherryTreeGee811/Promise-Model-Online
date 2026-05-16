@@ -28,17 +28,11 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return reactions.Select(r => _mapper.Map(r, null!));
         }
 
-        public async Task<ReactionDTO> UpsertReactionAsync(CreateReactionRequest request, int userId)
+        public async Task<ReactionDTO> CreateReactionAsync(CreateReactionRequest request, int userId)
         {
-            // If user already reacted, update emote; otherwise create new.
             var existing = await _reactionRepo.GetUserReactionAsync(userId, request.StackItemType, request.StackItemId);
             if (existing is not null)
-            {
-                existing.Emote = request.Emote;
-                _reactionRepo.Update(existing);
-                await _reactionRepo.SaveChangesAsync();
-                return _mapper.Map(existing, null!);
-            }
+                throw new InvalidOperationException("Reaction already exists for this user and item.");
 
             var reaction = new Reaction
             {
@@ -51,6 +45,21 @@ namespace PromiseModelOnline.Api.BusinessLogic
             await _reactionRepo.AddAsync(reaction);
             await _reactionRepo.SaveChangesAsync();
             return _mapper.Map(reaction, null!);
+        }
+
+        public async Task<ReactionDTO> UpdateReactionAsync(int reactionId, UpdateReactionRequestDTO request, int userId)
+        {
+            var existing = await _reactionRepo.GetByIdAsync(reactionId);
+            if (existing is null || existing.UserId != userId)
+                throw new InvalidOperationException("Reaction not found or not yours.");
+
+            if (string.IsNullOrWhiteSpace(request?.Emote))
+                throw new InvalidOperationException("Emote is required.");
+
+            existing.Emote = request.Emote;
+            _reactionRepo.Update(existing);
+            await _reactionRepo.SaveChangesAsync();
+            return _mapper.Map(existing, null!);
         }
 
         public async Task RemoveReactionAsync(int reactionId, int userId)

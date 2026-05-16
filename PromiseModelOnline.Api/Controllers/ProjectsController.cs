@@ -18,15 +18,18 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IProjectService _projectService;
         private readonly IUserRepository _userRepository;
+        private readonly IPermissionService _permissionService;
 
         public ProjectsController(
             IProjectService projectService,
             IGenericMapper<Project, ProjectDTO> mapper,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IPermissionService permissionService)
             : base(projectService, mapper)
         {
             _projectService = projectService;
             _userRepository = userRepository;
+            _permissionService = permissionService;
         }
 
         [HttpGet]
@@ -66,6 +69,30 @@ namespace PromiseModelOnline.Api.Controllers
 
             var username = User.FindFirst("nameid")?.Value;
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        }
+
+        [HttpGet("{projectId}/my-permission")]
+        public async Task<ActionResult<string>> GetMyPermission(int projectId)
+        {
+            try
+            {
+                var email = User.FindFirstValue(ClaimTypes.Email);
+                if (string.IsNullOrEmpty(email))
+                    return Unauthorized();
+
+                var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
+
+                var permission = await _permissionService.GetUserPermissionAsync(user.Id, projectId);
+
+                if (permission == null)
+                    return NoContent();
+
+                return Ok(permission.ToString());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

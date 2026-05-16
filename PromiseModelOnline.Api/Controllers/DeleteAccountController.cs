@@ -5,7 +5,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/users/me")]
     [ApiController]
     [Authorize]
     public class DeleteAccountController : ControllerBase
@@ -17,7 +17,7 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("delete-account")]
+        [HttpDelete]
         public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
         {
             try

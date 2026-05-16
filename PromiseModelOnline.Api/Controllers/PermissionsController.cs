@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -16,12 +18,15 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IPermissionService _permissionService;
         private readonly IUserRepository _userRepository;
+        private readonly ILogger<PermissionsController> _logger;
 
         public PermissionsController(IPermissionService permissionService,
-                                     IUserRepository userRepository)
+                                     IUserRepository userRepository,
+                                     ILogger<PermissionsController> logger)
         {
             _permissionService = permissionService;
             _userRepository = userRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -42,25 +47,15 @@ namespace PromiseModelOnline.Api.Controllers
             try
             {
                 var result = await _permissionService.InviteUserAsync(request, userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} created Permission invitation {PermissionId} at {UtcTimestamp}: {Details}",
+                    userId.Value,
+                    result.Id,
+                    DateTime.UtcNow,
+                    new { request.ProjectId, request.UserEmail, request.Level });
+
                 return CreatedAtAction(nameof(GetPermissions), new { projectId = request.ProjectId }, result);
-            }
-            catch (System.Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost("accept")]
-        public async Task<ActionResult<PermissionDTO>> AcceptInvitation(
-            [FromBody] AcceptInvitationRequestDTO request)
-        {
-            var userId = await GetCurrentUserIdByEmailAsync();
-            if (userId == null) return Unauthorized();
-
-            try
-            {
-                var result = await _permissionService.AcceptInvitationAsync(request.PermissionId, userId.Value);
-                return Ok(result);
             }
             catch (System.Exception ex)
             {
@@ -79,7 +74,7 @@ namespace PromiseModelOnline.Api.Controllers
                 await _permissionService.RemovePermissionAsync(id, userId.Value);
                 return NoContent();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -101,13 +96,25 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{id}/my-permission")]
         public async Task<ActionResult<string>> GetMyPermission(int id)
         {
-            var userId = await GetCurrentUserIdByEmailAsync();
-            if (userId is null) return Unauthorized();
+            try
+            {
+                var userEmail = User.FindFirstValue(ClaimTypes.Email);
+                if (string.IsNullOrEmpty(userEmail))
+                    return Unauthorized();
 
-            var level = await _permissionService.GetUserPermissionAsync(userId.Value, id);
-            if (level is null) return NoContent();
+                var user = await _userRepository.GetOrCreateUserByEmailAsync(userEmail);
 
-            return Ok(level.ToString());
+                var permissionLevel = await _permissionService.GetUserPermissionAsync(user.Id, id);
+
+                if (permissionLevel == null)
+                    return NoContent();
+
+                return Ok(permissionLevel.ToString());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         private async Task<int?> GetCurrentUserIdByEmailAsync()
@@ -125,6 +132,28 @@ namespace PromiseModelOnline.Api.Controllers
 
             var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
             return user.Id;
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<ActionResult<PermissionDTO>> UpdatePermissionStatus(
+            int id,
+            [FromBody] UpdatePermissionRequestDTO request)
+        {
+            var userId = await GetCurrentUserIdByEmailAsync();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                // ✅ IMPORTANT: capture result
+                var acceptedPermission = await _permissionService.AcceptInvitationAsync(id, userId.Value);
+
+                // ✅ RETURN Ok(...) NOT NoContent
+                return Ok(acceptedPermission);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

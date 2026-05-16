@@ -5,7 +5,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/sessions/current")]
     [ApiController]
     public class LogoutController : ControllerBase
     {
@@ -16,14 +16,15 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("logout")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        [HttpDelete]
+        [Authorize]
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest? request)
         {
             try
             {
-                await _authClient.LogoutAsync(request);
-                return Ok();
+                var authorizationHeader = Request.Headers["Authorization"].ToString();
+                await _authClient.LogoutAsync(request, authorizationHeader);
+                return NoContent();
             }
             catch (UnauthorizedAccessException)
             {

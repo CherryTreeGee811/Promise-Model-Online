@@ -52,6 +52,8 @@ export function getNameFromToken(token) {
         return (
             payload['name'] ||
             payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+            payload['nameid'] ||
+            payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
             null
         );
     } catch (e) {
