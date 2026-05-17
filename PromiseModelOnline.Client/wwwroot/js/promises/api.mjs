@@ -49,3 +49,29 @@ export function getEpicsByPromise(promiseId) {
         }
     });
 }
+
+export async function addPromise(promise) {
+    const url = `${base}/api/promises`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA',
+        },
+        body: JSON.stringify(promise)
+    });
+
+    if (res.ok) {
+        if (res.status === 204) return null;
+        return res.json();
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}
