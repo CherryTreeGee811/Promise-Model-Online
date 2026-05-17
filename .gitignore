@@ -23,3 +23,10 @@ query
 PromiseModelOnline.Api/*.pem
 PromiseModelOnline.Client/*.pem
 PromiseModelOnline.Auth/*.pem
+
+# Rider / JetBrains cache files and solution user settings
+**/*.lscache
+**/*.sln.DotSettings.user
+
+# Project/user files
+**/*.csproj.lscache
