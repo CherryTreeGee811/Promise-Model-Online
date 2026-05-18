@@ -129,41 +129,16 @@ function progressStrideDomUpdate(strideId) {
 }
 
 function estimateDropdownHtml(momentId, currentEstimate) {
-    return `
-        <select class="estimate-dropdown" data-moment-id="${momentId}">
-            <option value="">–</option>
-            <option value="XS" ${currentEstimate === 'XS' ? 'selected' : ''}>XS</option>
-            <option value="S"  ${currentEstimate === 'S'  ? 'selected' : ''}>S</option>
-            <option value="M"  ${currentEstimate === 'M'  ? 'selected' : ''}>M</option>
-            <option value="L"  ${currentEstimate === 'L'  ? 'selected' : ''}>L</option>
-            <option value="XL" ${currentEstimate === 'XL' ? 'selected' : ''}>XL</option>
-            <option value="XXL"${currentEstimate === 'XXL'? 'selected' : ''}>XXL</option>
-            <option value="XXXL"${currentEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
-        </select>
-    `.trim();
+    // Return an empty select placeholder; options will be created via DOM to preserve state.
+    return `<select class="estimate-dropdown" data-moment-id="${momentId}" data-current-estimate="${currentEstimate ?? ''}"></select>`;
 }
 
 function ownerDropdownHtml(momentId, ownerId) {
-    const optionsHtml = ['<option value="">Unassigned</option>']
-        .concat((cachedMembers || []).map(m => `<option value="${m.userId}">${escapeHtml(m.userName)}</option>`))
-        .join('');
-
-    return `
-        <select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}">
-            ${optionsHtml}
-        </select>
-    `.trim();
+    return `<select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}"></select>`;
 }
 
 function statusDropdownHtml(momentId, status) {
-    return `
-        <select class="status-dropdown" data-moment-id="${momentId}">
-            <option value="Todo" ${status === 'Todo' ? 'selected' : ''}>Todo</option>
-            <option value="InProgress" ${status === 'InProgress' ? 'selected' : ''}>InProgress</option>
-            <option value="Blocked" ${status === 'Blocked' ? 'selected' : ''}>Blocked</option>
-            <option value="Done" ${status === 'Done' ? 'selected' : ''}>Done</option>
-        </select>
-    `.trim();
+    return `<select class="status-dropdown" data-moment-id="${momentId}" data-current-status="${status ?? ''}"></select>`;
 }
 
 function updateStatusBadge(row, newStatus) {
@@ -208,10 +183,8 @@ function backlogStrideOptionsHtml() {
     // Prefer cloning from existing backlog selects to avoid depending on cachedAllStrides.
     const existing = document.querySelector('.backlog-target-stride');
     if (existing) return existing.innerHTML;
-
-    return (cachedAllStrides || [])
-        .map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`)
-        .join('');
+    // We'll populate backlog selects via DOM methods; return empty placeholder.
+    return '';
 }
 
 function createBacklogRow(moment) {
@@ -224,13 +197,14 @@ function createBacklogRow(moment) {
         <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
         <td>${moment.effortEstimate ?? '–'}</td>
         <td>
-            <select class="backlog-target-stride" data-moment-id="${moment.id}">
-                ${backlogStrideOptionsHtml()}
-            </select>
+            <select class="backlog-target-stride" data-moment-id="${moment.id}"></select>
             <button class="move-to-stride-from-backlog-btn" data-moment-id="${moment.id}">Move</button>
             <a href="/moments/${moment.id}" class="view-btn">View</a>
         </td>
     `;
+
+    const select = tr.querySelector('.backlog-target-stride');
+    populateBacklogStrideSelect(select);
     return tr;
 }
 
@@ -279,10 +253,17 @@ function createStrideRow(moment) {
             <a href="/moments/${moment.id}" class="view-btn">View</a>
         </td>
     `;
-
-    // Ensure the owner select reflects ownerId.
+    // Populate the selects using DOM methods to avoid innerHTML option rebuilding.
+    const estimateSelect = tr.querySelector('.estimate-dropdown');
     const ownerSelect = tr.querySelector('.owner-dropdown');
-    if (ownerSelect) ownerSelect.value = moment.ownerId ?? '';
+    const statusSelect = tr.querySelector('.status-dropdown');
+
+    if (estimateSelect) populateEstimateSelect(estimateSelect);
+    if (statusSelect) populateStatusSelect(statusSelect);
+    if (ownerSelect) {
+        // data-owner-id already set in the placeholder markup; populate will pick it up.
+        populateOwnerSelect(ownerSelect);
+    }
     return tr;
 }
 
@@ -319,6 +300,10 @@ function bindInlineMomentControls(root, projectId) {
             try {
                 const estimate = target.value === '' ? null : target.value;
                 await updateMomentEstimate(momentId, estimate);
+                // Recalculate totals for the containing stride card immediately
+                const row = findMomentRow(momentId);
+                const card = row ? row.closest('.stride-card') : null;
+                if (card) updateStrideTotalEffortFromDom(card);
             } catch (err) {
                 target.value = previous;
                 alert('Failed to update estimate');
@@ -355,12 +340,19 @@ function bindInlineMomentControls(root, projectId) {
             try {
                 const updated = await moveMomentToStride(momentId, null);
                 preserveScroll(() => {
-                    findMomentRow(momentId)?.remove();
+                    const row = findMomentRow(momentId);
+                    const origCard = row ? row.closest('.stride-card') : null;
+                    if (row) row.remove();
 
                     const tbody = ensureBacklogTbody();
                     if (tbody) {
                         tbody.appendChild(createBacklogRow(updated));
                         applyPermissionUI(cachedCanEdit);
+                    }
+
+                    if (origCard) {
+                        updateStrideTotalEffortFromDom(origCard);
+                        ensureNoItemsPlaceholder(origCard);
                     }
                 });
             } catch {
@@ -381,12 +373,19 @@ function bindInlineMomentControls(root, projectId) {
             try {
                 const updated = await moveMomentToStride(momentId, strideId);
                 preserveScroll(() => {
+                    // Remove backlog row
                     findMomentRow(momentId)?.remove();
 
                     const tbody = ensureStrideTbody(strideId);
+                    const targetCard = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
                     if (tbody) {
                         tbody.appendChild(createStrideRow(updated));
                         applyPermissionUI(cachedCanEdit);
+                    }
+
+                    if (targetCard) {
+                        updateStrideTotalEffortFromDom(targetCard);
+                        removeNoItemsPlaceholder(targetCard);
                     }
                 });
             } catch {
@@ -527,29 +526,13 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                             <td>${m.type}</td>
                                             <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                             <td>
-                                                <select class="estimate-dropdown" data-moment-id="${m.id}">
-                                                    <option value="">–</option>
-                                                    <option value="XS" ${m.effortEstimate === 'XS' ? 'selected' : ''}>XS</option>
-                                                    <option value="S"  ${m.effortEstimate === 'S'  ? 'selected' : ''}>S</option>
-                                                    <option value="M"  ${m.effortEstimate === 'M'  ? 'selected' : ''}>M</option>
-                                                    <option value="L"  ${m.effortEstimate === 'L'  ? 'selected' : ''}>L</option>
-                                                    <option value="XL" ${m.effortEstimate === 'XL' ? 'selected' : ''}>XL</option>
-                                                    <option value="XXL"${m.effortEstimate === 'XXL'? 'selected' : ''}>XXL</option>
-                                                    <option value="XXXL"${m.effortEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
-                                                </select>
+                                                <select class="estimate-dropdown" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}"></select>
                                             </td>
                                             <td>
-                                                <select class="owner-dropdown" data-moment-id="${m.id}" data-owner-id="${m.ownerId ?? ''}">
-                                                    <option value="">Unassigned</option>
-                                                </select>
+                                                <select class="owner-dropdown" data-moment-id="${m.id}" data-owner-id="${m.ownerId ?? ''}"></select>
                                             </td>
                                             <td>
-                                                <select class="status-dropdown" data-moment-id="${m.id}">
-                                                    <option value="Todo" ${m.status === 'Todo' ? 'selected' : ''}>Todo</option>
-                                                    <option value="InProgress" ${m.status === 'InProgress' ? 'selected' : ''}>InProgress</option>
-                                                    <option value="Blocked" ${m.status === 'Blocked' ? 'selected' : ''}>Blocked</option>
-                                                    <option value="Done" ${m.status === 'Done' ? 'selected' : ''}>Done</option>
-                                                </select>
+                                                <select class="status-dropdown" data-moment-id="${m.id}" data-current-status="${m.status ?? ''}"></select>
                                                 <button class="move-to-backlog-btn" data-moment-id="${m.id}">Backlog</button>
                                                 <a href="/moments/${m.id}" class="view-btn">View</a>
                                             </td>
@@ -561,6 +544,8 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     </div>
                 `;
                 strideBoard.appendChild(card);
+                // Populate dropdowns inside the newly created card using DOM option creation
+                populateSelectsWithin(card);
             });
 
             // Render Backlog
@@ -577,15 +562,15 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                 <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                 <td>${m.effortEstimate ?? '–'}</td>
                                 <td>
-                                    <select class="backlog-target-stride" data-moment-id="${m.id}">
-                                        ${allStrides.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
-                                    </select>
+                                    <select class="backlog-target-stride" data-moment-id="${m.id}"></select>
                                     <button class="move-to-stride-from-backlog-btn" data-moment-id="${m.id}">Move</button>
                                     <a href="/moments/${m.id}" class="view-btn">View</a>
                                 </td>
                             </tr>
                         `).join('')}
                     </tbody></table></div>`;
+                    // Populate backlog stride selects
+                    populateSelectsWithin(backlogSection);
                 }
             }
 
@@ -593,16 +578,8 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             getProjectMembers(projectId)
                 .then(members => {
                     cachedMembers = Array.isArray(members) ? members : [];
-                    document.querySelectorAll('.owner-dropdown').forEach(dropdown => {
-                        const currentOwnerId = dropdown.getAttribute('data-owner-id');
-                        dropdown.innerHTML = '<option value="">Unassigned</option>' +
-                            members.map(m => `<option value="${m.userId}">${escapeHtml(m.userName)}</option>`).join('');
-                        if (members.some(m => String(m.userId) === String(currentOwnerId))) {
-                            dropdown.value = currentOwnerId;
-                        } else {
-                            dropdown.value = '';
-                        }
-                    });
+                    // Populate all owner dropdowns now that we have members
+                    document.querySelectorAll('.owner-dropdown').forEach(dropdown => populateOwnerSelect(dropdown));
                 })
                 .catch(err => console.error('Failed to load project members', err));
                 
@@ -621,6 +598,8 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
             // Cache stride list for backlog move dropdowns (no refetch needed for later DOM inserts)
             cachedAllStrides = Array.isArray(allStrides) ? allStrides : [];
+            // Ensure any backlog selects reflect the cached strides
+            document.querySelectorAll('.backlog-target-stride').forEach(s => populateBacklogStrideSelect(s));
 
             // Attach planning event listeners (inline updates only; no full reload)
             attachPlanningListeners(projectId, navContentDiv, contentDiv);
@@ -709,6 +688,63 @@ function escapeHtml(str) {
         '"': '&quot;',
         "'": '&#39;'
     }[m]));
+}
+
+// Create DOM option element
+function createOption(value, text, selected) {
+    const opt = document.createElement('option');
+    opt.value = String(value ?? '');
+    opt.textContent = text ?? '';
+    if (selected) opt.selected = true;
+    return opt;
+}
+
+const estimateOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
+function populateEstimateSelect(select) {
+    if (!select) return;
+    const current = select.getAttribute('data-current-estimate') || select.value || '';
+    select.innerHTML = '';
+    select.appendChild(createOption('', '–', current === ''));
+    estimateOrder.forEach(k => select.appendChild(createOption(k, k, String(current) === String(k))));
+}
+
+function populateStatusSelect(select) {
+    if (!select) return;
+    const current = select.getAttribute('data-current-status') || select.value || '';
+    select.innerHTML = '';
+    select.appendChild(createOption('Todo', 'Todo', current === 'Todo'));
+    select.appendChild(createOption('InProgress', 'InProgress', current === 'InProgress'));
+    select.appendChild(createOption('Blocked', 'Blocked', current === 'Blocked'));
+    select.appendChild(createOption('Done', 'Done', current === 'Done'));
+}
+
+function populateOwnerSelect(select) {
+    if (!select) return;
+    const prev = select.value || select.getAttribute('data-owner-id') || '';
+    select.innerHTML = '';
+    select.appendChild(createOption('', 'Unassigned', prev === ''));
+    (cachedMembers || []).forEach(m => select.appendChild(createOption(String(m.userId), m.userName, String(prev) === String(m.userId))));
+    // If previous isn't valid, ensure default
+    if (![...select.options].some(o => o.value === String(prev))) {
+        select.value = '';
+    }
+}
+
+function populateBacklogStrideSelect(select) {
+    if (!select) return;
+    const prev = select.value || '';
+    select.innerHTML = '';
+    (cachedAllStrides || []).forEach(s => select.appendChild(createOption(String(s.id), s.name, String(prev) === String(s.id))));
+    if (![...select.options].some(o => o.value === String(prev))) select.value = (select.options[0] && select.options[0].value) || '';
+}
+
+function populateSelectsWithin(root) {
+    if (!root) return;
+    root.querySelectorAll('.estimate-dropdown').forEach(populateEstimateSelect);
+    root.querySelectorAll('.status-dropdown').forEach(populateStatusSelect);
+    root.querySelectorAll('.owner-dropdown').forEach(populateOwnerSelect);
+    root.querySelectorAll('.backlog-target-stride').forEach(populateBacklogStrideSelect);
 }
 
 function formatDate(dateStr) {

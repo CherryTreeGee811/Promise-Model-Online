@@ -164,7 +164,7 @@ export async function getMyPermission(projectId) {
     });
     if (res.status === 204) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.text();   // returns "Edit", "Comment", "View", or null
+    return res.json();   // returns "Edit", "Comment", "View", or null
 }
 
 /**

@@ -94,5 +94,7 @@ namespace PromiseModelOnline.Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        // Diagnostic endpoint removed. Temporary debug method rolled back.
     }
 }
