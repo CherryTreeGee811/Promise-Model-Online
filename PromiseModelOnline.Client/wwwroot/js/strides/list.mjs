@@ -127,7 +127,7 @@ function createStrideRow(m) {
         <td>
             <select class="status-dropdown" data-current-status="${m.status ?? ''}" data-moment-id="${m.id}"></select>
             <button class="move-to-backlog-btn" data-moment-id="${m.id}">Backlog</button>
-            /moments/${m.id}View</a>
+            <a href="/moments/${m.id}" class="view-btn">View</a>
         </td>
     `;
 
@@ -167,7 +167,13 @@ function bindInlineMomentControls(root) {
         try {
             if (t.matches('.status-dropdown')) {
                 const res = await updateMomentStatus(id, t.value);
-                findMomentRow(id)?.querySelector('.status-badge').textContent = res.status;
+                
+                const row = findMomentRow(id);
+                const badge = row?.querySelector('.status-badge');
+
+                if (badge) {
+                    badge.textContent = res.status;
+                }
             }
 
             if (t.matches('.estimate-dropdown')) {

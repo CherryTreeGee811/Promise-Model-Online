@@ -1,0 +1,33 @@
+services:
+  client:
+    build:
+      context: ../..
+      dockerfile: PromiseModelOnline.Client/Dockerfile
+      args:
+        API_BASE: ""
+    ports:
+      - "9000:9000"
+    depends_on:
+      - wiremock
+    networks:
+      - ui_test_net
+
+  wiremock:
+    image: wiremock/wiremock:latest
+    ports:
+      - "8000:8000"
+    command: >
+      --https-port 8000
+      --https-keystore keystore/wiremock.p12
+      --https-keystore-type PKCS12
+      --keystore-password ${JWT__KEY:-my-secret-key-for-development-only}
+    volumes:
+      - ../../PromiseModelOnline.Client.Tests/wiremock/mappings:/home/wiremock/mappings:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock/__files:/home/wiremock/__files:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock/keystore:/home/wiremock/keystore:ro
+    networks:
+      - ui_test_net
+
+networks:
+  ui_test_net:
+    driver: bridge

@@ -1,0 +1,4 @@
+{
+  "request": { "method": "GET", "url": "/api/strides" },
+  "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "bodyFileName": "strides.json" }
+}

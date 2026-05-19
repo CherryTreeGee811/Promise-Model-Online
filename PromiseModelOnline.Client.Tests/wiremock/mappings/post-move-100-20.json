@@ -1,0 +1,18 @@
+{
+  "scenarioName": "move-moment-100",
+  "requiredScenarioState": "Started",
+  "request": {
+    "method": "POST",
+    "url": "/api/moveMomentToStride",
+    "bodyPatterns": [
+      { "matchesJsonPath": "$.momentId[?(@ == 100)]" },
+      { "matchesJsonPath": "$.strideId[?(@ == 20)]" }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "bodyFileName": "moments-after-move-100-to-20.json",
+    "newScenarioState": "moved-100-20"
+  }
+}
