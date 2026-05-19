@@ -9,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/users/me")]
 public class DeleteAccountController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -21,7 +21,7 @@ public class DeleteAccountController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("delete-account")]
+    [HttpDelete]
     [Authorize]
     public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest? request)
     {

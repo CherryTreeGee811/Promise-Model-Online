@@ -13,7 +13,7 @@ using System.Security.Cryptography;
 namespace PromiseModelOnline.Auth.Controllers
 {
     [ApiController]
-    [Route("auth/")]
+    [Route("api")]
     public class LoginController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -28,7 +28,7 @@ namespace PromiseModelOnline.Auth.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("login")]
+        [HttpPost("sessions")]
         public async Task<IActionResult> Login([FromBody] UserLogin userLogin)
         {
             if (string.IsNullOrEmpty(userLogin?.UserName) || string.IsNullOrEmpty(userLogin?.Password))
@@ -67,7 +67,7 @@ namespace PromiseModelOnline.Auth.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("refresh")]
+        [HttpPost("access-tokens")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {
             if (request == null || string.IsNullOrEmpty(request.RefreshToken))

@@ -13,6 +13,7 @@ import { handleEpicRoutes } from './epics/router.mjs';
 import { handlePromiseRoutes } from './promises/router.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
+import { handleIterationRoutes } from './iterations/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -152,6 +153,12 @@ export function routeHandler(navContentDiv, contentDiv) {
             break;
         case path.startsWith('/promises/'):
             handlePromiseRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/projects') && path.includes('/iterations'):
+            handleIterationRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/projects'):
+            handleProjectRoutes(path, navContentDiv, contentDiv);
             break;
         case path == '/register':
             loadTemplate("register.html", contentDiv).then(() => {

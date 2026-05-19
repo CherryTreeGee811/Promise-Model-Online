@@ -2,7 +2,7 @@
 export const base = "https://localhost:8000";
 
 export function getToken(username, password) {
-    const login_url = `${base}/auth/login`
+    const login_url = `${base}/api/sessions`
     const body = JSON.stringify({
         username: `${username}`,
         password: `${password}`
@@ -43,18 +43,19 @@ export function getToken(username, password) {
 }
 
 export function requestLogout(token) {
-    const logout_url = `${base}/auth/logout`
+    const logout_url = `${base}/api/sessions/current`
+    const accessToken = getAccessTokenFromCookie();
 
     return fetch(logout_url, {
-        method: 'POST',
+        method: 'DELETE',
         mode: 'cors',
         headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
         },
-        body: JSON.stringify({})   // <-- send an empty JSON body
+        body: JSON.stringify({ refreshToken: token })
     })
     .then(response => {
         if (response.ok) {
@@ -75,7 +76,7 @@ export function requestLogout(token) {
 }
 
 export function registerUser(username, email, password) {
-    const register_url = `${base}/auth/register`;
+    const register_url = `${base}/api/users`;
     const body = JSON.stringify({
         userName: username,
         email: email,
@@ -119,7 +120,7 @@ export function registerUser(username, email, password) {
 import { getAccessTokenFromCookie } from './parser.mjs';
 
 export function changePassword(currentPassword, newPassword, confirmPassword) {
-    const change_url = `${base}/auth/change-password`;
+    const change_url = `${base}/api/users/me`;
     const token = getAccessTokenFromCookie();
 
     const body = JSON.stringify({
@@ -129,7 +130,7 @@ export function changePassword(currentPassword, newPassword, confirmPassword) {
     });
 
     return fetch(change_url, {
-        method: 'POST',
+        method: 'PATCH',
         mode: 'cors',
         headers: {
             'Accept': 'application/json',

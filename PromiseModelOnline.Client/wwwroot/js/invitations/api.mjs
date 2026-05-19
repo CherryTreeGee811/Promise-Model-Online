@@ -12,14 +12,14 @@ export async function getPendingInvitations() {
 
 export async function acceptInvitation(permissionId) {
     const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/permissions/accept`, {
-        method: 'POST',
+    const res = await fetch(`${base}/api/permissions/${permissionId}`, {
+        method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
-        body: JSON.stringify({ permissionId })
+        body: JSON.stringify({ status: 'Active' })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();

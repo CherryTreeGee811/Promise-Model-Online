@@ -145,7 +145,7 @@ export async function updateMomentOwner(momentId, userId) {
     const url = `${base}/api/moments/${momentId}/owner`;
     const token = getAccessTokenFromCookie();
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ export async function getMyPermission(projectId) {
     });
     if (res.status === 204) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.text();   // returns "Edit", "Comment", "View", or null
+    return res.json();   // returns "Edit", "Comment", "View", or null
 }
 
 /**
@@ -172,9 +172,10 @@ export async function getMyPermission(projectId) {
  */
 export async function progressStride(strideId) {
     const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/strides/${strideId}/progress`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${base}/api/strides/${strideId}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progressUnfinishedMoments: true })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
@@ -184,18 +185,9 @@ export async function progressStride(strideId) {
  */
 export async function sendDeadlineNotifications() {
     const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/strides/send-deadline-notifications`, {
+    const res = await fetch(`${base}/api/deadline-notification-runs`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
-
-export async function getStrideBurndown(strideId) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/strides/${strideId}/burndown`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }

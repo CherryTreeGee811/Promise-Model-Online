@@ -9,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/users/me")]
 public class ChangePasswordController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -21,7 +21,7 @@ public class ChangePasswordController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("change-password")]
+    [HttpPatch]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest? request)
     {

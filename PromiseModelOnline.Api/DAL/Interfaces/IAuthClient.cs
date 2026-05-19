@@ -8,7 +8,7 @@ public interface IAuthClient
 
     Task<PromiseModelOnline.Api.Models.TokenResponse> RefreshAsync(PromiseModelOnline.Api.Models.RefreshRequest request);
 
-    Task LogoutAsync(PromiseModelOnline.Api.Models.LogoutRequest? request);
+    Task LogoutAsync(PromiseModelOnline.Api.Models.LogoutRequest? request, string authorizationHeader);
 
     Task ChangePasswordAsync(PromiseModelOnline.Api.Models.ChangePasswordRequest request, string authorizationHeader);
 

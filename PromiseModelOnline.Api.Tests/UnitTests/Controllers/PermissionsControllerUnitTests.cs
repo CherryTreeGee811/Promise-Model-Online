@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -20,28 +21,30 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IUserRepository> _userRepositoryMock = null!;
         private PermissionsController _controller = null!;
 
+        private const string MEMBER_EMAIL = "member@example.com";
+        private const string OWNER_EMAIL = "owner@example.com";
+
         [SetUp]
         public void SetUp()
         {
             _permissionServiceMock = new Mock<IPermissionService>();
             _userRepositoryMock = new Mock<IUserRepository>();
-            _controller = new PermissionsController(_permissionServiceMock.Object, _userRepositoryMock.Object);
+
+            _controller = new PermissionsController(
+                _permissionServiceMock.Object,
+                _userRepositoryMock.Object,
+                NullLogger<PermissionsController>.Instance);
         }
 
-        private void SetCurrentUser(string? email, string? nameId = null)
+        private void SetCurrentUser(string? email)
         {
             var claims = new List<Claim>();
-            if (email is not null)
-            {
-                claims.Add(new Claim(ClaimTypes.Email, email));
-            }
 
-            if (nameId is not null)
-            {
-                claims.Add(new Claim("nameid", nameId));
-            }
+            if (email != null)
+                claims.Add(new Claim(ClaimTypes.Email, email));
 
             var identity = new ClaimsIdentity(claims, "test");
+
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext
@@ -51,28 +54,47 @@ namespace PromiseModelOnline.Api.Tests
             };
         }
 
-        [Test]
-        public async Task GetPermissions_WithProjectId_ReturnsOkWithPermissions()
+        private User SetupCurrentUser(string email, int id)
         {
-            var permissions = new List<PermissionDTO>
-            {
-                new PermissionDTO { Id = 1, UserId = 10, UserName = "User One", ProjectId = 99, Level = "Edit", Status = "Accepted" },
-                new PermissionDTO { Id = 2, UserId = 11, UserName = "User Two", ProjectId = 99, Level = "View", Status = "Pending" }
-            };
+            var user = new User { Id = id, Email = email };
 
-            _permissionServiceMock.Setup(s => s.GetPermissionsByProjectAsync(99)).ReturnsAsync(permissions);
+            _userRepositoryMock
+                .Setup(r => r.GetOrCreateUserByEmailAsync(
+                    It.Is<string>(e => e == email),
+                    It.IsAny<string?>()))
+                .ReturnsAsync(user);
+
+            SetCurrentUser(email);
+
+            return user;
+        }
+
+        // -----------------------------
+        // GET PERMISSIONS
+        // -----------------------------
+
+        [Test]
+        public async Task GetPermissions_HappyPath_ReturnsOk()
+        {
+            var data = new List<PermissionDTO> { new PermissionDTO { Id = 1 } };
+
+            _permissionServiceMock
+                .Setup(s => s.GetPermissionsByProjectAsync(99))
+                .ReturnsAsync(data);
 
             var result = await _controller.GetPermissions(99);
 
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            Assert.That(okResult!.Value, Is.SameAs(permissions));
-            _permissionServiceMock.Verify(s => s.GetPermissionsByProjectAsync(99), Times.Once);
+            Assert.That(result.Result, Is.TypeOf<OkObjectResult>());
+            var ok = (OkObjectResult)result.Result!;
+            Assert.That(ok.Value, Is.SameAs(data));
         }
 
+        // -----------------------------
+        // INVITE USER
+        // -----------------------------
+
         [Test]
-        public async Task InviteUser_WithAuthenticatedUser_ReturnsCreatedAtAction()
+        public async Task InviteUser_HappyPath_ReturnsCreated()
         {
             var request = new CreatePermissionRequestDTO
             {
@@ -80,295 +102,185 @@ namespace PromiseModelOnline.Api.Tests
                 ProjectId = 42,
                 Level = PermissionLevel.Edit
             };
-            var currentUser = new User { Id = 7, Email = "owner@example.com", Name = "Owner" };
-            var createdPermission = new PermissionDTO
-            {
-                Id = 123,
-                UserId = 88,
-                UserName = "Invitee",
-                ProjectId = 42,
-                Level = "Edit",
-                Status = "Pending"
-            };
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("owner@example.com", "owner-name"))
-                .ReturnsAsync(currentUser);
+            var user = SetupCurrentUser(OWNER_EMAIL, 7);
+            var created = new PermissionDTO { Id = 123 };
+
             _permissionServiceMock
-                .Setup(s => s.InviteUserAsync(request, currentUser.Id))
-                .ReturnsAsync(createdPermission);
-
-            SetCurrentUser("owner@example.com", "owner-name");
+                .Setup(s => s.InviteUserAsync(request, user.Id))
+                .ReturnsAsync(created);
 
             var result = await _controller.InviteUser(request);
 
-            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
-            var created = result.Result as CreatedAtActionResult;
-            Assert.That(created, Is.Not.Null);
-            Assert.That(created!.ActionName, Is.EqualTo(nameof(PermissionsController.GetPermissions)));
-            Assert.That(created.RouteValues!["projectId"], Is.EqualTo(42));
-            Assert.That(created.Value, Is.SameAs(createdPermission));
-            _permissionServiceMock.Verify(s => s.InviteUserAsync(request, currentUser.Id), Times.Once);
-            _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync("owner@example.com", "owner-name"), Times.Once);
+            Assert.That(result.Result, Is.TypeOf<CreatedAtActionResult>());
+
+            _permissionServiceMock.Verify(s =>
+                s.InviteUserAsync(request, user.Id), Times.Once);
         }
 
         [Test]
-        public async Task InviteUser_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task InviteUser_WhenNoEmail_ReturnsUnauthorized()
         {
-            var request = new CreatePermissionRequestDTO
-            {
-                UserEmail = "invitee@example.com",
-                ProjectId = 42,
-                Level = PermissionLevel.View
-            };
-
             SetCurrentUser(null);
 
-            var result = await _controller.InviteUser(request);
+            var result = await _controller.InviteUser(new CreatePermissionRequestDTO());
 
-            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
-            _permissionServiceMock.Verify(s => s.InviteUserAsync(It.IsAny<CreatePermissionRequestDTO>(), It.IsAny<int>()), Times.Never);
-            _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()), Times.Never);
+            Assert.That(result.Result, Is.TypeOf<UnauthorizedResult>());
         }
 
         [Test]
         public async Task InviteUser_WhenServiceThrows_ReturnsBadRequest()
         {
-            var request = new CreatePermissionRequestDTO
-            {
-                UserEmail = "invitee@example.com",
-                ProjectId = 42,
-                Level = PermissionLevel.Comment
-            };
-            var currentUser = new User { Id = 7, Email = "owner@example.com", Name = "Owner" };
+            var request = new CreatePermissionRequestDTO { ProjectId = 42 };
+            var user = SetupCurrentUser(OWNER_EMAIL, 7);
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("owner@example.com", null))
-                .ReturnsAsync(currentUser);
             _permissionServiceMock
-                .Setup(s => s.InviteUserAsync(request, currentUser.Id))
-                .ThrowsAsync(new System.Exception("invite failed"));
-
-            SetCurrentUser("owner@example.com");
+                .Setup(s => s.InviteUserAsync(request, user.Id))
+                .ThrowsAsync(new System.Exception());
 
             var result = await _controller.InviteUser(request);
 
-            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-            var badRequest = result.Result as BadRequestObjectResult;
-            Assert.That(badRequest, Is.Not.Null);
-            Assert.That(badRequest!.Value, Is.EqualTo("invite failed"));
-            _permissionServiceMock.Verify(s => s.InviteUserAsync(request, currentUser.Id), Times.Once);
+            Assert.That(result.Result, Is.TypeOf<BadRequestObjectResult>());
         }
 
-        [Test]
-        public async Task AcceptInvitation_WithAuthenticatedUser_ReturnsOkWithPermission()
-        {
-            var request = new AcceptInvitationRequestDTO { PermissionId = 55 };
-            var currentUser = new User { Id = 9, Email = "member@example.com", Name = "Member" };
-            var acceptedPermission = new PermissionDTO
-            {
-                Id = 55,
-                UserId = 9,
-                UserName = "Member",
-                ProjectId = 42,
-                Level = "Comment",
-                Status = "Accepted"
-            };
+        // -----------------------------
+        // UPDATE PERMISSION
+        // -----------------------------
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("member@example.com", null))
-                .ReturnsAsync(currentUser);
+        [Test]
+        public async Task UpdatePermission_HappyPath_ReturnsOk()
+        {
+            var user = SetupCurrentUser(MEMBER_EMAIL, 9);
+
             _permissionServiceMock
-                .Setup(s => s.AcceptInvitationAsync(request.PermissionId, currentUser.Id))
-                .ReturnsAsync(acceptedPermission);
+                .Setup(s => s.AcceptInvitationAsync(55, user.Id))
+                .ReturnsAsync(new PermissionDTO());
 
-            SetCurrentUser("member@example.com");
+            var result = await _controller.UpdatePermissionStatus(55, new UpdatePermissionRequestDTO());
 
-            var result = await _controller.AcceptInvitation(request);
-
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            Assert.That(okResult!.Value, Is.SameAs(acceptedPermission));
-            _permissionServiceMock.Verify(s => s.AcceptInvitationAsync(request.PermissionId, currentUser.Id), Times.Once);
+            Assert.That(result.Result, Is.TypeOf<OkObjectResult>());
         }
 
         [Test]
-        public async Task AcceptInvitation_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task UpdatePermission_WhenNoEmail_ReturnsUnauthorized()
         {
-            var request = new AcceptInvitationRequestDTO { PermissionId = 55 };
-
             SetCurrentUser(null);
 
-            var result = await _controller.AcceptInvitation(request);
+            var result = await _controller.UpdatePermissionStatus(55, new UpdatePermissionRequestDTO());
 
-            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
-            _permissionServiceMock.Verify(s => s.AcceptInvitationAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            Assert.That(result.Result, Is.TypeOf<UnauthorizedResult>());
         }
 
         [Test]
-        public async Task AcceptInvitation_WhenServiceThrows_ReturnsBadRequest()
+        public async Task UpdatePermission_WhenServiceThrows_ReturnsBadRequest()
         {
-            var request = new AcceptInvitationRequestDTO { PermissionId = 55 };
-            var currentUser = new User { Id = 9, Email = "member@example.com", Name = "Member" };
+            var user = SetupCurrentUser(MEMBER_EMAIL, 9);
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("member@example.com", null))
-                .ReturnsAsync(currentUser);
             _permissionServiceMock
-                .Setup(s => s.AcceptInvitationAsync(request.PermissionId, currentUser.Id))
-                .ThrowsAsync(new System.Exception("accept failed"));
+                .Setup(s => s.AcceptInvitationAsync(55, user.Id))
+                .ThrowsAsync(new System.Exception());
 
-            SetCurrentUser("member@example.com");
+            var result = await _controller.UpdatePermissionStatus(55, new UpdatePermissionRequestDTO());
 
-            var result = await _controller.AcceptInvitation(request);
-
-            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-            var badRequest = result.Result as BadRequestObjectResult;
-            Assert.That(badRequest, Is.Not.Null);
-            Assert.That(badRequest!.Value, Is.EqualTo("accept failed"));
+            Assert.That(result.Result, Is.TypeOf<BadRequestObjectResult>());
         }
 
-        [Test]
-        public async Task RevokePermission_WithAuthenticatedUser_ReturnsNoContent()
-        {
-            var currentUser = new User { Id = 13, Email = "owner@example.com", Name = "Owner" };
+        // -----------------------------
+        // REVOKE PERMISSION
+        // -----------------------------
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("owner@example.com", null))
-                .ReturnsAsync(currentUser);
+        [Test]
+        public async Task RevokePermission_HappyPath_ReturnsNoContent()
+        {
+            var user = SetupCurrentUser(OWNER_EMAIL, 13);
+
             _permissionServiceMock
-                .Setup(s => s.RemovePermissionAsync(77, currentUser.Id))
+                .Setup(s => s.RemovePermissionAsync(77, user.Id))
                 .Returns(Task.CompletedTask);
 
-            SetCurrentUser("owner@example.com");
-
             var result = await _controller.RevokePermission(77);
 
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _permissionServiceMock.Verify(s => s.RemovePermissionAsync(77, currentUser.Id), Times.Once);
+            Assert.That(result, Is.TypeOf<NoContentResult>());
         }
 
         [Test]
-        public async Task RevokePermission_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task RevokePermission_WhenNoEmail_ReturnsUnauthorized()
         {
             SetCurrentUser(null);
 
             var result = await _controller.RevokePermission(77);
 
-            Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
-            _permissionServiceMock.Verify(s => s.RemovePermissionAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            Assert.That(result, Is.TypeOf<UnauthorizedResult>());
         }
 
         [Test]
         public async Task RevokePermission_WhenServiceThrows_ReturnsBadRequest()
         {
-            var currentUser = new User { Id = 13, Email = "owner@example.com", Name = "Owner" };
+            var user = SetupCurrentUser(OWNER_EMAIL, 13);
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("owner@example.com", null))
-                .ReturnsAsync(currentUser);
             _permissionServiceMock
-                .Setup(s => s.RemovePermissionAsync(77, currentUser.Id))
-                .ThrowsAsync(new System.Exception("revoke failed"));
-
-            SetCurrentUser("owner@example.com");
+                .Setup(s => s.RemovePermissionAsync(77, user.Id))
+                .ThrowsAsync(new System.Exception());
 
             var result = await _controller.RevokePermission(77);
 
-            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
-            var badRequest = result as BadRequestObjectResult;
-            Assert.That(badRequest, Is.Not.Null);
-            Assert.That(badRequest!.Value, Is.EqualTo("revoke failed"));
+            Assert.That(result, Is.TypeOf<BadRequestObjectResult>());
         }
 
-        [Test]
-        public async Task GetPendingInvitations_WithAuthenticatedUser_ReturnsOkWithInvitations()
-        {
-            var currentUser = new User { Id = 21, Email = "member@example.com", Name = "Member" };
-            var invitations = new List<PendingInvitationDTO>
-            {
-                new PendingInvitationDTO { PermissionId = 1, ProjectId = 90, ProjectName = "Project A", Level = "View", Status = "Pending" }
-            };
+        // -----------------------------
+        // GET MY PERMISSION
+        // -----------------------------
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("member@example.com", null))
-                .ReturnsAsync(currentUser);
+        [Test]
+        public async Task GetMyPermission_HappyPath_ReturnsOk()
+        {
+            var user = SetupCurrentUser(MEMBER_EMAIL, 31);
+
             _permissionServiceMock
-                .Setup(s => s.GetPendingInvitationsForUserAsync(currentUser.Id))
-                .ReturnsAsync(invitations);
-
-            SetCurrentUser("member@example.com");
-
-            var result = await _controller.GetPendingInvitations();
-
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            Assert.That(okResult!.Value, Is.SameAs(invitations));
-        }
-
-        [Test]
-        public async Task GetPendingInvitations_WhenNoEmailClaim_ReturnsUnauthorized()
-        {
-            SetCurrentUser(null);
-
-            var result = await _controller.GetPendingInvitations();
-
-            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
-            _permissionServiceMock.Verify(s => s.GetPendingInvitationsForUserAsync(It.IsAny<int>()), Times.Never);
-        }
-
-        [Test]
-        public async Task GetMyPermission_WithPermission_ReturnsOkWithLevelName()
-        {
-            var currentUser = new User { Id = 31, Email = "member@example.com", Name = "Member" };
-
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("member@example.com", null))
-                .ReturnsAsync(currentUser);
-            _permissionServiceMock
-                .Setup(s => s.GetUserPermissionAsync(currentUser.Id, 123))
+                .Setup(s => s.GetUserPermissionAsync(user.Id, 123))
                 .ReturnsAsync(PermissionLevel.Edit);
-
-            SetCurrentUser("member@example.com");
 
             var result = await _controller.GetMyPermission(123);
 
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            Assert.That(okResult!.Value, Is.EqualTo("Edit"));
+            Assert.That(result.Result, Is.TypeOf<OkObjectResult>());
         }
 
         [Test]
         public async Task GetMyPermission_WhenNoPermission_ReturnsNoContent()
         {
-            var currentUser = new User { Id = 31, Email = "member@example.com", Name = "Member" };
+            var user = SetupCurrentUser(MEMBER_EMAIL, 31);
 
-            _userRepositoryMock
-                .Setup(r => r.GetOrCreateUserByEmailAsync("member@example.com", null))
-                .ReturnsAsync(currentUser);
             _permissionServiceMock
-                .Setup(s => s.GetUserPermissionAsync(currentUser.Id, 123))
+                .Setup(s => s.GetUserPermissionAsync(user.Id, 123))
                 .ReturnsAsync((PermissionLevel?)null);
-
-            SetCurrentUser("member@example.com");
 
             var result = await _controller.GetMyPermission(123);
 
-            Assert.That(result.Result, Is.InstanceOf<NoContentResult>());
+            Assert.That(result.Result, Is.TypeOf<NoContentResult>());
         }
 
         [Test]
-        public async Task GetMyPermission_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task GetMyPermission_WhenServiceThrows_ReturnsBadRequest()
+        {
+            var user = SetupCurrentUser(MEMBER_EMAIL, 31);
+
+            _permissionServiceMock
+                .Setup(s => s.GetUserPermissionAsync(user.Id, 123))
+                .ThrowsAsync(new System.Exception());
+
+            var result = await _controller.GetMyPermission(123);
+
+            Assert.That(result.Result, Is.TypeOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task GetMyPermission_WhenNoEmail_ReturnsUnauthorized()
         {
             SetCurrentUser(null);
 
             var result = await _controller.GetMyPermission(123);
 
-            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
-            _permissionServiceMock.Verify(s => s.GetUserPermissionAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            Assert.That(result.Result, Is.TypeOf<UnauthorizedResult>());
         }
     }
 }

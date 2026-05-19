@@ -27,10 +27,11 @@ export function loadComments(container, parentType, parentId) {
         const text = textarea.value.trim();
         if (!text) return;
         try {
-            await postComment(parentType, parentId, text);
-            const updated = await getComments(parentType, parentId);
-            renderComments(commentsList, updated);
+            const y = window.scrollY;
+            const created = await postComment(parentType, parentId, text);
+            appendComment(commentsList, created);
             textarea.value = '';
+            window.scrollTo(0, y);
         } catch (err) {
             alert('Failed to post comment.');
             console.error(err);
@@ -44,23 +45,32 @@ function renderComments(container, comments) {
         container.innerHTML = '<p class="no-items">No comments yet.</p>';
         return;
     }
-    comments.forEach(comment => {
-        const div = document.createElement('div');
-        div.className = 'comment-item';
-        div.innerHTML = `
-            <div class="comment-meta">
-                <strong>${escapeHtml(comment.userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
+    comments.forEach(comment => container.appendChild(createCommentElement(comment)));
+}
+
+function appendComment(container, comment) {
+    // Remove empty state without re-rendering the entire list.
+    const empty = container.querySelector('.no-items');
+    if (empty) empty.remove();
+    container.appendChild(createCommentElement(comment));
+}
+
+function createCommentElement(comment) {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    div.innerHTML = `
+        <div class="comment-meta">
+            <strong>${escapeHtml(comment.userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
+        </div>
+        <div class="comment-text">${formatCommentText(comment.text)}</div>
+        ${comment.mentionedUsers && comment.mentionedUsers.length ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
+        ${comment.replies && comment.replies.length ? `<div class="comment-replies">${comment.replies.map(r => `
+            <div class="comment-item reply">
+                <strong>${escapeHtml(r.userName)}</strong>: ${escapeHtml(r.text)}
             </div>
-            <div class="comment-text">${formatCommentText(comment.text)}</div>
-            ${comment.mentionedUsers && comment.mentionedUsers.length ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
-            ${comment.replies && comment.replies.length ? `<div class="comment-replies">${comment.replies.map(r => `
-                <div class="comment-item reply">
-                    <strong>${escapeHtml(r.userName)}</strong>: ${escapeHtml(r.text)}
-                </div>
-            `).join('')}</div>` : ''}
-        `;
-        container.appendChild(div);
-    });
+        `).join('')}</div>` : ''}
+    `;
+    return div;
 }
 
 function formatCommentText(text) {

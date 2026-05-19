@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/users")]
     [ApiController]
     public class RegisterController : ControllerBase
     {
@@ -21,7 +21,7 @@ namespace PromiseModelOnline.Api.Controllers
             _userRepository = userRepository;
         }
 
-        [HttpPost("register")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {

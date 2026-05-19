@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -26,7 +27,11 @@ namespace PromiseModelOnline.Api.Tests
             _mockStrideService = new Mock<IStrideService>();
             _mockMapper = new Mock<IGenericMapper<Stride, StrideDTO>>();
             _mockMomentService = new Mock<IMomentService>();
-            _controller = new StridesController(_mockStrideService.Object, _mockMapper.Object, _mockMomentService.Object);
+            _controller = new StridesController(
+                _mockStrideService.Object,
+                _mockMapper.Object,
+                _mockMomentService.Object,
+                NullLogger<StridesController>.Instance);
             _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
         }
 
@@ -138,7 +143,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task ProgressStride_ReturnsNoContentAndMovesMoments()
+        public async Task UpdateStride_ProgressUnfinishedMoments_ReturnsNoContentAndMovesMoments()
         {
             const int strideId = 12;
 
@@ -146,23 +151,11 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
                 .Returns(Task.CompletedTask);
 
-            var result = await _controller.ProgressStride(strideId);
+            var result = await _controller.UpdateStride(strideId, new UpdateStrideRequestDTO { ProgressUnfinishedMoments = true });
 
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _mockMomentService.Verify(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId), Times.Once);
         }
 
-        [Test]
-        public async Task SendDeadlineNotifications_ReturnsNoContentAndCallsService()
-        {
-            _mockStrideService
-                .Setup(s => s.SendDeadlineNotificationsAsync())
-                .Returns(Task.CompletedTask);
-
-            var result = await _controller.SendDeadlineNotifications();
-
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockStrideService.Verify(s => s.SendDeadlineNotificationsAsync(), Times.Once);
-        }
     }
 }

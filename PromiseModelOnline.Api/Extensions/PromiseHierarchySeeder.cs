@@ -183,9 +183,12 @@ public static class PromiseHierarchySeeder
             var statement = GetValue(row, "Moment Promise Statement");
             var strideIdStr = GetValue(row, "Assigned Stride ID");
 
-            int? strideId = string.IsNullOrWhiteSpace(strideIdStr)
-                ? (int?)null
-                : int.Parse(strideIdStr);
+            int? strideId = null;
+            if (!string.IsNullOrWhiteSpace(strideIdStr) &&
+                int.TryParse(strideIdStr, out var parsedStrideId))
+            {
+                strideId = parsedStrideId;
+            }
 
             var sql = @"
                 SET IDENTITY_INSERT Moments ON;
@@ -193,7 +196,10 @@ public static class PromiseHierarchySeeder
                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, 0);
                 SET IDENTITY_INSERT Moments OFF;";
 
-            var parameters = new object[] {
+            object? strideParam = strideId;
+
+            var parameters = new object[]
+            {
                 momentId,
                 flowId,
                 statement,
@@ -201,7 +207,7 @@ public static class PromiseHierarchySeeder
                 (int)MomentStatus.Todo,
                 momentId,
                 DateTime.UtcNow,
-                strideId,
+                strideParam,
                 "red"
             };
             await db.Database.ExecuteSqlRawAsync(sql, parameters);

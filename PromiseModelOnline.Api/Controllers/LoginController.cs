@@ -5,7 +5,7 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("auth")]
+    [Route("api/sessions")]
     [ApiController]
     public class LoginController : ControllerBase
     {
@@ -16,7 +16,7 @@ namespace PromiseModelOnline.Api.Controllers
             _authClient = authClient;
         }
 
-        [HttpPost("login")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] UserLogin userLogin)
         {

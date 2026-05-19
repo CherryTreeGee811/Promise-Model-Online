@@ -6,6 +6,7 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
+using PromiseModelOnline.Api.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -68,7 +69,10 @@ builder.Services.AddAuthentication(x =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<AuditLoggingActionFilter>();
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -93,17 +97,30 @@ builder.Services.AddSwaggerGen(c =>{
 });
 
 var app = builder.Build();
-app.ApplyMigrations();
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("PromiseHierarchySeeder");
+    app.ApplyMigrations();
 
-    logger.LogInformation("Running Promise hierarchy seed...");
-    var authClient = scope.ServiceProvider.GetRequiredService<PromiseModelOnline.Api.DAL.Interfaces.IAuthClient>();
-    await PromiseHierarchySeeder.SeedAsync(dbContext, app.Environment.ContentRootPath, logger, authClient);
-    logger.LogInformation("Migration and seed startup step complete.");
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+        var logger = scope.ServiceProvider
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("PromiseHierarchySeeder");
+
+        logger.LogInformation("Running Promise hierarchy seed...");
+
+        var authClient = scope.ServiceProvider.GetRequiredService<IAuthClient>();
+
+        await PromiseHierarchySeeder.SeedAsync(
+            dbContext,
+            app.Environment.ContentRootPath,
+            logger,
+            authClient);
+
+        logger.LogInformation("Migration and seed startup step complete.");
+    }
 }
 
 app.UseCors(MyAllowSpecificOrigins);

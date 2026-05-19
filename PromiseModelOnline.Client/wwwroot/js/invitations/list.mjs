@@ -43,7 +43,16 @@ export function loadInvitationsPage(contentDiv) {
                     const id = parseInt(btn.dataset.permissionId, 10);
                     try {
                         await acceptInvitation(id);
-                        refresh(); // reload list
+                        // Inline DOM update (no full list reload)
+                        const y = window.scrollY;
+                        const row = btn.closest('tr');
+                        row?.remove();
+
+                        const remaining = listDiv.querySelectorAll('tbody tr').length;
+                        if (remaining === 0) {
+                            listDiv.innerHTML = '<p class="no-items">No pending invitations.</p>';
+                        }
+                        window.scrollTo(0, y);
                     } catch (err) {
                         alert('Failed to accept invitation');
                         console.error(err);

@@ -265,11 +265,14 @@ namespace PromiseModelOnline.Api.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dto = okResult?.Value as FlowDTO;
+
+            var dto = okResult!.Value as FlowDTO;
             Assert.That(dto, Is.Not.Null);
-            Assert.That(dto?.Id, Is.EqualTo(flowId));
+
+            Assert.That(dto!.Id, Is.EqualTo(flowId));
             Assert.That(dto.Statement, Is.EqualTo("Test Flow"));
         }
 

@@ -8,7 +8,7 @@ using System.Linq;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/users")]
 public class RegisterController : ControllerBase
 {
     private readonly IConfiguration _config;
@@ -22,7 +22,7 @@ public class RegisterController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost("register")]
+    [HttpPost]
     public async Task<IActionResult> Register([FromBody] RegisterRequest req)
     {
         // Require a registration key for automated provisioning

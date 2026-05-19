@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -28,7 +29,10 @@ namespace PromiseModelOnline.Api.Tests
 
         private void InitControllerWithUser(string? email, string? nameid = null)
         {
-            _controller = new ReactionsController(_reactionServiceMock.Object, _userRepositoryMock.Object);
+            _controller = new ReactionsController(
+                _reactionServiceMock.Object,
+                _userRepositoryMock.Object,
+                NullLogger<ReactionsController>.Instance);
 
             var claims = new List<Claim>();
             if (email is not null)
@@ -93,7 +97,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpsertReaction_WithAuthenticatedUser_ReturnsOkWithReaction()
+        public async Task CreateReaction_WithAuthenticatedUser_ReturnsCreatedWithReaction()
         {
             var request = new CreateReactionRequest
             {
@@ -118,23 +122,23 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null))
                 .ReturnsAsync(currentUser);
             _reactionServiceMock
-                .Setup(s => s.UpsertReactionAsync(request, currentUser.Id))
+                .Setup(s => s.CreateReactionAsync(request, currentUser.Id))
                 .ReturnsAsync(createdReaction);
 
             InitControllerWithUser("user@example.com");
 
-            var result = await _controller.UpsertReaction(request);
+            var result = await _controller.CreateReaction(request);
 
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            Assert.That(okResult!.Value, Is.SameAs(createdReaction));
+            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+            var created = result.Result as CreatedAtActionResult;
+            Assert.That(created, Is.Not.Null);
+            Assert.That(created!.Value, Is.SameAs(createdReaction));
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync("user@example.com", null), Times.Once);
-            _reactionServiceMock.Verify(s => s.UpsertReactionAsync(request, currentUser.Id), Times.Once);
+            _reactionServiceMock.Verify(s => s.CreateReactionAsync(request, currentUser.Id), Times.Once);
         }
 
         [Test]
-        public async Task UpsertReaction_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task CreateReaction_WhenNoEmailClaim_ReturnsUnauthorized()
         {
             var request = new CreateReactionRequest
             {
@@ -145,11 +149,11 @@ namespace PromiseModelOnline.Api.Tests
 
             InitControllerWithUser(null);
 
-            var result = await _controller.UpsertReaction(request);
+            var result = await _controller.CreateReaction(request);
 
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()), Times.Never);
-            _reactionServiceMock.Verify(s => s.UpsertReactionAsync(It.IsAny<CreateReactionRequest>(), It.IsAny<int>()), Times.Never);
+            _reactionServiceMock.Verify(s => s.CreateReactionAsync(It.IsAny<CreateReactionRequest>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]

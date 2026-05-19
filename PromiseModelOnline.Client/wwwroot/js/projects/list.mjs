@@ -31,8 +31,11 @@ export function loadProjectList(navContentDiv, contentDiv) {
                 e.preventDefault();
                 const projectId = deleteBtn.getAttribute('project-id');
                 deleteProject(projectId).then(() => {
-                    // Reload the list after deleting the project
-                    loadProjectList();
+                    // Inline DOM update (no full list reload)
+                    const y = window.scrollY;
+                    deleteBtn.closest('tr')?.remove();
+                    if (successTextElement) successTextElement.textContent = 'Project deleted.';
+                    window.scrollTo(0, y);
                 }).catch(() => {
                     errorTextElement.textContent = "Failed to delete project. Please try again.";
                 });

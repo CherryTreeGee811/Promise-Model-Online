@@ -10,7 +10,7 @@ export async function getReactions(parentType, parentId) {
     return res.json();
 }
 
-export async function upsertReaction(parentType, parentId, emote) {
+export async function createReaction(parentType, parentId, emote) {
     const token = getAccessTokenFromCookie();
     const res = await fetch(`${base}/api/reactions`, {
         method: 'POST',
@@ -20,6 +20,21 @@ export async function upsertReaction(parentType, parentId, emote) {
             'Accept': 'application/json'
         },
         body: JSON.stringify({ emote, stackItemType: parentType, stackItemId: parentId })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+export async function updateReaction(reactionId, emote) {
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(`${base}/api/reactions/${reactionId}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ emote })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();

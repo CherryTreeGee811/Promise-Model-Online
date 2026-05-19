@@ -235,11 +235,14 @@ namespace PromiseModelOnline.Api.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
-            var dto = okResult?.Value as JourneyDTO;
+
+            var dto = okResult!.Value as JourneyDTO;
             Assert.That(dto, Is.Not.Null);
-            Assert.That(dto?.Id, Is.EqualTo(journeyId));
+
+            Assert.That(dto!.Id, Is.EqualTo(journeyId));
             Assert.That(dto.Statement, Is.EqualTo("Test Journey"));
         }
 

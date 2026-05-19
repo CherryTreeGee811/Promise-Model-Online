@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -35,7 +36,8 @@ namespace PromiseModelOnline.Api.Tests
                 _mockMomentService.Object,
                 _mockMapper.Object,
                 _mockUserRepo.Object,
-                _mockPermissionService.Object);
+                _mockPermissionService.Object,
+                NullLogger<MomentsController>.Instance);
             _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
         }
 
@@ -45,7 +47,8 @@ namespace PromiseModelOnline.Api.Tests
                 _mockMomentService.Object,
                 _mockMapper.Object,
                 _mockUserRepo.Object,
-                _mockPermissionService.Object);
+                _mockPermissionService.Object,
+                NullLogger<MomentsController>.Instance);
 
             var claims = new List<Claim>();
             if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));

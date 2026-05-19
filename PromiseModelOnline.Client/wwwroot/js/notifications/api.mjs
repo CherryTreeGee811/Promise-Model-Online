@@ -23,16 +23,18 @@ export async function fetchAllNotifications() {
 
 export async function markNotificationAsRead(id) {
     const token = getAccessTokenFromCookie();
-    await fetch(`${base}/api/notifications/${id}/read`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+    await fetch(`${base}/api/notifications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true })
     });
 }
 
 export async function markAllNotificationsAsRead() {
     const token = getAccessTokenFromCookie();
-    await fetch(`${base}/api/notifications/read-all`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+    await fetch(`${base}/api/notifications`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true, applyToAll: true })
     });
 }

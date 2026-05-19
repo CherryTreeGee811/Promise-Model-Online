@@ -10,7 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("api/sessions/current")]
 public class LogoutController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -23,7 +23,7 @@ public class LogoutController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("logout")]
+    [HttpDelete]
     [Authorize]   // Requires a valid access token in the Authorization header
     public async Task<IActionResult> Logout([FromBody] LogoutRequest? request)
     {
