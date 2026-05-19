@@ -222,17 +222,43 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 const card = document.createElement('div');
                 card.className = 'stride-card';
                 card.dataset.strideId = s.id;
+
+                card.innerHTML = `
+                    <div class="stride-header">
+                        <h3>${escapeHtml(s.name)}</h3>
+                    </div>
+                    <div class="stride-moments">
+                        <table class="promisemodel-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Statement</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Effort</th>
+                                    <th>Owner</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                `;
+
                 board.appendChild(card);
+
+                const tbody = card.querySelector('tbody');
 
                 getMomentsByStride(s.id).then(ms => {
                     ms.forEach(m => {
-                        card.appendChild(createStrideRow(m));
+                        const row = createStrideRow(m);
+                        tbody.appendChild(row);
                     });
+
+                    populateSelectsWithin(card);
+                    applyPermissionUI(cachedCanEdit);
                 });
             });
-
-            populateSelectsWithin(board);
-            applyPermissionUI(cachedCanEdit);
             bindInlineMomentControls(board);
         });
 
