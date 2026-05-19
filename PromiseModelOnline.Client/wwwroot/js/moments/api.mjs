@@ -128,3 +128,34 @@ export async function updateMomentOwner(momentId, userId) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
 }
+
+/**
+ * Create a new Moment.
+ * @param {object} moment - Moment creation DTO
+ * @returns {Promise<object|null>} created MomentDTO or null for 204
+ */
+export async function addMoment(moment) {
+    const url = `${base}/api/moments`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA'
+        },
+        body: JSON.stringify(moment)
+    });
+
+    if (res.ok) {
+        if (res.status === 204) return null;
+        return res.json();
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}
