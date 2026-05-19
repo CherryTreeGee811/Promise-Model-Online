@@ -36,6 +36,35 @@ export function getAllProjects() {
         });
 }
 
+export async function addProject(project) {
+    const url = `${base}/api/projects`;
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA',
+        },
+        body: JSON.stringify(project)
+    });
+
+    if (res.ok) {
+        if (res.status === 204) {
+            return null;
+        }
+        return res.json();
+    } else if (res.status == 401) {
+        const loginLinkElem = document.getElementById("login-link");
+        loginLinkElem.style.display = "block";
+        loginLinkElem.ariaHidden = false;
+        loginLinkElem.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}
+
 export function deleteProject(projectId) {
     const url = `${base}/api/projects/${projectId}`;
     const accessToken = getAccessTokenFromCookie();
