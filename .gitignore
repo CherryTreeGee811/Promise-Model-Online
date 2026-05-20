@@ -5,11 +5,7 @@
 .idea/
 
 # User-specific files
-PromiseModelOnline.Api/*.user
-PromiseModelOnline.Auth/*.user
-PromiseModelOnline.Client/*.user
-PromiseModelOnline.Api.Tests/*.user
-PromiseModelOnline.Client.Tests/*.user
+*.user
 query
 
 # Build outputs and intermediate objects
@@ -20,9 +16,7 @@ query
 *.DS_Store
 
 # SSL certificates (if any)
-PromiseModelOnline.Api/*.pem
-PromiseModelOnline.Client/*.pem
-PromiseModelOnline.Auth/*.pem
+*.pem
 
 # Rider / JetBrains cache files and solution user settings
 **/*.lscache

@@ -1,33 +1,23 @@
 services:
-  client:
+  promisemodelonline.client:
+    container_name: promisemodelonlineclient
+    hostname: localhost
+    ports:
+      - "9000:9000/tcp"
     build:
       context: ../..
       dockerfile: PromiseModelOnline.Client/Dockerfile
-      args:
-        API_BASE: ""
-    ports:
-      - "9000:9000"
     depends_on:
-      - wiremock
-    networks:
-      - ui_test_net
+      - promisemodelonline.api.mock
 
-  wiremock:
+  promisemodelonline.api.mock:
     image: wiremock/wiremock:latest
+    container_name: promisemodelonlineapimock
     ports:
-      - "8000:8000"
+      - "8000:8000/tcp"
     command: >
       --https-port 8000
-      --https-keystore keystore/wiremock.p12
-      --https-keystore-type PKCS12
-      --keystore-password ${JWT__KEY:-my-secret-key-for-development-only}
+      --verbose
     volumes:
       - ../../PromiseModelOnline.Client.Tests/wiremock/mappings:/home/wiremock/mappings:ro
       - ../../PromiseModelOnline.Client.Tests/wiremock/__files:/home/wiremock/__files:ro
-      - ../../PromiseModelOnline.Client.Tests/wiremock/keystore:/home/wiremock/keystore:ro
-    networks:
-      - ui_test_net
-
-networks:
-  ui_test_net:
-    driver: bridge

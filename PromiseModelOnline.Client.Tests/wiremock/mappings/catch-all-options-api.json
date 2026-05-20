@@ -1,0 +1,12 @@
+{
+  "priority": 1000,
+  "request": { "method": "OPTIONS", "urlPattern": "/api/.*" },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    }
+  }
+}

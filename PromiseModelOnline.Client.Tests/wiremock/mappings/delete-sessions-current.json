@@ -1,0 +1,4 @@
+{
+  "request": { "method": "DELETE", "url": "/api/sessions/current" },
+  "response": { "status": 204 }
+}

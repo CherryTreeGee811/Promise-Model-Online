@@ -1,4 +1,37 @@
 {
-  "request": { "method": "GET", "url": "/api/strides" },
-  "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "bodyFileName": "strides.json" }
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/strides",
+    "queryParameters": {
+      "iterationId": { "matches": "\\d+" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "id": 10,
+        "name": "Stride One",
+        "iterationId": 1,
+        "startDate": "2026-05-01T00:00:00Z",
+        "endDate": "2026-05-07T00:00:00Z",
+        "durationDays": 7,
+        "isActive": true,
+        "createdAt": "2026-05-01T00:00:00Z"
+      },
+      {
+        "id": 20,
+        "name": "Stride Two",
+        "iterationId": 1,
+        "startDate": "2026-05-08T00:00:00Z",
+        "endDate": "2026-05-15T00:00:00Z",
+        "durationDays": 8,
+        "isActive": true,
+        "createdAt": "2026-05-01T00:00:00Z"
+      }
+    ]
+  }
 }

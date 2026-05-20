@@ -18,12 +18,21 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         [SetUp]
         public void Setup()
         {
+            var tempProfile = Path.Combine(Path.GetTempPath(), "chrome-test-profile-" + Guid.NewGuid());
+            Directory.CreateDirectory(tempProfile);
+
             var options = new ChromeOptions();
             //var headless = Environment.GetEnvironmentVariable("HEADLESS") ?? "true";
             //if (headless == "true") options.AddArgument("--headless=new");
+            // Enable browser console logging for diagnostics
+            try { options.SetLoggingPreference(OpenQA.Selenium.LogType.Browser, OpenQA.Selenium.LogLevel.All); } catch { }
+            options.AddArgument("--disable-web-security");
+            options.AddArgument("--allow-running-insecure-content");
             options.AddArgument("--no-sandbox");
             options.AddArgument("--disable-dev-shm-usage");
             options.AddArgument("--ignore-certificate-errors");
+            options.AddArgument("--disable-features=OutOfBlinkCors");
+            options.AddArgument($"--user-data-dir={tempProfile}");
             options.AcceptInsecureCertificates = true;
 
             Driver = new ChromeDriver(options);
@@ -37,7 +46,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             // Wait for the client app to be healthy before running tests
             try { WaitForAppReady(30); } catch (Exception ex) { throw new Exception($"App not ready: {ex.Message}"); }
 
-            var authCookie = Environment.GetEnvironmentVariable("TEST_AUTH_COOKIE");
+            var authCookie = Environment.GetEnvironmentVariable("TEST_AUTH_COOKIE") ?? "owner-token-fixed";
             if (!string.IsNullOrEmpty(authCookie))
             {
                 SetAuthCookie(authCookie);
@@ -54,7 +63,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         {
             WaitForAppReady();
 
-            var authCookie = Environment.GetEnvironmentVariable("TEST_AUTH_COOKIE");
+            var authCookie = Environment.GetEnvironmentVariable("TEST_AUTH_COOKIE") ?? "owner-token-fixed";
             if (!string.IsNullOrEmpty(authCookie))
             {
                 SetAuthCookie(authCookie);
@@ -108,32 +117,87 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         protected IWebElement WaitForElement(By by, int timeoutSeconds = 20)
         {
             var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(timeoutSeconds));
-            return wait.Until(d =>
+            try
             {
+                return wait.Until(d =>
+                {
+                    try
+                    {
+                        var el = d.FindElement(by);
+                        return (el != null && el.Displayed) ? el : null;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                });
+            }
+            catch (OpenQA.Selenium.WebDriverTimeoutException)
+            {
+                // Collect diagnostics: page source and browser console logs
                 try
                 {
-                    var el = d.FindElement(by);
-                    return (el != null && el.Displayed) ? el : null;
+                    var src = Driver.PageSource ?? "(no page source)";
+                    TestContext.Progress.WriteLine("----- WaitForElement timed out: dumping page source (truncated 10000 chars) -----");
+                    TestContext.Progress.WriteLine(src.Length > 10000 ? src.Substring(0, 10000) : src);
+
+                    try
+                    {
+                        var logs = Driver.Manage().Logs.GetLog(OpenQA.Selenium.LogType.Browser);
+                        TestContext.Progress.WriteLine("----- Browser console logs -----");
+                        foreach (var l in logs) TestContext.Progress.WriteLine(l.ToString());
+                    }
+                    catch (Exception) { TestContext.Progress.WriteLine("(failed to read browser logs)"); }
                 }
-                catch
+                catch (Exception e)
                 {
-                    return null;
+                    TestContext.Progress.WriteLine($"(failed to collect diagnostics: {e.Message})");
                 }
-            });
+
+                throw;
+            }
         }
 
         protected T WaitUntil<T>(Func<IWebDriver, T> condition, int timeoutSeconds = 10)
         {
             var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(timeoutSeconds));
-            return wait.Until(condition);
+            try
+            {
+                return wait.Until(condition);
+            }
+            catch (OpenQA.Selenium.WebDriverTimeoutException)
+            {
+                try
+                {
+                    TestContext.Progress.WriteLine("----- WaitUntil<T> timed out: dumping page source (truncated 10000 chars) -----");
+                    var src = Driver.PageSource ?? "(no page source)";
+                    TestContext.Progress.WriteLine(src.Length > 10000 ? src.Substring(0, 10000) : src);
+                }
+                catch { }
+                throw;
+            }
         }
 
         protected bool WaitUntil(Func<IWebDriver, bool> predicate, int timeoutSeconds = 10)
         {
             var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(timeoutSeconds));
-            return wait.Until(d => {
-                try { return predicate(d); } catch { return false; }
-            });
+            try
+            {
+                return wait.Until(d => {
+                    try { return predicate(d); } catch { return false; }
+                });
+            }
+            catch (OpenQA.Selenium.WebDriverTimeoutException)
+            {
+                try
+                {
+                    TestContext.Progress.WriteLine("----- WaitUntil<bool> timed out: dumping page source (truncated 10000 chars) -----");
+                    var src = Driver.PageSource ?? "(no page source)";
+                    TestContext.Progress.WriteLine(src.Length > 10000 ? src.Substring(0, 10000) : src);
+                }
+                catch { }
+                throw;
+            }
         }
 
         private void WaitForAppReady(int timeoutSeconds = 30)
