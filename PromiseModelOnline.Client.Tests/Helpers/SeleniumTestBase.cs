@@ -14,6 +14,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         protected IWebDriver Driver = null!;
         protected WebDriverWait Wait = null!;
         protected string BaseUrl => Environment.GetEnvironmentVariable("TEST_BASE_URL") ?? "https://localhost:9000";
+        protected virtual bool ShouldSetDefaultAuthCookie => true;
 
         [SetUp]
         public void Setup()
@@ -33,6 +34,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             options.AddArgument("--ignore-certificate-errors");
             options.AddArgument("--disable-features=OutOfBlinkCors");
             options.AddArgument($"--user-data-dir={tempProfile}");
+            options.AddArgument("--window-size=1366,768");
             options.AcceptInsecureCertificates = true;
 
             Driver = new ChromeDriver(options);
@@ -46,10 +48,13 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             // Wait for the client app to be healthy before running tests
             try { WaitForAppReady(30); } catch (Exception ex) { throw new Exception($"App not ready: {ex.Message}"); }
 
-            var authCookie = Environment.GetEnvironmentVariable("TEST_AUTH_COOKIE") ?? "owner-token-fixed";
-            if (!string.IsNullOrEmpty(authCookie))
+            if (ShouldSetDefaultAuthCookie)
             {
-                SetAuthCookie(authCookie);
+                var authCookie = Environment.GetEnvironmentVariable("TEST_AUTH_COOKIE") ?? "owner-token-fixed";
+                if (!string.IsNullOrEmpty(authCookie))
+                {
+                    SetAuthCookie(authCookie);
+                }
             }
         }
 
@@ -82,36 +87,6 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
             // No auth provided; proceed unauthenticated. WireMock should return permissions and data for tests.
             Driver.Navigate().GoToUrl(BaseUrl + targetPath);
-        }
-
-        protected void LoginViaUi(string username, string password, int timeoutSeconds = 20)
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/login");
-
-            var userEl = WaitForElement(By.Id("username-input"), timeoutSeconds);
-            var passEl = WaitForElement(By.Id("password-input"), timeoutSeconds);
-            var btn = WaitForElement(By.Id("login-btn"), timeoutSeconds);
-
-            userEl.Clear();
-            userEl.SendKeys(username);
-            passEl.Clear();
-            passEl.SendKeys(password);
-            btn.Click();
-
-            var sw = Stopwatch.StartNew();
-            while (sw.Elapsed.TotalSeconds < timeoutSeconds)
-            {
-                try
-                {
-                    var cookie = Driver.Manage().Cookies.GetCookieNamed("accessToken");
-                    if (cookie != null && !string.IsNullOrEmpty(cookie.Value)) return;
-                }
-                catch { }
-
-                Thread.Sleep(500);
-            }
-
-            throw new Exception("Login via UI did not produce accessToken cookie within timeout.");
         }
 
         protected IWebElement WaitForElement(By by, int timeoutSeconds = 20)
@@ -233,6 +208,52 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             try { Driver.Manage().Cookies.DeleteCookieNamed(cookieName); } catch { }
             Driver.Manage().Cookies.AddCookie(cookie);
             Driver.Navigate().Refresh();
+        }
+
+        protected void ScrollToAndClick(By by, int timeoutSeconds = 10)
+        {
+            // Wait for the element to be present and visible
+            var element = WaitForElement(by, timeoutSeconds);
+
+            // Scroll the element into the centre of the screen, clearing any fixed overlays
+            ((IJavaScriptExecutor)Driver).ExecuteScript(
+                "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                element);
+
+            // Give the browser a moment to settle (no hard Sleep – just a minimal implicit delay)
+            // Then perform a real click – exactly what a user would do after scrolling.
+            element.Click();
+        }
+
+        protected void LoginViaUi(string username, string password, int timeoutSeconds = 20)
+        {
+            Driver.Navigate().GoToUrl(BaseUrl + "/login");
+
+            var userEl = WaitForElement(By.Id("username-input"), timeoutSeconds);
+            var passEl = WaitForElement(By.Id("password-input"), timeoutSeconds);
+
+            userEl.Clear();
+            userEl.SendKeys(username);
+            passEl.Clear();
+            passEl.SendKeys(password);
+
+            // Scroll the login button into view and click it – avoids interception by the fixed footer
+            ScrollToAndClick(By.Id("login-btn"));
+
+            var sw = Stopwatch.StartNew();
+            while (sw.Elapsed.TotalSeconds < timeoutSeconds)
+            {
+                try
+                {
+                    var cookie = Driver.Manage().Cookies.GetCookieNamed("accessToken");
+                    if (cookie != null && !string.IsNullOrEmpty(cookie.Value)) return;
+                }
+                catch { }
+
+                Thread.Sleep(500);
+            }
+
+            throw new Exception("Login via UI did not produce accessToken cookie within timeout.");
         }
     }
 }

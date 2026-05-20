@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/notifications",
+    "urlPath": "/api/projects",
     "headers": {
       "Authorization": { "equalTo": "Bearer owner-token-fixed" }
     }
@@ -13,11 +13,10 @@
     "jsonBody": [
       {
         "id": 1,
-        "message": "Test notification",
-        "type": "Mention",
-        "isRead": false,
-        "createdAt": "2026-05-20T00:00:00Z",
-        "link": null
+        "name": "Test Project",
+        "description": "A seeded test project",
+        "ownerId": 1,
+        "createdAt": "2026-05-01T00:00:00Z"
       }
     ]
   }
