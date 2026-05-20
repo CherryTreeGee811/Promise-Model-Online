@@ -58,6 +58,13 @@ jobs:
       - name: Smoke Test Production Environment
         shell: bash
         run: |
+          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
+          export PMO_API_DB_USER="${{ secrets.PMO_API_DB_USER }}"
+          export PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}"
+          export PMO_AUTH_DB_USER="${{ secrets.PMO_AUTH_DB_USER }}"
+          export PMO_AUTH_DB_PASSWORD="${{ secrets.PMO_AUTH_DB_PASSWORD }}"
+          export JWT__KEY="${{ secrets.JWT__KEY }}"
+          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
           docker compose up -d
           
           # ---- Wait for db-init to finish ----
