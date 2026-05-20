@@ -6,6 +6,15 @@ export function loadProjectList(navContentDiv, contentDiv) {
     const errorTextElement = document.getElementById("error-text");
     const successTextElement = document.getElementById("success-text");
     const loadingTextElement = document.getElementById("loading-text");
+    const addProjectLink = document.getElementById('add-project-link');
+
+    if (addProjectLink) {
+        addProjectLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.history.pushState({}, '', '/projects/add');
+            routeHandler(navContentDiv, contentDiv);
+        });
+    }
 
     loadingTextElement.textContent = "Loading projects...";
     tableBody.innerHTML = '';

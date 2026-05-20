@@ -1,0 +1,19 @@
+<h1>Add Project</h1>
+
+<div class="form-div">
+    <h1>Create Project</h1>
+    <form id="add-project-form">
+        <label id="project-name-label" for="project-name-input">Name:</label>
+        <input id="project-name-input" type="text" name="name" required maxlength="200" placeholder="Enter project name">
+
+        <label id="project-description-label" for="project-description-input">Description:</label>
+        <textarea id="project-description-input" name="description" maxlength="1000" placeholder="Enter an optional description"></textarea>
+
+        <button id="create-project-btn" type="submit">Create Project</button>
+        <a href="/projects" id="cancel-add-project-link">Cancel</a>
+    </form>
+
+    <p id="error-text"></p>
+    <p id="loading-text"></p>
+    <p id="success-text"></p>
+</div>

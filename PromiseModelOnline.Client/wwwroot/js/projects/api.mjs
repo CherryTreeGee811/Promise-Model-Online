@@ -37,9 +37,10 @@ export function getAllProjects() {
 }
 
 export async function addProject(project) {
-    const url = `${base}/api/projects`;
+    const url = `${base}/api/projects/create`;
     const token = getAccessTokenFromCookie();
     const res = await fetch(url, {
+        mode: 'cors',
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -61,7 +62,14 @@ export async function addProject(project) {
         loginLinkElem.ariaHidden = false;
         loginLinkElem.click();
     } else {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        // Try to parse problem details / error body for more info
+        try {
+            const body = await res.json();
+            const msg = body && (body.title || body.message || body.detail || JSON.stringify(body));
+            throw new Error(msg || `HTTP error! status: ${res.status}`);
+        } catch (e) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
     }
 }
 

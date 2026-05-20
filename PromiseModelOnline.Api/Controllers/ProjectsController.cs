@@ -95,6 +95,24 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        // Create endpoint that accepts a lightweight DTO so clients don't have to send Owner/OwnerId.
+        [HttpPost("create")]
+        public async Task<ActionResult<ProjectDTO>> CreateFromDto([FromBody] DTOs.ProjectCreateDTO dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null) return Unauthorized();
+
+            var project = new Project
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                OwnerId = user.Id
+            };
+
+            await _service.AddAsync(project);
+            return CreatedAtAction(nameof(GetById), new { id = project.Id }, _mapper.Map(project, _service));
+        }
+
         // Diagnostic endpoint removed. Temporary debug method rolled back.
     }
 }

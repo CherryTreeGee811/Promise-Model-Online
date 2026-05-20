@@ -1,5 +1,6 @@
 import { loadTemplate } from '../router.mjs';
 import { loadProjectList } from './list.mjs';
+import { loadAddProjectForm } from './add.mjs';
 import { loadStridesPage } from '../strides/router.mjs';
 import { loadSharePage } from './share.mjs';
 
@@ -41,6 +42,13 @@ export function handleProjectRoutes(path, navContentDiv, contentDiv) {
                 return loadProjectList(navContentDiv, contentDiv);
             }).catch((error) => {
                 console.error('Error loading project list page:', error);
+            });
+            break;
+        case '/projects/add':
+            loadTemplate("projects/add.html", contentDiv).then(() => {
+                return loadAddProjectForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading add project page:', error);
             });
             break;
         default:
