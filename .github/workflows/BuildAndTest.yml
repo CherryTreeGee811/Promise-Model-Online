@@ -132,8 +132,8 @@ jobs:
           # ---- Auth service health ----
           echo "Waiting for Auth Server..."
           AUTH_READY=false
-          for i in $(seq 1 60); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8060/health)
+          for i in $(seq 1 20); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8060/health || true)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:8060/health)
               if echo "$BODY" | grep -q '"healthy"'; then
