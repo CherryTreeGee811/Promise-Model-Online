@@ -59,12 +59,28 @@ jobs:
         shell: bash
         run: |
           docker compose up -d
-
+          
+          # ---- Wait for db-init to finish ----
+          echo "Waiting for db-init to complete..."
+          for i in $(seq 1 10); do
+            STATUS=$(docker inspect promisemodelonlinedbinit --format='{{.State.ExitCode}}')
+            if [ "$STATUS" -eq 0 ]; then
+              echo "db-init completed successfully"
+              break
+            fi
+            echo "db-init not finished yet (attempt $i)..."
+            sleep 5
+          done
+          if [ "$STATUS" != "0" ]; then
+            echo "ERROR: db-init did not exit successfully (exit code $STATUS)"
+            exit 1
+          fi
+          
           # ---- SQL Server ----
           echo "Waiting for SQL Server..."
           SQL_READY=false
           for i in $(seq 1 20); do
-            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U sa -P "${{ secrets.DB_SA_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
+            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U "${{ secrets.PMO_API_DB_USER }}" -P "${{ secrets.PMO_API_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
               echo "SQL Server is ready"
               SQL_READY=true
               break
