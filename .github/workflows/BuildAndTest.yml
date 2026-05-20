@@ -50,10 +50,6 @@ jobs:
           cat > PromiseModelOnline.Auth/key.pem <<'PEM'
           ${{ secrets.AUTH_CI_KEY }}
           PEM
-
-      - name: Build Containers
-        shell: bash
-        run: docker compose build
       
       - name: Smoke Test Production Environment
         shell: bash
@@ -66,7 +62,7 @@ jobs:
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
 
-          docker compose up -d
+          docker compose --project-name promisemodelonline up -d
 
           # ---- Wait for db-init to finish ----
           echo "Waiting for db-init to complete..."
@@ -196,7 +192,7 @@ jobs:
       - name: Tear Down Production Services
         if: always()
         shell: bash
-        run: docker compose down -v
+        run: docker compose --project-name promisemodelonline down -v
 
       - name: Run Auth Tests
         shell: bash
@@ -220,7 +216,7 @@ jobs:
     
       - name: Run Client UI Test Environment
         shell: bash
-        run: docker compose -f infrastructure/tests/docker-compose.ui.yml up --build -d
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up --build -d
 
       - name: Smoke Test Client UI Test Environment
         shell: bash
@@ -278,7 +274,7 @@ jobs:
       - name: Teardown Client UI Test Environment
         if: always()
         shell: bash
-        run: docker compose -f infrastructure/tests/docker-compose.ui.yml down --remove-orphans -v
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down --remove-orphans -v
 
       - name: Push Docker Images to DockerHub
         if: ${{ github.ref == 'refs/heads/main' }}
