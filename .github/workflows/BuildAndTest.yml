@@ -66,7 +66,7 @@ jobs:
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
 
-          docker compose --project-name promisemodelonline up -d
+          docker compose up -d
 
           # ---- Wait for db-init to finish ----
           echo "Waiting for db-init to complete..."
