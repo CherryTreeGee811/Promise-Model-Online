@@ -19,17 +19,23 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IProjectService _projectService;
         private readonly IUserRepository _userRepository;
         private readonly IPermissionService _permissionService;
+        private readonly IGenericService<Promise> _promiseService;
+        private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
 
         public ProjectsController(
             IProjectService projectService,
             IGenericMapper<Project, ProjectDTO> mapper,
             IUserRepository userRepository,
-            IPermissionService permissionService)
+            IPermissionService permissionService,
+            IGenericService<Promise> promiseService,
+            IGenericMapper<Promise, PromiseDTO> promiseMapper)
             : base(projectService, mapper)
         {
             _projectService = projectService;
             _userRepository = userRepository;
             _permissionService = permissionService;
+            _promiseService = promiseService;
+            _promiseMapper = promiseMapper;
         }
 
         [HttpGet]
@@ -59,6 +65,22 @@ namespace PromiseModelOnline.Api.Controllers
 
             var members = await _projectService.GetProjectMembersAsync(id);
             return Ok(members);
+        }
+
+        [HttpGet("{id}/promises")]
+        public async Task<ActionResult<IEnumerable<PromiseDTO>>> GetProjectPromises(int id)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null)
+                return Unauthorized();
+
+            var promises = await _projectService.GetProductPromisesAsync(id);
+            var result = promises
+                .OrderBy(promise => promise.DisplayOrder)
+                .Select(promise => _promiseMapper.Map(promise, _promiseService))
+                .ToList();
+
+            return Ok(result);
         }
 
         private async Task<User?> GetCurrentUserAsync()

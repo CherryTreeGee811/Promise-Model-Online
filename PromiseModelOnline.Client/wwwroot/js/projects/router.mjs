@@ -3,6 +3,7 @@ import { loadProjectList } from './list.mjs';
 import { loadAddProjectForm } from './add.mjs';
 import { loadStridesPage } from '../strides/router.mjs';
 import { loadSharePage } from './share.mjs';
+import { loadGraphPage } from './graph.mjs';
 
 export function handleProjectRoutes(path, navContentDiv, contentDiv) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -22,6 +23,15 @@ export function handleProjectRoutes(path, navContentDiv, contentDiv) {
         loadTemplate('projects/share.html', contentDiv)
             .then(() => loadSharePage(shareMatch[1], contentDiv))
             .catch(err => { contentDiv.innerHTML = '<h1>Error loading share page</h1>'; });
+        return;
+    }
+
+    // Match /projects/{id}/graph
+    const graphMatch = path.match(/^\/projects\/(\d+)\/graph$/);
+    if (graphMatch) {
+        loadTemplate('projects/graph.html', contentDiv)
+            .then(() => loadGraphPage(graphMatch[1], contentDiv))
+            .catch(err => { contentDiv.innerHTML = '<h1>Error loading graph page</h1>'; });
         return;
     }
 

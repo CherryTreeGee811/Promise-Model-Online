@@ -304,7 +304,7 @@ input[type=button]:hover, input[type=submit]:hover {
 /*********************************************
   9. Action Buttons (View, Edit, Delete)
 **********************************************/
-.view-btn, .edit-btn, .delete-btn {
+.view-btn, .edit-btn, .delete-btn, .graph-btn {
   display: inline-block;
   padding: 6px 16px;
   border-radius: var(--radius-sm);
@@ -317,7 +317,7 @@ input[type=button]:hover, input[type=submit]:hover {
   margin: 0 2px;
   color: #fff;
 }
-.view-btn:hover, .edit-btn:hover, .delete-btn:hover {
+.view-btn:hover, .edit-btn:hover, .delete-btn:hover, .graph-btn:hover {
   transform: translateY(-1px);
 }
 .view-btn {
@@ -338,6 +338,12 @@ input[type=button]:hover, input[type=submit]:hover {
 }
 .delete-btn:hover, .delete-btn:focus-visible {
   background: #8e0000;
+}
+.graph-btn {
+  background: #2c3e50;
+}
+.graph-btn:hover, .graph-btn:focus-visible {
+  background: #1f2b38;
 }
 
 /*********************************************

@@ -27,6 +27,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
                 <td>${project.name ?? ''}</td>
                 <td>
                     <a href="/projects/${project.id}/strides" class="view-btn">View</a>
+                    <a href="/projects/${project.id}/graph" class="graph-btn">&#128200; Graph View</a>
                     <a href="/projects/edit?id=${project.id}" class="edit-btn" project-id="${project.id}">Edit</a>
                     <button class="delete-btn" project-id="${project.id}">Delete</button>
                     <a href="/projects/${project.id}/share" class="share-btn">Share</a>

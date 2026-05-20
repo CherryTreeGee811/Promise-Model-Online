@@ -81,6 +81,9 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return members;
         }
 
+        public async Task<IEnumerable<Promise>> GetProductPromisesAsync(int projectId)
+            => await _projectRepo.GetProductPromisesByProjectAsync(projectId);
+
         private class ProjectComparer : IEqualityComparer<Project>
         {
             public bool Equals(Project? x, Project? y) => x?.Id == y?.Id;

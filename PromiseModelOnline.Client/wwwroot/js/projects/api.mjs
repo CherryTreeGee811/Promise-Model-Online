@@ -133,3 +133,11 @@ export async function revokePermission(permissionId) {
     const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
+
+export async function getProjectPromises(projectId) {
+    const url = `${base}/api/projects/${projectId}/promises`;
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
