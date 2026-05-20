@@ -87,7 +87,7 @@ jobs:
           echo "Waiting for SQL Server..."
           SQL_READY=false
           for i in $(seq 1 20); do
-            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U "${{ secrets.PMO_API_DB_USER }}" -P "${{ secrets.PMO_API_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
+            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U "${{ vars.PMO_API_DB_USER }}" -P "${{ secrets.PMO_API_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
               echo "SQL Server is ready"
               SQL_READY=true
               break
