@@ -278,8 +278,15 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
             var createdResult = result.Result as CreatedAtActionResult;
             Assert.That(createdResult, Is.Not.Null);
-            Assert.That(createdResult!.ActionName, Is.EqualTo(nameof(JourneysController.GetById)));
-            Assert.That(createdResult!.RouteValues["id"], Is.EqualTo(1));
+            Assert.That(createdResult.ActionName, Is.EqualTo(nameof(JourneysController.GetById)));
+            if (createdResult.RouteValues != null)
+            {
+                Assert.That(createdResult.RouteValues["id"], Is.EqualTo(1));
+            }
+            else
+            {
+                Assert.Fail("RouteValues is null");
+            }
             var dto = createdResult.Value as JourneyDTO;
             Assert.That(dto, Is.Not.Null);
             Assert.That(dto!.Id, Is.EqualTo(1));

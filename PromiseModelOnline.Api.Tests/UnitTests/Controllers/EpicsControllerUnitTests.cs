@@ -278,11 +278,12 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
             var createdResult = result.Result as CreatedAtActionResult;
             Assert.That(createdResult, Is.Not.Null);
-            Assert.That(createdResult!.ActionName, Is.EqualTo(nameof(EpicsController.GetById)));
-            Assert.That(createdResult!.RouteValues["id"], Is.EqualTo(1));
+            Assert.That(createdResult.ActionName, Is.EqualTo(nameof(EpicsController.GetById)));
+            Assert.That(createdResult.RouteValues, Is.Not.Null);
+            Assert.That(createdResult.RouteValues["id"], Is.EqualTo(1));
             var dto = createdResult.Value as EpicDTO;
             Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.Id, Is.EqualTo(1));
+            Assert.That(dto.Id, Is.EqualTo(1));
         }
 
         [Test]

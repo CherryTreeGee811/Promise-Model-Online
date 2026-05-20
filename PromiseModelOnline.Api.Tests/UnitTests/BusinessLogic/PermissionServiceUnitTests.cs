@@ -193,7 +193,7 @@ namespace PromiseModelOnline.Api.Tests
             var perms = new List<Permission>
             {
                 new Permission { Id = 10, ProjectId = 1, Project = new Project { Name = "P1" }, Level = PermissionLevel.View, Status = PermissionStatus.Pending },
-                new Permission { Id = 11, ProjectId = 2, Project = null, Level = PermissionLevel.Comment, Status = PermissionStatus.Pending }
+                new Permission { Id = 11, ProjectId = 2, Level = PermissionLevel.Comment, Status = PermissionStatus.Pending }
             };
             _permRepoMock.Setup(r => r.GetPendingInvitationsForUserAsync(5)).ReturnsAsync(perms);
 
