@@ -65,8 +65,9 @@ jobs:
           export PMO_AUTH_DB_PASSWORD="${{ secrets.PMO_AUTH_DB_PASSWORD }}"
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
-          docker compose up -d
-          
+
+          docker compose --project-name promisemodelonline up -d
+
           # ---- Wait for db-init to finish ----
           echo "Waiting for db-init to complete..."
           for i in $(seq 1 10); do
@@ -82,12 +83,17 @@ jobs:
             echo "ERROR: db-init did not exit successfully (exit code $STATUS)"
             exit 1
           fi
-          
-          # ---- SQL Server ----
-          echo "Waiting for SQL Server..."
+
+          # ---- SQL Server health check using API login ----
+          echo "Waiting for SQL Server (login: ${{ vars.PMO_API_DB_USER }})..."
           SQL_READY=false
           for i in $(seq 1 20); do
-            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U "${{ vars.PMO_AUTH_DB_USER }}" -P "${{ secrets.PMO_AUTH_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
+            if docker run --rm --network promisemodelonline_promisemodelonline-net mcr.microsoft.com/mssql-tools \
+              /opt/mssql-tools/bin/sqlcmd -S promisemodelonline.db,1433 \
+                -U "${{ vars.PMO_API_DB_USER }}" \
+                -P "${{ secrets.PMO_API_DB_PASSWORD }}" \
+                -d PromiseModelOnline \
+                -Q "SELECT 1" &>/dev/null; then
               echo "SQL Server is ready"
               SQL_READY=true
               break
@@ -100,21 +106,29 @@ jobs:
             exit 1
           fi
 
-          echo "Verifying API database login..."
-          API_DB_READY=false
+          # ---- Verify Auth database login ----
+          echo "Verifying Auth database login..."
+          AUTH_DB_READY=false
           for i in $(seq 1 5); do
-            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd \
-              -U "${{ vars.PMO_AUTH_DB_USER }}" -P "${{ secrets.PMO_AUTH_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
-              echo "API database login OK"
-              API_DB_READY=true
+            if docker run --rm --network promisemodelonline_promisemodelonline-net mcr.microsoft.com/mssql-tools \
+              /opt/mssql-tools/bin/sqlcmd -S promisemodelonline.db,1433 \
+                -U "${{ vars.PMO_AUTH_DB_USER }}" \
+                -P "${{ secrets.PMO_AUTH_DB_PASSWORD }}" \
+                -d PromiseModelOnlineAuth \
+                -Q "SELECT 1" &>/dev/null; then
+              echo "Auth database login OK"
+              AUTH_DB_READY=true
               break
             fi
-          if [ "$API_DB_READY" = false ]; then
-            echo "ERROR: API database login failed"
+            echo "Auth login check attempt $i..."
+            sleep 2
+          done
+          if [ "$AUTH_DB_READY" = false ]; then
+            echo "ERROR: Auth database login failed"
             exit 1
           fi
 
-          # ---- Auth ----
+          # ---- Auth service health ----
           echo "Waiting for Auth..."
           AUTH_READY=false
           for i in $(seq 1 20); do
@@ -135,7 +149,7 @@ jobs:
             exit 1
           fi
 
-          # ---- API ----
+          # ---- API service health ----
           echo "Waiting for API..."
           API_READY=false
           for i in $(seq 1 30); do
