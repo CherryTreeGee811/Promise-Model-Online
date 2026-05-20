@@ -22,8 +22,8 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             Directory.CreateDirectory(tempProfile);
 
             var options = new ChromeOptions();
-            //var headless = Environment.GetEnvironmentVariable("HEADLESS") ?? "true";
-            //if (headless == "true") options.AddArgument("--headless=new");
+            var headless = Environment.GetEnvironmentVariable("HEADLESS") ?? "true";
+            if (headless == "true") options.AddArgument("--headless=new");
             // Enable browser console logging for diagnostics
             try { options.SetLoggingPreference(OpenQA.Selenium.LogType.Browser, OpenQA.Selenium.LogLevel.All); } catch { }
             options.AddArgument("--disable-web-security");

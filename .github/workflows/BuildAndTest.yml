@@ -50,6 +50,10 @@ jobs:
           cat > PromiseModelOnline.Auth/key.pem <<'PEM'
           ${{ secrets.AUTH_CI_KEY }}
           PEM
+
+      - name: Build Containers
+        shell: bash
+        run: docker compose build
       
       - name: Run Auth Tests
         shell: bash
@@ -70,11 +74,21 @@ jobs:
             --results-directory ./ApiTestResults \
             --os linux \
             --logger "console;verbosity=normal"
-
-      - name: Build and Run App Containers
+    
+      - name: Run Test Client UI Environment
         shell: bash
-        run: docker compose up -d
+        run: docker compose -f infrastructure/tests/docker-compose.ui.yml up --build -d
 
+      - name : Run Client Tests
+        shell: bash
+        run: |
+          mkdir -p ClientTestResults
+          dotnet test PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+            -collect:"XPlat Code Coverage" \
+            --results-directory ./ClientTestResults \
+            --os linux \
+            --logger "console;verbosity=normal"
+        
       - name: Push Docker Images to DockerHub
         if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash
