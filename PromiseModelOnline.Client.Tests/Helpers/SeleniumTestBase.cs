@@ -34,7 +34,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             options.AddArgument("--ignore-certificate-errors");
             options.AddArgument("--disable-features=OutOfBlinkCors");
             options.AddArgument($"--user-data-dir={tempProfile}");
-            options.AddArgument("--window-size=1366,768");
+            options.AddArgument("--window-size=1366,900");
             options.AcceptInsecureCertificates = true;
 
             Driver = new ChromeDriver(options);
@@ -131,6 +131,13 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
                 throw;
             }
+        }
+
+        protected void ScrollElementIntoViewAndClick(By by, int timeoutSeconds = 10)
+        {
+            var element = WaitForElement(by, timeoutSeconds);
+            ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].scrollIntoView({block: 'center'});", element);
+            element.Click();
         }
 
         protected T WaitUntil<T>(Func<IWebDriver, T> condition, int timeoutSeconds = 10)

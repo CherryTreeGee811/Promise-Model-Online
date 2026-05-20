@@ -1,0 +1,29 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/comments",
+    "queryParameters": {
+      "type": { "equalTo": "Moment" },
+      "parentId": { "equalTo": "100" }
+    },
+    "headers": {
+      "Authorization": { "equalTo": "Bearer owner-token-fixed" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      {
+        "id": 1,
+        "text": "Existing comment",
+        "createdAt": "2026-05-01T00:00:00Z",
+        "userName": "pmo_test",
+        "mentionedUsers": [],
+        "parentCommentId": null,
+        "replies": []
+      }
+    ]
+  }
+}

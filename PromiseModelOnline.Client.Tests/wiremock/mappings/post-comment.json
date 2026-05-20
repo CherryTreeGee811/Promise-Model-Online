@@ -1,0 +1,23 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/comments",
+    "headers": {
+      "Authorization": { "equalTo": "Bearer owner-token-fixed" }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": 2,
+      "text": "New comment",
+      "createdAt": "2026-05-20T00:00:00Z",
+      "userName": "pmo_test",
+      "mentionedUsers": [],
+      "parentCommentId": null,
+      "replies": []
+    }
+  }
+}

@@ -196,7 +196,7 @@ public static class PromiseHierarchySeeder
                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, 0);
                 SET IDENTITY_INSERT Moments OFF;";
 
-            object strideParam = strideId.HasValue ? strideId.Value : DBNull.Value;
+            object? strideParam = strideId.HasValue ? strideId.Value : null;
 
             var parameters = new object[]
             {
@@ -207,7 +207,7 @@ public static class PromiseHierarchySeeder
                 (int)MomentStatus.Todo,
                 momentId,
                 DateTime.UtcNow,
-                strideParam,
+                strideParam!,
                 "red"
             };
             await db.Database.ExecuteSqlRawAsync(sql, parameters);
