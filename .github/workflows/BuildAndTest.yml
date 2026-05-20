@@ -58,6 +58,7 @@ jobs:
       - name: Smoke Test Production Environment
         shell: bash
         run: |
+          ls PromiseModelOnline.Auth
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
           export PMO_API_DB_USER="${{ vars.PMO_API_DB_USER }}"
           export PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}"
