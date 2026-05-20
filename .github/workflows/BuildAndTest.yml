@@ -55,61 +55,90 @@ jobs:
         shell: bash
         run: docker compose build
       
-      - name: Start Production Services and Verify Health
+      - name: Smoke Test Production Environment
         shell: bash
         run: |
           docker compose up -d
-          echo "Waiting for SQL Server to accept connections..."
+
+          # ---- SQL Server ----
+          echo "Waiting for SQL Server..."
+          SQL_READY=false
           for i in $(seq 1 20); do
             if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U sa -P "${{ secrets.DB_SA_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
               echo "SQL Server is ready"
+              SQL_READY=true
               break
             fi
             echo "SQL Server not ready yet, waiting..."
             sleep 3
           done
+          if [ "$SQL_READY" = false ]; then
+            echo "ERROR: SQL Server failed to become ready within 60 seconds"
+            exit 1
+          fi
 
-          echo "Waiting for Client (Nginx)..."
-          for i in $(seq 1 10); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(curl -k -s https://localhost:9000/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "Client is healthy"
-                break
-              fi
-            fi
-            echo "Client not ready (attempt $i)..."
-            sleep 3
-          done
-
-          echo "Waiting for Auth health endpoint..."
+          # ---- Auth ----
+          echo "Waiting for Auth..."
+          AUTH_READY=false
           for i in $(seq 1 20); do
             STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8060/health)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:8060/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "Auth is healthy"
+                AUTH_READY=true
                 break
               fi
             fi
             echo "Attempt $i: Auth not ready yet, waiting..."
             sleep 3
           done
+          if [ "$AUTH_READY" = false ]; then
+            echo "ERROR: Auth failed to become healthy within 60 seconds"
+            exit 1
+          fi
 
-          echo "Waiting for API health endpoint..."
+          # ---- API ----
+          echo "Waiting for API..."
+          API_READY=false
           for i in $(seq 1 30); do
             STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:8000/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "API is healthy"
+                API_READY=true
                 break
               fi
             fi
             echo "Attempt $i: API not ready yet, waiting..."
             sleep 3
           done
+          if [ "$API_READY" = false ]; then
+            echo "ERROR: API failed to become healthy within 90 seconds"
+            exit 1
+          fi
+
+          # ---- Client (Nginx) ----
+          echo "Waiting for Client..."
+          CLIENT_READY=false
+          for i in $(seq 1 10); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health)
+            if [ "$STATUS" -eq 200 ]; then
+              BODY=$(curl -k -s https://localhost:9000/health)
+              if echo "$BODY" | grep -q '"healthy"'; then
+                echo "Client is healthy"
+                CLIENT_READY=true
+                break
+              fi
+            fi
+            echo "Client not ready (attempt $i)..."
+            sleep 3
+          done
+          if [ "$CLIENT_READY" = false ]; then
+            echo "ERROR: Client failed to become healthy within 30 seconds"
+            exit 1
+          fi
 
           echo "All production services are healthy!"
 
@@ -138,11 +167,54 @@ jobs:
             --os linux \
             --logger "console;verbosity=normal"
     
-      - name: Run Test Client UI Environment
+      - name: Run Client UI Test Environment
         shell: bash
         run: docker compose -f infrastructure/tests/docker-compose.ui.yml up --build -d
 
-      - name : Run Client Tests
+      - name: Smoke Test Client UI Test Environment
+        shell: bash
+        run: |
+          echo "Waiting for WireMock..."
+          WIREMOCK_READY=false
+          for i in $(seq 1 10); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health)
+            if [ "$STATUS" -eq 200 ]; then
+              BODY=$(curl -k -s https://localhost:8000/health)
+              if echo "$BODY" | grep -q '"healthy"'; then
+                echo "WireMock is healthy"
+                WIREMOCK_READY=true
+                break
+              fi
+            fi
+            echo "WireMock not ready (attempt $i)..."
+            sleep 2
+          done
+          if [ "$WIREMOCK_READY" = false ]; then
+            echo "ERROR: WireMock failed to become healthy within 20 seconds"
+            exit 1
+          fi
+
+          echo "Waiting for Client (Nginx)..."
+          CLIENT_READY=false
+          for i in $(seq 1 10); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health)
+            if [ "$STATUS" -eq 200 ]; then
+              BODY=$(curl -k -s https://localhost:9000/health)
+              if echo "$BODY" | grep -q '"healthy"'; then
+                echo "Client is healthy"
+                CLIENT_READY=true
+                break
+              fi
+            fi
+            echo "Client not ready (attempt $i)..."
+            sleep 2
+          done
+          if [ "$CLIENT_READY" = false ]; then
+            echo "ERROR: Client failed to become healthy within 20 seconds"
+            exit 1
+          fi
+          
+      - name: Run Client Tests
         shell: bash
         run: |
           mkdir -p ClientTestResults
@@ -151,7 +223,12 @@ jobs:
             --results-directory ./ClientTestResults \
             --os linux \
             --logger "console;verbosity=normal"
-        
+
+      - name: Teardown Client UI Test Environment
+        if: always()
+        shell: bash
+        run: docker compose -f infrastructure/tests/docker-compose.ui.yml down --remove-orphans -v
+
       - name: Push Docker Images to DockerHub
         if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash
