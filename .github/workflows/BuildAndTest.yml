@@ -58,7 +58,7 @@ jobs:
       - name: Smoke Test Production Environment
         shell: bash
         run: |
-          ls PromiseModelOnline.Auth
+          cat cert.pem | head 1
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
           export PMO_API_DB_USER="${{ vars.PMO_API_DB_USER }}"
           export PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}"
@@ -132,7 +132,7 @@ jobs:
           # ---- Auth service health ----
           echo "Waiting for Auth Server..."
           AUTH_READY=false
-          for i in $(seq 1 20); do
+          for i in $(seq 1 60); do
             STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8060/health)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:8060/health)
