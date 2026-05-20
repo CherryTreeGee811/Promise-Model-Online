@@ -87,7 +87,7 @@ jobs:
           echo "Waiting for SQL Server..."
           SQL_READY=false
           for i in $(seq 1 20); do
-            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U "${{ vars.PMO_API_DB_USER }}" -P "${{ secrets.PMO_API_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
+            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U "${{ vars.PMO_AUTH_DB_USER }}" -P "${{ secrets.PMO_AUTH_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
               echo "SQL Server is ready"
               SQL_READY=true
               break
@@ -97,6 +97,20 @@ jobs:
           done
           if [ "$SQL_READY" = false ]; then
             echo "ERROR: SQL Server failed to become ready within 60 seconds"
+            exit 1
+          fi
+
+          echo "Verifying API database login..."
+          API_DB_READY=false
+          for i in $(seq 1 5); do
+            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd \
+              -U "${{ vars.PMO_AUTH_DB_USER }}" -P "${{ secrets.PMO_AUTH_DB_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
+              echo "API database login OK"
+              API_DB_READY=true
+              break
+            fi
+          if [ "$API_DB_READY" = false ]; then
+            echo "ERROR: API database login failed"
             exit 1
           fi
 
