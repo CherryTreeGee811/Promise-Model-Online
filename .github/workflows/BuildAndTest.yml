@@ -83,8 +83,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p ClientTestResults
-          dotnet test PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-            -collect:"XPlat Code Coverage" \
+          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+            --collect:"XPlat Code Coverage" \
             --results-directory ./ClientTestResults \
             --os linux \
             --logger "console;verbosity=normal"
