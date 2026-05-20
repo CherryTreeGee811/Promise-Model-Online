@@ -149,7 +149,7 @@ jobs:
           echo "Waiting for API..."
           API_READY=false
           for i in $(seq 1 30); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health)
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health || true)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:8000/health)
               if echo "$BODY" | grep -q '"healthy"'; then
@@ -170,7 +170,7 @@ jobs:
           echo "Waiting for Client..."
           CLIENT_READY=false
           for i in $(seq 1 10); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health)
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health || true)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:9000/health)
               if echo "$BODY" | grep -q '"healthy"'; then
@@ -216,7 +216,7 @@ jobs:
     
       - name: Run Client UI Test Environment
         shell: bash
-        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up --build -d
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
 
       - name: Smoke Test Client UI Test Environment
         shell: bash
@@ -224,7 +224,7 @@ jobs:
           echo "Waiting for WireMock..."
           WIREMOCK_READY=false
           for i in $(seq 1 10); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health)
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health || true)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:8000/health)
               if echo "$BODY" | grep -q '"healthy"'; then
@@ -244,7 +244,7 @@ jobs:
           echo "Waiting for Client (Nginx)..."
           CLIENT_READY=false
           for i in $(seq 1 10); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health)
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health || true)
             if [ "$STATUS" -eq 200 ]; then
               BODY=$(curl -k -s https://localhost:9000/health)
               if echo "$BODY" | grep -q '"healthy"'; then
