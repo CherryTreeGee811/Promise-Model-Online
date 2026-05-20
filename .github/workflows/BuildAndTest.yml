@@ -55,6 +55,69 @@ jobs:
         shell: bash
         run: docker compose build
       
+      - name: Start Production Services and Verify Health
+        shell: bash
+        run: |
+          docker compose up -d
+          echo "Waiting for SQL Server to accept connections..."
+          for i in $(seq 1 20); do
+            if docker exec promisemodelonlinedb /opt/mssql-tools/bin/sqlcmd -U sa -P "${{ secrets.DB_SA_PASSWORD }}" -Q "SELECT 1" &>/dev/null; then
+              echo "SQL Server is ready"
+              break
+            fi
+            echo "SQL Server not ready yet, waiting..."
+            sleep 3
+          done
+
+          echo "Waiting for Client (Nginx)..."
+          for i in $(seq 1 10); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health)
+            if [ "$STATUS" -eq 200 ]; then
+              BODY=$(curl -k -s https://localhost:9000/health)
+              if echo "$BODY" | grep -q '"healthy"'; then
+                echo "Client is healthy"
+                break
+              fi
+            fi
+            echo "Client not ready (attempt $i)..."
+            sleep 3
+          done
+
+          echo "Waiting for Auth health endpoint..."
+          for i in $(seq 1 20); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8060/health)
+            if [ "$STATUS" -eq 200 ]; then
+              BODY=$(curl -k -s https://localhost:8060/health)
+              if echo "$BODY" | grep -q '"healthy"'; then
+                echo "Auth is healthy"
+                break
+              fi
+            fi
+            echo "Attempt $i: Auth not ready yet, waiting..."
+            sleep 3
+          done
+
+          echo "Waiting for API health endpoint..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health)
+            if [ "$STATUS" -eq 200 ]; then
+              BODY=$(curl -k -s https://localhost:8000/health)
+              if echo "$BODY" | grep -q '"healthy"'; then
+                echo "API is healthy"
+                break
+              fi
+            fi
+            echo "Attempt $i: API not ready yet, waiting..."
+            sleep 3
+          done
+
+          echo "All production services are healthy!"
+
+      - name: Tear Down Production Services
+        if: always()
+        shell: bash
+        run: docker compose down -v
+
       - name: Run Auth Tests
         shell: bash
         run: |
