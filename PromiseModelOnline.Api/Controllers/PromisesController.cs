@@ -13,6 +13,8 @@ namespace PromiseModelOnline.Api.Controllers
     public class PromisesController : GenericController<Promise, PromiseDTO>
     {
         private readonly IMomentService _momentService;
+        private readonly IGenericService<Promise> _promiseService;
+        private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
 
         public PromisesController(
             IGenericService<Promise> service,
@@ -21,6 +23,30 @@ namespace PromiseModelOnline.Api.Controllers
             : base(service, mapper)
         {
             _momentService = momentService;
+            _promiseService = service;
+            _promiseMapper = mapper;
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult<PromiseDTO>> CreateFromDto([FromBody] CreatePromiseRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var promise = new Promise
+            {
+                Statement = request.Statement,
+                Description = request.Description,
+                ProjectId = request.ProjectId,
+                DisplayOrder = request.DisplayOrder,
+                StatusColor = "red",
+            };
+
+            await _promiseService.AddAsync(promise);
+            return CreatedAtAction(nameof(GetById), new { id = promise.Id }, _promiseMapper.Map(promise, _promiseService));
         }
 
         /// <summary>

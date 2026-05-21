@@ -51,7 +51,7 @@ export function getEpicsByPromise(promiseId) {
 }
 
 export async function addPromise(promise) {
-    const url = `${base}/api/promises`;
+    const url = `${base}/api/promises/create`;
     const token = getAccessTokenFromCookie();
 
     const res = await fetch(url, {

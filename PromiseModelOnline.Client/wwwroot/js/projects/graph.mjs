@@ -5,6 +5,7 @@ import { getJourneysByEpic } from '../epics/api.mjs';
 import { getFlowsByJourney } from '../journeys/api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { getMomentsByFlow } from '../flows/api.mjs';
+import { createGraphContextMenuController } from './graph-context-menu.mjs';
 
 const STEP_GAP_X = 360;
 const STEP_GAP_Y = 190;
@@ -38,6 +39,7 @@ const graphState = {
     zoomTransform: null,
     filterDebounceId: null,
     applyTimer: null,
+    contextMenu: null,
 };
 
 function createDefaultFilters() {
@@ -800,6 +802,7 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
     if (!graphContent) return;
 
     graphContent.replaceChildren();
+    graphState.contextMenu?.hide();
 
     const margin = { top: 32, right: 48, bottom: 32, left: 48 };
 
@@ -899,6 +902,11 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('href', current => getNodeHref(current.data))
         .attr('xlink:href', current => getNodeHref(current.data))
         .attr('transform', current => `translate(${current.y + contentOffsetX}, ${current.x + contentOffsetY})`);
+
+    node.on('contextmenu', (event, current) => {
+        event.preventDefault();
+        graphState.contextMenu?.open(event, current.data);
+    });
 
     node.append('title')
         .text(current => getNodeTitle(current.data));
@@ -1107,6 +1115,15 @@ export async function loadGraphPage(projectId, contentDiv) {
     graphState.filteredTree = null;
     graphState.totalRenderableNodes = 0;
     graphState.availableStrides = [];
+
+    graphState.contextMenu?.destroy();
+    graphState.contextMenu = createGraphContextMenuController({
+        projectId,
+        onGraphMutated: reloadGraphData,
+        onProjectDeleted: () => {
+            window.location.assign('/projects');
+        },
+    });
 
     await loadAvailableStrides(projectId);
 
