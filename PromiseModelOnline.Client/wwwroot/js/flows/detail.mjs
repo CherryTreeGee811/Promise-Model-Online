@@ -1,4 +1,5 @@
-import { getFlowById, getMomentsByFlow } from './api.mjs';
+import { getFlowById, getMomentsByFlow, updateFlow } from './api.mjs';
+import { getJourneyById } from '../journeys/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 
 export function loadFlowDetail(flowId, contentDiv) {
@@ -17,15 +18,17 @@ export function loadFlowDetail(flowId, contentDiv) {
                     <h2>${escapeHtml(flow.statement)}</h2>
                     <table class="detail-table">
                         <tr><th>ID</th><td>${flow.id}</td></tr>
-                        <tr><th>Description</th><td>${escapeHtml(flow.description || '–')}</td></tr>
+                        <tr><th>Description</th><td>
+                            <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(flow.description || '')}</textarea>
+                            <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                        </td></tr>
                         <tr>
                             <th>Journey</th>
-                            <td>
+                            <td id="flow-journey-cell">
                                 <a href="/journeys/${flow.journeyId}" class="detail-link">Journey ${flow.journeyId}</a>
                             </td>
                         </tr>
-                        <tr><th>Status Color</th><td>${escapeHtml(flow.statusColor || '–')}</td></tr>
-                        <tr><th>Display Order</th><td>${flow.displayOrder}</td></tr>
+                        <tr><th>Status</th><td id="flow-status-cell">${getStatusIcon(flow.statusColor)}</td></tr>
                         <tr><th>Created</th><td>${new Date(flow.createdAt).toLocaleDateString('en-CA')}</td></tr>
                         <tr><th>Updated</th><td>${flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
@@ -83,7 +86,38 @@ export function loadFlowDetail(flowId, contentDiv) {
                 });
             }
 
-            // Comments
+            // Load parent journey to show its status emoji
+            const journeyCell = document.getElementById('flow-journey-cell');
+            getJourneyById(flow.journeyId)
+                .then(journey => {
+                    const icon = getStatusIcon(journey.statusColor);
+                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" class="detail-link">${escapeHtml(journey.statement)}</a> ${icon}`;
+                })
+                .catch(() => {
+                    // leave link as-is
+                });
+
+            // Description save handler
+            const saveBtn = document.getElementById('save-desc');
+            const descMsg = document.getElementById('desc-save-msg');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async () => {
+                    descMsg.textContent = '';
+                    saveBtn.disabled = true;
+                    const newDesc = document.getElementById('description-input').value;
+                    try {
+                        const updated = { ...flow, description: newDesc };
+                        await updateFlow(updated);
+                        descMsg.textContent = 'Saved';
+                    } catch (err) {
+                        descMsg.textContent = 'Save failed';
+                        console.error(err);
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                });
+            }
+
             const commentsContainer = document.getElementById('flow-comments');
             loadComments(commentsContainer, 'Flow', flowId);
         })
@@ -98,4 +132,13 @@ function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m]));
+}
+
+function getStatusIcon(statusColor) {
+    const normalized = String(statusColor ?? '').toLowerCase();
+    if (normalized.includes('green')) return '🟢';
+    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
+    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
+    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
+    return '⚪';
 }

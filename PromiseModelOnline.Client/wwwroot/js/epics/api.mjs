@@ -75,3 +75,28 @@ export async function addEpic(epic) {
         throw new Error(`HTTP error! status: ${res.status}`);
     }
 }
+
+export async function updateEpic(epic) {
+    const url = `${base}/api/epics/${epic.id}`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'PUT',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA',
+        },
+        body: JSON.stringify(epic)
+    });
+
+    if (res.ok) {
+        return true;
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}
