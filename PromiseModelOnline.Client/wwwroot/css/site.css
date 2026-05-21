@@ -448,6 +448,77 @@ input[type=button]:hover, input[type=submit]:hover {
   font-weight: 600;
   text-decoration: none;
 }
+
+/*********************************************
+  14. Project Graph
+**********************************************/
+.graph-viewport {
+  width: 100%;
+  height: calc(100dvh - 240px);
+  min-height: 480px;
+  max-height: calc(100dvh - 240px);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at top left, rgba(29, 53, 87, 0.08), transparent 35%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  overflow: hidden;
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+  touch-action: none;
+  cursor: grab;
+}
+
+@media (max-width: 767px) {
+  .graph-viewport {
+    height: calc(100dvh - 220px);
+    max-height: calc(100dvh - 220px);
+    min-height: 420px;
+    padding: 4rem var(--spacing-md) var(--spacing-md);
+  }
+}
+
+.graph-viewport:active {
+  cursor: grabbing;
+}
+
+#graph-content svg {
+  display: block;
+  width: 100%;
+}
+
+.graph-node {
+  overflow: visible;
+}
+
+.graph-card {
+  stroke-linejoin: round;
+}
+
+.graph-card-accent {
+  opacity: 0.95;
+}
+
+.graph-card-statement,
+.graph-card-line,
+.graph-card-status {
+  font-family: var(--font-primary);
+  pointer-events: none;
+  user-select: none;
+}
+
+.graph-card-statement {
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 2px;
+}
+
+.graph-card-line {
+  fill: #334155;
+}
+
+.graph-card-divider {
+  pointer-events: none;
+}
 .detail-link:hover,
 .detail-link:focus-visible {
   text-decoration: underline;
