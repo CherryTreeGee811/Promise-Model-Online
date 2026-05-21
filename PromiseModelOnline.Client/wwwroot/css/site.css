@@ -629,6 +629,15 @@ input[type=button]:hover, input[type=submit]:hover {
 
 .graph-node {
   overflow: visible;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.graph-node:hover,
+.graph-node:focus-visible {
+  color: inherit;
+  text-decoration: none;
 }
 
 .graph-card {

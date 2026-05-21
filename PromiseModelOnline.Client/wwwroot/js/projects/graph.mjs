@@ -18,6 +18,14 @@ const DETAIL_LINE_GAP = 22;
 const FOREHEAD_GAP = 88;
 
 const NODE_TYPES = ['promise', 'epic', 'journey', 'flow', 'moment'];
+const NODE_ROUTE_SEGMENTS = {
+    promise: 'promises',
+    epic: 'epics',
+    journey: 'journeys',
+    flow: 'flows',
+    moment: 'moments',
+};
+const NODE_TYPE_INDEX = new Map(NODE_TYPES.map((type, index) => [type, index]));
 
 const graphState = {
     projectId: null,
@@ -58,7 +66,18 @@ function parseTypeList(value) {
         }
     }
 
-    return types;
+    return normalizeTypeSelection(types);
+}
+
+function normalizeTypeSelection(types) {
+    const selected = Array.from(types ?? []).filter(type => NODE_TYPE_INDEX.has(type));
+    if (selected.length === 0) return new Set();
+
+    const selectedIndexes = selected.map(type => NODE_TYPE_INDEX.get(type));
+    const minIndex = Math.min(...selectedIndexes);
+    const maxIndex = Math.max(...selectedIndexes);
+
+    return new Set(NODE_TYPES.slice(minIndex, maxIndex + 1));
 }
 
 function getStatusBucket(statusColor) {
@@ -235,6 +254,24 @@ function getNodeColor(nodeType) {
     }
 }
 
+function getAppBasePath() {
+    const pathSegments = window.location.pathname.split('/').filter(Boolean);
+    const routeRootIndex = pathSegments.findIndex(segment => Object.prototype.hasOwnProperty.call(NODE_ROUTE_SEGMENTS, segment));
+
+    if (routeRootIndex <= 0) {
+        return '';
+    }
+
+    return `/${pathSegments.slice(0, routeRootIndex).join('/')}`;
+}
+
+function getNodeHref(node) {
+    const routeSegment = NODE_ROUTE_SEGMENTS[node.nodeType];
+    if (!routeSegment) return null;
+
+    return `${getAppBasePath()}/${routeSegment}/${node.payload?.id}`;
+}
+
 function getNodeSearchText(node) {
     const payload = node.payload ?? {};
 
@@ -363,7 +400,7 @@ function readFiltersFromUrl() {
     const effort = getEffortFilterValue(params.get('effort'));
     const stride = getStrideFilterValue(params.get('stride'));
     const rawTypes = params.get('types');
-    const types = rawTypes === null ? new Set(NODE_TYPES) : parseTypeList(rawTypes);
+    const types = rawTypes === null ? new Set(NODE_TYPES) : normalizeTypeSelection(parseTypeList(rawTypes));
 
     return {
         search,
@@ -575,10 +612,11 @@ function bindFilterControls() {
 
     document.querySelectorAll('[data-filter-type]').forEach(input => {
         input.addEventListener('change', () => {
-            const selectedTypes = new Set(
+            const selectedTypes = normalizeTypeSelection(new Set(
                 Array.from(document.querySelectorAll('[data-filter-type]:checked')).map(item => item.value)
-            );
+            ));
             graphState.filters.types = selectedTypes;
+            syncControlsToFilters();
             applyFilters();
         });
     });
@@ -766,10 +804,12 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
             }));
 
     const node = zoomLayer.append('g')
-        .selectAll('g')
+        .selectAll('a')
         .data(renderable)
-        .join('g')
+        .join('a')
         .attr('class', current => `graph-node graph-node--${current.data.nodeType}`)
+        .attr('href', current => getNodeHref(current.data))
+        .attr('xlink:href', current => getNodeHref(current.data))
         .attr('transform', current => `translate(${current.y + contentOffsetX}, ${current.x + contentOffsetY})`);
 
     node.append('title')
