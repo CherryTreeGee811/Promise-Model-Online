@@ -7,5 +7,6 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
     public interface IProjectRepository : IGenericRepository<Project>
     {
         Task<IEnumerable<Project>> GetProjectsOwnedByUserAsync(int userId);
+        Task<IEnumerable<Promise>> GetProductPromisesByProjectAsync(int projectId);
     }
 }

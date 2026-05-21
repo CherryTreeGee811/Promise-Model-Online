@@ -107,6 +107,35 @@ export function deleteProject(projectId) {
         });
 }
 
+export async function getProjectById(projectId) {
+    const url = `${base}/api/projects/${projectId}`;
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(url, {
+        mode: 'cors',
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA',
+        }
+    });
+
+    if (res.ok) {
+        if (res.status === 204) return null;
+        return res.json();
+    }
+
+    if (res.status == 401) {
+        const loginLinkElem = document.getElementById("login-link");
+        loginLinkElem.style.display = "block";
+        loginLinkElem.ariaHidden = false;
+        loginLinkElem.click();
+        return null;
+    }
+
+    throw new Error(`HTTP ${res.status}`);
+}
+
 export async function getProjectPermissions(projectId) {
     const url = `${base}/api/permissions?projectId=${projectId}`;
     const token = getAccessTokenFromCookie();
@@ -132,4 +161,12 @@ export async function revokePermission(permissionId) {
     const token = getAccessTokenFromCookie();
     const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+export async function getProjectPromises(projectId) {
+    const url = `${base}/api/projects/${projectId}/promises`;
+    const token = getAccessTokenFromCookie();
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
 }

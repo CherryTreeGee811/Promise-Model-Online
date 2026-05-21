@@ -24,6 +24,7 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
             services.AddScoped(typeof(IGenericMapper<,>), typeof(GenericMapper<,>));
+            services.AddScoped<IHierarchyStatusService, HierarchyStatusService>();
             services.AddScoped<IEpicRepository, EpicRepository>();
             services.AddScoped<IEpicService, EpicService>();
             services.AddScoped<IJourneyRepository, JourneyRepository>();

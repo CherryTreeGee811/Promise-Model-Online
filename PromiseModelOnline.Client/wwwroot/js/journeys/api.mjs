@@ -75,3 +75,28 @@ export async function addJourney(journey) {
         throw new Error(`HTTP error! status: ${res.status}`);
     }
 }
+
+export async function updateJourney(journey) {
+    const url = `${base}/api/journeys/${journey.id}`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'PUT',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA',
+        },
+        body: JSON.stringify(journey)
+    });
+
+    if (res.ok) {
+        return true;
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}

@@ -1,4 +1,4 @@
-import { getPromiseById, getEpicsByPromise } from './api.mjs';
+import { getPromiseById, getEpicsByPromise, updatePromise } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 
 export function loadPromiseDetail(promiseId, contentDiv) {
@@ -16,8 +16,11 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                     <h2>${escapeHtml(promise.statement)}</h2>
                     <table class="detail-table">
                         <tr><th>ID</th><td>${promise.id}</td></tr>
-                        <tr><th>Description</th><td>${escapeHtml(promise.description || '–')}</td></tr>
-                        <tr><th>Status Color</th><td>${escapeHtml(promise.statusColor || '–')}</td></tr>
+                        <tr><th>Description</th><td>
+                            <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(promise.description || '')}</textarea>
+                            <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                        </td></tr>
+                        <tr><th>Status</th><td id="promise-status-cell">${getStatusIcon(promise.statusColor)}</td></tr>
                         <tr><th>Created</th><td>${new Date(promise.createdAt).toLocaleDateString('en-CA')}</td></tr>
                         <tr><th>Updated</th><td>${promise.updatedAt ? new Date(promise.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
@@ -79,6 +82,27 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                     window.history.back();
                 });
             }
+
+            // Description save handler
+            const saveBtn = document.getElementById('save-desc');
+            const descMsg = document.getElementById('desc-save-msg');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async () => {
+                    descMsg.textContent = '';
+                    saveBtn.disabled = true;
+                    const newDesc = document.getElementById('description-input').value;
+                    try {
+                        const updated = { ...promise, description: newDesc };
+                        await updatePromise(updated);
+                        descMsg.textContent = 'Saved';
+                    } catch (err) {
+                        descMsg.textContent = 'Save failed';
+                        console.error(err);
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                });
+            }
         })
         .catch(err => {
             loadingEl.textContent = '';
@@ -91,4 +115,13 @@ function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m]));
+}
+
+function getStatusIcon(statusColor) {
+    const normalized = String(statusColor ?? '').toLowerCase();
+    if (normalized.includes('green')) return '🟢';
+    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
+    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
+    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
+    return '⚪';
 }

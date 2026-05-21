@@ -232,6 +232,58 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
+        public async Task UpdateMomentType_UserCanEdit_UpdatesTypeAndReturnsOk()
+        {
+            // Arrange
+            int momentId = 91;
+            var user = new User { Id = 21, Email = "type@test.com", Name = "Type Tester" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("type@test.com", It.IsAny<string?>()))
+                .ReturnsAsync(user);
+            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(44);
+            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 44)).ReturnsAsync(PermissionLevel.Edit);
+
+            var moment = new Moment { Id = momentId, Type = MomentType.Story, UpdatedAt = null };
+            _mockMomentService.Setup(s => s.GetByIdAsync(momentId)).ReturnsAsync(moment);
+            _mockMomentService.Setup(s => s.UpdateAsync(moment)).Returns(Task.CompletedTask);
+            _mockMapper.Setup(m => m.Map(moment, _mockMomentService.Object))
+                .Returns(new MomentDTO { Id = momentId, Type = MomentType.Job, UpdatedAt = System.DateTime.UtcNow });
+
+            InitControllerWithUser("type@test.com", "type-user");
+
+            // Act
+            var result = await _controller.UpdateMomentType(momentId, new UpdateMomentTypeRequest { NewType = MomentType.Job });
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            Assert.That(moment.Type, Is.EqualTo(MomentType.Job));
+            Assert.That(moment.UpdatedAt, Is.Not.Null);
+            _mockMomentService.Verify(s => s.GetByIdAsync(momentId), Times.Once);
+            _mockMomentService.Verify(s => s.UpdateAsync(moment), Times.Once);
+        }
+
+        [Test]
+        public async Task UpdateMomentType_UserCannotEdit_ReturnsForbid()
+        {
+            // Arrange
+            int momentId = 92;
+            var user = new User { Id = 22, Email = "readonly@test.com", Name = "Read Only" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("readonly@test.com", It.IsAny<string?>()))
+                .ReturnsAsync(user);
+            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(45);
+            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 45)).ReturnsAsync(PermissionLevel.View);
+
+            InitControllerWithUser("readonly@test.com", "readonly-user");
+
+            // Act
+            var result = await _controller.UpdateMomentType(momentId, new UpdateMomentTypeRequest { NewType = MomentType.Job });
+
+            // Assert
+            Assert.That(result.Result, Is.TypeOf<ForbidResult>());
+            _mockMomentService.Verify(s => s.GetByIdAsync(It.IsAny<int>()), Times.Never);
+            _mockMomentService.Verify(s => s.UpdateAsync(It.IsAny<Moment>()), Times.Never);
+        }
+
+        [Test]
         public async Task Delete_WithValidId_ReturnsNoContent()
         {
             // Arrange
