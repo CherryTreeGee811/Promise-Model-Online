@@ -17,13 +17,15 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly IGenericRepository<Iteration> _iterationRepository;
         private readonly IIterationService _iterationService;
         private readonly IStrideService _strideService;
+        private readonly IHierarchyStatusService _hierarchyStatusService;
 
         public MomentService(
             IMomentRepository momentRepository,
             IGenericRepository<Stride> strideRepository,
             IGenericRepository<Iteration> iterationRepository,
             IIterationService iterationService,
-            IStrideService strideService)
+            IStrideService strideService,
+            IHierarchyStatusService hierarchyStatusService)
             : base(momentRepository)
         {
             _momentRepository = momentRepository;
@@ -31,6 +33,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
             _iterationRepository = iterationRepository;
             _iterationService = iterationService;
             _strideService = strideService;
+            _hierarchyStatusService = hierarchyStatusService;
         }
 
         // -------------------------------------------------------------------
@@ -84,6 +87,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
                          ?? throw new KeyNotFoundException($"Moment with ID {momentId} not found.");
 
             moment.Status = newStatus;
+            moment.StatusColor = StatusColorRules.FromMomentStatus(newStatus);
             moment.UpdatedAt = DateTime.UtcNow;
 
             if (newStatus == MomentStatus.Done)
@@ -93,6 +97,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
             _momentRepository.Update(moment);
             await _momentRepository.SaveChangesAsync();
+            await _hierarchyStatusService.RecalculateFromFlowAsync(moment.FlowId);
             return moment;
         }
 

@@ -54,7 +54,7 @@ public class Moment
     
     //TODO: Enum for glyph colours?
     [MaxLength(20)]
-    public string StatusColor { get; set; } = "red";
+    public string StatusColor { get; set; } = "red"; // red, orange, black, green
     
     // Navigation properties
     [ForeignKey("FlowId")]

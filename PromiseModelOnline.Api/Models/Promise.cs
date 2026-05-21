@@ -28,7 +28,7 @@ public class Promise
     // Status tracking for glyph (red/orange/yellow/green)
     //TODO: Enum for glyph colours?
     [MaxLength(20)]
-    public string StatusColor { get; set; } = "red"; // red, orange, yellow, green
+    public string StatusColor { get; set; } = "red"; // red, orange, black, green
         
     // Navigation properties
     [ForeignKey("ProjectId")]

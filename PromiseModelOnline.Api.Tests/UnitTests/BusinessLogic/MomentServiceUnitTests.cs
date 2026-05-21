@@ -21,6 +21,7 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IGenericRepository<Iteration>> _iterationRepoMock = null!;
         private Mock<IIterationService> _iterationServiceMock = null!;
         private Mock<IStrideService> _strideServiceMock = null!;
+        private Mock<IHierarchyStatusService> _hierarchyStatusServiceMock = null!;
         private MomentService _service = null!;
 
         [SetUp]
@@ -31,13 +32,15 @@ namespace PromiseModelOnline.Api.Tests
             _iterationRepoMock = new Mock<IGenericRepository<Iteration>>();
             _iterationServiceMock = new Mock<IIterationService>();
             _strideServiceMock = new Mock<IStrideService>();
+            _hierarchyStatusServiceMock = new Mock<IHierarchyStatusService>();
 
             _service = new MomentService(
                 _momentRepoMock.Object,
                 _strideRepoMock.Object,
                 _iterationRepoMock.Object,
                 _iterationServiceMock.Object,
-                _strideServiceMock.Object);
+                _strideServiceMock.Object,
+                _hierarchyStatusServiceMock.Object);
         }
 
         #region GetIterationBurndownAsync Tests
@@ -228,6 +231,45 @@ namespace PromiseModelOnline.Api.Tests
             // Assert
             Assert.That(result.EffortEstimate, Is.EqualTo(Estimate.L));
             Assert.That(result.UpdatedAt, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task UpdateMomentStatusAsync_UpdatesStatusColorAndRollsUpHierarchy()
+        {
+            var moment = new Moment { Id = 4, FlowId = 77, Status = MomentStatus.Todo, StatusColor = StatusColorRules.Todo };
+            _momentRepoMock.Setup(r => r.GetByIdAsync(4)).ReturnsAsync(moment);
+            _momentRepoMock.Setup(r => r.Update(It.IsAny<Moment>()));
+            _momentRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+            _hierarchyStatusServiceMock.Setup(r => r.RecalculateFromFlowAsync(77)).Returns(Task.CompletedTask);
+
+            var result = await _service.UpdateMomentStatusAsync(4, MomentStatus.Blocked);
+
+            Assert.That(result.StatusColor, Is.EqualTo(StatusColorRules.Blocked));
+            Assert.That(result.CompletedAt, Is.Null);
+            _hierarchyStatusServiceMock.Verify(r => r.RecalculateFromFlowAsync(77), Times.Once);
+        }
+
+        [Test]
+        public async Task UpdateMomentStatusAsync_DoneSetsCompletionAndDoneColor()
+        {
+            var moment = new Moment { Id = 5, FlowId = 78, Status = MomentStatus.Todo, StatusColor = StatusColorRules.Todo };
+            _momentRepoMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(moment);
+            _momentRepoMock.Setup(r => r.Update(It.IsAny<Moment>()));
+            _momentRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+            _hierarchyStatusServiceMock.Setup(r => r.RecalculateFromFlowAsync(78)).Returns(Task.CompletedTask);
+
+            var result = await _service.UpdateMomentStatusAsync(5, MomentStatus.Done);
+
+            Assert.That(result.StatusColor, Is.EqualTo(StatusColorRules.Done));
+            Assert.That(result.CompletedAt, Is.Not.Null);
+        }
+
+        [Test]
+        public void UpdateMomentStatusAsync_InvalidId_ThrowsKeyNotFound()
+        {
+            _momentRepoMock.Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Moment?)null);
+
+            Assert.ThrowsAsync<KeyNotFoundException>(() => _service.UpdateMomentStatusAsync(404, MomentStatus.Blocked));
         }
 
         [Test]

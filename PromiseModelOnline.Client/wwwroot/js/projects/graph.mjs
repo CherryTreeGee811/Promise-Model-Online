@@ -84,9 +84,10 @@ function getStatusBucket(statusColor) {
     const normalized = normalizeText(statusColor);
 
     if (!normalized || normalized === 'all') return 'other';
-    if (normalized.includes('green')) return 'green';
-    if (normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('orange')) return 'yellow';
-    if (normalized.includes('red')) return 'red';
+    if (normalized.includes('green') || normalized.includes('done')) return 'done';
+    if (normalized.includes('black') || normalized.includes('blocked')) return 'blocked';
+    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return 'inprogress';
+    if (normalized.includes('red') || normalized.includes('todo')) return 'todo';
 
     return 'other';
 }
@@ -94,10 +95,11 @@ function getStatusBucket(statusColor) {
 function getStatusFilterValue(value) {
     const normalized = normalizeText(value);
     if (!normalized || normalized === 'all') return 'all';
-    if (['green', 'yellow', 'red', 'other'].includes(normalized)) return normalized;
-    if (normalized.includes('green')) return 'green';
-    if (normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('orange')) return 'yellow';
-    if (normalized.includes('red')) return 'red';
+    if (['done', 'blocked', 'inprogress', 'todo', 'other'].includes(normalized)) return normalized;
+    if (normalized.includes('green') || normalized.includes('done')) return 'done';
+    if (normalized.includes('black') || normalized.includes('blocked')) return 'blocked';
+    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return 'inprogress';
+    if (normalized.includes('red') || normalized.includes('todo')) return 'todo';
     return 'other';
 }
 
@@ -173,10 +175,31 @@ function getStatusIcon(statusColor) {
     const normalized = String(statusColor ?? '').toLowerCase();
 
     if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('orange')) return '🟡';
-    if (normalized.includes('red')) return '🔴';
+    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
+    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
+    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
 
     return '⚪';
+}
+
+function getChildTypeLabel(nodeType) {
+    switch (nodeType) {
+        case 'promise': return 'Epic';
+        case 'epic': return 'Journey';
+        case 'journey': return 'Flow';
+        case 'flow': return 'Moment';
+        default: return null;
+    }
+}
+
+function getChildProgressSummary(nodeData) {
+    const childLabel = getChildTypeLabel(nodeData.nodeType);
+    const children = nodeData.children ?? [];
+
+    if (!childLabel) return null;
+
+    const completedCount = children.filter(child => getStatusBucket(child.payload?.statusColor) === 'done').length;
+    return `${completedCount}/${children.length} ${children.length === 1 ? childLabel : `${childLabel}s`} completed`;
 }
 
 function getStrideLabel(payload) {
@@ -515,9 +538,10 @@ function renderFilterBar() {
                 <span>Moment status</span>
                 <select id="graph-filter-status" class="graph-filter-select">
                     <option value="all" ${graphState.filters.status === 'all' ? 'selected' : ''}>All statuses</option>
-                    <option value="green" ${graphState.filters.status === 'green' ? 'selected' : ''}>Green</option>
-                    <option value="yellow" ${graphState.filters.status === 'yellow' ? 'selected' : ''}>Yellow</option>
-                    <option value="red" ${graphState.filters.status === 'red' ? 'selected' : ''}>Red</option>
+                    <option value="todo" ${graphState.filters.status === 'todo' ? 'selected' : ''}>Todo</option>
+                    <option value="inprogress" ${graphState.filters.status === 'inprogress' ? 'selected' : ''}>In Progress</option>
+                    <option value="blocked" ${graphState.filters.status === 'blocked' ? 'selected' : ''}>Blocked</option>
+                    <option value="done" ${graphState.filters.status === 'done' ? 'selected' : ''}>Done</option>
                     <option value="other" ${graphState.filters.status === 'other' ? 'selected' : ''}>Other</option>
                 </select>
             </label>
@@ -846,7 +870,7 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('font-weight', 100)
         .text(current => truncateText(current.data.label, 36));
 
-    node.filter(current => current.data.nodeType === 'moment')
+    node.filter(current => current.data.nodeType !== 'root')
         .append('text')
         .attr('class', 'graph-card-status')
         .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
@@ -891,6 +915,16 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .text(current => `Effort: ${formatEstimate(current.data.payload?.effortEstimate)}`);
+
+    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
+        .append('text')
+        .attr('class', 'graph-card-line')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 88)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .attr('dominant-baseline', 'middle')
+        .text(current => getChildProgressSummary(current.data) ?? 'No child cards');
 
     graphContent.appendChild(svg.node());
 }
