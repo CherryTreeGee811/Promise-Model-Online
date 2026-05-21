@@ -37,6 +37,7 @@ const graphState = {
     filters: createDefaultFilters(),
     zoomTransform: null,
     filterDebounceId: null,
+    applyTimer: null,
 };
 
 function createDefaultFilters() {
@@ -231,14 +232,34 @@ function createNode(nodeType, payload, children = []) {
     const childCount = children.length;
     const completedChildCount = children.filter(child => getStatusBucket(child.payload?.statusColor) === 'done').length;
 
+    const label = payload.statement ?? payload.name ?? `#${payload.id}`;
+    const searchText = normalizeText([
+        label,
+        payload.description,
+        nodeType,
+        payload.statusColor,
+        payload.effortEstimate,
+        payload.assignedStrideId,
+        getStrideLabel(payload),
+    ].join(' '));
+
+    const statusBucket = getStatusBucket(payload?.statusColor);
+    const effortBucket = nodeType === 'moment' ? getMomentEffortBucket(payload?.effortEstimate) : null;
+    const strideBucket = nodeType === 'moment' ? getMomentStrideBucket(payload) : null;
+
     return {
         id: `${nodeType}-${payload.id}`,
         nodeType,
-        label: payload.statement ?? payload.name ?? `#${payload.id}`,
+        label,
         payload,
         childCount,
         completedChildCount,
         children,
+        // cached derived values to speed up filtering
+        _searchText: searchText,
+        _statusBucket: statusBucket,
+        _effortBucket: effortBucket,
+        _strideBucket: strideBucket,
     };
 }
 
@@ -301,16 +322,14 @@ function getNodeHref(node) {
 }
 
 function getNodeSearchText(node) {
-    const payload = node.payload ?? {};
-
-    return normalizeText([
+    return node._searchText ?? normalizeText([
         node.label,
-        payload.description,
+        node.payload?.description,
         node.nodeType,
-        payload.statusColor,
-        payload.effortEstimate,
-        payload.assignedStrideId,
-        getStrideLabel(payload),
+        node.payload?.statusColor,
+        node.payload?.effortEstimate,
+        node.payload?.assignedStrideId,
+        getStrideLabel(node.payload),
     ].join(' '));
 }
 
@@ -332,12 +351,12 @@ function matchesNode(node, filters) {
     if (!filters.types.has(node.nodeType)) return false;
 
     if (filters.search) {
-        const searchText = getNodeSearchText(node);
+        const searchText = node._searchText ?? getNodeSearchText(node);
         if (!searchText.includes(filters.search)) return false;
     }
 
     if (filters.status !== 'all') {
-        const statusBucket = getStatusBucket(node.payload?.statusColor);
+        const statusBucket = node._statusBucket ?? getStatusBucket(node.payload?.statusColor);
         if (statusBucket !== filters.status) return false;
     }
 
@@ -351,15 +370,13 @@ function matchesNode(node, filters) {
 
     if (filters.effort !== 'all') {
         if (node.nodeType !== 'moment') return false;
-
-        const effortBucket = getMomentEffortBucket(node.payload?.effortEstimate);
+        const effortBucket = node._effortBucket ?? getMomentEffortBucket(node.payload?.effortEstimate);
         if (filters.effort !== effortBucket) return false;
     }
 
     if (filters.stride !== 'all') {
         if (node.nodeType !== 'moment') return false;
-
-        const strideBucket = getMomentStrideBucket(node.payload);
+        const strideBucket = node._strideBucket ?? getMomentStrideBucket(node.payload);
         if (filters.stride !== strideBucket) return false;
     }
 
@@ -607,46 +624,68 @@ function bindFilterControls() {
     if (includeChildrenInput) {
         includeChildrenInput.addEventListener('change', () => {
             graphState.filters.includeChildren = includeChildrenInput.checked;
-            applyFilters();
+            requestApplyFilters();
         });
     }
 
     if (effortSelect) {
         effortSelect.addEventListener('change', () => {
             graphState.filters.effort = getEffortFilterValue(effortSelect.value);
-            applyFilters();
+            requestApplyFilters();
         });
     }
 
     if (strideSelect) {
         strideSelect.addEventListener('change', () => {
             graphState.filters.stride = getStrideFilterValue(strideSelect.value);
-            applyFilters();
+            requestApplyFilters();
         });
     }
 
     if (statusSelect) {
         statusSelect.addEventListener('change', () => {
             graphState.filters.status = getStatusFilterValue(statusSelect.value);
-            applyFilters();
+            requestApplyFilters();
         });
     }
 
     if (assignmentSelect) {
         assignmentSelect.addEventListener('change', () => {
             graphState.filters.assignment = getAssignmentFilterValue(assignmentSelect.value);
-            applyFilters();
+            requestApplyFilters();
         });
     }
 
     document.querySelectorAll('[data-filter-type]').forEach(input => {
-        input.addEventListener('change', () => {
-            const selectedTypes = normalizeTypeSelection(new Set(
-                Array.from(document.querySelectorAll('[data-filter-type]:checked')).map(item => item.value)
-            ));
+        input.addEventListener('change', (e) => {
+            const changed = e.target;
+            const isChecked = !!changed.checked;
+
+            // Work off a copy of the previous selection to avoid extra DOM reads.
+            const prevTypes = new Set(graphState.filters.types);
+
+            // If the user just unchecked a type and previously all types were selected,
+            // deselect this type and every type after it (inverse cascade).
+            if (!isChecked && NODE_TYPES.every(t => prevTypes.has(t))) {
+                const idx = NODE_TYPES.indexOf(changed.value);
+                if (idx >= 0) {
+                    for (let i = idx; i < NODE_TYPES.length; i++) {
+                        const val = NODE_TYPES[i];
+                        // Update the DOM checkbox to reflect the cascade
+                        const el = document.querySelector(`[data-filter-type][value="${val}"]`);
+                        if (el) el.checked = false;
+                        prevTypes.delete(val);
+                    }
+                }
+            } else {
+                // Apply the single change to the copy
+                if (isChecked) prevTypes.add(changed.value); else prevTypes.delete(changed.value);
+            }
+
+            const selectedTypes = normalizeTypeSelection(prevTypes);
             graphState.filters.types = selectedTypes;
             syncControlsToFilters();
-            applyFilters();
+            requestApplyFilters();
         });
     });
 
@@ -654,7 +693,7 @@ function bindFilterControls() {
         resetButton.addEventListener('click', () => {
             graphState.filters = createDefaultFilters();
             syncControlsToFilters();
-            applyFilters();
+            requestApplyFilters();
         });
     }
 
@@ -710,6 +749,18 @@ function scheduleFilterApply() {
     graphState.filterDebounceId = window.setTimeout(() => {
         applyFilters();
     }, 150);
+}
+
+// Small-batch debounce for rendering to avoid repeated heavy D3 renders
+function requestApplyFilters(delay = 40) {
+    if (graphState.applyTimer) {
+        window.clearTimeout(graphState.applyTimer);
+    }
+
+    graphState.applyTimer = window.setTimeout(() => {
+        graphState.applyTimer = null;
+        applyFilters();
+    }, delay);
 }
 
 function updateFilterSummary(metrics) {
