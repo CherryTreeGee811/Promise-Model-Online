@@ -130,7 +130,7 @@ namespace PromiseModelOnline.Auth.Tests
 
 			Assert.That(result, Is.TypeOf<ConflictObjectResult>());
 			var conflict = (ConflictObjectResult)result;
-			Assert.That(GetAnonymousProperty(conflict.Value, "message"), Is.EqualTo("User already exists"));
+			Assert.That(GetAnonymousProperty(conflict.Value, "message"), Is.EqualTo("The username provided Is already taken"));
 
 			_userManagerMock.Verify(x => x.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>()), Times.Never);
 		}
