@@ -452,6 +452,147 @@ input[type=button]:hover, input[type=submit]:hover {
 /*********************************************
   14. Project Graph
 **********************************************/
+.graph-filter-bar {
+  display: grid;
+  gap: var(--spacing-md);
+  margin: var(--spacing-md) 0 var(--spacing-lg);
+  padding: var(--spacing-md);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: var(--radius-card);
+  background: rgba(248, 250, 252, 0.92);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.graph-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: end;
+}
+
+.graph-filter-field {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.graph-filter-checkbox-field {
+  min-width: 220px;
+}
+
+.graph-filter-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: #334155;
+  font-weight: 600;
+}
+
+.graph-filter-field > span,
+.graph-filter-group-label {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: #334155;
+}
+
+.graph-filter-input,
+.graph-filter-select {
+  min-height: 2.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.75rem;
+  background: #ffffff;
+  color: var(--color-text);
+}
+
+.graph-filter-input {
+  min-width: min(420px, 100%);
+}
+
+.graph-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
+.graph-filter-button {
+  min-height: 2.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.9rem;
+  background: linear-gradient(180deg, #ffffff 0%, #edf2f7 100%);
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.graph-filter-button:hover,
+.graph-filter-button:focus-visible {
+  border-color: #94a3b8;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+}
+
+.graph-filter-types {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.graph-filter-types legend {
+  padding: 0;
+  margin-bottom: -0.1rem;
+}
+
+.graph-filter-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.graph-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.graph-filter-chip input {
+  margin: 0;
+}
+
+.graph-filter-summary {
+  font-size: var(--font-size-sm);
+  color: #475569;
+}
+
+.graph-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.72);
+  color: #475569;
+  font-weight: 600;
+  text-align: center;
+}
+
 .graph-viewport {
   width: 100%;
   height: calc(100dvh - 240px);

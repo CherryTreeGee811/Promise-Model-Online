@@ -1,7 +1,9 @@
 import { getProjectPromises } from './api.mjs';
+import { getIterationsByProject } from '../iterations/api.mjs';
 import { getEpicsByPromise } from '../promises/api.mjs';
 import { getJourneysByEpic } from '../epics/api.mjs';
 import { getFlowsByJourney } from '../journeys/api.mjs';
+import { getStridesByIteration } from '../strides/api.mjs';
 import { getMomentsByFlow } from '../flows/api.mjs';
 
 const STEP_GAP_X = 360;
@@ -14,6 +16,113 @@ const CARD_PADDING_TOP = 16;
 const DETAIL_START_Y = 62;
 const DETAIL_LINE_GAP = 22;
 const FOREHEAD_GAP = 88;
+
+const NODE_TYPES = ['promise', 'epic', 'journey', 'flow', 'moment'];
+
+const graphState = {
+    projectId: null,
+    d3: null,
+    rawTree: null,
+    filteredTree: null,
+    totalRenderableNodes: 0,
+    availableStrides: [],
+    filters: createDefaultFilters(),
+    zoomTransform: null,
+    filterDebounceId: null,
+};
+
+function createDefaultFilters() {
+    return {
+        search: '',
+        includeChildren: false,
+        types: new Set(NODE_TYPES),
+        effort: 'all',
+        stride: 'all',
+        status: 'all',
+        assignment: 'all',
+    };
+}
+
+function normalizeText(value) {
+    return String(value ?? '').trim().toLowerCase();
+}
+
+function parseTypeList(value) {
+    if (value == null) return new Set(NODE_TYPES);
+
+    const types = new Set();
+    for (const item of String(value).split(',')) {
+        const type = normalizeText(item);
+        if (NODE_TYPES.includes(type)) {
+            types.add(type);
+        }
+    }
+
+    return types;
+}
+
+function getStatusBucket(statusColor) {
+    const normalized = normalizeText(statusColor);
+
+    if (!normalized || normalized === 'all') return 'other';
+    if (normalized.includes('green')) return 'green';
+    if (normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('orange')) return 'yellow';
+    if (normalized.includes('red')) return 'red';
+
+    return 'other';
+}
+
+function getStatusFilterValue(value) {
+    const normalized = normalizeText(value);
+    if (!normalized || normalized === 'all') return 'all';
+    if (['green', 'yellow', 'red', 'other'].includes(normalized)) return normalized;
+    if (normalized.includes('green')) return 'green';
+    if (normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('orange')) return 'yellow';
+    if (normalized.includes('red')) return 'red';
+    return 'other';
+}
+
+function getAssignmentFilterValue(value) {
+    const normalized = normalizeText(value);
+    if (normalized === 'assigned' || normalized === 'unassigned') return normalized;
+    return 'all';
+}
+
+function getEffortFilterValue(value) {
+    const normalized = normalizeText(value);
+    if (normalized === 'all' || normalized === 'unestimated') return normalized;
+    if (['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'].includes(normalized)) return normalized.toUpperCase();
+    return 'all';
+}
+
+function getStrideFilterValue(value) {
+    const normalized = normalizeText(value);
+    if (normalized === 'all' || normalized === 'backlog') return normalized;
+    if (/^\d+$/.test(normalized)) return normalized;
+    return 'all';
+}
+
+function getTypeLabel(nodeType) {
+    switch (nodeType) {
+        case 'promise': return 'Product Promise';
+        case 'epic': return 'Epic';
+        case 'journey': return 'Journey';
+        case 'flow': return 'Flow';
+        case 'moment': return 'Moment';
+        default: return nodeType;
+    }
+}
+
+function getTypeShortLabel(nodeType) {
+    switch (nodeType) {
+        case 'promise': return 'Promise';
+        case 'epic': return 'Epic';
+        case 'journey': return 'Journey';
+        case 'flow': return 'Flow';
+        case 'moment': return 'Moment';
+        default: return nodeType;
+    }
+}
 
 function getInnerViewportSize(element) {
     if (!element) return { width: 0, height: 0 };
@@ -126,7 +235,452 @@ function getNodeColor(nodeType) {
     }
 }
 
-function renderTree(contentDiv, d3, treeData) {
+function getNodeSearchText(node) {
+    const payload = node.payload ?? {};
+
+    return normalizeText([
+        node.label,
+        payload.description,
+        node.nodeType,
+        payload.statusColor,
+        payload.effortEstimate,
+        payload.assignedStrideId,
+        getStrideLabel(payload),
+    ].join(' '));
+}
+
+function getMomentEffortBucket(effortEstimate) {
+    if (effortEstimate == null) return 'unestimated';
+
+    const normalized = normalizeText(effortEstimate);
+    const allowed = new Set(['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl']);
+    return allowed.has(normalized) ? normalized.toUpperCase() : 'unestimated';
+}
+
+function getMomentStrideBucket(payload) {
+    return payload?.assignedStrideId == null ? 'backlog' : String(payload.assignedStrideId);
+}
+
+function matchesNode(node, filters) {
+    if (node.nodeType === 'root') return false;
+
+    if (!filters.types.has(node.nodeType)) return false;
+
+    if (filters.search) {
+        const searchText = getNodeSearchText(node);
+        if (!searchText.includes(filters.search)) return false;
+    }
+
+    if (filters.status !== 'all') {
+        const statusBucket = getStatusBucket(node.payload?.statusColor);
+        if (statusBucket !== filters.status) return false;
+    }
+
+    if (filters.assignment !== 'all') {
+        if (node.nodeType !== 'moment') return false;
+
+        const hasStride = node.payload?.assignedStrideId != null;
+        if (filters.assignment === 'assigned' && !hasStride) return false;
+        if (filters.assignment === 'unassigned' && hasStride) return false;
+    }
+
+    if (filters.effort !== 'all') {
+        if (node.nodeType !== 'moment') return false;
+
+        const effortBucket = getMomentEffortBucket(node.payload?.effortEstimate);
+        if (filters.effort !== effortBucket) return false;
+    }
+
+    if (filters.stride !== 'all') {
+        if (node.nodeType !== 'moment') return false;
+
+        const strideBucket = getMomentStrideBucket(node.payload);
+        if (filters.stride !== strideBucket) return false;
+    }
+
+    return true;
+}
+
+function cloneSubtree(node, metrics) {
+    if (node.nodeType !== 'root') {
+        metrics.visibleNodes += 1;
+    }
+
+    return {
+        ...node,
+        children: (node.children ?? []).map(child => cloneSubtree(child, metrics)),
+    };
+}
+
+function filterTree(node, filters, metrics, isRoot = false) {
+    const searchMatched = !isRoot && filters.search && matchesNode(node, { ...filters, search: filters.search, includeChildren: false });
+
+    if (searchMatched && filters.includeChildren) {
+        metrics.directMatches += 1;
+        return cloneSubtree(node, metrics);
+    }
+
+    const filteredChildren = (node.children ?? [])
+        .map(child => filterTree(child, filters, metrics))
+        .filter(Boolean);
+
+    const selfMatches = !isRoot && matchesNode(node, filters);
+    if (selfMatches) {
+        metrics.directMatches += 1;
+    }
+
+    if (isRoot) {
+        return {
+            ...node,
+            children: filteredChildren,
+        };
+    }
+
+    if (selfMatches || filteredChildren.length > 0) {
+        metrics.visibleNodes += 1;
+        return {
+            ...node,
+            children: filteredChildren,
+        };
+    }
+
+    return null;
+}
+
+function countRenderableNodes(node) {
+    if (!node) return 0;
+
+    const selfCount = node.nodeType === 'root' ? 0 : 1;
+    return selfCount + (node.children ?? []).reduce((sum, child) => sum + countRenderableNodes(child), 0);
+}
+
+function readFiltersFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const search = normalizeText(params.get('q'));
+    const includeChildren = params.get('children') === '1' || params.get('children') === 'true';
+    const status = getStatusFilterValue(params.get('status'));
+    const assignment = getAssignmentFilterValue(params.get('assignment'));
+    const effort = getEffortFilterValue(params.get('effort'));
+    const stride = getStrideFilterValue(params.get('stride'));
+    const rawTypes = params.get('types');
+    const types = rawTypes === null ? new Set(NODE_TYPES) : parseTypeList(rawTypes);
+
+    return {
+        search,
+        includeChildren,
+        status,
+        assignment,
+        effort,
+        stride,
+        types,
+    };
+}
+
+function syncFiltersToUrl(filters) {
+    const params = new URLSearchParams();
+
+    if (filters.search) {
+        params.set('q', filters.search);
+    }
+
+    if (filters.includeChildren) {
+        params.set('children', '1');
+    }
+
+    const selectedTypes = NODE_TYPES.filter(type => filters.types.has(type));
+    if (selectedTypes.length > 0 && selectedTypes.length < NODE_TYPES.length) {
+        params.set('types', selectedTypes.join(','));
+    } else if (selectedTypes.length === 0) {
+        params.set('types', '');
+    }
+
+    if (filters.status !== 'all') {
+        params.set('status', filters.status);
+    }
+
+    if (filters.assignment !== 'all') {
+        params.set('assignment', filters.assignment);
+    }
+
+    if (filters.effort !== 'all') {
+        params.set('effort', filters.effort);
+    }
+
+    if (filters.stride !== 'all') {
+        params.set('stride', filters.stride);
+    }
+
+    const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash || ''}`;
+    window.history.replaceState({ projectId: graphState.projectId }, '', nextUrl);
+}
+
+function renderFilterBar() {
+    const filterBar = document.getElementById('graph-filter-bar');
+    if (!filterBar) return;
+
+    const strideOptions = [
+        `<option value="all" ${graphState.filters.stride === 'all' ? 'selected' : ''}>All strides</option>`,
+        `<option value="backlog" ${graphState.filters.stride === 'backlog' ? 'selected' : ''}>Backlog</option>`,
+        ...graphState.availableStrides.map(stride => {
+            const label = stride.name ? `Stride #${stride.id} - ${escapeAttribute(stride.name)}` : `Stride #${stride.id}`;
+            return `<option value="${String(stride.id)}" ${String(graphState.filters.stride) === String(stride.id) ? 'selected' : ''}>${label}</option>`;
+        }),
+    ].join('');
+
+    const typeChips = NODE_TYPES.map(nodeType => {
+        const checked = graphState.filters.types.has(nodeType) ? 'checked' : '';
+        return `
+            <label class="graph-filter-chip">
+                <input type="checkbox" data-filter-type value="${nodeType}" ${checked} />
+                <span>${getTypeShortLabel(nodeType)}</span>
+            </label>
+        `;
+    }).join('');
+
+    filterBar.innerHTML = `
+        <div class="graph-filter-row">
+            <label class="graph-filter-field">
+                <span>Search</span>
+                <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeAttribute(graphState.filters.search)}" />
+            </label>
+
+            <label class="graph-filter-field graph-filter-checkbox-field">
+                <span>Search options</span>
+                <span class="graph-filter-checkbox">
+                    <input id="graph-filter-include-children" type="checkbox" ${graphState.filters.includeChildren ? 'checked' : ''} />
+                    <span>Include Children</span>
+                </span>
+            </label>
+
+            <label class="graph-filter-field">
+                <span>Effort estimate</span>
+                <select id="graph-filter-effort" class="graph-filter-select">
+                    <option value="all" ${graphState.filters.effort === 'all' ? 'selected' : ''}>All efforts</option>
+                    <option value="unestimated" ${graphState.filters.effort === 'unestimated' ? 'selected' : ''}>Unestimated</option>
+                    <option value="XS" ${graphState.filters.effort === 'XS' ? 'selected' : ''}>XS</option>
+                    <option value="S" ${graphState.filters.effort === 'S' ? 'selected' : ''}>S</option>
+                    <option value="M" ${graphState.filters.effort === 'M' ? 'selected' : ''}>M</option>
+                    <option value="L" ${graphState.filters.effort === 'L' ? 'selected' : ''}>L</option>
+                    <option value="XL" ${graphState.filters.effort === 'XL' ? 'selected' : ''}>XL</option>
+                    <option value="XXL" ${graphState.filters.effort === 'XXL' ? 'selected' : ''}>XXL</option>
+                    <option value="XXXL" ${graphState.filters.effort === 'XXXL' ? 'selected' : ''}>XXXL</option>
+                </select>
+            </label>
+
+            <label class="graph-filter-field">
+                <span>Stride</span>
+                <select id="graph-filter-stride" class="graph-filter-select">
+                    ${strideOptions}
+                </select>
+            </label>
+
+            <label class="graph-filter-field">
+                <span>Moment status</span>
+                <select id="graph-filter-status" class="graph-filter-select">
+                    <option value="all" ${graphState.filters.status === 'all' ? 'selected' : ''}>All statuses</option>
+                    <option value="green" ${graphState.filters.status === 'green' ? 'selected' : ''}>Green</option>
+                    <option value="yellow" ${graphState.filters.status === 'yellow' ? 'selected' : ''}>Yellow</option>
+                    <option value="red" ${graphState.filters.status === 'red' ? 'selected' : ''}>Red</option>
+                    <option value="other" ${graphState.filters.status === 'other' ? 'selected' : ''}>Other</option>
+                </select>
+            </label>
+
+            <label class="graph-filter-field">
+                <span>Moment assignment</span>
+                <select id="graph-filter-assignment" class="graph-filter-select">
+                    <option value="all" ${graphState.filters.assignment === 'all' ? 'selected' : ''}>All moments</option>
+                    <option value="assigned" ${graphState.filters.assignment === 'assigned' ? 'selected' : ''}>Assigned only</option>
+                    <option value="unassigned" ${graphState.filters.assignment === 'unassigned' ? 'selected' : ''}>Unassigned only</option>
+                </select>
+            </label>
+
+            <div class="graph-filter-actions">
+                <button id="graph-filter-reset" type="button" class="graph-filter-button">Reset</button>
+                <button id="graph-filter-refresh" type="button" class="graph-filter-button">Refresh</button>
+            </div>
+        </div>
+
+        <fieldset class="graph-filter-types">
+            <legend class="graph-filter-group-label">Card types</legend>
+            <div class="graph-filter-chip-list">
+                ${typeChips}
+            </div>
+        </fieldset>
+
+        <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
+    `;
+
+    bindFilterControls();
+}
+
+function escapeAttribute(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+}
+
+function bindFilterControls() {
+    const searchInput = document.getElementById('graph-filter-search');
+    const includeChildrenInput = document.getElementById('graph-filter-include-children');
+    const effortSelect = document.getElementById('graph-filter-effort');
+    const strideSelect = document.getElementById('graph-filter-stride');
+    const statusSelect = document.getElementById('graph-filter-status');
+    const assignmentSelect = document.getElementById('graph-filter-assignment');
+    const resetButton = document.getElementById('graph-filter-reset');
+    const refreshButton = document.getElementById('graph-filter-refresh');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            graphState.filters.search = normalizeText(searchInput.value);
+            scheduleFilterApply();
+        });
+    }
+
+    if (includeChildrenInput) {
+        includeChildrenInput.addEventListener('change', () => {
+            graphState.filters.includeChildren = includeChildrenInput.checked;
+            applyFilters();
+        });
+    }
+
+    if (effortSelect) {
+        effortSelect.addEventListener('change', () => {
+            graphState.filters.effort = getEffortFilterValue(effortSelect.value);
+            applyFilters();
+        });
+    }
+
+    if (strideSelect) {
+        strideSelect.addEventListener('change', () => {
+            graphState.filters.stride = getStrideFilterValue(strideSelect.value);
+            applyFilters();
+        });
+    }
+
+    if (statusSelect) {
+        statusSelect.addEventListener('change', () => {
+            graphState.filters.status = getStatusFilterValue(statusSelect.value);
+            applyFilters();
+        });
+    }
+
+    if (assignmentSelect) {
+        assignmentSelect.addEventListener('change', () => {
+            graphState.filters.assignment = getAssignmentFilterValue(assignmentSelect.value);
+            applyFilters();
+        });
+    }
+
+    document.querySelectorAll('[data-filter-type]').forEach(input => {
+        input.addEventListener('change', () => {
+            const selectedTypes = new Set(
+                Array.from(document.querySelectorAll('[data-filter-type]:checked')).map(item => item.value)
+            );
+            graphState.filters.types = selectedTypes;
+            applyFilters();
+        });
+    });
+
+    if (resetButton) {
+        resetButton.addEventListener('click', () => {
+            graphState.filters = createDefaultFilters();
+            syncControlsToFilters();
+            applyFilters();
+        });
+    }
+
+    if (refreshButton) {
+        refreshButton.addEventListener('click', () => {
+            reloadGraphData();
+        });
+    }
+}
+
+function syncControlsToFilters() {
+    const searchInput = document.getElementById('graph-filter-search');
+    const includeChildrenInput = document.getElementById('graph-filter-include-children');
+    const effortSelect = document.getElementById('graph-filter-effort');
+    const strideSelect = document.getElementById('graph-filter-stride');
+    const statusSelect = document.getElementById('graph-filter-status');
+    const assignmentSelect = document.getElementById('graph-filter-assignment');
+
+    if (searchInput) {
+        searchInput.value = graphState.filters.search;
+    }
+
+    if (includeChildrenInput) {
+        includeChildrenInput.checked = graphState.filters.includeChildren;
+    }
+
+    if (effortSelect) {
+        effortSelect.value = graphState.filters.effort;
+    }
+
+    if (strideSelect) {
+        strideSelect.value = graphState.filters.stride;
+    }
+
+    if (statusSelect) {
+        statusSelect.value = graphState.filters.status;
+    }
+
+    if (assignmentSelect) {
+        assignmentSelect.value = graphState.filters.assignment;
+    }
+
+    document.querySelectorAll('[data-filter-type]').forEach(input => {
+        input.checked = graphState.filters.types.has(input.value);
+    });
+}
+
+function scheduleFilterApply() {
+    if (graphState.filterDebounceId) {
+        window.clearTimeout(graphState.filterDebounceId);
+    }
+
+    graphState.filterDebounceId = window.setTimeout(() => {
+        applyFilters();
+    }, 150);
+}
+
+function updateFilterSummary(metrics) {
+    const summaryEl = document.getElementById('graph-filter-summary');
+    if (!summaryEl) return;
+
+    if (!graphState.rawTree) {
+        summaryEl.textContent = 'Loading graph cards...';
+        return;
+    }
+
+    if (metrics.visibleNodes === 0) {
+        summaryEl.textContent = 'No graph cards match the current filters.';
+        return;
+    }
+
+    const visibleLabel = `${metrics.visibleNodes} visible card${metrics.visibleNodes === 1 ? '' : 's'}`;
+    const totalLabel = `${graphState.totalRenderableNodes} total card${graphState.totalRenderableNodes === 1 ? '' : 's'}`;
+
+    if (metrics.directMatches === metrics.visibleNodes) {
+        summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel}.`;
+        return;
+    }
+
+    summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel} (${metrics.directMatches} direct match${metrics.directMatches === 1 ? '' : 'es'}).`;
+}
+
+function renderEmptyState(contentDiv, message) {
+    if (!contentDiv) return;
+    contentDiv.replaceChildren();
+
+    const emptyState = document.createElement('div');
+    emptyState.className = 'graph-empty-state';
+    emptyState.textContent = message;
+    contentDiv.appendChild(emptyState);
+}
+
+function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
     const graphContent = document.getElementById('graph-content');
     const graphViewport = document.getElementById('graph-viewport');
     if (!graphContent) return;
@@ -141,6 +695,12 @@ function renderTree(contentDiv, d3, treeData) {
 
     const descendants = root.descendants();
     const renderable = descendants.filter(node => node.depth > 0);
+
+    if (renderable.length === 0) {
+        renderEmptyState(graphContent, 'No cards match the current filters.');
+        return;
+    }
+
     const links = root.links();
     const viewportSize = getInnerViewportSize(graphViewport || contentDiv);
     const viewportWidth = viewportSize.width || contentDiv.clientWidth || 0;
@@ -168,6 +728,7 @@ function renderTree(contentDiv, d3, treeData) {
         .extent([[0, 0], [viewportWidth, viewportHeight]])
         .translateExtent([[0, 0], [graphWidth, graphHeight]])
         .on('zoom', event => {
+            graphState.zoomTransform = event.transform;
             zoomLayer.attr('transform', event.transform);
         });
 
@@ -179,13 +740,14 @@ function renderTree(contentDiv, d3, treeData) {
         viewportHeight > 0 ? viewportHeight / graphHeight : 1,
         1
     );
-    const initialTransform = d3.zoomIdentity
+    const initialTransform = restoreTransform ?? d3.zoomIdentity
         .translate(
             viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
             viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0
         )
         .scale(initialScale);
 
+    graphState.zoomTransform = initialTransform;
     svg.call(zoom.transform, initialTransform);
 
     zoomLayer.append('g')
@@ -293,9 +855,39 @@ function renderTree(contentDiv, d3, treeData) {
     graphContent.appendChild(svg.node());
 }
 
-export async function loadGraphPage(projectId, contentDiv) {
-    const errorEl = document.getElementById('error-text');
+function applyFilters() {
+    if (!graphState.rawTree || !graphState.d3) {
+        return;
+    }
+
+    const metrics = { visibleNodes: 0, directMatches: 0 };
+    graphState.filteredTree = filterTree(graphState.rawTree, graphState.filters, metrics, true);
+
+    syncFiltersToUrl(graphState.filters);
+
+    const graphContent = document.getElementById('graph-content');
+    if (graphState.filteredTree) {
+        renderTree(graphContent, graphState.d3, graphState.filteredTree, graphState.zoomTransform);
+    } else {
+        renderEmptyState(graphContent, 'No cards match the current filters.');
+    }
+
+    updateFilterSummary(metrics);
+}
+
+function parseGraphData(rootPromises, projectId) {
+    return {
+        id: `root-${projectId}`,
+        nodeType: 'root',
+        label: '',
+        payload: {},
+        children: rootPromises,
+    };
+}
+
+async function reloadGraphData() {
     const loadingEl = document.getElementById('loading-text');
+    const errorEl = document.getElementById('error-text');
     const successEl = document.getElementById('success-text');
 
     if (loadingEl) loadingEl.textContent = 'Loading project graph...';
@@ -303,12 +895,13 @@ export async function loadGraphPage(projectId, contentDiv) {
     if (successEl) successEl.textContent = '';
 
     try {
-        const d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
-        const rootPromises = sortByDisplayOrder(await getProjectPromises(projectId));
+        const rootPromises = sortByDisplayOrder(await getProjectPromises(graphState.projectId));
         const children = await Promise.all(rootPromises.map(buildPromiseNode));
-        const treeData = { id: `root-${projectId}`, nodeType: 'root', label: '', payload: {}, children };
 
-        renderTree(contentDiv, d3, treeData);
+        graphState.rawTree = parseGraphData(children, graphState.projectId);
+        graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
+
+        applyFilters();
 
         if (loadingEl) loadingEl.textContent = '';
         if (successEl) successEl.textContent = `Loaded ${children.length} top-level promise${children.length === 1 ? '' : 's'}.`;
@@ -317,4 +910,51 @@ export async function loadGraphPage(projectId, contentDiv) {
         if (loadingEl) loadingEl.textContent = '';
         if (errorEl) errorEl.textContent = 'Unable to load the project graph.';
     }
+}
+
+async function loadAvailableStrides(projectId) {
+    const iterations = await getIterationsByProject(projectId);
+    const strideGroups = await Promise.all(
+        (Array.isArray(iterations) ? iterations : []).map(async iteration => ({
+            iteration,
+            strides: await getStridesByIteration(iteration.id),
+        }))
+    );
+
+    const strides = strideGroups
+        .flatMap(group => (Array.isArray(group.strides) ? group.strides : []))
+        .sort((left, right) => {
+            const leftStart = new Date(left.startDate ?? 0).getTime();
+            const rightStart = new Date(right.startDate ?? 0).getTime();
+            if (leftStart !== rightStart) return leftStart - rightStart;
+            return Number(left.id) - Number(right.id);
+        });
+
+    graphState.availableStrides = strides;
+}
+
+export async function loadGraphPage(projectId, contentDiv) {
+    const errorEl = document.getElementById('error-text');
+    const loadingEl = document.getElementById('loading-text');
+    const successEl = document.getElementById('success-text');
+
+    graphState.projectId = projectId;
+    graphState.d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
+    graphState.filters = readFiltersFromUrl();
+    graphState.zoomTransform = null;
+    graphState.rawTree = null;
+    graphState.filteredTree = null;
+    graphState.totalRenderableNodes = 0;
+    graphState.availableStrides = [];
+
+    await loadAvailableStrides(projectId);
+
+    renderFilterBar();
+    syncControlsToFilters();
+
+    if (loadingEl) loadingEl.textContent = 'Loading project graph...';
+    if (errorEl) errorEl.textContent = '';
+    if (successEl) successEl.textContent = '';
+
+    await reloadGraphData();
 }
