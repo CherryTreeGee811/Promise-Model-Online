@@ -42,14 +42,15 @@
 }
 html {
   font-size: 100%;
-  position: relative;
   min-height: 100%;
 }
 body {
   font-family: var(--font-primary);
   color: var(--color-text);
   background-color: var(--color-page-bg);
-  margin-bottom: 60px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   overflow-x: hidden;
   line-height: 1.5;
 }
@@ -195,17 +196,16 @@ main {
 }
 
 .container {
-  position: absolute;
-  height: 100%;
+  position: relative;
+  flex: 1 0 auto;
   width: 100%;
   z-index: 0;
   background-size: cover;
 }
 
 .footer {
-  position: fixed;
-  left: 0;
-  bottom: 0;
+  position: relative;
+  flex-shrink: 0;
   width: 100%;
   background: rgba(0,0,0,0.7);
   padding: var(--spacing-md) 0;

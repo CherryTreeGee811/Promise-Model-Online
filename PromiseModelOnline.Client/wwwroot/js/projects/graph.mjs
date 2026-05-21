@@ -1,4 +1,4 @@
-import { getProjectPromises } from './api.mjs';
+import { getProjectById, getProjectPromises } from './api.mjs';
 import { getIterationsByProject } from '../iterations/api.mjs';
 import { getEpicsByPromise } from '../promises/api.mjs';
 import { getJourneysByEpic } from '../epics/api.mjs';
@@ -236,11 +236,6 @@ function createNode(nodeType, payload, children = []) {
     const searchText = normalizeText([
         label,
         payload.description,
-        nodeType,
-        payload.statusColor,
-        payload.effortEstimate,
-        payload.assignedStrideId,
-        getStrideLabel(payload),
     ].join(' '));
 
     const statusBucket = getStatusBucket(payload?.statusColor);
@@ -325,11 +320,6 @@ function getNodeSearchText(node) {
     return node._searchText ?? normalizeText([
         node.label,
         node.payload?.description,
-        node.nodeType,
-        node.payload?.statusColor,
-        node.payload?.effortEstimate,
-        node.payload?.assignedStrideId,
-        getStrideLabel(node.payload),
     ].join(' '));
 }
 
@@ -390,16 +380,20 @@ function cloneSubtree(node, metrics) {
 
     return {
         ...node,
+        _searchMatched: false,
         children: (node.children ?? []).map(child => cloneSubtree(child, metrics)),
     };
 }
 
 function filterTree(node, filters, metrics, isRoot = false) {
-    const searchMatched = !isRoot && filters.search && matchesNode(node, { ...filters, search: filters.search, includeChildren: false });
+    const searchMatched = !isRoot && filters.search && (node._searchText ?? getNodeSearchText(node)).includes(filters.search);
 
     if (searchMatched && filters.includeChildren) {
         metrics.directMatches += 1;
-        return cloneSubtree(node, metrics);
+        return {
+            ...cloneSubtree(node, metrics),
+            _searchMatched: true,
+        };
     }
 
     const filteredChildren = (node.children ?? [])
@@ -414,6 +408,7 @@ function filterTree(node, filters, metrics, isRoot = false) {
     if (isRoot) {
         return {
             ...node,
+            _searchMatched: false,
             children: filteredChildren,
         };
     }
@@ -422,6 +417,7 @@ function filterTree(node, filters, metrics, isRoot = false) {
         metrics.visibleNodes += 1;
         return {
             ...node,
+            _searchMatched: Boolean(searchMatched && filters.search),
             children: filteredChildren,
         };
     }
@@ -812,7 +808,7 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
     treeLayout(root);
 
     const descendants = root.descendants();
-    const renderable = descendants.filter(node => node.depth > 0);
+    const renderable = descendants;
 
     if (renderable.length === 0) {
         renderEmptyState(graphContent, 'No cards match the current filters.');
@@ -838,8 +834,20 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
 
     const contentOffsetX = margin.left - minY;
     const contentOffsetY = margin.top - minX + FOREHEAD_GAP;
+    const cardClipPathId = `graph-card-clip-${graphState.projectId ?? 'project'}`;
 
     const zoomLayer = svg.append('g');
+
+    svg.append('defs')
+        .append('clipPath')
+        .attr('id', cardClipPathId)
+        .append('rect')
+        .attr('x', -CARD_WIDTH / 2)
+        .attr('y', -CARD_HEIGHT / 2)
+        .attr('width', CARD_WIDTH)
+        .attr('height', CARD_HEIGHT)
+        .attr('rx', CARD_RADIUS)
+        .attr('ry', CARD_RADIUS);
 
     const zoom = d3.zoom()
         .scaleExtent([0.5, 2.5])
@@ -904,8 +912,8 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS)
         .attr('fill', current => current.depth === 0 ? '#f8fafc' : '#ffffff')
-        .attr('stroke', current => current.depth === 0 ? getNodeColor(current.data.nodeType) : '#cbd5e1')
-        .attr('stroke-width', current => current.depth === 0 ? 2.5 : 1.5);
+        .attr('stroke', current => current.data._searchMatched ? '#d4af37' : (current.depth === 0 ? getNodeColor(current.data.nodeType) : '#cbd5e1'))
+        .attr('stroke-width', current => current.data._searchMatched ? 3 : (current.depth === 0 ? 2.5 : 1.5));
 
     node.append('rect')
         .attr('class', 'graph-card-accent')
@@ -915,6 +923,7 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('height', CARD_HEIGHT)
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS)
+        .attr('clip-path', `url(#${cardClipPathId})`)
         .attr('fill', current => getNodeColor(current.data.nodeType));
 
     node.append('text')
@@ -1005,12 +1014,20 @@ function applyFilters() {
     updateFilterSummary(metrics);
 }
 
-function parseGraphData(rootPromises, projectId) {
+function parseGraphData(rootPromises, projectId, project = null) {
+    const rawName = project?.name ?? project?.Name ?? '';
+    const normalizedName = String(rawName).trim();
+    const projectLabel = normalizedName || `Project #${projectId}`;
+
     return {
         id: `root-${projectId}`,
         nodeType: 'root',
-        label: '',
-        payload: {},
+        label: projectLabel,
+        payload: {
+            id: projectId,
+            name: projectLabel,
+            description: project?.description ?? project?.Description ?? null,
+        },
         children: rootPromises,
     };
 }
@@ -1025,10 +1042,24 @@ async function reloadGraphData() {
     if (successEl) successEl.textContent = '';
 
     try {
-        const rootPromises = sortByDisplayOrder(await getProjectPromises(graphState.projectId));
+        const [projectResult, promisesResult] = await Promise.allSettled([
+            getProjectById(graphState.projectId),
+            getProjectPromises(graphState.projectId),
+        ]);
+
+        if (promisesResult.status !== 'fulfilled') {
+            throw promisesResult.reason;
+        }
+
+        if (projectResult.status === 'rejected') {
+            console.warn('Unable to load project details for graph root card label:', projectResult.reason);
+        }
+
+        const project = projectResult.status === 'fulfilled' ? projectResult.value : null;
+        const rootPromises = sortByDisplayOrder(promisesResult.value);
         const children = await Promise.all(rootPromises.map(buildPromiseNode));
 
-        graphState.rawTree = parseGraphData(children, graphState.projectId);
+        graphState.rawTree = parseGraphData(children, graphState.projectId, project);
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
 
         applyFilters();
