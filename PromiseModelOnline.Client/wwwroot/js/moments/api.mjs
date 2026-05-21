@@ -159,3 +159,34 @@ export async function addMoment(moment) {
         throw new Error(`HTTP error! status: ${res.status}`);
     }
 }
+
+/**
+ * Update a moment's type.
+ * @param {number} momentId
+ * @param {string} newType
+ */
+export async function updateMomentType(momentId, newType) {
+    const url = `${base}/api/moments/${momentId}/type`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA'
+        },
+        body: JSON.stringify({ newType })
+    });
+
+    if (res.ok) {
+        if (res.status === 204) return null;
+        return res.json();
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}

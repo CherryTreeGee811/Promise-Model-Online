@@ -26,6 +26,31 @@ export function getStridesByIteration(iterationId) {
     });
 }
 
+export function getAllStrides() {
+    const url = `${base}/api/strides`;
+    const token = getAccessTokenFromCookie();
+
+    return fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            if (response.status === 204) return [];
+            return response.json();
+        } else if (response.status === 401) {
+            document.getElementById("login-link").click();
+        } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+    });
+}
+
 export function getMomentsByStride(strideId) {
     const url = `${base}/api/moments?strideId=${strideId}`;
     const token = getAccessTokenFromCookie();

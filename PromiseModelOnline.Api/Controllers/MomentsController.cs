@@ -201,6 +201,53 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         /// <summary>
+        /// Updates the type of a moment.
+        /// Requires Edit permission on the project.
+        /// </summary>
+        [HttpPatch("{id}/type")]
+        public async Task<ActionResult<MomentDTO>> UpdateMomentType(
+            int id,
+            [FromBody] UpdateMomentTypeRequest request)
+        {
+            if (!await UserCanEditMomentAsync(id))
+                return Forbid();
+
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var moment = await _momentService.GetByIdAsync(id);
+                if (moment is null)
+                    return NotFound($"Moment with ID {id} not found.");
+
+                moment.Type = request.NewType;
+                moment.UpdatedAt = DateTime.UtcNow;
+
+                await _momentService.UpdateAsync(moment);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { NewType = request.NewType.ToString() });
+
+                return Ok(_mapper.Map(moment, _service));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Assigns a specific user as the owner of the moment, or clears the owner when UserId is null.
         /// Requires Edit permission on the project.
         /// </summary>
