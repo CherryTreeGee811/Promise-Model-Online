@@ -217,6 +217,46 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
 
+        #region CreateFromDto Tests
+
+        [Test]
+        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        {
+            // Arrange
+            var request = new CreateEpicRequestDTO { Statement = "New Epic", ProductPromiseId = 5, DisplayOrder = 1 };
+
+            _mockEpicService.Setup(s => s.AddAsync(It.IsAny<Epic>()))
+                .Callback<Epic>(e => e.Id = 77)
+                .Returns(Task.CompletedTask);
+
+            _mockMapper.Setup(m => m.Map(It.IsAny<Epic>(), It.IsAny<IGenericService<Epic>>() ))
+                .Returns<Epic, IGenericService<Epic>>((e, svc) => new EpicDTO { Id = e.Id, Statement = e.Statement, ProductPromiseId = e.ProductPromiseId });
+
+            // Act
+            var result = await _controller.CreateFromDto(request);
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+            var created = result.Result as CreatedAtActionResult;
+            Assert.That(created!.RouteValues!["id"], Is.EqualTo(77));
+            var dto = created.Value as EpicDTO;
+            Assert.That(dto, Is.Not.Null);
+            Assert.That(dto!.Statement, Is.EqualTo("New Epic"));
+            _mockEpicService.Verify(s => s.AddAsync(It.Is<Epic>(ep => ep.Statement == request.Statement && ep.ProductPromiseId == request.ProductPromiseId)), Times.Once);
+        }
+
+        [Test]
+        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        {
+            // Act
+            var result = await _controller.CreateFromDto(null);
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        #endregion
+
         #region Inherited Methods Tests
 
         [Test]

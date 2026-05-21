@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
@@ -21,6 +22,25 @@ namespace PromiseModelOnline.Api.Controllers
             : base(service, mapper)
         {
             _epicService = service;
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult<EpicDTO>> CreateFromDto([FromBody] CreateEpicRequestDTO request)
+        {
+            if (request is null) return BadRequest("Request is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var epic = new Epic
+            {
+                Statement = request.Statement,
+                Description = request.Description,
+                ProductPromiseId = request.ProductPromiseId,
+                DisplayOrder = request.DisplayOrder,
+                StatusColor = "red"
+            };
+
+            await _epicService.AddAsync(epic);
+            return CreatedAtAction(nameof(GetById), new { id = epic.Id }, _mapper.Map(epic, _service));
         }
 
         [HttpGet]

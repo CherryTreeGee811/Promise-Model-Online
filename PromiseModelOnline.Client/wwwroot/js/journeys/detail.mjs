@@ -1,6 +1,8 @@
 import { getJourneyById, getFlowsByJourney, updateJourney } from './api.mjs';
+import { addFlow } from '../flows/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
+import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 
 export function loadJourneyDetail(journeyId, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
@@ -44,30 +46,75 @@ export function loadJourneyDetail(journeyId, contentDiv) {
             const flowsList = document.getElementById('journey-flows-list');
             getFlowsByJourney(journeyId)
                 .then(flows => {
-                    if (!flows || flows.length === 0) {
-                        flowsList.innerHTML = '<p class="no-items">No flows found for this journey.</p>';
-                        return;
+                    const tbody = renderTableWithInlineAddRow(flowsList, {
+                        headers: ['Statement', 'Actions'],
+                        items: flows || [],
+                        emptyMessage: 'No flows found for this journey.',
+                        renderItemRow: f => `
+                            <tr data-flow-id="${f.id}">
+                                <td>${escapeHtml(f.statement)}</td>
+                                <td><a href="/flows/${f.id}" class="view-btn">View</a></td>
+                            </tr>
+                        `,
+                        renderAddRow: () => `
+                            <tr data-inline-add-row="1">
+                                <td>
+                                    <form id="add-flow-form" class="inline-add-form" style="margin:0;">
+                                        <input id="add-flow-statement" type="text" maxlength="500" required placeholder="New Flow Statement..." style="width:100%;">
+                                    </form>
+                                </td>
+                                <td>
+                                    <button id="add-flow-submit" type="submit" form="add-flow-form" class="view-btn">Add</button>
+                                    <span id="add-flow-msg"></span>
+                                </td>
+                            </tr>
+                        `,
+                    });
+
+                    const form = flowsList.querySelector('#add-flow-form');
+                    const statementInput = flowsList.querySelector('#add-flow-statement');
+                    const msg = flowsList.querySelector('#add-flow-msg');
+                    const submitBtn = flowsList.querySelector('#add-flow-submit');
+
+                    if (form && statementInput && msg && submitBtn) {
+                        form.addEventListener('submit', async event => {
+                            event.preventDefault();
+                            msg.textContent = '';
+
+                            const statement = statementInput.value.trim();
+                            if (!statement) {
+                                msg.textContent = 'Statement is required.';
+                                return;
+                            }
+
+                            submitBtn.disabled = true;
+
+                            try {
+                                const created = await addFlow({
+                                    statement,
+                                    journeyId,
+                                    displayOrder: (flows || []).length + 1,
+                                });
+
+                                if (created) {
+                                    removeInlineEmptyRow(tbody);
+                                    const row = document.createElement('tr');
+                                    row.dataset.flowId = created.id;
+                                    row.innerHTML = `
+                                        <td>${escapeHtml(created.statement)}</td>
+                                        <td><a href="/flows/${created.id}" class="view-btn">View</a></td>
+                                    `;
+                                    insertRowBeforeAddRow(tbody, row);
+                                    statementInput.value = '';
+                                }
+                            } catch (err) {
+                                msg.textContent = 'Failed to add flow.';
+                                console.error(err);
+                            } finally {
+                                submitBtn.disabled = false;
+                            }
+                        });
                     }
-                    flowsList.innerHTML = `
-                        <table class="promisemodel-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Statement</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${flows.map(f => `
-                                    <tr>
-                                        <td>${f.id}</td>
-                                        <td>${escapeHtml(f.statement)}</td>
-                                        <td><a href="/flows/${f.id}" class="view-btn">View</a></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
                 })
                 .catch(() => {
                     flowsList.innerHTML = '<p class="error">Failed to load flows.</p>';

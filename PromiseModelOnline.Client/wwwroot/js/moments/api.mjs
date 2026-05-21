@@ -135,7 +135,7 @@ export async function updateMomentOwner(momentId, userId) {
  * @returns {Promise<object|null>} created MomentDTO or null for 204
  */
 export async function addMoment(moment) {
-    const url = `${base}/api/moments`;
+    const url = `${base}/api/moments/create`;
     const token = getAccessTokenFromCookie();
 
     const res = await fetch(url, {

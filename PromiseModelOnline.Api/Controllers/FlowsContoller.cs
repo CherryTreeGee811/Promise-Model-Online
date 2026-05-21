@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
@@ -21,6 +22,25 @@ namespace PromiseModelOnline.Api.Controllers
             : base(service, mapper)
         {
             _flowService = service;
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult<FlowDTO>> CreateFromDto([FromBody] CreateFlowRequestDTO request)
+        {
+            if (request is null) return BadRequest("Request is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var flow = new Flow
+            {
+                Statement = request.Statement,
+                Description = request.Description,
+                JourneyId = request.JourneyId,
+                DisplayOrder = request.DisplayOrder,
+                StatusColor = "red"
+            };
+
+            await _flowService.AddAsync(flow);
+            return CreatedAtAction(nameof(GetById), new { id = flow.Id }, _mapper.Map(flow, _service));
         }
 
         [HttpGet]

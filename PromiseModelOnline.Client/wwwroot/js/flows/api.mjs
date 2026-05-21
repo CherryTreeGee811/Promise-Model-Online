@@ -51,7 +51,7 @@ export function getMomentsByFlow(flowId) {
 }
 
 export async function addFlow(flow) {
-    const url = `${base}/api/flows`;
+    const url = `${base}/api/flows/create`;
     const token = getAccessTokenFromCookie();
 
     const res = await fetch(url, {

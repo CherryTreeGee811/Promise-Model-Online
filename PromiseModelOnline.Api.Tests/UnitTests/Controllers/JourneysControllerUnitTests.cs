@@ -217,6 +217,37 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
 
+        #region CreateFromDto Tests
+
+        [Test]
+        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        {
+            var request = new CreateJourneyRequestDTO { Statement = "New Journey", EpicId = 3, DisplayOrder = 2 };
+
+            _mockJourneyService.Setup(s => s.AddAsync(It.IsAny<Journey>()))
+                .Callback<Journey>(j => j.Id = 55)
+                .Returns(Task.CompletedTask);
+
+            _mockMapper.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>() ))
+                .Returns<Journey, IGenericService<Journey>>((j, svc) => new JourneyDTO { Id = j.Id, Statement = j.Statement, EpicId = j.EpicId });
+
+            var result = await _controller.CreateFromDto(request);
+
+            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+            var created = result.Result as CreatedAtActionResult;
+            Assert.That(created!.RouteValues!["id"], Is.EqualTo(55));
+            _mockJourneyService.Verify(s => s.AddAsync(It.Is<Journey>(jj => jj.Statement == request.Statement && jj.EpicId == request.EpicId)), Times.Once);
+        }
+
+        [Test]
+        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        {
+            var result = await _controller.CreateFromDto(null);
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        #endregion
+
         #region Inherited Methods Tests
 
         [Test]

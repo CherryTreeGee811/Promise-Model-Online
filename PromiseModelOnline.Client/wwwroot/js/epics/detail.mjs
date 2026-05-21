@@ -1,6 +1,8 @@
 import { getEpicById, getJourneysByEpic, updateEpic } from './api.mjs';
+import { addJourney } from '../journeys/api.mjs';
 import { getPromiseById } from '../promises/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
+import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 
 export function loadEpicDetail(epicId, contentDiv) {
     const detailDiv = document.getElementById('epic-detail-content');
@@ -55,30 +57,75 @@ export function loadEpicDetail(epicId, contentDiv) {
             const journeysList = document.getElementById('epic-journeys-list');
             getJourneysByEpic(epicId)
                 .then(journeys => {
-                    if (!journeys || journeys.length === 0) {
-                        journeysList.innerHTML = '<p class="no-items">No journeys found for this epic.</p>';
-                        return;
+                    const tbody = renderTableWithInlineAddRow(journeysList, {
+                        headers: ['Statement', 'Actions'],
+                        items: journeys || [],
+                        emptyMessage: 'No journeys found for this epic.',
+                        renderItemRow: j => `
+                            <tr data-journey-id="${j.id}">
+                                <td>${escapeHtml(j.statement)}</td>
+                                <td><a href="/journeys/${j.id}" class="view-btn">View</a></td>
+                            </tr>
+                        `,
+                        renderAddRow: () => `
+                            <tr data-inline-add-row="1">
+                                <td>
+                                    <form id="add-journey-form" class="inline-add-form" style="margin:0;">
+                                        <input id="add-journey-statement" type="text" maxlength="500" required placeholder="New Journey Statement..." style="width:100%;">
+                                    </form>
+                                </td>
+                                <td>
+                                    <button id="add-journey-submit" type="submit" form="add-journey-form" class="view-btn">Add</button>
+                                    <span id="add-journey-msg"></span>
+                                </td>
+                            </tr>
+                        `,
+                    });
+
+                    const form = journeysList.querySelector('#add-journey-form');
+                    const statementInput = journeysList.querySelector('#add-journey-statement');
+                    const msg = journeysList.querySelector('#add-journey-msg');
+                    const submitBtn = journeysList.querySelector('#add-journey-submit');
+
+                    if (form && statementInput && msg && submitBtn) {
+                        form.addEventListener('submit', async event => {
+                            event.preventDefault();
+                            msg.textContent = '';
+
+                            const statement = statementInput.value.trim();
+                            if (!statement) {
+                                msg.textContent = 'Statement is required.';
+                                return;
+                            }
+
+                            submitBtn.disabled = true;
+
+                            try {
+                                const created = await addJourney({
+                                    statement,
+                                    epicId,
+                                    displayOrder: (journeys || []).length + 1,
+                                });
+
+                                if (created) {
+                                    removeInlineEmptyRow(tbody);
+                                    const row = document.createElement('tr');
+                                    row.dataset.journeyId = created.id;
+                                    row.innerHTML = `
+                                        <td>${escapeHtml(created.statement)}</td>
+                                        <td><a href="/journeys/${created.id}" class="view-btn">View</a></td>
+                                    `;
+                                    insertRowBeforeAddRow(tbody, row);
+                                    statementInput.value = '';
+                                }
+                            } catch (err) {
+                                msg.textContent = 'Failed to add journey.';
+                                console.error(err);
+                            } finally {
+                                submitBtn.disabled = false;
+                            }
+                        });
                     }
-                    journeysList.innerHTML = `
-                        <table class="promisemodel-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Statement</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${journeys.map(j => `
-                                    <tr>
-                                        <td>${j.id}</td>
-                                        <td>${escapeHtml(j.statement)}</td>
-                                        <td><a href="/journeys/${j.id}" class="view-btn">View</a></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
                 })
                 .catch(() => {
                     journeysList.innerHTML = '<p class="error">Failed to load journeys.</p>';

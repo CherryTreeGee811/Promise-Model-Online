@@ -51,7 +51,7 @@ export function getFlowsByJourney(journeyId) {
 }
 
 export async function addJourney(journey) {
-    const url = `${base}/api/journeys`;
+    const url = `${base}/api/journeys/create`;
     const token = getAccessTokenFromCookie();
 
     const res = await fetch(url, {

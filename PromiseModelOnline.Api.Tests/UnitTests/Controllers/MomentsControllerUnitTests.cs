@@ -200,6 +200,36 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
+        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        {
+            // Arrange
+            var request = new CreateMomentRequestDTO { Statement = "m1", FlowId = 9, Type = MomentType.Story, Status = MomentStatus.Todo, DisplayOrder = 3 };
+
+            _mockMomentService.Setup(s => s.AddAsync(It.IsAny<Moment>()))
+                .Callback<Moment>(m => m.Id = 500)
+                .Returns(Task.CompletedTask);
+
+            _mockMapper.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IGenericService<Moment>>() ))
+                .Returns<Moment, IGenericService<Moment>>((m, svc) => new MomentDTO { Id = m.Id, Statement = m.Statement, FlowId = m.FlowId });
+
+            // Act
+            var result = await _controller.CreateFromDto(request);
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+            var created = result.Result as CreatedAtActionResult;
+            Assert.That(created!.RouteValues!["id"], Is.EqualTo(500));
+            _mockMomentService.Verify(s => s.AddAsync(It.Is<Moment>(mm => mm.Statement == request.Statement && mm.FlowId == request.FlowId)), Times.Once);
+        }
+
+        [Test]
+        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        {
+            var result = await _controller.CreateFromDto(null);
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
         public async Task Update_WithValidIdAndMoment_ReturnsNoContent()
         {
             // Arrange

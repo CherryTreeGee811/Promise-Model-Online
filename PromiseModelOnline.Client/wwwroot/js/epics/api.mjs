@@ -51,7 +51,7 @@ export function getJourneysByEpic(epicId) {
 }
 
 export async function addEpic(epic) {
-    const url = `${base}/api/epics`;
+    const url = `${base}/api/epics/create`;
     const token = getAccessTokenFromCookie();
 
     const res = await fetch(url, {

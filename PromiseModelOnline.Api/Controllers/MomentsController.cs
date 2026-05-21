@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
@@ -35,6 +36,34 @@ namespace PromiseModelOnline.Api.Controllers
             _userRepository = userRepository;
             _permissionService = permissionService;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Creates a new moment from a lightweight request DTO.
+        /// The client only supplies the parent FlowId; the entity navigation property stays server-owned.
+        /// </summary>
+        [HttpPost("create")]
+        public async Task<ActionResult<MomentDTO>> CreateFromDto([FromBody] CreateMomentRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var moment = new Moment
+            {
+                Statement = request.Statement,
+                Description = request.Description,
+                FlowId = request.FlowId,
+                Type = request.Type,
+                Status = request.Status,
+                DisplayOrder = request.DisplayOrder,
+                StatusColor = StatusColorRules.FromMomentStatus(request.Status),
+            };
+
+            await _momentService.AddAsync(moment);
+            return CreatedAtAction(nameof(GetById), new { id = moment.Id }, _mapper.Map(moment, _service));
         }
 
         /// <summary>
