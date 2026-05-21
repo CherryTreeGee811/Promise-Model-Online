@@ -194,12 +194,12 @@ function getChildTypeLabel(nodeType) {
 
 function getChildProgressSummary(nodeData) {
     const childLabel = getChildTypeLabel(nodeData.nodeType);
-    const children = nodeData.children ?? [];
+    const childCount = nodeData.childCount ?? 0;
+    const completedCount = nodeData.completedChildCount ?? 0;
 
     if (!childLabel) return null;
 
-    const completedCount = children.filter(child => getStatusBucket(child.payload?.statusColor) === 'done').length;
-    return `${completedCount}/${children.length} ${children.length === 1 ? childLabel : `${childLabel}s`} completed`;
+    return `${completedCount}/${childCount} ${childCount === 1 ? childLabel : `${childLabel}s`} completed`;
 }
 
 function getStrideLabel(payload) {
@@ -228,11 +228,16 @@ function sortByDisplayOrder(items) {
 }
 
 function createNode(nodeType, payload, children = []) {
+    const childCount = children.length;
+    const completedChildCount = children.filter(child => getStatusBucket(child.payload?.statusColor) === 'done').length;
+
     return {
         id: `${nodeType}-${payload.id}`,
         nodeType,
         label: payload.statement ?? payload.name ?? `#${payload.id}`,
         payload,
+        childCount,
+        completedChildCount,
         children,
     };
 }
