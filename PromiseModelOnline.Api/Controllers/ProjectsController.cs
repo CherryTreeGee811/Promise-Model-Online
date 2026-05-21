@@ -124,7 +124,7 @@ namespace PromiseModelOnline.Api.Controllers
             var user = await GetCurrentUserAsync();
             if (user is null) return Unauthorized();
 
-            if (dto.Name.IsNullOrWhiteSpace()) return BadRequest("Project name is missing");
+            if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Project name is missing");
 
             var project = new Project
             {
