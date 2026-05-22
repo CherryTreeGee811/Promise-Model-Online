@@ -58,6 +58,8 @@ namespace PromiseModelOnline.Api.Controllers
                 FlowId = request.FlowId,
                 Type = request.Type,
                 Status = request.Status,
+                EffortEstimate = request.EffortEstimate,
+                AssignedStrideId = request.AssignedStrideId,
                 DisplayOrder = request.DisplayOrder,
                 StatusColor = StatusColorRules.FromMomentStatus(request.Status),
             };

@@ -172,11 +172,218 @@ function createInputField({ name, label, type = 'text', value = '', placeholder 
     return { field, input };
 }
 
-function buildCreateFormElement(nodeData, projectId, onGraphMutated, closeMenus) {
+function createSelectField({ name, label, value = '', options = [] }) {
+    const field = document.createElement('label');
+    field.className = 'graph-context-menu-form__field';
+
+    const fieldLabel = document.createElement('span');
+    fieldLabel.className = 'graph-context-menu-form__label';
+    fieldLabel.textContent = label;
+
+    const select = document.createElement('select');
+    select.name = name;
+    select.className = 'graph-context-menu-form__control';
+
+    for (const option of options) {
+        const optionElement = document.createElement('option');
+        optionElement.value = option.value;
+        optionElement.textContent = option.label;
+        optionElement.selected = String(option.value) === String(value);
+        select.appendChild(optionElement);
+    }
+
+    field.append(fieldLabel, select);
+    return { field, select };
+}
+
+function getMomentTypeOptions() {
+    return [
+        { value: 'Story', label: 'Story' },
+        { value: 'Job', label: 'Job' },
+    ];
+}
+
+function getMomentStatusOptions() {
+    return [
+        { value: 'Todo', label: 'Todo' },
+        { value: 'InProgress', label: 'In Progress' },
+        { value: 'Blocked', label: 'Blocked' },
+        { value: 'Done', label: 'Done' },
+    ];
+}
+
+function getMomentEstimateOptions() {
+    return [
+        { value: '', label: '-' },
+        { value: 'XS', label: 'XS' },
+        { value: 'S', label: 'S' },
+        { value: 'M', label: 'M' },
+        { value: 'L', label: 'L' },
+        { value: 'XL', label: 'XL' },
+        { value: 'XXL', label: 'XXL' },
+        { value: 'XXXL', label: 'XXXL' },
+    ];
+}
+
+function getStrideOptions(strides = []) {
+    return [
+        { value: '', label: 'Backlog' },
+        ...strides.map(stride => ({
+            value: String(stride.id),
+            label: stride.name ? `Stride #${stride.id} - ${stride.name}` : `Stride #${stride.id}`,
+        })),
+    ];
+}
+
+function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus) {
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!createMeta || !defaults) {
         return null;
+    }
+
+    const form = document.createElement('form');
+    form.className = 'graph-context-menu-form graph-context-menu-form--moment';
+
+    const title = document.createElement('div');
+    title.className = 'graph-context-menu-form__title';
+    title.textContent = 'Create Moment';
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'graph-context-menu-form__subtitle';
+    subtitle.textContent = 'Moments carry status, type, estimate, and stride assignment at creation time.';
+
+    const statementField = createInputField({
+        name: 'statement',
+        label: 'Statement',
+        value: defaults.statement,
+        placeholder: 'New Moment',
+    });
+
+    const descriptionField = createInputField({
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        value: defaults.description,
+        placeholder: 'Optional description',
+        rows: 3,
+    });
+
+    const typeField = createSelectField({
+        name: 'type',
+        label: 'Type',
+        value: 'Story',
+        options: getMomentTypeOptions(),
+    });
+
+    const statusField = createSelectField({
+        name: 'status',
+        label: 'Status',
+        value: 'Todo',
+        options: getMomentStatusOptions(),
+    });
+
+    const estimateField = createSelectField({
+        name: 'effortEstimate',
+        label: 'Effort Estimate',
+        value: '',
+        options: getMomentEstimateOptions(),
+    });
+
+    const strideField = createSelectField({
+        name: 'assignedStrideId',
+        label: 'Assigned Stride',
+        value: '',
+        options: getStrideOptions(getAvailableStrides?.() ?? []),
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'graph-context-menu-form__actions';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--secondary';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', event => {
+        event.preventDefault();
+        closeMenus();
+    });
+
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
+    submitButton.textContent = 'Create Moment';
+
+    actions.append(cancelButton, submitButton);
+
+    form.append(
+        title,
+        subtitle,
+        statementField.field,
+        descriptionField.field,
+        typeField.field,
+        statusField.field,
+        estimateField.field,
+        strideField.field,
+        actions
+    );
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        submitButton.disabled = true;
+        submitButton.textContent = 'Creating Moment...';
+
+        const statement = statementField.input.value.trim();
+        const description = descriptionField.input.value.trim();
+
+        if (!statement) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Create Moment';
+            statementField.input.focus();
+            return;
+        }
+
+        const payload = {
+            statement,
+            description: description || null,
+            flowId: nodeData.payload?.id,
+            type: typeField.select.value,
+            status: statusField.select.value,
+            effortEstimate: estimateField.select.value || null,
+            assignedStrideId: strideField.select.value ? Number.parseInt(strideField.select.value, 10) : null,
+            displayOrder: (Number.parseInt(nodeData.childCount ?? 0, 10) || 0) + 1,
+        };
+
+        try {
+            await requestJson(createMeta.endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            closeMenus();
+            await onGraphMutated?.();
+        } catch (error) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Create Moment';
+            throw error;
+        }
+    });
+
+    return form;
+}
+
+function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus) {
+    const createMeta = getCreateActionMeta(nodeData);
+    const defaults = getCreateFormDefaults(nodeData);
+    if (!createMeta || !defaults) {
+        return null;
+    }
+
+    if (createMeta.entityLabel === 'Moment') {
+        return buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus);
     }
 
     const form = document.createElement('form');
@@ -236,6 +443,8 @@ function buildCreateFormElement(nodeData, projectId, onGraphMutated, closeMenus)
         const description = descriptionField.input.value.trim();
 
         if (!statement) {
+            submitButton.disabled = false;
+            submitButton.textContent = `Create ${createMeta.entityLabel}`;
             statementField.input.focus();
             return;
         }
@@ -342,7 +551,7 @@ function buildMenuElement(actions) {
     return menu;
 }
 
-export function createGraphContextMenuController({ projectId, onGraphMutated, onProjectDeleted } = {}) {
+export function createGraphContextMenuController({ projectId, getAvailableStrides, onGraphMutated, onProjectDeleted } = {}) {
     let referenceRect = null;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
@@ -401,7 +610,7 @@ export function createGraphContextMenuController({ projectId, onGraphMutated, on
     function openCreateForm(nodeData, sourceProjectId, refreshGraph) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
         const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
-        const form = buildCreateFormElement(nodeData, sourceProjectId, refreshGraph, closeMenus);
+        const form = buildCreateFormElement(nodeData, sourceProjectId, getAvailableStrides, refreshGraph, closeMenus);
 
         if (!form) {
             return;

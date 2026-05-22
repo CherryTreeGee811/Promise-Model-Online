@@ -1119,6 +1119,7 @@ export async function loadGraphPage(projectId, contentDiv) {
     graphState.contextMenu?.destroy();
     graphState.contextMenu = createGraphContextMenuController({
         projectId,
+        getAvailableStrides: () => graphState.availableStrides,
         onGraphMutated: reloadGraphData,
         onProjectDeleted: () => {
             window.location.assign('/projects');
