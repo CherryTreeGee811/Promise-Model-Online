@@ -64,6 +64,5 @@ namespace PromiseModelOnline.Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        }
     }
 }
