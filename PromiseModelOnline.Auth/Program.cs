@@ -34,9 +34,12 @@ builder.Services.AddCors(options =>
 {
         options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
         {
-            policy.WithOrigins("https://localhost:8000", "https://promisemodelonline-api:8000")
+        policy.WithOrigins(
+            "https://localhost:9000",
+            "https://promisemodelonlineclient:9000")
                 .WithMethods("POST")
-                .AllowAnyHeader();
+        .AllowAnyHeader()
+        .AllowCredentials();
         });
 });
 

@@ -73,12 +73,16 @@ export async function authFetch(url, options = {}) {
     let token = getAccessToken();
 
     if (!token) {
-        // Only redirect if we KNOW user is not logged in
-        if (!window.location.pathname.startsWith('/login')) {
-            redirectToLogin();
-        }
+        token = await refreshAccessToken();
 
-        throw new Error("Missing auth token");
+        if (!token) {
+            // Only redirect if we KNOW user is not logged in
+            if (!window.location.pathname.startsWith('/login')) {
+                redirectToLogin();
+            }
+
+            throw new Error("Missing auth token");
+        }
     }
 
     let response = await fetch(url, {

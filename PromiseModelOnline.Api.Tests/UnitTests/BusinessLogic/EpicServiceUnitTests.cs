@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 
@@ -13,13 +14,15 @@ namespace PromiseModelOnline.Api.Tests
     public class EpicServiceUnitTests
     {
         private Mock<IEpicRepository> _epicRepoMock = null!;
+        private Mock<IHierarchyStatusService> _hierarchyStatusServiceMock = null!;
         private EpicService _service = null!;
 
         [SetUp]
         public void SetUp()
         {
             _epicRepoMock = new Mock<IEpicRepository>();
-            _service = new EpicService(_epicRepoMock.Object);
+            _hierarchyStatusServiceMock = new Mock<IHierarchyStatusService>();
+            _service = new EpicService(_epicRepoMock.Object, _hierarchyStatusServiceMock.Object);
         }
 
         #region GetEpicsByPromiseAsync Tests
@@ -101,6 +104,29 @@ namespace PromiseModelOnline.Api.Tests
             var result = await _service.GetByIdAsync(404);
 
             Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public async Task AddAsync_RollsUpHierarchyFromPromise()
+        {
+            var epic = new Epic { Id = 9, ProductPromiseId = 23 };
+
+            await _service.AddAsync(epic);
+
+            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromEpicAsync(9), Times.Once);
+        }
+
+        [Test]
+        public async Task DeleteByIdAsync_RollsUpHierarchyFromPromise()
+        {
+            var epic = new Epic { Id = 9, ProductPromiseId = 23 };
+            _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.GetByIdAsync(9)).ReturnsAsync(epic);
+            _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.DeleteByIdAsync(9)).ReturnsAsync(true);
+
+            var deleted = await _service.DeleteByIdAsync(9);
+
+            Assert.That(deleted, Is.True);
+            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromPromiseAsync(23), Times.Once);
         }
 
         #endregion

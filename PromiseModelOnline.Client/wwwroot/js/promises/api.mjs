@@ -69,8 +69,21 @@ function handleJson(response) {
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
     }
-
     return response.json();
+}
+
+export async function updatePromiseDescription(promiseId, description) {
+    const res = await authFetch(`${base}/api/promises/${promiseId}/description`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ description }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
 }
 
 function handleJsonOrEmpty(response) {

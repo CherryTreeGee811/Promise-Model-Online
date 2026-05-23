@@ -1,102 +1,50 @@
-import { getAccessToken } from '../auth-state.mjs';
-import { base } from '../api.mjs';
+import { authFetch, base } from '../api.mjs';
 
 export function getEpicById(epicId) {
-    const url = `${base}/api/epics/${epicId}`;
-    const token = getAccessToken();
-
-    return fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            if (response.status === 401) {
-                document.getElementById("login-link")?.click();
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+    return authFetch(`${base}/api/epics/${epicId}`).then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     });
 }
 
 export function getJourneysByEpic(epicId) {
-    const url = `${base}/api/journeys?epicId=${epicId}`;
-    const token = getAccessToken();
-
-    return fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        }
-    })
-    .then(response => {
-        if (response.ok) {
-            if (response.status === 204) return [];
-            return response.json();
-        } else if (response.status === 401) {
-            document.getElementById("login-link").click();
-        } else {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+    return authFetch(`${base}/api/journeys?epicId=${epicId}`).then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (response.status === 204) return [];
+        return response.json();
     });
 }
 
 export async function addEpic(epic) {
-    const url = `${base}/api/epics`;
-    const token = getAccessToken();
-
-    const res = await fetch(url, {
+    const res = await authFetch(`${base}/api/epics`, {
         method: 'POST',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        },
-        body: JSON.stringify(epic)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(epic),
     });
 
-    if (res.ok) {
-        if (res.status === 204) return null;
-        return res.json();
-    } else if (res.status === 401) {
-        document.getElementById("login-link")?.click();
-    } else {
-        throw new Error(`HTTP error! status: ${res.status}`);
-    }
+    if (res.status === 204) return null;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
 }
 
 export async function updateEpic(epic) {
-    const url = `${base}/api/epics/${epic.id}`;
-    const token = getAccessToken();
-
-    const res = await fetch(url, {
+    const res = await authFetch(`${base}/api/epics/${epic.id}`, {
         method: 'PUT',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        },
-        body: JSON.stringify(epic)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(epic),
     });
 
-    if (res.ok) {
-        return true;
-    } else if (res.status === 401) {
-        document.getElementById("login-link")?.click();
-    } else {
-        throw new Error(`HTTP error! status: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return true;
+}
+
+export async function updateEpicDescription(epicId, description) {
+    const res = await authFetch(`${base}/api/epics/${epicId}/description`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
 }

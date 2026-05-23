@@ -1,4 +1,5 @@
 using PromiseModelOnline.Api.Enums;
+using System.Collections.Generic;
 using System;
 
 namespace PromiseModelOnline.Api.DTOs;
@@ -21,4 +22,5 @@ public class MomentDTO
     public bool IsZombie { get; set; }
     public int? OriginalStrideId { get; set; }
     public string StatusColor { get; set; } = "red";
+    public List<MomentTaskDTO> Tasks { get; set; } = new List<MomentTaskDTO>();
 }

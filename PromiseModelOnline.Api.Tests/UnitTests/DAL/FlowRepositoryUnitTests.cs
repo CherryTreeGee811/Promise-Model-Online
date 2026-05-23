@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PMO.Core.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
@@ -90,6 +91,30 @@ namespace PromiseModelOnline.Api.Tests
             var saved = _context.Flows.FirstOrDefault(f => f.Statement == "New Flow");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.JourneyId, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task DeleteByIdAsync_WithChildMoment_DeletesFlowAndDescendants()
+        {
+            var flow = new Flow { Id = 1, Statement = "Parent Flow", JourneyId = 10 };
+            var moment = new Moment { Id = 2, Statement = "Child Moment", FlowId = 1, Flow = flow };
+            var flowComment = new Comment { Id = 3, UserId = 1, Text = "Flow comment", FlowId = 1 };
+            var momentComment = new Comment { Id = 4, UserId = 1, Text = "Moment comment", MomentId = 2 };
+            var momentTask = new MomentTask { Id = 5, Description = "Task", MomentId = 2 };
+
+            _context.Flows.Add(flow);
+            _context.Moments.Add(moment);
+            _context.Set<Comment>().AddRange(flowComment, momentComment);
+            _context.Set<MomentTask>().Add(momentTask);
+            await _context.SaveChangesAsync();
+
+            var deleted = await _repo.DeleteByIdAsync(1);
+
+            Assert.That(deleted, Is.True);
+            Assert.That(_context.Flows.Any(), Is.False);
+            Assert.That(_context.Moments.Any(), Is.False);
+            Assert.That(_context.Set<Comment>().Any(), Is.False);
+            Assert.That(_context.Set<MomentTask>().Any(), Is.False);
         }
     }
 }

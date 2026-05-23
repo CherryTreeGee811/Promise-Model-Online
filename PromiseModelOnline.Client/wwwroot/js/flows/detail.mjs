@@ -1,27 +1,44 @@
 import { routeHandler } from '../router.mjs';
-import { getFlowById, getMomentsByFlow, updateFlow } from './api.mjs';
+import { getFlowById, getMomentsByFlow, updateFlowDescription } from './api.mjs';
+import { addMoment } from '../moments/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
+import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
+import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchChildMetrics,
+    patchDetailStackGraphNode,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading flow...';
     errorEl.textContent = '';
 
     getFlowById(flowId)
         .then(flow => {
             loadingEl.textContent = '';
+
+            mountDetailStackGraph({
+                nodeType: 'flow',
+                nodeId: flowId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
+
             detailDiv.innerHTML = `
-                <div class="flow-detail-card">
+                <div class="detail-card flow-detail-card">
                     <h2>${escapeHtml(flow.statement)}</h2>
                     <table class="detail-table">
-                        <tr><th>ID</th><td>${flow.id}</td></tr>
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4">${escapeHtml(flow.description || '')}</textarea>
-                            <div class="save-btn-div"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(flow.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Journey</th>
@@ -60,10 +77,93 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
             const momentsList = document.getElementById('flow-moments-list');
             getMomentsByFlow(flowId)
                 .then(moments => {
-                    if (!moments || moments.length === 0) {
-                        momentsList.innerHTML = '<p class="no-items">No moments found for this flow.</p>';
-                        return;
+                    patchChildMetrics(`flow-${flowId}`, moments);
+                    const tbody = renderTableWithInlineAddRow(momentsList, {
+                        headers: ['Statement', 'Type', 'Status', 'Actions'],
+                        items: moments || [],
+                        emptyMessage: 'No moments found for this flow.',
+                        renderItemRow: m => `
+                            <tr data-moment-id="${m.id}">
+                                <td>${escapeHtml(m.statement)}</td>
+                                <td>${m.type}</td>
+                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                <td><a href="/moments/${m.id}" moment-id="${m.id}" class="view-btn">View</a></td>
+                            </tr>
+                        `,
+                        renderAddRow: () => `
+                            <tr data-inline-add-row="1">
+                                <td>
+                                    <form id="add-moment-form" class="inline-add-form">
+                                        <input id="add-moment-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Moment Statement...">
+                                    </form>
+                                </td>
+                                <td>
+                                    <select id="add-moment-type" class="inline-add-input" form="add-moment-form">
+                                        <option value="Story">Story</option>
+                                        <option value="Job">Job</option>
+                                    </select>
+                                </td>
+                                <td><span class="status-badge status-todo">Todo</span></td>
+                                <td>
+                                    <button id="add-moment-submit" type="submit" form="add-moment-form" class="view-btn">Add</button>
+                                    <span id="add-moment-msg"></span>
+                                </td>
+                            </tr>
+                        `,
+                    });
+
+                    const form = momentsList.querySelector('#add-moment-form');
+                    const statementInput = momentsList.querySelector('#add-moment-statement');
+                    const typeSelect = momentsList.querySelector('#add-moment-type');
+                    const msg = momentsList.querySelector('#add-moment-msg');
+                    const submitBtn = momentsList.querySelector('#add-moment-submit');
+
+                    if (form && statementInput && typeSelect && msg && submitBtn) {
+                        form.addEventListener('submit', async event => {
+                            event.preventDefault();
+                            msg.textContent = '';
+
+                            const statement = statementInput.value.trim();
+                            if (!statement) {
+                                msg.textContent = 'Statement is required.';
+                                return;
+                            }
+
+                            submitBtn.disabled = true;
+
+                            try {
+                                const created = await addMoment({
+                                    statement,
+                                    flowId,
+                                    type: typeSelect.value,
+                                    status: 'Todo',
+                                    displayOrder: (moments || []).length + 1,
+                                });
+
+                                if (created) {
+                                    removeInlineEmptyRow(tbody);
+                                    const row = document.createElement('tr');
+                                    row.dataset.momentId = created.id;
+                                    row.innerHTML = `
+                                        <td>${escapeHtml(created.statement)}</td>
+                                        <td>${created.type}</td>
+                                        <td><span class="status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
+                                        <td><a href="/moments/${created.id}" class="view-btn">View</a></td>
+                                    `;
+                                    insertRowBeforeAddRow(tbody, row);
+                                    statementInput.value = '';
+                                    typeSelect.value = 'Story';
+                                    patchChildMetrics(`flow-${flowId}`, [...(moments || []), created]);
+                                }
+                            } catch (err) {
+                                msg.textContent = 'Failed to add moment.';
+                                console.error(err);
+                            } finally {
+                                submitBtn.disabled = false;
+                            }
+                        });
                     }
+
                     momentsList.innerHTML = `
                         <table class="promisemodel-table">
                             <thead>
@@ -120,7 +220,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                 .then(journey => {
                     const icon = getStatusIcon(journey.statusColor);
                     journeyCell.innerHTML = `<a href="/journeys/${journey.id}" journey-id="${journey.id}" class="detail-link">${escapeHtml(journey.statement)}</a> ${icon}`;
-
+                    
                     const link = journeyCell.querySelector('a.detail-link');
                     if (link) {
                         link.addEventListener('click', (e) => {
@@ -149,8 +249,11 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = { ...flow, description: newDesc };
-                        await updateFlow(updated);
+                        const updated = await updateFlowDescription(flowId, newDesc);
+                        flow.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
+                        patchDetailStackGraphNode(`flow-${flowId}`, {
+                            description: flow.description,
+                        });
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
@@ -163,6 +266,17 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 
             const commentsContainer = document.getElementById('flow-comments');
             loadComments(commentsContainer, 'Flow', flowId);
+
+            getJourneyById(flow.journeyId)
+                .then(journey => getEpicById(journey.epicId))
+                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `flow-${flow.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for flow detail', error);
+                });
         })
         .catch(err => {
             loadingEl.textContent = '';
@@ -172,8 +286,8 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 }
 
 function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    return String(str).replace(/[&<>'\"]/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '\"': '&quot;'
     }[m]));
 }
 

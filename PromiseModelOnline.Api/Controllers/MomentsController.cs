@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
@@ -35,6 +36,36 @@ namespace PromiseModelOnline.Api.Controllers
             _userRepository = userRepository;
             _permissionService = permissionService;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Creates a new moment from a lightweight request DTO.
+        /// The client only supplies the parent FlowId; the entity navigation property stays server-owned.
+        /// </summary>
+        [HttpPost("create")]
+        public async Task<ActionResult<MomentDTO>> CreateFromDto([FromBody] CreateMomentRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var moment = new Moment
+            {
+                Statement = request.Statement,
+                Description = request.Description,
+                FlowId = request.FlowId,
+                Type = request.Type,
+                Status = request.Status,
+                EffortEstimate = request.EffortEstimate,
+                AssignedStrideId = request.AssignedStrideId,
+                DisplayOrder = request.DisplayOrder,
+                StatusColor = StatusColorRules.FromMomentStatus(request.Status),
+            };
+
+            await _momentService.AddAsync(moment);
+            return CreatedAtAction(nameof(GetById), new { id = moment.Id }, _mapper.Map(moment, _service));
         }
 
         /// <summary>
@@ -151,6 +182,55 @@ namespace PromiseModelOnline.Api.Controllers
                     id,
                     DateTime.UtcNow,
                     new { NewStatus = request.NewStatus.ToString() });
+
+                return Ok(_mapper.Map(moment, _service));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Updates only the description of a moment.
+        /// Requires Edit permission on the project.
+        /// </summary>
+        [HttpPatch("{id}/description")]
+        public async Task<ActionResult<MomentDTO>> UpdateMomentDescription(
+            int id,
+            [FromBody] UpdateDescriptionRequestDTO request)
+        {
+            if (!await UserCanEditMomentAsync(id))
+                return Forbid();
+
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var moment = await _momentService.GetByIdAsync(id);
+                if (moment is null)
+                    return NotFound($"Moment with ID {id} not found.");
+
+                moment.Description = string.IsNullOrWhiteSpace(request.Description)
+                    ? null
+                    : request.Description.Trim();
+                moment.UpdatedAt = DateTime.UtcNow;
+
+                await _momentService.UpdateAsync(moment);
+
+                var jwtSub = User.FindFirst("sub")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation(
+                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
+                    jwtSub,
+                    id,
+                    DateTime.UtcNow,
+                    new { Description = request.Description });
 
                 return Ok(_mapper.Map(moment, _service));
             }

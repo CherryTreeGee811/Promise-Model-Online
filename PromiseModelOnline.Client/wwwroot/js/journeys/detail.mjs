@@ -1,27 +1,43 @@
 import { routeHandler } from '../router.mjs';
-import { getJourneyById, getFlowsByJourney, updateJourney } from './api.mjs';
+import { getJourneyById, getFlowsByJourney, updateJourneyDescription } from './api.mjs';
+import { addFlow } from '../flows/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
+import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchChildMetrics,
+    patchDetailStackGraphNode,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading journey...';
     errorEl.textContent = '';
 
     getJourneyById(journeyId)
         .then(journey => {
             loadingEl.textContent = '';
+
+            mountDetailStackGraph({
+                nodeType: 'journey',
+                nodeId: journeyId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
+
             detailDiv.innerHTML = `
-                <div class="journey-detail-card">
+                <div class="detail-card journey-detail-card">
                     <h2>${escapeHtml(journey.statement)}</h2>
                     <table class="detail-table">
-                        <tr><th>ID</th><td>${journey.id}</td></tr>
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4">${escapeHtml(journey.description || '')}</textarea>
-                            <div class="save-btn-div"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(journey.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Epic</th>
@@ -59,10 +75,78 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
             const flowsList = document.getElementById('journey-flows-list');
             getFlowsByJourney(journeyId)
                 .then(flows => {
-                    if (!flows || flows.length === 0) {
-                        flowsList.innerHTML = '<p class="no-items">No flows found for this journey.</p>';
-                        return;
+                    patchChildMetrics(`journey-${journeyId}`, flows);
+                    const tbody = renderTableWithInlineAddRow(flowsList, {
+                        headers: ['Statement', 'Actions'],
+                        items: flows || [],
+                        emptyMessage: 'No flows found for this journey.',
+                        renderItemRow: f => `
+                            <tr data-flow-id="${f.id}">
+                                <td>${escapeHtml(f.statement)}</td>
+                                <td><a href="/flows/${f.id}" flow-id="${f.id}" class="view-btn">View</a></td>
+                            </tr>
+                        `,
+                        renderAddRow: () => `
+                            <tr data-inline-add-row="1">
+                                <td>
+                                    <form id="add-flow-form" class="inline-add-form">
+                                        <input id="add-flow-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Flow Statement...">
+                                    </form>
+                                </td>
+                                <td>
+                                    <button id="add-flow-submit" type="submit" form="add-flow-form" class="view-btn">Add</button>
+                                    <span id="add-flow-msg"></span>
+                                </td>
+                            </tr>
+                        `,
+                    });
+
+                    const form = flowsList.querySelector('#add-flow-form');
+                    const statementInput = flowsList.querySelector('#add-flow-statement');
+                    const msg = flowsList.querySelector('#add-flow-msg');
+                    const submitBtn = flowsList.querySelector('#add-flow-submit');
+
+                    if (form && statementInput && msg && submitBtn) {
+                        form.addEventListener('submit', async event => {
+                            event.preventDefault();
+                            msg.textContent = '';
+
+                            const statement = statementInput.value.trim();
+                            if (!statement) {
+                                msg.textContent = 'Statement is required.';
+                                return;
+                            }
+
+                            submitBtn.disabled = true;
+
+                            try {
+                                const created = await addFlow({
+                                    statement,
+                                    journeyId,
+                                    displayOrder: (flows || []).length + 1,
+                                });
+
+                                if (created) {
+                                    removeInlineEmptyRow(tbody);
+                                    const row = document.createElement('tr');
+                                    row.dataset.flowId = created.id;
+                                    row.innerHTML = `
+                                        <td>${escapeHtml(created.statement)}</td>
+                                        <td><a href="/flows/${created.id}" flow-id="${created.id}" class="view-btn">View</a></td>
+                                    `;
+                                    insertRowBeforeAddRow(tbody, row);
+                                    statementInput.value = '';
+                                    patchChildMetrics(`journey-${journeyId}`, [...(flows || []), created]);
+                                }
+                            } catch (err) {
+                                msg.textContent = 'Failed to add flow.';
+                                console.error(err);
+                            } finally {
+                                submitBtn.disabled = false;
+                            }
+                        });
                     }
+
                     flowsList.innerHTML = `
                         <table class="promisemodel-table">
                             <thead>
@@ -141,8 +225,11 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = { ...journey, description: newDesc };
-                        await updateJourney(updated);
+                        const updated = await updateJourneyDescription(journeyId, newDesc);
+                        journey.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
+                        patchDetailStackGraphNode(`journey-${journeyId}`, {
+                            description: journey.description,
+                        });
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
@@ -155,6 +242,16 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
 
             const commentsContainer = document.getElementById('journey-comments');
             loadComments(commentsContainer, 'Journey', journeyId);
+
+            getEpicById(journey.epicId)
+                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `journey-${journey.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for journey detail', error);
+                });
 
             loadingEl.textContent = '';
         })

@@ -8,6 +8,9 @@ public class Epic
     
     [Key]
     public int Id { get; set; }
+
+    [NotMapped]
+    public string Type => "Epic";
         
     [Required]
     [MaxLength(500)]

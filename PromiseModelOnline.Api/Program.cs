@@ -21,9 +21,12 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-            .AllowAnyOrigin()
+            .WithOrigins(
+                "https://localhost:9000",
+                "https://promisemodelonlineclient:9000")
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
         });
 });
 

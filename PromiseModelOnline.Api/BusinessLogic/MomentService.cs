@@ -51,6 +51,29 @@ namespace PromiseModelOnline.Api.BusinessLogic
         public async Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId)
             => await _momentRepository.GetMomentsByOwnerIdAsync(ownerId);
 
+        public override async Task AddAsync(Moment entity)
+        {
+            await base.AddAsync(entity);
+            await _hierarchyStatusService.RecalculateFromFlowAsync(entity.FlowId);
+        }
+
+        public override async Task<bool> DeleteByIdAsync(object id)
+        {
+            var moment = await _momentRepository.GetByIdAsync(id);
+            if (moment is null)
+            {
+                return false;
+            }
+
+            var deleted = await base.DeleteByIdAsync(id);
+            if (deleted)
+            {
+                await _hierarchyStatusService.RecalculateFromFlowAsync(moment.FlowId);
+            }
+
+            return deleted;
+        }
+
         // -------------------------------------------------------------------
         //  Planning operations
         // -------------------------------------------------------------------

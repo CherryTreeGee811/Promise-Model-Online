@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 
@@ -13,13 +14,15 @@ namespace PromiseModelOnline.Api.Tests
     public class JourneyServiceUnitTests
     {
         private Mock<IJourneyRepository> _journeyRepoMock = null!;
+        private Mock<IHierarchyStatusService> _hierarchyStatusServiceMock = null!;
         private JourneyService _service = null!;
 
         [SetUp]
         public void SetUp()
         {
             _journeyRepoMock = new Mock<IJourneyRepository>();
-            _service = new JourneyService(_journeyRepoMock.Object);
+            _hierarchyStatusServiceMock = new Mock<IHierarchyStatusService>();
+            _service = new JourneyService(_journeyRepoMock.Object, _hierarchyStatusServiceMock.Object);
         }
 
         #region GetJourneysByEpicAsync Tests
@@ -95,6 +98,29 @@ namespace PromiseModelOnline.Api.Tests
             var result = await _service.GetByIdAsync(404);
 
             Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public async Task AddAsync_RollsUpHierarchyFromEpic()
+        {
+            var journey = new Journey { Id = 8, EpicId = 22 };
+
+            await _service.AddAsync(journey);
+
+            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromJourneyAsync(8), Times.Once);
+        }
+
+        [Test]
+        public async Task DeleteByIdAsync_RollsUpHierarchyFromEpic()
+        {
+            var journey = new Journey { Id = 8, EpicId = 22 };
+            _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(8)).ReturnsAsync(journey);
+            _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.DeleteByIdAsync(8)).ReturnsAsync(true);
+
+            var deleted = await _service.DeleteByIdAsync(8);
+
+            Assert.That(deleted, Is.True);
+            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromEpicAsync(22), Times.Once);
         }
 
         #endregion

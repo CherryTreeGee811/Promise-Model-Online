@@ -449,6 +449,44 @@ input[type=button]:hover, input[type=submit]:hover {
   text-decoration: none;
 }
 
+/* Shared detail card and form utilities */
+.detail-card {
+  background: var(--color-panel-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+.detail-card h2 { margin-bottom: var(--spacing-sm); }
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-sm);
+  font-size: 0.98rem;
+}
+.detail-table th { text-align: left; padding: 8px 10px; vertical-align: top; width: 200px; color: var(--color-heading); }
+.detail-table td { padding: 8px 10px; }
+.detail-textarea { min-height: 96px; }
+.field-actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
+.save-btn {
+  background: linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Inline add row utilities used by detail pages */
+.inline-add-form { margin: 0; }
+.inline-add-input { width: 100%; padding: 10px 12px; border-radius: var(--radius-xs); border: 1px solid var(--color-border); }
+.inline-add-actions { display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+
+/* Moment task completion label */
+.moment-task-completion { display: inline-flex; align-items: center; gap: 8px; }
+
+
 /*********************************************
   14. Project Graph
 **********************************************/
@@ -593,6 +631,39 @@ input[type=button]:hover, input[type=submit]:hover {
   text-align: center;
 }
 
+.detail-stack-graph {
+  width: 100%;
+  height: 240px;
+  min-height: 220px;
+  max-height: 260px;
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at top left, rgba(29, 53, 87, 0.08), transparent 35%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  overflow: hidden;
+  padding: var(--spacing-md);
+}
+
+.detail-stack-graph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.detail-stack-graph--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.detail-stack-graph--loading::after {
+  content: 'Loading Promise Stack...';
+}
+
 .graph-viewport {
   width: 100%;
   height: calc(100dvh - 240px);
@@ -623,8 +694,18 @@ input[type=button]:hover, input[type=submit]:hover {
 }
 
 #graph-content svg {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
   width: 100%;
+}
+
+#graph-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
 }
 
 .graph-node {
@@ -656,6 +737,45 @@ input[type=button]:hover, input[type=submit]:hover {
   user-select: none;
 }
 
+/* SVG card theming via CSS variables set on the `.graph-node` elements */
+.graph-node {
+  --graph-card-bg: #ffffff;
+  --graph-accent: #355070;
+  --graph-stroke: #cbd5e1;
+  --graph-stroke-width: 1.5;
+}
+
+.graph-card {
+  fill: var(--graph-card-bg);
+  stroke: var(--graph-stroke);
+  stroke-width: var(--graph-stroke-width);
+}
+
+.graph-card-accent {
+  fill: var(--graph-accent);
+  opacity: 0.95;
+}
+
+.graph-card-statement {
+  fill: var(--color-heading);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.graph-card-status {
+  font-size: 18px;
+}
+
+.graph-node.is-search-matched .graph-card {
+  stroke: #d4af37;
+  stroke-width: 3;
+}
+
+.graph-node.is-focused .graph-card {
+  stroke: #d4af37;
+  stroke-width: 3;
+}
+
 .graph-card-statement {
   paint-order: stroke;
   stroke: rgba(255, 255, 255, 0.85);
@@ -669,6 +789,172 @@ input[type=button]:hover, input[type=submit]:hover {
 .graph-card-divider {
   pointer-events: none;
 }
+
+.tippy-box[data-theme~='graph-menu'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  color: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  box-shadow:
+    0 22px 48px rgba(15, 23, 42, 0.16),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.tippy-box[data-theme~='graph-menu'] > .tippy-content {
+  padding: 0;
+  border-radius: 18px;
+}
+
+.graph-context-menu {
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: transparent;
+}
+
+.graph-context-menu__item {
+  appearance: none;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.92);
+  color: #0f172a;
+  cursor: pointer;
+  font: 600 13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 12px 14px;
+  text-align: left;
+  transition: background-color 120ms ease, color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+.graph-context-menu__item:hover:not(:disabled),
+.graph-context-menu__item:focus-visible {
+  background: #ffffff;
+  outline: none;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.24),
+    0 10px 18px rgba(15, 23, 42, 0.10);
+}
+
+.graph-context-menu__item--danger {
+  color: #b91c1c;
+}
+
+.graph-context-menu__item--danger:hover:not(:disabled),
+.graph-context-menu__item--danger:focus-visible {
+  background: #fff1f2;
+}
+
+.graph-context-menu__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.graph-context-menu-form {
+  min-width: 300px;
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.graph-context-menu-form__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.graph-context-menu-form__subtitle {
+  margin-top: -0.35rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: #475569;
+}
+
+.graph-context-menu-form__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.graph-context-menu-form__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.graph-context-menu-form__control {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  font: inherit;
+  padding: 0.75rem 0.9rem;
+  resize: vertical;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.graph-context-menu-form__control::placeholder {
+  color: #94a3b8;
+}
+
+.graph-context-menu-form__control:focus-visible {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.75);
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.12),
+    inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.graph-context-menu-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding-top: 0.2rem;
+}
+
+.graph-context-menu-form__button {
+  min-height: 2.6rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  font: 700 0.9rem/1 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  cursor: pointer;
+}
+
+.graph-context-menu-form__button--secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.graph-context-menu-form__button--secondary:hover,
+.graph-context-menu-form__button--secondary:focus-visible {
+  background: #cbd5e1;
+}
+
+.graph-context-menu-form__button--primary {
+  background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 18px rgba(29, 78, 216, 0.24);
+}
+
+.graph-context-menu-form__button--primary:hover,
+.graph-context-menu-form__button--primary:focus-visible {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.graph-context-menu-form__button:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 .detail-link:hover,
 .detail-link:focus-visible {
   text-decoration: underline;

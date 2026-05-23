@@ -36,21 +36,21 @@ namespace PromiseModelOnline.Api.BusinessLogic
         }
 
         /// <inheritdoc/>
-        public async Task AddAsync(T entity)
+        public virtual async Task AddAsync(T entity)
         {
             await _repository.AddAsync(entity);
             await _repository.SaveChangesAsync();
         }
 
         /// <inheritdoc/>
-        public async Task UpdateAsync(T entity)
+        public virtual async Task UpdateAsync(T entity)
         {
             _repository.Update(entity);
             await _repository.SaveChangesAsync();
         }
 
         /// <inheritdoc/>
-        public async Task<bool> DeleteByIdAsync(object id)
+        public virtual async Task<bool> DeleteByIdAsync(object id)
         {
             return await _repository.DeleteByIdAsync(id);
         }

@@ -1,26 +1,35 @@
 import { routeHandler } from '../router.mjs';
-import { getPromiseById, getEpicsByPromise, updatePromise } from './api.mjs';
+import { getPromiseById, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
+import { addEpic } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { loadReactions } from '../reactions/reactions.mjs';
+import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchChildMetrics,
+    patchDetailStackGraphNode,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading promise…';
     errorEl.textContent = '';
 
     getPromiseById(promiseId)
         .then(promise => {
             detailDiv.innerHTML = `
-                <div class="promise-detail-card">
+                <div class="detail-card promise-detail-card">
                     <h2>${escapeHtml(promise.statement)}</h2>
                     <table class="detail-table">
-                        <tr><th>ID</th><td>${promise.id}</td></tr>
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4">${escapeHtml(promise.description || '')}</textarea>
-                            <div class="save-btn-div"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(promise.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr><th>Status</th><td id="promise-status-cell">${getStatusIcon(promise.statusColor)}</td></tr>
                         <tr><th>Created</th><td>${new Date(promise.createdAt).toLocaleDateString('en-CA')}</td></tr>
@@ -35,13 +44,88 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                 </div>
             `;
 
+            loadingEl.textContent = '';
+
+            mountDetailStackGraph({
+                nodeType: 'promise',
+                nodeId: promiseId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
             const epicsList = document.getElementById('promise-epics-list');
             getEpicsByPromise(promiseId)
                 .then(epics => {
-                    if (!epics || epics.length === 0) {
-                        epicsList.innerHTML = '<p class="no-items">No epics found for this promise.</p>';
-                        return;
+                    patchChildMetrics(`promise-${promiseId}`, epics);
+                    const tbody = renderTableWithInlineAddRow(epicsList, {
+                        headers: ['Statement', 'Actions'],
+                        items: epics || [],
+                        emptyMessage: 'No epics found for this promise.',
+                        renderItemRow: e => `
+                            <tr data-epic-id="${e.id}">
+                                <td>${escapeHtml(e.statement)}</td>
+                                <td><a href="/epics/${e.id}" class="view-btn">View</a></td>
+                            </tr>
+                        `,
+                        renderAddRow: () => `
+                            <tr data-inline-add-row="1">
+                                <td>
+                                    <form id="add-epic-form" class="inline-add-form">
+                                        <input id="add-epic-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Epic Statement...">
+                                    </form>
+                                </td>
+                                <td>
+                                    <button id="add-epic-submit" type="submit" form="add-epic-form" class="view-btn">Add</button>
+                                    <span id="add-epic-msg"></span>
+                                </td>
+                            </tr>
+                        `,
+                    });
+
+                    const form = epicsList.querySelector('#add-epic-form');
+                    const statementInput = epicsList.querySelector('#add-epic-statement');
+                    const msg = epicsList.querySelector('#add-epic-msg');
+                    const submitBtn = epicsList.querySelector('#add-epic-submit');
+
+                    if (form && statementInput && msg && submitBtn) {
+                        form.addEventListener('submit', async event => {
+                            event.preventDefault();
+                            msg.textContent = '';
+
+                            const statement = statementInput.value.trim();
+                            if (!statement) {
+                                msg.textContent = 'Statement is required.';
+                                return;
+                            }
+
+                            submitBtn.disabled = true;
+
+                            try {
+                                const created = await addEpic({
+                                    statement,
+                                    productPromiseId: promiseId,
+                                    displayOrder: (epics || []).length + 1,
+                                });
+
+                                if (created) {
+                                    removeInlineEmptyRow(tbody);
+                                    const row = document.createElement('tr');
+                                    row.dataset.epicId = created.id;
+                                    row.innerHTML = `
+                                        <td>${escapeHtml(created.statement)}</td>
+                                        <td><a href="/epics/${created.id}" class="view-btn">View</a></td>
+                                    `;
+                                    insertRowBeforeAddRow(tbody, row);
+                                    statementInput.value = '';
+                                    patchChildMetrics(`promise-${promiseId}`, [...(epics || []), created]);
+                                }
+                            } catch (err) {
+                                msg.textContent = 'Failed to add epic.';
+                                console.error(err);
+                            } finally {
+                                submitBtn.disabled = false;
+                            }
+                        });
                     }
+
                     epicsList.innerHTML = `
                         <table class="promisemodel-table">
                             <thead>
@@ -67,12 +151,12 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                         link.addEventListener('click', (e) => {
                             // allow new tab behavior
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
-        
+
                             e.preventDefault();
-        
+
                             const epicId = link.getAttribute('epic-id');
                             window.history.pushState({}, '', `/epics/${epicId}`);
-        
+
                             routeHandler(navContentDiv, contentDiv);
                         });
                     });
@@ -89,6 +173,15 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
             reactionsContainer.id = 'reactions-section';
             detailDiv.appendChild(reactionsContainer);
             loadReactions(reactionsContainer, 'Promise', promiseId);
+
+            resolveProjectIdForPromise(promise.id, getGraphProjectIdHintFromUrl())
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `promise-${promise.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for promise detail', error);
+                });
 
             const backLink = document.getElementById('back-link');
             if (backLink) {
@@ -107,8 +200,11 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = { ...promise, description: newDesc };
-                        await updatePromise(updated);
+                        const updated = await updatePromiseDescription(promiseId, newDesc);
+                        promise.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
+                        patchDetailStackGraphNode(`promise-${promiseId}`, {
+                            description: promise.description,
+                        });
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';

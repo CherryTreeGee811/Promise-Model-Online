@@ -1,6 +1,10 @@
 
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Models;
+using PMO.Core.Models;
+using System.Linq;
 
 namespace PromiseModelOnline.Api.Mappers
 {
@@ -33,6 +37,23 @@ namespace PromiseModelOnline.Api.Mappers
                 {
                     dProp.SetValue(destination, sProp.GetValue(source));
                 }
+            }
+
+            if (source is Moment moment && destination is MomentDTO momentDto)
+            {
+                momentDto.Tasks = (moment.Tasks ?? [])
+                    .Select(task => new MomentTaskDTO
+                    {
+                        Id = task.Id,
+                        Name = task.Name,
+                        Description = task.Description,
+                        MomentId = task.MomentId,
+                        OwnerId = task.OwnerId,
+                        IsCompleted = task.IsCompleted,
+                        CreatedAt = task.CreatedAt,
+                        CompletedAt = task.CompletedAt,
+                    })
+                    .ToList();
             }
             // Example: service can be used here for additional logic
             // e.g., service.GetByIdAsync(...), service.FindAsync(...), etc.

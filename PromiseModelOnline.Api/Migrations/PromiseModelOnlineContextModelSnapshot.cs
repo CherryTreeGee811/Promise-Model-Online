@@ -47,6 +47,11 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Property<int>("MomentId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<int?>("OwnerId")
                         .HasColumnType("int");
 

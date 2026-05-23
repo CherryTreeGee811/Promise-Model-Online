@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -23,6 +25,25 @@ namespace PromiseModelOnline.Api.Controllers
             _epicService = service;
         }
 
+        [HttpPost("create")]
+        public async Task<ActionResult<EpicDTO>> CreateFromDto([FromBody] CreateEpicRequestDTO request)
+        {
+            if (request is null) return BadRequest("Request is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var epic = new Epic
+            {
+                Statement = request.Statement,
+                Description = request.Description,
+                ProductPromiseId = request.ProductPromiseId,
+                DisplayOrder = request.DisplayOrder,
+                StatusColor = "red"
+            };
+
+            await _epicService.AddAsync(epic);
+            return CreatedAtAction(nameof(GetById), new { id = epic.Id }, _mapper.Map(epic, _service));
+        }
+
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<EpicDTO>>> GetAll()
         {
@@ -39,6 +60,30 @@ namespace PromiseModelOnline.Api.Controllers
                 result.Add(_mapper.Map(epic, _service));
 
             return Ok(result);
+        }
+
+        [HttpPatch("{id}/description")]
+        public async Task<ActionResult<EpicDTO>> UpdateDescription(
+            int id,
+            [FromBody] UpdateDescriptionRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var epic = await _service.GetByIdAsync(id);
+            if (epic is null)
+                return NotFound();
+
+            epic.Description = string.IsNullOrWhiteSpace(request.Description)
+                ? null
+                : request.Description.Trim();
+            epic.UpdatedAt = DateTime.UtcNow;
+
+            await _service.UpdateAsync(epic);
+            return Ok(_mapper.Map(epic, _service));
         }
     }
 }

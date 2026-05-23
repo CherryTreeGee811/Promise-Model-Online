@@ -247,6 +247,37 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
 
+        #region CreateFromDto Tests
+
+        [Test]
+        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        {
+            var request = new CreateFlowRequestDTO { Statement = "New Flow", JourneyId = 7, DisplayOrder = 1 };
+
+            _mockFlowService.Setup(s => s.AddAsync(It.IsAny<Flow>()))
+                .Callback<Flow>(f => f.Id = 200)
+                .Returns(Task.CompletedTask);
+
+            _mockMapper.Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>() ))
+                .Returns<Flow, IGenericService<Flow>>((f, svc) => new FlowDTO { Id = f.Id, Statement = f.Statement, JourneyId = f.JourneyId });
+
+            var result = await _controller.CreateFromDto(request);
+
+            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+            var created = result.Result as CreatedAtActionResult;
+            Assert.That(created!.RouteValues!["id"], Is.EqualTo(200));
+            _mockFlowService.Verify(s => s.AddAsync(It.Is<Flow>(ff => ff.Statement == request.Statement && ff.JourneyId == request.JourneyId)), Times.Once);
+        }
+
+        [Test]
+        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        {
+            var result = await _controller.CreateFromDto(null);
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        #endregion
+
         #region Inherited Methods Tests
 
         [Test]
