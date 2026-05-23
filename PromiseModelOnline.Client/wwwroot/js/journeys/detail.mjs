@@ -4,18 +4,32 @@ import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchChildMetrics,
+    patchDetailStackGraphNode,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadJourneyDetail(journeyId, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading journey...';
     errorEl.textContent = '';
 
     getJourneyById(journeyId)
         .then(journey => {
             loadingEl.textContent = '';
+
+            mountDetailStackGraph({
+                nodeType: 'journey',
+                nodeId: journeyId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
+
             detailDiv.innerHTML = `
                 <div class="journey-detail-card">
                     <h2>${escapeHtml(journey.statement)}</h2>
@@ -46,6 +60,7 @@ export function loadJourneyDetail(journeyId, contentDiv) {
             const flowsList = document.getElementById('journey-flows-list');
             getFlowsByJourney(journeyId)
                 .then(flows => {
+                    patchChildMetrics(`journey-${journeyId}`, flows);
                     const tbody = renderTableWithInlineAddRow(flowsList, {
                         headers: ['Statement', 'Actions'],
                         items: flows || [],
@@ -106,6 +121,7 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
+                                    patchChildMetrics(`journey-${journeyId}`, [...(flows || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add flow.';
@@ -149,6 +165,9 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                     try {
                         const updated = await updateJourneyDescription(journeyId, newDesc);
                         journey.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
+                        patchDetailStackGraphNode(`journey-${journeyId}`, {
+                            description: journey.description,
+                        });
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';

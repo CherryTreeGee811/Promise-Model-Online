@@ -593,6 +593,39 @@ input[type=button]:hover, input[type=submit]:hover {
   text-align: center;
 }
 
+.detail-stack-graph {
+  width: 100%;
+  height: 240px;
+  min-height: 220px;
+  max-height: 260px;
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at top left, rgba(29, 53, 87, 0.08), transparent 35%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  overflow: hidden;
+  padding: var(--spacing-md);
+}
+
+.detail-stack-graph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.detail-stack-graph--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.detail-stack-graph--loading::after {
+  content: 'Loading Promise Stack...';
+}
+
 .graph-viewport {
   width: 100%;
   height: calc(100dvh - 240px);

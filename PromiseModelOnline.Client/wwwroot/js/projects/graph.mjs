@@ -6,27 +6,22 @@ import { getFlowsByJourney } from '../journeys/api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { getMomentsByFlow } from '../flows/api.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
-
-const STEP_GAP_X = 360;
-const STEP_GAP_Y = 190;
-const CARD_WIDTH = 300;
-const CARD_HEIGHT = 144;
-const CARD_RADIUS = 18;
-const CARD_PADDING_X = 16;
-const CARD_PADDING_TOP = 16;
-const DETAIL_START_Y = 62;
-const DETAIL_LINE_GAP = 22;
-const FOREHEAD_GAP = 88;
-
-const NODE_TYPES = ['promise', 'epic', 'journey', 'flow', 'moment'];
-const NODE_ROUTE_SEGMENTS = {
-    promise: 'promises',
-    epic: 'epics',
-    journey: 'journeys',
-    flow: 'flows',
-    moment: 'moments',
-};
-const NODE_TYPE_INDEX = new Map(NODE_TYPES.map((type, index) => [type, index]));
+import {
+    NODE_TYPES,
+    NODE_TYPE_INDEX,
+    normalizeText,
+    getStatusBucket,
+    getNodeSearchText,
+    getMomentEffortBucket,
+    getMomentStrideBucket,
+    sortByDisplayOrder,
+    createNode,
+    findNodeById,
+    countRenderableNodes,
+    parseGraphData,
+    renderEmptyState,
+    renderStackGraph,
+} from './stack-graph-core.mjs';
 
 const graphState = {
     projectId: null,
@@ -58,10 +53,6 @@ function createDefaultFilters() {
     };
 }
 
-function normalizeText(value) {
-    return String(value ?? '').trim().toLowerCase();
-}
-
 function parseTypeList(value) {
     if (value == null) return new Set(NODE_TYPES);
 
@@ -85,18 +76,6 @@ function normalizeTypeSelection(types) {
     const maxIndex = Math.max(...selectedIndexes);
 
     return new Set(NODE_TYPES.slice(minIndex, maxIndex + 1));
-}
-
-function getStatusBucket(statusColor) {
-    const normalized = normalizeText(statusColor);
-
-    if (!normalized || normalized === 'all') return 'other';
-    if (normalized.includes('green') || normalized.includes('done')) return 'done';
-    if (normalized.includes('black') || normalized.includes('blocked')) return 'blocked';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return 'inprogress';
-    if (normalized.includes('red') || normalized.includes('todo')) return 'todo';
-
-    return 'other';
 }
 
 function getStatusFilterValue(value) {
@@ -152,146 +131,6 @@ function getTypeShortLabel(nodeType) {
     }
 }
 
-function getInnerViewportSize(element) {
-    if (!element) return { width: 0, height: 0 };
-
-    const styles = window.getComputedStyle(element);
-    const paddingLeft = Number.parseFloat(styles.paddingLeft || '0');
-    const paddingRight = Number.parseFloat(styles.paddingRight || '0');
-    const paddingTop = Number.parseFloat(styles.paddingTop || '0');
-    const paddingBottom = Number.parseFloat(styles.paddingBottom || '0');
-
-    return {
-        width: Math.max(0, element.clientWidth - paddingLeft - paddingRight),
-        height: Math.max(0, element.clientHeight - paddingTop - paddingBottom),
-    };
-}
-
-function truncateText(text, maxLength = 40) {
-    const value = String(text ?? '').trim();
-    if (value.length <= maxLength) return value;
-    if (maxLength <= 3) return '.'.repeat(maxLength);
-    return `${value.slice(0, maxLength - 3).trimEnd()}...`;
-}
-
-function formatEstimate(value) {
-    return value == null ? 'Unestimated' : String(value);
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-
-    return '⚪';
-}
-
-function getChildTypeLabel(nodeType) {
-    switch (nodeType) {
-        case 'promise': return 'Epic';
-        case 'epic': return 'Journey';
-        case 'journey': return 'Flow';
-        case 'flow': return 'Moment';
-        default: return null;
-    }
-}
-
-function getChildProgressSummary(nodeData) {
-    const childLabel = getChildTypeLabel(nodeData.nodeType);
-    const childCount = nodeData.childCount ?? 0;
-    const completedCount = nodeData.completedChildCount ?? 0;
-
-    if (!childLabel) return null;
-
-    return `${completedCount}/${childCount} ${childCount === 1 ? childLabel : `${childLabel}s`} completed`;
-}
-
-function getMomentTypeLabel(payload) {
-    const value = String(payload?.type ?? payload?.Type ?? '').trim();
-    if (!value) return null;
-
-    const normalized = value.toLowerCase();
-    if (normalized === 'story') return 'Story';
-    if (normalized === 'job') return 'Job';
-
-    return value;
-}
-
-function getMomentTaskSummary(payload) {
-    const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
-    if (tasks.length === 0) return null;
-
-    const completedCount = tasks.filter(task => Boolean(task?.isCompleted ?? task?.IsCompleted)).length;
-    return `Tasks: ${completedCount}/${tasks.length} complete`;
-}
-
-function getCardDescription(payload, maxLength = 52) {
-    const description = String(payload?.description ?? payload?.Description ?? '').trim();
-    if (!description) return 'Description: None';
-
-    return truncateText(description.replace(/\s+/g, ' '), maxLength);
-}
-
-function getStrideLabel(payload) {
-    return payload?.assignedStrideId == null ? 'Stride: Backlog' : `Stride # ${payload.assignedStrideId}`;
-}
-
-function getNodeTitle(nodeData) {
-    const payload = nodeData.payload ?? {};
-    const lines = [payload.statement ?? payload.name ?? `#${payload.id}`];
-
-    if (nodeData.nodeType === 'moment') {
-        lines.push(getStrideLabel(payload));
-        if (payload.description) lines.push(truncateText(payload.description, 40));
-        lines.push(`Effort: ${formatEstimate(payload.effortEstimate)}`);
-        const taskSummary = getMomentTaskSummary(payload);
-        if (taskSummary) lines.push(taskSummary);
-    }
-
-    return lines.join('\n');
-}
-
-function sortByDisplayOrder(items) {
-    return [...items].sort((left, right) => {
-        const orderDelta = (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
-        if (orderDelta !== 0) return orderDelta;
-        return String(left.statement ?? '').localeCompare(String(right.statement ?? ''));
-    });
-}
-
-function createNode(nodeType, payload, children = []) {
-    const childCount = children.length;
-    const completedChildCount = children.filter(child => getStatusBucket(child.payload?.statusColor) === 'done').length;
-
-    const label = payload.statement ?? payload.name ?? `#${payload.id}`;
-    const searchText = normalizeText([
-        label,
-        payload.description,
-    ].join(' '));
-
-    const statusBucket = getStatusBucket(payload?.statusColor);
-    const effortBucket = nodeType === 'moment' ? getMomentEffortBucket(payload?.effortEstimate) : null;
-    const strideBucket = nodeType === 'moment' ? getMomentStrideBucket(payload) : null;
-
-    return {
-        id: `${nodeType}-${payload.id}`,
-        nodeType,
-        label,
-        payload,
-        childCount,
-        completedChildCount,
-        children,
-        // cached derived values to speed up filtering
-        _searchText: searchText,
-        _statusBucket: statusBucket,
-        _effortBucket: effortBucket,
-        _strideBucket: strideBucket,
-    };
-}
-
 async function buildMomentNode(moment) {
     return createNode('moment', moment, []);
 }
@@ -318,61 +157,6 @@ async function buildPromiseNode(promise) {
     const epics = sortByDisplayOrder(await getEpicsByPromise(promise.id));
     const children = await Promise.all(epics.map(buildEpicNode));
     return createNode('promise', promise, children);
-}
-
-function getNodeColor(nodeType) {
-    switch (nodeType) {
-        case 'project': return '#1d3557';
-        case 'promise': return '#0f4c5c';
-        case 'epic': return '#2d6a4f';
-        case 'journey': return '#8b5e34';
-        case 'flow': return '#6c584c';
-        case 'moment': return '#355070';
-        default: return '#334155';
-    }
-}
-
-function getAppBasePath() {
-    const pathSegments = window.location.pathname.split('/').filter(Boolean);
-    const routeRootIndex = pathSegments.findIndex(segment => Object.prototype.hasOwnProperty.call(NODE_ROUTE_SEGMENTS, segment));
-
-    if (routeRootIndex <= 0) {
-        return '';
-    }
-
-    return `/${pathSegments.slice(0, routeRootIndex).join('/')}`;
-}
-
-function getNodeHref(node) {
-    const routeSegment = NODE_ROUTE_SEGMENTS[node.nodeType];
-    if (!routeSegment) return null;
-
-    const params = new URLSearchParams();
-    if (graphState.projectId != null) {
-        params.set('graphProjectId', String(graphState.projectId));
-    }
-    params.set('graphFocus', `${node.nodeType}-${node.payload?.id}`);
-
-    return `${getAppBasePath()}/${routeSegment}/${node.payload?.id}?${params.toString()}`;
-}
-
-function getNodeSearchText(node) {
-    return node._searchText ?? normalizeText([
-        node.label,
-        node.payload?.description,
-    ].join(' '));
-}
-
-function getMomentEffortBucket(effortEstimate) {
-    if (effortEstimate == null) return 'unestimated';
-
-    const normalized = normalizeText(effortEstimate);
-    const allowed = new Set(['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl']);
-    return allowed.has(normalized) ? normalized.toUpperCase() : 'unestimated';
-}
-
-function getMomentStrideBucket(payload) {
-    return payload?.assignedStrideId == null ? 'backlog' : String(payload.assignedStrideId);
 }
 
 function matchesNode(node, filters) {
@@ -463,30 +247,6 @@ function filterTree(node, filters, metrics, isRoot = false) {
     }
 
     return null;
-}
-
-function findNodeById(treeData, nodeId) {
-    if (!treeData || !nodeId) return null;
-
-    if (treeData.id === nodeId) {
-        return treeData;
-    }
-
-    for (const child of treeData.children ?? []) {
-        const match = findNodeById(child, nodeId);
-        if (match) {
-            return match;
-        }
-    }
-
-    return null;
-}
-
-function countRenderableNodes(node) {
-    if (!node) return 0;
-
-    const selfCount = node.nodeType === 'root' ? 0 : 1;
-    return selfCount + (node.children ?? []).reduce((sum, child) => sum + countRenderableNodes(child), 0);
 }
 
 function readFiltersFromUrl() {
@@ -850,35 +610,6 @@ function updateFilterSummary(metrics) {
     summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel} (${metrics.directMatches} direct match${metrics.directMatches === 1 ? '' : 'es'}).`;
 }
 
-function renderEmptyState(contentDiv, message) {
-    if (!contentDiv) return;
-    contentDiv.replaceChildren();
-
-    const emptyState = document.createElement('div');
-    emptyState.className = 'graph-empty-state';
-    emptyState.textContent = message;
-    contentDiv.appendChild(emptyState);
-}
-
-function getRenderedNodePosition(node, contentOffsetX, contentOffsetY) {
-    return {
-        x: node.y + contentOffsetX,
-        y: node.x + contentOffsetY,
-    };
-}
-
-function createFocusTransform(d3, viewportWidth, viewportHeight, node, contentOffsetX, contentOffsetY, scale = 1.5) {
-    if (!node) return null;
-
-    const targetScale = Math.max(0.5, Math.min(2.5, scale));
-    const position = getRenderedNodePosition(node, contentOffsetX, contentOffsetY);
-
-    return d3.zoomIdentity
-        .translate(viewportWidth / 2, viewportHeight / 2)
-        .scale(targetScale)
-        .translate(-position.x, -position.y);
-}
-
 function findFirstSearchMatch(treeData) {
     if (!treeData) return null;
 
@@ -896,296 +627,33 @@ function findFirstSearchMatch(treeData) {
     return null;
 }
 
-function renderTree(contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null) {
+function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null) {
     const graphContent = document.getElementById('graph-content');
     const graphViewport = document.getElementById('graph-viewport');
     if (!graphContent) return;
 
-    graphContent.replaceChildren();
     graphState.contextMenu?.hide();
 
-    const margin = { top: 32, right: 48, bottom: 32, left: 48 };
-
-    const root = d3.hierarchy(treeData);
-    const treeLayout = d3.tree().nodeSize([STEP_GAP_Y, STEP_GAP_X]);
-    treeLayout(root);
-
-    const descendants = root.descendants();
-    const renderable = descendants;
-
-    if (renderable.length === 0) {
-        renderEmptyState(graphContent, 'No cards match the current filters.');
-        return;
-    }
-
-    const links = root.links();
-    const focusedNodeId = focusNodeData?.id ?? null;
-    const viewportSize = getInnerViewportSize(graphViewport || contentDiv);
-    const viewportWidth = viewportSize.width || contentDiv.clientWidth || 0;
-    const viewportHeight = viewportSize.height || contentDiv.clientHeight || 0;
-    const minX = d3.min(renderable, node => node.x - (CARD_HEIGHT / 2)) ?? -(CARD_HEIGHT / 2);
-    const maxX = d3.max(renderable, node => node.x + (CARD_HEIGHT / 2)) ?? (CARD_HEIGHT / 2);
-    const minY = d3.min(renderable, node => node.y - (CARD_WIDTH / 2)) ?? -(CARD_WIDTH / 2);
-    const maxY = d3.max(renderable, node => node.y + (CARD_WIDTH / 2)) ?? (CARD_WIDTH / 2);
-    const graphWidth = Math.max((maxY - minY) + margin.left + margin.right, viewportWidth, 960);
-    const graphHeight = Math.max((maxX - minX) + margin.top + margin.bottom + FOREHEAD_GAP, viewportHeight, 520);
-    const svg = d3.create('svg')
-        .attr('viewBox', [0, 0, graphWidth, graphHeight])
-        .attr('width', '100%')
-        .attr('height', Math.max(graphHeight, viewportHeight || 0))
-        .attr('role', 'img')
-        .attr('aria-label', 'Project promise tree');
-
-    const contentOffsetX = margin.left - minY;
-    const contentOffsetY = margin.top - minX + FOREHEAD_GAP;
-    const cardClipPathId = `graph-card-clip-${graphState.projectId ?? 'project'}`;
-
-    const zoomLayer = svg.append('g');
-
-    svg.append('defs')
-        .append('clipPath')
-        .attr('id', cardClipPathId)
-        .append('rect')
-        .attr('x', -CARD_WIDTH / 2)
-        .attr('y', -CARD_HEIGHT / 2)
-        .attr('width', CARD_WIDTH)
-        .attr('height', CARD_HEIGHT)
-        .attr('rx', CARD_RADIUS)
-        .attr('ry', CARD_RADIUS);
-
-    const safeViewportWidth = Math.max(viewportWidth, 1);
-    const safeViewportHeight = Math.max(viewportHeight, 1);
-
-    const zoom = d3.zoom()
-        .scaleExtent([0.5, 2.5])
-        .extent([[0, 0], [safeViewportWidth, safeViewportHeight]])
-        // Include a viewport-sized gutter so edge cards (like the root Project card)
-        // can be centered when a focus transform is applied.
-        .translateExtent([
-            [-safeViewportWidth, -safeViewportHeight],
-            [graphWidth + safeViewportWidth, graphHeight + safeViewportHeight],
-        ])
-        .on('zoom', event => {
-            graphState.zoomTransform = event.transform;
-            zoomLayer.attr('transform', event.transform);
-
-            if (!graphState.suppressZoomStateUpdate) {
-                graphState.userZoomTransform = event.transform;
+    renderStackGraph(graphContent, d3, treeData, {
+        projectId: graphState.projectId,
+        focusNodeId: focusNodeData?.id ?? null,
+        focusNodeData,
+        enableZoom: true,
+        compact: false,
+        restoreTransform,
+        viewportElement: graphViewport,
+        clipPathIdPrefix: 'graph-card-clip',
+        emptyMessage: 'No cards match the current filters.',
+        onZoom: (transform, meta = {}) => {
+            graphState.zoomTransform = transform;
+            if (meta.user && !graphState.suppressZoomStateUpdate) {
+                graphState.userZoomTransform = transform;
             }
-        });
-
-    svg.call(zoom);
-    svg.on('dblclick.zoom', null);
-
-    const initialScale = Math.min(
-        viewportWidth > 0 ? viewportWidth / graphWidth : 1,
-        viewportHeight > 0 ? viewportHeight / graphHeight : 1,
-        1
-    );
-    const focusedHierarchyNode = focusNodeData
-        ? root.descendants().find(node => node.data === focusNodeData)
-        : null;
-    const focusTransform = focusNodeData
-        ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode, contentOffsetX, contentOffsetY)
-        : null;
-    const fitTransform = d3.zoomIdentity
-        .translate(
-            viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
-            viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0
-        )
-        .scale(initialScale);
-    const initialTransform = focusTransform ?? restoreTransform ?? fitTransform;
-
-    graphState.suppressZoomStateUpdate = true;
-    graphState.zoomTransform = initialTransform;
-    svg.call(zoom.transform, initialTransform);
-    graphState.suppressZoomStateUpdate = false;
-
-    // On large graphs, layout can settle after the first transform call.
-    // Re-apply focus using post-layout viewport dimensions to avoid vertical drift.
-    if (focusedHierarchyNode) {
-        window.requestAnimationFrame(() => {
-            const measuredViewport = getInnerViewportSize(graphViewport || contentDiv);
-            const measuredWidth = Math.max(measuredViewport.width || contentDiv.clientWidth || 0, 1);
-            const measuredHeight = Math.max(measuredViewport.height || contentDiv.clientHeight || 0, 1);
-            const refinedTransform = createFocusTransform(
-                d3,
-                measuredWidth,
-                measuredHeight,
-                focusedHierarchyNode,
-                contentOffsetX,
-                contentOffsetY
-            );
-
-            if (!refinedTransform) return;
-
-            graphState.suppressZoomStateUpdate = true;
-            graphState.zoomTransform = refinedTransform;
-            svg.call(zoom.transform, refinedTransform);
-            graphState.suppressZoomStateUpdate = false;
-        });
-    }
-
-    zoomLayer.append('g')
-        .attr('fill', 'none')
-        .attr('stroke', '#94a3b8')
-        .attr('stroke-opacity', 0.65)
-        .attr('stroke-width', 1.5)
-        .selectAll('path')
-        .data(links)
-        .join('path')
-        .attr('d', d => d3.linkHorizontal()
-            .x(point => point.y)
-            .y(point => point.x)({
-                source: { x: d.source.x + contentOffsetY, y: d.source.y + contentOffsetX + (CARD_WIDTH / 2) },
-                target: { x: d.target.x + contentOffsetY, y: d.target.y + contentOffsetX - (CARD_WIDTH / 2) },
-            }));
-
-    const node = zoomLayer.append('g')
-        .selectAll('a')
-        .data(renderable)
-        .join('a')
-        .attr('class', current => `graph-node graph-node--${current.data.nodeType}`)
-        .attr('href', current => getNodeHref(current.data))
-        .attr('xlink:href', current => getNodeHref(current.data))
-        .attr('transform', current => `translate(${current.y + contentOffsetX}, ${current.x + contentOffsetY})`);
-
-    node.on('contextmenu', (event, current) => {
-        event.preventDefault();
-        graphState.contextMenu?.open(event, current.data);
+        },
+        onContextMenu: (event, nodeData) => {
+            graphState.contextMenu?.open(event, nodeData);
+        },
     });
-
-    node.append('title')
-        .text(current => getNodeTitle(current.data));
-
-    node.append('rect')
-        .attr('class', 'graph-card')
-        .attr('x', -CARD_WIDTH / 2)
-        .attr('y', -CARD_HEIGHT / 2)
-        .attr('width', CARD_WIDTH)
-        .attr('height', CARD_HEIGHT)
-        .attr('rx', CARD_RADIUS)
-        .attr('ry', CARD_RADIUS)
-        .attr('fill', current => current.depth === 0 ? '#f8fafc' : '#ffffff')
-        .attr('stroke', current => {
-            const isFocused = focusedNodeId != null && current.data.id === focusedNodeId;
-            const allowFocusHighlight = current.data.nodeType !== 'root';
-            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return '#d4af37';
-            return current.depth === 0 ? getNodeColor(current.data.nodeType) : '#cbd5e1';
-        })
-        .attr('stroke-width', current => {
-            const isFocused = focusedNodeId != null && current.data.id === focusedNodeId;
-            const allowFocusHighlight = current.data.nodeType !== 'root';
-            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return 3;
-            return current.depth === 0 ? 2.5 : 1.5;
-        });
-
-    node.append('rect')
-        .attr('class', 'graph-card-accent')
-        .attr('x', -CARD_WIDTH / 2)
-        .attr('y', -CARD_HEIGHT / 2)
-        .attr('width', 10)
-        .attr('height', CARD_HEIGHT)
-        .attr('rx', CARD_RADIUS)
-        .attr('ry', CARD_RADIUS)
-        .attr('clip-path', `url(#${cardClipPathId})`)
-        .attr('fill', current => getNodeColor(current.data.nodeType));
-
-    node.append('text')
-        .attr('class', 'graph-card-statement')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
-        .attr('fill', '#0f172a')
-        .attr('font-size', 14)
-        .attr('font-weight', 100)
-        .text(current => truncateText(current.data.label, 36));
-
-    node.filter(current => current.data.nodeType !== 'root')
-        .append('text')
-        .attr('class', 'graph-card-status')
-        .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
-        .attr('text-anchor', 'end')
-        .attr('font-size', 18)
-        .attr('dominant-baseline', 'hanging')
-        .text(current => getStatusIcon(current.data.payload?.statusColor));
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line graph-card-line--moment-type')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + 30)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .attr('font-weight', 600)
-        .text(current => getMomentTypeLabel(current.data.payload) ?? '');
-
-    node.append('line')
-        .attr('class', 'graph-card-divider')
-        .attr('x1', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('x2', CARD_WIDTH / 2 - CARD_PADDING_X)
-        .attr('y1', -CARD_HEIGHT / 2 + 42)
-        .attr('y2', -CARD_HEIGHT / 2 + 42)
-        .attr('stroke', '#cbd5e1')
-        .attr('stroke-width', 1);
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => getStrideLabel(current.data.payload));
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + DETAIL_LINE_GAP)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => getCardDescription(current.data.payload, 52));
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 2))
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => `Effort: ${formatEstimate(current.data.payload?.effortEstimate)}`);
-
-    node.filter(current => current.data.nodeType === 'moment' && getMomentTaskSummary(current.data.payload))
-        .append('text')
-        .attr('class', 'graph-card-line graph-card-line--moment-tasks')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 3))
-        .attr('fill', '#0f766e')
-        .attr('font-size', 12)
-        .attr('font-weight', 600)
-        .text(current => getMomentTaskSummary(current.data.payload));
-
-    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + 62)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => getCardDescription(current.data.payload));
-
-    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + 88)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .attr('dominant-baseline', 'middle')
-        .text(current => getChildProgressSummary(current.data) ?? 'No child cards');
-
-    graphContent.appendChild(svg.node());
 }
 
 function applyFilters() {
@@ -1211,24 +679,6 @@ function applyFilters() {
     }
 
     updateFilterSummary(metrics);
-}
-
-function parseGraphData(rootPromises, projectId, project = null) {
-    const rawName = project?.name ?? project?.Name ?? '';
-    const normalizedName = String(rawName).trim();
-    const projectLabel = normalizedName || `Project #${projectId}`;
-
-    return {
-        id: `root-${projectId}`,
-        nodeType: 'root',
-        label: projectLabel,
-        payload: {
-            id: projectId,
-            name: projectLabel,
-            description: project?.description ?? project?.Description ?? null,
-        },
-        children: rootPromises,
-    };
 }
 
 async function reloadGraphData() {

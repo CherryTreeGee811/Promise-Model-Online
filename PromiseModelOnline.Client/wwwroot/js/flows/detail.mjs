@@ -5,18 +5,32 @@ import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchChildMetrics,
+    patchDetailStackGraphNode,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadFlowDetail(flowId, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading flow...';
     errorEl.textContent = '';
 
     getFlowById(flowId)
         .then(flow => {
             loadingEl.textContent = '';
+
+            mountDetailStackGraph({
+                nodeType: 'flow',
+                nodeId: flowId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
+
             detailDiv.innerHTML = `
                 <div class="flow-detail-card">
                     <h2>${escapeHtml(flow.statement)}</h2>
@@ -48,6 +62,7 @@ export function loadFlowDetail(flowId, contentDiv) {
             const momentsList = document.getElementById('flow-moments-list');
             getMomentsByFlow(flowId)
                 .then(moments => {
+                    patchChildMetrics(`flow-${flowId}`, moments);
                     const tbody = renderTableWithInlineAddRow(momentsList, {
                         headers: ['Statement', 'Type', 'Status', 'Actions'],
                         items: moments || [],
@@ -123,6 +138,7 @@ export function loadFlowDetail(flowId, contentDiv) {
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
                                     typeSelect.value = 'Story';
+                                    patchChildMetrics(`flow-${flowId}`, [...(moments || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add moment.';
@@ -167,6 +183,9 @@ export function loadFlowDetail(flowId, contentDiv) {
                     try {
                         const updated = await updateFlowDescription(flowId, newDesc);
                         flow.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
+                        patchDetailStackGraphNode(`flow-${flowId}`, {
+                            description: flow.description,
+                        });
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';

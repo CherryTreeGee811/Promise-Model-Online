@@ -6,18 +6,31 @@ import { getJourneyById } from '../journeys/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchDetailStackGraphNode,
+    refreshDetailStackGraph,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadMomentDetail(momentId, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading moment...';
     errorEl.textContent = '';
 
     getMomentById(momentId)
         .then(async moment => {
             loadingEl.textContent = '';
+
+            mountDetailStackGraph({
+                nodeType: 'moment',
+                nodeId: momentId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
 
             detailDiv.innerHTML = `
                 <div class="moment-detail-card">
@@ -84,7 +97,7 @@ export function loadMomentDetail(momentId, contentDiv) {
             `;
 
             const tasksContainer = document.getElementById('moment-tasks');
-            renderMomentTasks(tasksContainer, momentId, moment.tasks);
+            renderMomentTasks(tasksContainer, momentId, moment.tasks, moment);
 
             const descriptionSaveButton = document.getElementById('moment-description-save');
             const descriptionInput = document.getElementById('moment-description-input');
@@ -98,6 +111,9 @@ export function loadMomentDetail(momentId, contentDiv) {
                     try {
                         const updated = await updateMomentDescription(momentId, newDescription);
                         moment.description = updated?.description ?? (newDescription.trim() ? newDescription : null);
+                        patchDetailStackGraphNode(`moment-${momentId}`, {
+                            description: moment.description,
+                        });
                         descriptionMessage.textContent = 'Saved';
                     } catch (err) {
                         descriptionMessage.textContent = 'Save failed';
@@ -115,6 +131,10 @@ export function loadMomentDetail(momentId, contentDiv) {
                     const estimate = estSelect.value === '-' ? null : estSelect.value;
                     try {
                         await updateMomentEstimate(momentId, estimate);
+                        moment.effortEstimate = estimate;
+                        patchDetailStackGraphNode(`moment-${momentId}`, {
+                            effortEstimate: estimate,
+                        });
                     } catch (err) {
                         alert('Failed to update estimate');
                         console.error(err);
@@ -144,9 +164,10 @@ export function loadMomentDetail(momentId, contentDiv) {
                         const val = strideSelect.value === '' ? null : parseInt(strideSelect.value, 10);
                         try {
                             const updated = await moveMomentToStride(momentId, val);
-                            // reflect assigned stride id
-                            const display = updated.assignedStrideId ? String(updated.assignedStrideId) : 'Backlog';
-                            // keep select in sync with returned value
+                            moment.assignedStrideId = updated.assignedStrideId;
+                            patchDetailStackGraphNode(`moment-${momentId}`, {
+                                assignedStrideId: updated.assignedStrideId,
+                            });
                             strideSelect.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
                         } catch (err) {
                             alert('Failed to update assigned stride');
@@ -166,9 +187,11 @@ export function loadMomentDetail(momentId, contentDiv) {
                     const prev = statusSelect.value;
                     try {
                         const updated = await updateMomentStatus(momentId, statusSelect.value);
-                        // update status and completed fields from returned DTO
-                        // update select value and Completed cell from returned DTO
+                        moment.status = updated.status;
+                        moment.statusColor = updated.statusColor;
+                        moment.completedAt = updated.completedAt;
                         statusSelect.value = updated.status;
+                        await refreshDetailStackGraph();
                         if (updated.completedAt) {
                             const d = new Date(updated.completedAt);
                             completedCell.textContent = d.toLocaleDateString('en-CA');
@@ -189,8 +212,13 @@ export function loadMomentDetail(momentId, contentDiv) {
                     const newType = typeSelect.value;
                     try {
                         const updated = await updateMomentType(momentId, newType);
-                        // keep UI in sync (server may return DTO)
-                        if (updated && updated.type) typeSelect.value = updated.type;
+                        if (updated && updated.type) {
+                            moment.type = updated.type;
+                            typeSelect.value = updated.type;
+                            patchDetailStackGraphNode(`moment-${momentId}`, {
+                                type: updated.type,
+                            });
+                        }
                     } catch (err) {
                         alert('Failed to update type');
                         typeSelect.value = moment.type;
@@ -273,7 +301,7 @@ function getStatusIconForStatus(status) {
     }
 }
 
-function renderMomentTasks(container, momentId, tasks) {
+function renderMomentTasks(container, momentId, tasks, moment) {
     if (!container) return;
 
     const taskList = Array.isArray(tasks) ? tasks : [];
@@ -359,7 +387,10 @@ function renderMomentTasks(container, momentId, tasks) {
                     addTaskName.value = '';
                     addTaskDescription.value = '';
                     addTaskCompleted.checked = false;
-                    bindMomentTaskCompletionToggle(tbody, momentId);
+                    if (!Array.isArray(moment.tasks)) moment.tasks = [];
+                    moment.tasks.push(created);
+                    syncMomentTasksToStackGraph(momentId, moment);
+                    bindMomentTaskCompletionToggle(tbody, momentId, moment);
                 }
             } catch (err) {
                 addTaskMessage.textContent = 'Failed to add task.';
@@ -370,10 +401,16 @@ function renderMomentTasks(container, momentId, tasks) {
         });
     }
 
-    bindMomentTaskCompletionToggle(tbody, momentId);
+    bindMomentTaskCompletionToggle(tbody, momentId, moment);
 }
 
-function bindMomentTaskCompletionToggle(tbody, momentId) {
+function syncMomentTasksToStackGraph(momentId, moment) {
+    patchDetailStackGraphNode(`moment-${momentId}`, {
+        tasks: Array.isArray(moment?.tasks) ? [...moment.tasks] : [],
+    });
+}
+
+function bindMomentTaskCompletionToggle(tbody, momentId, moment) {
     if (!tbody) return;
 
     tbody.querySelectorAll('.moment-task-complete-checkbox').forEach(checkbox => {
@@ -392,6 +429,11 @@ function bindMomentTaskCompletionToggle(tbody, momentId) {
                 if (updated) {
                     checkbox.checked = Boolean(updated.isCompleted);
                     if (label) label.textContent = updated.isCompleted ? 'Completed' : 'Open';
+                    const task = (moment.tasks ?? []).find(item => Number(item.id) === taskId);
+                    if (task) {
+                        task.isCompleted = updated.isCompleted;
+                        syncMomentTasksToStackGraph(momentId, moment);
+                    }
                 } else if (label) {
                     label.textContent = checkbox.checked ? 'Completed' : 'Open';
                 }

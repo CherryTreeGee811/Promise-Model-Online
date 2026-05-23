@@ -4,12 +4,19 @@ import { loadComments } from '../comments/comments.mjs';
 import { loadReactions } from '../reactions/reactions.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchChildMetrics,
+    patchDetailStackGraphNode,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadPromiseDetail(promiseId, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading promise…';
     errorEl.textContent = '';
 
@@ -38,9 +45,16 @@ export function loadPromiseDetail(promiseId, contentDiv) {
 
             loadingEl.textContent = '';
 
+            mountDetailStackGraph({
+                nodeType: 'promise',
+                nodeId: promiseId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
+
             const epicsList = document.getElementById('promise-epics-list');
             getEpicsByPromise(promiseId)
                 .then(epics => {
+                    patchChildMetrics(`promise-${promiseId}`, epics);
                     const tbody = renderTableWithInlineAddRow(epicsList, {
                         headers: ['Statement', 'Actions'],
                         items: epics || [],
@@ -101,6 +115,7 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
+                                    patchChildMetrics(`promise-${promiseId}`, [...(epics || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add epic.';
@@ -151,6 +166,9 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                     try {
                         const updated = await updatePromiseDescription(promiseId, newDesc);
                         promise.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
+                        patchDetailStackGraphNode(`promise-${promiseId}`, {
+                            description: promise.description,
+                        });
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';

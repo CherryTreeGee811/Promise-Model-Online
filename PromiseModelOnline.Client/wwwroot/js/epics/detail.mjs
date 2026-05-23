@@ -4,12 +4,19 @@ import { getPromiseById } from '../promises/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import {
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    patchChildMetrics,
+    patchDetailStackGraphNode,
+} from '../projects/detail-stack-graph.mjs';
 
 export function loadEpicDetail(epicId, contentDiv) {
     const detailDiv = document.getElementById('epic-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
 
+    destroyDetailStackGraph();
     loadingEl.textContent = 'Loading epic…';
     errorEl.textContent = '';
 
@@ -42,6 +49,12 @@ export function loadEpicDetail(epicId, contentDiv) {
 
             loadingEl.textContent = '';
 
+            mountDetailStackGraph({
+                nodeType: 'epic',
+                nodeId: epicId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
+
             // Load parent promise name asynchronously and show its status emoji
             const parentCell = document.getElementById('epic-parent-promise');
             getPromiseById(epic.productPromiseId)
@@ -57,6 +70,7 @@ export function loadEpicDetail(epicId, contentDiv) {
             const journeysList = document.getElementById('epic-journeys-list');
             getJourneysByEpic(epicId)
                 .then(journeys => {
+                    patchChildMetrics(`epic-${epicId}`, journeys);
                     const tbody = renderTableWithInlineAddRow(journeysList, {
                         headers: ['Statement', 'Actions'],
                         items: journeys || [],
@@ -117,6 +131,7 @@ export function loadEpicDetail(epicId, contentDiv) {
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
+                                    patchChildMetrics(`epic-${epicId}`, [...(journeys || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add journey.';
@@ -150,6 +165,9 @@ export function loadEpicDetail(epicId, contentDiv) {
                     try {
                         const updated = await updateEpicDescription(epicId, newDesc);
                         epic.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
+                        patchDetailStackGraphNode(`epic-${epicId}`, {
+                            description: epic.description,
+                        });
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
