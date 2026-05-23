@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/api/sessions/current"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "userName": "changepw_user",
+      "email": "changepw_user@example.com"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

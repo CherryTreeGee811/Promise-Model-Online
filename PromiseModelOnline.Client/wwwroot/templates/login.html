@@ -3,15 +3,19 @@
 <div class="form-div">
     <form id="login-form">
         <label id="username-label" for="username-input">Username:</label>
-        <input id="username-input" type="text" name="username-input" required>
-        <br />
-        <br />
+        <input id="username-input" type="text" name="username-input" required placeholder="Enter your username">
+
         <label id="password-label" for="password-input">Password:</label>
-        <input id="password-input" type="password" name="password-input" required>
-        <br>
-        <input id="login-btn" name="login-btn" type="button" value="Login" />
+        <input id="password-input" type="password" name="password-input" required placeholder="Enter your password">
+
+        <input id="login-btn" name="login-btn" type="button" value="Login">
     </form>
     <p id="login-register-text">
         Don't have an account? <a href="/register" id="login-register-link">Register here</a>
     </p>
+
+    <p id="error-text"></p>
+    <p id="loading-text"></p>
+    <p id="success-text"></p>
+
 </div>

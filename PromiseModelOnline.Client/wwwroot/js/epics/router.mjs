@@ -6,7 +6,7 @@ export function handleEpicRoutes(path, navContentDiv, contentDiv) {
     if (segments.length === 2 && segments[0] === 'epics') {
         const epicId = segments[1];
         loadTemplate('epics/detail.html', contentDiv)
-            .then(() => loadEpicDetail(epicId, contentDiv))
+            .then(() => loadEpicDetail(epicId, navContentDiv, contentDiv))
             .catch(err => {
                 console.error('Error loading epic detail:', err);
                 contentDiv.innerHTML = '<h1>Error loading epic</h1>';

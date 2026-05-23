@@ -1,15 +1,20 @@
 {
   "priority": 1,
+  "scenarioName": "comment-scenario",
+  "requiredScenarioState": "Started",
+  "newScenarioState": "AfterPost",
   "request": {
     "method": "POST",
-    "urlPath": "/api/comments",
-    "headers": {
-      "Authorization": { "equalTo": "Bearer owner-token-fixed" }
-    }
+    "urlPath": "/api/comments"
   },
   "response": {
-    "status": 201,
-    "headers": { "Content-Type": "application/json" },
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    },
     "jsonBody": {
       "id": 2,
       "text": "New comment",

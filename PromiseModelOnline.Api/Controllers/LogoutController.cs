@@ -18,19 +18,27 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpDelete]
         [Authorize]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequest? request)
+        public async Task<IActionResult> Logout()
         {
+            var refreshToken = Request.Cookies["refreshToken"];
+            var authorizationHeader = Request.Headers["Authorization"].ToString() ?? string.Empty;
+
             try
             {
-                var authorizationHeader = Request.Headers["Authorization"].ToString();
-                await _authClient.LogoutAsync(request, authorizationHeader);
+                await _authClient.LogoutAsync(
+                    new LogoutRequest { RefreshToken = refreshToken },
+                    authorizationHeader
+                );
+
+                Response.Cookies.Delete("refreshToken");
+
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
             {
-                return Unauthorized("Invalid refresh token");
+                return Unauthorized();
             }
-            catch (Exception)
+            catch
             {
                 return StatusCode(500, "Internal server error");
             }

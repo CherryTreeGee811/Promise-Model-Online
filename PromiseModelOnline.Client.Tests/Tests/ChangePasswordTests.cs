@@ -9,21 +9,21 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void ChangePassword_Success_RedirectsToLogin()
         {
-            // Navigate to change password page (requires auth)
-            Driver.Navigate().GoToUrl(BaseUrl + "/change-password");
+            EnsureLoggedIn("/change-password");
 
             var currentInput = WaitForElement(By.Id("current-password-input"), 5);
             var newInput = WaitForElement(By.Id("new-password-input"), 5);
             var confirmInput = WaitForElement(By.Id("confirm-password-input"), 5);
 
-            currentInput.SendKeys("oldpass");
-            newInput.SendKeys("newpass123");
-            confirmInput.SendKeys("newpass123");
+            // ✅ MUST match real current password
+            currentInput.SendKeys("P@ssw0rd!");
+
+            // ✅ MUST meet backend rules
+            newInput.SendKeys("NewP@ssw0rd1!");
+            confirmInput.SendKeys("NewP@ssw0rd1!");
+
             ScrollToAndClick(By.Id("change-password-btn"));
 
-            // The success message should appear, then after logout and redirect, we should land on /login
-            // The test code shows a success message and then auto-logout and redirect to /login after 1.2s.
-            // Let's wait for the URL to change to /login
             WaitUntil(driver => driver.Url.Contains("/login"), 10);
 
             Assert.That(Driver.Url, Does.Contain("/login"));

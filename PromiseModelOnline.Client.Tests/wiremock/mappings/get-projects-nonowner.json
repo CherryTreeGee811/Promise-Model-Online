@@ -1,11 +1,11 @@
 {
-  "priority": 2,
+  "priority": 1,
   "request": {
     "method": "GET",
     "urlPath": "/api/projects",
     "headers": {
       "Authorization": {
-        "equalTo": "Bearer owner-token-fixed"
+        "equalTo": "Bearer nonowner-token-fixed"
       }
     }
   },
@@ -17,7 +17,7 @@
         "id": 1,
         "name": "Test Project",
         "description": "A seeded test project",
-        "ownerId": 1,
+        "ownerId": 999,
         "createdAt": "2026-05-01T00:00:00Z"
       }
     ]

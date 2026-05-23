@@ -40,19 +40,22 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.Text))
+                return BadRequest("Comment text cannot be empty.");
+
             var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-                     ?? User.FindFirst("email")?.Value;
+                    ?? User.FindFirst("email")?.Value;
 
             if (string.IsNullOrEmpty(email))
                 return Unauthorized("Missing email claim");
 
-            // Extract the username claim so the local user gets a readable name
             var username = User.FindFirst("nameid")?.Value;
 
             try
             {
                 var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
                 var comment = await _commentService.CreateCommentAsync(dto, user.Id);
+
                 return CreatedAtAction(nameof(GetComments),
                     new { type = dto.ParentType, parentId = dto.ParentId }, comment);
             }

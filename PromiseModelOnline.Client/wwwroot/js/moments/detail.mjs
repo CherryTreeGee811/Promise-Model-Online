@@ -1,3 +1,4 @@
+import { routeHandler } from '../router.mjs';
 import { getMomentById, addMomentTask, updateMomentTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { getAllStrides } from '../strides/api.mjs';
@@ -13,7 +14,7 @@ import {
     refreshDetailStackGraph,
 } from '../projects/detail-stack-graph.mjs';
 
-export function loadMomentDetail(momentId, contentDiv) {
+export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
@@ -80,12 +81,6 @@ export function loadMomentDetail(momentId, contentDiv) {
                                 </select>
                             </td>
                         </tr>
-                        <tr>
-                            <th>Flow</th>
-                            <td id="moment-flow-cell">
-                                <a href="/flows/${moment.flowId}" class="detail-link">Flow ${moment.flowId}</a>
-                            </td>
-                        </tr>
                         <tr><th>Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
                         <tr><th>Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
@@ -123,6 +118,20 @@ export function loadMomentDetail(momentId, contentDiv) {
                     }
                 });
             }
+
+            // allow routing by clicking detail links
+            detailDiv.addEventListener('click', (e) => {
+                const flowLink = e.target.closest('a.detail-link');
+                if (!flowLink) return;
+
+                // allow new-tab behaviour
+                if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+                e.preventDefault();
+                const flowId = flowLink.getAttribute('flow-id');
+                window.history.pushState({}, '', `/flows/${flowId}`);
+                routeHandler(navContentDiv, contentDiv);
+            });
 
             // Estimate auto‑save on change
             const estSelect = document.getElementById('moment-estimate-select');
@@ -224,19 +233,6 @@ export function loadMomentDetail(momentId, contentDiv) {
                         typeSelect.value = moment.type;
                     }
                 });
-            }
-
-            // Load parent flow and show its status emoji
-            const flowCell = document.getElementById('moment-flow-cell');
-            if (flowCell) {
-                getFlowById(moment.flowId)
-                    .then(flow => {
-                        const icon = getStatusIcon(flow.statusColor);
-                        flowCell.innerHTML = `<a href="/flows/${flow.id}" class="detail-link">${escapeHtml(flow.statement)}</a> ${icon}`;
-                    })
-                    .catch(() => {
-                        // leave as-is
-                    });
             }
 
             // Back button event

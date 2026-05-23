@@ -38,10 +38,16 @@ public class RegisterController : ControllerBase
             return BadRequest("UserName, Email and Password are required.");
         }
 
-        var existing = await _userManager.FindByNameAsync(req.UserName);
-        if (existing != null)
+        var existingName = await _userManager.FindByNameAsync(req.UserName);
+        if (existingName != null)
         {
-            return Conflict(new { message = "User already exists" });
+            return Conflict(new { message = "The username provided Is already taken" });
+        }
+
+        var existingEmail = await _userManager.FindByEmailAsync(req.Email);
+        if (existingEmail != null)
+        {
+            return Conflict(new { message = "The email provided is already associated with an existing account" });
         }
 
         var user = new IdentityUser

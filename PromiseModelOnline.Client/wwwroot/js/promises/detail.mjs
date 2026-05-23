@@ -1,3 +1,4 @@
+import { routeHandler } from '../router.mjs';
 import { getPromiseById, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
 import { addEpic } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
@@ -11,7 +12,7 @@ import {
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.mjs';
 
-export function loadPromiseDetail(promiseId, contentDiv) {
+export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
@@ -50,7 +51,6 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                 nodeId: promiseId,
                 projectIdHint: getGraphProjectIdHintFromUrl(),
             });
-
             const epicsList = document.getElementById('promise-epics-list');
             getEpicsByPromise(promiseId)
                 .then(epics => {
@@ -125,6 +125,41 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                             }
                         });
                     }
+
+                    epicsList.innerHTML = `
+                        <table class="promisemodel-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Statement</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${epics.map(e => `
+                                    <tr>
+                                        <td>${e.id}</td>
+                                        <td>${escapeHtml(e.statement)}</td>
+                                        <td><a href="/epics/${e.id}" epic-id="${e.id}" class="view-btn">View</a></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    
+                    detailDiv.querySelectorAll('.view-btn[epic-id]').forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            // allow new tab behavior
+                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+                            e.preventDefault();
+
+                            const epicId = link.getAttribute('epic-id');
+                            window.history.pushState({}, '', `/epics/${epicId}`);
+
+                            routeHandler(navContentDiv, contentDiv);
+                        });
+                    });
                 })
                 .catch(() => {
                     epicsList.innerHTML = '<p class="error">Failed to load epics.</p>';
@@ -159,7 +194,8 @@ export function loadPromiseDetail(promiseId, contentDiv) {
             const saveBtn = document.getElementById('save-desc');
             const descMsg = document.getElementById('desc-save-msg');
             if (saveBtn) {
-                saveBtn.addEventListener('click', async () => {
+                saveBtn.addEventListener('click', async (e) => {
+                    e.preventDefault()
                     descMsg.textContent = '';
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
@@ -178,6 +214,7 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                     }
                 });
             }
+            loadingEl.textContent = '';
         })
         .catch(err => {
             loadingEl.textContent = '';

@@ -1,50 +1,66 @@
-import { getAccessTokenFromCookie } from '../parser.mjs';
-import { base } from '../api.mjs';
+import { authFetch, base } from '../api.mjs';
 
+/*
+====================================
+GET REACTIONS
+====================================
+*/
 export async function getReactions(parentType, parentId) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/reactions?type=${parentType}&itemId=${parentId}`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
+    const res = await authFetch(`${base}/api/reactions?type=${parentType}&itemId=${parentId}`);
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
+/*
+====================================
+CREATE REACTION
+====================================
+*/
 export async function createReaction(parentType, parentId, emote) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/reactions`, {
+    const res = await authFetch(`${base}/api/reactions`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ emote, stackItemType: parentType, stackItemId: parentId })
+        body: JSON.stringify({
+            emote,
+            stackItemType: parentType,
+            stackItemId: parentId
+        })
     });
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
+/*
+====================================
+UPDATE REACTION
+====================================
+*/
 export async function updateReaction(reactionId, emote) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/reactions/${reactionId}`, {
+    const res = await authFetch(`${base}/api/reactions/${reactionId}`, {
         method: 'PATCH',
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({ emote })
     });
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
+/*
+====================================
+DELETE REACTION
+====================================
+*/
 export async function deleteReaction(reactionId) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/reactions/${reactionId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+    const res = await authFetch(`${base}/api/reactions/${reactionId}`, {
+        method: 'DELETE'
     });
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }

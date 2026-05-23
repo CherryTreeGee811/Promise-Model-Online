@@ -1,26 +1,35 @@
-import { getAccessTokenFromCookie } from '../parser.mjs';
-import { base } from '../api.mjs';
+import { authFetch, base } from '../api.mjs';
+
+/*
+====================================
+PENDING INVITATIONS
+====================================
+*/
 
 export async function getPendingInvitations() {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/permissions/pending`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
+    const res = await authFetch(`${base}/api/permissions/pending`);
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     return res.json();
 }
 
+/*
+====================================
+ACCEPT INVITATION
+====================================
+*/
+
 export async function acceptInvitation(permissionId) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/permissions/${permissionId}`, {
+    const res = await authFetch(`${base}/api/permissions/${permissionId}`, {
         method: 'PATCH',
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({ status: 'Active' })
     });
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     return res.json();
 }

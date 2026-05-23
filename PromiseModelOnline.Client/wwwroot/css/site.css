@@ -1078,3 +1078,11 @@ input[type=button]:hover, input[type=submit]:hover {
 .hidden {
     display: none !important;
 }
+
+#description-input {
+  width:100%;
+}
+
+.save-btn-div {
+  margin-top:6px;
+}

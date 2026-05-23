@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
+using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
@@ -17,10 +19,16 @@ namespace PromiseModelOnline.Api.Tests
         {
             _authClientMock = new Mock<IAuthClient>();
             _controller = new LoginController(_authClientMock.Object);
+
+            // ✅ Required to test cookies
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            };
         }
 
         [Test]
-        public async Task Login_WhenAuthServiceReturnsToken_ReturnsOk()
+        public async Task Login_WhenAuthServiceReturnsToken_ReturnsOk_WithAccessTokenOnly()
         {
             var request = new UserLogin
             {
@@ -28,20 +36,26 @@ namespace PromiseModelOnline.Api.Tests
                 Password = "P@ssw0rd!"
             };
 
-            var response = new TokenResponse
+            var authResponse = new TokenResponse
             {
                 AccessToken = "access",
                 RefreshToken = "refresh"
             };
 
-            _authClientMock.Setup(x => x.LoginAsync(request)).ReturnsAsync(response);
+            _authClientMock.Setup(x => x.LoginAsync(request))
+                .ReturnsAsync(authResponse);
 
             var result = await _controller.Login(request);
 
             Assert.That(result, Is.InstanceOf<OkObjectResult>());
+
             var ok = result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
-            Assert.That(ok!.Value, Is.SameAs(response));
+
+            var value = ok!.Value as AccessTokenResponse;
+            Assert.That(value, Is.Not.Null);
+
+            Assert.That(value!.AccessToken, Is.EqualTo("access"));
 
             _authClientMock.Verify(x => x.LoginAsync(request), Times.Once);
         }
@@ -55,12 +69,15 @@ namespace PromiseModelOnline.Api.Tests
                 Password = "wrong"
             };
 
-            _authClientMock.Setup(x => x.LoginAsync(request)).ThrowsAsync(new UnauthorizedAccessException());
+            _authClientMock.Setup(x => x.LoginAsync(request))
+                .ThrowsAsync(new UnauthorizedAccessException());
 
             var result = await _controller.Login(request);
 
             Assert.That(result, Is.InstanceOf<UnauthorizedObjectResult>());
+
             var unauthorized = result as UnauthorizedObjectResult;
+
             Assert.That(unauthorized, Is.Not.Null);
             Assert.That(unauthorized!.Value, Is.EqualTo("Invalid username or password"));
 
@@ -76,12 +93,15 @@ namespace PromiseModelOnline.Api.Tests
                 Password = "P@ssw0rd!"
             };
 
-            _authClientMock.Setup(x => x.LoginAsync(request)).ThrowsAsync(new System.Exception("boom"));
+            _authClientMock.Setup(x => x.LoginAsync(request))
+                .ThrowsAsync(new Exception("boom"));
 
             var result = await _controller.Login(request);
 
             Assert.That(result, Is.InstanceOf<ObjectResult>());
+
             var objectResult = result as ObjectResult;
+
             Assert.That(objectResult, Is.Not.Null);
             Assert.That(objectResult!.StatusCode, Is.EqualTo(500));
             Assert.That(objectResult.Value, Is.EqualTo("Internal server error"));

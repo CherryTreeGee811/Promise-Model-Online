@@ -6,10 +6,12 @@ namespace PromiseModelOnline.Client.Tests.Tests
 {
     public class IterationHistoryTests : SeleniumTestBase
     {
-        [Test]
+       [Test]
         public void IterationHistory_ShowsIterationAndStrides()
         {
-            Driver.Navigate().GoToUrl(BaseUrl + "/projects/1/iterations");
+            EnsureLoggedIn();
+
+            NavigateSpa("/projects/1/iterations");
 
             var iterationRow = WaitForElement(By.CssSelector("#iterations-list tbody tr"));
             Assert.That(iterationRow.Text, Does.Contain("Sprint 1"));

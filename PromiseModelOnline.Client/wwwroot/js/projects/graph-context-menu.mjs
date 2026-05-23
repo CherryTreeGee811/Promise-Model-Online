@@ -1,6 +1,6 @@
 import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
 import { base } from '../api.mjs';
-import { getAccessTokenFromCookie } from '../parser.mjs';
+import { getAccessToken } from '../auth-state.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';
 
 const NODE_CHILD_LABELS = {
@@ -111,7 +111,7 @@ function getCreateFormDefaults(nodeData) {
 }
 
 async function requestJson(url, options) {
-    const accessToken = getAccessTokenFromCookie();
+    const accessToken = getAccessToken();
     const { headers: optionHeaders, ...fetchOptions } = options;
     const response = await fetch(`${base}${url}`, {
         mode: 'cors',

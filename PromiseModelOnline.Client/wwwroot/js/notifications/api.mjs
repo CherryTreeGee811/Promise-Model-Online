@@ -1,40 +1,53 @@
-import { getAccessTokenFromCookie } from '../parser.mjs';
-import { base } from '../api.mjs';
+import { authFetch, base } from '../api.mjs';
+
+/*
+====================================
+FETCH NOTIFICATIONS
+====================================
+*/
 
 export async function fetchUnreadNotifications() {
-    const token = getAccessTokenFromCookie();
-    if (!token) return [];
-    const res = await fetch(`${base}/api/notifications`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
+    const res = await authFetch(`${base}/api/notifications`);
+
     if (!res.ok) return [];
+
     return res.json();
 }
 
 export async function fetchAllNotifications() {
-    const token = getAccessTokenFromCookie();
-    if (!token) return [];
-    const res = await fetch(`${base}/api/notifications`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
+    const res = await authFetch(`${base}/api/notifications`);
+
     if (!res.ok) return [];
+
     return res.json();
 }
 
+/*
+====================================
+MARK READ
+====================================
+*/
+
 export async function markNotificationAsRead(id) {
-    const token = getAccessTokenFromCookie();
-    await fetch(`${base}/api/notifications/${id}`, {
+    const res = await authFetch(`${base}/api/notifications/${id}`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ isRead: true })
     });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 export async function markAllNotificationsAsRead() {
-    const token = getAccessTokenFromCookie();
-    await fetch(`${base}/api/notifications`, {
+    const res = await authFetch(`${base}/api/notifications`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ isRead: true, applyToAll: true })
     });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
