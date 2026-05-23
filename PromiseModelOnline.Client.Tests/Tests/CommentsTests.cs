@@ -13,19 +13,19 @@ namespace PromiseModelOnline.Client.Tests.Tests
             EnsureLoggedIn();
             NavigateSpa("/moments/100");
 
-            // Verify existing comment is loaded
             var existingComment = WaitForElement(By.CssSelector(".comment-item .comment-text"));
             Assert.That(existingComment.Text, Does.Contain("Existing comment"));
 
-            // Type new comment
             var textarea = WaitForElement(By.Id("comment-textarea"));
             textarea.SendKeys("New comment");
 
-            // Wait until the Post button is truly clickable (visible + enabled)
+            // Wait for button to be present and interactive
             var postButton = WaitForClickable(By.CssSelector("#comment-form .view-btn"));
-            postButton.Click();
 
-            // Wait for the new comment to appear in the list
+            // Click via JavaScript – works reliably in headless mode
+            ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].click();", postButton);
+
+            // Wait for new comment to appear
             WaitUntil(driver =>
             {
                 try
@@ -36,7 +36,6 @@ namespace PromiseModelOnline.Client.Tests.Tests
                 catch { return false; }
             }, 10);
 
-            // Confirm at least 2 comments now exist (original + new)
             var allComments = Driver.FindElements(By.CssSelector(".comment-item .comment-text"));
             Assert.That(allComments.Count, Is.GreaterThanOrEqualTo(2));
         }
