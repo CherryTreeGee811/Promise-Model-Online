@@ -23,12 +23,12 @@ export function loadEpicDetail(epicId, contentDiv) {
     getEpicById(epicId)
         .then(epic => {
             detailDiv.innerHTML = `
-                <div class="epic-detail-card">
+                <div class="detail-card epic-detail-card">
                     <h2>${escapeHtml(epic.statement)}</h2>
                     <table class="detail-table">
                                 <tr><th>Description</th><td>
-                                    <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(epic.description || '')}</textarea>
-                                    <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                                    <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(epic.description || '')}</textarea>
+                                    <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                                 </td></tr>
                                 <tr>
                                     <th>Parent Promise</th>
@@ -84,8 +84,8 @@ export function loadEpicDetail(epicId, contentDiv) {
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
-                                    <form id="add-journey-form" class="inline-add-form" style="margin:0;">
-                                        <input id="add-journey-statement" type="text" maxlength="500" required placeholder="New Journey Statement..." style="width:100%;">
+                                    <form id="add-journey-form" class="inline-add-form">
+                                        <input id="add-journey-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Journey Statement...">
                                     </form>
                                 </td>
                                 <td>

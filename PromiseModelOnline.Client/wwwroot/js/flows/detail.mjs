@@ -32,12 +32,12 @@ export function loadFlowDetail(flowId, contentDiv) {
             });
 
             detailDiv.innerHTML = `
-                <div class="flow-detail-card">
+                <div class="detail-card flow-detail-card">
                     <h2>${escapeHtml(flow.statement)}</h2>
                     <table class="detail-table">
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(flow.description || '')}</textarea>
-                            <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(flow.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Journey</th>
@@ -78,12 +78,12 @@ export function loadFlowDetail(flowId, contentDiv) {
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
-                                    <form id="add-moment-form" class="inline-add-form" style="margin:0;">
-                                        <input id="add-moment-statement" type="text" maxlength="500" required placeholder="New Moment Statement..." style="width:100%;">
+                                    <form id="add-moment-form" class="inline-add-form">
+                                        <input id="add-moment-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Moment Statement...">
                                     </form>
                                 </td>
                                 <td>
-                                    <select id="add-moment-type" form="add-moment-form" style="width:100%;">
+                                    <select id="add-moment-type" class="inline-add-input" form="add-moment-form">
                                         <option value="Story">Story</option>
                                         <option value="Job">Job</option>
                                     </select>

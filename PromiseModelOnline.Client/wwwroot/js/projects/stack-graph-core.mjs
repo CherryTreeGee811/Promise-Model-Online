@@ -32,6 +32,25 @@ export function normalizeText(value) {
     return String(value ?? '').trim().toLowerCase();
 }
 
+function isGraphFocusDebugEnabled() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const paramValue = normalizeText(params.get('debugGraphFocus'));
+        if (paramValue === '1' || paramValue === 'true' || paramValue === 'yes' || paramValue === 'on') {
+            return true;
+        }
+
+        return window.localStorage?.getItem('pmo.debugGraphFocus') === '1';
+    } catch {
+        return false;
+    }
+}
+
+function logGraphFocus(stage, details) {
+    if (!isGraphFocusDebugEnabled()) return;
+    console.info('[graph-focus]', stage, details);
+}
+
 export function getStatusBucket(statusColor) {
     const normalized = normalizeText(statusColor);
 
@@ -101,7 +120,7 @@ export function getChildProgressSummary(nodeData) {
     return `${completedCount}/${childCount} ${childCount === 1 ? childLabel : `${childLabel}s`} completed`;
 }
 
-export function getMomentTypeLabel(payload) {
+export function getNodeTypeLabel(payload) {
     const value = String(payload?.type ?? payload?.Type ?? '').trim();
     if (!value) return null;
 
@@ -388,6 +407,27 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
             return `translate(${x}, ${y}) scale(${nodeScale})`;
         });
 
+    // Expose styling tokens and state via CSS variables and classes on the anchor element so
+    // the visual appearance can be controlled from `site.css` while still allowing JS to
+    // provide the accent color per node type.
+    node.style('--graph-accent', current => getNodeColor(current.data.nodeType))
+        .style('--graph-stroke', current => {
+            const isFocused = focusNodeId != null && current.data.id === focusNodeId;
+            const allowFocusHighlight = current.data.nodeType !== 'root';
+            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return '#d4af37';
+            return current.depth === 0 ? getNodeColor(current.data.nodeType) : '#cbd5e1';
+        })
+        .style('--graph-stroke-width', current => {
+            const isFocused = focusNodeId != null && current.data.id === focusNodeId;
+            const allowFocusHighlight = current.data.nodeType !== 'root';
+            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return 3;
+            return current.depth === 0 ? 2.5 : 1.5;
+        })
+        .classed('is-root', current => current.data.nodeType === 'root')
+        .classed('is-moment', current => current.data.nodeType === 'moment')
+        .classed('is-search-matched', current => Boolean(current.data._searchMatched))
+        .classed('is-focused', current => (focusNodeId != null && current.data.id === focusNodeId));
+
     if (onContextMenu) {
         node.on('contextmenu', (event, current) => {
             event.preventDefault();
@@ -406,19 +446,9 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('height', CARD_HEIGHT)
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS)
-        .attr('fill', current => current.depth === 0 ? '#f8fafc' : '#ffffff')
-        .attr('stroke', current => {
-            const isFocused = focusNodeId != null && current.data.id === focusNodeId;
-            const allowFocusHighlight = current.data.nodeType !== 'root';
-            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return '#d4af37';
-            return current.depth === 0 ? getNodeColor(current.data.nodeType) : '#cbd5e1';
-        })
-        .attr('stroke-width', current => {
-            const isFocused = focusNodeId != null && current.data.id === focusNodeId;
-            const allowFocusHighlight = current.data.nodeType !== 'root';
-            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return 3;
-            return current.depth === 0 ? 2.5 : 1.5;
-        });
+        .attr('fill', 'var(--graph-card-bg)')
+        .attr('stroke', 'var(--graph-stroke)')
+        .attr('stroke-width', 'var(--graph-stroke-width)');
 
     node.append('rect')
         .attr('class', 'graph-card-accent')
@@ -429,16 +459,26 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS)
         .attr('clip-path', `url(#${cardClipPathId})`)
+        // Keep the CSS variable for normal styling but also set an inline fill attribute
+        // so browser extensions like Dark Reader that may not honor SVG CSS variables
+        // still display the accent color correctly.
         .attr('fill', current => getNodeColor(current.data.nodeType));
 
     node.append('text')
         .attr('class', 'graph-card-statement')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
-        .attr('fill', '#0f172a')
-        .attr('font-size', 14)
-        .attr('font-weight', 100)
         .text(current => truncateText(current.data.label, 36));
+
+    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
+        .append('text')
+        .attr('class', 'graph-card-line graph-card-line--node-type')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 30)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .attr('font-weight', 600)
+        .text(current => getNodeTypeLabel(current.data.payload) ?? '');
 
     node.filter(current => current.data.nodeType !== 'root')
         .append('text')
@@ -446,7 +486,6 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
         .attr('text-anchor', 'end')
-        .attr('font-size', 18)
         .attr('dominant-baseline', 'hanging')
         .text(current => getStatusIcon(current.data.payload?.statusColor));
 
@@ -458,7 +497,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .attr('font-weight', 600)
-        .text(current => getMomentTypeLabel(current.data.payload) ?? '');
+        .text(current => getNodeTypeLabel(current.data.payload) ?? '');
 
     node.append('line')
         .attr('class', 'graph-card-divider')
@@ -602,8 +641,27 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
     const graphWidth = Math.max((maxY - minY) + margin.left + margin.right, viewportWidth, minGraphWidth ?? defaultMinWidth);
     const graphHeight = Math.max((maxX - minX) + margin.top + margin.bottom + foreheadGap, viewportHeight, minGraphHeight ?? defaultMinHeight);
 
+    logGraphFocus('render-start', {
+        projectId,
+        compact,
+        resolvedFocusNodeId,
+        nodeCount: renderable.length,
+        maxDepth,
+        viewportWidth,
+        viewportHeight,
+        graphWidth,
+        graphHeight,
+        minX,
+        maxX,
+        minY,
+        maxY,
+        contentOffsetPreviewX: margin.left - minY,
+        contentOffsetPreviewY: margin.top - minX + foreheadGap,
+    });
+
     const svg = d3.create('svg')
         .attr('viewBox', [0, 0, graphWidth, graphHeight])
+        .attr('preserveAspectRatio', 'xMinYMin meet')
         .attr('width', '100%')
         .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
         .attr('role', 'img')
@@ -625,6 +683,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         .attr('ry', CARD_RADIUS);
 
     const graphLayer = svg.append('g');
+    let focusedHierarchyNode = null;
     const nodeOptions = {
         contentOffsetX,
         contentOffsetY,
@@ -649,7 +708,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
             ])
             .on('zoom', event => {
                 zoomLayer.attr('transform', event.transform);
-                onZoom?.(event.transform, { user: true });
+                onZoom?.(event.transform, { user: Boolean(event.sourceEvent) });
             });
 
         svg.call(zoom);
@@ -660,10 +719,34 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
             viewportHeight > 0 ? viewportHeight / graphHeight : 1,
             1
         );
-        const focusedHierarchyNode = focusNodeData
-            ? root.descendants().find(node => node.data === focusNodeData)
-            : null;
-        const focusTransform = focusNodeData
+        focusedHierarchyNode = (() => {
+            if (focusNodeData) {
+                const byIdentity = root.descendants().find(node => node.data === focusNodeData);
+                if (byIdentity) return byIdentity;
+            }
+
+            if (!resolvedFocusNodeId) return null;
+            return root.descendants().find(node => node.data?.id === resolvedFocusNodeId) ?? null;
+        })();
+
+        if (focusedHierarchyNode) {
+            logGraphFocus('focus-node-resolved', {
+                resolvedFocusNodeId,
+                hierarchyX: focusedHierarchyNode.x,
+                hierarchyY: focusedHierarchyNode.y,
+                dataId: focusedHierarchyNode.data?.id,
+                nodeType: focusedHierarchyNode.data?.nodeType,
+                label: focusedHierarchyNode.data?.label,
+            });
+        } else {
+            logGraphFocus('focus-node-missing', {
+                resolvedFocusNodeId,
+                hasFocusNodeData: Boolean(focusNodeData),
+                renderableCount: renderable.length,
+            });
+        }
+
+        const focusTransform = focusedHierarchyNode
             ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode, contentOffsetX, contentOffsetY)
             : null;
         const fitTransform = d3.zoomIdentity
@@ -674,18 +757,41 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
             .scale(initialScale);
         const initialTransform = focusTransform ?? restoreTransform ?? fitTransform;
 
-        zoomLayer.attr('transform', initialTransform);
-        onZoom?.(initialTransform, { user: false });
+        logGraphFocus('initial-transform', {
+            mode: focusTransform ? 'focus' : (restoreTransform ? 'restore' : 'fit'),
+            transform: {
+                x: initialTransform?.x,
+                y: initialTransform?.y,
+                k: initialTransform?.k,
+            },
+            focusTransform: focusTransform ? { x: focusTransform.x, y: focusTransform.y, k: focusTransform.k } : null,
+            fitTransform: { x: fitTransform.x, y: fitTransform.y, k: fitTransform.k },
+            restoreTransform: restoreTransform ? { x: restoreTransform.x, y: restoreTransform.y, k: restoreTransform.k } : null,
+        });
+
+        svg.call(zoom.transform, initialTransform);
 
         if (focusedHierarchyNode) {
             window.requestAnimationFrame(() => {
                 const measuredViewport = getInnerViewportSize(viewportEl);
-                const measuredWidth = Math.max(measuredViewport.width || contentDiv.clientWidth || 0, 1);
-                const measuredHeight = Math.max(measuredViewport.height || contentDiv.clientHeight || 0, 1);
+                const measuredWidth = Number(measuredViewport.width ?? 0);
+                const measuredHeight = Number(measuredViewport.height ?? 0);
+
+                // For large graphs, falling back to contentDiv size can use the full SVG height,
+                // which pushes the focus transform far off target. Only refine when we can
+                // measure the real viewport dimensions.
+                if (measuredWidth <= 1 || measuredHeight <= 1) {
+                    logGraphFocus('refine-skip-invalid-viewport', {
+                        measuredWidth,
+                        measuredHeight,
+                    });
+                    return;
+                }
+
                 const refinedTransform = createFocusTransform(
                     d3,
-                    measuredWidth,
-                    measuredHeight,
+                    Math.max(measuredWidth, 1),
+                    Math.max(measuredHeight, 1),
                     focusedHierarchyNode,
                     contentOffsetX,
                     contentOffsetY
@@ -693,8 +799,17 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
 
                 if (!refinedTransform) return;
 
+                logGraphFocus('refined-transform', {
+                    measuredWidth,
+                    measuredHeight,
+                    transform: {
+                        x: refinedTransform.x,
+                        y: refinedTransform.y,
+                        k: refinedTransform.k,
+                    },
+                });
+
                 svg.call(zoom.transform, refinedTransform);
-                onZoom?.(refinedTransform, { user: false });
             });
         }
 
@@ -717,5 +832,56 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
     }
 
     contentDiv.appendChild(svg.node());
+
+    if (focusedHierarchyNode) {
+        window.requestAnimationFrame(() => {
+            if (!isGraphFocusDebugEnabled()) return;
+
+            const focusElement = contentDiv.querySelector('.graph-node.is-focused .graph-card');
+            const viewportRect = viewportEl?.getBoundingClientRect?.() ?? null;
+            const focusRect = focusElement?.getBoundingClientRect?.() ?? null;
+            const zoomTransform = svg.node()?.__zoom ?? null;
+
+            logGraphFocus('post-render-transform-state', {
+                resolvedFocusNodeId,
+                layerTransform: graphLayer.attr('transform') ?? null,
+                svgZoomTransform: zoomTransform ? {
+                    x: zoomTransform.x,
+                    y: zoomTransform.y,
+                    k: zoomTransform.k,
+                } : null,
+                svgViewBox: svg.attr('viewBox') ?? null,
+                svgSize: {
+                    width: svg.attr('width') ?? null,
+                    height: svg.attr('height') ?? null,
+                },
+            });
+
+            logGraphFocus('post-render-focus-rect', {
+                resolvedFocusNodeId,
+                viewportRect: viewportRect ? {
+                    x: viewportRect.x,
+                    y: viewportRect.y,
+                    width: viewportRect.width,
+                    height: viewportRect.height,
+                    centerX: viewportRect.x + (viewportRect.width / 2),
+                    centerY: viewportRect.y + (viewportRect.height / 2),
+                } : null,
+                focusRect: focusRect ? {
+                    x: focusRect.x,
+                    y: focusRect.y,
+                    width: focusRect.width,
+                    height: focusRect.height,
+                    centerX: focusRect.x + (focusRect.width / 2),
+                    centerY: focusRect.y + (focusRect.height / 2),
+                } : null,
+                deltaFromViewportCenter: viewportRect && focusRect ? {
+                    x: (focusRect.x + (focusRect.width / 2)) - (viewportRect.x + (viewportRect.width / 2)),
+                    y: (focusRect.y + (focusRect.height / 2)) - (viewportRect.y + (viewportRect.height / 2)),
+                } : null,
+            });
+        });
+    }
+
     return svg.node();
 }

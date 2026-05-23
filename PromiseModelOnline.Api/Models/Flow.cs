@@ -7,6 +7,9 @@ public class Flow
 {
     [Key]
     public int Id { get; set; }
+
+    [NotMapped]
+    public string Type => "Flow";
         
     [Required]
     [MaxLength(500)]

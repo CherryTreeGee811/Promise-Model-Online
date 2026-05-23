@@ -41,6 +41,25 @@ const graphState = {
     pageShowRefreshHandler: null,
 };
 
+function isGraphFocusDebugEnabled() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const paramValue = normalizeText(params.get('debugGraphFocus'));
+        if (paramValue === '1' || paramValue === 'true' || paramValue === 'yes' || paramValue === 'on') {
+            return true;
+        }
+
+        return window.localStorage?.getItem('pmo.debugGraphFocus') === '1';
+    } catch {
+        return false;
+    }
+}
+
+function logGraphFocus(stage, details) {
+    if (!isGraphFocusDebugEnabled()) return;
+    console.info('[graph-focus]', stage, details);
+}
+
 function createDefaultFilters() {
     return {
         search: '',
@@ -671,6 +690,17 @@ function applyFilters() {
         const focusNode = graphState.filters.search
             ? findFirstSearchMatch(graphState.filteredTree)
             : (graphState.focusNodeId ? findNodeById(graphState.filteredTree, graphState.focusNodeId) : (graphState.userZoomTransform ? null : graphState.filteredTree));
+
+        logGraphFocus('apply-filters-focus-selection', {
+            requestedFocusNodeId: graphState.focusNodeId,
+            selectedFocusNodeId: focusNode?.id ?? null,
+            selectedFocusNodeType: focusNode?.nodeType ?? null,
+            hasUserZoomTransform: Boolean(graphState.userZoomTransform),
+            searchFilter: graphState.filters.search,
+            includeChildren: graphState.filters.includeChildren,
+            visibleNodeCount: metrics.visibleNodes,
+            directMatches: metrics.directMatches,
+        });
 
         const restoreTransform = focusNode ? null : (graphState.userZoomTransform ?? graphState.zoomTransform);
         renderTree(graphContent, graphState.d3, graphState.filteredTree, restoreTransform, focusNode);

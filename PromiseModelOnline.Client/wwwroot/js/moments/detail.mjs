@@ -33,14 +33,14 @@ export function loadMomentDetail(momentId, contentDiv) {
             });
 
             detailDiv.innerHTML = `
-                <div class="moment-detail-card">
+                <div class="detail-card moment-detail-card">
                     <h2>${escapeHtml(moment.statement)}</h2>
                     <table class="detail-table">
                         <tr>
                             <th>Description</th>
                             <td>
-                                <textarea id="moment-description-input" rows="4" style="width:100%">${escapeHtml(moment.description || '')}</textarea>
-                                <div style="margin-top:6px"><button id="moment-description-save" class="save-btn">Save</button> <span id="moment-description-msg"></span></div>
+                                <textarea id="moment-description-input" rows="4" class="detail-textarea">${escapeHtml(moment.description || '')}</textarea>
+                                <div class="field-actions"><button id="moment-description-save" class="save-btn">Save</button> <span id="moment-description-msg"></span></div>
                             </td>
                         </tr>
                         <tr><th>Type</th><td>
@@ -325,13 +325,13 @@ function renderMomentTasks(container, momentId, tasks, moment) {
         renderAddRow: () => `
             <tr data-inline-add-row="1">
                 <td>
-                    <input id="add-moment-task-name" type="text" maxlength="200" required placeholder="New task name..." style="width:100%;">
+                    <input id="add-moment-task-name" class="inline-add-input" type="text" maxlength="200" required placeholder="New task name...">
                 </td>
                 <td>
-                    <input id="add-moment-task-description" type="text" maxlength="500" placeholder="Task description..." style="width:100%;">
+                    <input id="add-moment-task-description" class="inline-add-input" type="text" maxlength="500" placeholder="Task description...">
                 </td>
                 <td>
-                    <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+                    <div class="inline-add-actions">
                         <label class="moment-task-completion">
                             <input id="add-moment-task-completed" type="checkbox" />
                             <span>Completed</span>

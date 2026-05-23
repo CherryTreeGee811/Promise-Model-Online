@@ -31,12 +31,12 @@ export function loadJourneyDetail(journeyId, contentDiv) {
             });
 
             detailDiv.innerHTML = `
-                <div class="journey-detail-card">
+                <div class="detail-card journey-detail-card">
                     <h2>${escapeHtml(journey.statement)}</h2>
                     <table class="detail-table">
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(journey.description || '')}</textarea>
-                            <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(journey.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Epic</th>
@@ -74,8 +74,8 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
-                                    <form id="add-flow-form" class="inline-add-form" style="margin:0;">
-                                        <input id="add-flow-statement" type="text" maxlength="500" required placeholder="New Flow Statement..." style="width:100%;">
+                                    <form id="add-flow-form" class="inline-add-form">
+                                        <input id="add-flow-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Flow Statement...">
                                     </form>
                                 </td>
                                 <td>

@@ -449,6 +449,44 @@ input[type=button]:hover, input[type=submit]:hover {
   text-decoration: none;
 }
 
+/* Shared detail card and form utilities */
+.detail-card {
+  background: var(--color-panel-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+.detail-card h2 { margin-bottom: var(--spacing-sm); }
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-sm);
+  font-size: 0.98rem;
+}
+.detail-table th { text-align: left; padding: 8px 10px; vertical-align: top; width: 200px; color: var(--color-heading); }
+.detail-table td { padding: 8px 10px; }
+.detail-textarea { min-height: 96px; }
+.field-actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
+.save-btn {
+  background: linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Inline add row utilities used by detail pages */
+.inline-add-form { margin: 0; }
+.inline-add-input { width: 100%; padding: 10px 12px; border-radius: var(--radius-xs); border: 1px solid var(--color-border); }
+.inline-add-actions { display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+
+/* Moment task completion label */
+.moment-task-completion { display: inline-flex; align-items: center; gap: 8px; }
+
+
 /*********************************************
   14. Project Graph
 **********************************************/
@@ -656,8 +694,18 @@ input[type=button]:hover, input[type=submit]:hover {
 }
 
 #graph-content svg {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
   width: 100%;
+}
+
+#graph-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
 }
 
 .graph-node {
@@ -687,6 +735,45 @@ input[type=button]:hover, input[type=submit]:hover {
   font-family: var(--font-primary);
   pointer-events: none;
   user-select: none;
+}
+
+/* SVG card theming via CSS variables set on the `.graph-node` elements */
+.graph-node {
+  --graph-card-bg: #ffffff;
+  --graph-accent: #355070;
+  --graph-stroke: #cbd5e1;
+  --graph-stroke-width: 1.5;
+}
+
+.graph-card {
+  fill: var(--graph-card-bg);
+  stroke: var(--graph-stroke);
+  stroke-width: var(--graph-stroke-width);
+}
+
+.graph-card-accent {
+  fill: var(--graph-accent);
+  opacity: 0.95;
+}
+
+.graph-card-statement {
+  fill: var(--color-heading);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.graph-card-status {
+  font-size: 18px;
+}
+
+.graph-node.is-search-matched .graph-card {
+  stroke: #d4af37;
+  stroke-width: 3;
+}
+
+.graph-node.is-focused .graph-card {
+  stroke: #d4af37;
+  stroke-width: 3;
 }
 
 .graph-card-statement {

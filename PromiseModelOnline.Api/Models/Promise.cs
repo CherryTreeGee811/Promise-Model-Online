@@ -7,6 +7,9 @@ public class Promise
 {
     [Key]
     public int Id { get; set; }
+
+    [NotMapped]
+    public string Type => "Promise";
         
     [Required]
     [MaxLength(500)]

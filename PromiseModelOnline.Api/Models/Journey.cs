@@ -7,6 +7,9 @@ public class Journey
 {
     [Key]
     public int Id { get; set; }
+
+    [NotMapped]
+    public string Type => "Journey";
         
     [Required]
     [MaxLength(500)]

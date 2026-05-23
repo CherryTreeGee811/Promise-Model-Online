@@ -23,12 +23,12 @@ export function loadPromiseDetail(promiseId, contentDiv) {
     getPromiseById(promiseId)
         .then(promise => {
             detailDiv.innerHTML = `
-                <div class="promise-detail-card">
+                <div class="detail-card promise-detail-card">
                     <h2>${escapeHtml(promise.statement)}</h2>
                     <table class="detail-table">
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(promise.description || '')}</textarea>
-                            <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(promise.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr><th>Status</th><td id="promise-status-cell">${getStatusIcon(promise.statusColor)}</td></tr>
                         <tr><th>Created</th><td>${new Date(promise.createdAt).toLocaleDateString('en-CA')}</td></tr>
@@ -68,8 +68,8 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
-                                    <form id="add-epic-form" class="inline-add-form" style="margin:0;">
-                                        <input id="add-epic-statement" type="text" maxlength="500" required placeholder="New Epic Statement..." style="width:100%;">
+                                    <form id="add-epic-form" class="inline-add-form">
+                                        <input id="add-epic-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Epic Statement...">
                                     </form>
                                 </td>
                                 <td>
