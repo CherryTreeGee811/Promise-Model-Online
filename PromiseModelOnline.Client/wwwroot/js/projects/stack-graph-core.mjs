@@ -425,6 +425,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         })
         .classed('is-root', current => current.data.nodeType === 'root')
         .classed('is-moment', current => current.data.nodeType === 'moment')
+        .classed('is-collapsed', current => Boolean(current.data._isCollapsed))
         .classed('is-search-matched', current => Boolean(current.data._searchMatched))
         .classed('is-focused', current => (focusNodeId != null && current.data.id === focusNodeId));
 
@@ -488,6 +489,20 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'hanging')
         .text(current => getStatusIcon(current.data.payload?.statusColor));
+
+    node.filter(current => {
+        const hiddenCount = Number.parseInt(current.data._hiddenDescendantCount ?? 0, 10) || 0;
+        return hiddenCount > 0 && Boolean(current.data._isCollapsed);
+    })
+        .append('text')
+        .attr('class', 'graph-card-collapsed-badge')
+        .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
+        .attr('y', CARD_HEIGHT / 2 - 12)
+        .attr('text-anchor', 'end')
+        .text(current => {
+            const hiddenCount = Number.parseInt(current.data._hiddenDescendantCount ?? 0, 10) || 0;
+            return `${hiddenCount} hidden`;
+        });
 
     node.filter(current => current.data.nodeType === 'moment')
         .append('text')

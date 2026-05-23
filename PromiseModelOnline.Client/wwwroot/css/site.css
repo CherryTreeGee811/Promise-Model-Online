@@ -766,6 +766,24 @@ input[type=button]:hover, input[type=submit]:hover {
   font-size: 18px;
 }
 
+.graph-node.is-collapsed .graph-card {
+  fill: #f8fafc;
+  stroke: #94a3b8;
+  stroke-width: 2;
+}
+
+.graph-node.is-collapsed .graph-card-accent {
+  opacity: 0.62;
+}
+
+.graph-card-collapsed-badge {
+  fill: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
 .graph-node.is-search-matched .graph-card {
   stroke: #d4af37;
   stroke-width: 3;
