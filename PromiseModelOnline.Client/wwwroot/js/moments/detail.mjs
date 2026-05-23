@@ -1,9 +1,10 @@
-import { getMomentById, updateMomentDescription, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
+import { getMomentById, addMomentTask, updateMomentTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { getAllStrides } from '../strides/api.mjs';
 import { getFlowById } from '../flows/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
+import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 
 export function loadMomentDetail(momentId, contentDiv) {
@@ -75,10 +76,15 @@ export function loadMomentDetail(momentId, contentDiv) {
                         <tr><th>Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
                         <tr><th>Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
+                    <h3>Moment Tasks</h3>
+                    <div id="moment-tasks"></div>
                     <div id="moment-comments"></div>
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
+
+            const tasksContainer = document.getElementById('moment-tasks');
+            renderMomentTasks(tasksContainer, momentId, moment.tasks);
 
             const descriptionSaveButton = document.getElementById('moment-description-save');
             const descriptionInput = document.getElementById('moment-description-input');
@@ -265,4 +271,138 @@ function getStatusIconForStatus(status) {
         case 'Done': return '🟢';
         default: return '⚪';
     }
+}
+
+function renderMomentTasks(container, momentId, tasks) {
+    if (!container) return;
+
+    const taskList = Array.isArray(tasks) ? tasks : [];
+
+    const tbody = renderTableWithInlineAddRow(container, {
+        headers: ['Name', 'Description', 'Completion Status'],
+        items: taskList,
+        emptyMessage: 'No moment tasks found.',
+        renderItemRow: task => `
+            <tr data-moment-task-id="${task.id}">
+                <td>${escapeHtml(task.name || '')}</td>
+                <td>${escapeHtml(task.description)}</td>
+                <td>
+                    <label class="moment-task-completion">
+                        <input type="checkbox" class="moment-task-complete-checkbox" data-moment-task-id="${task.id}" ${task.isCompleted ? 'checked' : ''} />
+                        <span>${task.isCompleted ? 'Completed' : 'Open'}</span>
+                    </label>
+                </td>
+            </tr>
+        `,
+        renderAddRow: () => `
+            <tr data-inline-add-row="1">
+                <td>
+                    <input id="add-moment-task-name" type="text" maxlength="200" required placeholder="New task name..." style="width:100%;">
+                </td>
+                <td>
+                    <input id="add-moment-task-description" type="text" maxlength="500" placeholder="Task description..." style="width:100%;">
+                </td>
+                <td>
+                    <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+                        <label class="moment-task-completion">
+                            <input id="add-moment-task-completed" type="checkbox" />
+                            <span>Completed</span>
+                        </label>
+                        <button id="add-moment-task-submit" type="button" class="view-btn">Add</button>
+                        <span id="add-moment-task-msg"></span>
+                    </div>
+                </td>
+            </tr>
+        `,
+    });
+
+    const addTaskName = container.querySelector('#add-moment-task-name');
+    const addTaskDescription = container.querySelector('#add-moment-task-description');
+    const addTaskCompleted = container.querySelector('#add-moment-task-completed');
+    const addTaskButton = container.querySelector('#add-moment-task-submit');
+    const addTaskMessage = container.querySelector('#add-moment-task-msg');
+
+    if (addTaskButton && addTaskName && addTaskDescription && addTaskCompleted && addTaskMessage) {
+        addTaskButton.addEventListener('click', async () => {
+            addTaskMessage.textContent = '';
+
+            const name = addTaskName.value.trim();
+            if (!name) {
+                addTaskMessage.textContent = 'Name is required.';
+                return;
+            }
+
+            addTaskButton.disabled = true;
+
+            try {
+                const created = await addMomentTask(momentId, {
+                    name,
+                    description: addTaskDescription.value.trim(),
+                    isCompleted: addTaskCompleted.checked,
+                });
+
+                if (created) {
+                    removeInlineEmptyRow(tbody);
+                    const row = document.createElement('tr');
+                    row.dataset.momentTaskId = created.id;
+                    row.innerHTML = `
+                        <td>${escapeHtml(created.name || '')}</td>
+                        <td>${escapeHtml(created.description || '')}</td>
+                        <td>
+                            <label class="moment-task-completion">
+                                <input type="checkbox" class="moment-task-complete-checkbox" data-moment-task-id="${created.id}" ${created.isCompleted ? 'checked' : ''} />
+                                <span>${created.isCompleted ? 'Completed' : 'Open'}</span>
+                            </label>
+                        </td>
+                    `;
+                    insertRowBeforeAddRow(tbody, row);
+                    addTaskName.value = '';
+                    addTaskDescription.value = '';
+                    addTaskCompleted.checked = false;
+                    bindMomentTaskCompletionToggle(tbody, momentId);
+                }
+            } catch (err) {
+                addTaskMessage.textContent = 'Failed to add task.';
+                console.error(err);
+            } finally {
+                addTaskButton.disabled = false;
+            }
+        });
+    }
+
+    bindMomentTaskCompletionToggle(tbody, momentId);
+}
+
+function bindMomentTaskCompletionToggle(tbody, momentId) {
+    if (!tbody) return;
+
+    tbody.querySelectorAll('.moment-task-complete-checkbox').forEach(checkbox => {
+        if (checkbox.dataset.bound === '1') return;
+        checkbox.dataset.bound = '1';
+
+        checkbox.addEventListener('change', async () => {
+            const taskId = Number.parseInt(String(checkbox.dataset.momentTaskId ?? ''), 10);
+            const row = checkbox.closest('tr');
+            const label = row?.querySelector('.moment-task-completion span');
+            const prevChecked = !checkbox.checked;
+            checkbox.disabled = true;
+
+            try {
+                const updated = await updateMomentTaskCompletion(momentId, taskId, checkbox.checked);
+                if (updated) {
+                    checkbox.checked = Boolean(updated.isCompleted);
+                    if (label) label.textContent = updated.isCompleted ? 'Completed' : 'Open';
+                } else if (label) {
+                    label.textContent = checkbox.checked ? 'Completed' : 'Open';
+                }
+            } catch (err) {
+                checkbox.checked = prevChecked;
+                if (label) label.textContent = prevChecked ? 'Completed' : 'Open';
+                alert('Failed to update task completion');
+                console.error(err);
+            } finally {
+                checkbox.disabled = false;
+            }
+        });
+    });
 }

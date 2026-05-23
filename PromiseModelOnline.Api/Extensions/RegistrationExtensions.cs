@@ -33,6 +33,8 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped<IFlowService, FlowService>();
             services.AddScoped<IMomentRepository, MomentRepository>();
             services.AddScoped<IMomentService, MomentService>();
+            services.AddScoped<IMomentTaskRepository, MomentTaskRepository>();
+            services.AddScoped<IMomentTaskService, MomentTaskService>();
             services.AddScoped<IStrideRepository, StrideRepository>();
             services.AddScoped<IStrideService, StrideService>();
             services.AddScoped<IIterationRepository, IterationRepository>();

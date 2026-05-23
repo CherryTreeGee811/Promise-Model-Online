@@ -220,6 +220,14 @@ function getMomentTypeLabel(payload) {
     return value;
 }
 
+function getMomentTaskSummary(payload) {
+    const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
+    if (tasks.length === 0) return null;
+
+    const completedCount = tasks.filter(task => Boolean(task?.isCompleted ?? task?.IsCompleted)).length;
+    return `Tasks: ${completedCount}/${tasks.length} complete`;
+}
+
 function getCardDescription(payload, maxLength = 52) {
     const description = String(payload?.description ?? payload?.Description ?? '').trim();
     if (!description) return 'Description: None';
@@ -239,6 +247,8 @@ function getNodeTitle(nodeData) {
         lines.push(getStrideLabel(payload));
         if (payload.description) lines.push(truncateText(payload.description, 40));
         lines.push(`Effort: ${formatEstimate(payload.effortEstimate)}`);
+        const taskSummary = getMomentTaskSummary(payload);
+        if (taskSummary) lines.push(taskSummary);
     }
 
     return lines.join('\n');
@@ -1145,6 +1155,16 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null, focusNode
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .text(current => `Effort: ${formatEstimate(current.data.payload?.effortEstimate)}`);
+
+    node.filter(current => current.data.nodeType === 'moment' && getMomentTaskSummary(current.data.payload))
+        .append('text')
+        .attr('class', 'graph-card-line graph-card-line--moment-tasks')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 3))
+        .attr('fill', '#0f766e')
+        .attr('font-size', 12)
+        .attr('font-weight', 600)
+        .text(current => getMomentTaskSummary(current.data.payload));
 
     node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
         .append('text')

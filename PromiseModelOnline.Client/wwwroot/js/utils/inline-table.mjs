@@ -3,12 +3,14 @@ export function renderTableWithInlineAddRow(container, {
     items,
     emptyMessage,
     renderItemRow,
-    renderAddRow,
+    renderAddRow = () => '',
 }) {
     const columnCount = headers.length;
     const rowsHtml = items && items.length
         ? items.map(renderItemRow).join('')
         : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`;
+
+    const addRowHtml = renderAddRow ? renderAddRow() : '';
 
     container.innerHTML = `
         <table class="promisemodel-table">
@@ -17,7 +19,7 @@ export function renderTableWithInlineAddRow(container, {
             </thead>
             <tbody>
                 ${rowsHtml}
-                ${renderAddRow()}
+                ${addRowHtml}
             </tbody>
         </table>
     `;

@@ -231,3 +231,55 @@ export async function updateMomentType(momentId, newType) {
         throw new Error(`HTTP error! status: ${res.status}`);
     }
 }
+
+export async function addMomentTask(momentId, task) {
+    const url = `${base}/api/moments/${momentId}/tasks`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA'
+        },
+        body: JSON.stringify(task)
+    });
+
+    if (res.ok) {
+        if (res.status === 204) return null;
+        return res.json();
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}
+
+export async function updateMomentTaskCompletion(momentId, taskId, isCompleted) {
+    const url = `${base}/api/moments/${momentId}/tasks/${taskId}/completion`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA'
+        },
+        body: JSON.stringify({ isCompleted })
+    });
+
+    if (res.ok) {
+        if (res.status === 204) return null;
+        return res.json();
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}
