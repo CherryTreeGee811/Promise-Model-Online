@@ -566,9 +566,22 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
     return form;
 }
 
-function buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted, openCreateForm, openMomentStatusForm) {
+function buildMenuActions(
+    nodeData,
+    projectId,
+    onGraphMutated,
+    onProjectDeleted,
+    openCreateForm,
+    openMomentStatusForm,
+    isNodeChildrenHidden,
+    setNodeChildrenHidden,
+) {
     const actions = [];
     const childLabel = getChildLabel(nodeData.nodeType);
+    const childCount = Number.parseInt(nodeData?.childCount ?? 0, 10) || 0;
+    const hiddenDescendantCount = Number.parseInt(nodeData?._hiddenDescendantCount ?? 0, 10) || 0;
+    const canToggleChildren = childCount > 0 || hiddenDescendantCount > 0;
+    const childrenHidden = canToggleChildren && Boolean(isNodeChildrenHidden?.(nodeData));
 
     if (childLabel) {
         actions.push({
@@ -577,6 +590,17 @@ function buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted,
             danger: false,
             handler: async () => {
                 openCreateForm(nodeData, projectId, onGraphMutated);
+            },
+        });
+    }
+
+    if (canToggleChildren) {
+        actions.push({
+            id: childrenHidden ? 'reveal-children' : 'hide-children',
+            label: childrenHidden ? 'Reveal Children' : 'Hide Children',
+            danger: false,
+            handler: async () => {
+                await setNodeChildrenHidden?.(nodeData, !childrenHidden);
             },
         });
     }
@@ -645,7 +669,14 @@ function buildMenuElement(actions) {
     return menu;
 }
 
-export function createGraphContextMenuController({ projectId, getAvailableStrides, onGraphMutated, onProjectDeleted } = {}) {
+export function createGraphContextMenuController({
+    projectId,
+    getAvailableStrides,
+    onGraphMutated,
+    onProjectDeleted,
+    isNodeChildrenHidden,
+    setNodeChildrenHidden,
+} = {}) {
     let referenceRect = null;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
@@ -738,7 +769,16 @@ export function createGraphContextMenuController({ projectId, getAvailableStride
         const clientY = Number(event?.clientY ?? 0);
         referenceRect = new DOMRect(clientX, clientY, 1, 1);
 
-        const actions = buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted, openCreateForm, openMomentStatusForm);
+        const actions = buildMenuActions(
+            nodeData,
+            projectId,
+            onGraphMutated,
+            onProjectDeleted,
+            openCreateForm,
+            openMomentStatusForm,
+            isNodeChildrenHidden,
+            setNodeChildrenHidden,
+        );
         menuContent.replaceChildren(buildMenuElement(actions));
 
         instance.setProps({

@@ -39,7 +39,66 @@ const graphState = {
     applyTimer: null,
     contextMenu: null,
     pageShowRefreshHandler: null,
+    collapsedNodeIds: new Set(),
 };
+
+function hasNodeChildren(node) {
+    return Array.isArray(node?.children) && node.children.length > 0;
+}
+
+function isNodeCollapsed(nodeId) {
+    return Boolean(nodeId) && graphState.collapsedNodeIds.has(nodeId);
+}
+
+function setNodeCollapsed(nodeId, collapsed) {
+    if (!nodeId) return;
+
+    if (collapsed) {
+        graphState.collapsedNodeIds.add(nodeId);
+    } else {
+        graphState.collapsedNodeIds.delete(nodeId);
+    }
+}
+
+function getHiddenDescendantCount(node) {
+    if (!hasNodeChildren(node)) return 0;
+
+    return node.children.reduce((sum, child) => sum + countRenderableNodes(child), 0);
+}
+
+function reconcileCollapsedNodes() {
+    if (!graphState.rawTree) {
+        graphState.collapsedNodeIds.clear();
+        return;
+    }
+
+    const reconciled = new Set();
+    for (const nodeId of graphState.collapsedNodeIds) {
+        const node = findNodeById(graphState.rawTree, nodeId);
+        if (node && hasNodeChildren(node)) {
+            reconciled.add(nodeId);
+        }
+    }
+
+    graphState.collapsedNodeIds = reconciled;
+}
+
+function collapseAllBelowPromises() {
+    if (!graphState.rawTree) return;
+
+    const nextCollapsed = new Set();
+    for (const promiseNode of graphState.rawTree.children ?? []) {
+        if (hasNodeChildren(promiseNode)) {
+            nextCollapsed.add(promiseNode.id);
+        }
+    }
+
+    graphState.collapsedNodeIds = nextCollapsed;
+}
+
+function expandAllNodes() {
+    graphState.collapsedNodeIds.clear();
+}
 
 function isGraphFocusDebugEnabled() {
     try {
@@ -221,17 +280,28 @@ function cloneSubtree(node, metrics) {
         metrics.visibleNodes += 1;
     }
 
+    const isCollapsed = isNodeCollapsed(node.id);
+    const hiddenDescendantCount = isCollapsed ? getHiddenDescendantCount(node) : 0;
+
+    if (hiddenDescendantCount > 0) {
+        metrics.hiddenNodes += hiddenDescendantCount;
+    }
+
     return {
         ...node,
         _searchMatched: false,
-        children: (node.children ?? []).map(child => cloneSubtree(child, metrics)),
+        _isCollapsed: isCollapsed,
+        _hiddenDescendantCount: hiddenDescendantCount,
+        children: isCollapsed ? [] : (node.children ?? []).map(child => cloneSubtree(child, metrics)),
     };
 }
 
 function filterTree(node, filters, metrics, isRoot = false) {
+    const isCollapsed = isNodeCollapsed(node.id);
+    const hiddenDescendantCount = isCollapsed ? getHiddenDescendantCount(node) : 0;
     const searchMatched = !isRoot && filters.search && (node._searchText ?? getNodeSearchText(node)).includes(filters.search);
 
-    if (searchMatched && filters.includeChildren) {
+    if (searchMatched && filters.includeChildren && !isCollapsed) {
         metrics.directMatches += 1;
         return {
             ...cloneSubtree(node, metrics),
@@ -239,9 +309,15 @@ function filterTree(node, filters, metrics, isRoot = false) {
         };
     }
 
-    const filteredChildren = (node.children ?? [])
-        .map(child => filterTree(child, filters, metrics))
-        .filter(Boolean);
+    if (hiddenDescendantCount > 0) {
+        metrics.hiddenNodes += hiddenDescendantCount;
+    }
+
+    const filteredChildren = isCollapsed
+        ? []
+        : (node.children ?? [])
+            .map(child => filterTree(child, filters, metrics))
+            .filter(Boolean);
 
     const selfMatches = !isRoot && matchesNode(node, filters);
     if (selfMatches) {
@@ -252,6 +328,8 @@ function filterTree(node, filters, metrics, isRoot = false) {
         return {
             ...node,
             _searchMatched: false,
+            _isCollapsed: isCollapsed,
+            _hiddenDescendantCount: hiddenDescendantCount,
             children: filteredChildren,
         };
     }
@@ -261,6 +339,8 @@ function filterTree(node, filters, metrics, isRoot = false) {
         return {
             ...node,
             _searchMatched: Boolean(searchMatched && filters.search),
+            _isCollapsed: isCollapsed,
+            _hiddenDescendantCount: hiddenDescendantCount,
             children: filteredChildren,
         };
     }
@@ -420,6 +500,8 @@ function renderFilterBar() {
 
             <div class="graph-filter-actions">
                 <button id="graph-filter-reset" type="button" class="graph-filter-button">Reset</button>
+                <button id="graph-filter-hide-all" type="button" class="graph-filter-button">Hide All</button>
+                <button id="graph-filter-expand-all" type="button" class="graph-filter-button">Expand All</button>
                 <button id="graph-filter-refresh" type="button" class="graph-filter-button">Refresh</button>
             </div>
         </div>
@@ -453,6 +535,8 @@ function bindFilterControls() {
     const statusSelect = document.getElementById('graph-filter-status');
     const assignmentSelect = document.getElementById('graph-filter-assignment');
     const resetButton = document.getElementById('graph-filter-reset');
+    const hideAllButton = document.getElementById('graph-filter-hide-all');
+    const expandAllButton = document.getElementById('graph-filter-expand-all');
     const refreshButton = document.getElementById('graph-filter-refresh');
 
     if (searchInput) {
@@ -533,8 +617,23 @@ function bindFilterControls() {
     if (resetButton) {
         resetButton.addEventListener('click', () => {
             graphState.filters = createDefaultFilters();
+            expandAllNodes();
             syncControlsToFilters();
             requestApplyFilters();
+        });
+    }
+
+    if (hideAllButton) {
+        hideAllButton.addEventListener('click', () => {
+            collapseAllBelowPromises();
+            requestApplyFilters(0);
+        });
+    }
+
+    if (expandAllButton) {
+        expandAllButton.addEventListener('click', () => {
+            expandAllNodes();
+            requestApplyFilters(0);
         });
     }
 
@@ -622,11 +721,11 @@ function updateFilterSummary(metrics) {
     const totalLabel = `${graphState.totalRenderableNodes} total promise${graphState.totalRenderableNodes === 1 ? '' : 's'}`;
 
     if (metrics.directMatches === metrics.visibleNodes) {
-        summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel}.`;
+        summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel}${metrics.hiddenNodes > 0 ? ` (${metrics.hiddenNodes} hidden)` : ''}.`;
         return;
     }
 
-    summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel} (${metrics.directMatches} direct match${metrics.directMatches === 1 ? '' : 'es'}).`;
+    summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel} (${metrics.directMatches} direct match${metrics.directMatches === 1 ? '' : 'es'}${metrics.hiddenNodes > 0 ? `, ${metrics.hiddenNodes} hidden` : ''}).`;
 }
 
 function findFirstSearchMatch(treeData) {
@@ -680,7 +779,7 @@ function applyFilters() {
         return;
     }
 
-    const metrics = { visibleNodes: 0, directMatches: 0 };
+    const metrics = { visibleNodes: 0, directMatches: 0, hiddenNodes: 0 };
     graphState.filteredTree = filterTree(graphState.rawTree, graphState.filters, metrics, true);
 
     syncFiltersToUrl(graphState.filters);
@@ -700,6 +799,7 @@ function applyFilters() {
             includeChildren: graphState.filters.includeChildren,
             visibleNodeCount: metrics.visibleNodes,
             directMatches: metrics.directMatches,
+            hiddenNodeCount: metrics.hiddenNodes,
         });
 
         const restoreTransform = focusNode ? null : (graphState.userZoomTransform ?? graphState.zoomTransform);
@@ -739,6 +839,7 @@ async function reloadGraphData() {
         const children = await Promise.all(rootPromises.map(buildPromiseNode));
 
         graphState.rawTree = parseGraphData(children, graphState.projectId, project);
+        reconcileCollapsedNodes();
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
         applyFilters();
 
@@ -793,12 +894,21 @@ export async function loadGraphPage(projectId, contentDiv) {
     graphState.filteredTree = null;
     graphState.totalRenderableNodes = 0;
     graphState.availableStrides = [];
+    graphState.collapsedNodeIds = new Set();
 
     graphState.contextMenu?.destroy();
     graphState.contextMenu = createGraphContextMenuController({
         projectId,
         getAvailableStrides: () => graphState.availableStrides,
         onGraphMutated: reloadGraphData,
+        isNodeChildrenHidden: (nodeData) => isNodeCollapsed(nodeData?.id),
+        setNodeChildrenHidden: async (nodeData, hidden) => {
+            const nodeId = nodeData?.id;
+            if (!nodeId) return;
+
+            setNodeCollapsed(nodeId, hidden);
+            requestApplyFilters(0);
+        },
         onProjectDeleted: () => {
             window.location.assign('/projects');
         },
