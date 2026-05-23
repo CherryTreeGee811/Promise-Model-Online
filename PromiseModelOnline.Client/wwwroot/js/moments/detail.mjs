@@ -1,7 +1,10 @@
-import { getMomentById, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
+import { getMomentById, updateMomentDescription, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { getAllStrides } from '../strides/api.mjs';
 import { getFlowById } from '../flows/api.mjs';
+import { getJourneyById } from '../journeys/api.mjs';
+import { getEpicById } from '../epics/api.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 
 export function loadMomentDetail(momentId, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
@@ -14,11 +17,18 @@ export function loadMomentDetail(momentId, contentDiv) {
     getMomentById(momentId)
         .then(async moment => {
             loadingEl.textContent = '';
+
             detailDiv.innerHTML = `
                 <div class="moment-detail-card">
                     <h2>${escapeHtml(moment.statement)}</h2>
                     <table class="detail-table">
-                        <tr><th>ID</th><td>${moment.id}</td></tr>
+                        <tr>
+                            <th>Description</th>
+                            <td>
+                                <textarea id="moment-description-input" rows="4" style="width:100%">${escapeHtml(moment.description || '')}</textarea>
+                                <div style="margin-top:6px"><button id="moment-description-save" class="save-btn">Save</button> <span id="moment-description-msg"></span></div>
+                            </td>
+                        </tr>
                         <tr><th>Type</th><td>
                             <select id="moment-type-select">
                                 <option value="Story" ${moment.type === 'Story' ? 'selected' : ''}>Story</option>
@@ -27,17 +37,17 @@ export function loadMomentDetail(momentId, contentDiv) {
                         </td></tr>
                         <tr><th>Status</th><td>
                             <select id="moment-status-select">
-                                <option value="Todo" ${moment.status === 'Todo' ? 'selected' : ''}>Todo</option>
-                                <option value="InProgress" ${moment.status === 'InProgress' ? 'selected' : ''}>InProgress</option>
-                                <option value="Blocked" ${moment.status === 'Blocked' ? 'selected' : ''}>Blocked</option>
-                                <option value="Done" ${moment.status === 'Done' ? 'selected' : ''}>Done</option>
+                                ${getStatusOption('Todo', moment.status)}
+                                ${getStatusOption('InProgress', moment.status)}
+                                ${getStatusOption('Blocked', moment.status)}
+                                ${getStatusOption('Done', moment.status)}
                             </select>
                         </td></tr>
                         <tr>
                             <th>Effort Estimate</th>
                             <td>
                                 <select id="moment-estimate-select">
-                                    <option value="">–</option>
+                                    <option value="-" ${moment.effortEstimate == null ? 'selected' : ''}>-</option>
                                     <option value="XS"  ${moment.effortEstimate === 'XS'  ? 'selected' : ''}>XS</option>
                                     <option value="S"   ${moment.effortEstimate === 'S'   ? 'selected' : ''}>S</option>
                                     <option value="M"   ${moment.effortEstimate === 'M'   ? 'selected' : ''}>M</option>
@@ -70,11 +80,33 @@ export function loadMomentDetail(momentId, contentDiv) {
                 </div>
             `;
 
+            const descriptionSaveButton = document.getElementById('moment-description-save');
+            const descriptionInput = document.getElementById('moment-description-input');
+            const descriptionMessage = document.getElementById('moment-description-msg');
+            if (descriptionSaveButton && descriptionInput && descriptionMessage) {
+                descriptionSaveButton.addEventListener('click', async () => {
+                    descriptionMessage.textContent = '';
+                    descriptionSaveButton.disabled = true;
+
+                    const newDescription = descriptionInput.value;
+                    try {
+                        const updated = await updateMomentDescription(momentId, newDescription);
+                        moment.description = updated?.description ?? (newDescription.trim() ? newDescription : null);
+                        descriptionMessage.textContent = 'Saved';
+                    } catch (err) {
+                        descriptionMessage.textContent = 'Save failed';
+                        console.error(err);
+                    } finally {
+                        descriptionSaveButton.disabled = false;
+                    }
+                });
+            }
+
             // Estimate auto‑save on change
             const estSelect = document.getElementById('moment-estimate-select');
             if (estSelect) {
                 estSelect.addEventListener('change', async () => {
-                    const estimate = estSelect.value === '' ? null : estSelect.value;
+                    const estimate = estSelect.value === '-' ? null : estSelect.value;
                     try {
                         await updateMomentEstimate(momentId, estimate);
                     } catch (err) {
@@ -184,6 +216,18 @@ export function loadMomentDetail(momentId, contentDiv) {
             // Comments
             const commentsContainer = document.getElementById('moment-comments');
             loadComments(commentsContainer, 'Moment', momentId);
+
+            getFlowById(moment.flowId)
+                .then(flow => getJourneyById(flow.journeyId))
+                .then(journey => getEpicById(journey.epicId))
+                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `moment-${moment.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for moment detail', error);
+                });
         })
         .catch(err => {
             loadingEl.textContent = '';
@@ -205,4 +249,20 @@ function getStatusIcon(statusColor) {
     if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
     if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
     return '⚪';
+}
+
+function getStatusOption(value, selectedValue) {
+    const icon = getStatusIconForStatus(value);
+    const selected = value === selectedValue ? 'selected' : '';
+    return `<option value="${value}" ${selected}>${icon} ${value}</option>`;
+}
+
+function getStatusIconForStatus(status) {
+    switch (String(status ?? '')) {
+        case 'Todo': return '🔴';
+        case 'InProgress': return '🟠';
+        case 'Blocked': return '⚫️';
+        case 'Done': return '🟢';
+        default: return '⚪';
+    }
 }

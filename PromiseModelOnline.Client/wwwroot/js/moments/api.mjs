@@ -93,6 +93,47 @@ export async function updateMomentEstimate(momentId, estimate) {
     return response.json();
 }
 
+/**
+ * Update a moment via the generic PUT route.
+ * @param {object} moment
+ * @returns {Promise<void>}
+ */
+export async function updateMoment(moment) {
+    const url = `${base}/api/moments/${moment.id}`;
+    const token = getAccessTokenFromCookie();
+
+    const response = await fetch(url, {
+        method: 'PUT',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA'
+        },
+        body: JSON.stringify(moment)
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+}
+
+export async function updateMomentDescription(momentId, description) {
+    const url = `${base}/api/moments/${momentId}/description`;
+    const token = getAccessTokenFromCookie();
+    const response = await fetch(url, {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ description })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}
+
 export async function getMyTasks() {
     const token = getAccessTokenFromCookie();
     if (!token) return [];

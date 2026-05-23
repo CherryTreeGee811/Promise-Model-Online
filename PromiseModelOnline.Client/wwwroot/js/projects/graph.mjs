@@ -37,9 +37,13 @@ const graphState = {
     availableStrides: [],
     filters: createDefaultFilters(),
     zoomTransform: null,
+    userZoomTransform: null,
+    focusNodeId: null,
+    suppressZoomStateUpdate: false,
     filterDebounceId: null,
     applyTimer: null,
     contextMenu: null,
+    pageShowRefreshHandler: null,
 };
 
 function createDefaultFilters() {
@@ -205,6 +209,24 @@ function getChildProgressSummary(nodeData) {
     return `${completedCount}/${childCount} ${childCount === 1 ? childLabel : `${childLabel}s`} completed`;
 }
 
+function getMomentTypeLabel(payload) {
+    const value = String(payload?.type ?? payload?.Type ?? '').trim();
+    if (!value) return null;
+
+    const normalized = value.toLowerCase();
+    if (normalized === 'story') return 'Story';
+    if (normalized === 'job') return 'Job';
+
+    return value;
+}
+
+function getCardDescription(payload, maxLength = 52) {
+    const description = String(payload?.description ?? payload?.Description ?? '').trim();
+    if (!description) return 'Description: None';
+
+    return truncateText(description.replace(/\s+/g, ' '), maxLength);
+}
+
 function getStrideLabel(payload) {
     return payload?.assignedStrideId == null ? 'Stride: Backlog' : `Stride # ${payload.assignedStrideId}`;
 }
@@ -315,7 +337,13 @@ function getNodeHref(node) {
     const routeSegment = NODE_ROUTE_SEGMENTS[node.nodeType];
     if (!routeSegment) return null;
 
-    return `${getAppBasePath()}/${routeSegment}/${node.payload?.id}`;
+    const params = new URLSearchParams();
+    if (graphState.projectId != null) {
+        params.set('graphProjectId', String(graphState.projectId));
+    }
+    params.set('graphFocus', `${node.nodeType}-${node.payload?.id}`);
+
+    return `${getAppBasePath()}/${routeSegment}/${node.payload?.id}?${params.toString()}`;
 }
 
 function getNodeSearchText(node) {
@@ -427,6 +455,23 @@ function filterTree(node, filters, metrics, isRoot = false) {
     return null;
 }
 
+function findNodeById(treeData, nodeId) {
+    if (!treeData || !nodeId) return null;
+
+    if (treeData.id === nodeId) {
+        return treeData;
+    }
+
+    for (const child of treeData.children ?? []) {
+        const match = findNodeById(child, nodeId);
+        if (match) {
+            return match;
+        }
+    }
+
+    return null;
+}
+
 function countRenderableNodes(node) {
     if (!node) return 0;
 
@@ -454,6 +499,11 @@ function readFiltersFromUrl() {
         stride,
         types,
     };
+}
+
+function readGraphFocusFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return String(params.get('focus') ?? '').trim() || null;
 }
 
 function syncFiltersToUrl(filters) {
@@ -488,6 +538,10 @@ function syncFiltersToUrl(filters) {
 
     if (filters.stride !== 'all') {
         params.set('stride', filters.stride);
+    }
+
+    if (graphState.focusNodeId) {
+        params.set('focus', graphState.focusNodeId);
     }
 
     const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash || ''}`;
@@ -766,17 +820,17 @@ function updateFilterSummary(metrics) {
     if (!summaryEl) return;
 
     if (!graphState.rawTree) {
-        summaryEl.textContent = 'Loading graph cards...';
+        summaryEl.textContent = 'Loading promises...';
         return;
     }
 
     if (metrics.visibleNodes === 0) {
-        summaryEl.textContent = 'No graph cards match the current filters.';
+        summaryEl.textContent = 'No promises match the current filters.';
         return;
     }
 
-    const visibleLabel = `${metrics.visibleNodes} visible card${metrics.visibleNodes === 1 ? '' : 's'}`;
-    const totalLabel = `${graphState.totalRenderableNodes} total card${graphState.totalRenderableNodes === 1 ? '' : 's'}`;
+    const visibleLabel = `${metrics.visibleNodes} visible promise${metrics.visibleNodes === 1 ? '' : 's'}`;
+    const totalLabel = `${graphState.totalRenderableNodes} total promise${graphState.totalRenderableNodes === 1 ? '' : 's'}`;
 
     if (metrics.directMatches === metrics.visibleNodes) {
         summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel}.`;
@@ -796,7 +850,43 @@ function renderEmptyState(contentDiv, message) {
     contentDiv.appendChild(emptyState);
 }
 
-function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
+function getRenderedNodePosition(node, contentOffsetX, contentOffsetY) {
+    return {
+        x: node.y + contentOffsetX,
+        y: node.x + contentOffsetY,
+    };
+}
+
+function createFocusTransform(d3, viewportWidth, viewportHeight, node, contentOffsetX, contentOffsetY, scale = 1.5) {
+    if (!node) return null;
+
+    const targetScale = Math.max(0.5, Math.min(2.5, scale));
+    const position = getRenderedNodePosition(node, contentOffsetX, contentOffsetY);
+
+    return d3.zoomIdentity
+        .translate(viewportWidth / 2, viewportHeight / 2)
+        .scale(targetScale)
+        .translate(-position.x, -position.y);
+}
+
+function findFirstSearchMatch(treeData) {
+    if (!treeData) return null;
+
+    if (treeData._searchMatched) {
+        return treeData;
+    }
+
+    for (const child of treeData.children ?? []) {
+        const match = findFirstSearchMatch(child);
+        if (match) {
+            return match;
+        }
+    }
+
+    return null;
+}
+
+function renderTree(contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null) {
     const graphContent = document.getElementById('graph-content');
     const graphViewport = document.getElementById('graph-viewport');
     if (!graphContent) return;
@@ -819,6 +909,7 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
     }
 
     const links = root.links();
+    const focusedNodeId = focusNodeData?.id ?? null;
     const viewportSize = getInnerViewportSize(graphViewport || contentDiv);
     const viewportWidth = viewportSize.width || contentDiv.clientWidth || 0;
     const viewportHeight = viewportSize.height || contentDiv.clientHeight || 0;
@@ -852,13 +943,25 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS);
 
+    const safeViewportWidth = Math.max(viewportWidth, 1);
+    const safeViewportHeight = Math.max(viewportHeight, 1);
+
     const zoom = d3.zoom()
         .scaleExtent([0.5, 2.5])
-        .extent([[0, 0], [viewportWidth, viewportHeight]])
-        .translateExtent([[0, 0], [graphWidth, graphHeight]])
+        .extent([[0, 0], [safeViewportWidth, safeViewportHeight]])
+        // Include a viewport-sized gutter so edge cards (like the root Project card)
+        // can be centered when a focus transform is applied.
+        .translateExtent([
+            [-safeViewportWidth, -safeViewportHeight],
+            [graphWidth + safeViewportWidth, graphHeight + safeViewportHeight],
+        ])
         .on('zoom', event => {
             graphState.zoomTransform = event.transform;
             zoomLayer.attr('transform', event.transform);
+
+            if (!graphState.suppressZoomStateUpdate) {
+                graphState.userZoomTransform = event.transform;
+            }
         });
 
     svg.call(zoom);
@@ -869,15 +972,49 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         viewportHeight > 0 ? viewportHeight / graphHeight : 1,
         1
     );
-    const initialTransform = restoreTransform ?? d3.zoomIdentity
+    const focusedHierarchyNode = focusNodeData
+        ? root.descendants().find(node => node.data === focusNodeData)
+        : null;
+    const focusTransform = focusNodeData
+        ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode, contentOffsetX, contentOffsetY)
+        : null;
+    const fitTransform = d3.zoomIdentity
         .translate(
             viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
             viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0
         )
         .scale(initialScale);
+    const initialTransform = focusTransform ?? restoreTransform ?? fitTransform;
 
+    graphState.suppressZoomStateUpdate = true;
     graphState.zoomTransform = initialTransform;
     svg.call(zoom.transform, initialTransform);
+    graphState.suppressZoomStateUpdate = false;
+
+    // On large graphs, layout can settle after the first transform call.
+    // Re-apply focus using post-layout viewport dimensions to avoid vertical drift.
+    if (focusedHierarchyNode) {
+        window.requestAnimationFrame(() => {
+            const measuredViewport = getInnerViewportSize(graphViewport || contentDiv);
+            const measuredWidth = Math.max(measuredViewport.width || contentDiv.clientWidth || 0, 1);
+            const measuredHeight = Math.max(measuredViewport.height || contentDiv.clientHeight || 0, 1);
+            const refinedTransform = createFocusTransform(
+                d3,
+                measuredWidth,
+                measuredHeight,
+                focusedHierarchyNode,
+                contentOffsetX,
+                contentOffsetY
+            );
+
+            if (!refinedTransform) return;
+
+            graphState.suppressZoomStateUpdate = true;
+            graphState.zoomTransform = refinedTransform;
+            svg.call(zoom.transform, refinedTransform);
+            graphState.suppressZoomStateUpdate = false;
+        });
+    }
 
     zoomLayer.append('g')
         .attr('fill', 'none')
@@ -920,8 +1057,18 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS)
         .attr('fill', current => current.depth === 0 ? '#f8fafc' : '#ffffff')
-        .attr('stroke', current => current.data._searchMatched ? '#d4af37' : (current.depth === 0 ? getNodeColor(current.data.nodeType) : '#cbd5e1'))
-        .attr('stroke-width', current => current.data._searchMatched ? 3 : (current.depth === 0 ? 2.5 : 1.5));
+        .attr('stroke', current => {
+            const isFocused = focusedNodeId != null && current.data.id === focusedNodeId;
+            const allowFocusHighlight = current.data.nodeType !== 'root';
+            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return '#d4af37';
+            return current.depth === 0 ? getNodeColor(current.data.nodeType) : '#cbd5e1';
+        })
+        .attr('stroke-width', current => {
+            const isFocused = focusedNodeId != null && current.data.id === focusedNodeId;
+            const allowFocusHighlight = current.data.nodeType !== 'root';
+            if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return 3;
+            return current.depth === 0 ? 2.5 : 1.5;
+        });
 
     node.append('rect')
         .attr('class', 'graph-card-accent')
@@ -953,6 +1100,16 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('dominant-baseline', 'hanging')
         .text(current => getStatusIcon(current.data.payload?.statusColor));
 
+    node.filter(current => current.data.nodeType === 'moment')
+        .append('text')
+        .attr('class', 'graph-card-line graph-card-line--moment-type')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 30)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .attr('font-weight', 600)
+        .text(current => getMomentTypeLabel(current.data.payload) ?? '');
+
     node.append('line')
         .attr('class', 'graph-card-divider')
         .attr('x1', -CARD_WIDTH / 2 + CARD_PADDING_X)
@@ -978,7 +1135,7 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + DETAIL_LINE_GAP)
         .attr('fill', '#334155')
         .attr('font-size', 12)
-        .text(current => `Description: ${truncateText(current.data.payload?.description ?? '', 40) || 'None'}`);
+        .text(current => getCardDescription(current.data.payload, 52));
 
     node.filter(current => current.data.nodeType === 'moment')
         .append('text')
@@ -988,6 +1145,15 @@ function renderTree(contentDiv, d3, treeData, restoreTransform = null) {
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .text(current => `Effort: ${formatEstimate(current.data.payload?.effortEstimate)}`);
+
+    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
+        .append('text')
+        .attr('class', 'graph-card-line')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 62)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .text(current => getCardDescription(current.data.payload));
 
     node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
         .append('text')
@@ -1014,7 +1180,12 @@ function applyFilters() {
 
     const graphContent = document.getElementById('graph-content');
     if (graphState.filteredTree) {
-        renderTree(graphContent, graphState.d3, graphState.filteredTree, graphState.zoomTransform);
+        const focusNode = graphState.filters.search
+            ? findFirstSearchMatch(graphState.filteredTree)
+            : (graphState.focusNodeId ? findNodeById(graphState.filteredTree, graphState.focusNodeId) : (graphState.userZoomTransform ? null : graphState.filteredTree));
+
+        const restoreTransform = focusNode ? null : (graphState.userZoomTransform ?? graphState.zoomTransform);
+        renderTree(graphContent, graphState.d3, graphState.filteredTree, restoreTransform, focusNode);
     } else {
         renderEmptyState(graphContent, 'No cards match the current filters.');
     }
@@ -1069,7 +1240,6 @@ async function reloadGraphData() {
 
         graphState.rawTree = parseGraphData(children, graphState.projectId, project);
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
-
         applyFilters();
 
         if (loadingEl) loadingEl.textContent = '';
@@ -1107,10 +1277,18 @@ export async function loadGraphPage(projectId, contentDiv) {
     const loadingEl = document.getElementById('loading-text');
     const successEl = document.getElementById('success-text');
 
+    if (graphState.pageShowRefreshHandler) {
+        window.removeEventListener('pageshow', graphState.pageShowRefreshHandler);
+        graphState.pageShowRefreshHandler = null;
+    }
+
     graphState.projectId = projectId;
     graphState.d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
     graphState.filters = readFiltersFromUrl();
+    graphState.focusNodeId = readGraphFocusFromUrl();
     graphState.zoomTransform = null;
+    graphState.userZoomTransform = null;
+    graphState.suppressZoomStateUpdate = false;
     graphState.rawTree = null;
     graphState.filteredTree = null;
     graphState.totalRenderableNodes = 0;
@@ -1125,6 +1303,12 @@ export async function loadGraphPage(projectId, contentDiv) {
             window.location.assign('/projects');
         },
     });
+
+    graphState.pageShowRefreshHandler = event => {
+        if (!event.persisted) return;
+        reloadGraphData();
+    };
+    window.addEventListener('pageshow', graphState.pageShowRefreshHandler);
 
     await loadAvailableStrides(projectId);
 

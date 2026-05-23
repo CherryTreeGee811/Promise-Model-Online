@@ -1,8 +1,9 @@
-import { getEpicById, getJourneysByEpic, updateEpic } from './api.mjs';
+import { getEpicById, getJourneysByEpic, updateEpicDescription } from './api.mjs';
 import { addJourney } from '../journeys/api.mjs';
 import { getPromiseById } from '../promises/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 
 export function loadEpicDetail(epicId, contentDiv) {
     const detailDiv = document.getElementById('epic-detail-content');
@@ -18,7 +19,6 @@ export function loadEpicDetail(epicId, contentDiv) {
                 <div class="epic-detail-card">
                     <h2>${escapeHtml(epic.statement)}</h2>
                     <table class="detail-table">
-                                <tr><th>ID</th><td>${epic.id}</td></tr>
                                 <tr><th>Description</th><td>
                                     <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(epic.description || '')}</textarea>
                                     <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
@@ -148,8 +148,8 @@ export function loadEpicDetail(epicId, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = { ...epic, description: newDesc };
-                        await updateEpic(updated);
+                        const updated = await updateEpicDescription(epicId, newDesc);
+                        epic.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
@@ -163,6 +163,15 @@ export function loadEpicDetail(epicId, contentDiv) {
             // Comments
             const commentsContainer = document.getElementById('epic-comments');
             loadComments(commentsContainer, 'Epic', epicId);
+
+            resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl())
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `epic-${epic.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for epic detail', error);
+                });
         })
         .catch(err => {
             loadingEl.textContent = '';

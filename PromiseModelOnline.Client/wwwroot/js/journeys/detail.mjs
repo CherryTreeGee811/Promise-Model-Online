@@ -1,8 +1,9 @@
-import { getJourneyById, getFlowsByJourney, updateJourney } from './api.mjs';
+import { getJourneyById, getFlowsByJourney, updateJourneyDescription } from './api.mjs';
 import { addFlow } from '../flows/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 
 export function loadJourneyDetail(journeyId, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
@@ -19,7 +20,6 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                 <div class="journey-detail-card">
                     <h2>${escapeHtml(journey.statement)}</h2>
                     <table class="detail-table">
-                        <tr><th>ID</th><td>${journey.id}</td></tr>
                         <tr><th>Description</th><td>
                             <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(journey.description || '')}</textarea>
                             <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
@@ -147,8 +147,8 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = { ...journey, description: newDesc };
-                        await updateJourney(updated);
+                        const updated = await updateJourneyDescription(journeyId, newDesc);
+                        journey.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
@@ -161,6 +161,16 @@ export function loadJourneyDetail(journeyId, contentDiv) {
 
             const commentsContainer = document.getElementById('journey-comments');
             loadComments(commentsContainer, 'Journey', journeyId);
+
+            getEpicById(journey.epicId)
+                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `journey-${journey.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for journey detail', error);
+                });
         })
         .catch(err => {
             loadingEl.textContent = '';

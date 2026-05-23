@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 
@@ -13,13 +14,15 @@ namespace PromiseModelOnline.Api.Tests
     public class FlowServiceUnitTests
     {
         private Mock<IFlowRepository> _flowRepoMock = null!;
+        private Mock<IHierarchyStatusService> _hierarchyStatusServiceMock = null!;
         private FlowService _service = null!;
 
         [SetUp]
         public void SetUp()
         {
             _flowRepoMock = new Mock<IFlowRepository>();
-            _service = new FlowService(_flowRepoMock.Object);
+            _hierarchyStatusServiceMock = new Mock<IHierarchyStatusService>();
+            _service = new FlowService(_flowRepoMock.Object, _hierarchyStatusServiceMock.Object);
         }
 
         #region GetFlowsByJourneyAsync Tests
@@ -88,6 +91,29 @@ namespace PromiseModelOnline.Api.Tests
 
             var result = await _service.GetByIdAsync(404);
             Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public async Task AddAsync_RollsUpHierarchyFromJourney()
+        {
+            var flow = new Flow { Id = 7, JourneyId = 21 };
+
+            await _service.AddAsync(flow);
+
+            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromFlowAsync(7), Times.Once);
+        }
+
+        [Test]
+        public async Task DeleteByIdAsync_RollsUpHierarchyFromJourney()
+        {
+            var flow = new Flow { Id = 7, JourneyId = 21 };
+            _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetByIdAsync(7)).ReturnsAsync(flow);
+            _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.DeleteByIdAsync(7)).ReturnsAsync(true);
+
+            var deleted = await _service.DeleteByIdAsync(7);
+
+            Assert.That(deleted, Is.True);
+            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromJourneyAsync(21), Times.Once);
         }
 
         #endregion

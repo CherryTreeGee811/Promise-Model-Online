@@ -1,8 +1,10 @@
-import { getFlowById, getMomentsByFlow, updateFlow } from './api.mjs';
+import { getFlowById, getMomentsByFlow, updateFlowDescription } from './api.mjs';
 import { addMoment } from '../moments/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
+import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 
 export function loadFlowDetail(flowId, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
@@ -19,7 +21,6 @@ export function loadFlowDetail(flowId, contentDiv) {
                 <div class="flow-detail-card">
                     <h2>${escapeHtml(flow.statement)}</h2>
                     <table class="detail-table">
-                        <tr><th>ID</th><td>${flow.id}</td></tr>
                         <tr><th>Description</th><td>
                             <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(flow.description || '')}</textarea>
                             <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
@@ -164,8 +165,8 @@ export function loadFlowDetail(flowId, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = { ...flow, description: newDesc };
-                        await updateFlow(updated);
+                        const updated = await updateFlowDescription(flowId, newDesc);
+                        flow.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
@@ -178,6 +179,17 @@ export function loadFlowDetail(flowId, contentDiv) {
 
             const commentsContainer = document.getElementById('flow-comments');
             loadComments(commentsContainer, 'Flow', flowId);
+
+            getJourneyById(flow.journeyId)
+                .then(journey => getEpicById(journey.epicId))
+                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `flow-${flow.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for flow detail', error);
+                });
         })
         .catch(err => {
             loadingEl.textContent = '';

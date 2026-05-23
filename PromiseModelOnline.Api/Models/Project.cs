@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace PromiseModelOnline.Api.Models;
 
@@ -21,11 +22,15 @@ public class Project
     
     // Navigation properties
     [ForeignKey("OwnerId")]
+    [ValidateNever]
     public User Owner { get; set; } = null!;
 
+    [ValidateNever]
     public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
 
+    [ValidateNever]
     public ICollection<Promise> ProductPromises { get; set; } = new List<Promise>();
     
+    [ValidateNever]
     public ICollection<Stride> Strides { get; set; } = new List<Stride>();
 }

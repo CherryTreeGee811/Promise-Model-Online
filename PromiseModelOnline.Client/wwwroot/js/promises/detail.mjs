@@ -1,8 +1,9 @@
-import { getPromiseById, getEpicsByPromise, updatePromise } from './api.mjs';
+import { getPromiseById, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
 import { addEpic } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { loadReactions } from '../reactions/reactions.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 
 export function loadPromiseDetail(promiseId, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
@@ -18,7 +19,6 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                 <div class="promise-detail-card">
                     <h2>${escapeHtml(promise.statement)}</h2>
                     <table class="detail-table">
-                        <tr><th>ID</th><td>${promise.id}</td></tr>
                         <tr><th>Description</th><td>
                             <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(promise.description || '')}</textarea>
                             <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
@@ -124,6 +124,15 @@ export function loadPromiseDetail(promiseId, contentDiv) {
             detailDiv.appendChild(reactionsContainer);
             loadReactions(reactionsContainer, 'Promise', promiseId);
 
+            resolveProjectIdForPromise(promise.id, getGraphProjectIdHintFromUrl())
+                .then(projectId => {
+                    const href = buildGraphViewHref(projectId, `promise-${promise.id}`);
+                    upsertGraphViewButton(detailDiv, href);
+                })
+                .catch(error => {
+                    console.error('Unable to resolve graph link for promise detail', error);
+                });
+
             const backLink = document.getElementById('back-link');
             if (backLink) {
                 backLink.addEventListener('click', () => {
@@ -140,8 +149,8 @@ export function loadPromiseDetail(promiseId, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = { ...promise, description: newDesc };
-                        await updatePromise(updated);
+                        const updated = await updatePromiseDescription(promiseId, newDesc);
+                        promise.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
                         descMsg.textContent = 'Saved';
                     } catch (err) {
                         descMsg.textContent = 'Save failed';

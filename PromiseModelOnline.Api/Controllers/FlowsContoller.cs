@@ -5,6 +5,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -59,6 +60,30 @@ namespace PromiseModelOnline.Api.Controllers
                 result.Add(_mapper.Map(flow, _service));
 
             return Ok(result);
+        }
+
+        [HttpPatch("{id}/description")]
+        public async Task<ActionResult<FlowDTO>> UpdateDescription(
+            int id,
+            [FromBody] UpdateDescriptionRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var flow = await _service.GetByIdAsync(id);
+            if (flow is null)
+                return NotFound();
+
+            flow.Description = string.IsNullOrWhiteSpace(request.Description)
+                ? null
+                : request.Description.Trim();
+            flow.UpdatedAt = DateTime.UtcNow;
+
+            await _service.UpdateAsync(flow);
+            return Ok(_mapper.Map(flow, _service));
         }
     }
 }

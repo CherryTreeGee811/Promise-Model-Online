@@ -1,6 +1,7 @@
 import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
 import { base } from '../api.mjs';
 import { getAccessTokenFromCookie } from '../parser.mjs';
+import { updateMomentStatus } from '../moments/api.mjs';
 
 const NODE_CHILD_LABELS = {
     root: 'Promise',
@@ -212,9 +213,28 @@ function getMomentStatusOptions() {
     ];
 }
 
+function getMomentStatusValue(nodeData) {
+    const payload = nodeData?.payload ?? {};
+    const status = String(payload.status ?? payload.Status ?? '').trim();
+    if (status) {
+        const match = getMomentStatusOptions().find(option => option.value.toLowerCase() === status.toLowerCase());
+        if (match) {
+            return match.value;
+        }
+    }
+
+    const statusColor = String(payload.statusColor ?? payload.StatusColor ?? '').trim().toLowerCase();
+    if (statusColor.includes('green') || statusColor.includes('done')) return 'Done';
+    if (statusColor.includes('black') || statusColor.includes('blocked')) return 'Blocked';
+    if (statusColor.includes('orange') || statusColor.includes('yellow') || statusColor.includes('amber') || statusColor.includes('inprogress') || statusColor.includes('in-progress')) return 'InProgress';
+    if (statusColor.includes('red') || statusColor.includes('todo')) return 'Todo';
+
+    return 'Todo';
+}
+
 function getMomentEstimateOptions() {
     return [
-        { value: '', label: '-' },
+        { value: '-', label: '-' },
         { value: 'XS', label: 'XS' },
         { value: 'S', label: 'S' },
         { value: 'M', label: 'M' },
@@ -349,7 +369,7 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
             flowId: nodeData.payload?.id,
             type: typeField.select.value,
             status: statusField.select.value,
-            effortEstimate: estimateField.select.value || null,
+            effortEstimate: estimateField.select.value === '-' ? null : estimateField.select.value || null,
             assignedStrideId: strideField.select.value ? Number.parseInt(strideField.select.value, 10) : null,
             displayOrder: (Number.parseInt(nodeData.childCount ?? 0, 10) || 0) + 1,
         };
@@ -368,6 +388,69 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
         } catch (error) {
             submitButton.disabled = false;
             submitButton.textContent = 'Create Moment';
+            throw error;
+        }
+    });
+
+    return form;
+}
+
+function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
+    const momentId = nodeData?.payload?.id;
+    if (momentId == null) {
+        return null;
+    }
+
+    const form = document.createElement('form');
+    form.className = 'graph-context-menu-form graph-context-menu-form--moment';
+
+    const title = document.createElement('div');
+    title.className = 'graph-context-menu-form__title';
+    title.textContent = 'Change Moment Status';
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'graph-context-menu-form__subtitle';
+    subtitle.textContent = 'Update the moment status without leaving the graph.';
+
+    const statusField = createSelectField({
+        name: 'status',
+        label: 'Status',
+        value: getMomentStatusValue(nodeData),
+        options: getMomentStatusOptions(),
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'graph-context-menu-form__actions';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--secondary';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', event => {
+        event.preventDefault();
+        closeMenus();
+    });
+
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
+    submitButton.textContent = 'Save Status';
+
+    actions.append(cancelButton, submitButton);
+    form.append(title, subtitle, statusField.field, actions);
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving Status...';
+
+        try {
+            await updateMomentStatus(momentId, statusField.select.value);
+            closeMenus();
+            await onGraphMutated?.();
+        } catch (error) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Save Status';
             throw error;
         }
     });
@@ -483,7 +566,7 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
     return form;
 }
 
-function buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted, openCreateForm) {
+function buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted, openCreateForm, openMomentStatusForm) {
     const actions = [];
     const childLabel = getChildLabel(nodeData.nodeType);
 
@@ -494,6 +577,17 @@ function buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted,
             danger: false,
             handler: async () => {
                 openCreateForm(nodeData, projectId, onGraphMutated);
+            },
+        });
+    }
+
+    if (normalizeNodeType(nodeData.nodeType) === 'moment') {
+        actions.push({
+            id: 'change-status',
+            label: 'Change Status',
+            danger: false,
+            handler: async () => {
+                openMomentStatusForm(nodeData, onGraphMutated);
             },
         });
     }
@@ -623,12 +717,28 @@ export function createGraphContextMenuController({ projectId, getAvailableStride
         createFormTippy.show();
     }
 
+    function openMomentStatusForm(nodeData, refreshGraph) {
+        const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
+        const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
+        const form = buildMomentStatusFormElement(nodeData, refreshGraph, closeMenus);
+
+        if (!form) {
+            return;
+        }
+
+        createFormTippy.setProps({
+            getReferenceClientRect: () => anchorRect,
+        });
+        createFormTippy.setContent(form);
+        createFormTippy.show();
+    }
+
     function open(event, nodeData) {
         const clientX = Number(event?.clientX ?? 0);
         const clientY = Number(event?.clientY ?? 0);
         referenceRect = new DOMRect(clientX, clientY, 1, 1);
 
-        const actions = buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted, openCreateForm);
+        const actions = buildMenuActions(nodeData, projectId, onGraphMutated, onProjectDeleted, openCreateForm, openMomentStatusForm);
         menuContent.replaceChildren(buildMenuElement(actions));
 
         instance.setProps({

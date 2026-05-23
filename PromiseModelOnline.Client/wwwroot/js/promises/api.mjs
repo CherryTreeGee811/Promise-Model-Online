@@ -100,3 +100,28 @@ export async function updatePromise(promise) {
         throw new Error(`HTTP error! status: ${res.status}`);
     }
 }
+
+export async function updatePromiseDescription(promiseId, description) {
+    const url = `${base}/api/promises/${promiseId}/description`;
+    const token = getAccessTokenFromCookie();
+
+    const res = await fetch(url, {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-CA',
+        },
+        body: JSON.stringify({ description }),
+    });
+
+    if (res.ok) {
+        return res.json();
+    } else if (res.status === 401) {
+        document.getElementById("login-link")?.click();
+    } else {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+}

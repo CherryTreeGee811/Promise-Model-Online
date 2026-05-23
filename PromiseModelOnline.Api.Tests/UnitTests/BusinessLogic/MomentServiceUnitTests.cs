@@ -265,6 +265,29 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
+        public async Task AddAsync_RollsUpHierarchyFromFlow()
+        {
+            var moment = new Moment { Id = 6, FlowId = 79 };
+
+            await _service.AddAsync(moment);
+
+            _hierarchyStatusServiceMock.Verify(r => r.RecalculateFromFlowAsync(79), Times.Once);
+        }
+
+        [Test]
+        public async Task DeleteByIdAsync_RollsUpHierarchyFromFlow()
+        {
+            var moment = new Moment { Id = 6, FlowId = 79 };
+            _momentRepoMock.Setup(r => r.GetByIdAsync(6)).ReturnsAsync(moment);
+            _momentRepoMock.Setup(r => r.DeleteByIdAsync(6)).ReturnsAsync(true);
+
+            var deleted = await _service.DeleteByIdAsync(6);
+
+            Assert.That(deleted, Is.True);
+            _hierarchyStatusServiceMock.Verify(r => r.RecalculateFromFlowAsync(79), Times.Once);
+        }
+
+        [Test]
         public void UpdateMomentStatusAsync_InvalidId_ThrowsKeyNotFound()
         {
             _momentRepoMock.Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Moment?)null);
