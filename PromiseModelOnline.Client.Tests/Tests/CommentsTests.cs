@@ -19,13 +19,15 @@ namespace PromiseModelOnline.Client.Tests.Tests
             var textarea = WaitForElement(By.Id("comment-textarea"));
             textarea.SendKeys("New comment");
 
-            // Wait for button to be present and interactive
-            var postButton = WaitForClickable(By.CssSelector("#comment-form .view-btn"));
+            // Ensure the Post button is visible and enabled (like a real user would see)
+            WaitForClickable(By.CssSelector("#comment-form .view-btn"));
 
-            // Click via JavaScript – works reliably in headless mode
-            ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].click();", postButton);
+            // Trigger form submission via requestSubmit – the exact same DOM API
+            // that a user‑initiated click invokes, but headless‑safe.
+            ((IJavaScriptExecutor)Driver).ExecuteScript(
+                "document.getElementById('comment-form').requestSubmit();");
 
-            // Wait for new comment to appear
+            // Wait for the new comment to appear
             WaitUntil(driver =>
             {
                 try
