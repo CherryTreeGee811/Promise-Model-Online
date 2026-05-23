@@ -1,9 +1,10 @@
+import { routeHandler } from '../router.mjs';
 import { getMomentById, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { getAllStrides } from '../strides/api.mjs';
 import { getFlowById } from '../flows/api.mjs';
 
-export function loadMomentDetail(momentId, contentDiv) {
+export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
@@ -57,10 +58,16 @@ export function loadMomentDetail(momentId, contentDiv) {
                             </td>
                         </tr>
                         <tr>
-                            <th>Flow</th>
-                            <td id="moment-flow-cell">
-                                <a href="/flows/${moment.flowId}" class="detail-link">Flow ${moment.flowId}</a>
-                            </td>
+                            <tr>
+                                <th>Flow</th>
+                                <td id="moment-flow-cell">
+                                    ${
+                                        moment.flowId
+                                            ? `<a href="/flows/${moment.flowId}" flow-id="${moment.flowId}" class="detail-link"></a>`
+                                            : `<span>—</span>`
+                                    }
+                                </td>
+                            </tr>
                         </tr>
                         <tr><th>Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
                         <tr><th>Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
@@ -69,6 +76,19 @@ export function loadMomentDetail(momentId, contentDiv) {
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
+
+            detailDiv.addEventListener('click', (e) => {
+                e.preventDefault();
+                const flowLink = e.target.closest('a.detail-link');
+                if (!flowLink) return;
+
+                const flowId = flowLink.getAttribute('flow-id');
+                const url = `/flows/${flowId}`;
+
+                window.history.pushState({}, '', url);
+
+                routeHandler(navContentDiv, contentDiv);
+            });
 
             // Estimate auto‑save on change
             const estSelect = document.getElementById('moment-estimate-select');
@@ -163,14 +183,20 @@ export function loadMomentDetail(momentId, contentDiv) {
             // Load parent flow and show its status emoji
             const flowCell = document.getElementById('moment-flow-cell');
             if (flowCell) {
-                getFlowById(moment.flowId)
-                    .then(flow => {
+                if (moment.flowId !== undefined && moment.flowId !== null) {
+                    try {
+                        const flow = await getFlowById(moment.flowId);
                         const icon = getStatusIcon(flow.statusColor);
-                        flowCell.innerHTML = `<a href="/flows/${flow.id}" class="detail-link">${escapeHtml(flow.statement)}</a> ${icon}`;
-                    })
-                    .catch(() => {
-                        // leave as-is
-                    });
+
+                        flowCell.innerHTML = `
+                            /flows/${flow.id}
+                                ${escapeHtml(flow.statement)}
+                            </a> ${icon}
+                        `;
+                    } catch (err) {
+                        console.warn("Failed to load flow:", err);
+                    }
+                }
             }
 
             // Back button event

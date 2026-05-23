@@ -1,165 +1,188 @@
-// API base URL for login.
+import { setTokens, getAccessToken, clearTokens } from './auth-state.mjs';
+import { routeHandler } from './router.mjs';
+
 export const base = "https://localhost:8000";
 
+function redirectToLogin() {
+    const navContentDiv = document.getElementById('main-menu');
+    const contentDiv = document.getElementById('content');
+
+    window.history.pushState({}, '', '/login');
+    routeHandler(navContentDiv, contentDiv);
+}
+
+/*
+====================================
+LOGIN
+====================================
+*/
 export function getToken(username, password) {
-    const login_url = `${base}/api/sessions`
-    const body = JSON.stringify({
-        username: `${username}`,
-        password: `${password}`
-    });
+    const login_url = `${base}/api/sessions`;
 
     return fetch(login_url, {
         method: 'POST',
         mode: 'cors',
+        credentials: 'include', // ✅ REQUIRED
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Accept-Language': 'en-CA',
         },
-        body: body,
+        body: JSON.stringify({ username, password }),
     })
-        .then(response => {
-            if (response.ok) {
-                if (response.status === 204) {
-                    return true;
-                } else {
-                    return response.json();
-                }
-            } else if (response.status == 401) {
-                document.getElementById("login-link").click();
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            if (data && data.accessToken && data.refreshToken) {
-                document.cookie = `accessToken=${data.accessToken}; path=/; SameSite=Strict;`;
-                document.cookie = `refreshToken=${data.refreshToken}; path=/; SameSite=Strict;`;
-            }
-        })
-        .catch(error => {
-            throw error;
-        });
+    .then(response => {
+        if (response.ok) return response.json();
+
+        if (response.status === 401) {
+            throw new Error("Unauthorized");
+        }
+
+        throw new Error(`HTTP error! status: ${response.status}`);
+    })
+    .then(data => {
+        if (data && data.accessToken) {
+            setTokens(data.accessToken);
+        }
+    });
 }
 
-export function requestLogout(token) {
-    const logout_url = `${base}/api/sessions/current`
-    const accessToken = getAccessTokenFromCookie();
+/*
+====================================
+REFRESH TOKEN
+====================================
+*/
+export async function refreshAccessToken() {
+    const res = await fetch(`${base}/api/access-tokens`, {
+        method: 'POST',
+        credentials: 'include' // ✅ cookie automatically sent
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    setTokens(data.accessToken);
+
+    return data.accessToken;
+}
+
+/*
+====================================
+AUTH FETCH (AUTO REFRESH)
+====================================
+*/
+export async function authFetch(url, options = {}) {
+    let token = getAccessToken();
+
+    if (!token) {
+        // Only redirect if we KNOW user is not logged in
+        if (!window.location.pathname.startsWith('/login')) {
+            redirectToLogin();
+        }
+
+        throw new Error("Missing auth token");
+    }
+
+    let response = await fetch(url, {
+        ...options,
+        credentials: 'include',
+        headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if (response.status !== 401) return response;
+
+    // 🔁 try refresh
+    token = await refreshAccessToken();
+
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
+
+    // 🔁 retry request
+    return fetch(url, {
+        ...options,
+        credentials: 'include',
+        headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token}`
+        }
+    });
+}
+
+/*
+====================================
+LOGOUT
+====================================
+*/
+export function requestLogout() {
+    const accessToken = getAccessToken();
+    const logout_url = `${base}/api/sessions/current`;
 
     return fetch(logout_url, {
         method: 'DELETE',
         mode: 'cors',
+        credentials: 'include', // ✅ important
         headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        },
-        body: JSON.stringify({ refreshToken: token })
-    })
-    .then(response => {
-        if (response.ok) {
-            if (response.status === 204) {
-                return true;
-            } else {
-                return response.json();
-            }
-        } else if (response.status == 401) {
-            document.getElementById("login-link").click();
-        } else {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            'Authorization': `Bearer ${accessToken}`
         }
     })
-    .catch(error => {
-        throw error;
+    .then(() => {
+        clearTokens();
+        redirectToLogin();
     });
 }
 
+/*
+====================================
+REGISTER
+====================================
+*/
 export function registerUser(username, email, password) {
     const register_url = `${base}/api/users`;
-    const body = JSON.stringify({
-        userName: username,
-        email: email,
-        password: password
-    });
 
     return fetch(register_url, {
         method: 'POST',
         mode: 'cors',
         headers: {
-            'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Accept-Language': 'en-CA',
         },
-        body: body,
+        body: JSON.stringify({ userName: username, email, password }),
     })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else if (response.status === 409) {
-                return response.json().then(data => {
-                    const error = new Error(data.message || "Username or email already exists.");
-                    error.statusCode = 409;
-                    throw error;
-                });
-            } else if (response.status === 400) {
-                return response.json().then(data => {
-                    const error = new Error(data.message || "Invalid registration data.");
-                    error.statusCode = 400;
-                    throw error;
-                });
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-        })
-        .catch(error => {
-            throw error;
-        });
+    .then(response => {
+        if (response.ok) return response.json();
+
+        if (response.status === 409) {
+            return response.json().then(data => {
+                throw new Error(data.message || "User exists");
+            });
+        }
+
+        throw new Error("Registration failed");
+    });
 }
 
-import { getAccessTokenFromCookie } from './parser.mjs';
-
+/*
+====================================
+CHANGE PASSWORD
+====================================
+*/
 export function changePassword(currentPassword, newPassword, confirmPassword) {
-    const change_url = `${base}/api/users/me`;
-    const token = getAccessTokenFromCookie();
-
-    const body = JSON.stringify({
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-        confirmPassword: confirmPassword
-    });
-
-    return fetch(change_url, {
+    return authFetch(`${base}/api/users/me`, {
         method: 'PATCH',
-        mode: 'cors',
         headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Accept-Language': 'en-CA',
-            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
         },
-        body: body,
-    })
-        .then(response => {
-            if (response.ok) {
-                if (response.status === 204) {
-                    return true;
-                } else {
-                    return response.json();
-                }
-            } else if (response.status === 401) {
-                document.getElementById("login-link").click();
-            } else if (response.status === 400) {
-                return response.json().then(data => {
-                    const error = new Error(data.message || "Invalid request.");
-                    error.statusCode = 400;
-                    throw error;
-                });
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+        body: JSON.stringify({
+            currentPassword,
+            newPassword,
+            confirmPassword
         })
-        .catch(error => {
-            throw error;
-        });
+    }).then(async response => {
+        if (response.ok) return true;
+
+        const data = await response.json();
+        throw new Error(data.message || "Change password failed");
+    });
 }

@@ -1,8 +1,9 @@
+import { routeHandler } from '../router.mjs';
 import { getFlowById, getMomentsByFlow, updateFlow } from './api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 
-export function loadFlowDetail(flowId, contentDiv) {
+export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
@@ -19,13 +20,13 @@ export function loadFlowDetail(flowId, contentDiv) {
                     <table class="detail-table">
                         <tr><th>ID</th><td>${flow.id}</td></tr>
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(flow.description || '')}</textarea>
-                            <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4">${escapeHtml(flow.description || '')}</textarea>
+                            <div class="save-btn-div"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Journey</th>
                             <td id="flow-journey-cell">
-                                <a href="/journeys/${flow.journeyId}" class="detail-link">Journey ${flow.journeyId}</a>
+                                <a href="/journeys/${flow.journeyId}" journey-id="${flow.journeyId}" class="detail-link">Journey ${flow.journeyId}</a>
                             </td>
                         </tr>
                         <tr><th>Status</th><td id="flow-status-cell">${getStatusIcon(flow.statusColor)}</td></tr>
@@ -40,6 +41,20 @@ export function loadFlowDetail(flowId, contentDiv) {
                     <button id="back-link" class="back-btn">← Back</button>
                 </div>
             `;
+
+            const journeyLink = detailDiv.querySelector('.detail-link[journey-id]');
+            if (journeyLink) {
+                journeyLink.addEventListener('click', (e) => {
+                    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+                    e.preventDefault();
+
+                    const journeyId = journeyLink.getAttribute('journey-id');
+                    window.history.pushState({}, '', `/journeys/${journeyId}`);
+
+                    routeHandler(navContentDiv, contentDiv);
+                });
+            }
 
             // Load moments for this flow
             const momentsList = document.getElementById('flow-moments-list');
@@ -67,12 +82,25 @@ export function loadFlowDetail(flowId, contentDiv) {
                                         <td>${escapeHtml(m.statement)}</td>
                                         <td>${m.type}</td>
                                         <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                        <td><a href="/moments/${m.id}" class="view-btn">View</a></td>
+                                        <td><a href="/moments/${m.id}" moment-id="${m.id}" class="view-btn">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     `;
+
+                    momentsList.querySelectorAll('.view-btn[moment-id]').forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+                            e.preventDefault();
+
+                            const momentId = link.getAttribute('moment-id');
+                            window.history.pushState({}, '', `/moments/${momentId}`);
+
+                            routeHandler(navContentDiv, contentDiv);
+                        });
+                    });
                 })
                 .catch(() => {
                     momentsList.innerHTML = '<p class="error">Failed to load moments.</p>';
@@ -91,7 +119,21 @@ export function loadFlowDetail(flowId, contentDiv) {
             getJourneyById(flow.journeyId)
                 .then(journey => {
                     const icon = getStatusIcon(journey.statusColor);
-                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" class="detail-link">${escapeHtml(journey.statement)}</a> ${icon}`;
+                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" journey-id="${journey.id}" class="detail-link">${escapeHtml(journey.statement)}</a> ${icon}`;
+
+                    const link = journeyCell.querySelector('a.detail-link');
+                    if (link) {
+                        link.addEventListener('click', (e) => {
+                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+                            e.preventDefault();
+
+                            const href = link.getAttribute('href');
+                            window.history.pushState({}, '', href);
+
+                            routeHandler(navContentDiv, contentDiv);
+                        });
+                    }
                 })
                 .catch(() => {
                     // leave link as-is
@@ -101,7 +143,8 @@ export function loadFlowDetail(flowId, contentDiv) {
             const saveBtn = document.getElementById('save-desc');
             const descMsg = document.getElementById('desc-save-msg');
             if (saveBtn) {
-                saveBtn.addEventListener('click', async () => {
+                saveBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
                     descMsg.textContent = '';
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;

@@ -9,7 +9,9 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void EpicDetail_DisplaysEpicAndJourneys()
         {
-            Driver.Navigate().GoToUrl(BaseUrl + "/epics/1");
+            EnsureLoggedIn();
+
+            NavigateSpa("/epics/1");
 
             var header = WaitForElement(By.CssSelector(".epic-detail-card h2"));
             Assert.That(header.Text, Does.Contain("Epic One"));

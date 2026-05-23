@@ -1,6 +1,6 @@
-import { changePassword, requestLogout } from './api.mjs';
+import { changePassword } from './api.mjs';
 import { routeHandler } from './router.mjs';
-import { deleteTokenCookies, getRefreshTokenFromCookie } from './parser.mjs';
+import { clearTokens } from './auth-state.mjs';
 
 export function loadChangePasswordForm(navContentDiv, contentDiv) {
     const changeBtn = document.getElementById("change-password-btn");
@@ -56,27 +56,12 @@ function manageChangeSubmission(navContentDiv, contentDiv) {
             newElement.value = "";
             confirmElement.value = "";
 
-            // Auto-logout: attempt to invalidate tokens server-side, then clear cookies and redirect to login
-            const refreshToken = getRefreshTokenFromCookie();
-            if (refreshToken) {
-                requestLogout(refreshToken)
-                    .catch(err => {
-                        console.error('Failed to invalidate tokens on server:', err);
-                    })
-                    .finally(() => {
-                        deleteTokenCookies();
-                        setTimeout(() => {
-                            window.history.pushState({}, '', '/login');
-                            routeHandler(navContentDiv, contentDiv);
-                        }, 1200);
-                    });
-            } else {
-                deleteTokenCookies();
-                setTimeout(() => {
-                    window.history.pushState({}, '', '/login');
-                    routeHandler(navContentDiv, contentDiv);
-                }, 1200);
-            }
+            clearTokens();
+
+            setTimeout(() => {
+                window.history.pushState({}, '', '/login');
+                routeHandler(navContentDiv, contentDiv);
+            }, 1200);
         })
         .catch((error) => {
             let errorMessage = "An error occurred while changing password.";

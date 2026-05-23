@@ -267,7 +267,7 @@ function createStrideRow(moment) {
     return tr;
 }
 
-function bindInlineMomentControls(root, projectId) {
+function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
     if (!root) return;
 
     // Prevent double binding ON ROOT (not elements)
@@ -327,9 +327,22 @@ function bindInlineMomentControls(root, projectId) {
     });
 
     root.addEventListener('click', async (e) => {
+        // ✅ Handle View navigation (NO REFRESH)
+        const viewLink = e.target.closest('a.view-btn');
+        if (viewLink) {
+            e.preventDefault();
+
+            const href = viewLink.getAttribute('href');
+            window.history.pushState({}, '', href);
+            routeHandler(navContentDiv, contentDiv);
+
+            return;
+        }
+
         const btn = e.target.closest(
             '.move-to-backlog-btn, .move-to-stride-from-backlog-btn, .progress-stride-btn'
         );
+
         if (!btn) return;
 
         // ✅ Move to Backlog
@@ -547,6 +560,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 // Populate dropdowns inside the newly created card using DOM option creation
                 populateSelectsWithin(card);
             });
+            
 
             // Render Backlog
             if (backlogSection) {
@@ -564,7 +578,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                 <td>
                                     <select class="backlog-target-stride" data-moment-id="${m.id}"></select>
                                     <button class="move-to-stride-from-backlog-btn" data-moment-id="${m.id}">Move</button>
-                                    <a href="/moments/${m.id}" class="view-btn">View</a>
+                                    <a href="/moments/${m.id}" moment-id="${m.id}" class="view-btn">View</a>
                                 </td>
                             </tr>
                         `).join('')}

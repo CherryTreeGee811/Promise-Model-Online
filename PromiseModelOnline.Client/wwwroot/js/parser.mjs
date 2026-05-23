@@ -1,18 +1,3 @@
-export function getAccessTokenFromCookie() {
-    const name = 'accessToken=';
-    const decodedCookies = decodeURIComponent(document.cookie);
-    const cookiesArray = decodedCookies.split('; ');
-
-    // Iterate through the cookies to find the one with the key 'token'
-    for (let i = 0; i < cookiesArray.length; i++) {
-        if (cookiesArray[i].startsWith(name)) {
-            return cookiesArray[i].substring(name.length);
-        }
-    }
-
-    return null;
-}
-
 function base64UrlDecode(str) {
     // Replace non-url compatible chars with base64 standard chars
     str = str.replace(/-/g, '+').replace(/_/g, '/');
@@ -59,23 +44,4 @@ export function getNameFromToken(token) {
     } catch (e) {
         return null;
     }
-}
-
-export function getRefreshTokenFromCookie() {
-    const name = 'refreshToken=';
-    const decodedCookies = decodeURIComponent(document.cookie);
-    const cookiesArray = decodedCookies.split('; ');
-
-    for (let i = 0; i < cookiesArray.length; i++) {
-        if (cookiesArray[i].startsWith(name)) {
-            return cookiesArray[i].substring(name.length);
-        }
-    }
-
-    return null;
-}
-
-export function deleteTokenCookies() {
-    document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }

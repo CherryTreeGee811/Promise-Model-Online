@@ -1,9 +1,9 @@
-import { getAccessTokenFromCookie } from '../parser.mjs';
+import { getAccessToken } from '../auth-state.mjs';
 import { base } from '../api.mjs';
 
 export function getEpicById(epicId) {
     const url = `${base}/api/epics/${epicId}`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     return fetch(url, {
         method: 'GET',
@@ -27,7 +27,7 @@ export function getEpicById(epicId) {
 
 export function getJourneysByEpic(epicId) {
     const url = `${base}/api/journeys?epicId=${epicId}`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     return fetch(url, {
         method: 'GET',
@@ -52,7 +52,7 @@ export function getJourneysByEpic(epicId) {
 
 export async function addEpic(epic) {
     const url = `${base}/api/epics`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     const res = await fetch(url, {
         method: 'POST',
@@ -78,7 +78,7 @@ export async function addEpic(epic) {
 
 export async function updateEpic(epic) {
     const url = `${base}/api/epics/${epic.id}`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     const res = await fetch(url, {
         method: 'PUT',

@@ -1,8 +1,9 @@
+import { routeHandler } from '../router.mjs';
 import { getJourneyById, getFlowsByJourney, updateJourney } from './api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 
-export function loadJourneyDetail(journeyId, contentDiv) {
+export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
@@ -19,13 +20,13 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                     <table class="detail-table">
                         <tr><th>ID</th><td>${journey.id}</td></tr>
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" style="width:100%">${escapeHtml(journey.description || '')}</textarea>
-                            <div style="margin-top:6px"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4">${escapeHtml(journey.description || '')}</textarea>
+                            <div class="save-btn-div"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Epic</th>
                             <td id="journey-epic-cell">
-                                <a href="/epics/${journey.epicId}" class="detail-link">Epic ${journey.epicId}</a>
+                                <a href="/epics/${journey.epicId}" epic-id="${journey.epicId}" class="detail-link">Epic ${journey.epicId}</a>
                             </td>
                         </tr>
                         <tr><th>Status</th><td id="journey-status-cell">${getStatusIcon(journey.statusColor)}</td></tr>
@@ -41,6 +42,20 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                 </div>
             `;
 
+            const epicLink = detailDiv.querySelector('a.detail-link[epic-id]');
+            if (epicLink) {
+                epicLink.addEventListener('click', (e) => {
+                    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+                    e.preventDefault();
+
+                    const epicId = epicLink.getAttribute('epic-id');
+                    window.history.pushState({}, '', `/epics/${epicId}`);
+
+                    routeHandler(navContentDiv, contentDiv);
+                });
+            }
+            
             const flowsList = document.getElementById('journey-flows-list');
             getFlowsByJourney(journeyId)
                 .then(flows => {
@@ -62,12 +77,23 @@ export function loadJourneyDetail(journeyId, contentDiv) {
                                     <tr>
                                         <td>${f.id}</td>
                                         <td>${escapeHtml(f.statement)}</td>
-                                        <td><a href="/flows/${f.id}" class="view-btn">View</a></td>
+                                        <td><a href="/flows/${f.id}" flow-id="${f.id}" class="view-btn">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     `;
+
+                    flowsList.querySelectorAll('.view-btn[flow-id]').forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                            e.preventDefault();
+                            const flowId = link.getAttribute('flow-id');
+                            window.history.pushState({}, '', `/flows/${flowId}`);
+
+                            routeHandler(navContentDiv, contentDiv);
+                        });
+                    });
                 })
                 .catch(() => {
                     flowsList.innerHTML = '<p class="error">Failed to load flows.</p>';
@@ -85,7 +111,21 @@ export function loadJourneyDetail(journeyId, contentDiv) {
             getEpicById(journey.epicId)
                 .then(epic => {
                     const icon = getStatusIcon(epic.statusColor);
-                    epicCell.innerHTML = `<a href="/epics/${epic.id}" class="detail-link">${escapeHtml(epic.statement)}</a> ${icon}`;
+                    epicCell.innerHTML = `<a href="/epics/${epic.id}" epic-id="${epic.id}" class="detail-link">${escapeHtml(epic.statement)}</a> ${icon}`;
+                    const link = epicCell.querySelector('a.detail-link');
+
+                    if (link) {
+                        link.addEventListener('click', (e) => {
+                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+                            e.preventDefault();
+
+                            const href = link.getAttribute('href');
+                            window.history.pushState({}, '', href);
+
+                            routeHandler(navContentDiv, contentDiv);
+                        });
+                    }
                 })
                 .catch(() => {
                     // keep default link
@@ -95,7 +135,8 @@ export function loadJourneyDetail(journeyId, contentDiv) {
             const saveBtn = document.getElementById('save-desc');
             const descMsg = document.getElementById('desc-save-msg');
             if (saveBtn) {
-                saveBtn.addEventListener('click', async () => {
+                saveBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
                     descMsg.textContent = '';
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
@@ -114,6 +155,8 @@ export function loadJourneyDetail(journeyId, contentDiv) {
 
             const commentsContainer = document.getElementById('journey-comments');
             loadComments(commentsContainer, 'Journey', journeyId);
+
+            loadingEl.textContent = '';
         })
         .catch(err => {
             loadingEl.textContent = '';

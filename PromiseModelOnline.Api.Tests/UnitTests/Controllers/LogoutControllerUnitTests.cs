@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Controllers;
@@ -17,96 +17,78 @@ namespace PromiseModelOnline.Api.Tests
         public void SetUp()
         {
             _authClientMock = new Mock<IAuthClient>();
+
+            var httpContext = new DefaultHttpContext();
+
+            // ✅ Set Authorization header
+            httpContext.Request.Headers["Authorization"] = "Bearer test-access-token";
+
+            // ✅ Set refresh token cookie (using mock)
+            var mockCookies = new Mock<IRequestCookieCollection>();
+            mockCookies.Setup(c => c["refreshToken"])
+                    .Returns("valid-refresh-token-123");
+
+            httpContext.Request.Cookies = mockCookies.Object;
+
             _controller = new LogoutController(_authClientMock.Object)
             {
                 ControllerContext = new ControllerContext
                 {
-                    HttpContext = new DefaultHttpContext()
+                    HttpContext = httpContext
                 }
             };
-
-            _controller.ControllerContext.HttpContext.Request.Headers.Authorization = "Bearer test-access-token";
         }
 
         [Test]
         public async Task Logout_WhenAuthServiceSucceeds_ReturnsNoContent()
         {
-            var request = new LogoutRequest
-            {
-                RefreshToken = "valid-refresh-token-123"
-            };
-
             _authClientMock
-                .Setup(x => x.LogoutAsync(request, "Bearer test-access-token"))
+                .Setup(x => x.LogoutAsync(
+                    It.Is<LogoutRequest>(r => r.RefreshToken == "valid-refresh-token-123"),
+                    "Bearer test-access-token"))
                 .Returns(Task.CompletedTask);
 
-            var result = await _controller.Logout(request);
+            var result = await _controller.Logout();
 
             Assert.That(result, Is.InstanceOf<NoContentResult>());
 
-            _authClientMock.Verify(x => x.LogoutAsync(request, "Bearer test-access-token"), Times.Once);
+            _authClientMock.Verify(x => x.LogoutAsync(
+                It.Is<LogoutRequest>(r => r.RefreshToken == "valid-refresh-token-123"),
+                "Bearer test-access-token"),
+                Times.Once);
         }
 
         [Test]
         public async Task Logout_WhenRefreshTokenIsInvalid_ReturnsUnauthorized()
         {
-            var request = new LogoutRequest
-            {
-                RefreshToken = "invalid-refresh-token"
-            };
-
             _authClientMock
-                .Setup(x => x.LogoutAsync(request, "Bearer test-access-token"))
+                .Setup(x => x.LogoutAsync(
+                    It.IsAny<LogoutRequest>(),
+                    "Bearer test-access-token"))
                 .ThrowsAsync(new UnauthorizedAccessException());
 
-            var result = await _controller.Logout(request);
+            var result = await _controller.Logout();
 
-            Assert.That(result, Is.InstanceOf<UnauthorizedObjectResult>());
-            var unauthorized = result as UnauthorizedObjectResult;
-            Assert.That(unauthorized, Is.Not.Null);
-            Assert.That(unauthorized!.Value, Is.EqualTo("Invalid refresh token"));
-
-            _authClientMock.Verify(x => x.LogoutAsync(request, "Bearer test-access-token"), Times.Once);
+            Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
         public async Task Logout_WhenAuthServiceThrowsUnexpectedError_ReturnsServerError()
         {
-            var request = new LogoutRequest
-            {
-                RefreshToken = "valid-refresh-token"
-            };
-
             _authClientMock
-                .Setup(x => x.LogoutAsync(request, "Bearer test-access-token"))
-                .ThrowsAsync(new System.Exception("Database connection failed"));
+                .Setup(x => x.LogoutAsync(
+                    It.IsAny<LogoutRequest>(),
+                    "Bearer test-access-token"))
+                .ThrowsAsync(new Exception("boom"));
 
-            var result = await _controller.Logout(request);
+            var result = await _controller.Logout();
 
             Assert.That(result, Is.InstanceOf<ObjectResult>());
+
             var objectResult = result as ObjectResult;
             Assert.That(objectResult, Is.Not.Null);
             Assert.That(objectResult!.StatusCode, Is.EqualTo(500));
             Assert.That(objectResult.Value, Is.EqualTo("Internal server error"));
-
-            _authClientMock.Verify(x => x.LogoutAsync(request, "Bearer test-access-token"), Times.Once);
-        }
-
-        [Test]
-        public async Task Logout_WhenRequestIsNull_ReturnsServerError()
-        {
-            _authClientMock
-                .Setup(x => x.LogoutAsync(null, "Bearer test-access-token"))
-                .ThrowsAsync(new ArgumentNullException(nameof(LogoutRequest)));
-
-            var result = await _controller.Logout(null!);
-
-            Assert.That(result, Is.InstanceOf<ObjectResult>());
-            var objectResult = result as ObjectResult;
-            Assert.That(objectResult, Is.Not.Null);
-            Assert.That(objectResult!.StatusCode, Is.EqualTo(500));
-
-            _authClientMock.Verify(x => x.LogoutAsync(null, "Bearer test-access-token"), Times.Once);
         }
     }
 }

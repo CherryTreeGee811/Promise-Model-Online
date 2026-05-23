@@ -6,7 +6,7 @@ export function handlePromiseRoutes(path, navContentDiv, contentDiv) {
     if (segments.length === 2 && segments[0] === 'promises') {
         const promiseId = segments[1];
         loadTemplate('promises/detail.html', contentDiv)
-            .then(() => loadPromiseDetail(promiseId, contentDiv))
+            .then(() => loadPromiseDetail(promiseId, navContentDiv, contentDiv))
             .catch(err => {
                 console.error('Error loading promise detail:', err);
                 contentDiv.innerHTML = '<h1>Error loading promise</h1>';

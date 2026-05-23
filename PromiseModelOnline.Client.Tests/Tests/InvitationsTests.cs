@@ -9,13 +9,15 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void Invitations_AcceptInvitation_RemovesRow()
         {
-            Driver.Navigate().GoToUrl(BaseUrl + "/invitations");
+            EnsureLoggedIn();
+
+            NavigateSpa("/invitations");
 
             var acceptBtn = WaitForElement(By.CssSelector(".accept-btn"));
             acceptBtn.Click();
 
             // After accepting, the row should be removed
-            WaitUntil(driver =>
+            var removed = WaitUntil(driver =>
             {
                 try
                 {
@@ -27,8 +29,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
                 }
             }, 5);
 
-            var rows = Driver.FindElements(By.CssSelector("tbody tr"));
-            Assert.That(rows.Count, Is.EqualTo(0), "Invitation row was not removed after accept");
+            Assert.That(removed, Is.True, "Invitation row was not removed after accept");
         }
     }
 }

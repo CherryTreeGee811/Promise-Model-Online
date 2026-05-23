@@ -1,9 +1,9 @@
-import { getAccessTokenFromCookie } from '../parser.mjs';
+import { getAccessToken } from '../auth-state.mjs';
 import { base } from '../api.mjs';
 
 export function getFlowById(flowId) {
     const url = `${base}/api/flows/${flowId}`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     return fetch(url, {
         method: 'GET',
@@ -27,7 +27,7 @@ export function getFlowById(flowId) {
 
 export function getMomentsByFlow(flowId) {
     const url = `${base}/api/moments?flowId=${flowId}`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     return fetch(url, {
         method: 'GET',
@@ -52,7 +52,7 @@ export function getMomentsByFlow(flowId) {
 
 export async function addFlow(flow) {
     const url = `${base}/api/flows`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     const res = await fetch(url, {
         method: 'POST',
@@ -78,7 +78,7 @@ export async function addFlow(flow) {
 
 export async function updateFlow(flow) {
     const url = `${base}/api/flows/${flow.id}`;
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
 
     const res = await fetch(url, {
         method: 'PUT',

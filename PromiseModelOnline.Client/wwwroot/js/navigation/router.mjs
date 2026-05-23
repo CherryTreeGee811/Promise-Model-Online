@@ -1,5 +1,5 @@
 import { routeHandler } from '../router.mjs';
-import { getAccessTokenFromCookie } from '../parser.mjs';
+import { getAccessToken } from '../auth-state.mjs';
 import { startNotificationPolling } from '../notifications/badge.mjs';
 
 function initGeneralLinkListeners(navContentDiv, contentDiv) {
@@ -75,7 +75,7 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
     let templateName = "anonymous.html";
 
     // Check if an existing token exists
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
     if (token) {
         templateName = "authenticated.html";
     }
@@ -87,7 +87,11 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
         })
         .then(html => {
             navContentDiv.innerHTML = html;
-            startNotificationPolling();
+            
+            if (getAccessToken()) {
+                startNotificationPolling();
+            }
+            
             initNavLinkListeners(templateName, navContentDiv, contentDiv);
             return Promise.resolve();
         })

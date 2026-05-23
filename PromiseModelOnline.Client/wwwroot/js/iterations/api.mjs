@@ -1,20 +1,23 @@
-import { getAccessTokenFromCookie } from '../parser.mjs';
-import { base } from '../api.mjs';
+import { authFetch, base } from '../api.mjs';
+
+/*
+====================================
+ITERATIONS
+====================================
+*/
 
 export async function getIterationsByProject(projectId) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/iterations?projectId=${projectId}`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
+    const res = await authFetch(`${base}/api/iterations?projectId=${projectId}`);
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     return res.json();
 }
 
 export async function getIterationBurndown(iterationId) {
-    const token = getAccessTokenFromCookie();
-    const res = await fetch(`${base}/api/iterations/${iterationId}/burndown`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
+    const res = await authFetch(`${base}/api/iterations/${iterationId}/burndown`);
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     return res.json();
 }

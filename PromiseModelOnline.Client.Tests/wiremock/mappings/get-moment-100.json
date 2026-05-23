@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/epics/1",
+    "urlPath": "/api/moments/100",
     "headers": {
       "Authorization": {
         "equalTo": "Bearer owner-token-fixed"
@@ -13,15 +13,13 @@
     "status": 200,
     "headers": { "Content-Type": "application/json" },
     "jsonBody": {
-      "id": 1,
-      "statement": "Epic One",
-      "description": "First epic",
-      "productPromiseId": 1,
+      "id": 100,
+      "statement": "Moment 100",
+      "type": "Task",
+      "status": "Todo",
+      "effortEstimate": "M",
       "ownerId": 1,
-      "displayOrder": 1,
-      "createdAt": "2026-05-01T00:00:00Z",
-      "updatedAt": null,
-      "statusColor": "red"
+      "assignedStrideId": 10
     }
   }
 }

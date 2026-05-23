@@ -10,7 +10,8 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void ProjectList_LoadsAndDisplaysProject()
         {
             // Navigate to projects page (already authenticated via default cookie)
-            Driver.Navigate().GoToUrl(BaseUrl + "/projects");
+            EnsureLoggedIn();
+            NavigateSpa("/projects");
 
             // Wait for the table to populate
             var row = WaitForElement(By.CssSelector("#project-list-table-body tr"));
@@ -20,7 +21,8 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void ProjectList_DeleteButton_RemovesRow()
         {
-            Driver.Navigate().GoToUrl(BaseUrl + "/projects");
+            EnsureLoggedIn();
+            NavigateSpa("/projects");
 
             var deleteBtn = WaitForElement(By.CssSelector(".delete-btn[project-id='1']"));
             deleteBtn.Click();

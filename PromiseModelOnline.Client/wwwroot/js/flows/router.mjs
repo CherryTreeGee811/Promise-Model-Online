@@ -6,7 +6,7 @@ export function handleFlowRoutes(path, navContentDiv, contentDiv) {
     if (segments.length === 2 && segments[0] === 'flows') {
         const flowId = segments[1];
         loadTemplate('flows/detail.html', contentDiv)
-            .then(() => loadFlowDetail(flowId, contentDiv))
+            .then(() => loadFlowDetail(flowId, navContentDiv, contentDiv))
             .catch(err => {
                 console.error('Error loading flow detail:', err);
                 contentDiv.innerHTML = '<h1>Error loading flow</h1>';

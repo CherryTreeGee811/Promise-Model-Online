@@ -1,7 +1,7 @@
 {
   "priority": 1,
   "scenarioName": "comment-scenario",
-  "requiredScenarioState": "Started",
+  "requiredScenarioState": "AfterPost",
   "request": {
     "method": "GET",
     "urlPath": "/api/comments",
@@ -18,6 +18,15 @@
         "id": 1,
         "text": "Existing comment",
         "createdAt": "2026-05-01T00:00:00Z",
+        "userName": "pmo_test",
+        "mentionedUsers": [],
+        "parentCommentId": null,
+        "replies": []
+      },
+      {
+        "id": 2,
+        "text": "New comment",
+        "createdAt": "2026-05-20T00:00:00Z",
         "userName": "pmo_test",
         "mentionedUsers": [],
         "parentCommentId": null,

@@ -3,7 +3,7 @@ import { loadNavTemplate } from './navigation/router.mjs';
 import { loadLoginForm } from './login.mjs';
 import { loadRegistrationForm } from './register.mjs';
 import { loadChangePasswordForm } from './change-password.mjs';
-import { deleteTokenCookies, getRefreshTokenFromCookie, getAccessTokenFromCookie } from './parser.mjs';
+import { clearTokens, getAccessToken } from './auth-state.mjs';
 import { requestLogout } from './api.mjs';
 import { handleProjectRoutes } from './projects/router.mjs';
 import { handleMomentRoutes } from './moments/router.mjs';
@@ -30,7 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const navContentDiv = document.getElementById("main-menu");
 
     // Handle browser back/forward navigation
-    window.addEventListener("popstate", routeHandler);
+    window.addEventListener("popstate", () => {
+        routeHandler(navContentDiv, contentDiv);
+    });
 
     // Initial route handling
     routeHandler(navContentDiv, contentDiv);
@@ -85,39 +87,27 @@ export function routeHandler(navContentDiv, contentDiv) {
     
     // Handle logout
     if (path === '/logout') {
-        const refreshToken = getRefreshTokenFromCookie();
-        if (refreshToken) {
-            requestLogout(refreshToken)
-                .then(() => {
-                    deleteTokenCookies();
-                    window.history.replaceState({}, '', '/');
-                    path = '/';
-                    loadNavTemplate(navContentDiv, contentDiv);
-                    loadTemplate("home.html", contentDiv).then(() => {
-                        return loadHomePage();
-                    });
-                })
-                .catch((error) => {
-                    console.error('Logout failed:', error);
-                    // Still clear cookies and redirect even if API call fails
-                    deleteTokenCookies();
-                    window.history.replaceState({}, '', '/');
-                    path = '/';
-                    loadNavTemplate(navContentDiv, contentDiv);
-                    loadTemplate("home.html", contentDiv).then(() => {
-                        return loadHomePage();
-                    });
-                });
-        } else {
-            // No refresh token, just redirect
-            deleteTokenCookies();
+    requestLogout()
+        .then(() => {
+            clearTokens();
             window.history.replaceState({}, '', '/');
             path = '/';
             loadNavTemplate(navContentDiv, contentDiv);
             loadTemplate("home.html", contentDiv).then(() => {
                 return loadHomePage();
             });
-        }
+        })
+        .catch((error) => {
+            console.error('Logout failed:', error);
+            // Still clear cookies and redirect even if API call fails
+            clearTokens();
+            window.history.replaceState({}, '', '/');
+            path = '/';
+            loadNavTemplate(navContentDiv, contentDiv);
+            loadTemplate("home.html", contentDiv).then(() => {
+                return loadHomePage();
+            });
+        });
         return;
     }
     
@@ -175,7 +165,7 @@ export function routeHandler(navContentDiv, contentDiv) {
             break;
         case path == '/change-password':
             // Protect route: require authentication
-            if (!getAccessTokenFromCookie()) {
+            if (!getAccessToken()) {
                 window.history.pushState({}, '', '/login');
                 loadNavTemplate(navContentDiv, contentDiv);
                 loadTemplate("login.html", contentDiv).then(() => {
