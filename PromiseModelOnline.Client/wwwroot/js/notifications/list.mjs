@@ -59,8 +59,10 @@ function renderNotificationsInto(listDiv, notifications) {
     }
 
     listDiv.innerHTML = `
-        <button id="mark-all-read" class="view-btn">Mark All as Read</button>
-        <table class="promisemodel-table">
+        <div class="mb-3">
+            <button id="mark-all-read" class="btn btn-primary btn-sm" type="button">Mark All as Read</button>
+        </div>
+        <table class="table table-sm table-striped table-hover align-middle">
             <thead>
                 <tr>
                     <th>Message</th>
@@ -77,7 +79,7 @@ function renderNotificationsInto(listDiv, notifications) {
                         <td>${new Date(n.createdAt).toLocaleString('en-CA')}</td>
                         <td data-actions="1">
                             ${!n.isRead 
-                                ? `<button class="mark-read-btn" data-id="${n.id}">Read</button>` 
+                                ? `<button class="btn btn-sm btn-outline-primary mark-read-btn" type="button" data-id="${n.id}">Read</button>` 
                                 : '✓ Read'}
                         </td>
                     </tr>
@@ -136,24 +138,20 @@ function renderNotificationsInto(listDiv, notifications) {
 async function refreshNotificationsPage() {
     const listDiv = document.getElementById('notifications-list');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
 
-    if (!listDiv || !errorEl || !loadingEl) return;
+    if (!listDiv || !errorEl) return;
 
-    loadingEl.textContent = 'Loading notifications…';
     errorEl.textContent = '';
 
     try {
         const notifications = await fetchAllNotifications();
 
-        loadingEl.textContent = '';
         renderNotificationsInto(listDiv, notifications);
 
         // Full recalculation for initial load
         updateNotificationBadge();
 
     } catch {
-        loadingEl.textContent = '';
         errorEl.textContent = 'Failed to load notifications.';
     }
 }
