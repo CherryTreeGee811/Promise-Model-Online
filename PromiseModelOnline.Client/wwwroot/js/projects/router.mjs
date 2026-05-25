@@ -4,10 +4,19 @@ import { loadAddProjectForm } from './add.mjs';
 import { loadStridesPage } from '../strides/router.mjs';
 import { loadSharePage } from './share.mjs';
 import { loadGraphPage } from './graph.mjs';
+import { loadProjectSettingsPage } from './settings.mjs';
 
 export function handleProjectRoutes(path, navContentDiv, contentDiv) {
     const urlParams = new URLSearchParams(window.location.search);
     const idParam = urlParams.get('id');
+
+    if (path === '/projects/edit' && idParam) {
+        window.history.replaceState({}, '', `/projects/${idParam}/settings`);
+        loadTemplate('projects/settings.html', contentDiv)
+            .then(() => loadProjectSettingsPage(navContentDiv, contentDiv, idParam))
+            .catch(err => { contentDiv.innerHTML = '<h1>Error loading project settings</h1>'; });
+        return;
+    }
     
     // Match /projects/{id}/strides
     const stridesMatch = path.match(/^\/projects\/(\d+)\/strides$/);
@@ -32,6 +41,15 @@ export function handleProjectRoutes(path, navContentDiv, contentDiv) {
         loadTemplate('projects/graph.html', contentDiv)
             .then(() => loadGraphPage(graphMatch[1], contentDiv))
             .catch(err => { contentDiv.innerHTML = '<h1>Error loading graph page</h1>'; });
+        return;
+    }
+
+    // Match /projects/{id}/settings
+    const settingsMatch = path.match(/^\/projects\/(\d+)\/settings$/);
+    if (settingsMatch) {
+        loadTemplate('projects/settings.html', contentDiv)
+            .then(() => loadProjectSettingsPage(navContentDiv, contentDiv, settingsMatch[1]))
+            .catch(err => { contentDiv.innerHTML = '<h1>Error loading project settings</h1>'; });
         return;
     }
 

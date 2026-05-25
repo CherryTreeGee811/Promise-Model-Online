@@ -30,6 +30,23 @@ export async function addProject(project) {
     return res.json();
 }
 
+export async function updateProjectDetails(projectId, details) {
+    const res = await authFetch(`${base}/api/projects/${projectId}/details`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(details)
+    });
+
+    if (!res.ok) {
+        const body = await safeParse(res);
+        throw new Error(body?.message || body?.title || `HTTP ${res.status}`);
+    }
+
+    return res.json();
+}
+
 export function deleteProject(projectId) {
     return authFetch(`${base}/api/projects/${projectId}`, {
         method: 'DELETE'
@@ -41,6 +58,39 @@ export async function getProjectById(projectId) {
 
     if (res.status === 204) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    return res.json();
+}
+
+export async function exportProject(projectId) {
+    const res = await authFetch(`${base}/api/projects/${projectId}/export`);
+
+    if (!res.ok) {
+        const body = await safeParse(res);
+        throw new Error(body?.message || body?.title || `HTTP ${res.status}`);
+    }
+
+    return res.blob();
+}
+
+export async function importProject(file) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    const res = await authFetch(`${base}/api/projects/import`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!res.ok) {
+        const body = await safeParse(res);
+        const message = body?.message
+            || body?.title
+            || (Array.isArray(body?.errors) ? body.errors.join(' ') : '')
+            || `HTTP ${res.status}`;
+
+        throw new Error(message);
+    }
 
     return res.json();
 }

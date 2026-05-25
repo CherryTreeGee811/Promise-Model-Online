@@ -458,6 +458,16 @@ input[type=button]:hover, input[type=submit]:hover {
   margin-bottom: var(--spacing-lg);
 }
 .detail-card h2 { margin-bottom: var(--spacing-sm); }
+
+.project-settings-sections {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.project-settings-sections .detail-card {
+  margin-bottom: 0;
+}
+
 .detail-table {
   width: 100%;
   border-collapse: collapse;
@@ -477,6 +487,20 @@ input[type=button]:hover, input[type=submit]:hover {
   font-weight: 700;
 }
 .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.delete-btn:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
+  color: #f9fafb;
+  opacity: 0.8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.delete-btn:disabled:hover,
+.delete-btn:disabled:focus-visible {
+  background: #9ca3af;
+}
 
 /* Inline add row utilities used by detail pages */
 .inline-add-form { margin: 0; }
@@ -1103,4 +1127,8 @@ input[type=button]:hover, input[type=submit]:hover {
 
 .save-btn-div {
   margin-top:6px;
+}
+
+.light-blur {
+  filter: blur(1px);
 }

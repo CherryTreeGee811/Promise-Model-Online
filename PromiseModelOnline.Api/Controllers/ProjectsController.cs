@@ -151,6 +151,28 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = project.Id }, _mapper.Map(project, _service));
         }
 
+        [HttpPatch("{id}/details")]
+        public async Task<ActionResult<ProjectDTO>> UpdateDetails(int id, [FromBody] UpdateProjectDetailsRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest("Project title is required.");
+
+            var project = await _service.GetByIdAsync(id);
+            if (project is null)
+                return NotFound();
+
+            project.Name = request.Name.Trim();
+            project.Description = string.IsNullOrWhiteSpace(request.Description)
+                ? null
+                : request.Description.Trim();
+
+            await _service.UpdateAsync(project);
+            return Ok(_mapper.Map(project, _service));
+        }
+
         [HttpGet("{id}/export")]
         public async Task<IActionResult> Export(int id)
         {

@@ -26,7 +26,7 @@ CREATE PROMISE
 ====================================
 */
 export async function addPromise(promise) {
-    const res = await authFetch(`${base}/api/promises`, {
+    const res = await authFetch(`${base}/api/promises/create`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
