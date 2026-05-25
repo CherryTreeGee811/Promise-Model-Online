@@ -19,12 +19,11 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
     const importButtonLabel = document.getElementById('import-project-btn-label');
     const clearImportButton = document.getElementById('clear-import-btn');
     const importInput = document.getElementById('import-project-input');
-    const importFileName = document.getElementById('import-file-name');
     const importSummaryPanel = document.getElementById('project-import-summary-panel');
     const errorTextElement = document.getElementById('error-text');
     const successTextElement = document.getElementById('success-text');
 
-    if (!form || !nameInput || !descriptionInput || !firstPromisePanel || !firstPromiseInput || !createButton || !createButtonSpinner || !createButtonLabel || !importButton || !importButtonSpinner || !importButtonIcon || !importButtonLabel || !clearImportButton || !importInput || !importFileName || !importSummaryPanel || !errorTextElement || !successTextElement) {
+    if (!form || !nameInput || !descriptionInput || !firstPromisePanel || !firstPromiseInput || !createButton || !createButtonSpinner || !createButtonLabel || !importButton || !importButtonSpinner || !importButtonIcon || !importButtonLabel || !clearImportButton || !importInput || !importSummaryPanel || !errorTextElement || !successTextElement) {
         return;
     }
 
@@ -87,7 +86,6 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
 
     function resetImportState() {
         importInput.value = '';
-        importFileName.textContent = '';
         importSummaryPanel.innerHTML = '';
         nameInput.value = '';
         descriptionInput.value = '';
@@ -137,7 +135,6 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         const project = document.project;
         const summary = summarizeProjectExport(document);
 
-        importFileName.textContent = `Selected file: ${file.name}`;
         renderSummaryTable(importSummaryPanel, [
             { label: 'Schema Version', value: document.schemaVersion ?? 'Unknown' },
             { label: 'Exported At', value: document.exportedAt ? new Date(document.exportedAt).toLocaleString() : 'Unknown' },

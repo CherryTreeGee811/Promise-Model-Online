@@ -12,8 +12,8 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     const titleInput = document.getElementById('project-title-input');
     const descriptionInput = document.getElementById('project-description-input');
     const summaryPanel = document.getElementById('project-summary-panel');
+    const summaryLoading = document.getElementById('project-summary-loading');
     const errorText = document.getElementById('error-text');
-    const loadingText = document.getElementById('loading-text');
     const successText = document.getElementById('success-text');
     const exportButton = document.getElementById('export-project-btn');
     const deleteButton = document.getElementById('delete-project-btn');
@@ -32,18 +32,51 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         },
         memberCount: 0,
     };
+    let exportPopoverHideTimer = null;
+    let exportPopover = null;
 
-    if (!form || !titleInput || !descriptionInput || !summaryPanel || !loadingText || !successText || !exportButton || !deleteButton || !deleteConfirmationInput || !deleteConfirmationText) {
+    if (!form || !titleInput || !descriptionInput || !summaryPanel || !summaryLoading || !errorText || !successText || !exportButton || !deleteButton || !deleteConfirmationInput || !deleteConfirmationText) {
         return;
-    }
-
-    function setBusy(message) {
-        loadingText.textContent = message;
     }
 
     function clearMessages() {
         errorText.textContent = '';
         successText.textContent = '';
+    }
+
+    function setSummaryLoading(loading) {
+        summaryLoading.hidden = !loading;
+        summaryPanel.hidden = loading;
+    }
+
+    function showExportPopover() {
+        if (typeof bootstrap === 'undefined' || !bootstrap.Popover) {
+            successText.textContent = 'Exported!';
+            window.setTimeout(() => {
+                if (successText.textContent === 'Exported!') {
+                    successText.textContent = '';
+                }
+            }, 2000);
+            return;
+        }
+
+        if (!exportPopover) {
+            exportPopover = new bootstrap.Popover(exportButton, {
+                trigger: 'manual',
+                placement: 'top',
+                content: 'Exported!',
+            });
+        }
+
+        exportPopover.show();
+
+        if (exportPopoverHideTimer) {
+            window.clearTimeout(exportPopoverHideTimer);
+        }
+
+        exportPopoverHideTimer = window.setTimeout(() => {
+            exportPopover?.hide();
+        }, 2000);
     }
 
     function getDeletePhrase(projectName) {
@@ -77,6 +110,8 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     }
 
     async function loadSummary(project) {
+        setSummaryLoading(true);
+
         try {
             const [promises, members] = await Promise.all([
                 getProjectPromises(projectId),
@@ -123,21 +158,20 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
 
             renderSummary(project, summaryState.counts, summaryState.memberCount);
             console.warn('Failed to load project summary:', error);
+        } finally {
+            setSummaryLoading(false);
         }
     }
 
     async function loadProject() {
         try {
-            setBusy('Loading project settings...');
             const project = await getProjectById(projectId);
             currentProject = project;
             titleInput.value = project.name ?? '';
             descriptionInput.value = project.description ?? '';
             refreshDeleteGate(project.name ?? '');
             await loadSummary(project);
-            loadingText.textContent = '';
         } catch (error) {
-            loadingText.textContent = '';
             errorText.textContent = 'Failed to load project settings.';
             console.error(error);
         }
@@ -156,7 +190,6 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         }
 
         try {
-            setBusy('Saving project settings...');
             const updatedProject = await updateProjectDetails(projectId, {
                 name,
                 description: description || null,
@@ -170,8 +203,6 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
             successText.textContent = 'Project settings saved.';
         } catch (error) {
             errorText.textContent = error.message || 'Failed to save project settings.';
-        } finally {
-            loadingText.textContent = '';
         }
     });
 
@@ -181,14 +212,11 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         clearMessages();
 
         try {
-            setBusy('Exporting project...');
             const blob = await exportProject(projectId);
             downloadBlob(blob, `project-${projectId}-export.json`);
-            successText.textContent = 'Project export downloaded.';
+            showExportPopover();
         } catch (error) {
             errorText.textContent = error.message || 'Failed to export project.';
-        } finally {
-            loadingText.textContent = '';
         }
     });
 
@@ -206,13 +234,11 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         }
 
         try {
-            setBusy('Deleting project...');
             await deleteProject(projectId);
             window.history.pushState({}, '', '/projects');
             routeHandler(navContentDiv, contentDiv);
         } catch (error) {
             errorText.textContent = error.message || 'Failed to delete project.';
-            loadingText.textContent = '';
         }
     });
 

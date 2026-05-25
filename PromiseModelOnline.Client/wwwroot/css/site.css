@@ -476,6 +476,22 @@ input[type=button]:hover, input[type=submit]:hover {
 }
 .detail-table th { text-align: left; padding: 8px 10px; vertical-align: top; width: 200px; color: var(--color-heading); }
 .detail-table td { padding: 8px 10px; }
+.summary-table {
+  margin-top: var(--spacing-sm);
+}
+.summary-table .summary-key {
+  width: 42%;
+  min-width: 170px;
+  letter-spacing: 0.01em;
+}
+.summary-table .summary-value {
+  font-weight: 500;
+  color: var(--color-text);
+  word-break: break-word;
+}
+.summary-table .summary-gap td {
+  background: transparent;
+}
 .detail-textarea { min-height: 96px; }
 .field-actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
 .save-btn {
