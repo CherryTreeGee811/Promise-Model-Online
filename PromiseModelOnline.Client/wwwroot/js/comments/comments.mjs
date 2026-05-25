@@ -6,8 +6,8 @@ export function loadComments(container, parentType, parentId) {
         <div id="comments-list" class="comments-list" role="list" aria-label="Comments"></div>
         <form id="comment-form" class="comment-form" aria-label="Add a comment">
             <label for="comment-textarea" class="sr-only">Your comment</label>
-            <textarea id="comment-textarea" rows="3" required placeholder="Write a comment... Use @name to mention someone."></textarea>
-            <button type="submit" class="view-btn">Post</button>
+            <textarea id="comment-textarea" class="form-control mb-2" rows="3" required placeholder="Write a comment... Use @name to mention someone."></textarea>
+            <button type="submit" class="btn btn-primary btn-sm">Post</button>
         </form>
     `;
 

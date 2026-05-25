@@ -15,15 +15,15 @@ import {
 export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const loadingEl = document.getElementById('journey-detail-loading');
 
     destroyDetailStackGraph();
-    loadingEl.textContent = 'Loading journey...';
+    if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
     getJourneyById(journeyId)
         .then(journey => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'journey',
@@ -34,15 +34,15 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
             detailDiv.innerHTML = `
                 <div class="detail-card journey-detail-card">
                     <h2>${escapeHtml(journey.statement)}</h2>
-                    <table class="detail-table">
+                    <table class="table table-sm table-striped align-middle detail-table">
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(journey.description || '')}</textarea>
-                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="form-control detail-textarea">${escapeHtml(journey.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Epic</th>
                             <td id="journey-epic-cell">
-                                <a href="/epics/${journey.epicId}" epic-id="${journey.epicId}" class="detail-link">Epic ${journey.epicId}</a>
+                                <a href="/epics/${journey.epicId}" epic-id="${journey.epicId}" class="detail-link link-primary text-decoration-none fw-semibold">Epic ${journey.epicId}</a>
                             </td>
                         </tr>
                         <tr><th>Status</th><td id="journey-status-cell">${getStatusIcon(journey.statusColor)}</td></tr>
@@ -54,7 +54,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         <p>Loading flows...</p>
                     </div>
                     <div id="journey-comments"></div>
-                    <button id="back-link" class="back-btn">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
                 </div>
             `;
 
@@ -83,18 +83,18 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         renderItemRow: f => `
                             <tr data-flow-id="${f.id}">
                                 <td>${escapeHtml(f.statement)}</td>
-                                <td><a href="/flows/${f.id}" flow-id="${f.id}" class="view-btn">View</a></td>
+                                <td><a href="/flows/${f.id}" flow-id="${f.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-flow-form" class="inline-add-form">
-                                        <input id="add-flow-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Flow Statement...">
+                                        <input id="add-flow-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Flow Statement...">
                                     </form>
                                 </td>
                                 <td>
-                                    <button id="add-flow-submit" type="submit" form="add-flow-form" class="view-btn">Add</button>
+                                    <button id="add-flow-submit" type="submit" form="add-flow-form" class="btn btn-sm btn-outline-primary">Add</button>
                                     <span id="add-flow-msg"></span>
                                 </td>
                             </tr>
@@ -132,7 +132,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                                     row.dataset.flowId = created.id;
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
-                                        <td><a href="/flows/${created.id}" flow-id="${created.id}" class="view-btn">View</a></td>
+                                        <td><a href="/flows/${created.id}" flow-id="${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
@@ -148,7 +148,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     }
 
                     flowsList.innerHTML = `
-                        <table class="promisemodel-table">
+                        <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -161,14 +161,14 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                                     <tr>
                                         <td>${f.id}</td>
                                         <td>${escapeHtml(f.statement)}</td>
-                                        <td><a href="/flows/${f.id}" flow-id="${f.id}" class="view-btn">View</a></td>
+                                        <td><a href="/flows/${f.id}" flow-id="${f.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     `;
 
-                    flowsList.querySelectorAll('.view-btn[flow-id]').forEach(link => {
+                    flowsList.querySelectorAll('a[flow-id]').forEach(link => {
                         link.addEventListener('click', (e) => {
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
                             e.preventDefault();
@@ -195,7 +195,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
             getEpicById(journey.epicId)
                 .then(epic => {
                     const icon = getStatusIcon(epic.statusColor);
-                    epicCell.innerHTML = `<a href="/epics/${epic.id}" epic-id="${epic.id}" class="detail-link">${escapeHtml(epic.statement)}</a> ${icon}`;
+                    epicCell.innerHTML = `<a href="/epics/${epic.id}" epic-id="${epic.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(epic.statement)}</a> ${icon}`;
                     const link = epicCell.querySelector('a.detail-link');
 
                     if (link) {
@@ -253,10 +253,10 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     console.error('Unable to resolve graph link for journey detail', error);
                 });
 
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
             errorEl.textContent = 'Failed to load journey details.';
             console.error(err);
         });

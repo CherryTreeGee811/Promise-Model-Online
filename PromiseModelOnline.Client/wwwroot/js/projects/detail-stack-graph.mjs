@@ -44,6 +44,18 @@ function getContainer() {
     return document.getElementById('detail-stack-graph');
 }
 
+function renderLoadingSpinner(container) {
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="d-flex h-100 w-100 align-items-center justify-content-center" aria-live="polite" aria-label="Loading detail stack graph">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading detail stack graph...</span>
+            </div>
+        </div>
+    `;
+}
+
 function refreshNodeDerivedFields(node) {
     const payload = node.payload ?? {};
     node.label = payload.statement ?? payload.name ?? `#${payload.id}`;
@@ -302,7 +314,7 @@ export async function mountDetailStackGraph({ nodeType, nodeId, projectIdHint = 
 
     const mountToken = ++detailStackState.mountToken;
     container.classList.add('detail-stack-graph--loading');
-    container.replaceChildren();
+    renderLoadingSpinner(container);
 
     try {
         const [d3, pathResult] = await Promise.all([

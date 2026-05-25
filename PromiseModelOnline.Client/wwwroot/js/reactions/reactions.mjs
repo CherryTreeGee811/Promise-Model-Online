@@ -9,7 +9,7 @@ export function loadReactions(container, parentType, parentId) {
         <div class="reactions-bar">
             <span class="reactions-summary" id="reactions-summary"></span>
             <span class="reactions-picker">
-                ${EMOTE_SET.map(e => `<button class="emote-btn" data-emote="${e}" title="${e}">${e}</button>`).join('')}
+                ${EMOTE_SET.map(e => `<button class="btn btn-outline-secondary btn-sm emote-btn" data-emote="${e}" title="${e}" aria-label="React with ${e}">${e}</button>`).join('')}
             </span>
         </div>
     `;

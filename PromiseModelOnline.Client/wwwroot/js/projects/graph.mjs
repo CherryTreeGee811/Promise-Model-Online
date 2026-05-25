@@ -499,15 +499,15 @@ function renderFilterBar() {
             </label>
 
             <div class="graph-filter-actions">
-                <button id="graph-filter-reset" type="button" class="graph-filter-button">Reset</button>
-                <button id="graph-filter-hide-all" type="button" class="graph-filter-button">Hide All</button>
-                <button id="graph-filter-expand-all" type="button" class="graph-filter-button">Expand All</button>
-                <button id="graph-filter-refresh" type="button" class="graph-filter-button">Refresh</button>
+                <button id="graph-filter-reset" type="button" class="btn btn-outline-secondary btn-sm">Reset</button>
+                <button id="graph-filter-hide-all" type="button" class="btn btn-outline-secondary btn-sm">Hide All</button>
+                <button id="graph-filter-expand-all" type="button" class="btn btn-outline-secondary btn-sm">Expand All</button>
+                <button id="graph-filter-refresh" type="button" class="btn btn-outline-primary btn-sm">Refresh</button>
             </div>
         </div>
 
         <fieldset class="graph-filter-types">
-            <legend class="graph-filter-group-label">Card types</legend>
+            <legend class="graph-filter-group-label">Promise types</legend>
             <div class="graph-filter-chip-list">
                 ${typeChips}
             </div>
@@ -517,6 +517,15 @@ function renderFilterBar() {
     `;
 
     bindFilterControls();
+}
+
+function setGraphLoading(loading) {
+    const loadingState = document.getElementById('graph-loading-state');
+    if (loadingState) {
+        loadingState.hidden = !loading;
+        loadingState.classList.toggle('d-none', !loading);
+        loadingState.setAttribute('aria-hidden', loading ? 'false' : 'true');
+    }
 }
 
 function escapeAttribute(value) {
@@ -708,7 +717,7 @@ function updateFilterSummary(metrics) {
     if (!summaryEl) return;
 
     if (!graphState.rawTree) {
-        summaryEl.textContent = 'Loading promises...';
+        summaryEl.textContent = 'Loading graph...';
         return;
     }
 
@@ -812,11 +821,10 @@ function applyFilters() {
 }
 
 async function reloadGraphData() {
-    const loadingEl = document.getElementById('loading-text');
     const errorEl = document.getElementById('error-text');
     const successEl = document.getElementById('success-text');
 
-    if (loadingEl) loadingEl.textContent = 'Loading project graph...';
+    setGraphLoading(true);
     if (errorEl) errorEl.textContent = '';
     if (successEl) successEl.textContent = '';
 
@@ -843,12 +851,12 @@ async function reloadGraphData() {
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
         applyFilters();
 
-        if (loadingEl) loadingEl.textContent = '';
         if (successEl) successEl.textContent = `Loaded ${children.length} top-level promise${children.length === 1 ? '' : 's'}.`;
     } catch (error) {
         console.error('Error loading project graph:', error);
-        if (loadingEl) loadingEl.textContent = '';
         if (errorEl) errorEl.textContent = 'Unable to load the project graph.';
+    } finally {
+        setGraphLoading(false);
     }
 }
 
@@ -875,7 +883,6 @@ async function loadAvailableStrides(projectId) {
 
 export async function loadGraphPage(projectId, contentDiv) {
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
     const successEl = document.getElementById('success-text');
 
     if (graphState.pageShowRefreshHandler) {
@@ -925,9 +932,9 @@ export async function loadGraphPage(projectId, contentDiv) {
     renderFilterBar();
     syncControlsToFilters();
 
-    if (loadingEl) loadingEl.textContent = 'Loading project graph...';
     if (errorEl) errorEl.textContent = '';
     if (successEl) successEl.textContent = '';
+    setGraphLoading(true);
 
     await reloadGraphData();
 }

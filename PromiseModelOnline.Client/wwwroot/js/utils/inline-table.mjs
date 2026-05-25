@@ -13,8 +13,9 @@ export function renderTableWithInlineAddRow(container, {
     const addRowHtml = renderAddRow ? renderAddRow() : '';
 
     container.innerHTML = `
-        <table class="promisemodel-table">
-            <thead>
+        <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle mb-0 promisemodel-table">
+            <thead class="table-light">
                 <tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
             </thead>
             <tbody>
@@ -22,6 +23,7 @@ export function renderTableWithInlineAddRow(container, {
                 ${addRowHtml}
             </tbody>
         </table>
+        </div>
     `;
 
     return container.querySelector('tbody');
