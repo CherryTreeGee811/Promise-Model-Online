@@ -50,6 +50,9 @@ namespace PromiseModelOnline.Api.DAL
         {
             switch (entity)
             {
+                case Project project:
+                    await RemoveProjectAsync(project);
+                    return;
                 case Promise promise:
                     await RemovePromiseAsync(promise);
                     return;
@@ -72,6 +75,70 @@ namespace PromiseModelOnline.Api.DAL
                     _context.Remove(entity);
                     return;
             }
+        }
+
+        private async Task RemoveProjectAsync(Project project)
+        {
+            var promises = await _context.Set<Promise>()
+                .Where(promise => promise.ProjectId == project.Id)
+                .ToListAsync();
+
+            foreach (var promise in promises)
+            {
+                await RemovePromiseAsync(promise);
+            }
+
+            var iterations = await _context.Set<Iteration>()
+                .Where(iteration => iteration.ProjectId == project.Id)
+                .ToListAsync();
+
+            foreach (var iteration in iterations)
+            {
+                await RemoveIterationAsync(iteration);
+            }
+
+            var permissions = await _context.Set<Permission>()
+                .Where(permission => permission.ProjectId == project.Id)
+                .ToListAsync();
+
+            _context.RemoveRange(permissions);
+            _context.Remove(project);
+        }
+
+        private async Task RemoveIterationAsync(Iteration iteration)
+        {
+            var strides = await _context.Set<Stride>()
+                .Where(stride => stride.IterationId == iteration.Id)
+                .ToListAsync();
+
+            foreach (var stride in strides)
+            {
+                await RemoveStrideAsync(stride);
+            }
+
+            _context.Remove(iteration);
+        }
+
+        private async Task RemoveStrideAsync(Stride stride)
+        {
+            var moments = await _context.Set<Moment>()
+                .Where(moment => moment.AssignedStrideId == stride.Id || moment.OriginalStrideId == stride.Id)
+                .ToListAsync();
+
+            foreach (var moment in moments)
+            {
+                if (moment.AssignedStrideId == stride.Id)
+                {
+                    moment.AssignedStrideId = null;
+                }
+
+                if (moment.OriginalStrideId == stride.Id)
+                {
+                    moment.OriginalStrideId = null;
+                }
+            }
+
+            _context.Remove(stride);
         }
 
         private async Task RemovePromiseAsync(Promise promise)

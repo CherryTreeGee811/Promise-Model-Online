@@ -92,5 +92,49 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.OwnerId, Is.EqualTo(42));
         }
+
+        [Test]
+        public async Task DeleteByIdAsync_WithChildPromisesAndProjectChildren_DeletesProjectTree()
+        {
+            var project = new Project { Id = 1, Name = "Project A", OwnerId = 10 };
+            var promise = new Promise { Id = 2, Statement = "Promise", ProjectId = 1, Project = project };
+            var epic = new Epic { Id = 3, Statement = "Epic", ProductPromiseId = 2, ProductPromise = promise };
+            var journey = new Journey { Id = 4, Statement = "Journey", EpicId = 3, Epic = epic };
+            var flow = new Flow { Id = 5, Statement = "Flow", JourneyId = 4, Journey = journey };
+            var moment = new Moment { Id = 6, Statement = "Moment", FlowId = 5, Flow = flow };
+            var iteration = new Iteration { Id = 7, Name = "Iteration", ProjectId = 1, Project = project };
+            var stride = new Stride { Id = 8, Name = "Stride", IterationId = 7 };
+            var permission = new Permission { Id = 9, UserId = 10, ProjectId = 1 };
+            var comment = new Comment { Id = 10, UserId = 10, Text = "Moment comment", MomentId = 6 };
+            var mention = new CommentMention { Id = 11, CommentId = 10, MentionedUserId = 10 };
+
+            _context.Projects.Add(project);
+            _context.Promises.Add(promise);
+            _context.Epics.Add(epic);
+            _context.Journeys.Add(journey);
+            _context.Flows.Add(flow);
+            _context.Moments.Add(moment);
+            _context.Iterations.Add(iteration);
+            _context.Strides.Add(stride);
+            _context.Set<Permission>().Add(permission);
+            _context.Set<Comment>().Add(comment);
+            _context.Set<CommentMention>().Add(mention);
+            await _context.SaveChangesAsync();
+
+            var deleted = await _repo.DeleteByIdAsync(1);
+
+            Assert.That(deleted, Is.True);
+            Assert.That(_context.Projects.Any(), Is.False);
+            Assert.That(_context.Promises.Any(), Is.False);
+            Assert.That(_context.Epics.Any(), Is.False);
+            Assert.That(_context.Journeys.Any(), Is.False);
+            Assert.That(_context.Flows.Any(), Is.False);
+            Assert.That(_context.Moments.Any(), Is.False);
+            Assert.That(_context.Iterations.Any(), Is.False);
+            Assert.That(_context.Strides.Any(), Is.False);
+            Assert.That(_context.Set<Permission>().Any(), Is.False);
+            Assert.That(_context.Set<Comment>().Any(), Is.False);
+            Assert.That(_context.Set<CommentMention>().Any(), Is.False);
+        }
     }
 }

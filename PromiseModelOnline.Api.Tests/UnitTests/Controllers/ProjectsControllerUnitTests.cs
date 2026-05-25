@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,9 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IPermissionService> _mockPermissionService = null!;
         private Mock<IGenericService<Promise>> _mockPromiseService = null!;
         private Mock<IGenericMapper<Promise, PromiseDTO>> _mockPromiseMapper = null!;
+        private Mock<IProjectExportService> _mockProjectExportService = null!;
+        private Mock<IProjectImportService> _mockProjectImportService = null!;
+        private Mock<IProjectImportValidationService> _mockProjectImportValidationService = null!;
         private ProjectsController _controller = null!;
 
         [SetUp]
@@ -33,6 +37,9 @@ namespace PromiseModelOnline.Api.Tests
             _mockPermissionService = new Mock<IPermissionService>();
             _mockPromiseService = new Mock<IGenericService<Promise>>();
             _mockPromiseMapper = new Mock<IGenericMapper<Promise, PromiseDTO>>();
+            _mockProjectExportService = new Mock<IProjectExportService>();
+            _mockProjectImportService = new Mock<IProjectImportService>();
+            _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
         }
 
         private void InitControllerWithUser(string? email, string? nameid = null)
@@ -43,7 +50,10 @@ namespace PromiseModelOnline.Api.Tests
                 _mockUserRepo.Object,
                 _mockPermissionService.Object,
                 _mockPromiseService.Object,
-                _mockPromiseMapper.Object);
+                _mockPromiseMapper.Object,
+                _mockProjectExportService.Object,
+                _mockProjectImportService.Object,
+                _mockProjectImportValidationService.Object);
             var claims = new List<Claim>();
             if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
             if (nameid is not null) claims.Add(new Claim("nameid", nameid));
@@ -202,6 +212,79 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService.Setup(s => s.DeleteByIdAsync(66)).ReturnsAsync(false);
             InitControllerWithUser("u@u.com");
             var result = await _controller.Delete(66);
+            Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        }
+
+        [Test]
+        public async Task Export_WithAccessibleProject_ReturnsJsonFile()
+        {
+            var user = new User { Id = 77, Email = "exporter@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("exporter@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project>
+            {
+                new Project { Id = 55, Name = "Export me" }
+            });
+
+            _mockProjectExportService.Setup(s => s.BuildExportAsync(55)).ReturnsAsync(new ProjectExportDocument
+            {
+                SchemaVersion = "1.0",
+                Project = new ProjectExportProject { Id = 55, Name = "Export me" }
+            });
+
+            InitControllerWithUser("exporter@x.com");
+
+            var result = await _controller.Export(55);
+
+            Assert.That(result, Is.InstanceOf<FileContentResult>());
+            var file = result as FileContentResult;
+            Assert.That(file, Is.Not.Null);
+            Assert.That(file!.ContentType, Is.EqualTo("application/json"));
+            Assert.That(file.FileDownloadName, Is.EqualTo("project-55-export.json"));
+
+            var json = Encoding.UTF8.GetString(file.FileContents);
+            Assert.That(json, Does.Contain("schemaVersion"));
+            Assert.That(json, Does.Contain("Export me"));
+        }
+
+        [Test]
+        public async Task Export_MissingEmail_ReturnsUnauthorized()
+        {
+            InitControllerWithUser(null);
+
+            var result = await _controller.Export(55);
+
+            Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
+        }
+
+        [Test]
+        public async Task Export_WithoutAccess_ReturnsForbid()
+        {
+            var user = new User { Id = 88, Email = "noaccess@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("noaccess@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project>());
+
+            InitControllerWithUser("noaccess@x.com");
+
+            var result = await _controller.Export(99);
+
+            Assert.That(result, Is.InstanceOf<ForbidResult>());
+        }
+
+        [Test]
+        public async Task Export_MissingProject_ReturnsNotFound()
+        {
+            var user = new User { Id = 99, Email = "owner@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("owner@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project>
+            {
+                new Project { Id = 100, Name = "Allowed" }
+            });
+            _mockProjectExportService.Setup(s => s.BuildExportAsync(100)).ThrowsAsync(new KeyNotFoundException());
+
+            InitControllerWithUser("owner@x.com");
+
+            var result = await _controller.Export(100);
+
             Assert.That(result, Is.InstanceOf<NotFoundResult>());
         }
     }

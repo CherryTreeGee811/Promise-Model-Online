@@ -1,13 +1,18 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
@@ -21,6 +26,9 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPermissionService _permissionService;
         private readonly IGenericService<Promise> _promiseService;
         private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
+        private readonly IProjectExportService _projectExportService;
+        private readonly IProjectImportService _projectImportService;
+        private readonly IProjectImportValidationService _projectImportValidationService;
 
         public ProjectsController(
             IProjectService projectService,
@@ -28,7 +36,10 @@ namespace PromiseModelOnline.Api.Controllers
             IUserRepository userRepository,
             IPermissionService permissionService,
             IGenericService<Promise> promiseService,
-            IGenericMapper<Promise, PromiseDTO> promiseMapper)
+            IGenericMapper<Promise, PromiseDTO> promiseMapper,
+            IProjectExportService projectExportService,
+            IProjectImportService projectImportService,
+            IProjectImportValidationService projectImportValidationService)
             : base(projectService, mapper)
         {
             _projectService = projectService;
@@ -36,6 +47,9 @@ namespace PromiseModelOnline.Api.Controllers
             _permissionService = permissionService;
             _promiseService = promiseService;
             _promiseMapper = promiseMapper;
+            _projectExportService = projectExportService;
+            _projectImportService = projectImportService;
+            _projectImportValidationService = projectImportValidationService;
         }
 
         [HttpGet]
@@ -135,6 +149,81 @@ namespace PromiseModelOnline.Api.Controllers
 
             await _service.AddAsync(project);
             return CreatedAtAction(nameof(GetById), new { id = project.Id }, _mapper.Map(project, _service));
+        }
+
+        [HttpPatch("{id}/details")]
+        public async Task<ActionResult<ProjectDTO>> UpdateDetails(int id, [FromBody] UpdateProjectDetailsRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest("Project title is required.");
+
+            var project = await _service.GetByIdAsync(id);
+            if (project is null)
+                return NotFound();
+
+            project.Name = request.Name.Trim();
+            project.Description = string.IsNullOrWhiteSpace(request.Description)
+                ? null
+                : request.Description.Trim();
+
+            await _service.UpdateAsync(project);
+            return Ok(_mapper.Map(project, _service));
+        }
+
+        [HttpGet("{id}/export")]
+        public async Task<IActionResult> Export(int id)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null)
+                return Unauthorized();
+
+            var accessibleProjects = await _projectService.GetAccessibleProjectsAsync(user.Id);
+            if (!accessibleProjects.Any(project => project.Id == id))
+                return Forbid();
+
+            try
+            {
+                var exportDocument = await _projectExportService.BuildExportAsync(id);
+                var json = JsonSerializer.Serialize(exportDocument, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                return File(Encoding.UTF8.GetBytes(json), "application/json", $"project-{id}-export.json");
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost("import")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Import([FromForm] IFormFile file)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null)
+                return Unauthorized();
+
+            if (file is null || file.Length == 0)
+                return BadRequest("Import file is missing.");
+
+            await using var stream = file.OpenReadStream();
+            var validation = await _projectImportValidationService.ValidateAsync(stream);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new
+                {
+                    errors = validation.Errors,
+                    warnings = validation.Warnings
+                });
+            }
+
+            var result = await _projectImportService.ImportAsync(validation.Document!, user.Id);
+            return CreatedAtAction(nameof(GetById), new { id = result.ProjectId }, result);
         }
 
         // Diagnostic endpoint removed. Temporary debug method rolled back.
