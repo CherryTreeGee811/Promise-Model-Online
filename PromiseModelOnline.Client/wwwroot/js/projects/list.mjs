@@ -5,8 +5,11 @@ export function loadProjectList(navContentDiv, contentDiv) {
     const tableBody = document.getElementById('project-list-table-body');
     const errorTextElement = document.getElementById("error-text");
     const successTextElement = document.getElementById("success-text");
-    const loadingTextElement = document.getElementById("loading-text");
     const addProjectLink = document.getElementById('add-project-link');
+
+    if (!tableBody || !errorTextElement || !successTextElement) {
+        return;
+    }
 
     if (addProjectLink) {
         addProjectLink.addEventListener('click', (e) => {
@@ -16,48 +19,63 @@ export function loadProjectList(navContentDiv, contentDiv) {
         });
     }
 
-    loadingTextElement.textContent = "Loading projects...";
+    errorTextElement.textContent = '';
+    successTextElement.textContent = '';
     tableBody.innerHTML = '';
 
     getAllProjects().then(projects => {
         projects.forEach(project => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${project.id ?? ''}</td>
                 <td>${project.name ?? ''}</td>
-                <td>
-                    <a href="/projects/${project.id}/strides" class="view-btn" project-id="${project.id}">View</a>
-                    <a href="/projects/${project.id}/graph" class="graph-btn" project-id="${project.id}">&#128200; Graph View</a>
-                    <a href="/projects/${project.id}/settings" class="edit-btn" project-id="${project.id}">&#9881;&#65039; Settings</a>
-                    <a href="/projects/${project.id}/share" class="share-btn">Share</a>
+                <td class="d-flex flex-wrap gap-2">
+                    <a href="/projects/${project.id}/strides" class="btn btn-sm btn-outline-primary view-iterations-btn" data-project-id="${project.id}">View Iterations</a>
+                    <a href="/projects/${project.id}/graph" class="btn btn-sm btn-outline-secondary graph-btn" data-project-id="${project.id}" title="Open graph view" aria-label="Open graph view">
+                        <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                    </a>
+                    <a href="/projects/${project.id}/settings" class="btn btn-sm btn-outline-secondary settings-btn" data-project-id="${project.id}" title="Open project settings" aria-label="Open project settings">
+                        <i class="bi bi-gear" aria-hidden="true"></i>
+                    </a>
+                    <a href="/projects/${project.id}/share" class="btn btn-sm btn-outline-secondary share-btn" data-project-id="${project.id}" title="Manage sharing permissions" aria-label="Manage sharing permissions">
+                        <i class="bi bi-share" aria-hidden="true"></i>
+                    </a>
                 </td>
             `;
             tableBody.appendChild(row);
         });
 
-        tableBody.querySelectorAll('.view-btn[project-id]').forEach(viewBtn => {
+        tableBody.querySelectorAll('.view-iterations-btn[data-project-id]').forEach(viewBtn => {
             viewBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const projectId = viewBtn.getAttribute('project-id');
+                const projectId = viewBtn.getAttribute('data-project-id');
                 window.history.pushState({}, '', `/projects/${projectId}/strides`);
                 routeHandler(navContentDiv, contentDiv);
             });
         });
 
-        tableBody.querySelectorAll('.graph-btn[project-id]').forEach(graphBtn => {
+        tableBody.querySelectorAll('.graph-btn[data-project-id]').forEach(graphBtn => {
             graphBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const projectId = graphBtn.getAttribute('project-id');
+                const projectId = graphBtn.getAttribute('data-project-id');
                 window.history.pushState({}, '', `/projects/${projectId}/graph`);
                 routeHandler(navContentDiv, contentDiv);
             });
         });
 
-        tableBody.querySelectorAll('.edit-btn[project-id]').forEach(settingsBtn => {
+        tableBody.querySelectorAll('.settings-btn[data-project-id]').forEach(settingsBtn => {
             settingsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const projectId = settingsBtn.getAttribute('project-id');
+                const projectId = settingsBtn.getAttribute('data-project-id');
                 window.history.pushState({}, '', `/projects/${projectId}/settings`);
+                routeHandler(navContentDiv, contentDiv);
+            });
+        });
+
+        tableBody.querySelectorAll('.share-btn[data-project-id]').forEach(shareBtn => {
+            shareBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const projectId = shareBtn.getAttribute('data-project-id');
+                window.history.pushState({}, '', `/projects/${projectId}/share`);
                 routeHandler(navContentDiv, contentDiv);
             });
         });
@@ -70,5 +88,4 @@ export function loadProjectList(navContentDiv, contentDiv) {
             errorTextElement.textContent = "Unknown error";
         }
     });
-    loadingTextElement.textContent = "";
 }
