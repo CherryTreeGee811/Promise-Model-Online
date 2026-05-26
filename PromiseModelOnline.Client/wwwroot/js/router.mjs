@@ -14,6 +14,7 @@ import { handlePromiseRoutes } from './promises/router.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleIterationRoutes } from './iterations/router.mjs';
+import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -173,12 +174,14 @@ export function routeHandler(navContentDiv, contentDiv) {
                 });
                 break;
             }
-
             loadTemplate("change-password.html", contentDiv).then(() => {
                 return loadChangePasswordForm(navContentDiv, contentDiv);
             }).catch((error) => {
                 console.error('Error loading change password form js:', error);
             });
+            break;
+        case path == '/knowledge-base':
+            handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv);
             break;
         default:
             contentDiv.innerHTML = `<h1>404 Not Found</h1>`;

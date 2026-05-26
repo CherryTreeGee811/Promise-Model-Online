@@ -55,6 +55,15 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
             routeHandler(navContentDiv, contentDiv);
         });
     }
+
+    const kbLink = document.getElementById("knowledge-base-link");
+    if (kbLink) {
+        kbLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.history.pushState({}, '', '/knowledge-base');
+            routeHandler(navContentDiv, contentDiv);
+        });
+    }
 }
 
 function initAnonymousLinkListeners(navContentDiv, contentDiv) {
