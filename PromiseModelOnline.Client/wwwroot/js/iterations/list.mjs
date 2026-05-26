@@ -1,3 +1,4 @@
+import { getProjectById } from '../projects/api.mjs';
 import { getIterationsByProject, getIterationBurndown } from './api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { drawBurndownChart } from '../utils/burndown.mjs';
@@ -6,18 +7,24 @@ export function loadIterationHistory(projectId) {
     const listDiv = document.getElementById('iterations-list');
     const detailDiv = document.getElementById('iteration-detail');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const projectTitle = document.getElementById('project-title');
 
     // Start with list visible, detail hidden
     listDiv.classList.remove('hidden');
     detailDiv.classList.add('hidden');
 
-    loadingEl.textContent = 'Loading iterations…';
+    listDiv.innerHTML = renderLoadingSpinner('Loading iterations');
     errorEl.textContent = '';
 
-    getIterationsByProject(projectId)
-        .then(iterations => {
-            loadingEl.textContent = '';
+    Promise.all([
+        getProjectById(projectId).catch(() => null),
+        getIterationsByProject(projectId)
+    ])
+        .then(([project, iterations]) => {
+            if (projectTitle) {
+                projectTitle.textContent = project?.name ?? `Project ${projectId}`;
+            }
+
             if (!iterations || iterations.length === 0) {
                 listDiv.innerHTML = '<p class="no-items">No iterations found.</p>';
                 return;
@@ -28,14 +35,13 @@ export function loadIterationHistory(projectId) {
 
             listDiv.innerHTML = `
                 <table class="promisemodel-table">
-                    <thead><tr><th>ID</th><th>Name</th><th>Created</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Name</th><th>Created</th><th>Actions</th></tr></thead>
                     <tbody>
                         ${iterations.map(i => `
                             <tr>
-                                <td>${i.id}</td>
                                 <td>${escapeHtml(i.name)}</td>
                                 <td>${new Date(i.createdAt).toLocaleDateString('en-CA')}</td>
-                                <td><button class="view-iteration-btn view-btn" data-iteration-id="${i.id}">View</button></td>
+                                <td><button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${i.id}" type="button">View</button></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -51,7 +57,7 @@ export function loadIterationHistory(projectId) {
             });
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            listDiv.innerHTML = '';
             errorEl.textContent = 'Failed to load iterations.';
             console.error(err);
         });
@@ -133,6 +139,16 @@ export function loadIterationHistory(projectId) {
         detailDiv.classList.add('hidden');
         listDiv.classList.remove('hidden');
     });
+}
+
+function renderLoadingSpinner(message) {
+    return `
+        <div class="d-flex w-100 justify-content-center align-items-center py-5" aria-live="polite">
+            <div class="spinner-border text-primary" role="status" aria-label="${escapeHtml(message)}">
+                <span class="visually-hidden">${escapeHtml(message)}</span>
+            </div>
+        </div>
+    `;
 }
 
 function escapeHtml(s) {
