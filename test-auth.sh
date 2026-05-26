@@ -1,0 +1,62 @@
+#!/bin/bash
+
+set -e
+
+BASE="https://localhost:9000"
+CLIENT_ID="pmo-spa"
+REDIRECT_URI="https://localhost:9000/auth/callback"
+USER="pmo_test"
+PASS="Hello123*"
+
+echo "== Resetting =="
+rm -f cookies.txt login.html
+
+echo "== PKCE setup =="
+VERIFIER="TEST123"
+CHALLENGE="$VERIFIER"
+
+AUTH_QUERY="response_type=code&client_id=$CLIENT_ID&redirect_uri=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$REDIRECT_URI'''))")&scope=openid%20profile%20offline_access&code_challenge=$CHALLENGE&code_challenge_method=plain"
+
+RETURN_URL=$(python3 - <<EOF
+import urllib.parse
+print(urllib.parse.quote("/connect/authorize?$AUTH_QUERY"))
+EOF
+)
+
+echo "== Fetch login page =="
+curl -k -s -c cookies.txt -b cookies.txt \
+  "$BASE/connect/login?returnUrl=$RETURN_URL" \
+  -o login.html
+
+TOKEN=$(grep -oP '__RequestVerificationToken" type="hidden" value="[^"]+"' login.html | sed -E 's/.*value="([^"]+)".*/\1/')
+
+echo "== Logging in =="
+curl -k -s -i -c cookies.txt -b cookies.txt \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "Username=$USER&Password=$PASS&ReturnUrl=$RETURN_URL&__RequestVerificationToken=$TOKEN" \
+  "$BASE/connect/login" > /dev/null
+
+echo "== Requesting authorization code =="
+AUTH_RESPONSE=$(curl -k -i -s -b cookies.txt "$BASE/connect/authorize?$AUTH_QUERY")
+
+CODE=$(echo "$AUTH_RESPONSE" | grep -i location | sed -E 's/.*code=([^&]+).*/\1/' | tr -d '\r')
+
+if [ -z "$CODE" ]; then
+  echo "❌ Failed to extract authorization code"
+  echo "$AUTH_RESPONSE"
+  exit 1
+fi
+
+echo "✅ Got authorization code: $CODE"
+
+echo "== Exchanging code for tokens =="
+
+TOKEN_RESPONSE=$(curl -k -i -s -b cookies.txt \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "grant_type=authorization_code&client_id=$CLIENT_ID&code=$CODE&redirect_uri=$REDIRECT_URI&code_verifier=$VERIFIER" \
+  "$BASE/connect/token")
+
+echo "$TOKEN_RESPONSE"
+
+echo ""
+echo "✅ Flow complete"

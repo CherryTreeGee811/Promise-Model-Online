@@ -1,102 +1,41 @@
-import { getAccessToken } from '../auth-state.mjs';
-import { base } from '../api.mjs';
+import { get, post, put } from '../api.mjs';
+
+/*
+====================================
+GET FLOW
+====================================
+*/
 
 export function getFlowById(flowId) {
-    const url = `${base}/api/flows/${flowId}`;
-    const token = getAccessToken();
-
-    return fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            if (response.status === 401) {
-                document.getElementById("login-link")?.click();
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    });
+    return get(`/flows/${flowId}`);
 }
+
+/*
+====================================
+GET MOMENTS BY FLOW
+====================================
+*/
 
 export function getMomentsByFlow(flowId) {
-    const url = `${base}/api/moments?flowId=${flowId}`;
-    const token = getAccessToken();
-
-    return fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        }
-    })
-    .then(response => {
-        if (response.ok) {
-            if (response.status === 204) return [];
-            return response.json();
-        } else if (response.status === 401) {
-            document.getElementById("login-link").click();
-        } else {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-    });
+    return get(`/moments?flowId=${flowId}`);
 }
 
-export async function addFlow(flow) {
-    const url = `${base}/api/flows`;
-    const token = getAccessToken();
+/*
+====================================
+CREATE FLOW
+====================================
+*/
 
-    const res = await fetch(url, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        },
-        body: JSON.stringify(flow)
-    });
-
-    if (res.ok) {
-        if (res.status === 204) return null;
-        return res.json();
-    } else if (res.status === 401) {
-        document.getElementById("login-link")?.click();
-    } else {
-        throw new Error(`HTTP error! status: ${res.status}`);
-    }
+export function addFlow(flow) {
+    return post(`/flows`, flow);
 }
 
-export async function updateFlow(flow) {
-    const url = `${base}/api/flows/${flow.id}`;
-    const token = getAccessToken();
+/*
+====================================
+UPDATE FLOW
+====================================
+*/
 
-    const res = await fetch(url, {
-        method: 'PUT',
-        mode: 'cors',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-        },
-        body: JSON.stringify(flow)
-    });
-
-    if (res.ok) {
-        return true;
-    } else if (res.status === 401) {
-        document.getElementById("login-link")?.click();
-    } else {
-        throw new Error(`HTTP error! status: ${res.status}`);
-    }
+export function updateFlow(flow) {
+    return put(`/flows/${flow.id}`, flow);
 }

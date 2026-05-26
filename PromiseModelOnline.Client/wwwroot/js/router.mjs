@@ -1,10 +1,8 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate } from './navigation/router.mjs';
-import { loadLoginForm } from './login.mjs';
-import { loadRegistrationForm } from './register.mjs';
-import { loadChangePasswordForm } from './change-password.mjs';
-import { clearTokens, getAccessToken } from './auth-state.mjs';
-import { requestLogout } from './api.mjs';
+import { getAccessToken } from './auth/auth-state.mjs';
+import { login, tryRefresh } from './auth/oidc.mjs';
+import { handleAuthRoutes } from './auth/router.mjs';
 import { handleProjectRoutes } from './projects/router.mjs';
 import { handleMomentRoutes } from './moments/router.mjs';
 import { handleFlowRoutes } from './flows/router.mjs';
@@ -14,47 +12,29 @@ import { handlePromiseRoutes } from './promises/router.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleIterationRoutes } from './iterations/router.mjs';
+import { getRoleFromToken, getNameFromToken } from './auth/parser.mjs';
 
-/**
- * Initializes the application when the DOM is fully loaded.
- * 
- * This function sets up the main content area, initializes event listeners for 
- * navigation links, and handles routing based on the current URL path. It also 
- * loads the appropriate templates and data.
- * 
- * @function
- * @returns {void} This function does not return a value.
- */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const contentDiv = document.getElementById("content");
     const navContentDiv = document.getElementById("main-menu");
 
-    // Handle browser back/forward navigation
-    window.addEventListener("popstate", () => {
-        routeHandler(navContentDiv, contentDiv);
-    });
+    // 1. Silent token refresh
+    const path = window.location.pathname;
+    const isAuthCallback = path === '/auth/callback';
+    if (!getAccessToken() && !isAuthCallback) {
+        try {
+            const refreshed = await tryRefresh();
+            if (!refreshed) { /* will be caught by route guards */ }
+        } catch { /* ignore */ }
+    }
 
-    // Initial route handling
+    // 2. Handle browser back/forward
+    window.addEventListener("popstate", () => routeHandler(navContentDiv, contentDiv));
+
+    // 3. Initial route
     routeHandler(navContentDiv, contentDiv);
 });
 
-
-/**
-* Loads an HTML template and updates the specified contentDiv with the fetched content.
-* 
-* This function fetches the specified template from the server and updates the 
-* inner HTML of the provided contentDiv. If the fetch operation fails, it displays 
-* an error message in the contentDiv.
-* 
-* @function loadTemplate
-* @param {string} templateName - The name of the template file to load.
-* @param {HTMLElement} contentDiv - The HTML element where the template will be loaded.
-* @returns {void} This function does not return a value.
-* 
-* @example
-* // Load the home template into the contentDiv
-* loadTemplate("home.html", contentDiv);
-*/
 export function loadTemplate(templateName, contentDiv) {
     return fetch(`/templates/${templateName}`)
         .then(response => {
@@ -71,115 +51,67 @@ export function loadTemplate(templateName, contentDiv) {
         });
 }
 
-
-/**
-* Handles routing based on the current URL path.
-* 
-* This function determines which template to load and which data to fetch based 
-* on the current URL path. It updates the contentDiv with the appropriate template 
-* and data.
-* 
-* @function routeHandler
-* @returns {void} This function does not return a value.
-*/
 export function routeHandler(navContentDiv, contentDiv) {
     let path = window.location.pathname;
-    
-    // Handle logout
-    if (path === '/logout') {
-    requestLogout()
-        .then(() => {
-            clearTokens();
-            window.history.replaceState({}, '', '/');
-            path = '/';
-            loadNavTemplate(navContentDiv, contentDiv);
-            loadTemplate("home.html", contentDiv).then(() => {
-                return loadHomePage();
-            });
-        })
-        .catch((error) => {
-            console.error('Logout failed:', error);
-            // Still clear cookies and redirect even if API call fails
-            clearTokens();
-            window.history.replaceState({}, '', '/');
-            path = '/';
-            loadNavTemplate(navContentDiv, contentDiv);
-            loadTemplate("home.html", contentDiv).then(() => {
-                return loadHomePage();
-            });
-        });
+
+    // Delegate all /auth/* routes to the auth router
+    if (path.startsWith('/auth')) {
+        handleAuthRoutes(path, navContentDiv, contentDiv);
         return;
     }
-    
+
     loadNavTemplate(navContentDiv, contentDiv);
+
+    function requireAuth() {
+        if (!getAccessToken()) {
+            sessionStorage.setItem("oidc_return_url", path);
+            login();
+            return false;
+        }
+        return true;
+    }
 
     switch (true) {
         case path == '/':
-            loadTemplate("home.html", contentDiv).then(() => {
-                return loadHomePage();
-            });
+            loadTemplate("home.html", contentDiv).then(() => loadHomePage());
             break;
-        case path == '/login':
-            loadTemplate("login.html", contentDiv).then(() => {
-                return loadLoginForm(navContentDiv, contentDiv);
-            }).catch((error) => {
-                console.error('Error loading login form js:', error);
-            });
-            break;
-        case path.startsWith('/projects'):
-            handleProjectRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/moments/'):
-            handleMomentRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/flows/'):
-            handleFlowRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/journeys/'):
-            handleJourneyRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/epics/'):
-            handleEpicRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/promises/'):
-            handlePromiseRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/projects') && path.includes('/iterations'):
-            handleIterationRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/projects'):
-            handleProjectRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path == '/register':
-            loadTemplate("register.html", contentDiv).then(() => {
-                return loadRegistrationForm(navContentDiv, contentDiv);
-            }).catch((error) => {
-                console.error('Error loading registration form js:', error);
-            });
-            break;
-        case path.startsWith('/notifications'):
-            handleNotificationsRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/invitations'):
-            handleInvitationsRoute(path, contentDiv);
-            break;
-        case path == '/change-password':
-            // Protect route: require authentication
-            if (!getAccessToken()) {
-                window.history.pushState({}, '', '/login');
-                loadNavTemplate(navContentDiv, contentDiv);
-                loadTemplate("login.html", contentDiv).then(() => {
-                    return loadLoginForm(navContentDiv, contentDiv);
-                });
-                break;
-            }
 
-            loadTemplate("change-password.html", contentDiv).then(() => {
-                return loadChangePasswordForm(navContentDiv, contentDiv);
-            }).catch((error) => {
-                console.error('Error loading change password form js:', error);
-            });
+        case path.startsWith('/projects') && path.includes('/iterations'):
+            if (requireAuth()) handleIterationRoutes(path, navContentDiv, contentDiv);
             break;
+
+        case path.startsWith('/projects'):
+            if (requireAuth()) handleProjectRoutes(path, navContentDiv, contentDiv);
+            break;
+
+        case path.startsWith('/moments/'):
+            if (requireAuth()) handleMomentRoutes(path, navContentDiv, contentDiv);
+            break;
+
+        case path.startsWith('/flows/'):
+            if (requireAuth()) handleFlowRoutes(path, navContentDiv, contentDiv);
+            break;
+
+        case path.startsWith('/journeys/'):
+            if (requireAuth()) handleJourneyRoutes(path, navContentDiv, contentDiv);
+            break;
+
+        case path.startsWith('/epics/'):
+            if (requireAuth()) handleEpicRoutes(path, navContentDiv, contentDiv);
+            break;
+
+        case path.startsWith('/promises/'):
+            if (requireAuth()) handlePromiseRoutes(path, navContentDiv, contentDiv);
+            break;
+
+        case path.startsWith('/notifications'):
+            if (requireAuth()) handleNotificationsRoutes(path, navContentDiv, contentDiv);
+            break;
+
+        case path.startsWith('/invitations'):
+            if (requireAuth()) handleInvitationsRoute(path, contentDiv);
+            break;
+
         default:
             contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
     }

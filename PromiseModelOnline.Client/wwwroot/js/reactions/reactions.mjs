@@ -1,6 +1,6 @@
 import { getReactions, createReaction, updateReaction, deleteReaction } from './api.mjs';
-import { getNameFromToken } from '../parser.mjs';
-import { getAccessToken } from '../auth-state.mjs';
+import { getNameFromToken } from '../auth/parser.mjs';
+import { getAccessToken } from '../auth/auth-state.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 

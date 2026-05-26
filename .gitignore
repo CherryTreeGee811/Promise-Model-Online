@@ -24,3 +24,6 @@ query
 
 # Project/user files
 **/*.csproj.lscache
+
+# Remove development env files
+*.env

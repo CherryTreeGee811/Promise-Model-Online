@@ -15,14 +15,23 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly IMomentRepository _momentRepository;
         private readonly IGenericRepository<Stride> _strideRepository;
         private readonly IGenericRepository<Iteration> _iterationRepository;
+        private readonly IGenericRepository<Flow> _flowRepository;
         private readonly IIterationService _iterationService;
         private readonly IStrideService _strideService;
         private readonly IHierarchyStatusService _hierarchyStatusService;
+        private readonly IGenericRepository<Journey> _journeyRepository;
+        private readonly IGenericRepository<Epic> _epicRepository;
+        private readonly IGenericRepository<Promise> _promiseRepository;
+        
 
         public MomentService(
             IMomentRepository momentRepository,
             IGenericRepository<Stride> strideRepository,
             IGenericRepository<Iteration> iterationRepository,
+            IGenericRepository<Flow> flowRepository,
+            IGenericRepository<Journey> journeyRepository,
+            IGenericRepository<Epic> epicRepository,
+            IGenericRepository<Promise> promiseRepository,
             IIterationService iterationService,
             IStrideService strideService,
             IHierarchyStatusService hierarchyStatusService)
@@ -31,14 +40,19 @@ namespace PromiseModelOnline.Api.BusinessLogic
             _momentRepository = momentRepository;
             _strideRepository = strideRepository;
             _iterationRepository = iterationRepository;
+            _flowRepository = flowRepository;
             _iterationService = iterationService;
             _strideService = strideService;
             _hierarchyStatusService = hierarchyStatusService;
+            _journeyRepository = journeyRepository;
+            _epicRepository = epicRepository;
+            _promiseRepository = promiseRepository;
         }
 
         // -------------------------------------------------------------------
-        //  Query methods
+        // Query methods
         // -------------------------------------------------------------------
+
         public async Task<IEnumerable<Moment>> GetMomentsByFlowAsync(int flowId)
             => await _momentRepository.GetMomentsByFlowAsync(flowId);
 
@@ -52,8 +66,52 @@ namespace PromiseModelOnline.Api.BusinessLogic
             => await _momentRepository.GetMomentsByOwnerIdAsync(ownerId);
 
         // -------------------------------------------------------------------
-        //  Planning operations
+        // Permission helpers (NEW)
         // -------------------------------------------------------------------
+
+        public async Task<int> GetProjectIdFromFlowAsync(int flowId)
+        {
+            var flow = await _flowRepository.GetByIdAsync(flowId)
+                    ?? throw new KeyNotFoundException("Flow not found");
+
+            var journey = await _journeyRepository.GetByIdAsync(flow.JourneyId)
+                        ?? throw new KeyNotFoundException("Journey not found");
+
+            var epic = await _epicRepository.GetByIdAsync(journey.EpicId)
+                    ?? throw new KeyNotFoundException("Epic not found");
+
+            var promise = await _promiseRepository.GetByIdAsync(epic.ProductPromiseId)
+                        ?? throw new KeyNotFoundException("Promise not found");
+
+            return promise.ProjectId;
+        }
+
+        public async Task<int> GetProjectIdFromStrideAsync(int strideId)
+        {
+            var stride = await _strideRepository.GetByIdAsync(strideId)
+                         ?? throw new KeyNotFoundException("Stride not found");
+
+            if (stride.IterationId == null)
+                throw new InvalidOperationException("Stride has no iteration");
+
+            var iteration = await _iterationRepository.GetByIdAsync(stride.IterationId.Value)
+                           ?? throw new KeyNotFoundException("Iteration not found");
+
+            return iteration.ProjectId;
+        }
+
+        public async Task<int> GetProjectIdFromIterationAsync(int iterationId)
+        {
+            var iteration = await _iterationRepository.GetByIdAsync(iterationId)
+                           ?? throw new KeyNotFoundException("Iteration not found");
+
+            return iteration.ProjectId;
+        }
+
+        // -------------------------------------------------------------------
+        // Planning operations
+        // -------------------------------------------------------------------
+
         public async Task<Moment> AssignMomentToStrideAsync(int momentId, int? strideId)
         {
             var moment = await _momentRepository.GetByIdAsync(momentId)
@@ -72,12 +130,14 @@ namespace PromiseModelOnline.Api.BusinessLogic
                          ?? throw new KeyNotFoundException($"Stride with ID {strideId} not found.");
 
             if (stride.IterationId is null)
-                throw new InvalidOperationException($"Stride with ID {stride.Id} is not associated with an iteration.");
+                throw new InvalidOperationException($"Stride is not associated with an iteration.");
 
             moment.AssignedStrideId = stride.Id;
             moment.UpdatedAt = DateTime.UtcNow;
+
             _momentRepository.Update(moment);
             await _momentRepository.SaveChangesAsync();
+
             return moment;
         }
 
@@ -97,7 +157,9 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
             _momentRepository.Update(moment);
             await _momentRepository.SaveChangesAsync();
+
             await _hierarchyStatusService.RecalculateFromFlowAsync(moment.FlowId);
+
             return moment;
         }
 
@@ -105,10 +167,13 @@ namespace PromiseModelOnline.Api.BusinessLogic
         {
             var moment = await _momentRepository.GetByIdAsync(momentId)
                         ?? throw new KeyNotFoundException($"Moment with ID {momentId} not found.");
+
             moment.EffortEstimate = estimate;
             moment.UpdatedAt = DateTime.UtcNow;
+
             _momentRepository.Update(moment);
             await _momentRepository.SaveChangesAsync();
+
             return moment;
         }
 
@@ -122,69 +187,22 @@ namespace PromiseModelOnline.Api.BusinessLogic
         {
             var moment = await _momentRepository.GetByIdAsync(momentId)
                         ?? throw new KeyNotFoundException($"Moment with ID {momentId} not found.");
+
             moment.OwnerId = userId;
             moment.UpdatedAt = DateTime.UtcNow;
+
             _momentRepository.Update(moment);
             await _momentRepository.SaveChangesAsync();
+
             return moment;
         }
 
         public async Task<int?> GetProjectIdForMomentAsync(int momentId)
             => await _momentRepository.GetProjectIdForMomentAsync(momentId);
 
-        public async Task MoveUnfinishedMomentsToNextStrideAsync(int strideId)
-        {
-            var moments = await _momentRepository.GetUnfinishedMomentsByStrideAsync(strideId);
-            if (!moments.Any()) return;
-
-            var currentStride = await _strideRepository.GetByIdAsync(strideId);
-            if (currentStride is null || currentStride.IterationId is null) return;
-
-            var iterationStrides = (await _strideService.GetStridesByIterationAsync(currentStride.IterationId.Value))
-                                    .OrderBy(s => s.StartDate).ToList();
-
-            Stride? nextStride = null;
-            for (int i = 0; i < iterationStrides.Count; i++)
-            {
-                if (iterationStrides[i].Id == strideId && i + 1 < iterationStrides.Count)
-                {
-                    nextStride = iterationStrides[i + 1];
-                    break;
-                }
-            }
-
-            if (nextStride is null)
-            {
-                var currentIteration = await _iterationRepository.GetByIdAsync(currentStride.IterationId.Value);
-                if (currentIteration is not null)
-                {
-                    var nextIterations = (await _iterationService.GetIterationsByProjectAsync(currentIteration.ProjectId))
-                                        .OrderBy(i => i.Id)
-                                        .SkipWhile(i => i.Id <= currentIteration.Id)
-                                        .ToList();
-                    if (nextIterations.Any())
-                    {
-                        var firstStrideOfNextIteration = (await _strideService.GetStridesByIterationAsync(nextIterations.First().Id))
-                                                        .OrderBy(s => s.StartDate).FirstOrDefault();
-                        nextStride = firstStrideOfNextIteration;
-                    }
-                }
-            }
-
-            foreach (var moment in moments)
-            {
-                moment.AssignedStrideId = nextStride?.Id;
-                moment.IsZombie = true;
-                moment.OriginalStrideId = strideId;
-                moment.UpdatedAt = DateTime.UtcNow;
-                _momentRepository.Update(moment);
-            }
-            await _momentRepository.SaveChangesAsync();
-        }
-
-        // ---------------------------------------------------------------
-        //  Burndown (iteration only)
-        // ---------------------------------------------------------------
+        // -------------------------------------------------------------------
+        // Burndown logic (unchanged)
+        // -------------------------------------------------------------------
 
         private static int EstimateToNumeric(Estimate? estimate)
         {
@@ -201,12 +219,25 @@ namespace PromiseModelOnline.Api.BusinessLogic
             };
         }
 
+        public async Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId)
+        {
+            var assigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, false);
+            var unassigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, true);
+
+            var all = assigned.Concat(unassigned)
+                              .GroupBy(m => m.Id)
+                              .Select(g => g.First())
+                              .ToList();
+
+            return await ComputeBurndownAsync(all);
+        }
+
         private async Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
         {
             var result = new List<BurndownPointDTO>();
-            if (moments.Count == 0) return result;
+            if (!moments.Any()) return result;
 
-            var startDate = moments.Min(m => m.CreatedAt).Date;
+            var start = moments.Min(m => m.CreatedAt).Date;
             var today = DateTime.UtcNow.Date;
 
             var completedDates = moments
@@ -214,41 +245,72 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 .Select(m => m.CompletedAt!.Value.Date)
                 .ToList();
 
-            DateTime? latestCompleted = completedDates.Count > 0
-                ? completedDates.Max()
-                : null;
-            var endDate = latestCompleted > today ? latestCompleted.Value : today;
+            var end = completedDates.Any() 
+                ? completedDates.Max() > today ? completedDates.Max() : today 
+                : today;
 
-            var initialEffort = moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
-            var totalDays = (endDate - startDate).Days;
-            if (totalDays <= 0) totalDays = 1;
+            var initial = moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
+            var totalDays = Math.Max((end - start).Days, 1);
 
-            for (var date = startDate; date <= endDate; date = date.AddDays(1))
+            for (var date = start; date <= end; date = date.AddDays(1))
             {
                 var remaining = moments
                     .Where(m => m.CompletedAt == null || m.CompletedAt.Value.Date > date)
                     .Sum(m => EstimateToNumeric(m.EffortEstimate));
 
-                var dayNumber = (date - startDate).Days;
-                var idealRemaining = initialEffort - (initialEffort * dayNumber / totalDays);
-                if (idealRemaining < 0) idealRemaining = 0;
+                var dayNumber = (date - start).Days;
+                var ideal = initial - (initial * dayNumber / totalDays);
+
+                if (ideal < 0) ideal = 0;
 
                 result.Add(new BurndownPointDTO
                 {
                     Date = date,
                     RemainingEffort = remaining,
-                    IdealRemaining = idealRemaining
+                    IdealRemaining = ideal
                 });
             }
+
             return result;
         }
 
-        public async Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId)
+        public async Task MoveUnfinishedMomentsToNextStrideAsync(int strideId)
         {
-            var assigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: false);
-            var unassigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: true);
-            var allMoments = assigned.Concat(unassigned).GroupBy(m => m.Id).Select(g => g.First()).ToList();
-            return await ComputeBurndownAsync(allMoments);
+            var moments = await _momentRepository.GetUnfinishedMomentsByStrideAsync(strideId);
+
+            if (!moments.Any()) return;
+
+            var currentStride = await _strideRepository.GetByIdAsync(strideId);
+            if (currentStride == null || currentStride.IterationId == null) return;
+
+            var strides = (await _strideService
+                .GetStridesByIterationAsync(currentStride.IterationId.Value))
+                .OrderBy(s => s.StartDate)
+                .ToList();
+
+            Stride? nextStride = null;
+
+            for (int i = 0; i < strides.Count; i++)
+            {
+                if (strides[i].Id == strideId && i + 1 < strides.Count)
+                {
+                    nextStride = strides[i + 1];
+                    break;
+                }
+            }
+
+            if (nextStride == null)
+                return;
+
+            foreach (var moment in moments)
+            {
+                moment.AssignedStrideId = nextStride.Id;
+                moment.UpdatedAt = DateTime.UtcNow;
+
+                _momentRepository.Update(moment);
+            }
+
+            await _momentRepository.SaveChangesAsync();
         }
     }
 }

@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { get, post, patch } from '../api.mjs';
 
 /*
 ====================================
@@ -7,13 +7,11 @@ STRIDES
 */
 
 export function getStridesByIteration(iterationId) {
-    return authFetch(`${base}/api/strides?iterationId=${iterationId}`)
-        .then(handleJsonOrEmpty);
+    return get(`/strides?iterationId=${iterationId}`);
 }
 
 export function getAllStrides() {
-    return authFetch(`${base}/api/strides`)
-        .then(handleJsonOrEmpty);
+    return get(`/strides`);
 }
 
 /*
@@ -23,19 +21,17 @@ MOMENTS
 */
 
 export function getMomentsByStride(strideId) {
-    return authFetch(`${base}/api/moments?strideId=${strideId}`)
-        .then(handleJsonOrEmpty);
+    return get(`/moments?strideId=${strideId}`);
 }
 
 export function getBacklogMoments(projectId) {
-    return authFetch(`${base}/api/moments?projectId=${projectId}&unassigned=true`)
-        .then(handleJsonOrEmpty);
+    return get(`/moments?projectId=${projectId}&unassigned=true`);
 }
 
 export function getMomentsByIteration(iterationId, unassigned = false) {
-    return authFetch(
-        `${base}/api/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`
-    ).then(handleJsonOrEmpty);
+    return get(
+        `/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`
+    );
 }
 
 /*
@@ -45,8 +41,7 @@ ITERATIONS
 */
 
 export function getIterationsByProject(projectId) {
-    return authFetch(`${base}/api/iterations?projectId=${projectId}`)
-        .then(handleJsonOrEmpty);
+    return get(`/iterations?projectId=${projectId}`);
 }
 
 /*
@@ -55,20 +50,18 @@ PROJECT MEMBERS / PERMISSIONS
 ====================================
 */
 
-export async function getProjectMembers(projectId) {
-    const res = await authFetch(`${base}/api/projects/${projectId}/members`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+export function getProjectMembers(projectId) {
+    return get(`/projects/${projectId}/members`);
 }
 
 export async function getMyPermission(projectId) {
-    const res = await authFetch(`${base}/api/projects/${projectId}/my-permission`);
-
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
+    try {
+        return await get(`/projects/${projectId}/my-permission`);
+    } catch (err) {
+        // ✅ Handle 204-like scenario gracefully
+        if (err.message.includes('204')) return null;
+        throw err;
+    }
 }
 
 /*
@@ -77,50 +70,17 @@ UPDATES
 ====================================
 */
 
-export async function updateMomentOwner(momentId, userId) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/owner`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId })
+export function updateMomentOwner(momentId, userId) {
+    return patch(`/moments/${momentId}/owner`, { userId });
+}
+
+export function progressStride(strideId) {
+    return patch(`/strides/${strideId}`, {
+        progressUnfinishedMoments: true
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
-export async function progressStride(strideId) {
-    const res = await authFetch(`${base}/api/strides/${strideId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ progressUnfinishedMoments: true })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+export function sendDeadlineNotifications() {
+    return post(`/deadline-notification-runs`);
 }
-
-export async function sendDeadlineNotifications() {
-    const res = await authFetch(`${base}/api/deadline-notification-runs`, {
-        method: 'POST'
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
-
-/*
-====================================
-HELPERS
-====================================
-*/
-
-function handleJsonOrEmpty(response) {
-    if (response.ok) {
-        if (response.status === 204) return [];
-        return response.json();
-    }
-
-    throw new Error(`HTTP error! status: ${response.status}`);
-}
+``

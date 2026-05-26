@@ -1,9 +1,10 @@
-import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
+import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.mjs';
 
 let liveListenerRegistered = false;
 
 /* ---------- Badge helpers ---------- */
+
 function setBadgeCount(count) {
     const badge = document.getElementById('notification-badge');
     if (!badge) return;
@@ -33,6 +34,7 @@ function decrementBadgeIfVisible() {
 }
 
 /* ---------- Row update helper ---------- */
+
 function markRowRead(row) {
     if (!row) return;
 
@@ -50,6 +52,7 @@ function markRowRead(row) {
 }
 
 /* ---------- Render ---------- */
+
 function renderNotificationsInto(listDiv, notifications) {
     if (!listDiv) return;
 
@@ -86,12 +89,15 @@ function renderNotificationsInto(listDiv, notifications) {
         </table>
     `;
 
-    /* ---------- Mark All ---------- */
+    attachHandlers(listDiv);
+}
+
+/* ---------- Event Handlers ---------- */
+
+function attachHandlers(listDiv) {
     document.getElementById('mark-all-read')?.addEventListener('click', async () => {
         try {
             await markAllNotificationsAsRead();
-
-            const y = window.scrollY;
 
             listDiv.querySelectorAll('tbody tr').forEach(tr => {
                 tr.classList.remove('unread');
@@ -101,7 +107,6 @@ function renderNotificationsInto(listDiv, notifications) {
             });
 
             setBadgeCount(0);
-            window.scrollTo(0, y);
 
         } catch (err) {
             alert('Failed to mark all as read');
@@ -109,7 +114,6 @@ function renderNotificationsInto(listDiv, notifications) {
         }
     });
 
-    /* ---------- Individual Read ---------- */
     listDiv.querySelectorAll('.mark-read-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const id = parseInt(btn.dataset.id, 10);
@@ -117,12 +121,8 @@ function renderNotificationsInto(listDiv, notifications) {
             try {
                 await markNotificationAsRead(id);
 
-                const y = window.scrollY;
-
                 const row = listDiv.querySelector(`tr[data-notification-id="${id}"]`);
                 markRowRead(row);
-
-                window.scrollTo(0, y);
 
             } catch (err) {
                 alert('Failed to mark notification as read');
@@ -133,6 +133,7 @@ function renderNotificationsInto(listDiv, notifications) {
 }
 
 /* ---------- Refresh ---------- */
+
 async function refreshNotificationsPage() {
     const listDiv = document.getElementById('notifications-list');
     const errorEl = document.getElementById('error-text');
@@ -144,12 +145,11 @@ async function refreshNotificationsPage() {
     errorEl.textContent = '';
 
     try {
-        const notifications = await fetchAllNotifications();
+        const notifications = await fetchNotifications();
 
         loadingEl.textContent = '';
         renderNotificationsInto(listDiv, notifications);
 
-        // Full recalculation for initial load
         updateNotificationBadge();
 
     } catch {
@@ -159,29 +159,24 @@ async function refreshNotificationsPage() {
 }
 
 /* ---------- Page loader ---------- */
+
 export function loadNotificationsPage(contentDiv) {
     if (!liveListenerRegistered) {
         liveListenerRegistered = true;
 
         const eventName = getUnreadNotificationsEventName();
 
-        window.addEventListener(eventName, (e) => {
-            const listDiv = document.getElementById('notifications-list');
-            if (!listDiv) return;
-
-            const notifications = e?.detail?.notifications;
-
-            renderNotificationsInto(
-                listDiv,
-                Array.isArray(notifications) ? notifications : []
-            );
+        window.addEventListener(eventName, async () => {
+            // ✅ Always re-fetch full list (critical)
+            await refreshNotificationsPage();
         });
     }
 
     refreshNotificationsPage();
 }
 
-/* ---------- Safe escape (FIXED) ---------- */
+/* ---------- Safe escape ---------- */
+
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({
         '&': '&amp;',

@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html lang="en-CA" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Jonathan Taylor, Isaiah Andrew, Salah Salame">
+    <meta name="description" content="Promise Model Online Client">
+    <meta name="keywords" content="Promise Model Online, PMO, CISPM">
+    <title>Home - Promise Model Online</title>
+    <link href="/css/site.css" rel="stylesheet" type="text/css" />
+    <link href="/images/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+</head>
+<body>
+    <a href="#content" class="skip-link">Skip to main content</a>
+    <header class="header">
+        <a id="home-link" href="/"><img id="logo" src="/images/PromiseModelOnline_Logo_64x64.png" type="image/png" width="64" height="64" alt="Promise Model Online Logo" /></a>
+        <input type="checkbox" id="mobile-menu-check" name="mobile-menu-check" />
+        <label id="mobile-menu-icon" for="mobile-menu-check"><span class="mobile-menu-icon-line"></span></label>
+        <nav id="main-nav">
+            <ul id="main-menu">
+                <li class="main-menu-item">
+                    <a href="/connect/login" id="login-link" class="main-menu-link">Login</a>
+                </li>
+                <li class="main-menu-item">
+                    <a href="/connect/register" id="register-link" class="main-menu-link">Register</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+    <div class="container" id="app-container">
+        <main id="content" role="main" class="pb-3" aria-live="polite"></main>
+            @RenderBody()
+        </main>
+    </div>
+    <footer class="footer">
+        <div>
+            &copy; 2026 - Promise Model Online
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,9 @@ using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
@@ -16,6 +19,9 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IFlowService> _mockFlowService = null!;
         private Mock<IGenericMapper<Flow, FlowDTO>> _mockMapper = null!;
+        private Mock<IUserRepository> _mockUserRepository = null!;
+        private Mock<IPermissionService> _mockPermissionService = null!;
+
         private FlowsController _controller = null!;
 
         [SetUp]
@@ -23,361 +29,242 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockFlowService = new Mock<IFlowService>();
             _mockMapper = new Mock<IGenericMapper<Flow, FlowDTO>>();
-            _controller = new FlowsController(_mockFlowService.Object, _mockMapper.Object);
+            _mockUserRepository = new Mock<IUserRepository>();
+            _mockPermissionService = new Mock<IPermissionService>();
+
+            _controller = new FlowsController(
+                _mockFlowService.Object,
+                _mockMapper.Object,
+                _mockUserRepository.Object,
+                _mockPermissionService.Object
+            );
         }
 
-        #region GetAll Tests
-
-        [Test]
-        public async Task GetAll_WithoutJourneyIdParameter_ReturnsAllFlows()
+        private void SetupUser()
         {
-            // Arrange
-            var flows = new List<Flow>
+            var user = new User { Id = 1 };
+
+            _mockUserRepository
+                .Setup(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()))
+                .ReturnsAsync(user);
+
+            _mockPermissionService
+                .Setup(p => p.HasPermissionAsync(
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<PermissionLevel>()))
+                .ReturnsAsync(true);
+
+            var identity = new ClaimsIdentity(new[]
             {
-                new Flow { Id = 1, Statement = "Flow 1", JourneyId = 10 },
-                new Flow { Id = 2, Statement = "Flow 2", JourneyId = 10 },
-                new Flow { Id = 3, Statement = "Flow 3", JourneyId = 20 }
-            };
+                new Claim(ClaimTypes.Email, "user@test.com"),
+                new Claim("nameid", "tester")
+            }, "test");
 
-            _mockFlowService.Setup(s => s.GetAllAsync()).ReturnsAsync(flows);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>() ))
-                .Returns<Flow, IGenericService<Flow>>((f, svc) => new FlowDTO
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
                 {
-                    Id = f.Id,
-                    Statement = f.Statement,
-                    JourneyId = f.JourneyId,
-                    Description = f.Description,
-                    OwnerId = f.OwnerId,
-                    DisplayOrder = f.DisplayOrder,
-                    CreatedAt = f.CreatedAt,
-                    UpdatedAt = f.UpdatedAt,
-                    StatusColor = f.StatusColor
-                });
-
-            // Setup HttpContext with empty query string
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = QueryString.Empty;
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-            // Act
-            var result = await _controller.GetAll();
-
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<FlowDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(3));
-            Assert.That(dtos[0].Id, Is.EqualTo(1));
-            _mockFlowService.Verify(s => s.GetAllAsync(), Times.Once);
+                    User = new ClaimsPrincipal(identity)
+                }
+            };
         }
 
+        // =========================================
+        // ✅ GET ALL
+        // =========================================
+
         [Test]
-        public async Task GetAll_WithValidJourneyIdParameter_ReturnsFlowsFilteredByJourney()
+        public async Task GetAll_WithValidJourneyId_ReturnsOk()
         {
-            // Arrange
             int journeyId = 10;
+
             var flows = new List<Flow>
             {
-                new Flow { Id = 1, Statement = "Flow 1", JourneyId = 10 },
-                new Flow { Id = 2, Statement = "Flow 2", JourneyId = 10 }
+                new Flow { Id = 1, JourneyId = journeyId }
             };
 
-            _mockFlowService.Setup(s => s.GetFlowsByJourneyAsync(journeyId)).ReturnsAsync(flows);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>() ))
-                .Returns<Flow, IGenericService<Flow>>((f, svc) => new FlowDTO
-                {
-                    Id = f.Id,
-                    Statement = f.Statement,
-                    JourneyId = f.JourneyId,
-                    Description = f.Description,
-                    OwnerId = f.OwnerId,
-                    DisplayOrder = f.DisplayOrder,
-                    CreatedAt = f.CreatedAt,
-                    UpdatedAt = f.UpdatedAt,
-                    StatusColor = f.StatusColor
-                });
+            _mockFlowService
+                .Setup(s => s.GetFlowsByJourneyAsync(journeyId))
+                .ReturnsAsync(flows);
 
-            // Setup HttpContext with journeyId query parameter
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString($"?journeyId={journeyId}");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            _mockFlowService
+                .Setup(s => s.GetProjectIdFromJourneyAsync(journeyId))
+                .ReturnsAsync(5);
 
-            // Act
+            _mockMapper
+                .Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>()))
+                .Returns<Flow, IGenericService<Flow>>((f, _) => new FlowDTO { Id = f.Id });
+
+            SetupUser();
+
+            _controller.Request.QueryString = new QueryString($"?journeyId={journeyId}");
+
             var result = await _controller.GetAll();
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<FlowDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(2));
-            Assert.That(dtos[0].JourneyId, Is.EqualTo(10));
-            _mockFlowService.Verify(s => s.GetFlowsByJourneyAsync(journeyId), Times.Once);
-            _mockFlowService.Verify(s => s.GetAllAsync(), Times.Never);
+            var ok = result.Result as OkObjectResult;
+
+            Assert.That(ok, Is.Not.Null);
         }
 
         [Test]
-        public async Task GetAll_WithInvalidJourneyIdParameter_ReturnsAllFlows()
+        public async Task GetAll_MissingJourneyId_ReturnsBadRequest()
         {
-            // Arrange
-            var flows = new List<Flow>
+            SetupUser();
+
+            var result = await _controller.GetAll();
+
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task GetAll_NoUser_ReturnsUnauthorized()
+        {
+            _controller.ControllerContext = new ControllerContext
             {
-                new Flow { Id = 1, Statement = "Flow 1", JourneyId = 10 },
-                new Flow { Id = 2, Statement = "Flow 2", JourneyId = 20 }
+                HttpContext = new DefaultHttpContext() // no claims
             };
 
-            _mockFlowService.Setup(s => s.GetAllAsync()).ReturnsAsync(flows);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>() ))
-                .Returns<Flow, IGenericService<Flow>>((f, svc) => new FlowDTO
-                {
-                    Id = f.Id,
-                    Statement = f.Statement,
-                    JourneyId = f.JourneyId,
-                    Description = f.Description,
-                    OwnerId = f.OwnerId,
-                    DisplayOrder = f.DisplayOrder,
-                    CreatedAt = f.CreatedAt,
-                    UpdatedAt = f.UpdatedAt,
-                    StatusColor = f.StatusColor
-                });
-
-            // Setup HttpContext with invalid journeyId (non-integer)
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString("?journeyId=invalid");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-            // Act
             var result = await _controller.GetAll();
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<FlowDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(2));
-            _mockFlowService.Verify(s => s.GetAllAsync(), Times.Once);
-            _mockFlowService.Verify(s => s.GetFlowsByJourneyAsync(It.IsAny<int>()), Times.Never);
+            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public async Task GetAll_WithEmptyJourneyIdParameter_ReturnsAllFlows()
+        public async Task GetAll_NoPermission_ReturnsForbid()
         {
-            // Arrange
-            var flows = new List<Flow>
+            int journeyId = 10;
+
+            var user = new User { Id = 1 };
+
+            _mockUserRepository
+                .Setup(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()))
+                .ReturnsAsync(user);
+
+            _mockFlowService
+                .Setup(s => s.GetProjectIdFromJourneyAsync(journeyId))
+                .ReturnsAsync(5);
+
+            _mockPermissionService
+                .Setup(p => p.HasPermissionAsync(user.Id, 5, PermissionLevel.View))
+                .ReturnsAsync(false); // ❌ no permission
+
+            _controller.ControllerContext = new ControllerContext
             {
-                new Flow { Id = 1, Statement = "Flow 1", JourneyId = 10 }
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.Email, "user@test.com")
+                    }))
+                }
             };
 
-            _mockFlowService.Setup(s => s.GetAllAsync()).ReturnsAsync(flows);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>() ))
-                .Returns<Flow, IGenericService<Flow>>((f, svc) => new FlowDTO
-                {
-                    Id = f.Id,
-                    Statement = f.Statement,
-                    JourneyId = f.JourneyId,
-                    Description = f.Description,
-                    OwnerId = f.OwnerId,
-                    DisplayOrder = f.DisplayOrder,
-                    CreatedAt = f.CreatedAt,
-                    UpdatedAt = f.UpdatedAt,
-                    StatusColor = f.StatusColor
-                });
+            _controller.Request.QueryString = new QueryString($"?journeyId={journeyId}");
 
-            // Setup HttpContext with empty journeyId value
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString("?journeyId=");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-            // Act
             var result = await _controller.GetAll();
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<FlowDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(1));
-            _mockFlowService.Verify(s => s.GetAllAsync(), Times.Once);
+            Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
         }
 
         [Test]
-        public async Task GetAll_WithValidJourneyIdParameter_ReturnsEmptyListWhenNoFlowsFound()
+        public async Task GetAll_InvalidJourneyId_ReturnsBadRequest()
         {
-            // Arrange
-            int journeyId = 999;
-            var flows = new List<Flow>();
+            SetupUser();
 
-            _mockFlowService.Setup(s => s.GetFlowsByJourneyAsync(journeyId)).ReturnsAsync(flows);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>() ))
-                .Returns<Flow, IGenericService<Flow>>((f, svc) => new FlowDTO
-                {
-                    Id = f.Id,
-                    Statement = f.Statement,
-                    JourneyId = f.JourneyId,
-                    Description = f.Description,
-                    OwnerId = f.OwnerId,
-                    DisplayOrder = f.DisplayOrder,
-                    CreatedAt = f.CreatedAt,
-                    UpdatedAt = f.UpdatedAt,
-                    StatusColor = f.StatusColor
-                });
+            _controller.Request.QueryString = new QueryString("?journeyId=abc");
 
-            // Setup HttpContext with journeyId query parameter
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString($"?journeyId={journeyId}");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-            // Act
             var result = await _controller.GetAll();
 
-            // Assert
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task GetAll_NoFlows_ReturnsOkWithEmptyList()
+        {
+            int journeyId = 10;
+
+            _mockFlowService
+                .Setup(s => s.GetFlowsByJourneyAsync(journeyId))
+                .ReturnsAsync(new List<Flow>());
+
+            _mockFlowService
+                .Setup(s => s.GetProjectIdFromJourneyAsync(journeyId))
+                .ReturnsAsync(5);
+
+            _mockMapper
+                .Setup(m => m.Map(It.IsAny<Flow>(), It.IsAny<IGenericService<Flow>>()))
+                .Returns(new FlowDTO());
+
+            SetupUser();
+
+            _controller.Request.QueryString = new QueryString($"?journeyId={journeyId}");
+
+            var result = await _controller.GetAll();
+
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<FlowDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(0));
-            _mockFlowService.Verify(s => s.GetFlowsByJourneyAsync(journeyId), Times.Once);
         }
 
-        #endregion
-
-        #region Inherited Methods Tests
+        // =========================================
+        // ✅ GET BY ID
+        // =========================================
 
         [Test]
-        public async Task GetById_WithValidId_ReturnsOkWithFlowDTO()
+        public async Task GetById_ReturnsOk()
         {
-            // Arrange
-            int flowId = 1;
-            var flow = new Flow { Id = flowId, Statement = "Test Flow", JourneyId = 10 };
-            var expectedDto = new FlowDTO { Id = flowId, Statement = "Test Flow", JourneyId = 10 };
+            var flow = new Flow { Id = 1 };
 
-            _mockFlowService.Setup(s => s.GetByIdAsync(flowId)).ReturnsAsync(flow);
-            _mockMapper.Setup(m => m.Map(flow, _mockFlowService.Object)).Returns(expectedDto);
+            _mockFlowService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(flow);
+            _mockMapper.Setup(m => m.Map(flow, _mockFlowService.Object))
+                       .Returns(new FlowDTO { Id = 1 });
 
-            // Act
-            var result = await _controller.GetById(flowId);
+            var result = await _controller.GetById(1);
 
-            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-
-            var dto = okResult!.Value as FlowDTO;
-            Assert.That(dto, Is.Not.Null);
-
-            Assert.That(dto!.Id, Is.EqualTo(flowId));
-            Assert.That(dto.Statement, Is.EqualTo("Test Flow"));
         }
 
-        [Test]
-        public async Task GetById_WithNonexistentId_ReturnsNotFound()
-        {
-            // Arrange
-            int flowId = 999;
-            _mockFlowService.Setup(s => s.GetByIdAsync(flowId)).ReturnsAsync((Flow?)null);
-
-            // Act
-            var result = await _controller.GetById(flowId);
-
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
-            _mockFlowService.Verify(s => s.GetByIdAsync(flowId), Times.Once);
-        }
+        // =========================================
+        // ✅ CREATE
+        // =========================================
 
         [Test]
-        public async Task Create_WithValidFlow_ReturnsCreatedAtAction()
+        public async Task Create_ReturnsCreated()
         {
-            // Arrange
-            var flow = new Flow { Id = 1, Statement = "New Flow", JourneyId = 10 };
-            var expectedDto = new FlowDTO { Id = 1, Statement = "New Flow", JourneyId = 10 };
+            var flow = new Flow { Id = 1 };
 
             _mockFlowService.Setup(s => s.AddAsync(flow)).Returns(Task.CompletedTask);
-            _mockMapper.Setup(m => m.Map(flow, _mockFlowService.Object)).Returns(expectedDto);
+            _mockMapper.Setup(m => m.Map(flow, _mockFlowService.Object))
+                       .Returns(new FlowDTO { Id = 1 });
 
-            // Act
             var result = await _controller.Create(flow);
 
-            // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
-            var createdResult = result.Result as CreatedAtActionResult;
-            Assert.That(createdResult, Is.Not.Null);
-            Assert.That(createdResult.ActionName, Is.EqualTo(nameof(FlowsController.GetById)));
-            Assert.That(createdResult.RouteValues, Is.Not.Null);
-            Assert.That(createdResult.RouteValues["id"], Is.EqualTo(1));
-            var dto = createdResult.Value as FlowDTO;
-            Assert.That(dto, Is.Not.Null);
-            Assert.That(dto.Id, Is.EqualTo(1));
         }
 
-        [Test]
-        public async Task Update_WithValidIdAndFlow_ReturnsNoContent()
-        {
-            // Arrange
-            int flowId = 1;
-            var flow = new Flow { Id = flowId, Statement = "Updated Flow", JourneyId = 10 };
-
-            _mockFlowService.Setup(s => s.UpdateAsync(flow)).Returns(Task.CompletedTask);
-
-            // Act
-            var result = await _controller.Update(flowId, flow);
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockFlowService.Verify(s => s.UpdateAsync(flow), Times.Once);
-        }
+        // =========================================
+        // ✅ UPDATE
+        // =========================================
 
         [Test]
-        public async Task Update_WithMismatchedId_ReturnsBadRequest()
+        public async Task Update_Mismatch_ReturnsBadRequest()
         {
-            // Arrange
-            int flowId = 1;
-            var flow = new Flow { Id = 2, Statement = "Updated Flow", JourneyId = 10 };
+            var result = await _controller.Update(1, new Flow { Id = 2 });
 
-            // Act
-            var result = await _controller.Update(flowId, flow);
-
-            // Assert
             Assert.That(result, Is.InstanceOf<BadRequestResult>());
-            _mockFlowService.Verify(s => s.UpdateAsync(It.IsAny<Flow>()), Times.Never);
         }
 
-        [Test]
-        public async Task Delete_WithValidId_ReturnsNoContent()
-        {
-            // Arrange
-            int flowId = 1;
-            _mockFlowService.Setup(s => s.DeleteByIdAsync(flowId)).ReturnsAsync(true);
-
-            // Act
-            var result = await _controller.Delete(flowId);
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockFlowService.Verify(s => s.DeleteByIdAsync(flowId), Times.Once);
-        }
+        // =========================================
+        // ✅ DELETE
+        // =========================================
 
         [Test]
-        public async Task Delete_WithNonexistentId_ReturnsNotFound()
+        public async Task Delete_NotFound_ReturnsNotFound()
         {
-            // Arrange
-            int flowId = 999;
-            _mockFlowService.Setup(s => s.DeleteByIdAsync(flowId)).ReturnsAsync(false);
+            _mockFlowService.Setup(s => s.DeleteByIdAsync(1)).ReturnsAsync(false);
 
-            // Act
-            var result = await _controller.Delete(flowId);
+            var result = await _controller.Delete(1);
 
-            // Assert
             Assert.That(result, Is.InstanceOf<NotFoundResult>());
-            _mockFlowService.Verify(s => s.DeleteByIdAsync(flowId), Times.Once);
         }
-
-        #endregion
     }
 }

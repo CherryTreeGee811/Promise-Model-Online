@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { get, patch } from '../api.mjs';
 
 /*
 ====================================
@@ -6,21 +6,13 @@ FETCH NOTIFICATIONS
 ====================================
 */
 
-export async function fetchUnreadNotifications() {
-    const res = await authFetch(`${base}/api/notifications`);
-
-    if (!res.ok) return [];
-
-    return res.json();
+// ✅ Unified fetch (with optional filter later if API supports it)
+export function fetchNotifications() {
+    return get(`/notifications`);
 }
 
-export async function fetchAllNotifications() {
-    const res = await authFetch(`${base}/api/notifications`);
-
-    if (!res.ok) return [];
-
-    return res.json();
-}
+// ✅ Alias for clarity (optional future filtering)
+export const fetchUnreadNotifications = fetchNotifications;
 
 /*
 ====================================
@@ -28,26 +20,15 @@ MARK READ
 ====================================
 */
 
-export async function markNotificationAsRead(id) {
-    const res = await authFetch(`${base}/api/notifications/${id}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isRead: true })
+export function markNotificationAsRead(id) {
+    return patch(`/notifications/${id}`, {
+        isRead: true
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-export async function markAllNotificationsAsRead() {
-    const res = await authFetch(`${base}/api/notifications`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isRead: true, applyToAll: true })
+export function markAllNotificationsAsRead() {
+    return patch(`/notifications`, {
+        isRead: true,
+        applyToAll: true
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }

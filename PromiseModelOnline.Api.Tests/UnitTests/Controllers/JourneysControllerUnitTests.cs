@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,9 @@ using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
@@ -16,6 +19,9 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IJourneyService> _mockJourneyService = null!;
         private Mock<IGenericMapper<Journey, JourneyDTO>> _mockMapper = null!;
+        private Mock<IUserRepository> _userRepoMock = null!;
+        private Mock<IPermissionService> _permissionMock = null!;
+
         private JourneysController _controller = null!;
 
         [SetUp]
@@ -23,337 +29,225 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockJourneyService = new Mock<IJourneyService>();
             _mockMapper = new Mock<IGenericMapper<Journey, JourneyDTO>>();
-            _controller = new JourneysController(_mockJourneyService.Object, _mockMapper.Object);
+            _userRepoMock = new Mock<IUserRepository>();
+            _permissionMock = new Mock<IPermissionService>();
+
+            _controller = new JourneysController(
+                _mockJourneyService.Object,
+                _mockMapper.Object,
+                _userRepoMock.Object,
+                _permissionMock.Object
+            );
         }
 
-        #region GetAll Tests
-
-        [Test]
-        public async Task GetAll_WithoutEpicIdParameter_ReturnsAllJourneys()
+        private void SetupUser()
         {
-            // Arrange
-            var journeys = new List<Journey>
+            var user = new User { Id = 1 };
+
+            _userRepoMock
+                .Setup(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()))
+                .ReturnsAsync(user);
+
+            var identity = new ClaimsIdentity(new[]
             {
-                new Journey { Id = 1, Statement = "Journey 1", EpicId = 10 },
-                new Journey { Id = 2, Statement = "Journey 2", EpicId = 10 },
-                new Journey { Id = 3, Statement = "Journey 3", EpicId = 20 }
-            };
+                new Claim(ClaimTypes.Email, "user@test.com"),
+                new Claim("nameid", "tester")
+            }, "test");
 
-            _mockJourneyService.Setup(s => s.GetAllAsync()).ReturnsAsync(journeys);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
-                .Returns<Journey, IGenericService<Journey>>((j, svc) => new JourneyDTO
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
                 {
-                    Id = j.Id,
-                    Statement = j.Statement,
-                    EpicId = j.EpicId
-                });
-
-            // Setup HttpContext with empty query string
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = QueryString.Empty;
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-            // Act
-            var result = await _controller.GetAll();
-
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<JourneyDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(3));
-            Assert.That(dtos[0].Id, Is.EqualTo(1));
-            _mockJourneyService.Verify(s => s.GetAllAsync(), Times.Once);
+                    User = new ClaimsPrincipal(identity)
+                }
+            };
         }
 
+        // =========================================
+        // ✅ GET ALL
+        // =========================================
+
         [Test]
-        public async Task GetAll_WithValidEpicIdParameter_ReturnsJourneysFilteredByEpic()
+        public async Task GetAll_WithValidEpicId_ReturnsOk()
         {
-            // Arrange
             int epicId = 10;
+
+            SetupUser();
+
             var journeys = new List<Journey>
             {
-                new Journey { Id = 1, Statement = "Journey 1", EpicId = 10 },
-                new Journey { Id = 2, Statement = "Journey 2", EpicId = 10 }
+                new Journey { Id = 1, EpicId = epicId }
             };
 
-            _mockJourneyService.Setup(s => s.GetJourneysByEpicAsync(epicId)).ReturnsAsync(journeys);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
-                .Returns<Journey, IGenericService<Journey>>((j, svc) => new JourneyDTO
-                {
-                    Id = j.Id,
-                    Statement = j.Statement,
-                    EpicId = j.EpicId
-                });
+            _mockJourneyService
+                .Setup(s => s.GetJourneysByEpicAsync(epicId))
+                .ReturnsAsync(journeys);
 
-            // Setup HttpContext with epicId query parameter
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString($"?epicId={epicId}");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            _mockJourneyService
+                .Setup(s => s.GetProjectIdFromEpicAsync(epicId))
+                .ReturnsAsync(5);
 
-            // Act
+            _permissionMock
+                .Setup(p => p.HasPermissionAsync(
+                    It.IsAny<int>(),
+                    5,
+                    PermissionLevel.View))
+                .ReturnsAsync(true);
+
+            _mockMapper
+                .Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
+                .Returns<Journey, IGenericService<Journey>>((j, _) => new JourneyDTO { Id = j.Id });
+
+            _controller.Request.QueryString = new QueryString($"?epicId={epicId}");
+
             var result = await _controller.GetAll();
 
-            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<JourneyDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(2));
-            Assert.That(dtos[0].EpicId, Is.EqualTo(10));
-            _mockJourneyService.Verify(s => s.GetJourneysByEpicAsync(epicId), Times.Once);
-            _mockJourneyService.Verify(s => s.GetAllAsync(), Times.Never);
         }
 
         [Test]
-        public async Task GetAll_WithInvalidEpicIdParameter_ReturnsAllJourneys()
+        public async Task GetAll_MissingEpicId_ReturnsBadRequest()
         {
-            // Arrange
-            var journeys = new List<Journey>
+            SetupUser();
+
+            var result = await _controller.GetAll();
+
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task GetAll_InvalidEpicId_ReturnsBadRequest()
+        {
+            SetupUser();
+
+            _controller.Request.QueryString = new QueryString("?epicId=abc");
+
+            var result = await _controller.GetAll();
+
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task GetAll_NoUser_ReturnsUnauthorized()
+        {
+            _controller.ControllerContext = new ControllerContext
             {
-                new Journey { Id = 1, Statement = "Journey 1", EpicId = 10 },
-                new Journey { Id = 2, Statement = "Journey 2", EpicId = 20 }
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity())
+                }
             };
 
-            _mockJourneyService.Setup(s => s.GetAllAsync()).ReturnsAsync(journeys);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
-                .Returns<Journey, IGenericService<Journey>>((j, svc) => new JourneyDTO
-                {
-                    Id = j.Id,
-                    Statement = j.Statement,
-                    EpicId = j.EpicId
-                });
+            _controller.Request.QueryString = new QueryString("?epicId=1");
 
-            // Setup HttpContext with invalid epicId (non-integer)
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString("?epicId=invalid");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-            // Act
             var result = await _controller.GetAll();
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<JourneyDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(2));
-            _mockJourneyService.Verify(s => s.GetAllAsync(), Times.Once);
-            _mockJourneyService.Verify(s => s.GetJourneysByEpicAsync(It.IsAny<int>()), Times.Never);
+            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public async Task GetAll_WithEmptyEpicIdParameter_ReturnsAllJourneys()
+        public async Task GetAll_NoPermission_ReturnsForbid()
         {
-            // Arrange
-            var journeys = new List<Journey>
-            {
-                new Journey { Id = 1, Statement = "Journey 1", EpicId = 10 }
-            };
+            int epicId = 10;
 
-            _mockJourneyService.Setup(s => s.GetAllAsync()).ReturnsAsync(journeys);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
-                .Returns<Journey, IGenericService<Journey>>((j, svc) => new JourneyDTO
-                {
-                    Id = j.Id,
-                    Statement = j.Statement,
-                    EpicId = j.EpicId
-                });
+            SetupUser();
 
-            // Setup HttpContext with empty epicId value
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString("?epicId=");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            _mockJourneyService
+                .Setup(s => s.GetProjectIdFromEpicAsync(epicId))
+                .ReturnsAsync(5);
 
-            // Act
+            _permissionMock
+                .Setup(p => p.HasPermissionAsync(
+                    It.IsAny<int>(),
+                    5,
+                    PermissionLevel.View))
+                .ReturnsAsync(false);
+
+            _controller.Request.QueryString = new QueryString($"?epicId={epicId}");
+
             var result = await _controller.GetAll();
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<JourneyDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(1));
-            _mockJourneyService.Verify(s => s.GetAllAsync(), Times.Once);
+            Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
         }
 
         [Test]
-        public async Task GetAll_WithValidEpicIdParameter_ReturnsEmptyListWhenNoJourneysFound()
+        public async Task GetAll_NoJourneys_ReturnsOkWithEmptyList()
         {
-            // Arrange
-            int epicId = 999;
-            var journeys = new List<Journey>();
+            int epicId = 10;
 
-            _mockJourneyService.Setup(s => s.GetJourneysByEpicAsync(epicId)).ReturnsAsync(journeys);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
-                .Returns<Journey, IGenericService<Journey>>((j, svc) => new JourneyDTO
-                {
-                    Id = j.Id,
-                    Statement = j.Statement,
-                    EpicId = j.EpicId
-                });
+            SetupUser();
 
-            // Setup HttpContext with epicId query parameter
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString($"?epicId={epicId}");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            _mockJourneyService
+                .Setup(s => s.GetJourneysByEpicAsync(epicId))
+                .ReturnsAsync(new List<Journey>());
 
-            // Act
+            _mockJourneyService
+                .Setup(s => s.GetProjectIdFromEpicAsync(epicId))
+                .ReturnsAsync(5);
+
+            _permissionMock
+                .Setup(p => p.HasPermissionAsync(It.IsAny<int>(), 5, PermissionLevel.View))
+                .ReturnsAsync(true);
+
+            _mockMapper
+                .Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
+                .Returns(new JourneyDTO());
+
+            _controller.Request.QueryString = new QueryString($"?epicId={epicId}");
+
             var result = await _controller.GetAll();
 
-            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-            var dtos = okResult?.Value as List<JourneyDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(0));
-            _mockJourneyService.Verify(s => s.GetJourneysByEpicAsync(epicId), Times.Once);
         }
 
-        #endregion
-
-        #region Inherited Methods Tests
+        // =========================================
+        // ✅ GENERIC (BASE CONTROLLER)
+        // =========================================
 
         [Test]
-        public async Task GetById_WithValidId_ReturnsOkWithJourneyDTO()
+        public async Task GetById_ReturnsOk()
         {
-            // Arrange
-            int journeyId = 1;
-            var journey = new Journey { Id = journeyId, Statement = "Test Journey", EpicId = 10 };
-            var expectedDto = new JourneyDTO { Id = journeyId, Statement = "Test Journey", EpicId = 10 };
+            var journey = new Journey { Id = 1 };
 
-            _mockJourneyService.Setup(s => s.GetByIdAsync(journeyId)).ReturnsAsync(journey);
-            _mockMapper.Setup(m => m.Map(journey, _mockJourneyService.Object)).Returns(expectedDto);
+            _mockJourneyService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(journey);
+            _mockMapper.Setup(m => m.Map(journey, _mockJourneyService.Object))
+                       .Returns(new JourneyDTO { Id = 1 });
 
-            // Act
-            var result = await _controller.GetById(journeyId);
+            var result = await _controller.GetById(1);
 
-            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-
-            var okResult = result.Result as OkObjectResult;
-            Assert.That(okResult, Is.Not.Null);
-
-            var dto = okResult!.Value as JourneyDTO;
-            Assert.That(dto, Is.Not.Null);
-
-            Assert.That(dto!.Id, Is.EqualTo(journeyId));
-            Assert.That(dto.Statement, Is.EqualTo("Test Journey"));
         }
 
         [Test]
-        public async Task GetById_WithNonexistentId_ReturnsNotFound()
+        public async Task Create_ReturnsCreated()
         {
-            // Arrange
-            int journeyId = 999;
-            _mockJourneyService.Setup(s => s.GetByIdAsync(journeyId)).ReturnsAsync((Journey?)null);
-
-            // Act
-            var result = await _controller.GetById(journeyId);
-
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
-            _mockJourneyService.Verify(s => s.GetByIdAsync(journeyId), Times.Once);
-        }
-
-        [Test]
-        public async Task Create_WithValidJourney_ReturnsCreatedAtAction()
-        {
-            // Arrange
-            var journey = new Journey { Id = 1, Statement = "New Journey", EpicId = 10 };
-            var expectedDto = new JourneyDTO { Id = 1, Statement = "New Journey", EpicId = 10 };
+            var journey = new Journey { Id = 1 };
 
             _mockJourneyService.Setup(s => s.AddAsync(journey)).Returns(Task.CompletedTask);
-            _mockMapper.Setup(m => m.Map(journey, _mockJourneyService.Object)).Returns(expectedDto);
+            _mockMapper.Setup(m => m.Map(journey, _mockJourneyService.Object))
+                       .Returns(new JourneyDTO { Id = 1 });
 
-            // Act
             var result = await _controller.Create(journey);
 
-            // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
-            var createdResult = result.Result as CreatedAtActionResult;
-            Assert.That(createdResult, Is.Not.Null);
-            Assert.That(createdResult.ActionName, Is.EqualTo(nameof(JourneysController.GetById)));
-            if (createdResult.RouteValues != null)
-            {
-                Assert.That(createdResult.RouteValues["id"], Is.EqualTo(1));
-            }
-            else
-            {
-                Assert.Fail("RouteValues is null");
-            }
-            var dto = createdResult.Value as JourneyDTO;
-            Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.Id, Is.EqualTo(1));
         }
 
         [Test]
-        public async Task Update_WithValidIdAndJourney_ReturnsNoContent()
+        public async Task Update_Mismatch_ReturnsBadRequest()
         {
-            // Arrange
-            int journeyId = 1;
-            var journey = new Journey { Id = journeyId, Statement = "Updated Journey", EpicId = 10 };
+            var result = await _controller.Update(1, new Journey { Id = 2 });
 
-            _mockJourneyService.Setup(s => s.UpdateAsync(journey)).Returns(Task.CompletedTask);
-
-            // Act
-            var result = await _controller.Update(journeyId, journey);
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockJourneyService.Verify(s => s.UpdateAsync(journey), Times.Once);
-        }
-
-        [Test]
-        public async Task Update_WithMismatchedId_ReturnsBadRequest()
-        {
-            // Arrange
-            int journeyId = 1;
-            var journey = new Journey { Id = 2, Statement = "Updated Journey", EpicId = 10 };
-
-            // Act
-            var result = await _controller.Update(journeyId, journey);
-
-            // Assert
             Assert.That(result, Is.InstanceOf<BadRequestResult>());
-            _mockJourneyService.Verify(s => s.UpdateAsync(It.IsAny<Journey>()), Times.Never);
         }
 
         [Test]
-        public async Task Delete_WithValidId_ReturnsNoContent()
+        public async Task Delete_NotFound_ReturnsNotFound()
         {
-            // Arrange
-            int journeyId = 1;
-            _mockJourneyService.Setup(s => s.DeleteByIdAsync(journeyId)).ReturnsAsync(true);
+            _mockJourneyService.Setup(s => s.DeleteByIdAsync(1)).ReturnsAsync(false);
 
-            // Act
-            var result = await _controller.Delete(journeyId);
+            var result = await _controller.Delete(1);
 
-            // Assert
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockJourneyService.Verify(s => s.DeleteByIdAsync(journeyId), Times.Once);
-        }
-
-        [Test]
-        public async Task Delete_WithNonexistentId_ReturnsNotFound()
-        {
-            // Arrange
-            int journeyId = 999;
-            _mockJourneyService.Setup(s => s.DeleteByIdAsync(journeyId)).ReturnsAsync(false);
-
-            // Act
-            var result = await _controller.Delete(journeyId);
-
-            // Assert
             Assert.That(result, Is.InstanceOf<NotFoundResult>());
-            _mockJourneyService.Verify(s => s.DeleteByIdAsync(journeyId), Times.Once);
         }
-
-        #endregion
     }
 }

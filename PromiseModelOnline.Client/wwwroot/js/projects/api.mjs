@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { get, post, del } from '../api.mjs';
 
 /*
 ====================================
@@ -7,42 +7,29 @@ PROJECTS
 */
 
 export function getAllProjects() {
-    return authFetch(`${base}/api/projects`)
-        .then(handleJsonOrNull);
+    return get(`/projects`);
 }
 
 export async function addProject(project) {
-    const res = await authFetch(`${base}/api/projects/create`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(project)
-    });
-
-    if (res.status === 204) return null;
-
-    if (!res.ok) {
-        const body = await safeParse(res);
-        throw new Error(body?.message || body?.title || `HTTP ${res.status}`);
+    try {
+        return await post(`/projects/create`, project);
+    } catch (err) {
+        // ✅ Preserve your custom API error parsing behavior
+        try {
+            const parsed = JSON.parse(err.message.replace(/^.* - /, ""));
+            throw new Error(parsed?.message || parsed?.title || err.message);
+        } catch {
+            throw err;
+        }
     }
-
-    return res.json();
 }
 
 export function deleteProject(projectId) {
-    return authFetch(`${base}/api/projects/${projectId}`, {
-        method: 'DELETE'
-    }).then(handleJsonOrNull);
+    return del(`/projects/${projectId}`);
 }
 
-export async function getProjectById(projectId) {
-    const res = await authFetch(`${base}/api/projects/${projectId}`);
-
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
+export function getProjectById(projectId) {
+    return get(`/projects/${projectId}`);
 }
 
 /*
@@ -51,32 +38,20 @@ PERMISSIONS
 ====================================
 */
 
-export async function getProjectPermissions(projectId) {
-    const res = await authFetch(`${base}/api/permissions?projectId=${projectId}`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+export function getProjectPermissions(projectId) {
+    return get(`/permissions?projectId=${projectId}`);
 }
 
-export async function inviteUserToProject(userEmail, projectId, level) {
-    const res = await authFetch(`${base}/api/permissions`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userEmail, projectId, level })
+export function inviteUserToProject(userEmail, projectId, level) {
+    return post(`/permissions`, {
+        userEmail,
+        projectId,
+        level
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
-export async function revokePermission(permissionId) {
-    const res = await authFetch(`${base}/api/permissions/${permissionId}`, {
-        method: 'DELETE'
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+export function revokePermission(permissionId) {
+    return del(`/permissions/${permissionId}`);
 }
 
 /*
@@ -85,33 +60,6 @@ PROMISES
 ====================================
 */
 
-export async function getProjectPromises(projectId) {
-    const res = await authFetch(`${base}/api/projects/${projectId}/promises`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-}
-
-/*
-====================================
-HELPERS
-====================================
-*/
-
-function handleJsonOrNull(response) {
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    if (response.status === 204) return null;
-
-    return response.json();
-}
-
-async function safeParse(res) {
-    try {
-        return await res.json();
-    } catch {
-        return null;
-    }
+export function getProjectPromises(projectId) {
+    return get(`/projects/${projectId}/promises`);
 }

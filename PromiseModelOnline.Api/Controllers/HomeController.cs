@@ -3,6 +3,7 @@
 namespace PromiseModelOnline.Api.Controllers
 {
     [ApiController]
+    [Route("api")]
     public class HomeController : ControllerBase
     {
         /// <summary>

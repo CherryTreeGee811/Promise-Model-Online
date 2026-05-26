@@ -13,5 +13,6 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
         Task<IEnumerable<PendingInvitationDTO>> GetPendingInvitationsForUserAsync(int userId);
         Task RemovePermissionAsync(int permissionId, int requestingUserId);
         Task<PermissionLevel?> GetUserPermissionAsync(int userId, int projectId);
+        Task<bool> HasPermissionAsync(int userId, int projectId, PermissionLevel required);
     }
 }

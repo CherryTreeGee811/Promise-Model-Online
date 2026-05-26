@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PromiseModelOnline.Auth.DAL;
+using OpenIddict.Abstractions;
 using PromiseModelOnline.Auth.Models;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -13,12 +12,13 @@ namespace PromiseModelOnline.Auth.Controllers;
 public class ChangePasswordController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
-    private readonly AuthorizationDbContext _dbContext;
+    private readonly IOpenIddictTokenManager _tokenManager;
 
-    public ChangePasswordController(UserManager<IdentityUser> userManager, AuthorizationDbContext dbContext)
+    public ChangePasswordController(UserManager<IdentityUser> userManager,
+                                    IOpenIddictTokenManager tokenManager)
     {
         _userManager = userManager;
-        _dbContext = dbContext;
+        _tokenManager = tokenManager;
     }
 
     [HttpPatch]
@@ -63,16 +63,12 @@ public class ChangePasswordController : ControllerBase
             return BadRequest(new { message = "Could not change password", errors });
         }
 
-        var activeTokens = await _dbContext.RefreshTokens
-            .Where(r => r.UserId == user.Id && !r.IsRevoked && r.Expires > DateTime.UtcNow)
-            .ToListAsync();
-
-        foreach (var token in activeTokens)
+        // Revoke all existing refresh tokens for this user
+        await foreach (var token in _tokenManager.FindBySubjectAsync(user.Id))
         {
-            token.IsRevoked = true;
+            await _tokenManager.TryRevokeAsync(token);
         }
 
-        await _dbContext.SaveChangesAsync();
         return NoContent();
     }
 }

@@ -17,7 +17,8 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
-      
+
+      # ---------- TLS Certificates ----------
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
         run: |
@@ -50,17 +51,33 @@ jobs:
           cat > PromiseModelOnline.Auth/key.pem <<'PEM'
           ${{ secrets.AUTH_CI_KEY }}
           PEM
+
+      # ---------- Signing Certificate (PFX) ----------
+      - name: Create signing certificate (cert.pfx)
+        shell: bash
+        run: |
+          echo "${{ secrets.AUTH_SIGNING_PFX_BASE64 }}" | base64 -d > PromiseModelOnline.Auth/cert.pfx
       
+      # ---------- Create secret files ----------
+      - name: Create secret files
+        shell: bash
+        run: |
+          mkdir -p run/secrets
+          echo "${{ secrets.DB_SA_PASSWORD }}"        > run/secrets/db_sa_password
+          echo "${{ secrets.PMO_API_DB_PASSWORD }}"    > run/secrets/db_api_password
+          echo "${{ secrets.PMO_AUTH_DB_PASSWORD }}"   > run/secrets/db_auth_password
+          echo "${{ secrets.CERT_PASSWORD }}"          > run/secrets/cert_password
+          chmod 600 run/secrets/*
+
+      # ---------- Smoke Test ----------
       - name: Smoke Test Production Environment
         shell: bash
         run: |
-          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
+          export ASPNETCORE_ENVIRONMENT=Production
+          export JWT__ISSUER="https://promisemodelonline.auth:8060"
+          export JWT__AUDIENCE="promisemodelonline.api"
           export PMO_API_DB_USER="${{ vars.PMO_API_DB_USER }}"
-          export PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}"
           export PMO_AUTH_DB_USER="${{ vars.PMO_AUTH_DB_USER }}"
-          export PMO_AUTH_DB_PASSWORD="${{ secrets.PMO_AUTH_DB_PASSWORD }}"
-          export JWT__KEY="${{ secrets.JWT__KEY }}"
-          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
 
           docker compose --project-name promisemodelonline up -d
 
@@ -194,6 +211,7 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
 
+      # ---------- Unit Tests ----------
       - name: Run Auth Tests
         shell: bash
         run: |
@@ -214,6 +232,7 @@ jobs:
             --os linux \
             --logger "console;verbosity=normal"
     
+      # ---------- Client UI Tests ----------
       - name: Run Client UI Test Environment
         shell: bash
         run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
@@ -276,6 +295,7 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down --remove-orphans -v
 
+      # ---------- Push to DockerHub (main branch only) ----------
       - name: Push Docker Images to DockerHub
         if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash

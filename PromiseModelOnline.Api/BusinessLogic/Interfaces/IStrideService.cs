@@ -8,5 +8,7 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
     {
         Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId);
         Task SendDeadlineNotificationsAsync();
+        Task<int> GetProjectIdFromIterationAsync(int iterationId);
+        Task<int> GetProjectIdAsync(int strideId);
     }
 }

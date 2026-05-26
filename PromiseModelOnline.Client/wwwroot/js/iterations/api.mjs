@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { get } from '../api.mjs';
 
 /*
 ====================================
@@ -6,18 +6,10 @@ ITERATIONS
 ====================================
 */
 
-export async function getIterationsByProject(projectId) {
-    const res = await authFetch(`${base}/api/iterations?projectId=${projectId}`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
+export function getIterationsByProject(projectId) {
+    return get(`/iterations?projectId=${projectId}`);
 }
 
-export async function getIterationBurndown(iterationId) {
-    const res = await authFetch(`${base}/api/iterations/${iterationId}/burndown`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
+export function getIterationBurndown(iterationId) {
+    return get(`/iterations/${iterationId}/burndown`);
 }

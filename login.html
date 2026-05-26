@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en-CA" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Jonathan Taylor, Isaiah Andrew, Salah Salame">
+    <meta name="description" content="Promise Model Online Client">
+    <meta name="keywords" content="Promise Model Online, PMO, CISPM">
+    <title>Home - Promise Model Online</title>
+    <link href="/css/site.css" rel="stylesheet" type="text/css" />
+    <link href="/images/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+</head>
+<body>
+    <a href="#content" class="skip-link">Skip to main content</a>
+    <header class="header">
+        <a id="home-link" href="/"><img id="logo" src="/images/PromiseModelOnline_Logo_64x64.png" type="image/png" width="64" height="64" alt="Promise Model Online Logo" /></a>
+        <input type="checkbox" id="mobile-menu-check" name="mobile-menu-check" />
+        <label id="mobile-menu-icon" for="mobile-menu-check"><span class="mobile-menu-icon-line"></span></label>
+        <nav id="main-nav">
+            <ul id="main-menu">
+                <li class="main-menu-item">
+                    <a href="/connect/login" id="login-link" class="main-menu-link">Login</a>
+                </li>
+                <li class="main-menu-item">
+                    <a href="/connect/register" id="register-link" class="main-menu-link">Register</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+    <div class="container" id="app-container">
+        <main id="content" role="main" class="pb-3" aria-live="polite"></main>
+            
+<h1 id="form-title">Login</h1>
+
+<div class="form-div">
+    <h2>Sign in</h2>
+
+
+    <form method="post" id="login-form">
+        
+        <div>
+            <label class="username-label" for="Username">Username:</label>
+            <input type="text" class="username-input" required data-val="true" data-val-required="The Username field is required." id="Username" name="Username" value="" />
+        </div>
+        <div>
+            <label class="password-label" for="Password">Password:</label>
+            <input type="password" class="password-input" required data-val="true" data-val-required="The Password field is required." id="Password" name="Password" />
+        </div>
+        <input type="hidden" id="ReturnUrl" name="ReturnUrl" value="/connect/authorize?response_type=code&amp;client_id=pmo-spa&amp;redirect_uri=https%3A//localhost%3A9000/auth/callback&amp;scope=openid%20profile%20offline_access&amp;code_challenge=TEST123&amp;code_challenge_method=plain" />
+        <button type="submit" class="login-btn">Login</button>
+    <input name="__RequestVerificationToken" type="hidden" value="CfDJ8DZ-wPoyXWpPnD96XChe5T2lpR5gaCPx8tWVeDeGDoOHvnIdfjLe2SgXTCG7rugA6KJhliLJd-isEiVxfVcp6B5kamhht-5dNTG22jclBjXHJDJq4-y9zLgyit3lfa7LS4qGTefPsIAsTCcQF-7YD-c" /></form>
+
+    <div class="auth-link" id="login-register-text">
+        Don't have an account? <a href="/connect/register?returnUrl=/connect/authorize?response_type=code&amp;client_id=pmo-spa&amp;redirect_uri=https%3A//localhost%3A9000/auth/callback&amp;scope=openid%20profile%20offline_access&amp;code_challenge=TEST123&amp;code_challenge_method=plain">Register here</a>
+    </div>
+</div>
+        </main>
+    </div>
+    <footer class="footer">
+        <div>
+            &copy; 2026 - Promise Model Online
+        </div>
+    </footer>
+</body>
+</html>

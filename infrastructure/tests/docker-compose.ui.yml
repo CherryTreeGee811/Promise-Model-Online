@@ -19,5 +19,17 @@ services:
       --https-port 8000
       --verbose
     volumes:
-      - ../../PromiseModelOnline.Client.Tests/wiremock/mappings:/home/wiremock/mappings:ro
-      - ../../PromiseModelOnline.Client.Tests/wiremock/__files:/home/wiremock/__files:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-api/mappings:/home/wiremock/mappings:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-api/__files:/home/wiremock/__files:ro
+
+  promisemodelonline.auth.mock:
+    image: wiremock/wiremock:latest
+    container_name: promisemodelonlineauthmock
+    ports:
+      - "8060:8060/tcp"
+    command: >
+      --https-port 8060
+      --verbose
+    volumes:
+      - ../../PromiseModelOnline.Client.Tests/wiremock-auth/mappings:/home/wiremock/mappings:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-auth/__files:/home/wiremock/__files:ro

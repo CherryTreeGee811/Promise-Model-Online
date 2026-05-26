@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromiseModelOnline.Auth.Tes
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromiseModelOnline.Gateway", "PromiseModelOnline.Gateway\PromiseModelOnline.Gateway.csproj", "{A4C0111E-CA56-4BAD-A641-9D0CD020518A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -91,6 +93,18 @@ Global
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|x64.ActiveCfg = Release|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|x86.ActiveCfg = Release|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Debug|x64.Build.0 = Debug|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Debug|x86.Build.0 = Debug|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Release|x64.ActiveCfg = Release|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Release|x64.Build.0 = Release|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Release|x86.ActiveCfg = Release|Any CPU
+		{A4C0111E-CA56-4BAD-A641-9D0CD020518A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

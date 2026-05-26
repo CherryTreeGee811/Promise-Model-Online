@@ -44,8 +44,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void OwnerCanEditDropdowns()
         {
-            EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            EnsureLoggedIn("/projects/1/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);
@@ -59,11 +58,10 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void PermissionEnforcement_NonOwnerCannotEdit()
         {
-            var nonOwnerUser = "nonowner";
-            var nonOwnerPass = "P@ssw0rd!";
-
-            LoginViaUi(nonOwnerUser, nonOwnerPass);
-
+            // Use the non‑owner token (WireMock returns permission=View)
+            var nonOwnerToken = "nonowner-token-fixed";
+            // Inject token and go to the stride board
+            Driver.Navigate().GoToUrl(BaseUrl + "/?test_token=" + nonOwnerToken);
             NavigateSpa("/projects/1/strides");
 
             var row = GetFirstMomentRow();
@@ -77,8 +75,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void EstimatePersistence()
         {
-            EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            EnsureLoggedIn("/projects/1/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);
@@ -107,8 +104,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void StatusChangePersistence()
         {
-            EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            EnsureLoggedIn("/projects/1/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);
@@ -137,8 +133,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void OwnerAssignmentPersistence()
         {
-            EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            EnsureLoggedIn("/projects/1/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);

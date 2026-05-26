@@ -14,6 +14,7 @@ namespace PromiseModelOnline.Api.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
+    [ApiController]
     public class ProjectsController : GenericController<Project, ProjectDTO>
     {
         private readonly IProjectService _projectService;
@@ -38,12 +39,13 @@ namespace PromiseModelOnline.Api.Controllers
             _promiseMapper = promiseMapper;
         }
 
+        // ✅ READ scope
+        [Authorize(Policy = "Projects.Read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<ProjectDTO>>> GetAll()
         {
             var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
+            if (user is null) return Unauthorized();
 
             var projects = await _projectService.GetAccessibleProjectsAsync(user.Id);
 
@@ -54,9 +56,8 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Returns the project owner plus all users who have any permission on this project.
-        /// </summary>
+        // ✅ READ scope
+        [Authorize(Policy = "Projects.Read")]
         [HttpGet("{id}/members")]
         public async Task<ActionResult<IEnumerable<ProjectMemberDTO>>> GetMembers(int id)
         {
@@ -67,64 +68,51 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(members);
         }
 
+        // ✅ READ scope
+        [Authorize(Policy = "Projects.Read")]
         [HttpGet("{id}/promises")]
         public async Task<ActionResult<IEnumerable<PromiseDTO>>> GetProjectPromises(int id)
         {
             var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
+            if (user is null) return Unauthorized();
 
             var promises = await _projectService.GetProductPromisesAsync(id);
             var result = promises
-                .OrderBy(promise => promise.DisplayOrder)
-                .Select(promise => _promiseMapper.Map(promise, _promiseService))
+                .OrderBy(p => p.DisplayOrder)
+                .Select(p => _promiseMapper.Map(p, _promiseService))
                 .ToList();
 
             return Ok(result);
         }
 
-        private async Task<User?> GetCurrentUserAsync()
-        {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value
-                     ?? User.FindFirst("email")?.Value;
-            if (string.IsNullOrEmpty(email)) return null;
-
-            var username = User.FindFirst("nameid")?.Value;
-            return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
-        }
-
+        // ✅ READ scope (FIXED)
+        [Authorize(Policy = "Projects.Read")]
         [HttpGet("{projectId}/my-permission")]
         public async Task<ActionResult<string>> GetMyPermission(int projectId)
         {
-            try
-            {
-                var email = User.FindFirstValue(ClaimTypes.Email);
-                if (string.IsNullOrEmpty(email))
-                    return Unauthorized();
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(email)) return Unauthorized();
 
-                var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
+            var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
 
-                var permission = await _permissionService.GetUserPermissionAsync(user.Id, projectId);
+            var permission = await _permissionService.GetUserPermissionAsync(user.Id, projectId);
 
-                if (permission == null)
-                    return NoContent();
+            if (permission == null)
+                return NoContent();
 
-                return Ok(permission.ToString());
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(permission.ToString());
         }
 
-        // Create endpoint that accepts a lightweight DTO so clients don't have to send Owner/OwnerId.
+        // ✅ WRITE scope
+        [Authorize(Policy = "Projects.Write")]
         [HttpPost("create")]
-        public async Task<ActionResult<ProjectDTO>> CreateFromDto([FromBody] DTOs.ProjectCreateDTO dto)
+        public async Task<ActionResult<ProjectDTO>> CreateFromDto([FromBody] ProjectCreateDTO dto)
         {
             var user = await GetCurrentUserAsync();
             if (user is null) return Unauthorized();
 
-            if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Project name is missing");
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                return BadRequest("Project name is missing");
 
             var project = new Project
             {
@@ -134,9 +122,22 @@ namespace PromiseModelOnline.Api.Controllers
             };
 
             await _service.AddAsync(project);
-            return CreatedAtAction(nameof(GetById), new { id = project.Id }, _mapper.Map(project, _service));
+
+            return CreatedAtAction(nameof(GetById),
+                new { id = project.Id },
+                _mapper.Map(project, _service));
         }
 
-        // Diagnostic endpoint removed. Temporary debug method rolled back.
+        private async Task<User?> GetCurrentUserAsync()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
+                     ?? User.FindFirst("email")?.Value;
+
+            if (string.IsNullOrEmpty(email)) return null;
+
+            var username = User.FindFirst("nameid")?.Value;
+
+            return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        }
     }
 }

@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace PromiseModelOnline.Api.Controllers
 {
     /// <summary>
     /// Represents a run/batch that generates deadline notifications.
-    /// Creating a run triggers generation of deadline notifications.
     /// </summary>
     [Authorize]
     [Route("api/deadline-notification-runs")]
@@ -21,9 +21,17 @@ namespace PromiseModelOnline.Api.Controllers
             _strideService = strideService;
         }
 
+        // ✅ WRITE scope (important)
+        [Authorize]
+        [Authorize(Policy = "Projects.Write")]
         [HttpPost]
         public async Task<IActionResult> Create()
         {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized();
+
             await _strideService.SendDeadlineNotificationsAsync();
             return NoContent();
         }

@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { get, post, put } from '../api.mjs';
 
 /*
 ====================================
@@ -6,8 +6,7 @@ GET PROMISE
 ====================================
 */
 export function getPromiseById(promiseId) {
-    return authFetch(`${base}/api/promises/${promiseId}`)
-        .then(handleJson);
+    return get(`/promises/${promiseId}`);
 }
 
 /*
@@ -16,8 +15,7 @@ GET EPICS
 ====================================
 */
 export function getEpicsByPromise(promiseId) {
-    return authFetch(`${base}/api/epics?promiseId=${promiseId}`)
-        .then(handleJsonOrEmpty);
+    return get(`/epics?promiseId=${promiseId}`);
 }
 
 /*
@@ -25,19 +23,8 @@ export function getEpicsByPromise(promiseId) {
 CREATE PROMISE
 ====================================
 */
-export async function addPromise(promise) {
-    const res = await authFetch(`${base}/api/promises`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(promise)
-    });
-
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
+export function addPromise(promise) {
+    return post(`/promises`, promise);
 }
 
 /*
@@ -45,40 +32,6 @@ export async function addPromise(promise) {
 UPDATE PROMISE
 ====================================
 */
-export async function updatePromise(promise) {
-    const res = await authFetch(`${base}/api/promises/${promise.id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(promise)
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return true;
-}
-
-/*
-====================================
-HELPERS
-====================================
-*/
-
-function handleJson(response) {
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    return response.json();
-}
-
-function handleJsonOrEmpty(response) {
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    if (response.status === 204) return [];
-
-    return response.json();
+export function updatePromise(promise) {
+    return put(`/promises/${promise.id}`, promise);
 }

@@ -1,10 +1,10 @@
 #!/bin/sh
 
-SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
-API_USER=${PMO_API_DB_USER:-pmo_api}
-API_PASSWORD=${PMO_API_DB_PASSWORD:-ChangeMeApi123!}
-AUTH_USER=${PMO_AUTH_DB_USER:-pmo_auth}
-AUTH_PASSWORD=${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!}
+SA_PASSWORD=$(cat /run/secrets/db_sa_password)
+API_PASSWORD=$(cat /run/secrets/db_api_password)
+AUTH_PASSWORD=$(cat /run/secrets/db_auth_password)
+API_USER=${PMO_API_DB_USER}
+AUTH_USER=${PMO_AUTH_DB_USER}
 SQLCMD=/opt/mssql-tools/bin/sqlcmd
 
 sql_escape_literal() {

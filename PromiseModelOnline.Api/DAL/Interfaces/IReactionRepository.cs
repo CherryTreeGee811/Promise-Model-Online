@@ -8,5 +8,7 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
     {
         Task<IEnumerable<Reaction>> GetReactionsForItemAsync(string stackItemType, int stackItemId);
         Task<Reaction?> GetUserReactionAsync(int userId, string stackItemType, int stackItemId);
+        Task<int?> GetProjectIdAsync(string stackItemType, int stackItemId);
+        Task<int?> GetProjectIdByReactionIdAsync(int reactionId);
     }
 }

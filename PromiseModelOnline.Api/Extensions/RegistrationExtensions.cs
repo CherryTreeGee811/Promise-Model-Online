@@ -17,9 +17,6 @@ namespace PromiseModelOnline.Api.Extensions
     {
         public static void AddPromiseModelOnlineScopes(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<PromiseModelOnlineContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("MSSQL")));
-
             services.AddScoped<IPromiseModelOnlineContext, PromiseModelOnlineContext>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
@@ -48,25 +45,10 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<IProjectService, ProjectService>();
+            services.AddScoped<IPromiseService, PromiseService>();
             services.AddStrideAutomation();
             services.AddScoped<IReactionRepository, ReactionRepository>();
             services.AddScoped<IReactionService, ReactionService>();
-            services.AddHttpClient<IAuthClient, AuthClient>(client =>
-            {
-                var issuer = configuration["JwtSettings:Issuer"];
-                if (!string.IsNullOrEmpty(issuer))
-                {
-                    client.BaseAddress = new Uri(issuer);
-                }
-                client.Timeout = TimeSpan.FromSeconds(10);
-            })
-            .ConfigurePrimaryHttpMessageHandler(() =>
-            {
-                var handler = new HttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback =
-                    (sender, cert, chain, sslPolicyErrors) => true;
-                return handler;
-            });
         }
     }
 }

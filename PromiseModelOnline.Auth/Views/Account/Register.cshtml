@@ -1,0 +1,47 @@
+@model RegisterViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Create Account";
+}
+<h1 id="form-title">Register</h1>
+
+<div class="auth-form form-div">
+    <h2>Create Account</h2>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="auth-error">
+            <ul>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form method="post" id="register-form">
+        @Html.AntiForgeryToken()
+        <div>
+            <label asp-for="Username" class="username-label">Username:</label>
+            <input asp-for="Username" class="username-label" type="text" required placeholder="Enter your username" />
+        </div>
+        <div>
+            <label asp-for="Email" class="email-label">Email:</label>
+            <input asp-for="Email" class="email-input" type="email" required placeholder="Enter your email" />
+        </div>
+        <div>
+            <label asp-for="Password" class="password-label">Password:</label>
+            <input asp-for="Password" type="password" class="input-label" required placeholder="Enter your password" />
+        </div>
+        <div>
+            <label asp-for="ConfirmPassword" class="confirm-password-label">Confirm Password:</label>
+            <input asp-for="ConfirmPassword" class="confirm-password-input" type="password" required placeholder="Confirm your password" />
+        </div>
+        <button type="submit" id="register-btn">Register</button>
+    </form>
+
+    <div class="auth-link" id="register-login-link">
+        Already have an account? <a href="/connect/login?returnUrl=@Context.Request.Query["returnUrl"]">Login here</a>
+    </div>
+</div>

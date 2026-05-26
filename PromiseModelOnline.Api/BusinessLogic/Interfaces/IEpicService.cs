@@ -8,5 +8,6 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
     public interface IEpicService : IGenericService<Epic>
     {
         Task<IEnumerable<Epic>> GetEpicsByPromiseAsync(int promiseId);
+        Task<int> GetProjectIdFromPromiseAsync(int promiseId);
     }
 }

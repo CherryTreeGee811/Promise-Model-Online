@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { get, post, put } from '../api.mjs';
 
 /*
 ====================================
@@ -7,8 +7,7 @@ GET JOURNEY
 */
 
 export function getJourneyById(journeyId) {
-    return authFetch(`${base}/api/journeys/${journeyId}`)
-        .then(handleJson);
+    return get(`/journeys/${journeyId}`);
 }
 
 /*
@@ -18,8 +17,7 @@ GET FLOWS
 */
 
 export function getFlowsByJourney(journeyId) {
-    return authFetch(`${base}/api/flows?journeyId=${journeyId}`)
-        .then(handleJsonOrEmpty);
+    return get(`/flows?journeyId=${journeyId}`);
 }
 
 /*
@@ -28,20 +26,8 @@ CREATE JOURNEY
 ====================================
 */
 
-export async function addJourney(journey) {
-    const res = await authFetch(`${base}/api/journeys`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(journey)
-    });
-
-    if (res.status === 204) return null;
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
+export function addJourney(journey) {
+    return post(`/journeys`, journey);
 }
 
 /*
@@ -50,40 +36,6 @@ UPDATE JOURNEY
 ====================================
 */
 
-export async function updateJourney(journey) {
-    const res = await authFetch(`${base}/api/journeys/${journey.id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(journey)
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return true;
-}
-
-/*
-====================================
-HELPERS
-====================================
-*/
-
-function handleJson(response) {
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    return response.json();
-}
-
-function handleJsonOrEmpty(response) {
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    if (response.status === 204) return [];
-
-    return response.json();
+export function updateJourney(journey) {
+    return put(`/journeys/${journey.id}`, journey);
 }

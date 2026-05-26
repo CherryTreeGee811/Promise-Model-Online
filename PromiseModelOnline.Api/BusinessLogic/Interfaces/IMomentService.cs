@@ -12,13 +12,23 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
         Task<IEnumerable<Moment>> GetMomentsByStrideAsync(int strideId);
         Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false);
         Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId);
+
         Task<Moment> AssignMomentToStrideAsync(int momentId, int? strideId);
         Task<Moment> UpdateMomentStatusAsync(int momentId, MomentStatus newStatus);
         Task<Moment> UpdateMomentEstimateAsync(int momentId, Estimate? estimate);
-        Task<int> GetTotalEffortForPromiseAsync(int promiseId);
         Task<Moment> AssignOwnerAsync(int momentId, int? userId);
+
+        Task<int> GetTotalEffortForPromiseAsync(int promiseId);
+
         Task<int?> GetProjectIdForMomentAsync(int momentId);
+
+        // ✅ NEW (for permission checks in controller)
+        Task<int> GetProjectIdFromFlowAsync(int flowId);
+        Task<int> GetProjectIdFromStrideAsync(int strideId);
+        Task<int> GetProjectIdFromIterationAsync(int iterationId);
+
         Task MoveUnfinishedMomentsToNextStrideAsync(int strideId);
+
         Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId);
     }
 }

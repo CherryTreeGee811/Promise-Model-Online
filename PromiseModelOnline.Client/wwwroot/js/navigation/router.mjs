@@ -1,5 +1,5 @@
 import { routeHandler } from '../router.mjs';
-import { getAccessToken } from '../auth-state.mjs';
+import { getAccessToken } from '../auth/auth-state.mjs';
 import { startNotificationPolling } from '../notifications/badge.mjs';
 
 function initGeneralLinkListeners(navContentDiv, contentDiv) {
@@ -57,20 +57,6 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
     }
 }
 
-function initAnonymousLinkListeners(navContentDiv, contentDiv) {
-    document.getElementById("login-link").addEventListener("click", (e) => {
-        e.preventDefault();
-        window.history.pushState({}, '', '/login');
-        routeHandler(navContentDiv, contentDiv);
-    });
-
-    document.getElementById("register-link").addEventListener("click", (e) => {
-        e.preventDefault();
-        window.history.pushState({}, '', '/register');
-        routeHandler(navContentDiv, contentDiv);
-    });
-}
-
 export function loadNavTemplate(navContentDiv, contentDiv) {
     let templateName = "anonymous.html";
 
@@ -105,8 +91,5 @@ function initNavLinkListeners(templateName, navContentDiv, contentDiv) {
     initGeneralLinkListeners(navContentDiv, contentDiv);
     if (templateName === "authenticated.html") {
         initAuthenticatedLinkListeners(navContentDiv, contentDiv);
-    }
-    else {
-        initAnonymousLinkListeners(navContentDiv, contentDiv);
     }
 }

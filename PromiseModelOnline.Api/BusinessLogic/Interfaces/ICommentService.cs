@@ -8,5 +8,6 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
     {
         Task<IEnumerable<CommentDTO>> GetCommentsAsync(string parentType, int parentId);
         Task<CommentDTO> CreateCommentAsync(CreateCommentDTO dto, int userId);
+        Task<int> GetProjectIdAsync(string type, int parentId);
     }
 }

@@ -133,5 +133,15 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
             return null; // no access]
         }
+
+        public async Task<bool> HasPermissionAsync(int userId, int projectId, PermissionLevel required)
+        {
+            var level = await GetUserPermissionAsync(userId, projectId);
+
+            if (level == null)
+                return false;
+
+            return level >= required;
+        }
     }
 }

@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { get, post, patch } from '../api.mjs';
 
 /*
 ====================================
@@ -7,8 +7,7 @@ GET MOMENT
 */
 
 export function getMomentById(momentId) {
-    return authFetch(`${base}/api/moments/${momentId}`)
-        .then(handleJson);
+    return get(`/moments/${momentId}`);
 }
 
 /*
@@ -17,17 +16,10 @@ MOVE MOMENT
 ====================================
 */
 
-export async function moveMomentToStride(momentId, targetStrideId) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/stride-assignment`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ strideId: targetStrideId })
+export function moveMomentToStride(momentId, targetStrideId) {
+    return patch(`/moments/${momentId}/stride-assignment`, {
+        strideId: targetStrideId
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
 /*
@@ -36,45 +28,22 @@ STATUS / ESTIMATE / TYPE
 ====================================
 */
 
-export async function updateMomentStatus(momentId, newStatus) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/status`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ newStatus })
+export function updateMomentStatus(momentId, newStatus) {
+    return patch(`/moments/${momentId}/status`, {
+        newStatus
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
-export async function updateMomentEstimate(momentId, estimate) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/estimate`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ estimate })
+export function updateMomentEstimate(momentId, estimate) {
+    return patch(`/moments/${momentId}/estimate`, {
+        estimate
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
-export async function updateMomentType(momentId, newType) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/type`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ newType })
+export function updateMomentType(momentId, newType) {
+    return patch(`/moments/${momentId}/type`, {
+        newType
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    if (res.status === 204) return null;
-    return res.json();
 }
 
 /*
@@ -83,17 +52,10 @@ OWNER
 ====================================
 */
 
-export async function updateMomentOwner(momentId, userId) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/owner`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId })
+export function updateMomentOwner(momentId, userId) {
+    return patch(`/moments/${momentId}/owner`, {
+        userId
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
 /*
@@ -102,11 +64,8 @@ TASKS
 ====================================
 */
 
-export async function getMyTasks() {
-    const res = await authFetch(`${base}/api/moments/assigned-to-me`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+export function getMyTasks() {
+    return get(`/moments/assigned-to-me`);
 }
 
 /*
@@ -115,32 +74,7 @@ CREATE MOMENT
 ====================================
 */
 
-export async function addMoment(moment) {
-    const res = await authFetch(`${base}/api/moments`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(moment)
-    });
-
-    if (res.status === 204) return null;
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
+export function addMoment(moment) {
+    return post(`/moments`, moment);
 }
-
-/*
-====================================
-HELPER
-====================================
-*/
-
-function handleJson(response) {
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    return response.json();
-}
+``

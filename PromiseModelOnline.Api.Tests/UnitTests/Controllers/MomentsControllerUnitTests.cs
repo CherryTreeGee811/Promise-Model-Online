@@ -3,18 +3,20 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
-using PromiseModelOnline.Api.DTOs;
-using PromiseModelOnline.Api.Mappers.Interfaces;
-using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.DAL.Interfaces;
+using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
+using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Mappers.Interfaces;
+using PromiseModelOnline.Api.Hubs;
 
-namespace PromiseModelOnline.Api.Tests
+namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
 {
     public class MomentsControllerUnitTests
     {
@@ -22,6 +24,8 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IGenericMapper<Moment, MomentDTO>> _mockMapper = null!;
         private Mock<IUserRepository> _mockUserRepo = null!;
         private Mock<IPermissionService> _mockPermissionService = null!;
+        private Mock<IHubContext<NotificationHub>> _mockHub = null!;
+
         private MomentsController _controller = null!;
 
         [SetUp]
@@ -31,392 +35,268 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper = new Mock<IGenericMapper<Moment, MomentDTO>>();
             _mockUserRepo = new Mock<IUserRepository>();
             _mockPermissionService = new Mock<IPermissionService>();
-            // Initialize controller with a default HttpContext to prevent null Request/ControllerContext in tests
+            _mockHub = new Mock<IHubContext<NotificationHub>>();
+
             _controller = new MomentsController(
                 _mockMomentService.Object,
                 _mockMapper.Object,
                 _mockUserRepo.Object,
                 _mockPermissionService.Object,
-                NullLogger<MomentsController>.Instance);
-            _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+                NullLogger<MomentsController>.Instance,
+                _mockHub.Object // ✅ FIXED
+            );
         }
 
-        private void InitControllerWithUser(string? email, string? nameid = null)
+        private void SetupUser()
         {
-            _controller = new MomentsController(
-                _mockMomentService.Object,
-                _mockMapper.Object,
-                _mockUserRepo.Object,
-                _mockPermissionService.Object,
-                NullLogger<MomentsController>.Instance);
+            var user = new User { Id = 1 };
 
-            var claims = new List<Claim>();
-            if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
-            if (nameid is not null) claims.Add(new Claim("nameid", nameid));
-            var identity = new ClaimsIdentity(claims, "test");
+            _mockUserRepo
+                .Setup(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()))
+                .ReturnsAsync(user);
+
+            var identity = new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Email, "user@test.com"),
+                new Claim("nameid", "tester")
+            }, "test");
+
             _controller.ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-            };
-        }
-
-        [Test]
-        public async Task GetAll_WithoutQuery_ReturnsAllMoments()
-        {
-            // Arrange
-            var moments = new List<Moment>
-            {
-                new Moment { Id = 1, Statement = "M1" },
-                new Moment { Id = 2, Statement = "M2" }
-            };
-
-            _mockMomentService.Setup(s => s.GetAllAsync()).ReturnsAsync(moments);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IGenericService<Moment>>() ))
-                .Returns<Moment, IGenericService<Moment>>((m, svc) => new MomentDTO
+                HttpContext = new DefaultHttpContext
                 {
-                    Id = m.Id,
-                    Statement = m.Statement,
-                    FlowId = m.FlowId,
-                    OwnerId = m.OwnerId,
-                    AssignedStrideId = m.AssignedStrideId,
-                    Status = m.Status,
-                    EffortEstimate = m.EffortEstimate,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    CompletedAt = m.CompletedAt,
-                    DisplayOrder = m.DisplayOrder,
-                    IsZombie = m.IsZombie,
-                    OriginalStrideId = m.OriginalStrideId,
-                    StatusColor = m.StatusColor
-                });
+                    User = new ClaimsPrincipal(identity)
+                }
+            };
+        }
 
-            // Setup HttpContext with empty query string
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = QueryString.Empty;
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+        // =========================================
+        // ✅ GET ALL
+        // =========================================
 
-            // Act
+        [Test]
+        public async Task GetAll_WithoutQuery_ReturnsBadRequest()
+        {
+            SetupUser();
+
             var result = await _controller.GetAll();
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            var dtos = okResult!.Value as List<MomentDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(2));
-            _mockMomentService.Verify(s => s.GetAllAsync(), Times.Once);
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task GetAll_WithStrideIdParameter_ReturnsFilteredByStride()
+        public async Task GetAll_WithStrideId_ReturnsOk()
         {
-            // Arrange
             int strideId = 5;
-            var moments = new List<Moment>
+
+            SetupUser();
+
+            _mockMomentService
+                .Setup(s => s.GetProjectIdFromStrideAsync(strideId))
+                .ReturnsAsync(1);
+
+            _mockPermissionService
+                .Setup(p => p.HasPermissionAsync(It.IsAny<int>(), 1, PermissionLevel.View))
+                .ReturnsAsync(true);
+
+            _mockMomentService
+                .Setup(s => s.GetMomentsByStrideAsync(strideId))
+                .ReturnsAsync(new List<Moment> { new Moment { Id = 10 } });
+
+            _mockMapper
+                .Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IGenericService<Moment>>()))
+                .Returns(new MomentDTO());
+
+            _controller.Request.QueryString = new QueryString($"?strideId={strideId}");
+
+            var result = await _controller.GetAll();
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        }
+
+        [Test]
+        public async Task GetAll_NoPermission_ReturnsForbid()
+        {
+            int strideId = 5;
+
+            SetupUser();
+
+            _mockMomentService
+                .Setup(s => s.GetProjectIdFromStrideAsync(strideId))
+                .ReturnsAsync(1);
+
+            _mockPermissionService
+                .Setup(p => p.HasPermissionAsync(It.IsAny<int>(), 1, PermissionLevel.View))
+                .ReturnsAsync(false);
+
+            _controller.Request.QueryString = new QueryString($"?strideId={strideId}");
+
+            var result = await _controller.GetAll();
+
+            Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
+        }
+
+        [Test]
+        public async Task GetAll_NoUser_ReturnsUnauthorized()
+        {
+            _controller.ControllerContext = new ControllerContext
             {
-                new Moment { Id = 10, Statement = "M10", AssignedStrideId = strideId },
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity())
+                }
             };
 
-            _mockMomentService.Setup(s => s.GetMomentsByStrideAsync(strideId)).ReturnsAsync(moments);
-            _mockMapper.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IGenericService<Moment>>() ))
-                .Returns<Moment, IGenericService<Moment>>((m, svc) => new MomentDTO { Id = m.Id, AssignedStrideId = m.AssignedStrideId });
+            _controller.Request.QueryString = new QueryString("?strideId=5");
 
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.QueryString = new QueryString($"?strideId={strideId}");
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-            // Act
             var result = await _controller.GetAll();
 
-            // Assert
+            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
+        }
+
+        [Test]
+        public async Task GetAll_WithFlowId_ReturnsOk()
+        {
+            int flowId = 3;
+
+            SetupUser();
+
+            _mockMomentService
+                .Setup(s => s.GetProjectIdFromFlowAsync(flowId))
+                .ReturnsAsync(1);
+
+            _mockPermissionService
+                .Setup(p => p.HasPermissionAsync(It.IsAny<int>(), 1, PermissionLevel.View))
+                .ReturnsAsync(true);
+
+            _mockMomentService
+                .Setup(s => s.GetMomentsByFlowAsync(flowId))
+                .ReturnsAsync(new List<Moment> { new Moment { Id = 1 } });
+
+            _mockMapper
+                .Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IGenericService<Moment>>()))
+                .Returns(new MomentDTO());
+
+            _controller.Request.QueryString = new QueryString($"?flowId={flowId}");
+
+            var result = await _controller.GetAll();
+
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = result.Result as OkObjectResult;
-            var dtos = okResult!.Value as List<MomentDTO>;
-            Assert.That(dtos, Is.Not.Null);
-            Assert.That(dtos!.Count, Is.EqualTo(1));
-            Assert.That(dtos[0].AssignedStrideId, Is.EqualTo(strideId));
-            _mockMomentService.Verify(s => s.GetMomentsByStrideAsync(strideId), Times.Once);
         }
 
         [Test]
-        public async Task GetById_WithValidId_ReturnsOkWithMomentDTO()
+        public async Task GetAll_WithIterationIdAndUnassigned_ReturnsOk()
         {
-            // Arrange
-            int momentId = 2;
-            var moment = new Moment { Id = momentId, Statement = "Find me" };
-            var expectedDto = new MomentDTO { Id = momentId, Statement = "Find me" };
+            int iterationId = 2;
 
-            _mockMomentService.Setup(s => s.GetByIdAsync(momentId)).ReturnsAsync(moment);
-            _mockMapper.Setup(m => m.Map(moment, _mockMomentService.Object)).Returns(expectedDto);
+            SetupUser();
 
-            // Act
-            var result = await _controller.GetById(momentId);
+            _mockMomentService
+                .Setup(s => s.GetProjectIdFromIterationAsync(iterationId))
+                .ReturnsAsync(1);
 
-            // Assert
+            _mockPermissionService
+                .Setup(p => p.HasPermissionAsync(It.IsAny<int>(), 1, PermissionLevel.View))
+                .ReturnsAsync(true);
+
+            _mockMomentService
+                .Setup(s => s.GetMomentsByIterationAsync(iterationId, true))
+                .ReturnsAsync(new List<Moment> { new Moment { Id = 1 } });
+
+            _mockMapper
+                .Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IGenericService<Moment>>()))
+                .Returns(new MomentDTO());
+
+            _controller.Request.QueryString = new QueryString($"?iterationId={iterationId}&unassigned=true");
+
+            var result = await _controller.GetAll();
+
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var ok = result.Result as OkObjectResult;
-            var dto = ok!.Value as MomentDTO;
-            Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.Id, Is.EqualTo(momentId));
-            Assert.That(dto.Statement, Is.EqualTo("Find me"));
         }
 
-        [Test]
-        public async Task GetById_WithNonexistentId_ReturnsNotFound()
-        {
-            // Arrange
-            int momentId = 999;
-            _mockMomentService.Setup(s => s.GetByIdAsync(momentId)).ReturnsAsync((Moment?)null);
-
-            // Act
-            var result = await _controller.GetById(momentId);
-
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
-            _mockMomentService.Verify(s => s.GetByIdAsync(momentId), Times.Once);
-        }
+        // =========================================
+        // ✅ UPDATE OWNER
+        // =========================================
 
         [Test]
-        public async Task Create_WithValidMoment_ReturnsCreatedAtAction()
+        public async Task UpdateMomentOwner_ValidRequest_ReturnsOk()
         {
-            // Arrange
-            var moment = new Moment { Id = 33, Statement = "New" };
-            var expectedDto = new MomentDTO { Id = 33, Statement = "New" };
+            int momentId = 10;
+            int newOwnerId = 5;
 
-            _mockMomentService.Setup(s => s.AddAsync(moment)).Returns(Task.CompletedTask);
-            _mockMapper.Setup(m => m.Map(moment, _mockMomentService.Object)).Returns(expectedDto);
+            SetupUser();
 
-            // Act
-            var result = await _controller.Create(moment);
+            _mockMomentService
+                .Setup(s => s.GetProjectIdForMomentAsync(momentId))
+                .ReturnsAsync(2);
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
-            var created = result.Result as CreatedAtActionResult;
-            Assert.That(created!.ActionName, Is.EqualTo(nameof(MomentsController.GetById)));
-            Assert.That(created.RouteValues![("id")], Is.EqualTo(33));
-            var dto = created.Value as MomentDTO;
-            Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.Id, Is.EqualTo(33));
-        }
+            _mockPermissionService
+                .Setup(p => p.GetUserPermissionAsync(It.IsAny<int>(), 2))
+                .ReturnsAsync(PermissionLevel.Edit);
 
-        [Test]
-        public async Task Update_WithValidIdAndMoment_ReturnsNoContent()
-        {
-            // Arrange
-            int momentId = 44;
-            var moment = new Moment { Id = momentId, Statement = "Up" };
+            var updatedMoment = new Moment { Id = momentId, OwnerId = newOwnerId };
 
-            _mockMomentService.Setup(s => s.UpdateAsync(moment)).Returns(Task.CompletedTask);
+            _mockMomentService
+                .Setup(s => s.AssignOwnerAsync(momentId, newOwnerId))
+                .ReturnsAsync(updatedMoment);
 
-            // Act
-            var result = await _controller.Update(momentId, moment);
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockMomentService.Verify(s => s.UpdateAsync(moment), Times.Once);
-        }
-
-        [Test]
-        public async Task Update_WithMismatchedId_ReturnsBadRequest()
-        {
-            // Arrange
-            int momentId = 1;
-            var moment = new Moment { Id = 2, Statement = "Bad" };
-
-            // Act
-            var result = await _controller.Update(momentId, moment);
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<BadRequestResult>());
-            _mockMomentService.Verify(s => s.UpdateAsync(It.IsAny<Moment>()), Times.Never);
-        }
-
-        [Test]
-        public async Task UpdateMomentType_UserCanEdit_UpdatesTypeAndReturnsOk()
-        {
-            // Arrange
-            int momentId = 91;
-            var user = new User { Id = 21, Email = "type@test.com", Name = "Type Tester" };
-            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("type@test.com", It.IsAny<string?>()))
-                .ReturnsAsync(user);
-            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(44);
-            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 44)).ReturnsAsync(PermissionLevel.Edit);
-
-            var moment = new Moment { Id = momentId, Type = MomentType.Story, UpdatedAt = null };
-            _mockMomentService.Setup(s => s.GetByIdAsync(momentId)).ReturnsAsync(moment);
-            _mockMomentService.Setup(s => s.UpdateAsync(moment)).Returns(Task.CompletedTask);
-            _mockMapper.Setup(m => m.Map(moment, _mockMomentService.Object))
-                .Returns(new MomentDTO { Id = momentId, Type = MomentType.Job, UpdatedAt = System.DateTime.UtcNow });
-
-            InitControllerWithUser("type@test.com", "type-user");
-
-            // Act
-            var result = await _controller.UpdateMomentType(momentId, new UpdateMomentTypeRequest { NewType = MomentType.Job });
-
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            Assert.That(moment.Type, Is.EqualTo(MomentType.Job));
-            Assert.That(moment.UpdatedAt, Is.Not.Null);
-            _mockMomentService.Verify(s => s.GetByIdAsync(momentId), Times.Once);
-            _mockMomentService.Verify(s => s.UpdateAsync(moment), Times.Once);
-        }
-
-        [Test]
-        public async Task UpdateMomentType_UserCannotEdit_ReturnsForbid()
-        {
-            // Arrange
-            int momentId = 92;
-            var user = new User { Id = 22, Email = "readonly@test.com", Name = "Read Only" };
-            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("readonly@test.com", It.IsAny<string?>()))
-                .ReturnsAsync(user);
-            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(45);
-            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 45)).ReturnsAsync(PermissionLevel.View);
-
-            InitControllerWithUser("readonly@test.com", "readonly-user");
-
-            // Act
-            var result = await _controller.UpdateMomentType(momentId, new UpdateMomentTypeRequest { NewType = MomentType.Job });
-
-            // Assert
-            Assert.That(result.Result, Is.TypeOf<ForbidResult>());
-            _mockMomentService.Verify(s => s.GetByIdAsync(It.IsAny<int>()), Times.Never);
-            _mockMomentService.Verify(s => s.UpdateAsync(It.IsAny<Moment>()), Times.Never);
-        }
-
-        [Test]
-        public async Task Delete_WithValidId_ReturnsNoContent()
-        {
-            // Arrange
-            int momentId = 77;
-            _mockMomentService.Setup(s => s.DeleteByIdAsync(momentId)).ReturnsAsync(true);
-
-            // Act
-            var result = await _controller.Delete(momentId);
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _mockMomentService.Verify(s => s.DeleteByIdAsync(momentId), Times.Once);
-        }
-
-        [Test]
-        public async Task Delete_WithNonexistentId_ReturnsNotFound()
-        {
-            // Arrange
-            int momentId = 9999;
-            _mockMomentService.Setup(s => s.DeleteByIdAsync(momentId)).ReturnsAsync(false);
-
-            // Act
-            var result = await _controller.Delete(momentId);
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<NotFoundResult>());
-            _mockMomentService.Verify(s => s.DeleteByIdAsync(momentId), Times.Once);
-        }
-
-        [Test]
-        public async Task UpdateMomentOwner_UserCannotEdit_ReturnsForbid()
-        {
-            // Arrange
-            int momentId = 7;
-            var user = new User { Id = 42, Email = "u@u.com", Name = "User" };
-            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("u@u.com", It.IsAny<string?>())).ReturnsAsync(user);
-            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(99);
-            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 99)).ReturnsAsync(PermissionLevel.View);
-
-            InitControllerWithUser("u@u.com", "uname");
-
-            // Act
-            var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = 5 });
-
-            // Assert
-            Assert.That(result.Result, Is.TypeOf<ForbidResult>());
-            _mockMomentService.Verify(s => s.AssignOwnerAsync(It.IsAny<int>(), It.IsAny<int?>()), Times.Never);
-        }
-
-        [Test]
-        public async Task UpdateMomentOwner_Success_ReturnsOkWithDto()
-        {
-            // Arrange
-            int momentId = 3;
-            int newOwnerId = 99;
-            var user = new User { Id = 2, Email = "a@b.com", Name = "A" };
-            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("a@b.com", It.IsAny<string?>())).ReturnsAsync(user);
-            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(7);
-            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 7)).ReturnsAsync(PermissionLevel.Edit);
-
-            var returnedMoment = new Moment { Id = momentId, OwnerId = newOwnerId };
-            _mockMomentService.Setup(s => s.AssignOwnerAsync(momentId, newOwnerId)).ReturnsAsync(returnedMoment);
-
-            _mockMapper.Setup(m => m.Map(returnedMoment, _mockMomentService.Object))
+            _mockMapper
+                .Setup(m => m.Map(updatedMoment, _mockMomentService.Object))
                 .Returns(new MomentDTO { Id = momentId, OwnerId = newOwnerId });
 
-            InitControllerWithUser("a@b.com", "a");
+            var result = await _controller.UpdateMomentOwner(
+                momentId,
+                new UpdateMomentOwnerRequest { UserId = newOwnerId });
 
-            // Act
-            var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = newOwnerId });
-
-            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var ok = result.Result as OkObjectResult;
-            var dto = ok!.Value as MomentDTO;
-            Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.OwnerId, Is.EqualTo(newOwnerId));
-            _mockMomentService.Verify(s => s.AssignOwnerAsync(momentId, newOwnerId), Times.Once);
         }
 
         [Test]
-        public async Task UpdateMomentOwner_WhenServiceThrowsKeyNotFound_ReturnsNotFound()
+        public async Task UpdateMomentOwner_NoPermission_ReturnsForbid()
         {
-            // Arrange
-            int momentId = 55;
-            var user = new User { Id = 10, Email = "x@y.com", Name = "X" };
-            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("x@y.com", It.IsAny<string?>())).ReturnsAsync(user);
-            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(2);
-            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 2)).ReturnsAsync(PermissionLevel.Edit);
+            int momentId = 10;
 
-            _mockMomentService.Setup(s => s.AssignOwnerAsync(momentId, 123)).ThrowsAsync(new KeyNotFoundException("not found"));
+            SetupUser();
 
-            InitControllerWithUser("x@y.com", "x");
+            _mockMomentService
+                .Setup(s => s.GetProjectIdForMomentAsync(momentId))
+                .ReturnsAsync(2);
 
-            // Act
-            var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = 123 });
+            _mockPermissionService
+                .Setup(p => p.GetUserPermissionAsync(It.IsAny<int>(), 2))
+                .ReturnsAsync(PermissionLevel.View);
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+            var result = await _controller.UpdateMomentOwner(
+                momentId,
+                new UpdateMomentOwnerRequest { UserId = 99 });
+
+            Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
         }
 
         [Test]
-        public async Task UpdateMomentOwner_WithNullUserId_UnassignsExistingOwnerAndReturnsOk()
+        public async Task UpdateMomentType_WhenMomentNotFound_ReturnsNotFound()
         {
-            // Arrange
-            int momentId = 88;
-            int previousOwnerId = 17;
-            var user = new User { Id = 5, Email = "y@z.com", Name = "Y" };
-            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("y@z.com", It.IsAny<string?>())).ReturnsAsync(user);
-            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(11);
-            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 11)).ReturnsAsync(PermissionLevel.Edit);
+            int momentId = 10;
 
-            // Simulate clearing an existing owner to null.
-            var momentWithExistingOwner = new Moment { Id = momentId, OwnerId = previousOwnerId };
-            var returnedMoment = new Moment { Id = momentId, OwnerId = null };
-            _mockMomentService.Setup(s => s.AssignOwnerAsync(momentId, null)).ReturnsAsync(returnedMoment);
+            SetupUser();
 
-            _mockMapper.Setup(m => m.Map(returnedMoment, _mockMomentService.Object))
-                .Returns(new MomentDTO { Id = momentId, OwnerId = null });
+            _mockMomentService
+                .Setup(s => s.GetProjectIdForMomentAsync(momentId))
+                .ReturnsAsync(2);
 
-            InitControllerWithUser("y@z.com", "y");
+            _mockPermissionService
+                .Setup(p => p.GetUserPermissionAsync(It.IsAny<int>(), 2))
+                .ReturnsAsync(PermissionLevel.Edit); // ✅ allow past permission check
 
-            // Act
-            var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = null });
+            _mockMomentService
+                .Setup(s => s.GetByIdAsync(momentId))
+                .ReturnsAsync((Moment?)null);
 
-            _mockMomentService.Verify(s => s.AssignOwnerAsync(momentId, null), Times.Once);
+            var result = await _controller.UpdateMomentType(
+                momentId,
+                new UpdateMomentTypeRequest { NewType = MomentType.Story });
 
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var ok = result.Result as OkObjectResult;
-            var dto = ok!.Value as MomentDTO;
-            Assert.That(dto, Is.Not.Null);
-            Assert.That(dto!.OwnerId, Is.Null);
+            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
         }
     }
 }

@@ -3,66 +3,82 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
+using PromiseModelOnline.Api.Enums;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
+    [ApiController]
     public class CommentsController : ControllerBase
     {
         private readonly ICommentService _commentService;
         private readonly IUserRepository _userRepository;
+        private readonly IPermissionService _permissionService;
 
-        public CommentsController(ICommentService commentService,
-                                  IUserRepository userRepository)
+        public CommentsController(
+            ICommentService commentService,
+            IUserRepository userRepository,
+            IPermissionService permissionService)
         {
             _commentService = commentService;
             _userRepository = userRepository;
+            _permissionService = permissionService;
         }
 
+        [Authorize(Policy = "Projects.Read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CommentDTO>>> GetComments(
-            [FromQuery] string? type,
-            [FromQuery] int parentId)
+        public async Task<ActionResult> GetComments(string type, int parentId)
         {
             if (string.IsNullOrEmpty(type) || parentId <= 0)
-                return BadRequest("Type and parentId are required.");
+                return BadRequest("Type and parentId are required");
 
-            var comments = await _commentService.GetCommentsAsync(type, parentId);
-            return Ok(comments);
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null) return Unauthorized();
+
+            var projectId = await _commentService.GetProjectIdAsync(type, parentId);
+
+            if (!await _permissionService.HasPermissionAsync(
+                userId.Value, projectId, PermissionLevel.View))
+                return Forbid();
+
+            var result = await _commentService.GetCommentsAsync(type, parentId);
+            return Ok(result);
         }
 
+        [Authorize(Policy = "Projects.Write")]
         [HttpPost]
-        public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
+        public async Task<ActionResult> CreateComment(CreateCommentDTO dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Text))
-                return BadRequest("Comment text cannot be empty.");
-
-            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-                    ?? User.FindFirst("email")?.Value;
-
-            if (string.IsNullOrEmpty(email))
-                return Unauthorized("Missing email claim");
-
-            var username = User.FindFirst("nameid")?.Value;
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null) return Unauthorized();
 
             try
             {
-                var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
-                var comment = await _commentService.CreateCommentAsync(dto, user.Id);
-
+                var comment = await _commentService.CreateCommentAsync(dto, userId.Value);
                 return CreatedAtAction(nameof(GetComments),
-                    new { type = dto.ParentType, parentId = dto.ParentId }, comment);
+                    new { type = dto.ParentType, parentId = dto.ParentId },
+                    comment);
             }
-            catch (Exception ex)
+            catch
             {
-                return BadRequest(ex.Message);
+                return BadRequest("Invalid operation.");
             }
+        }
+
+        private async Task<int?> GetCurrentUserIdAsync()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
+                     ?? User.FindFirst("email")?.Value;
+
+            if (string.IsNullOrEmpty(email)) return null;
+
+            var username = User.FindFirst("nameid")?.Value;
+
+            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+            return user.Id;
         }
     }
 }

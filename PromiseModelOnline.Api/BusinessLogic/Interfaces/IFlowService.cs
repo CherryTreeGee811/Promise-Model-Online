@@ -7,5 +7,7 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
     public interface IFlowService : IGenericService<Flow>
     {
         Task<IEnumerable<Flow>> GetFlowsByJourneyAsync(int journeyId);
+
+        Task<int> GetProjectIdFromJourneyAsync(int journeyId);
     }
 }

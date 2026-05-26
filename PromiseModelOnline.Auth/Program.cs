@@ -1,55 +1,175 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
+using Microsoft.AspNetCore.RateLimiting;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using PromiseModelOnline.Auth.Middleware;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
-using Microsoft.OpenApi;
-
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>{
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "Enter your JWT token",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
+builder.Configuration.AddSecretFileResolver();
 
-    // Use the new overload that takes a document parameter
-    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-    });
-});
 builder.Services.AddCors(options =>
 {
-        options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
-        {
-            policy.WithOrigins("https://localhost:8000", "https://promisemodelonline-api:8000")
-                .WithMethods("POST")
-                .AllowAnyHeader();
-        });
+    options.AddPolicy("SPA", policy =>
+    {
+        policy.WithOrigins("https://localhost:9000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
 
-// Configure Kestrel to use SSL with PEM files when available; otherwise fall back to HTTP
-var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
-var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
-if (File.Exists(certPath) && File.Exists(keyPath))
+var connectionString = builder.Configuration.GetConnectionString("MSSQL") ?? "";;
+
+if (connectionString.Contains("Password_FILE="))
+{
+    var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+    for (int i = 0; i < parts.Count; i++)
+    {
+        if (parts[i].StartsWith("Password_FILE="))
+        {
+            var filePath = parts[i].Substring("Password_FILE=".Length);
+
+            if (File.Exists(filePath))
+            {
+                var password = File.ReadAllText(filePath).Trim();
+                parts[i] = $"Password={password}";
+            }
+        }
+    }
+
+    connectionString = string.Join(';', parts);
+}
+
+builder.Services.AddDbContext<AuthorizationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<AuthorizationDbContext>()
+    .AddDefaultTokenProviders()
+    .AddSignInManager();
+
+builder.Services.AddOpenIddict()
+    .AddCore(options =>
+    {
+        options.UseEntityFrameworkCore()
+               .UseDbContext<AuthorizationDbContext>();
+    })
+    .AddServer(options =>
+    {
+        var certPath     = Path.Combine(Directory.GetCurrentDirectory(), "cert.pfx");
+        var certPassword = builder.Configuration["Certificates:Password"];
+
+        if (string.IsNullOrEmpty(certPassword))
+        {
+            var filePath = builder.Configuration["Certificates:Password_FILE"];
+
+            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                certPassword = File.ReadAllText(filePath).Trim();
+        }
+
+        if (File.Exists(certPath))
+        {
+            var signingCert = X509CertificateLoader.LoadPkcs12(
+                File.ReadAllBytes(certPath),
+                certPassword,
+                X509KeyStorageFlags.MachineKeySet |
+                X509KeyStorageFlags.PersistKeySet  |
+                X509KeyStorageFlags.Exportable);
+
+            options.AddSigningCertificate(signingCert);
+            options.AddEncryptionCertificate(signingCert);
+        }
+        else
+        {
+            options.AddEphemeralEncryptionKey();
+            options.AddEphemeralSigningKey();
+        }
+
+        options.RegisterScopes(
+            OpenIddictConstants.Scopes.OpenId,
+            OpenIddictConstants.Scopes.Profile,
+            OpenIddictConstants.Scopes.Email,
+            OpenIddictConstants.Scopes.OfflineAccess,
+            "projects.read",
+            "projects.write"
+        );
+
+        options.SetAuthorizationEndpointUris("/connect/authorize")
+               .SetTokenEndpointUris("/connect/token")
+               .SetEndSessionEndpointUris("/connect/logout")
+               .SetIntrospectionEndpointUris("/connect/introspect")
+               .SetRevocationEndpointUris("/connect/revoke");
+
+        options.AllowAuthorizationCodeFlow()
+               .AllowRefreshTokenFlow()
+               .RequireProofKeyForCodeExchange();
+
+        // 7-day lifetime. TokenCookieMiddleware.CookieMaxAge must match this value.
+        // If they drift, users get 400 errors instead of a clean re-login prompt.
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(7));
+
+        // Short access token lifetime — minimises the exposure window.
+        // api.mjs refreshes transparently on 401 so users never notice.
+        options.SetAccessTokenLifetime(TimeSpan.FromMinutes(15));
+
+        var aspNetCoreBuilder = options.UseAspNetCore()
+               .EnableAuthorizationEndpointPassthrough()
+               .EnableTokenEndpointPassthrough()
+               .EnableEndSessionEndpointPassthrough()
+               .EnableStatusCodePagesIntegration();
+
+        // Dev-only: allows the auth server to operate when certs are absent or
+        // the reverse proxy terminates TLS before reaching this service.
+        // This must never run in production — remove the guard and HTTPS enforcement
+        // is silently disabled for all environments.
+        if (builder.Environment.IsDevelopment())
+            aspNetCoreBuilder.DisableTransportSecurityRequirement();
+    })
+    .AddValidation(options =>
+    {
+        options.UseLocalServer();
+        options.UseAspNetCore();
+    });
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultScheme             = IdentityConstants.ApplicationScheme;
+    options.DefaultChallengeScheme    =
+        OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+});
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("TokenEndpointPolicy", config =>
+    {
+        config.PermitLimit          = 30;
+        config.Window               = TimeSpan.FromMinutes(1);
+        config.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        config.QueueLimit           = 0;
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
+var certPathPem = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
+var keyPathPem  = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
+
+if (File.Exists(certPathPem) && File.Exists(keyPathPem))
 {
     builder.WebHost.ConfigureKestrel(options =>
     {
         options.ListenAnyIP(8060, listenOptions =>
         {
-            var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+            var cert = X509Certificate2.CreateFromPemFile(certPathPem, keyPathPem);
             listenOptions.UseHttps(cert);
         });
     });
@@ -61,66 +181,94 @@ else
     builder.WebHost.UseUrls(urls);
 }
 
-builder.Services.AddAuthScopes(builder.Configuration);
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.MapInboundClaims = false;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]!))
-    };
-
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(context.Exception, "JWT Authentication Failed: {Message}", context.Exception.Message);
-            return Task.CompletedTask;
-        }
-    };
-});
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// apply migrations (if any) for the Auth database
 app.ApplyMigrations();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Authorization Server");
-        c.RoutePrefix = string.Empty;
-        var registrationKey = app.Configuration["Auth:RegistrationKey"];
-
-        if (!string.IsNullOrEmpty(registrationKey))
-        {
-            // Escape single quotes so the JavaScript string is valid
-            var escapedKey = registrationKey.Replace("'", "\\'");
-            c.UseRequestInterceptor($"(req) => {{ req.headers['X-Registration-Key'] = '{escapedKey}'; return req; }}");
-        }
-    });
-
-    await AuthorizationSeeder.SeedAsync(app.Services);
+    using var scope = app.Services.CreateScope();
+    await SeedOpenIddictClientAsync(scope.ServiceProvider);
+    await AuthorizationSeeder.SeedAsync(scope.ServiceProvider);
 }
 
-app.UseCors(MyAllowSpecificOrigins);
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor   |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost
+};
+// Safe in a containerised environment where only the nginx proxy is the ingress.
+// If this service were ever exposed directly, remove these two lines and enumerate
+// KnownProxies explicitly to avoid trusting spoofed X-Forwarded-* headers.
+forwardedOptions.KnownIPNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"]        = "DENY";
+
+    if (context.Request.IsHttps)
+        headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+
+    headers["Content-Security-Policy"] =
+        "default-src 'self'; script-src 'self'; style-src 'self'; form-action 'self'; frame-ancestors 'none';";
+
+    await next();
+});
+
+app.UseStaticFiles();
+app.UseCors("SPA");
+app.UseMiddleware<TokenCookieMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.UseRateLimiter();
+
+app.MapDefaultControllerRoute();
 app.Run();
+
+async Task SeedOpenIddictClientAsync(IServiceProvider services)
+{
+    var manager = services.GetRequiredService<IOpenIddictApplicationManager>();
+
+    var existing = await manager.FindByClientIdAsync("pmo-spa");
+    if (existing != null)
+    {
+        await manager.DeleteAsync(existing);
+    }
+
+    var descriptor = new OpenIddictApplicationDescriptor
+    {
+        ClientId    = "pmo-spa",
+        DisplayName = "PMO SPA",
+        RedirectUris           = { new Uri("https://localhost:9000/auth/callback") },
+        PostLogoutRedirectUris = { new Uri("https://localhost:9000/") }
+    };
+
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Token);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.EndSession);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Revocation);
+
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.ResponseTypes.Code);
+
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.OpenId);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Profile);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Email);
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.OfflineAccess);
+
+    descriptor.Permissions.Add("scp:projects.read");
+    descriptor.Permissions.Add("scp:projects.write");
+
+    descriptor.Requirements.Add(OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange);
+
+    await manager.CreateAsync(descriptor);
+}

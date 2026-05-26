@@ -17,5 +17,15 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
         public async Task<IEnumerable<Iteration>> GetIterationsByProjectAsync(int projectId)
             => await _iterationRepository.GetIterationsByProjectAsync(projectId);
+
+        public async Task<int> GetProjectIdAsync(int iterationId)
+        {
+            var iteration = await _iterationRepository.GetByIdAsync(iterationId);
+
+            if (iteration == null)
+                throw new KeyNotFoundException("Iteration not found");
+
+            return iteration.ProjectId;
+        }
     }
 }

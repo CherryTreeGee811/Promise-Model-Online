@@ -1,0 +1,276 @@
+===== FILE: auth/change-password.html =====
+<h1 id="form-title">Change Password</h1>
+<div class="form-div">
+    <form id="change-password-form">
+        <label id="current-password-label" for="current-password-input">Current Password:</label>
+        <input id="current-password-input" type="password" name="current-password" required>
+
+        <label id="new-password-label" for="new-password-input">New Password:</label>
+        <input id="new-password-input" type="password" name="new-password" required>
+
+        <label id="confirm-password-label" for="confirm-password-input">Confirm New Password:</label>
+        <input id="confirm-password-input" type="password" name="confirm-password" required>
+
+        <input id="change-password-btn" name="change-password-btn" type="button" value="Change Password">
+    </form>
+    <p id="error-text"></p>
+    <p id="success-text"></p>
+</div>
+
+
+
+===== FILE: dump_project.sh =====
+#!/usr/bin/env bash
+
+OUTPUT_FILE="project_dump.txt"
+ROOT_DIR="$(pwd)"
+
+# Clear output file
+> "$OUTPUT_FILE"
+
+echo "Dumping project from: $ROOT_DIR"
+echo ""
+
+find "$ROOT_DIR" -type f \
+  ! -path "*/.git/*" \
+  ! -path "*/bin/*" \
+  ! -path "*/obj/*" \
+  ! -path "*/node_modules/*" \
+  | sort | while read -r file; do
+
+    rel_path="${file#$ROOT_DIR/}"
+
+    echo "===== FILE: $rel_path =====" >> "$OUTPUT_FILE"
+
+    # Only dump text files
+    if file "$file" | grep -qE 'text|JSON|XML|ASCII|UTF-8'; then
+        cat "$file" >> "$OUTPUT_FILE"
+    else
+        echo "[BINARY FILE SKIPPED]" >> "$OUTPUT_FILE"
+    fi
+
+    echo -e "\n\n" >> "$OUTPUT_FILE"
+done
+
+echo "✅ Dump completed: $OUTPUT_FILE"
+
+
+===== FILE: epics/detail.html =====
+<h1>Epic Detail</h1>
+<div id="epic-detail-content">
+    <p id="loading-text">Loading epic...</p>
+</div>
+<p id="error-text"></p>
+
+
+===== FILE: flows/detail.html =====
+<h1>Flow Detail</h1>
+<div id="flow-detail-content">
+    <p id="loading-text">Loading flow...</p>
+</div>
+<p id="error-text"></p>
+
+
+===== FILE: home.html =====
+﻿<h1 id="title-head">Welcome to the Promise Model Online</h1>
+
+<p>
+    Promise Model Online helps students, professors, and project teams organize work through the five-level Promise Stack, with comments, @mentions, strides, imports, and exports built into one web-based workspace. 
+</p>
+
+<br/>
+<h2 id="subtitle-head">Product overview</h2>
+<p>The app is designed to support the documented SRS flows: create the stack, collaborate on items, manage strides, and share progress through a single browser-based interface.</p>
+
+<br/>
+
+
+===== FILE: invitations/list.html =====
+<h1>Pending Invitations</h1>
+<p id="error-text"></p>
+<p id="loading-text">Loading invitations…</p>
+<div id="invitations-list"></div>
+
+
+===== FILE: iterations/list.html =====
+<h1>Iteration History</h1>
+<p id="error-text"></p>
+<p id="loading-text">Loading iterations…</p>
+<div id="iterations-list"></div>
+
+<div id="iteration-detail" class="hidden">
+    <h2 id="iteration-title"></h2>
+    <div id="iteration-burndown-container">
+        <h3>Iteration Burndown</h3>
+        <canvas class="burndown-canvas" id="iteration-burndown-canvas" width="400" height="200"></canvas>
+    </div>
+    <h3>Strides</h3>
+    <div id="stride-details"></div>
+    <button id="back-to-iterations-btn" class="back-btn">← Back to iterations</button>
+</div>
+
+
+===== FILE: journeys/detail.html =====
+<h1>Journey Detail</h1>
+<div id="journey-detail-content">
+    <p id="loading-text">Loading journey...</p>
+</div>
+<p id="error-text"></p>
+
+
+===== FILE: moments/detail.html =====
+<h1>Moment Detail</h1>
+<div id="moment-detail-content">
+    <p id="loading-text">Loading moment...</p>
+</div>
+<p id="error-text"></p>
+
+
+===== FILE: moments/my-tasks.html =====
+<h1>My Tasks</h1>
+<p id="error-text"></p>
+<p id="loading-text">Loading your tasks…</p>
+<div id="my-tasks-content"></div>
+
+
+===== FILE: navigation/anonymous.html =====
+<li class="main-menu-item">
+    <a href="https://localhost:8060/Login/Index" id="login-link" class="main-menu-link">Login</a>
+</li>
+<li class="main-menu-item">
+    <a href="https://localhost:8060/Account/Register" id="register-link" class="main-menu-link">Register</a>
+</li>
+
+
+===== FILE: navigation/authenticated.html =====
+<li class="main-menu-item">
+    <a class="main-menu-link" id="projects-link" href="/projects">Projects</a>
+</li>
+<li class="main-menu-item">
+    <a class="main-menu-link" id="change-password-link" href="/auth/change-password">Change Password</a>
+</li>
+<li class="main-menu-item">
+    <a class="main-menu-link" id="notifications-link" href="/notifications">
+        Notifications <span id="notification-badge" class="badge">0</span>
+    </a>
+</li>
+<li class="main-menu-item">
+    <a class="main-menu-link" id="logout-link" href="/auth/logout">Logout</a>
+</li>
+<li class="main-menu-item">
+    <a class="main-menu-link" id="my-tasks-link" href="/moments/my-tasks">My Tasks</a>
+</li>
+<li class="main-menu-item">
+    <a class="main-menu-link" id="invitations-link" href="/invitations">Invitations</a>
+</li>
+
+
+===== FILE: notifications/list.html =====
+<h1>Notifications</h1>
+<p id="error-text"></p>
+<p id="loading-text">Loading notifications…</p>
+<div id="notifications-list"></div>
+
+
+===== FILE: project_dump.txt =====
+
+
+
+===== FILE: projects/add.html =====
+<h1>Add Project</h1>
+
+<div class="form-div">
+    <h1>Create Project</h1>
+    <form id="add-project-form">
+        <label id="project-name-label" for="project-name-input">Name:</label>
+        <input id="project-name-input" type="text" name="name" required maxlength="200" placeholder="Enter project name">
+
+        <label id="project-description-label" for="project-description-input">Description:</label>
+        <textarea id="project-description-input" name="description" maxlength="1000" placeholder="Enter an optional description"></textarea>
+
+        <button id="create-project-btn" type="submit">Create Project</button>
+        <a href="/projects" id="cancel-add-project-link">Cancel</a>
+    </form>
+
+    <p id="error-text"></p>
+    <p id="loading-text"></p>
+    <p id="success-text"></p>
+</div>
+
+
+===== FILE: projects/graph.html =====
+<h1>Project Graph</h1>
+
+<p id="error-text"></p>
+<p id="loading-text"></p>
+<p id="success-text"></p>
+
+<div id="graph-filter-bar" class="graph-filter-bar">
+    <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
+</div>
+
+<div id="graph-viewport" class="graph-viewport">
+	<div id="graph-content"></div>
+</div>
+
+
+===== FILE: projects/list.html =====
+<h1>Projects</h1>
+
+<p>
+    <a href="/projects/add" id="add-project-link">Add Project</a>
+</p>
+
+<p id="error-text"></p>
+<p id="loading-text"></p>
+<p id="success-text"></p>
+
+<table id="project-list-table">
+    <thead id="project-list-table-head">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="project-list-table-body">
+        <!--Dynamic-->
+    </tbody>
+</table>
+
+
+===== FILE: projects/share.html =====
+<h1>Project Access</h1>
+<p id="error-text"></p>
+<p id="loading-text">Loading permissions…</p>
+<p id="success-text"></p>
+<div id="permissions-section"></div>
+
+
+===== FILE: promises/detail.html =====
+<h1>Product Promise Detail</h1>
+<div id="promise-detail-content">
+    <p id="loading-text">Loading promise…</p>
+</div>
+<p id="error-text"></p>
+
+
+===== FILE: strides/list.html =====
+<h1>Strides &amp; Moments</h1>
+<div id="project-title"></div>
+
+<a href="#" id="iteration-history-link" class="view-btn">Iteration History</a>
+
+<p id="error-text"></p>
+<p id="loading-text">Loading strides...</p>
+<p id="success-text"></p>
+
+<div id="stride-board">
+    <!-- Dynamic: stride cards with moments -->
+</div>
+
+<div id="backlog-section">
+    <!-- Dynamic: backlog moments -->
+</div>
+
+

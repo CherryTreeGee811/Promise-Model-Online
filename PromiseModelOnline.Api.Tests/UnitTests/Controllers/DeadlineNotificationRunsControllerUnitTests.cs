@@ -1,10 +1,11 @@
+using System.Threading.Tasks;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
-using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
 {
@@ -18,11 +19,20 @@ namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
         public void SetUp()
         {
             _strideServiceMock = new Mock<IStrideService>();
-            _controller = new DeadlineNotificationRunsController(_strideServiceMock.Object)
+
+            _controller = new DeadlineNotificationRunsController(
+                _strideServiceMock.Object
+            );
+
+            // ✅ FIX: add authenticated user
+            _controller.ControllerContext = new ControllerContext
             {
-                ControllerContext = new ControllerContext
+                HttpContext = new DefaultHttpContext
                 {
-                    HttpContext = new DefaultHttpContext()
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.Email, "user@test.com")
+                    }, "test"))
                 }
             };
         }
@@ -37,7 +47,10 @@ namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
             var result = await _controller.Create();
 
             Assert.That(result, Is.InstanceOf<NoContentResult>());
-            _strideServiceMock.Verify(s => s.SendDeadlineNotificationsAsync(), Times.Once);
+
+            _strideServiceMock.Verify(
+                s => s.SendDeadlineNotificationsAsync(),
+                Times.Once);
         }
     }
 }

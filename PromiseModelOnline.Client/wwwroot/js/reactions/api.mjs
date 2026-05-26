@@ -1,15 +1,12 @@
-import { authFetch, base } from '../api.mjs';
+import { get, post, patch, del } from '../api.mjs';
 
 /*
 ====================================
 GET REACTIONS
 ====================================
 */
-export async function getReactions(parentType, parentId) {
-    const res = await authFetch(`${base}/api/reactions?type=${parentType}&itemId=${parentId}`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+export function getReactions(parentType, parentId) {
+    return get(`/reactions?type=${parentType}&itemId=${parentId}`);
 }
 
 /*
@@ -17,21 +14,12 @@ export async function getReactions(parentType, parentId) {
 CREATE REACTION
 ====================================
 */
-export async function createReaction(parentType, parentId, emote) {
-    const res = await authFetch(`${base}/api/reactions`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            emote,
-            stackItemType: parentType,
-            stackItemId: parentId
-        })
+export function createReaction(parentType, parentId, emote) {
+    return post(`/reactions`, {
+        emote,
+        stackItemType: parentType,
+        stackItemId: parentId
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
 /*
@@ -39,17 +27,10 @@ export async function createReaction(parentType, parentId, emote) {
 UPDATE REACTION
 ====================================
 */
-export async function updateReaction(reactionId, emote) {
-    const res = await authFetch(`${base}/api/reactions/${reactionId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ emote })
+export function updateReaction(reactionId, emote) {
+    return patch(`/reactions/${reactionId}`, {
+        emote
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
 }
 
 /*
@@ -57,10 +38,6 @@ export async function updateReaction(reactionId, emote) {
 DELETE REACTION
 ====================================
 */
-export async function deleteReaction(reactionId) {
-    const res = await authFetch(`${base}/api/reactions/${reactionId}`, {
-        method: 'DELETE'
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+export function deleteReaction(reactionId) {
+    return del(`/reactions/${reactionId}`);
 }

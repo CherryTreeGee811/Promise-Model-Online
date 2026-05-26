@@ -1,35 +1,117 @@
-using Microsoft.OpenApi;
-using PromiseModelOnline.Api.Extensions;
-using System.Text.Json.Serialization;
-using System.Security.Cryptography.X509Certificates;
-using System.IO;
 using Microsoft.EntityFrameworkCore;
-using PromiseModelOnline.Api.DAL;
-using PromiseModelOnline.Api.DAL.Interfaces;
-using PromiseModelOnline.Api.Filters;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using PromiseModelOnline.Api.DAL;
+using PromiseModelOnline.Api.Extensions;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using PromiseModelOnline.Api.Hubs;
 
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
 var builder = WebApplication.CreateBuilder(args);
-var config = builder.Configuration;
 
+// ---------- CORS -------------------------------------------------------
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-        policy =>
-        {
-            policy
-            .AllowAnyOrigin()
-            .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-            .AllowAnyHeader();
-        });
+    options.AddPolicy("SPA", policy =>
+    {
+        policy.WithOrigins("https://localhost:9000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
 
-// Configure Kestrel to use SSL with PEM files when available; otherwise fall back to HTTP
+// ---------- Database & scoped services ---------------------------------
+var connectionString = builder.Configuration.GetConnectionString("MSSQL");
+
+if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("Password_FILE="))
+{
+    var parts = connectionString
+        .Split(';', StringSplitOptions.RemoveEmptyEntries)
+        .ToList();
+
+    for (int i = 0; i < parts.Count; i++)
+    {
+        if (parts[i].StartsWith("Password_FILE=", StringComparison.OrdinalIgnoreCase))
+        {
+            var filePath = parts[i].Substring("Password_FILE=".Length);
+
+            if (File.Exists(filePath))
+            {
+                var password = File.ReadAllText(filePath).Trim();
+                parts[i] = $"Password={password}";
+            }
+        }
+    }
+
+    connectionString = string.Join(';', parts);
+    builder.Configuration["ConnectionStrings:MSSQL"] = connectionString;
+}
+
+builder.Services.AddDbContext<PromiseModelOnlineContext>(options =>
+    options.UseSqlServer(connectionString));
+    
+builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
+
+// ---------- Authentication (OpenIddict JWT validation) -----------------
+builder.Services.AddAuthentication()
+    .AddJwtBearer(options =>
+    {
+        options.Authority = builder.Configuration["JwtSettings:Issuer"];
+        options.Audience = builder.Configuration["JwtSettings:Audience"];
+
+        options.RequireHttpsMetadata = true;
+
+        // ✅ Slight hardening
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+
+        // ✅ Helpful debugging (optional but recommended)
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var scopes = context.Principal?.FindAll("scope");
+
+                if (scopes == null || !scopes.Any())
+                {
+                    // Fail fast — no scopes in token
+                    context.Fail("Token missing scopes");
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+// ---------- Authorization (SCOPE POLICIES) -----------------------------
+builder.Services.AddAuthorization(options =>
+{
+    // ✅ READ access
+    options.AddPolicy("Projects.Read", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("scope", "projects.read");
+    });
+
+    // ✅ WRITE access
+    options.AddPolicy("Projects.Write", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("scope", "projects.write");
+    });
+});
+
+// ---------- HTTPS / Kestrel --------------------------------------------
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
 var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
+
 if (File.Exists(certPath) && File.Exists(keyPath))
 {
     builder.WebHost.ConfigureKestrel(options =>
@@ -44,109 +126,48 @@ if (File.Exists(certPath) && File.Exists(keyPath))
 else
 {
     var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://+:8000";
-    if (urls.Contains("https://")) urls = urls.Replace("https://", "http://");
     builder.WebHost.UseUrls(urls);
 }
 
-builder.Services.AddAuthentication(x => 
-{
-    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(x => {
-    x.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = config["JwtSettings:Issuer"],
-        ValidAudience = config["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey
-            (Encoding.UTF8.GetBytes(config["JwtSettings:Key"]!)),
-    };
-});
-builder.Services.AddAuthorization();
-
-builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
-builder.Services.AddControllers(options =>
-    {
-        options.Filters.Add<AuditLoggingActionFilter>();
-    })
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>{
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "Enter your JWT token",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
-
-    // Use the new overload that takes a document parameter
-    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-    });
-});
+// ---------- MVC & background services ----------------------------------
+builder.Services.AddControllers();
+builder.Services.AddSignalR();
+builder.Services.AddHostedService<StrideAutomationService>();
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Testing"))
-{
-    app.ApplyMigrations();
+app.ApplyMigrations();
 
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
-        var logger = scope.ServiceProvider
-            .GetRequiredService<ILoggerFactory>()
-            .CreateLogger("PromiseHierarchySeeder");
-
-        logger.LogInformation("Running Promise hierarchy seed...");
-
-        var authClient = scope.ServiceProvider.GetRequiredService<IAuthClient>();
-
-        await PromiseHierarchySeeder.SeedAsync(
-            dbContext,
-            app.Environment.ContentRootPath,
-            logger,
-            authClient);
-
-        logger.LogInformation("Migration and seed startup step complete.");
-    }
-}
-
-app.UseCors(MyAllowSpecificOrigins);
-
-// Configure the HTTP request pipeline.
+// ---------- Development Seed ------------------------------------------
 if (app.Environment.IsDevelopment())
 {
-     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api Server");
-        c.RoutePrefix = string.Empty;
-        var registrationKey = app.Configuration["Auth:RegistrationKey"];
-
-        if (!string.IsNullOrEmpty(registrationKey))
-        {
-            // Escape single quotes so the JavaScript string is valid
-            var escapedKey = registrationKey.Replace("'", "\\'");
-            c.UseRequestInterceptor($"(req) => {{ req.headers['X-Registration-Key'] = '{escapedKey}'; return req; }}");
-        }
-    });
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+    var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await PromiseHierarchySeeder.SeedAsync(db, env.ContentRootPath, logger);
 }
 
-app.UseHttpsRedirection();
+// ---------- Security headers -------------------------------------------
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+
+    if (context.Request.IsHttps)
+        context.Response.Headers["Strict-Transport-Security"] =
+            "max-age=31536000; includeSubDomains";
+
+    await next();
+});
+
+// ---------- Middleware pipeline ---------------------------------------
+app.UseCors("SPA");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

@@ -1,0 +1,22 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/token",
+    "bodyPatterns": [
+      { "contains": "grant_type=refresh_token" }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "https://localhost:9000",
+      "Access-Control-Allow-Credentials": "true"
+    },
+    "jsonBody": {
+      "access_token": "owner-token-fixed",
+      "token_type": "Bearer",
+      "expires_in": 3600
+    }
+  }
+}
