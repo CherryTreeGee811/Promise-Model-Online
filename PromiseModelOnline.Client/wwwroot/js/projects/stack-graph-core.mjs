@@ -11,6 +11,7 @@ export const FOREHEAD_GAP = 88;
 
 export const COMPACT_STEP_GAP_X = 400;
 export const COMPACT_STEP_GAP_Y = 180;
+export const COMPACT_MIN_TIER_GAP_Y = 72;
 export const COMPACT_FOREHEAD_GAP = 40;
 export const COMPACT_MIN_TIER_GAP = 140;
 /** Largest cards when the detail page shows the fewest tiers (promise). */
@@ -334,7 +335,6 @@ function getRenderedNodePosition(node, contentOffsetX, contentOffsetY) {
 
 function createFocusTransform(d3, viewportWidth, viewportHeight, node, contentOffsetX, contentOffsetY, scale = 1.5) {
     if (!node) return null;
-
     const targetScale = Math.max(0.5, Math.min(2.5, scale));
     const position = getRenderedNodePosition(node, contentOffsetX, contentOffsetY);
 
@@ -342,6 +342,26 @@ function createFocusTransform(d3, viewportWidth, viewportHeight, node, contentOf
         .translate(viewportWidth / 2, viewportHeight / 2)
         .scale(targetScale)
         .translate(-position.x, -position.y);
+}
+
+function getCompactLayoutProfile(visibleCount, viewportWidth, viewportHeight) {
+    // Explicit presets tuned for the detail pages (1..5 visible cards)
+    // Provide nodeScale and suggested min gaps; fall back to defaults if out of range.
+    const presets = {
+        // Promise detail
+        1: { nodeScale: 1.10, minGapX: 340, minGapY: 100, forehead: COMPACT_FOREHEAD_GAP, anchorOffsetX: -10, anchorOffsetY: -8 },
+        // Epic detail
+        2: { nodeScale: 1.10, minGapX: 340, minGapY: 100, forehead: COMPACT_FOREHEAD_GAP, anchorOffsetX: -20, anchorOffsetY: 0 },
+        // Journey detail
+        3: { nodeScale: 0.98, minGapX: 320, minGapY: 92, forehead: COMPACT_FOREHEAD_GAP, anchorOffsetX: 0, anchorOffsetY: 0 },
+        // Flow detail
+        4: { nodeScale: 0.94, minGapX: 320, minGapY: 96, forehead: COMPACT_FOREHEAD_GAP, anchorOffsetX: 0, anchorOffsetY: 0 },
+        // Moment detail
+        5: { nodeScale: 0.94, minGapX: 300, minGapY: 96, forehead: COMPACT_FOREHEAD_GAP, anchorOffsetX: -150, anchorOffsetY: -10 },
+    };
+
+    const key = Math.max(1, Math.min(5, visibleCount));
+    return presets[key] ?? presets[3];
 }
 
 /**
@@ -618,32 +638,54 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
     const viewportWidth = viewportSize.width || contentDiv.clientWidth || 0;
     const viewportHeight = viewportSize.height || contentDiv.clientHeight || 0;
 
+    // Determine compact layout profile when in compact detail mode. This drives node scale
+    // and both X/Y tier gaps so small containers don't produce overlapping cards.
     let stepGapX = compact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
-    const stepGapY = compact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
-    const foreheadGap = compact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
+    let stepGapY = compact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
+    let foreheadGap = compact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
 
-    const cardScale = uniformNodeScale ?? 1;
+    // Default card scale; may be overridden for compact detail pages by the profile
+    let cardScale = uniformNodeScale ?? 1;
+    if (compact) {
+        const visibleCount = countRenderableNodes(treeData);
+        const profile = getCompactLayoutProfile(visibleCount, viewportWidth, viewportHeight);
+        cardScale = profile.nodeScale ?? cardScale;
+        stepGapY = profile.minGapY ?? stepGapY;
+        foreheadGap = profile.forehead ?? foreheadGap;
 
-    if (compact && maxDepth > 0 && viewportWidth > 0) {
-        const usableWidth = Math.max(
-            viewportWidth - margin.left - margin.right - (CARD_WIDTH * cardScale),
-            CARD_WIDTH,
-        );
-        stepGapX = Math.max(usableWidth / maxDepth, COMPACT_MIN_TIER_GAP);
+        if (maxDepth > 0 && viewportWidth > 0) {
+            const usableWidth = Math.max(
+                viewportWidth - margin.left - margin.right - (CARD_WIDTH * cardScale),
+                CARD_WIDTH,
+            );
+            stepGapX = Math.max(usableWidth / maxDepth, profile.minGapX ?? COMPACT_MIN_TIER_GAP);
+        }
+
+        // Also compress vertical spacing when the viewport height is small
+        if (maxDepth > 0 && viewportHeight > 0) {
+            const usableHeight = Math.max(
+                viewportHeight - margin.top - margin.bottom - (CARD_HEIGHT * cardScale) - foreheadGap,
+                CARD_HEIGHT,
+            );
+            // distribute usableHeight across tiers, but don't go below a small minimum
+            stepGapY = Math.max(Math.floor(usableHeight / Math.max(1, maxDepth)), COMPACT_MIN_TIER_GAP_Y);
+        }
     }
 
     const treeLayout = d3.tree().nodeSize([stepGapY, stepGapX]);
     treeLayout(root);
 
     const descendants = root.descendants();
-    const renderable = descendants;
+    // Hide the root/project card in detail-mode renderables so the project promise card
+    // does not take up visual space in the detail stack.
+    const renderable = descendants.filter(node => node.data?.nodeType !== 'root');
 
     if (renderable.length === 0) {
         renderEmptyState(contentDiv, emptyMessage);
         return null;
     }
 
-    const links = root.links();
+    const links = root.links().filter(l => l.source?.data?.nodeType !== 'root' && l.target?.data?.nodeType !== 'root');
     const resolvedFocusNodeId = focusNodeId ?? focusNodeData?.id ?? null;
     const scaledCardWidth = CARD_WIDTH * cardScale;
     const scaledCardHeight = CARD_HEIGHT * cardScale;
@@ -706,7 +748,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         projectId,
         focusNodeId: resolvedFocusNodeId,
         onContextMenu,
-        uniformNodeScale: compact ? uniformNodeScale : null,
+        uniformNodeScale: compact ? cardScale : null,
     };
 
     if (enableZoom) {
@@ -762,7 +804,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         }
 
         const focusTransform = focusedHierarchyNode
-            ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode, contentOffsetX, contentOffsetY)
+            ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode, contentOffsetX, contentOffsetY, cardScale)
             : null;
         const fitTransform = d3.zoomIdentity
             .translate(
@@ -809,7 +851,8 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
                     Math.max(measuredHeight, 1),
                     focusedHierarchyNode,
                     contentOffsetX,
-                    contentOffsetY
+                    contentOffsetY,
+                    cardScale
                 );
 
                 if (!refinedTransform) return;
@@ -835,12 +878,44 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
             viewportHeight > 0 ? viewportHeight / graphHeight : 1,
             1
         );
-        const fitTransform = d3.zoomIdentity
+        // For compact non-zoom mode prefer a deterministic anchor-centered transform
+        // based on visible nodes so detail pages center predictably.
+        let fitTransform = d3.zoomIdentity
             .translate(
                 viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
                 viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0
             )
             .scale(initialScale);
+
+        if (compact) {
+            // Choose anchor: middle card for odd counts, midpoint between middle two for even
+            const ordered = [...renderable].sort((a, b) => (a.y || 0) - (b.y || 0));
+            if (ordered.length > 0) {
+                const mid = Math.floor((ordered.length - 1) / 2);
+                let anchors = [];
+                if (ordered.length % 2 === 1) {
+                    anchors = [ordered[mid]];
+                } else {
+                    anchors = [ordered[mid], ordered[mid + 1]];
+                }
+
+                const anchorPos = anchors.reduce((acc, node) => {
+                    const pos = getRenderedNodePosition(node, contentOffsetX, contentOffsetY);
+                    acc.x += pos.x; acc.y += pos.y; return acc;
+                }, { x: 0, y: 0 });
+                anchorPos.x /= anchors.length; anchorPos.y /= anchors.length;
+
+                // Apply any profile-specified anchor offsets (helps nudge centering)
+                const profile = getCompactLayoutProfile(ordered.length, viewportWidth, viewportHeight) || {};
+                anchorPos.x += profile.anchorOffsetX ?? 0;
+                anchorPos.y += profile.anchorOffsetY ?? 0;
+
+                fitTransform = d3.zoomIdentity
+                    .translate(viewportWidth / 2, viewportHeight / 2)
+                    .scale(cardScale)
+                    .translate(-anchorPos.x, -anchorPos.y);
+            }
+        }
 
         graphLayer.attr('transform', fitTransform);
         appendGraphNodes(d3, graphLayer, renderable, links, nodeOptions);
