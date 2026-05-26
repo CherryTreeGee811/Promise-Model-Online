@@ -1,0 +1,28 @@
+{
+  "priority": 1,
+  "scenarioName": "comment-scenario",
+  "requiredScenarioState": "Started",
+  "newScenarioState": "AfterPost",
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/comments"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    },
+    "jsonBody": {
+      "id": 2,
+      "text": "New comment",
+      "createdAt": "2026-05-20T00:00:00Z",
+      "userName": "pmo_test",
+      "mentionedUsers": [],
+      "parentCommentId": null,
+      "replies": []
+    }
+  }
+}

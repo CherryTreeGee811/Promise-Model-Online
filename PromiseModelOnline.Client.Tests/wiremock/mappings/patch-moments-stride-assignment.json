@@ -1,0 +1,15 @@
+{
+  "priority": 1,
+  "scenarioName": "move-moment-100",
+  "requiredScenarioState": "Started",
+  "newScenarioState": "moved-100-20",
+  "request": {
+    "method": "PATCH",
+    "urlPathPattern": "/api/moments/100/stride-assignment"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language", "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS" },
+    "bodyFileName": "moments-after-move-100-to-20.json"
+  }
+}

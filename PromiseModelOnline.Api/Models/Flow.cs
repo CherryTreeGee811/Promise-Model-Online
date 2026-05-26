@@ -7,6 +7,9 @@ public class Flow
 {
     [Key]
     public int Id { get; set; }
+
+    [NotMapped]
+    public string Type => "Flow";
         
     [Required]
     [MaxLength(500)]
@@ -27,7 +30,7 @@ public class Flow
         
     //TODO: Enum for glyph colours?
     [MaxLength(20)]
-    public string StatusColor { get; set; } = "red";
+    public string StatusColor { get; set; } = "red"; // red, orange, black, green
         
     // Navigation properties
     [ForeignKey("JourneyId")]

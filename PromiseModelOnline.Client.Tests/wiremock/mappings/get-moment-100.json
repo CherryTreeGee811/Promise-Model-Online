@@ -1,0 +1,25 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/moments/100",
+    "headers": {
+      "Authorization": {
+        "equalTo": "Bearer owner-token-fixed"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": 100,
+      "statement": "Moment 100",
+      "type": "Task",
+      "status": "Todo",
+      "effortEstimate": "M",
+      "ownerId": 1,
+      "assignedStrideId": 10
+    }
+  }
+}

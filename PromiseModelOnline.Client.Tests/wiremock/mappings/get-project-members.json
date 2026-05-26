@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/projects/1/members"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      { "userId": 1, "userName": "pmo_test", "email": "pmo@test.com" },
+      { "userId": 2, "userName": "other_user", "email": "other@test.com" }
+    ]
+  }
+}

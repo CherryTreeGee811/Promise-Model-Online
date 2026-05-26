@@ -1,0 +1,23 @@
+services:
+  promisemodelonline.client:
+    container_name: promisemodelonlineclient
+    hostname: localhost
+    ports:
+      - "9000:9000/tcp"
+    build:
+      context: ../..
+      dockerfile: PromiseModelOnline.Client/Dockerfile
+    depends_on:
+      - promisemodelonline.api.mock
+
+  promisemodelonline.api.mock:
+    image: wiremock/wiremock:latest
+    container_name: promisemodelonlineapimock
+    ports:
+      - "8000:8000/tcp"
+    command: >
+      --https-port 8000
+      --verbose
+    volumes:
+      - ../../PromiseModelOnline.Client.Tests/wiremock/mappings:/home/wiremock/mappings:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock/__files:/home/wiremock/__files:ro

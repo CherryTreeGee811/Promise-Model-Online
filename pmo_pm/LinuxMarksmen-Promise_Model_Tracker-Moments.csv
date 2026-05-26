@@ -1,0 +1,498 @@
+Moment ID,Moment Promise ID,Parent Flow ID,Moment Promise Statement,Acceptance / Evidence (optional),Notes,Assigned Stride ID
+1,MO-0001,FL-0001,"User clicks ""Add Promise"" button",,Add a Product Promise to the project,1
+2,MO-0002,FL-0001,System displays Promise creation form,,,1
+3,MO-0003,FL-0001,User enters Promise statement,,,1
+4,MO-0004,FL-0001,"User clicks ""Save"" button",,,1
+5,MO-0005,FL-0001,System confirms Promise created and displays in stack,,,1
+6,MO-0006,FL-0002,User navigates to a specific Promise,,,1
+7,MO-0007,FL-0002,"User clicks ""Add Epic"" button",,,1
+8,MO-0008,FL-0002,System displays Epic creation form,,,1
+9,MO-0009,FL-0002,User enters Epic statement,,,1
+10,MO-0010,FL-0002,"User clicks ""Save"" button",,,1
+11,MO-0011,FL-0002,System confirms Epic created and displays under its Promise,,,1
+12,MO-0012,FL-0003,User navigates to a specific Epic,,,1
+13,MO-0013,FL-0003,"User clicks ""Add Journey"" button",,,1
+14,MO-0014,FL-0003,System displays Journey creation form,,,1
+15,MO-0015,FL-0003,User enters Journey statement,,,1
+16,MO-0016,FL-0003,"User clicks ""Save"" button",,,1
+17,MO-0017,FL-0003,System confirms Journey created and displays under its Epic,,,1
+18,MO-0018,FL-0004,User navigates to a specific Journey,,,1
+19,MO-0019,FL-0004,"User clicks ""Add Flow"" button",,,1
+20,MO-0020,FL-0004,System displays Flow creation form,,,1
+21,MO-0021,FL-0004,User enters Flow statement,,,1
+22,MO-0022,FL-0004,"User clicks ""Save"" button",,,1
+23,MO-0023,FL-0004,System confirms Flow created and displays under its Journey,,,1
+24,MO-0024,FL-0005,User navigates to a specific Flow,,,1
+25,MO-0025,FL-0005,"User clicks ""Add Moment"" button",,,1
+26,MO-0026,FL-0005,System displays Moment creation form,,,1
+27,MO-0027,FL-0005,User selects Moment type,,,1
+28,MO-0028,FL-0005,User enters Moment statement,,,1
+29,MO-0029,FL-0005,"User clicks ""Save"" button",,,1
+30,MO-0030,FL-0005,System confirms Moment created and displays under its Flow,,,1
+31,MO-0031,FL-0006,"User clicks ""Share"" button",,,1
+32,MO-0032,FL-0006,System displays Share form,,,1
+33,MO-0033,FL-0006,User enters teammate's email address,,,1
+34,MO-0034,FL-0006,User selects permission level,,,1
+35,MO-0035,FL-0006,"User clicks ""Send Invitation"" button",,,1
+36,MO-0036,FL-0006,System sends invitation email,,,1
+37,MO-0037,FL-0006,System logs the invitation in project activity,,,1
+38,MO-0038,FL-0006,Teammate accepts invitation,,,1
+39,MO-0039,FL-0007,"Team member clicks ""Add Promise"" button",,,1
+40,MO-0040,FL-0007,System displays Promise creation form,,,1
+41,MO-0041,FL-0007,Team member enters initial Promise statement,,,1
+42,MO-0042,FL-0007,"Team member clicks ""Save"" button",,,1
+43,MO-0043,FL-0007,System displays the new promise in the stack,,,1
+44,MO-0044,FL-0007,Another team member opens the promise for editing,,,1
+45,MO-0045,FL-0007,System displays the promise with edit controls,,,1
+46,MO-0046,FL-0007,Team member updates the promise statement,,,1
+47,MO-0047,FL-0007,"Team member clicks ""Save"" to commit changes",,,1
+48,MO-0048,FL-0007,System confirms the promise was updated,,,1
+49,MO-0049,FL-0008,Team member opens a specific promise,,,1
+50,MO-0050,FL-0008,System displays promise with reaction options,,,1
+51,MO-0051,FL-0008,"Team member votes whether they approve of the promise by selecting an emote (e.g., thumbs up or thumbs down)",,,1
+52,MO-0052,FL-0008,Team members add comments describing either their approval or disapproval,,,1
+53,MO-0053,FL-0008,Team lead leaves or updates the promise based on the feedback and reactions,,,1
+54,MO-0054,FL-0009,User opens a project from the project navigation page,,,1
+55,MO-0055,FL-0009,System displays the view Strides page by default,,,1
+56,MO-0056,FL-0009,User scans the stride list and notices a specific Moment,,,1
+57,MO-0057,FL-0009,User clicks on the Moment to open its detail view,,,1
+58,MO-0058,FL-0009,System displays the Moment detail page,,,1
+59,MO-0059,FL-0009,User clicks the parent Flow ID link,,,1
+60,MO-0060,FL-0009,System navigates to the Flow detail page,,,1
+61,MO-0061,FL-0009,User clicks the parent Journey ID link from the Flow page,,,1
+62,MO-0062,FL-0009, System navigates to the Journey detail page,,,1
+63,MO-0063,FL-0009,User clicks the parent Epic ID link from the Journey page,,,1
+64,MO-0064,FL-0009,System navigates to the Epic detail page,,,1
+65,MO-0065,FL-0009,User clicks the parent Epic ID link from the Journey page,,,1
+66,MO-0066,FL-0009,System navigates to the Epic detail page,,,1
+67,MO-0067,FL-0009,User clicks the parent Promise ID link from the Epic page,,,1
+68,MO-0068,FL-0009,System navigates to the Product Promise detail page,,,1
+69,MO-0069,FL-0009,"User clicks a ""Back to Stride"" button",,,1
+70,MO-0070,FL-0009,System returns to the view Strides page,,,1
+71,MO-0071,FL-0009,User navigates to an item they want to edit,,,1
+72,MO-0072,FL-0010,User clicks the pencil icon,,,1
+73,MO-0073,FL-0010,System displays the item in edit mode,,,1
+74,MO-0074,FL-0010,User modifies the item statement,,,1
+75,MO-0075,FL-0010,User optionally updates other editable fields,,,1
+76,MO-0076,FL-0010,"User clicks ""Save"" button",,,1
+77,MO-0077,FL-0010,System validates the input,,,1
+78,MO-0078,FL-0010,System saves the changes,,,1
+79,MO-0079,FL-0010,System displays a success confirmation,,,1
+80,MO-0080,FL-0011,User navigates to a specific stack item,,,1
+81,MO-0081,FL-0011,User scrolls to the comments section,,,1
+82,MO-0082,FL-0011,User clicks into the comment input field,,,1
+83,MO-0083,FL-0011,User types their comment,,,1
+84,MO-0084,FL-0011,User optionally mentions a teammate using @,,,1
+85,MO-0085,FL-0011,System displays mention suggestions as the user types,,,1
+86,MO-0086,FL-0011,User selects a teammate from the suggestions,,,1
+87,MO-0087,FL-0011,"User clicks ""Post"" button",,,1
+88,MO-0088,FL-0011,System displays the new comment in the thread,,,1
+89,MO-0089,FL-0011,System sends notifications to mentioned users,,,1
+90,MO-0090,FL-0011,Other team members can view and reply to the comment,,,1
+91,MO-0091,FL-0012,"User encounters an unfamiliar term (i.e., Promise, Epic, Journey, Flow, Moment) in the interface",,,1
+92,MO-0092,FL-0012,User hovers their cursor over the term,,,1
+93,MO-0093,FL-0012,System displays a short tooltip definition,,,1
+94,MO-0094,FL-0012,User reads the tooltip and understands the basic meaning,,,1
+95,MO-0095,FL-0013,"User clicks the ""Help"" option in the main navigation bar",,,1
+96,MO-0096,FL-0013,System displays the help center landing page,,,1
+97,MO-0097,FL-0013,"User navigates to the ""Understanding the Stack"" page",,,1
+98,MO-0098,FL-0013,User scrolls to the item definition of the unfamiliar term,,,1
+99,MO-0099,FL-0013,User navigates back to their project,,,1
+100,MO-0100,FL-0014,"User clicks the ""Help"" option in the main navigation bar",,,1
+101,MO-0101,FL-0014,System displays the help center landing page,,,1
+102,MO-0102,FL-0014,"User navigates to the ""Understanding the Stack"" page",,,1
+103,MO-0103,FL-0014,User scrolls to the examples section for the term,,,1
+104,MO-0104,FL-0014,User navigates back to their project,,,1
+105,MO-0105,FL-0015,"User clicks a ""View Diagram"" link from the project navigation",,,1
+106,MO-0106,FL-0015,System displays a diagram of the full promise stack,,,1
+107,MO-0107,FL-0015,User zooms in or out to see more or less detail,,,1
+108,MO-0108,FL-0015,User closes the diagram and returns to their previous view,,,1
+109,MO-0109,FL-0016,User navigates to any stack item (except promise),,,1
+110,MO-0110,FL-0016,User looks at the item's detail page,,,1
+111,MO-0111,FL-0016,"User clicks ""View Parents"" link",,,1
+112,MO-0112,FL-0016,System displays alert showing item lineage,,,1
+113,MO-0113,FL-0016,User reads the parent chain,,,1
+114,MO-0114,FL-0016,User closes the alert,,,1
+115,MO-0115,FL-0017,User navigates to a promise,,,1
+116,MO-0116,FL-0017,User looks at the promise's detail page,,,1
+117,MO-0117,FL-0017,"User clicks ""View Children"" link",,,1
+118,MO-0118,FL-0017,System displays alert showing children in an ASCII tree diagram,,,1
+119,MO-0119,FL-0017,User reads the diagram,,,1
+120,MO-0120,FL-0017,User closes the alert,,,1
+121,MO-0121,FL-0018,User creates a new account or logs in for the first time,,,
+122,MO-0122,FL-0018,"System displays a welcome modal with a ""Start Tour"" button",,,
+123,MO-0123,FL-0018,"User clicks ""Start Tour""",,,
+124,MO-0124,FL-0018,System highlights key interface elements one by one with explanatory text,,,
+125,MO-0125,FL-0018,"User clicks ""Next"" to advance through each step",,,2
+126,MO-0126,FL-0018,System progresses to the next highlighted element,,,2
+127,MO-0127,FL-0018,"User clicks ""Finish"" on the final step",,,2
+128,MO-0128,FL-0018,System closes the tour and returns the user to their dashboard,,,2
+129,MO-0129,FL-0019,User hovers over a navigation item,,,2
+130,MO-0130,FL-0019,System displays a short descriptive tooltip,,,2
+131,MO-0131,FL-0019,User reads the tooltip,,,2
+132,MO-0132,FL-0019,User moves their cursor away,,,2
+133,MO-0133,FL-0020,"User clicks the ""Help"" option in the main navigation bar",,,2
+134,MO-0134,FL-0020,"User click the ""Site Navigation"" option",,,2
+135,MO-0135,FL-0020,User clicks play on video,,,2
+136,MO-0136,FL-0020,System plays the video,,,2
+137,MO-0137,FL-0020,User watches the video,,,2
+138,MO-0138,FL-0021,"User clicks ""File"" main navigation menu then ""Import Project""",,,2
+139,MO-0139,FL-0021,System displays a file picker dialog,,,2
+140,MO-0140,FL-0021,User selects a project JSON file from their computer,,,2
+141,MO-0141,FL-0021,User selects a JSON file from their computer,,,2
+142,MO-0142,FL-0021,"User clicks ""Open""",,,2
+143,MO-0143,FL-0021,System displays project with data from the file,,,2
+144,MO-0144,FL-0022,"User clicks ""File"" menu then ""Download Project""",,,2
+145,MO-0145,FL-0022,System generates a JSON file containing the full project stack,,,2
+146,MO-0146,FL-0022,System downloads the JSON file,,,2
+147,MO-0147,FL-0023,"User clicks ""Preview Import"" button",,,2
+148,MO-0148,FL-0023,System displays a file picker dialog,,,2
+149,MO-0149,FL-0023,User selects a project JSON file from their computer,,,2
+150,MO-0150,FL-0023,System displays a diagram of the full promise stack,,,2
+151,MO-0151,FL-0023,User zooms in or out to see more or less detail,,,2
+152,MO-0152,FL-0023,User closes the diagram and returns to their previous view,,,2
+153,MO-0153,FL-0024,"Professor clicks ""Create New Project"" button",,,2
+154,MO-0154,FL-0024,System displays project creation form,,,2
+155,MO-0155,FL-0024,Professor enters project name and optional description,,,2
+156,MO-0156,FL-0024,"Professor clicks ""Create"" button",,,2
+157,MO-0157,FL-0024,System creates the project and navigates to it,,,2
+158,MO-0158,FL-0025,Professor opens an existing project,,,2
+159,MO-0159,FL-0025,Professor navigates to a stack item,,,2
+160,MO-0160,FL-0025,System displays stack item details,,,2
+161,MO-0161,FL-0025,Professor clicks set status button,,,2
+162,MO-0162,FL-0025,"System prompts Professor with status options (i.e., draft, complete)",,,2
+163,MO-0163,FL-0025,Professor selects status and exits prompt,,,2
+164,MO-0164,FL-0025,System updates the stack items status,,,2
+165,MO-0165,FL-0026,Professor opens the project they want to export,,,2
+166,MO-0166,FL-0026,"Professor clicks ""File"" menu then ""Export Project""",,,2
+167,MO-0167,FL-0026,System generates a JSON file containing the full project stack,,,2
+168,MO-0168,FL-0026,System downloads the JSON file,,,2
+169,MO-0169,FL-0027,"User clicks ""File"" menu then ""Import Requirements""",,,2
+170,MO-0170,FL-0027,System displays a file picker dialog,,,2
+171,MO-0171,FL-0027,User selects a PDF from their computer,,,2
+172,MO-0172,FL-0027,"User clicks ""Open"" or ""Import""",,,2
+173,MO-0173,FL-0027,System stores file,,,2
+174,MO-0174,FL-0028,"User clicks the ""Documentation"" option in the main navigation menu",,,2
+175,MO-0175,FL-0028,User scrolls to document,,,2
+176,MO-0176,FL-0028,User clicks document,,,2
+177,MO-0177,FL-0028,System displays document,,,2
+178,MO-0178,FL-0028,User enter a comment in the text area bellow the document,,,2
+179,MO-0179,FL-0028,"User clicks the ""Post"" button",,,2
+180,MO-0180,FL-0028,System saves and displays the comment,,,2
+181,MO-0181,FL-0029,"User clicks ""Documents"" or ""Files"" in the main navigation",,,2
+182,MO-0182,FL-0029,System displays a list of all documents across projects,,,2
+183,MO-0183,FL-0029,User clicks into a search bar at the top of the document list,,,2
+184,MO-0184,FL-0029,User types a keyword or phrase,,,2
+185,MO-0185,FL-0029,System filters the document list to show only matches that contain the same text,,,2
+186,MO-0186,FL-0029,User clicks on a document to open and view it,,,2
+187,MO-0187,FL-0029,The system displays the document,,,2
+188,MO-0188,FL-0030,"User clicks a ""Set Stride Duration"" link from the project navigation",,,2
+189,MO-0189,FL-0030,"System displays a prompt asking for months, days, weeks.",,,2
+190,MO-0190,FL-0030,User enters their desired stride length,,,2
+191,MO-0191,FL-0030,User clicks confirm,,,2
+192,MO-0192,FL-0030,System updates the stride durations,,,2
+193,MO-0193,FL-0031,User opens the stride planning view,,,2
+194,MO-0194,FL-0031,User opens a moment from the backlog,,,2
+195,MO-0195,FL-0031,User edits the stride assignment,,,2
+196,MO-0196,FL-0031,"User click ""Save""",,,2
+197,MO-0197,FL-0031,System add the moment to the assigned stride,,,2
+198,MO-0198,FL-0032,User opens the stride planning view,,,2
+199,MO-0199,FL-0032,"User clicks ""Add Moment"" button in the stride",,,2
+200,MO-0200,FL-0032,System displays Moment creation form,,,2
+201,MO-0201,FL-0032,"User enters moment description starting with ""Spike:""",,,2
+202,MO-0202,FL-0032,"User clicks ""Add to Stride"" button",,,2
+203,MO-0203,FL-0032,System adds the moment to the stride,,,2
+204,MO-0204,FL-0033,User opens the view Strides page,,,2
+205,MO-0205,FL-0033,User opens a moment that needs to be moved,,,2
+206,MO-0206,FL-0033,System displays the moment with edit controls,,,2
+207,MO-0207,FL-0033,User updates the stride assignment,,,2
+208,MO-0208,FL-0033,"User clicks the ""Save"" button",,,2
+209,MO-0209,FL-0033,The system updates the moment's assigned Stride,,,2
+210,MO-0210,FL-0034,User opens the view Strides page,,,2
+211,MO-0211,FL-0034,User opens a moment that needs to be moved,,,2
+212,MO-0212,FL-0034,System displays the moment with edit controls,,,2
+213,MO-0213,FL-0034,User updates the stride assignment to nothing,,,2
+214,MO-0214,FL-0034,"User clicks the ""Save"" button",,,2
+215,MO-0215,FL-0034,The system assigns the moment to the backlog,,,2
+216,MO-0216,FL-0035,User opens the view Strides page,,,2
+217,MO-0217,FL-0035,User opens a moment that needs to be updated,,,2
+218,MO-0218,FL-0035,System displays the moment with edit controls,,,2
+219,MO-0219,FL-0035,User updates the moment's status to blocked,,,2
+220,MO-0220,FL-0035,"User clicks the ""Save"" button",,,2
+221,MO-0221,FL-0035,The system assigns blocked status to the moment,,,2
+222,MO-0222,FL-0036,User opens the view Strides page,,,2
+223,MO-0223,FL-0036,User opens a moment from a future stride,,,2
+224,MO-0224,FL-0036,System displays the moment with edit controls,,,2
+225,MO-0225,FL-0036,User updates the stride assignment to the current stride,,,2
+226,MO-0226,FL-0036,"User clicks the ""Save"" button",,,2
+227,MO-0227,FL-0036,The system assigns the moment to the current stride,,,2
+228,MO-0228,FL-0037,User opens the view Strides page,,,2
+229,MO-0229,FL-0037,User opens a moment from the backlog,,,2
+230,MO-0230,FL-0037,System displays the moment with edit controls,,,2
+231,MO-0231,FL-0037,User updates the stride assignment to the current stride,,,2
+232,MO-0232,FL-0037,"User clicks the ""Save"" button",,,2
+233,MO-0233,FL-0037,The system assigns the moment to the current stride,,,2
+234,MO-0234,FL-0038,User opens the view Strides page,,,2
+235,MO-0235,FL-0038,"User clicks the ""Assigned to Me"" option",,,2
+236,MO-0236,FL-0038,System filters the current selection to show only moments assigned to the current user,,,2
+237,MO-0237,FL-0039,User opens the view Strides page,,,2
+238,MO-0238,FL-0039,User opens a moment,,,2
+239,MO-0239,FL-0039,System displays the moment with edit controls,,,2
+240,MO-0240,FL-0039,User updates the flow assignment to another flow,,,2
+241,MO-0241,FL-0039,"User clicks the ""Save"" button",,,2
+242,MO-0242,FL-0039,The system assigns the moment to the new flow,,,2
+243,MO-0243,FL-0040,User opens the view Strides page,,,2
+244,MO-0244,FL-0040,User opens a moment,,,2
+245,MO-0245,FL-0040,System displays the moment with edit controls,,,
+246,MO-0246,FL-0040,"User updates the moment's title to be prefixed with ""Spike: """,,,
+247,MO-0247,FL-0040,"User clicks the ""Save"" button",,,
+248,MO-0248,FL-0040,The system updates the moment's title,,,
+249,MO-0249,FL-0041,User opens the view Strides page,,,3
+250,MO-0250,FL-0041,User opens a moment,,,3
+251,MO-0251,FL-0041,System displays the moment with edit controls,,,3
+252,MO-0252,FL-0041,User updates the moments type either from job to story or story to job,,,3
+253,MO-0253,FL-0041,"User clicks the ""Save"" button",,,3
+254,MO-0254,FL-0041,The system updates the moment type,,,3
+255,MO-0255,FL-0042,User opens a moment in any view,,,3
+256,MO-0256,FL-0042,User clicks the estimate field,,,3
+257,MO-0257,FL-0042,"System displays t-shirt size options (XS, S, M, L, XL, XXL, XXXL)",,,3
+258,MO-0258,FL-0042,User selects a size,,,3
+259,MO-0259,FL-0042,"User clicks the ""Save"" button",,,3
+260,MO-0260,FL-0042,System saves the moment's points,,,3
+261,MO-0261,FL-0043,User opens the current stride view,,,3
+262,MO-0262,FL-0043,System displays a stride header with total estimate,,,3
+263,MO-0263,FL-0043,User sees the sum of all moment estimates in the stride,,,3
+264,MO-0264,FL-0043,User adds or removes moments from the stride,,,3
+265,MO-0265,FL-0043,System automatically updates the total estimate,,,3
+266,MO-0266,FL-0044,User navigates to a specific Product Promise,,,3
+267,MO-0267,FL-0044,System displays the promise detail page,,,3
+268,MO-0268,FL-0044,"User finds a ""Total Effort"" field on the page",,,3
+269,MO-0269,FL-0044,System shows the sum of all moment estimates under this promise,,,3
+270,MO-0270,FL-0044,"User adds, removes, or updates moments anywhere under this promise",,,3
+271,MO-0271,FL-0044,System automatically updates the total effort,,,3
+272,MO-0272,FL-0045,User navigates to a specific stack item,,,3
+273,MO-0273,FL-0045,User scrolls to the comments section,,,3
+274,MO-0274,FL-0045, User types feedback in the comment input,,,3
+275,MO-0275,FL-0045,"User clicks ""Post"" button",,,3
+276,MO-0276,FL-0045,System displays the comment,,,3
+277,MO-0277,FL-0046,User navigates to a specific Product Promise,,,3
+278,MO-0278,FL-0046,System displays the promise detail page,,,3
+279,MO-0279,FL-0046,User clicks on view all moments button,,,3
+280,MO-0280,FL-0046,System displays an alert with all moments listed,,,3
+281,MO-0281,FL-0046,User reads the moments,,,3
+282,MO-0282,FL-0046,User exits the alert,,,3
+283,MO-0283,FL-0047,"Professor Professor clicks ""Projects"" in the main navigation",,,3
+284,MO-0284,FL-0047,System displays projects shared with the professor + their own,,,3
+285,MO-0285,FL-0047,Professor finds the student project they would like to open,,,3
+286,MO-0286,FL-0047,Professor clicks on the project name,,,3
+287,MO-0287,FL-0047,System opens that student's project,,,3
+288,MO-0288,FL-0048,User opens the view Strides page,,,3
+289,MO-0289,FL-0048,User finds a moment that needs an owner,,,3
+290,MO-0290,FL-0048,User opens a moment that needs to be updated,,,3
+291,MO-0291,FL-0048,System displays the moment with edit controls,,,3
+292,MO-0292,FL-0048,User updates the moment's owner,,,3
+293,MO-0293,FL-0048,"User clicks the ""Save"" button",,,3
+294,MO-0294,FL-0048,The system assigns the new owner to the moment,,,3
+295,MO-0295,FL-0049, User opens a specific moment,,,3
+296,MO-0296,FL-0049,"User scrolls to the ""Tasks"" section",,,3
+297,MO-0297,FL-0049,"User clicks ""Add Task"" button",,,3
+298,MO-0298,FL-0049,System displays task creation form,,,3
+299,MO-0299,FL-0049,User enters task description,,,3
+300,MO-0300,FL-0049,"User clicks the ""Owner"" field",,,3
+301,MO-0301,FL-0049,System displays a dropdown of team members,,,3
+302,MO-0302,FL-0049,User selects a team member,,,3
+303,MO-0303,FL-0049,"User clicks ""Save"" button",,,3
+304,MO-0304,FL-0049,System creates the task and displays it with owner name,,,3
+305,MO-0305,FL-0050,User opens the view Strides page,,,3
+306,MO-0306,FL-0050,"System displays current moments in each stride along with each moments assigned owners, and estimated work",,,3
+307,MO-0307,FL-0050,User reviews who has capacity for more work,,,3
+308,MO-0308,FL-0050,User opens the moment to assign/reassign,,,3
+309,MO-0309,FL-0050,System displays the moment with edit controls,,,3
+310,MO-0310,FL-0050,User updates the moment's owner,,,3
+311,MO-0311,FL-0050,"User clicks the ""Save"" button",,,3
+312,MO-0312,FL-0050,The system assigns the new owner to the moment,,,3
+313,MO-0313,FL-0051,Student navigates to a specific Promise,,,3
+314,MO-0314,FL-0051,"Student clicks the ""Owner"" field on the promise",,,3
+315,MO-0315,FL-0051,System displays a dropdown of team members,,,3
+316,MO-0316,FL-0051,Student selects their own name from the list,,,3
+317,MO-0317,FL-0051,System saves the owner and displays their name on the promise,,,3
+318,MO-0318,FL-0052,Student navigates to a specific Promise,,,3
+319,MO-0319,FL-0052,"Student clicks the ""Owner"" field on the promise",,,3
+320,MO-0320,FL-0052, System displays a dropdown of team members,,,3
+321,MO-0321,FL-0052,Student selects their own name from the list,,,3
+322,MO-0322,FL-0052,System saves the new owner and updates the display,,,3
+323,MO-0323,FL-0053,Current owner navigates to a specific Promise,,,3
+324,MO-0324,FL-0053,"Current owner clicks the ""Owner"" field on the promise",,,3
+325,MO-0325,FL-0053,System displays a dropdown of team members,,,3
+326,MO-0326,FL-0053,Current owner selects another student from the list,,,3
+327,MO-0327,FL-0053,System saves the new owner and updates the display,,,3
+328,MO-0328,FL-0054,User opens a specific moment,,,3
+329,MO-0329,FL-0054,"User clicks the current owner's name or ""Owner"" field",,,3
+330,MO-0330,FL-0054,System displays a dropdown of team members,,,3
+331,MO-0331,FL-0054,User selects a new owner from the list,,,3
+332,MO-0332,FL-0054,System saves the new owner and updates the display,,,3
+333,MO-0333,FL-0055,User opens a specific moment,,,3
+334,MO-0334,FL-0055,User finds the task that needs a new owner,,,3
+335,MO-0335,FL-0055,User clicks the current owner's name on that task,,,3
+336,MO-0336,FL-0055,System displays a dropdown of team members,,,3
+337,MO-0337,FL-0055,User selects a new owner from the list,,,3
+338,MO-0338,FL-0055,"User clicks the ""Save"" button",,,3
+339,MO-0339,FL-0055,System saves the assignee and updates the display,,,3
+340,MO-0340,FL-0056,User navigates to a specific issue,,,3
+341,MO-0341,FL-0056,"User clicks the ""Assignee"" field on the issue",,,3
+342,MO-0342,FL-0056,System displays a dropdown of team members,,,3
+343,MO-0343,FL-0056,User selects a team member from the list,,,3
+344,MO-0344,FL-0056,"User clicks the ""Save"" button",,,3
+345,MO-0345,FL-0056,System saves the assignee and updates the display,,,3
+346,MO-0346,FL-0057,User opens the project's main stack view,,,3
+347,MO-0347,FL-0057,User finds a promise owned by a specific teammate,,,3
+348,MO-0348,FL-0057,User clicks on that promise to open it,,,3
+349,MO-0349,FL-0057,System displays the promise detail page,,,3
+350,MO-0350,FL-0058,User navigates to a specific promise,,,3
+351,MO-0351,FL-0058,User scrolls to the comments section,,,3
+352,MO-0352,FL-0058,User types their suggestion in the comment input,,,3
+353,MO-0353,FL-0058,User optionally includes @mentions,,,3
+354,MO-0354,FL-0058,"User clicks ""Post"" button",,,3
+355,MO-0355,FL-0058,System displays the comment,,,3
+356,MO-0356,FL-0059,User posts a comment on a promise,,,3
+357,MO-0357,FL-0059,System identifies the promise owner and creator,,,3
+358,MO-0358,FL-0059,System creates in-app notifications for both users,,,3
+359,MO-0359,FL-0059,Both users see notification indicators when they next log in,,,3
+360,MO-0360,FL-0060,User types a comment in any comment input,,,3
+361,MO-0361,FL-0060,"User types ""@"" followed by a teammate's name",,,3
+362,MO-0362,FL-0060,User completes and posts the comment,,,3
+363,MO-0363,FL-0060,System sends an in-app notification to the mentioned user,,,3
+364,MO-0364,FL-0061,User navigates to the view Strides page,,,3
+365,MO-0365,FL-0061,"User click on the ""!"" (create issue) icon",,,3
+366,MO-0366,FL-0061,User enters issue title and description,,,3
+367,MO-0367,FL-0061,User optionally assigns an owner,,,3
+368,MO-0368,FL-0061,"User clicks ""Create"" button",,,3
+369,MO-0369,FL-0061,System creates the issue and displays it in the backlog,,,
+370,MO-0370,FL-0062,User navigates to the view Strides page,,,
+371,MO-0371,FL-0062,User finds an issue that has been resolved,,,
+372,MO-0372,FL-0062,User open the issue,,,
+373,MO-0373,FL-0062,The system return issue detail and displays edit controls,,,4
+374,MO-0374,FL-0062,User updates the issues status to resolved,,,4
+375,MO-0375,FL-0062,"User presses the ""Save"" button",,,4
+376,MO-0376,FL-0062,The system updates the issues status to be resolved,,,4
+377,MO-0377,FL-0063,Professor navigates to a specific stack item,,,4
+378,MO-0378,FL-0063,Professor hovers over the item's reaction area,,,4
+379,MO-0379,FL-0063,System displays available emote options,,,4
+380,MO-0380,FL-0063,Professor clicks an emote,,,4
+381,MO-0381,FL-0063,System saves and displays the reaction,,,4
+382,MO-0382,FL-0063,Student sees the reaction when they view the item,,,4
+383,MO-0383,FL-0064,Professor navigates to a specific stack item,,,4
+384,MO-0384,FL-0064,Professor scrolls to the comments section,,,4
+385,MO-0385,FL-0064,Professor types their feedback in the comment input,,,4
+386,MO-0386,FL-0064,"Professor clicks ""Post"" button",,,4
+387,MO-0387,FL-0064,System displays the comment with user name,,,4
+388,MO-0388,FL-0064, Student sees the comment when they view the item,,,4
+389,MO-0389,FL-0065,Student posts a reply to a professor's comment,,,4
+390,MO-0390,FL-0065,System creates an in-app notification for the professor,,,4
+391,MO-0391,FL-0065,Professor sees the notification indicator when they next log in,,,4
+392,MO-0392,FL-0066,Professor posts a comment on a stack item,,,4
+393,MO-0393,FL-0066,System creates an in-app notification for the students who created or own the item,,,4
+394,MO-0394,FL-0066,Students sees a notification badge when they next log in,,,4
+395,MO-0395,FL-0067,Professor posts a comment on a stack item,,,4
+396,MO-0396,FL-0067,System checks the student's notification preferences,,,4
+397,MO-0397,FL-0067,System sends an email to the student with the feedback and a link,,,4
+398,MO-0398,FL-0067,Student clicks the link to navigate directly to the feedback,,,4
+399,MO-0399,FL-0068,User receives a notification (in-app or email),,,4
+400,MO-0400,FL-0068,User clicks on the notification,,,4
+401,MO-0401,FL-0068,System opens the application,,,4
+402,MO-0402,FL-0068,System navigates directly to the specific stack item and highlights the comment,,,4
+403,MO-0403,FL-0068,User reads the feedback and can reply immediately,,,4
+404,MO-0404,FL-0069,User opens the view Strides page,,,4
+405,MO-0405,FL-0069,"System displays a countdown or ""X days remaining"" in the stride header",,,4
+406,MO-0406,FL-0069,User sees the time remaining,,,4
+407,MO-0407,FL-0069,System automatically updates the count each day,,,4
+408,MO-0408,FL-0070,System checks stride end dates daily,,,4
+409,MO-0409,FL-0070,System detects a stride ending in exactly 3 days,,,4
+410,MO-0410,FL-0070,System creates in-app notifications for all team members,,,4
+411,MO-0411,FL-0070,Team members see notification badges when they next log in,,,4
+412,MO-0412,FL-0071,System checks stride end dates daily,,,4
+413,MO-0413,FL-0071,System detects a stride ending in exactly 3 days,,,4
+414,MO-0414,FL-0071,System checks each team member's notification preferences,,,4
+415,MO-0415,FL-0071,System sends email notifications to members who have email enabled,,,4
+416,MO-0416,FL-0071,Team members receive email with stride summary and link,,,4
+417,MO-0417,FL-0072,System event triggers a need to notify a user,,,4
+418,MO-0418,FL-0072,"System creates a notification record with user ID, message, and link",,,4
+419,MO-0419,FL-0072,System stores the notification in the database,,,4
+420,MO-0420,FL-0072,User next loads the application,,,4
+421,MO-0421,FL-0072,System checks for unread notifications,,,4
+422,MO-0422,FL-0072,System displays a notification badge or indicator,,,4
+423,MO-0423,FL-0072,User clicks to view notifications,,,4
+424,MO-0424,FL-0073,System event triggers a need to send an email,,,4
+425,MO-0425,FL-0073,System checks the recipient's email notification preferences,,,4
+426,MO-0426,FL-0073,System generates email content with message and link,,,4
+427,MO-0427,FL-0073,System sends the email through an email service,,,4
+428,MO-0428,FL-0073,Email arrives in the recipient's inbox,,,4
+429,MO-0429,FL-0074,"User clicks ""Settings"" > ""Manage Notifications"" in the main navigation",,,4
+430,MO-0430,FL-0074,System displays user settings page,,,4
+431,MO-0431,FL-0074,"User finds ""Notifications"" section",,,4
+432,MO-0432,FL-0074,"User toggles switches for in-app notifications, email notifications, or both",,,4
+433,MO-0433,FL-0074,"User clicks ""Save Preferences"" button",,,4
+434,MO-0434,FL-0074,System updates and confirms the new settings,,,4
+435,MO-0435,FL-0075,Student opens their project,,,4
+436,MO-0436,FL-0075,"Student clicks ""Share"" button in the project navigation",,,4
+437,MO-0437,FL-0075,System displays sharing options,,,4
+438,MO-0438,FL-0075,"Student selects ""Share with Professor"" or enters email directly",,,4
+439,MO-0439,FL-0075,"Student clicks ""Send Invitation"" button",,,4
+440,MO-0440,FL-0075,System sends an invitation email to the professor,,,4
+441,MO-0441,FL-0076,Student opens sharing dialog (from FL-0075),,,4
+442,MO-0442,FL-0076,"Student clicks dropdown and selects ""View"", ""Comment"", or ""Edit""",,,4
+443,MO-0443,FL-0076,"Student clicks ""Send Invitation"" or ""Update"" button",,,4
+444,MO-0444,FL-0076,System saves the permission setting,,,4
+445,MO-0445,FL-0076,Professor receives access at the chosen level,,,4
+446,MO-0446,FL-0077,Student opens their project,,,4
+447,MO-0447,FL-0077,"Student ""Manage access"" button in the project navigation",,,4
+448,MO-0448,FL-0077,System displays list of people with access,,,4
+449,MO-0449,FL-0077,Student finds the professor in the list,,,4
+450,MO-0450,FL-0077,"Student clicks ""Remove"" button next to professor's name",,,4
+451,MO-0451,FL-0077,System removes professor's access,,,4
+452,MO-0452,FL-0077,System displays updated access list,,,4
+453,MO-0453,FL-0078,User opens their project,,,4
+454,MO-0454,FL-0078,"User clicks ""Share"" button in the project navigation",,,4
+455,MO-0455,FL-0078,System displays sharing options,,,4
+456,MO-0456,FL-0078,"User clicks ""Copy Link"" button",,,4
+457,MO-0457,FL-0078,System copies the project URL to clipboard,,,4
+458,MO-0458,FL-0078,"System displays a brief ""Link copied"" confirmation",,,4
+459,MO-0459,FL-0078,User pastes the link wherever they want to share it,,,4
+460,MO-0460,FL-0079,User opens sharing dialog (from FL-0078),,,4
+461,MO-0461,FL-0079,"User finds ""Anyone with link"" section",,,4
+462,MO-0462,FL-0079,User clicks permission dropdown,,,4
+463,MO-0463,FL-0079,"User selects ""View"", ""Comment"", or ""Edit""",,,4
+464,MO-0464,FL-0079,"User clicks ""Save"" or ""Update"" button",,,4
+465,MO-0465,FL-0079,System saves the link permission setting,,,4
+466,MO-0466,FL-0080,Professor creates a project,,,4
+467,MO-0467,FL-0080,"Professor clicks ""Share"" and copies link",,,4
+468,MO-0468,FL-0080,Professor shares the project invitation link,,,4
+469,MO-0469,FL-0080,Student opens the invitation link,,,4
+470,MO-0470,FL-0080,System adds student to the project and displays project,,,4
+471,MO-0471,FL-0080,Student views project,,,4
+472,MO-0472,FL-0080,"Professor navigates to the ""Manage Access"" page",,,4
+473,MO-0473,FL-0080,Professor sees student who accessed the project,,,4
+474,MO-0474,FL-0081,User opens their project,,,4
+475,MO-0475,FL-0081,"User clicks ""Share"" button in the project navigation",,,4
+476,MO-0476,FL-0081,System displays sharing options,,,4
+477,MO-0477,FL-0081,Student enters the name of a team that exists in their organization,,,4
+478,MO-0478,FL-0081,Student selects teams' access permissions,,,4
+479,MO-0479,FL-0081,Student clicks share,,,4
+480,MO-0480,FL-0081,System emails team members with invitation link,,,4
+481,MO-0481,FL-0081,Team members click the link,,,4
+482,MO-0482,FL-0081,System redirects team member to the project,,,4
+483,MO-0483,FL-0081,"Student navigates to the ""Manage Access"" page",,,4
+484,MO-0484,FL-0081,Student sees which members have accessed the project,,,4
+485,MO-0485,FL-0082,Student opens their project,,,4
+486,MO-0486,FL-0082,"Student clicks the ""Manage access"" button in the project navigation",,,4
+487,MO-0487,FL-0082,User finds permission dropdown next to team members,,,4
+488,MO-0488,FL-0082,"User clicks dropdown and selects ""View"", ""Comment"", or ""Edit"" for each team member",,,4
+489,MO-0489,FL-0082,System saves the permission setting for each team member,,,4
+490,MO-0490,FL-0082,System displays updated permissions,,,4
+491,MO-0491,FL-0083,Student opens their project,,,4
+492,MO-0492,FL-0083,"Student clicks the ""Manage access"" button in the project navigation",,,4
+493,MO-0493,FL-0083,System displays list of people with access,,,4
+494,MO-0494,FL-0083,Student finds the team members in the list,,,
+495,MO-0495,FL-0083,"Student clicks ""Remove"" button next to each team's name",,,
+496,MO-0496,FL-0083,System removes each team member's access,,,
+497,MO-0497,FL-0083,System displays updated access list,,,

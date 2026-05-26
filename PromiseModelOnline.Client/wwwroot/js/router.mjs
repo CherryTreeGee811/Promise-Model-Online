@@ -1,4 +1,19 @@
 import { loadHomePage } from './home.mjs';
+import { loadNavTemplate } from './navigation/router.mjs';
+import { loadLoginForm } from './login.mjs';
+import { loadRegistrationForm } from './register.mjs';
+import { loadChangePasswordForm } from './change-password.mjs';
+import { clearTokens, getAccessToken } from './auth-state.mjs';
+import { requestLogout } from './api.mjs';
+import { handleProjectRoutes } from './projects/router.mjs';
+import { handleMomentRoutes } from './moments/router.mjs';
+import { handleFlowRoutes } from './flows/router.mjs';
+import { handleJourneyRoutes } from './journeys/router.mjs';
+import { handleEpicRoutes } from './epics/router.mjs';
+import { handlePromiseRoutes } from './promises/router.mjs';
+import { handleNotificationsRoutes } from './notifications/router.mjs';
+import { handleInvitationsRoute } from './invitations/router.mjs';
+import { handleIterationRoutes } from './iterations/router.mjs';
 
 /**
  * Initializes the application when the DOM is fully loaded.
@@ -15,7 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const navContentDiv = document.getElementById("main-menu");
 
     // Handle browser back/forward navigation
-    window.addEventListener("popstate", routeHandler);
+    window.addEventListener("popstate", () => {
+        routeHandler(navContentDiv, contentDiv);
+    });
 
     // Initial route handling
     routeHandler(navContentDiv, contentDiv);
@@ -66,12 +83,101 @@ export function loadTemplate(templateName, contentDiv) {
 * @returns {void} This function does not return a value.
 */
 export function routeHandler(navContentDiv, contentDiv) {
-    const path = window.location.pathname;
+    let path = window.location.pathname;
+    
+    // Handle logout
+    if (path === '/logout') {
+    requestLogout()
+        .then(() => {
+            clearTokens();
+            window.history.replaceState({}, '', '/');
+            path = '/';
+            loadNavTemplate(navContentDiv, contentDiv);
+            loadTemplate("home.html", contentDiv).then(() => {
+                return loadHomePage();
+            });
+        })
+        .catch((error) => {
+            console.error('Logout failed:', error);
+            // Still clear cookies and redirect even if API call fails
+            clearTokens();
+            window.history.replaceState({}, '', '/');
+            path = '/';
+            loadNavTemplate(navContentDiv, contentDiv);
+            loadTemplate("home.html", contentDiv).then(() => {
+                return loadHomePage();
+            });
+        });
+        return;
+    }
+    
+    loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
         case path == '/':
             loadTemplate("home.html", contentDiv).then(() => {
                 return loadHomePage();
+            });
+            break;
+        case path == '/login':
+            loadTemplate("login.html", contentDiv).then(() => {
+                return loadLoginForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading login form js:', error);
+            });
+            break;
+        case path.startsWith('/projects'):
+            handleProjectRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/moments/'):
+            handleMomentRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/flows/'):
+            handleFlowRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/journeys/'):
+            handleJourneyRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/epics/'):
+            handleEpicRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/promises/'):
+            handlePromiseRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/projects') && path.includes('/iterations'):
+            handleIterationRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/projects'):
+            handleProjectRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path == '/register':
+            loadTemplate("register.html", contentDiv).then(() => {
+                return loadRegistrationForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading registration form js:', error);
+            });
+            break;
+        case path.startsWith('/notifications'):
+            handleNotificationsRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/invitations'):
+            handleInvitationsRoute(path, contentDiv);
+            break;
+        case path == '/change-password':
+            // Protect route: require authentication
+            if (!getAccessToken()) {
+                window.history.pushState({}, '', '/login');
+                loadNavTemplate(navContentDiv, contentDiv);
+                loadTemplate("login.html", contentDiv).then(() => {
+                    return loadLoginForm(navContentDiv, contentDiv);
+                });
+                break;
+            }
+
+            loadTemplate("change-password.html", contentDiv).then(() => {
+                return loadChangePasswordForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading change password form js:', error);
             });
             break;
         default:

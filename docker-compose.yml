@@ -19,8 +19,16 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8000
+      - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
+      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
+      - JwtSettings__Audience=promisemodelonline.api
+      - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER:-pmo_api};Password=${PMO_API_DB_PASSWORD:-ChangeMeApi123!};TrustServerCertificate=true;
     depends_on:
-      - promisemodelonline.auth
+      promisemodelonline.auth:
+        condition: service_started
+      promisemodelonline.db-init:
+        condition: service_completed_successfully
     networks:
       - promisemodelonline-net
     build:
@@ -35,17 +43,23 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8060
+      - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
+      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
+      - JwtSettings__Audience=promisemodelonline.api
+      - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER:-pmo_auth};Password=${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!};TrustServerCertificate=true;
     depends_on:
-      - sqlpreview
+      promisemodelonline.db-init:
+        condition: service_completed_successfully
     networks:
       - promisemodelonline-net
     build:
       context: .
       dockerfile: PromiseModelOnline.Auth/Dockerfile
 
-  sqlpreview:
+  promisemodelonline.db:
     image: mcr.microsoft.com/mssql/server:2025-latest
-    container_name: sqlpreview
+    container_name: promisemodelonlinedb
     networks:
       - promisemodelonline-net
     ports:
@@ -55,6 +69,27 @@ services:
       MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}
     volumes:
       - mssql-data:/var/opt/mssql
+
+  promisemodelonline.db-init:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: promisemodelonlinedbinit
+    depends_on:
+      - promisemodelonline.db
+    networks:
+      - promisemodelonline-net
+    environment:
+      DB_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}
+      PMO_API_DB_USER: ${PMO_API_DB_USER:-pmo_api}
+      PMO_API_DB_PASSWORD: ${PMO_API_DB_PASSWORD:-ChangeMeApi123!}
+      PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER:-pmo_auth}
+      PMO_AUTH_DB_PASSWORD: ${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!}
+    volumes:
+      - ./db/init/run-init.sh:/init/run-init.sh:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - set -e; tr -d '\r' < /init/run-init.sh > /tmp/run-init.lf && /bin/sh /tmp/run-init.lf
+    restart: "no"
 
 networks:
   promisemodelonline-net:

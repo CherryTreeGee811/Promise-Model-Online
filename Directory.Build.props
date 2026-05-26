@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Allow building with SDK previews that may lack prune package metadata -->
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+  </PropertyGroup>
+</Project>

@@ -7,6 +7,9 @@ public class Promise
 {
     [Key]
     public int Id { get; set; }
+
+    [NotMapped]
+    public string Type => "Promise";
         
     [Required]
     [MaxLength(500)]
@@ -16,7 +19,7 @@ public class Promise
     public string? Description { get; set; }
         
     public int ProjectId { get; set; }
-        
+    
     public int? OwnerId { get; set; }
         
     public int DisplayOrder { get; set; } = 0;
@@ -28,7 +31,7 @@ public class Promise
     // Status tracking for glyph (red/orange/yellow/green)
     //TODO: Enum for glyph colours?
     [MaxLength(20)]
-    public string StatusColor { get; set; } = "red"; // red, orange, yellow, green
+    public string StatusColor { get; set; } = "red"; // red, orange, black, green
         
     // Navigation properties
     [ForeignKey("ProjectId")]
@@ -38,5 +41,6 @@ public class Promise
     public User? Owner { get; set; }
         
     public ICollection<Epic> Epics { get; set; } = new List<Epic>();
+    
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }

@@ -1,0 +1,15 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "POST",
+    "url": "/api/sessions"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "accessToken": "owner-token-fixed",
+      "refreshToken": "refresh-token"
+    }
+  }
+}

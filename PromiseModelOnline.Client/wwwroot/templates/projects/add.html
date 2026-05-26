@@ -1,0 +1,47 @@
+<h1>Create Project</h1>
+
+<div class="form-div project-wizard">
+    <form id="add-project-form">
+        <section class="detail-card">
+            <h2>Project Details</h2>
+            <label id="project-name-label" for="project-name-input">Name:</label>
+            <input id="project-name-input" type="text" name="name" required maxlength="200" placeholder="Enter project name">
+
+            <label id="project-description-label" for="project-description-input">Description:</label>
+            <textarea id="project-description-input" name="description" maxlength="1000" placeholder="Enter an optional description"></textarea>
+        </section>
+
+        <section class="detail-card">
+            <h2>Import Existing Project</h2>
+            <p>Upload a project export to restore its promises, epics, journeys, flows, moments, and iterations.</p>
+            <div class="field-actions">
+                <button id="import-project-btn" class="view-btn" type="button">Import Project...</button>
+                <button id="clear-import-btn" class="delete-btn" type="button" hidden>Cancel Import</button>
+            </div>
+            <input id="import-project-input" type="file" accept="application/json,.json" hidden>
+            <p id="import-file-name"></p>
+            <div id="project-import-summary-panel"></div>
+        </section>
+
+        <fieldset id="first-promise-panel" class="detail-card">
+            <legend>First Promise</legend>
+            <p>Write your first <b>Product Promise</b>:</p>
+            <br>
+            <p>As a <span class="light-blur">[Persona]</span>, <span class="light-blur">[Verb]</span> <span class="light-blur">[Outcome]</span>.</p>
+            <p>Example: “As a Shopper, complete purchases without friction.”</p>
+            <p>Then ask: <i>Would users feel betrayed if we stopped delivering this?</i></p>
+            <br>
+            <label id="first-promise-label" for="first-promise-input">Promise statement:</label>
+            <textarea id="first-promise-input" name="firstPromise" maxlength="1000" placeholder="As a ..."></textarea>
+        </fieldset>
+
+        <div class="field-actions">
+            <input id="create-project-btn" name="create-project-btn" type="submit" value="Create Project">
+            <a href="/projects" id="cancel-add-project-link" class="delete-btn">Cancel</a>
+        </div>
+    </form>
+
+    <p id="error-text"></p>
+    <p id="loading-text"></p>
+    <p id="success-text"></p>
+</div>

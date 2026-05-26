@@ -5,37 +5,22 @@
 .idea/
 
 # User-specific files
-PromiseModelOnline.Api/*.user
-PromiseModelOnline.Auth/*.user
-PromiseModelOnline.Client/*.user
-PromiseModelOnline.Api.Tests/*.user
-PromiseModelOnline.Client.Tests/*.user
+*.user
+query
 
 # Build outputs and intermediate objects
 **/bin/
 **/obj/
-# Generated with debug and execute
-PromiseModelOnline.Api/bin
-PromiseModelOnline.Api/obj
 
-PromiseModelOnline.Auth/bin
-PromiseModelOnline.Auth/obj
+# macOS exclusion files.
+*.DS_Store
 
-PromiseModelOnline.Client/bin
-PromiseModelOnline.Client/obj
+# SSL certificates (if any)
+*.pem
 
-PromiseModelOnline.Api.Tests/bin
-PromiseModelOnline.Api.Tests/obj
+# Rider / JetBrains cache files and solution user settings
+**/*.lscache
+**/*.sln.DotSettings.user
 
-PromiseModelOnline.Client.Tests/bin
-PromiseModelOnline.Client.Tests/obj
-
-/PromiseModelOnline
-/bin
-/obj
-PromiseModelOnline.Api/cert.pem
-PromiseModelOnline.Api/key.pem
-PromiseModelOnline.Client/cert.pem
-PromiseModelOnline.Client/key.pem
-PromiseModelOnline.Auth/cert.pem
-PromiseModelOnline.Auth/key.pem
+# Project/user files
+**/*.csproj.lscache

@@ -7,6 +7,9 @@ public class Journey
 {
     [Key]
     public int Id { get; set; }
+
+    [NotMapped]
+    public string Type => "Journey";
         
     [Required]
     [MaxLength(500)]
@@ -27,7 +30,7 @@ public class Journey
         
     //TODO: Enum for glyph colours?
     [MaxLength(20)]
-    public string StatusColor { get; set; } = "red";
+    public string StatusColor { get; set; } = "red"; // red, orange, black, green
         
     // Navigation properties
     [ForeignKey("EpicId")]
