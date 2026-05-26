@@ -767,6 +767,7 @@ function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNod
         focusNodeData,
         enableZoom: true,
         compact: false,
+        renderRootCard: true,
         restoreTransform,
         viewportElement: graphViewport,
         clipPathIdPrefix: 'graph-card-clip',

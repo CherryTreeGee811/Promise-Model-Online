@@ -621,6 +621,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         minGraphWidth = null,
         minGraphHeight = null,
         uniformNodeScale = null,
+        renderRootCard = false,
     } = options;
 
     if (!contentDiv) return null;
@@ -676,16 +677,17 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
     treeLayout(root);
 
     const descendants = root.descendants();
-    // Hide the root/project card in detail-mode renderables so the project promise card
-    // does not take up visual space in the detail stack.
-    const renderable = descendants.filter(node => node.data?.nodeType !== 'root');
+    const renderable = descendants.filter(node => renderRootCard || node.data?.nodeType !== 'root');
 
     if (renderable.length === 0) {
         renderEmptyState(contentDiv, emptyMessage);
         return null;
     }
 
-    const links = root.links().filter(l => l.source?.data?.nodeType !== 'root' && l.target?.data?.nodeType !== 'root');
+    const links = root.links().filter(l => {
+        if (renderRootCard) return true;
+        return l.source?.data?.nodeType !== 'root' && l.target?.data?.nodeType !== 'root';
+    });
     const resolvedFocusNodeId = focusNodeId ?? focusNodeData?.id ?? null;
     const scaledCardWidth = CARD_WIDTH * cardScale;
     const scaledCardHeight = CARD_HEIGHT * cardScale;
