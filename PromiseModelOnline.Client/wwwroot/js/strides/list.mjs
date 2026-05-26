@@ -488,7 +488,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
     root.addEventListener('change', async (e) => {
         const target = e.target;
 
-        // ✅ STATUS
+        // STATUS
         if (target.matches('.status-dropdown')) {
             const momentId = parseInt(target.dataset.momentId, 10);
             const previous = target.value;
@@ -503,7 +503,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             }
         }
 
-        // ✅ ESTIMATE
+        // ESTIMATE
         if (target.matches('.estimate-dropdown')) {
             const momentId = parseInt(target.dataset.momentId, 10);
             const previous = target.value;
@@ -521,7 +521,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             }
         }
 
-        // ✅ OWNER
+        // OWNER
         if (target.matches('.owner-dropdown')) {
             const momentId = parseInt(target.dataset.momentId, 10);
             const previous = target.value;
@@ -538,7 +538,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
     });
 
     root.addEventListener('click', async (e) => {
-        // ✅ Handle View navigation (NO REFRESH)
+        // Handle View navigation (NO REFRESH)
         const viewLink = e.target.closest('a[data-moment-view]');
         if (viewLink) {
             e.preventDefault();
@@ -556,7 +556,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
 
         if (!btn) return;
 
-        // ✅ Move to Backlog
+        // Move to Backlog
         if (btn.classList.contains('move-to-backlog-btn')) {
             const momentId = parseInt(btn.dataset.momentId, 10);
             promptMoveToBacklog(momentId, async () => {
@@ -569,7 +569,6 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
                     const tbody = ensureBacklogTbody();
                     if (tbody) {
                         tbody.appendChild(createBacklogRow(updated));
-                        applyPermissionUI(cachedCanEdit);
                     }
 
                     if (origCard) {
@@ -580,7 +579,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             });
         }
 
-        // ✅ Move to Stride
+        // Move to Stride
         if (btn.classList.contains('move-to-stride-from-backlog-btn')) {
             const momentId = parseInt(btn.dataset.momentId, 10);
             const row = btn.closest('tr');
@@ -598,7 +597,6 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
                     const targetCard = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
                     if (tbody) {
                         tbody.appendChild(createStrideRow(updated));
-                        applyPermissionUI(cachedCanEdit);
                     }
 
                     if (targetCard) {
@@ -609,7 +607,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             });
         }
 
-        // ✅ Progress Stride
+        // Progress Stride
         if (btn.classList.contains('progress-stride-btn')) {
             const strideId = parseInt(btn.dataset.strideId, 10);
 
