@@ -5,16 +5,21 @@ using PromiseModelOnline.Api.Extensions;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PromiseModelOnline.Api.Hubs;
+using PromiseModelOnline.Api.Common;
+using OpenIddict.Validation.AspNetCore;
+using OpenIddict.Validation;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+AppUrls.BaseUrl = builder.Configuration["APP_BASE_URL"] ?? "";
 
 // ---------- CORS -------------------------------------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("SPA", policy =>
     {
-        policy.WithOrigins("https://localhost:9000")
+        policy.WithOrigins(AppUrls.BaseUrl)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -54,40 +59,24 @@ builder.Services.AddDbContext<PromiseModelOnlineContext>(options =>
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 
 // ---------- Authentication (OpenIddict JWT validation) -----------------
-builder.Services.AddAuthentication()
-    .AddJwtBearer(options =>
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme =
+        OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+
+    options.DefaultChallengeScheme =
+        OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+});
+
+builder.Services.AddOpenIddict()
+    .AddValidation(options =>
     {
-        options.Authority = builder.Configuration["JwtSettings:Issuer"];
-        options.Audience = builder.Configuration["JwtSettings:Audience"];
+        options.SetIssuer(AppUrls.BaseUrl);
 
-        options.RequireHttpsMetadata = true;
+        options.UseAspNetCore();
 
-        // ✅ Slight hardening
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ClockSkew = TimeSpan.FromSeconds(30)
-        };
-
-        // ✅ Helpful debugging (optional but recommended)
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = context =>
-            {
-                var scopes = context.Principal?.FindAll("scope");
-
-                if (scopes == null || !scopes.Any())
-                {
-                    // Fail fast — no scopes in token
-                    context.Fail("Token missing scopes");
-                }
-
-                return Task.CompletedTask;
-            }
-        };
+        options.AddAudiences("promisemodelonline.api");
     });
 
 // ---------- Authorization (SCOPE POLICIES) -----------------------------

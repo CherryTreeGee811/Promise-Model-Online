@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Auth.Models;
 using PromiseModelOnline.Auth.ViewModels;
+using PromiseModelOnline.Auth.Common;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
@@ -77,7 +78,7 @@ public class LoginController : Controller
                     return LocalRedirect(returnUrl);
                 }
 
-                if (returnUrl.StartsWith("https://localhost:9000", StringComparison.OrdinalIgnoreCase))
+                if (returnUrl.StartsWith(AppUrls.BaseUrl, StringComparison.OrdinalIgnoreCase))
                 {
                     return Redirect(returnUrl);
                 }

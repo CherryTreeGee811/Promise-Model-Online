@@ -47,10 +47,9 @@ services:
     volumes:
       - ./run/secrets:/run/secrets:ro
     environment:
+      - APP_BASE_URL=${APP_BASE_URL}
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=https://+:8000
-      - JwtSettings__Issuer=${JWT__ISSUER:-https://localhost:9000}
-      - JwtSettings__Audience=${JWT__AUDIENCE:-promisemodelonline.api}
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/db_api_password;TrustServerCertificate=true
     depends_on:
       promisemodelonline.auth:
@@ -77,10 +76,9 @@ services:
       - ./PromiseModelOnline.Auth/cert.pfx:/app/cert.pfx:ro
       - ./run/secrets:/run/secrets:ro
     environment:
+      - APP_BASE_URL=${APP_BASE_URL}
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=https://+:8060
-      - JwtSettings__Issuer=${JWT__ISSUER:-https://localhost:9000}
-      - JwtSettings__Audience=${JWT__AUDIENCE:-promisemodelonline.api}
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER};Password_FILE=/run/secrets/db_auth_password;TrustServerCertificate=true
       - Certificates__Password_FILE=/run/secrets/cert_password
     depends_on:
