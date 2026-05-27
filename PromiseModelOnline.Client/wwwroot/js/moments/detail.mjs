@@ -17,15 +17,15 @@ import {
 export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const loadingEl = document.getElementById('moment-detail-loading');
 
     destroyDetailStackGraph();
-    loadingEl.textContent = 'Loading moment...';
+    if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
     getMomentById(momentId)
         .then(async moment => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'moment',
@@ -36,22 +36,22 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             detailDiv.innerHTML = `
                 <div class="detail-card moment-detail-card">
                     <h2>${escapeHtml(moment.statement)}</h2>
-                    <table class="detail-table">
+                    <table class="table table-sm table-striped align-middle detail-table">
                         <tr>
                             <th>Description</th>
                             <td>
-                                <textarea id="moment-description-input" rows="4" class="detail-textarea">${escapeHtml(moment.description || '')}</textarea>
-                                <div class="field-actions"><button id="moment-description-save" class="save-btn">Save</button> <span id="moment-description-msg"></span></div>
+                                <textarea id="moment-description-input" rows="4" class="form-control detail-textarea">${escapeHtml(moment.description || '')}</textarea>
+                                <div class="field-actions"><button id="moment-description-save" class="btn btn-primary btn-sm" type="button">Save</button> <span id="moment-description-msg"></span></div>
                             </td>
                         </tr>
                         <tr><th>Type</th><td>
-                            <select id="moment-type-select">
+                            <select id="moment-type-select" class="form-select form-select-sm">
                                 <option value="Story" ${moment.type === 'Story' ? 'selected' : ''}>Story</option>
                                 <option value="Job" ${moment.type === 'Job' ? 'selected' : ''}>Job</option>
                             </select>
                         </td></tr>
                         <tr><th>Status</th><td>
-                            <select id="moment-status-select">
+                            <select id="moment-status-select" class="form-select form-select-sm">
                                 ${getStatusOption('Todo', moment.status)}
                                 ${getStatusOption('InProgress', moment.status)}
                                 ${getStatusOption('Blocked', moment.status)}
@@ -61,7 +61,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                         <tr>
                             <th>Effort Estimate</th>
                             <td>
-                                <select id="moment-estimate-select">
+                                <select id="moment-estimate-select" class="form-select form-select-sm">
                                     <option value="-" ${moment.effortEstimate == null ? 'selected' : ''}>-</option>
                                     <option value="XS"  ${moment.effortEstimate === 'XS'  ? 'selected' : ''}>XS</option>
                                     <option value="S"   ${moment.effortEstimate === 'S'   ? 'selected' : ''}>S</option>
@@ -76,7 +76,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                         <tr>
                             <th>Assigned Stride</th>
                             <td>
-                                <select id="moment-stride-select">
+                                <select id="moment-stride-select" class="form-select form-select-sm">
                                     <option value="">Backlog</option>
                                 </select>
                             </td>
@@ -87,7 +87,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                     <h3>Moment Tasks</h3>
                     <div id="moment-tasks"></div>
                     <div id="moment-comments"></div>
-                    <button id="back-link" class="back-btn">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
                 </div>
             `;
 
@@ -260,7 +260,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 });
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
             errorEl.textContent = 'Failed to load moment details.';
             console.error(err);
         });
@@ -312,7 +312,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
                 <td>${escapeHtml(task.description)}</td>
                 <td>
                     <label class="moment-task-completion">
-                        <input type="checkbox" class="moment-task-complete-checkbox" data-moment-task-id="${task.id}" ${task.isCompleted ? 'checked' : ''} />
+                            <input type="checkbox" class="moment-task-complete-checkbox form-check-input" data-moment-task-id="${task.id}" ${task.isCompleted ? 'checked' : ''} />
                         <span>${task.isCompleted ? 'Completed' : 'Open'}</span>
                     </label>
                 </td>
@@ -321,10 +321,10 @@ function renderMomentTasks(container, momentId, tasks, moment) {
         renderAddRow: () => `
             <tr data-inline-add-row="1">
                 <td>
-                    <input id="add-moment-task-name" class="inline-add-input" type="text" maxlength="200" required placeholder="New task name...">
+                    <input id="add-moment-task-name" class="form-control form-control-sm" type="text" maxlength="200" required placeholder="New task name...">
                 </td>
                 <td>
-                    <input id="add-moment-task-description" class="inline-add-input" type="text" maxlength="500" placeholder="Task description...">
+                    <input id="add-moment-task-description" class="form-control form-control-sm" type="text" maxlength="500" placeholder="Task description...">
                 </td>
                 <td>
                     <div class="inline-add-actions">
@@ -332,7 +332,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
                             <input id="add-moment-task-completed" type="checkbox" />
                             <span>Completed</span>
                         </label>
-                        <button id="add-moment-task-submit" type="button" class="view-btn">Add</button>
+                        <button id="add-moment-task-submit" type="button" class="btn btn-sm btn-outline-primary">Add</button>
                         <span id="add-moment-task-msg"></span>
                     </div>
                 </td>

@@ -14,12 +14,17 @@
         <section class="detail-card">
             <h2>Import Existing Project</h2>
             <p>Upload a project export to restore its promises, epics, journeys, flows, moments, and iterations.</p>
-            <div class="field-actions">
-                <button id="import-project-btn" class="view-btn" type="button">Import Project...</button>
-                <button id="clear-import-btn" class="delete-btn" type="button" hidden>Cancel Import</button>
+            <div class="input-group input-group-sm mb-3">
+                <button id="import-project-btn" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" type="button">
+                    <span id="import-project-btn-spinner" class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+                    <i id="import-project-btn-icon" class="bi bi-upload" aria-hidden="true"></i>
+                    <span id="import-project-btn-label">Import Project...</span>
+                </button>
+                <input id="import-project-input" type="file" class="form-control form-control-sm" accept="application/json,.json" aria-describedby="import-project-btn" aria-label="Upload">
             </div>
-            <input id="import-project-input" type="file" accept="application/json,.json" hidden>
-            <p id="import-file-name"></p>
+            <div class="field-actions">
+                <button id="clear-import-btn" class="btn btn-outline-secondary" type="button" hidden>Cancel Import</button>
+            </div>
             <div id="project-import-summary-panel"></div>
         </section>
 
@@ -36,12 +41,14 @@
         </fieldset>
 
         <div class="field-actions">
-            <input id="create-project-btn" name="create-project-btn" type="submit" value="Create Project">
-            <a href="/projects" id="cancel-add-project-link" class="delete-btn">Cancel</a>
+            <button id="create-project-btn" name="create-project-btn" type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                <span id="create-project-btn-spinner" class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+                <span id="create-project-btn-label">Create Project</span>
+            </button>
+            <a href="/projects" id="cancel-add-project-link" class="btn btn-outline-danger">Cancel</a>
         </div>
     </form>
 
     <p id="error-text"></p>
-    <p id="loading-text"></p>
     <p id="success-text"></p>
 </div>

@@ -27,8 +27,8 @@ export function upsertGraphViewButton(detailContainer, href) {
     if (!button) {
         button = document.createElement('a');
         button.id = 'graph-view-link';
-        button.className = 'view-btn';
-        button.textContent = 'Graph View';
+        button.className = 'btn btn-outline-secondary btn-sm align-items-center gap-2';
+        button.innerHTML = '<i class="bi bi-diagram-3" aria-hidden="true"></i><span> Graph View</span>';
 
         const backButton = detailContainer.querySelector('#back-link');
         if (backButton?.parentElement) {

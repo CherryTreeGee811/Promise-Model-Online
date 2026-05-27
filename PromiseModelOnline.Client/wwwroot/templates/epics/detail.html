@@ -1,6 +1,10 @@
 <h1>Epic Detail</h1>
 <div id="detail-stack-graph" class="detail-stack-graph" aria-label="Promise stack context"></div>
 <div id="epic-detail-content">
-    <p id="loading-text">Loading epic...</p>
+    <div id="epic-detail-loading" class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status" aria-live="polite" aria-label="Loading epic details">
+            <span class="visually-hidden">Loading epic details...</span>
+        </div>
+    </div>
 </div>
 <p id="error-text"></p>

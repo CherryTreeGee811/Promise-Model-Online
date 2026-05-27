@@ -456,8 +456,11 @@ input[type=button]:hover, input[type=submit]:hover {
   box-shadow: var(--shadow-card);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
 }
-.detail-card h2 { margin-bottom: var(--spacing-sm); }
+.detail-card h2 { margin: 0; }
 
 .project-settings-sections {
   display: grid;
@@ -470,14 +473,50 @@ input[type=button]:hover, input[type=submit]:hover {
 
 .detail-table {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: var(--spacing-sm);
+  border-collapse: separate;
+  border-spacing: 0 0.75rem;
+  margin-top: 0;
   font-size: 0.98rem;
 }
-.detail-table th { text-align: left; padding: 8px 10px; vertical-align: top; width: 200px; color: var(--color-heading); }
-.detail-table td { padding: 8px 10px; }
+.detail-table th,
+.detail-table td {
+  text-align: left;
+  padding: 12px 14px;
+  vertical-align: top;
+  background: rgba(248, 250, 252, 0.88);
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+}
+.detail-table th {
+  width: 200px;
+  color: var(--color-heading);
+  border-left: 1px solid rgba(226, 232, 240, 0.95);
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+.detail-table td {
+  border-right: 1px solid rgba(226, 232, 240, 0.95);
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.summary-table {
+  margin-top: var(--spacing-sm);
+}
+.summary-table .summary-key {
+  width: 42%;
+  min-width: 170px;
+  letter-spacing: 0.01em;
+}
+.summary-table .summary-value {
+  font-weight: 500;
+  color: var(--color-text);
+  word-break: break-word;
+}
+.summary-table .summary-gap td {
+  background: transparent;
+}
 .detail-textarea { min-height: 96px; }
-.field-actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
+.field-actions { margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .save-btn {
   background: linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
   color: #fff;
@@ -677,15 +716,7 @@ input[type=button]:hover, input[type=submit]:hover {
 }
 
 .detail-stack-graph--loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  font-size: 0.95rem;
-}
-
-.detail-stack-graph--loading::after {
-  content: 'Loading Promise Stack...';
+  position: relative;
 }
 
 .graph-viewport {

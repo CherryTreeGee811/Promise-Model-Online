@@ -3,20 +3,19 @@ import { getPendingInvitations, acceptInvitation } from './api.mjs';
 export function loadInvitationsPage(contentDiv) {
     const listDiv = document.getElementById('invitations-list');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    
 
     async function refresh() {
-        loadingEl.textContent = 'Loading invitations…';
         try {
             const invitations = await getPendingInvitations();
-            loadingEl.textContent = '';
+            
             if (!invitations || invitations.length === 0) {
                 listDiv.innerHTML = '<p class="no-items">No pending invitations.</p>';
                 return;
             }
 
             listDiv.innerHTML = `
-                <table class="promisemodel-table">
+                <table class="table table-sm table-striped table-hover align-middle">
                     <thead>
                         <tr>
                             <th>Project</th>
@@ -30,7 +29,7 @@ export function loadInvitationsPage(contentDiv) {
                                 <td>${escapeHtml(inv.projectName)}</td>
                                 <td>${inv.level}</td>
                                 <td>
-                                    <button class="accept-btn" data-permission-id="${inv.permissionId}">Accept</button>
+                                    <button class="btn btn-sm btn-outline-primary accept-btn" data-permission-id="${inv.permissionId}" type="button">Accept</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -60,7 +59,6 @@ export function loadInvitationsPage(contentDiv) {
                 });
             });
         } catch (err) {
-            loadingEl.textContent = '';
             errorEl.textContent = 'Failed to load invitations.';
         }
     }

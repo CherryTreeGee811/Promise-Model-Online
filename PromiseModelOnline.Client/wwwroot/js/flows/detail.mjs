@@ -16,15 +16,15 @@ import {
 export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const loadingEl = document.getElementById('flow-detail-loading');
 
     destroyDetailStackGraph();
-    loadingEl.textContent = 'Loading flow...';
+    if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
     getFlowById(flowId)
         .then(flow => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'flow',
@@ -35,15 +35,15 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
             detailDiv.innerHTML = `
                 <div class="detail-card flow-detail-card">
                     <h2>${escapeHtml(flow.statement)}</h2>
-                    <table class="detail-table">
+                    <table class="table table-sm table-striped align-middle detail-table">
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(flow.description || '')}</textarea>
-                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="form-control detail-textarea">${escapeHtml(flow.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Journey</th>
                             <td id="flow-journey-cell">
-                                <a href="/journeys/${flow.journeyId}" journey-id="${flow.journeyId}" class="detail-link">Journey ${flow.journeyId}</a>
+                                <a href="/journeys/${flow.journeyId}" journey-id="${flow.journeyId}" class="detail-link link-primary text-decoration-none fw-semibold">Journey ${flow.journeyId}</a>
                             </td>
                         </tr>
                         <tr><th>Status</th><td id="flow-status-cell">${getStatusIcon(flow.statusColor)}</td></tr>
@@ -55,7 +55,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                         <p>Loading moments...</p>
                     </div>
                     <div id="flow-comments"></div>
-                    <button id="back-link" class="back-btn">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
                 </div>
             `;
 
@@ -86,26 +86,26 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             <tr data-moment-id="${m.id}">
                                 <td>${escapeHtml(m.statement)}</td>
                                 <td>${m.type}</td>
-                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                <td><a href="/moments/${m.id}" moment-id="${m.id}" class="view-btn">View</a></td>
+                                <td><span class="badge rounded-pill text-bg-secondary status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-moment-form" class="inline-add-form">
-                                        <input id="add-moment-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Moment Statement...">
+                                        <input id="add-moment-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Moment Statement...">
                                     </form>
                                 </td>
                                 <td>
-                                    <select id="add-moment-type" class="inline-add-input" form="add-moment-form">
+                                    <select id="add-moment-type" class="form-select form-select-sm" form="add-moment-form">
                                         <option value="Story">Story</option>
                                         <option value="Job">Job</option>
                                     </select>
                                 </td>
                                 <td><span class="status-badge status-todo">Todo</span></td>
                                 <td>
-                                    <button id="add-moment-submit" type="submit" form="add-moment-form" class="view-btn">Add</button>
+                                    <button id="add-moment-submit" type="submit" form="add-moment-form" class="btn btn-sm btn-outline-primary">Add</button>
                                     <span id="add-moment-msg"></span>
                                 </td>
                             </tr>
@@ -147,8 +147,8 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
                                         <td>${created.type}</td>
-                                        <td><span class="status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
-                                        <td><a href="/moments/${created.id}" class="view-btn">View</a></td>
+                                        <td><span class="badge rounded-pill text-bg-secondary status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
+                                        <td><a href="/moments/${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
@@ -165,7 +165,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                     }
 
                     momentsList.innerHTML = `
-                        <table class="promisemodel-table">
+                        <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -181,15 +181,15 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                                         <td>${m.id}</td>
                                         <td>${escapeHtml(m.statement)}</td>
                                         <td>${m.type}</td>
-                                        <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                        <td><a href="/moments/${m.id}" moment-id="${m.id}" class="view-btn">View</a></td>
+                                        <td><span class="badge rounded-pill text-bg-secondary status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                        <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     `;
 
-                    momentsList.querySelectorAll('.view-btn[moment-id]').forEach(link => {
+                    momentsList.querySelectorAll('a[moment-id]').forEach(link => {
                         link.addEventListener('click', (e) => {
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
@@ -219,7 +219,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
             getJourneyById(flow.journeyId)
                 .then(journey => {
                     const icon = getStatusIcon(journey.statusColor);
-                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" journey-id="${journey.id}" class="detail-link">${escapeHtml(journey.statement)}</a> ${icon}`;
+                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" journey-id="${journey.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(journey.statement)}</a> ${icon}`;
                     
                     const link = journeyCell.querySelector('a.detail-link');
                     if (link) {
@@ -279,7 +279,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                 });
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
             errorEl.textContent = 'Failed to load flow details.';
             console.error(err);
         });

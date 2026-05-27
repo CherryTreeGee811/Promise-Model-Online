@@ -15,15 +15,15 @@ import {
 export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('epic-detail-content');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const loadingEl = document.getElementById('epic-detail-loading');
 
     destroyDetailStackGraph();
-    loadingEl.textContent = 'Loading epic…';
+    if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
     getEpicById(epicId)
         .then(epic => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'epic',
@@ -34,11 +34,10 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
             detailDiv.innerHTML = `
                 <div class="detail-card epic-detail-card">
                     <h2>${escapeHtml(epic.statement)}</h2>
-                    <table class="detail-table">
-                        <tr><th>ID</th><td>${epic.id}</td></tr>
+                    <table class="table table-sm table-striped align-middle detail-table">
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(epic.description || '')}</textarea>
-                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="form-control detail-textarea">${escapeHtml(epic.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Parent Promise</th>
@@ -53,7 +52,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                         <p>Loading journeys…</p>
                     </div>
                     <div id="epic-comments"></div>
-                    <button id="back-link" class="back-btn">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
                 </div>
             `;
 
@@ -62,7 +61,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
             getPromiseById(epic.productPromiseId)
                 .then(promise => {
                     const icon = getStatusIcon(promise.statusColor);
-                    parentCell.innerHTML = `<a href="/promises/${promise.id}" promise-id="${promise.id}" class="detail-link">${escapeHtml(promise.statement)}</a> ${icon}`;
+                    parentCell.innerHTML = `<a href="/promises/${promise.id}" promise-id="${promise.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(promise.statement)}</a> ${icon}`;
 
                     const link = parentCell.querySelector('a.detail-link');
 
@@ -95,18 +94,18 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                         renderItemRow: j => `
                             <tr data-journey-id="${j.id}">
                                 <td>${escapeHtml(j.statement)}</td>
-                                <td><a href="/journeys/${j.id}" journey-id="${j.id}" class="view-btn">View</a></td>
+                                <td><a href="/journeys/${j.id}" journey-id="${j.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-journey-form" class="inline-add-form">
-                                        <input id="add-journey-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Journey Statement...">
+                                        <input id="add-journey-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Journey Statement...">
                                     </form>
                                 </td>
                                 <td>
-                                    <button id="add-journey-submit" type="submit" form="add-journey-form" class="view-btn">Add</button>
+                                    <button id="add-journey-submit" type="submit" form="add-journey-form" class="btn btn-sm btn-outline-primary">Add</button>
                                     <span id="add-journey-msg"></span>
                                 </td>
                             </tr>
@@ -144,7 +143,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                                     row.dataset.journeyId = created.id;
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
-                                        <td><a href="/journeys/${created.id}" journey-id="${created.id}" class="view-btn">View</a></td>
+                                        <td><a href="/journeys/${created.id}" journey-id="${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
@@ -160,7 +159,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                     }
 
                     journeysList.innerHTML = `
-                        <table class="promisemodel-table">
+                        <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -173,14 +172,14 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                                     <tr>
                                         <td>${j.id}</td>
                                         <td>${escapeHtml(j.statement)}</td>
-                                        <td><a href="/journeys/${j.id}" journey-id="${j.id}" class="view-btn">View</a></td>
+                                        <td><a href="/journeys/${j.id}" journey-id="${j.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     `;
 
-                    journeysList.querySelectorAll('.view-btn[journey-id]').forEach(link => {
+                    journeysList.querySelectorAll('a[journey-id]').forEach(link => {
                         link.addEventListener('click', (e) => {
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
@@ -244,7 +243,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                 });
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
             errorEl.textContent = 'Failed to load epic details.';
             console.error(err);
         });

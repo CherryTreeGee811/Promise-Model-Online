@@ -15,21 +15,23 @@ import {
 export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const loadingEl = document.getElementById('promise-detail-loading');
 
     destroyDetailStackGraph();
-    loadingEl.textContent = 'Loading promise…';
+    if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
     getPromiseById(promiseId)
         .then(promise => {
+            if (loadingEl) loadingEl.hidden = true;
+
             detailDiv.innerHTML = `
                 <div class="detail-card promise-detail-card">
                     <h2>${escapeHtml(promise.statement)}</h2>
-                    <table class="detail-table">
+                    <table class="table table-sm table-striped align-middle detail-table">
                         <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(promise.description || '')}</textarea>
-                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                            <textarea id="description-input" rows="4" class="form-control detail-textarea">${escapeHtml(promise.description || '')}</textarea>
+                            <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr><th>Status</th><td id="promise-status-cell">${getStatusIcon(promise.statusColor)}</td></tr>
                         <tr><th>Created</th><td>${new Date(promise.createdAt).toLocaleDateString('en-CA')}</td></tr>
@@ -40,11 +42,11 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                         <p>Loading epics…</p>
                     </div>
                     <div id="promise-comments"></div>
-                    <button id="back-link" class="back-btn">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
                 </div>
             `;
 
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'promise',
@@ -62,18 +64,18 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                         renderItemRow: e => `
                             <tr data-epic-id="${e.id}">
                                 <td>${escapeHtml(e.statement)}</td>
-                                <td><a href="/epics/${e.id}" class="view-btn">View</a></td>
+                                <td><a href="/epics/${e.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-epic-form" class="inline-add-form">
-                                        <input id="add-epic-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Epic Statement...">
+                                        <input id="add-epic-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Epic Statement...">
                                     </form>
                                 </td>
                                 <td>
-                                    <button id="add-epic-submit" type="submit" form="add-epic-form" class="view-btn">Add</button>
+                                    <button id="add-epic-submit" type="submit" form="add-epic-form" class="btn btn-sm btn-outline-primary">Add</button>
                                     <span id="add-epic-msg"></span>
                                 </td>
                             </tr>
@@ -111,7 +113,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                                     row.dataset.epicId = created.id;
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
-                                        <td><a href="/epics/${created.id}" class="view-btn">View</a></td>
+                                        <td><a href="/epics/${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
@@ -127,7 +129,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     }
 
                     epicsList.innerHTML = `
-                        <table class="promisemodel-table">
+                        <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -140,14 +142,14 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                                     <tr>
                                         <td>${e.id}</td>
                                         <td>${escapeHtml(e.statement)}</td>
-                                        <td><a href="/epics/${e.id}" epic-id="${e.id}" class="view-btn">View</a></td>
+                                        <td><a href="/epics/${e.id}" epic-id="${e.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     `;
                     
-                    detailDiv.querySelectorAll('.view-btn[epic-id]').forEach(link => {
+                    detailDiv.querySelectorAll('a[epic-id]').forEach(link => {
                         link.addEventListener('click', (e) => {
                             // allow new tab behavior
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
@@ -214,10 +216,10 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     }
                 });
             }
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
             errorEl.textContent = 'Failed to load promise details.';
             console.error(err);
         });
