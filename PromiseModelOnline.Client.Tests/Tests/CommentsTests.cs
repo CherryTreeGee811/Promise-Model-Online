@@ -20,7 +20,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
             textarea.SendKeys("New comment");
 
             // Ensure the Post button is visible and enabled (like a real user would see)
-            WaitForClickable(By.CssSelector("#comment-form .view-btn"));
+            WaitForClickable(By.CssSelector("#comment-form button[type='submit']"));
 
             // Trigger form submission via requestSubmit – the exact same DOM API
             // that a user‑initiated click invokes, but headless‑safe.

@@ -16,7 +16,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
             var header = WaitForElement(By.CssSelector(".epic-detail-card h2"));
             Assert.That(header.Text, Does.Contain("Epic One"));
 
-            var journeyLink = WaitForElement(By.CssSelector("#epic-journeys-list .view-btn"));
+            var journeyLink = WaitForElement(By.CssSelector("#epic-journeys-list a[journey-id]"));
             Assert.That(journeyLink.Text, Is.EqualTo("View"));
         }
     }
