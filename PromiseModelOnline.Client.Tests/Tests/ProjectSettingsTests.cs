@@ -42,7 +42,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
 
 		private int CreateProject(string projectName)
 		{
-			var token = Driver.ExecuteScript("return sessionStorage.getItem('pmo.accessToken');")?.ToString();
+			var token = ((IJavaScriptExecutor)Driver).ExecuteScript("return sessionStorage.getItem('pmo.accessToken');")?.ToString();
 			Assert.That(token, Is.Not.Null.And.Not.Empty, "Access token was not available for API setup.");
 
 			using var handler = new HttpClientHandler
