@@ -1,10 +1,10 @@
-import { getReactions, createReaction, updateReaction, deleteReaction } from './api.mjs';
-import { getNameFromToken } from '../auth/parser.mjs';
-import { getAccessToken } from '../auth/auth-state.mjs';
+import { getReactions, createReaction, updateReaction } from './api.mjs';
+import { getCurrentUser } from '../api.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 
-export function loadReactions(container, parentType, parentId) {
+export async function loadReactions(container, parentType, parentId) {
+
     container.innerHTML = `
         <div class="reactions-bar">
             <span class="reactions-summary" id="reactions-summary"></span>
@@ -17,8 +17,7 @@ export function loadReactions(container, parentType, parentId) {
     const summaryEl = container.querySelector('#reactions-summary');
     const buttons = container.querySelectorAll('.emote-btn');
 
-    const token = getAccessToken();
-    const myUserName = getNameFromToken(token);
+    let myUserName = null;
 
     const state = {
         counts: {},
@@ -26,40 +25,60 @@ export function loadReactions(container, parentType, parentId) {
         myEmote: null,
     };
 
+    async function loadCurrentUser() {
+        try {
+            const user = await getCurrentUser();
+            myUserName = user?.name ?? null;
+        } catch {
+            myUserName = null;
+        }
+    }
+
     function renderSummary() {
         const items = EMOTE_SET
             .filter(e => state.counts[e])
             .map(e => `${e} ${state.counts[e]}`);
+
         summaryEl.textContent = items.join(' ') || 'No reactions yet.';
     }
 
     async function refresh() {
         try {
             const reactions = await getReactions(parentType, parentId);
+
             state.counts = {};
+
             (reactions || []).forEach(r => {
                 state.counts[r.emote] = (state.counts[r.emote] || 0) + 1;
             });
 
             if (myUserName) {
-                const mine = (reactions || []).find(r => String(r.userName) === String(myUserName));
+                const mine = (reactions || []).find(r =>
+                    String(r.userName) === String(myUserName)
+                );
+
                 state.myReactionId = mine?.id ?? null;
                 state.myEmote = mine?.emote ?? null;
             }
 
             renderSummary();
-        } catch (err) {
+
+        } catch {
             summaryEl.textContent = 'Failed to load reactions.';
         }
     }
 
-    refresh();
+    // ✅ FIX: valid async usage
+    await loadCurrentUser();
+    await refresh();
 
     buttons.forEach(btn => {
         btn.addEventListener('click', async () => {
             const emote = btn.dataset.emote;
+
             try {
                 const y = window.scrollY;
+
                 const updated = state.myReactionId
                     ? await updateReaction(state.myReactionId, emote)
                     : await createReaction(parentType, parentId, emote);
@@ -68,17 +87,22 @@ export function loadReactions(container, parentType, parentId) {
                 const next = updated?.emote ?? emote;
 
                 if (previous && previous !== next) {
-                    state.counts[previous] = Math.max(0, (state.counts[previous] || 0) - 1);
+                    state.counts[previous] =
+                        Math.max(0, (state.counts[previous] || 0) - 1);
                 }
+
                 if (!previous || previous !== next) {
-                    state.counts[next] = (state.counts[next] || 0) + 1;
+                    state.counts[next] =
+                        (state.counts[next] || 0) + 1;
                 }
 
                 state.myReactionId = updated?.id ?? state.myReactionId;
                 state.myEmote = next;
+
                 renderSummary();
                 window.scrollTo(0, y);
-            } catch (err) {
+
+            } catch {
                 alert('Failed to react');
             }
         });

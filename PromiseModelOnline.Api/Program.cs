@@ -1,99 +1,122 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PromiseModelOnline.Api.Common;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Extensions;
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PromiseModelOnline.Api.Hubs;
-using PromiseModelOnline.Api.Common;
-using OpenIddict.Validation.AspNetCore;
-using OpenIddict.Validation;
-
+using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
-AppUrls.BaseUrl = builder.Configuration["APP_BASE_URL"] ?? "";
+// ---------- Auth/public URL config -------------------------------------
+var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
+    ?? throw new InvalidOperationException("AUTH_PUBLIC_ISSUER is required.");
 
-// ---------- CORS -------------------------------------------------------
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("SPA", policy =>
-    {
-        policy.WithOrigins(AppUrls.BaseUrl)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
+var metadataAddress = builder.Configuration["AUTH_METADATA_ADDRESS"]
+    ?? throw new InvalidOperationException("AUTH_METADATA_ADDRESS is required.");
+
+AppUrls.PublicIssuer = publicIssuer.TrimEnd('/');
+AppUrls.AuthMetaData = metadataAddress;
 
 // ---------- Database & scoped services ---------------------------------
 var connectionString = builder.Configuration.GetConnectionString("MSSQL");
 
-if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("Password_FILE="))
+if (string.IsNullOrWhiteSpace(connectionString))
 {
-    var parts = connectionString
-        .Split(';', StringSplitOptions.RemoveEmptyEntries)
-        .ToList();
-
-    for (int i = 0; i < parts.Count; i++)
-    {
-        if (parts[i].StartsWith("Password_FILE=", StringComparison.OrdinalIgnoreCase))
-        {
-            var filePath = parts[i].Substring("Password_FILE=".Length);
-
-            if (File.Exists(filePath))
-            {
-                var password = File.ReadAllText(filePath).Trim();
-                parts[i] = $"Password={password}";
-            }
-        }
-    }
-
-    connectionString = string.Join(';', parts);
-    builder.Configuration["ConnectionStrings:MSSQL"] = connectionString;
+    throw new InvalidOperationException("ConnectionStrings:MSSQL is required.");
 }
+
+connectionString = ResolvePasswordFile(connectionString);
+builder.Configuration["ConnectionStrings:MSSQL"] = connectionString;
 
 builder.Services.AddDbContext<PromiseModelOnlineContext>(options =>
     options.UseSqlServer(connectionString));
-    
+
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 
-// ---------- Authentication (OpenIddict JWT validation) -----------------
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme =
-        OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-
-    options.DefaultChallengeScheme =
-        OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-});
-
-builder.Services.AddOpenIddict()
-    .AddValidation(options =>
+// ---------- Authentication: JWT resource-server validation --------------
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        options.SetIssuer(AppUrls.BaseUrl);
+        // Public issuer expected inside the token.
+        options.Authority = AppUrls.PublicIssuer;
 
-        options.UseAspNetCore();
+        // Internal Docker-reachable metadata URL.
+        options.MetadataAddress = AppUrls.AuthMetaData;
 
-        options.AddAudiences("promisemodelonline.api");
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = AppUrls.PublicIssuer,
+
+            ValidateAudience = true,
+            ValidAudience = "promisemodelonline.api",
+
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            NameClaimType = "name",
+            RoleClaimType = "role"
+        };
+
+        if (builder.Environment.IsDevelopment())
+        {
+            options.BackchannelHttpHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+        }
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("JwtBearer");
+
+                logger.LogError(context.Exception, "JWT authentication failed.");
+
+                return Task.CompletedTask;
+            },
+
+            OnChallenge = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("JwtBearer");
+
+                logger.LogWarning(
+                    "JWT challenge. Error: {Error}. Description: {Description}",
+                    context.Error,
+                    context.ErrorDescription);
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
-// ---------- Authorization (SCOPE POLICIES) -----------------------------
+// ---------- Authorization: scope policies -------------------------------
 builder.Services.AddAuthorization(options =>
 {
-    // ✅ READ access
     options.AddPolicy("Projects.Read", policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim("scope", "projects.read");
+        policy.RequireAssertion(context =>
+            HasScope(context.User, "projects.read"));
     });
 
-    // ✅ WRITE access
     options.AddPolicy("Projects.Write", policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim("scope", "projects.write");
+        policy.RequireAssertion(context =>
+            HasScope(context.User, "projects.write"));
     });
 });
 
@@ -127,13 +150,15 @@ var app = builder.Build();
 
 app.ApplyMigrations();
 
-// ---------- Development Seed ------------------------------------------
+// ---------- Development Seed -------------------------------------------
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
+
     var db = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
     var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
     await PromiseHierarchySeeder.SeedAsync(db, env.ContentRootPath, logger);
 }
 
@@ -144,15 +169,15 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Frame-Options"] = "DENY";
 
     if (context.Request.IsHttps)
+    {
         context.Response.Headers["Strict-Transport-Security"] =
             "max-age=31536000; includeSubDomains";
+    }
 
     await next();
 });
 
-// ---------- Middleware pipeline ---------------------------------------
-app.UseCors("SPA");
-
+// ---------- Middleware pipeline ----------------------------------------
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -160,3 +185,47 @@ app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
+
+static string ResolvePasswordFile(string connectionString)
+{
+    if (!connectionString.Contains("Password_FILE=", StringComparison.OrdinalIgnoreCase))
+    {
+        return connectionString;
+    }
+
+    var parts = connectionString
+        .Split(';', StringSplitOptions.RemoveEmptyEntries)
+        .ToList();
+
+    for (var i = 0; i < parts.Count; i++)
+    {
+        if (!parts[i].StartsWith("Password_FILE=", StringComparison.OrdinalIgnoreCase))
+        {
+            continue;
+        }
+
+        var filePath = parts[i]["Password_FILE=".Length..];
+
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException(
+                $"The configured password file does not exist: {filePath}",
+                filePath);
+        }
+
+        var password = File.ReadAllText(filePath).Trim();
+        parts[i] = $"Password={password}";
+    }
+
+    return string.Join(';', parts);
+}
+
+static bool HasScope(ClaimsPrincipal user, string requiredScope)
+{
+    return user.FindAll("scope")
+            .SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Contains(requiredScope, StringComparer.Ordinal)
+        || user.FindAll("scp")
+            .SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Contains(requiredScope, StringComparer.Ordinal);
+}

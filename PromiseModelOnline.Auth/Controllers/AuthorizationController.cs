@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 
 namespace PromiseModelOnline.Auth.Controllers
@@ -16,104 +15,116 @@ namespace PromiseModelOnline.Auth.Controllers
     public class AuthorizationController : ControllerBase
     {
         [HttpGet, HttpPost]
-        [IgnoreAntiforgeryToken] // OAuth request validation is handled directly by OpenIddict cryptographic state parameters
+        [IgnoreAntiforgeryToken]
         public IActionResult Authorize()
         {
-            // 1. Resolve OpenIddict's securely parsed native request object
-            var request = HttpContext.GetOpenIddictServerRequest() ??
-                throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+            // ✅ 1. Get OpenIddict request
+            var feature = HttpContext.Features.Get<OpenIddictServerAspNetCoreFeature>()
+                ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-            // 2. Evaluate interactive identity session context
-            if (!User.Identity!.IsAuthenticated)
+            var request = feature.Transaction?.Request
+                ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved");
+
+            // ✅ 2. If user is not logged in → redirect to login
+            var result = HttpContext.AuthenticateAsync(
+                IdentityConstants.ApplicationScheme).Result;
+
+            if (result == null || !result.Succeeded)
             {
                 var relativeUrl = Request.Path + Request.QueryString;
                 var returnUrl = Uri.EscapeDataString(relativeUrl);
-                
-                // ✅ FIXED: Points to the correct route mapping defined on LoginController
+
                 return Redirect($"/connect/login?returnUrl={returnUrl}");
             }
 
-            var subject = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // ✅ 3. Resolve subject (user id)
+            var subject = User.FindFirstValue(OpenIddictConstants.Claims.Subject)
+                ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (string.IsNullOrEmpty(subject))
             {
                 return Forbid();
             }
 
-            // 3. Instantiate ClaimsIdentity explicitly mapping internal OpenIddict schema rules
+            // ✅ 4. Create identity for OpenIddict
             var identity = new ClaimsIdentity(
-                authenticationType: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                nameType: Claims.Name,
-                roleType: Claims.Role);
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                OpenIddictConstants.Claims.Name,
+                OpenIddictConstants.Claims.Role
+            );
 
             var principal = new ClaimsPrincipal(identity);
 
-            // ✅ FIXED: Use OpenIddict request helper extensions instead of raw Request.Query parsing
+            // ✅ 5. Get scopes from request
             var scopes = request.GetScopes();
-            Console.WriteLine($"[AUTH-DEBUG] /connect/authorize scopes: {string.Join(' ', scopes)}");
-            if (!scopes.Contains(Scopes.OpenId))
+
+            if (!scopes.Contains(OpenIddictConstants.Scopes.OpenId))
             {
-                return BadRequest(new { error = Errors.InvalidRequest, error_description = "The 'openid' scope parameter must be supplied." });
+                return BadRequest(new
+                {
+                    error = OpenIddictConstants.Errors.InvalidRequest,
+                    error_description = "The 'openid' scope is required."
+                });
             }
 
-            principal.SetScopes(scopes);
+            principal.SetScopes(scopes.ToList());
 
-            // 4. Resource Allocation Auditing
-            if (principal.HasScope("projects.read") || principal.HasScope("projects.write"))
+            // ✅ 6. Assign API resource
+            if (scopes.Contains("projects.read") || scopes.Contains("projects.write"))
             {
                 principal.SetResources("promisemodelonline.api");
             }
 
-            // 5. Build Token Destinations
-            var subjectClaim = new Claim(Claims.Subject, subject);
-            subjectClaim.SetDestinations(Destinations.AccessToken, Destinations.IdentityToken);
-            identity.AddClaim(subjectClaim);
+            // ✅ 7. Add required claims
 
+            // sub
+            var subClaim = new Claim(OpenIddictConstants.Claims.Subject, subject);
+            subClaim.SetDestinations(
+                OpenIddictConstants.Destinations.AccessToken,
+                OpenIddictConstants.Destinations.IdentityToken
+            );
+            identity.AddClaim(subClaim);
+
+            // name
             if (!string.IsNullOrEmpty(User.Identity.Name))
             {
-                var nameClaim = new Claim(Claims.Name, User.Identity.Name);
-                nameClaim.SetDestinations(GetDestinations(Scopes.Profile, principal));
+                var nameClaim = new Claim(OpenIddictConstants.Claims.Name, User.Identity.Name);
+                nameClaim.SetDestinations(
+                    OpenIddictConstants.Destinations.AccessToken,
+                    OpenIddictConstants.Destinations.IdentityToken
+                );
                 identity.AddClaim(nameClaim);
             }
-            
+
+            // email
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             if (!string.IsNullOrEmpty(email))
             {
-                var emailClaim = new Claim(Claims.Email, email);
-                emailClaim.SetDestinations(GetDestinations(Scopes.Email, principal));
+                var emailClaim = new Claim(OpenIddictConstants.Claims.Email, email);
+                emailClaim.SetDestinations(
+                    OpenIddictConstants.Destinations.AccessToken,
+                    OpenIddictConstants.Destinations.IdentityToken
+                );
                 identity.AddClaim(emailClaim);
             }
 
-            foreach (var roleClaim in User.FindAll(ClaimTypes.Role))
+            // roles
+            foreach (var role in User.FindAll(ClaimTypes.Role))
             {
-                var targetRoleClaim = new Claim(Claims.Role, roleClaim.Value);
-                targetRoleClaim.SetDestinations(Destinations.AccessToken, Destinations.IdentityToken);
-                identity.AddClaim(targetRoleClaim);
+                var roleClaim = new Claim(OpenIddictConstants.Claims.Role, role.Value);
+                roleClaim.SetDestinations(
+                    OpenIddictConstants.Destinations.AccessToken,
+                    OpenIddictConstants.Destinations.IdentityToken
+                );
+                identity.AddClaim(roleClaim);
             }
 
-            return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        }
-
-        [HttpPost("~/connect/token")]
-        [Produces("application/json")]
-        public async Task<IActionResult> Exchange()
-        {
-            var request = HttpContext.GetOpenIddictServerRequest() ??
-                throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
-
-            if (request.IsAuthorizationCodeGrantType() || request.IsRefreshTokenGrantType())
-            {
-                // 1. Retrieve the claims principal stored in the authorization code/refresh token.
-                var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-
-                // 2. Create a new ClaimsPrincipal to sign in.
-                var principal = result.Principal;
-
-                // 3. Return the tokens to the client.
-                // TokenCookieMiddleware will intercept this 200 OK and strip the refresh_token
-                return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            }
-
-            throw new InvalidOperationException("The specified grant type is not supported.");
+            // ✅ ✅ ✅ CRITICAL FIX: return with AuthenticationProperties
+            return SignIn(
+                principal,
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme
+            );
         }
 
         private static IEnumerable<string> GetDestinations(string scope, ClaimsPrincipal principal)

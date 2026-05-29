@@ -25,10 +25,9 @@ RUN dotnet publish "./PromiseModelOnline.Auth.csproj" -c $BUILD_CONFIGURATION -o
 FROM base AS final
 WORKDIR /app
 USER root
-# Install curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+USER app
 COPY --from=publish /app/publish .
-USER appuser
 # Copy SSL certificate and key into the image
 COPY PromiseModelOnline.Auth/cert.pem /app/cert.pem
 COPY PromiseModelOnline.Auth/key.pem /app/key.pem

@@ -1,3 +1,5 @@
+namespace PromiseModelOnline.Auth.Middleware;
+
 public class SecurityHeadersMiddleware
 {
     private readonly RequestDelegate _next;
@@ -21,7 +23,7 @@ public class SecurityHeadersMiddleware
         }
 
         headers["Content-Security-Policy"] =
-            "default-src 'self'; script-src 'self'; style-src 'self'; form-action 'self'; frame-ancestors 'none';";
+            "default-src 'self'; script-src 'self' 'sha256-j7OoGArf6XW6YY4cAyS3riSSvrJRqpSi1fOF9vQ5SrI='; style-src 'self'; form-action 'self'; frame-ancestors 'none';";
 
         await _next(context);
     }

@@ -1,6 +1,5 @@
 import { changePassword } from './api.mjs';
 import { routeHandler } from '../router.mjs';
-import { clearTokens } from './auth-state.mjs';
 
 export function loadChangePasswordForm(navContentDiv, contentDiv) {
     const changeBtn = document.getElementById("change-password-btn");

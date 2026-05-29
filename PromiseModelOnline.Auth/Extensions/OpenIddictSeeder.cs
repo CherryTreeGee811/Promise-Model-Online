@@ -12,23 +12,32 @@ namespace PromiseModelOnline.Auth.Extensions
         {
             var manager = services.GetRequiredService<IOpenIddictApplicationManager>();
 
-            var existing = await manager.FindByClientIdAsync("pmo-spa");
-            if (existing != null)
-            {
-                await manager.DeleteAsync(existing);
-            }
-
             var descriptor = new OpenIddictApplicationDescriptor
             {
                 ClientId = "pmo-spa",
-                DisplayName = "PMO SPA",
-                RedirectUris = { new Uri($"{AppUrls.BaseUrl}/auth/callback") },
-                PostLogoutRedirectUris = { new Uri(AppUrls.BaseUrl) }
+                DisplayName = "PMO BFF Client",
+                RedirectUris =
+                {
+                    new Uri($"{AppUrls.BaseUrl}/signin-oidc")
+                },
+                PostLogoutRedirectUris =
+                {
+                    new Uri(AppUrls.BaseUrl)
+                }
             };
 
             AddPermissions(descriptor);
 
-            await manager.CreateAsync(descriptor);
+            var existing = await manager.FindByClientIdAsync("pmo-spa");
+
+            if (existing is null)
+            {
+                await manager.CreateAsync(descriptor);
+            }
+            else
+            {
+                await manager.UpdateAsync(existing, descriptor);
+            }
         }
 
         private static void AddPermissions(OpenIddictApplicationDescriptor descriptor)

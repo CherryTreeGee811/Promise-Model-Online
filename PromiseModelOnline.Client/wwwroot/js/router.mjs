@@ -1,8 +1,6 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate } from './navigation/router.mjs';
-import { getAccessToken } from './auth/auth-state.mjs';
-import { login, tryRefresh } from './auth/oidc.mjs';
-import { handleAuthRoutes } from './auth/router.mjs';
+
 import { handleProjectRoutes } from './projects/router.mjs';
 import { handleMomentRoutes } from './moments/router.mjs';
 import { handleFlowRoutes } from './flows/router.mjs';
@@ -12,28 +10,29 @@ import { handlePromiseRoutes } from './promises/router.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleIterationRoutes } from './iterations/router.mjs';
-import { getRoleFromToken, getNameFromToken } from './auth/parser.mjs';
+import { isAuthenticated } from './api.mjs';
+import { loadChangePasswordForm } from './auth/change-password.mjs';
+
+// ============================
+// ✅ INIT
+// ============================
 
 document.addEventListener("DOMContentLoaded", async () => {
     const contentDiv = document.getElementById("content");
     const navContentDiv = document.getElementById("main-menu");
 
-    // 1. Silent token refresh
-    const path = window.location.pathname;
-    const isAuthCallback = path === '/auth/callback';
-    if (!getAccessToken() && !isAuthCallback) {
-        try {
-            const refreshed = await tryRefresh();
-            if (!refreshed) { /* will be caught by route guards */ }
-        } catch { /* ignore */ }
-    }
+    // ✅ Handle browser navigation
+    window.addEventListener("popstate", () =>
+        routeHandler(navContentDiv, contentDiv)
+    );
 
-    // 2. Handle browser back/forward
-    window.addEventListener("popstate", () => routeHandler(navContentDiv, contentDiv));
-
-    // 3. Initial route
+    // ✅ Initial route
     routeHandler(navContentDiv, contentDiv);
 });
+
+// ============================
+// ✅ TEMPLATE LOADER
+// ============================
 
 export function loadTemplate(templateName, contentDiv) {
     return fetch(`/templates/${templateName}`)
@@ -51,66 +50,95 @@ export function loadTemplate(templateName, contentDiv) {
         });
 }
 
-export function routeHandler(navContentDiv, contentDiv) {
-    let path = window.location.pathname;
+// ============================
+// ✅ ROUTER
+// ============================
 
-    // Delegate all /auth/* routes to the auth router
-    if (path.startsWith('/auth')) {
-        handleAuthRoutes(path, navContentDiv, contentDiv);
-        return;
-    }
+export async function routeHandler(navContentDiv, contentDiv) {
+    let path = window.location.pathname;
 
     loadNavTemplate(navContentDiv, contentDiv);
 
-    function requireAuth() {
-        if (!getAccessToken()) {
-            sessionStorage.setItem("oidc_return_url", path);
-            login();
-            return false;
+    // ✅ BFF-style auth guard
+    async function requireAuth(callback) {
+        const auth = await isAuthenticated();
+
+        if (!auth) {
+            window.location.href = `/login?returnUrl=${encodeURIComponent(path)}`;
+            return;
         }
-        return true;
+
+        callback();
     }
 
     switch (true) {
-        case path == '/':
-            loadTemplate("home.html", contentDiv).then(() => loadHomePage());
+
+        case path === '/':
+            loadTemplate("home.html", contentDiv)
+                .then(() => loadHomePage());
             break;
 
         case path.startsWith('/projects') && path.includes('/iterations'):
-            if (requireAuth()) handleIterationRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handleIterationRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/projects'):
-            if (requireAuth()) handleProjectRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handleProjectRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/moments/'):
-            if (requireAuth()) handleMomentRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handleMomentRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/flows/'):
-            if (requireAuth()) handleFlowRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handleFlowRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/journeys/'):
-            if (requireAuth()) handleJourneyRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handleJourneyRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/epics/'):
-            if (requireAuth()) handleEpicRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handleEpicRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/promises/'):
-            if (requireAuth()) handlePromiseRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handlePromiseRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/notifications'):
-            if (requireAuth()) handleNotificationsRoutes(path, navContentDiv, contentDiv);
+            await requireAuth(() =>
+                handleNotificationsRoutes(path, navContentDiv, contentDiv)
+            );
             break;
 
         case path.startsWith('/invitations'):
-            if (requireAuth()) handleInvitationsRoute(path, contentDiv);
+            await requireAuth(() =>
+                handleInvitationsRoute(path, contentDiv)
+            );
             break;
+        
+        case path === '/change-password':
+            await requireAuth(() =>
+                loadTemplate("auth/change-password.html", contentDiv)
+                    .then(() => loadChangePasswordForm(navContentDiv, contentDiv))
+            );
+            break;
+
 
         default:
             contentDiv.innerHTML = `<h1>404 Not Found</h1>`;

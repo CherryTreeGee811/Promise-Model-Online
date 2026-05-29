@@ -1,71 +1,92 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using OpenIddict.Abstractions;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
+using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
 using PromiseModelOnline.Auth.Middleware;
-using PromiseModelOnline.Auth.Common;
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
-AppUrls.BaseUrl = builder.Configuration["APP_BASE_URL"] ?? "";
+// ---------- Auth/public URL config -------------------------------------
+var appBaseUrl = builder.Configuration["APP_BASE_URL"]
+    ?? throw new InvalidOperationException("APP_BASE_URL is required.");
 
+var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
+    ?? builder.Configuration["AUTH_AUTHORITY"]
+    ?? appBaseUrl;
+
+AppUrls.BaseUrl = appBaseUrl.TrimEnd('/');
+AppUrls.PublicIssuer = publicIssuer.TrimEnd('/');
+
+// Must happen before reading config values that may use *_FILE.
 builder.Configuration.AddSecretFileResolver();
 
+// ---------- CORS -------------------------------------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("SPA", policy =>
     {
-        policy.WithOrigins(AppUrls.BaseUrl)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.WithOrigins(
+                AppUrls.BaseUrl,
+                "https://promisemodelonline.gateway:8010")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
+// ---------- Database ---------------------------------------------------
 var connectionString = builder.Configuration
     .GetConnectionString("MSSQL")?
-    .ResolveSecrets() ?? "";
+    .ResolveSecrets();
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("ConnectionStrings:MSSQL is required.");
+}
 
 builder.Services.AddDbContext<AuthorizationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+// ---------- Identity ---------------------------------------------------
+builder.Services
+    .AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthorizationDbContext>()
     .AddDefaultTokenProviders()
     .AddSignInManager();
 
+// ---------- OpenIddict -------------------------------------------------
 builder.Services.AddOpenIddictServerConfig(
     builder.Configuration,
-    builder.Environment
-);
+    builder.Environment);
 
+// Identity already configures the application cookie scheme.
+// This explicit config is acceptable, but not strictly required.
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
-    options.DefaultScheme             = IdentityConstants.ApplicationScheme;
-    options.DefaultChallengeScheme    =
-        OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
 });
 
 builder.Services.AddAuthorization();
 
+// ---------- Rate limiting ----------------------------------------------
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("TokenEndpointPolicy", config =>
     {
-        config.PermitLimit          = 30;
-        config.Window               = TimeSpan.FromMinutes(1);
-        config.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit           = 0;
+        config.PermitLimit = 30;
+        config.Window = TimeSpan.FromMinutes(1);
+        config.QueueProcessingOrder =
+            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 0;
     });
 
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
+// ---------- HTTPS / MVC ------------------------------------------------
 builder.ConfigureHttps();
 builder.Services.AddControllersWithViews();
 
@@ -81,28 +102,35 @@ if (app.Environment.IsDevelopment())
     await AuthorizationSeeder.SeedAsync(scope.ServiceProvider);
 }
 
+// ---------- Forwarded headers ------------------------------------------
 var forwardedOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor   |
+        ForwardedHeaders.XForwardedFor |
         ForwardedHeaders.XForwardedProto |
         ForwardedHeaders.XForwardedHost
 };
-// Safe in a containerised environment where only the nginx proxy is the ingress.
-// If this service were ever exposed directly, remove these two lines and enumerate
-// KnownProxies explicitly to avoid trusting spoofed X-Forwarded-* headers.
+
+// Safe only while Auth is not directly exposed publicly.
 forwardedOptions.KnownIPNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
+
 app.UseForwardedHeaders(forwardedOptions);
+
+// This middleware is probably redundant if UseForwardedHeaders is correctly configured,
+// but keeping it is okay during local debugging.
 app.UseMiddleware<ForwardedHeadersFixMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
 app.UseStaticFiles();
+
 app.UseCors("SPA");
-app.UseMiddleware<TokenCookieMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.UseRateLimiter();
 
 app.MapDefaultControllerRoute();
+
 app.Run();

@@ -1,5 +1,5 @@
 import { routeHandler } from '../router.mjs';
-import { getAccessToken } from '../auth/auth-state.mjs';
+import { isAuthenticated } from '../api.mjs';
 import { startNotificationPolling } from '../notifications/badge.mjs';
 
 function initGeneralLinkListeners(navContentDiv, contentDiv) {
@@ -11,6 +11,7 @@ function initGeneralLinkListeners(navContentDiv, contentDiv) {
 }
 
 function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
+
     const notificationLink = document.getElementById("notifications-link");
     if (notificationLink) {
         notificationLink.addEventListener("click", (e) => {
@@ -19,17 +20,17 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
             routeHandler(navContentDiv, contentDiv);
         });
     }
-   
+
     document.getElementById("my-tasks-link").addEventListener("click", (e) => {
         e.preventDefault();
         window.history.pushState({}, '', '/moments/my-tasks');
         routeHandler(navContentDiv, contentDiv);
     });
-    
+
+    // ✅ FIXED
     document.getElementById("logout-link").addEventListener("click", (e) => {
         e.preventDefault();
-        window.history.pushState({}, '', '/logout');
-        routeHandler(navContentDiv, contentDiv);
+        window.location.href = "/logout";
     });
 
     document.getElementById("projects-link").addEventListener("click", (e) => {
@@ -57,12 +58,12 @@ function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
     }
 }
 
-export function loadNavTemplate(navContentDiv, contentDiv) {
+export async function loadNavTemplate(navContentDiv, contentDiv) {
+
     let templateName = "anonymous.html";
 
-    // Check if an existing token exists
-    const token = getAccessToken();
-    if (token) {
+    const auth = await isAuthenticated();
+    if (auth) {
         templateName = "authenticated.html";
     }
 
@@ -73,22 +74,22 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
         })
         .then(html => {
             navContentDiv.innerHTML = html;
-            
-            if (getAccessToken()) {
+
+            if (auth) {
                 startNotificationPolling();
             }
-            
+
             initNavLinkListeners(templateName, navContentDiv, contentDiv);
-            return Promise.resolve();
         })
         .catch(error => {
-            navContentDiv.innerHTML = `<h1>Error loading template</h1><p>${error.message}</p>`;
-            return Promise.reject(error);
+            navContentDiv.innerHTML =
+                `<h1>Error loading template</h1><p>${error.message}</p>`;
         });
 }
 
 function initNavLinkListeners(templateName, navContentDiv, contentDiv) {
     initGeneralLinkListeners(navContentDiv, contentDiv);
+
     if (templateName === "authenticated.html") {
         initAuthenticatedLinkListeners(navContentDiv, contentDiv);
     }

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using PromiseModelOnline.Auth.Models;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
@@ -30,13 +29,13 @@ public class DeleteAccountController : ControllerBase
             return BadRequest("Password is required.");
         }
 
-        var userName = User.FindFirst(JwtRegisteredClaimNames.NameId)?.Value;
-        if (string.IsNullOrEmpty(userName))
+        var userId = User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
 
-        var user = await _userManager.FindByNameAsync(userName);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
             return Unauthorized();

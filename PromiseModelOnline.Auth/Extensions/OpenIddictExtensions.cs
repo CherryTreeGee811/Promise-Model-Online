@@ -2,6 +2,7 @@ using OpenIddict.Abstractions;
 using PromiseModelOnline.Auth.DAL;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.X509Certificates;
+using PromiseModelOnline.Auth.Common;
 
 namespace PromiseModelOnline.Auth.Extensions
 {
@@ -20,6 +21,8 @@ namespace PromiseModelOnline.Auth.Extensions
                 })
                 .AddServer(options =>
                 {
+                    options.SetIssuer(new Uri(AppUrls.PublicIssuer));
+
                     ConfigureCertificates(options, config);
 
                     options.RegisterScopes(
@@ -41,17 +44,21 @@ namespace PromiseModelOnline.Auth.Extensions
                         .AllowRefreshTokenFlow()
                         .RequireProofKeyForCodeExchange();
 
+                    options.SetAuthorizationCodeLifetime(TimeSpan.FromMinutes(10));
                     options.SetRefreshTokenLifetime(TimeSpan.FromDays(7));
                     options.SetAccessTokenLifetime(TimeSpan.FromMinutes(15));
 
+                    options.DisableAccessTokenEncryption();
+
                     var aspNetCoreBuilder = options.UseAspNetCore()
                         .EnableAuthorizationEndpointPassthrough()
-                        .EnableTokenEndpointPassthrough()
                         .EnableEndSessionEndpointPassthrough()
                         .EnableStatusCodePagesIntegration();
 
                     if (env.IsDevelopment())
+                    {
                         aspNetCoreBuilder.DisableTransportSecurityRequirement();
+                    }
                 })
                 .AddValidation(options =>
                 {

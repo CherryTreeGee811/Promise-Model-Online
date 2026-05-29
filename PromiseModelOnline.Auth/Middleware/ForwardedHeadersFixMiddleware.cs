@@ -1,3 +1,5 @@
+namespace PromiseModelOnline.Auth.Middleware;
+
 public class ForwardedHeadersFixMiddleware
 {
     private readonly RequestDelegate _next;

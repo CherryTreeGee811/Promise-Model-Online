@@ -5,7 +5,8 @@ services:
     ports:
       - "9000:9000/tcp"
     depends_on:
-      - promisemodelonline.gateway
+      promisemodelonline.gateway:
+        condition: service_healthy
     networks:
       - promisemodelonline-net
     build:
@@ -20,21 +21,24 @@ services:
   promisemodelonline.gateway:
     image: ${DOCKER_REGISTRY-}promisemodelonlinegateway
     container_name: promisemodelonlinegateway
-    ports:
-      - "8010:8010"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=https://+:8010
+      - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - AUTH_METADATA_ADDRESS=${AUTH_METADATA_ADDRESS}
+      - APP_BASE_URL=${APP_BASE_URL}
     depends_on:
-      - promisemodelonline.api
-      - promisemodelonline.auth
+      promisemodelonline.api:
+        condition: service_healthy
+      promisemodelonline.auth:
+        condition: service_healthy
     networks:
       - promisemodelonline-net
     build:
       context: .
       dockerfile: PromiseModelOnline.Gateway/Dockerfile
     healthcheck:
-      test: ["CMD", "curl", "-kf", "https://localhost:8010"]
+      test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -42,12 +46,11 @@ services:
   promisemodelonline.api:
     image: ${DOCKER_REGISTRY-}promisemodelonlineapi
     container_name: promisemodelonlineapi
-    ports:
-      - "8000:8000/tcp"
     volumes:
       - ./run/secrets:/run/secrets:ro
     environment:
-      - APP_BASE_URL=${APP_BASE_URL}
+      - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - AUTH_METADATA_ADDRESS=${AUTH_METADATA_ADDRESS}
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=https://+:8000
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/db_api_password;TrustServerCertificate=true
@@ -70,8 +73,6 @@ services:
   promisemodelonline.auth:
     image: ${DOCKER_REGISTRY-}promisemodelonlineauth
     container_name: promisemodelonlineauth
-    ports:
-      - "8060:8060/tcp"
     volumes:
       - ./PromiseModelOnline.Auth/cert.pfx:/app/cert.pfx:ro
       - ./run/secrets:/run/secrets:ro
@@ -81,6 +82,7 @@ services:
       - ASPNETCORE_URLS=https://+:8060
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER};Password_FILE=/run/secrets/db_auth_password;TrustServerCertificate=true
       - Certificates__Password_FILE=/run/secrets/cert_password
+      - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
     depends_on:
       promisemodelonline.db-init:
         condition: service_completed_successfully
@@ -100,8 +102,6 @@ services:
     container_name: promisemodelonlinedb
     networks:
       - promisemodelonline-net
-    ports:
-      - 1433:1433/tcp
     volumes:
       - ./run/secrets:/run/secrets:ro
       - mssql-data:/var/opt/mssql

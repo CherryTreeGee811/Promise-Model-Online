@@ -4,6 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Auth.Models;
 using PromiseModelOnline.Auth.ViewModels;
 using PromiseModelOnline.Auth.Common;
+using System.Security.Claims;
+using OpenIddict.Abstractions;
+using Microsoft.AspNetCore.Authentication;
+using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
@@ -33,63 +37,31 @@ public class LoginController : Controller
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
-    [AllowAnonymous]
-    [HttpPost("")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Index(LoginViewModel model)
+    [HttpPost("/connect/login")]
+    public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)
-        {
-            ViewBag.ReturnUrl = model.ReturnUrl;
-            ViewBag.Registered = (Request?.Query?["registered"].ToString() ?? "") == "true";
             return View(model);
-        }
-
-        var returnUrl = model.ReturnUrl;
-        if (string.IsNullOrEmpty(returnUrl))
-        {
-            returnUrl = Request?.Query?["returnUrl"].ToString();
-        }
-
-        model.ReturnUrl = returnUrl;
 
         var user = await _userManager.FindByNameAsync(model.Username);
-        if (user == null)
+
+        if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
         {
-            ModelState.AddModelError(string.Empty, "Invalid username or password.");
-            ViewBag.ReturnUrl = returnUrl;
+            ModelState.AddModelError("", "Invalid credentials");
             return View(model);
         }
 
-        var result = await _signInManager.PasswordSignInAsync(
-            user,
-            model.Password,
-            isPersistent: false,
-            lockoutOnFailure: false
-        );
+        // ✅ ONLY sign into Identity cookie
+        await _signInManager.SignInAsync(user, isPersistent: false);
 
-        if (result.Succeeded)
+        var returnUrl = model.ReturnUrl;
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {
-            if (!string.IsNullOrEmpty(returnUrl))
-            {
-                // FIX: Allow relative URLs OR absolute URLs pointing back to your proxy gateway domain
-                if (Url.IsLocalUrl(returnUrl) || returnUrl.StartsWith("/"))
-                {
-                    return LocalRedirect(returnUrl);
-                }
-
-                if (returnUrl.StartsWith(AppUrls.BaseUrl, StringComparison.OrdinalIgnoreCase))
-                {
-                    return Redirect(returnUrl);
-                }
-            }
-
-            // Fallback if no return URL was found
-            return Redirect("/");
+            // ✅ go back to authorize endpoint
+            return Redirect(returnUrl);
         }
 
-        ModelState.AddModelError(string.Empty, "Invalid username or password.");
-        ViewBag.ReturnUrl = model.ReturnUrl;
-        return View(model);
+        return Redirect("/");
     }
 }
