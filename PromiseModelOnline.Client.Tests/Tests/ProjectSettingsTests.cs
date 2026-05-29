@@ -3,10 +3,7 @@ using PromiseModelOnline.Client.Tests.Helpers;
 using OpenQA.Selenium;
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace PromiseModelOnline.Client.Tests.Tests
 {
@@ -18,7 +15,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
 			EnsureLoggedIn();
 
 			var projectName = $"Selenium Delete Project {Guid.NewGuid():N}";
-			var projectId = CreateProject(projectName);
+			var projectId = CreateProjectViaUi(projectName);
 
 			NavigateSpa($"/projects/{projectId}/settings");
 
@@ -40,50 +37,19 @@ namespace PromiseModelOnline.Client.Tests.Tests
 				"Project row was not removed after deletion");
 		}
 
-		private int CreateProject(string projectName)
+		private int CreateProjectViaUi(string projectName)
 		{
-			var token = ((IJavaScriptExecutor)Driver).ExecuteScript("return sessionStorage.getItem('pmo.accessToken');")?.ToString();
-			Assert.That(token, Is.Not.Null.And.Not.Empty, "Access token was not available for API setup.");
+			NavigateSpa("/projects/add");
 
-			using var handler = new HttpClientHandler
-			{
-				ServerCertificateCustomValidationCallback = (_, _, _, _) => true
-			};
+			WaitForElement(By.Id("project-name-input")).SendKeys(projectName);
+			WaitForElement(By.Id("first-promise-input")).SendKeys("As a tester, validate project deletion.");
+			WaitForClickable(By.Id("create-project-btn")).Click();
 
-			using var client = new HttpClient(handler)
-			{
-				BaseAddress = new Uri(BaseUrl)
-			};
+			WaitUntil(driver => Regex.IsMatch(driver.Url, @"/projects/\d+/graph$"), 20);
+			var match = Regex.Match(Driver.Url, @"/projects/(\d+)/graph$");
+			Assert.That(match.Success, Is.True, $"Unexpected project redirect URL: {Driver.Url}");
 
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-			var payload = JsonSerializer.Serialize(new
-			{
-				name = projectName,
-				description = (string?)null,
-			});
-
-			using var response = client.PostAsync(
-				"/api/projects/create",
-				new StringContent(payload, Encoding.UTF8, "application/json")).GetAwaiter().GetResult();
-
-			var responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-			Assert.That(response.IsSuccessStatusCode, Is.True, $"Project creation failed: {response.StatusCode} {responseBody}");
-
-			using var document = JsonDocument.Parse(responseBody);
-			var root = document.RootElement;
-
-			if (root.TryGetProperty("id", out var idElement))
-			{
-				return idElement.GetInt32();
-			}
-
-			if (root.TryGetProperty("Id", out var legacyIdElement))
-			{
-				return legacyIdElement.GetInt32();
-			}
-
-			throw new AssertionException("Project creation response did not include an id.");
+			return int.Parse(match.Groups[1].Value);
 		}
 	}
 }
