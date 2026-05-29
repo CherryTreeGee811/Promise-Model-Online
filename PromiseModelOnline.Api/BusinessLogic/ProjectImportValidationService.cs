@@ -53,7 +53,6 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
         }
 
         ValidateHierarchy(document, result);
-        DetectCycles(document, result);
         return result;
     }
 
@@ -179,99 +178,6 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
             .SelectMany(journey => journey.Flows)
             .SelectMany(flow => flow.Moments)
             .Any(moment => moment.Id == momentId);
-    }
-
-    private static void DetectCycles(ProjectExportDocument document, ProjectImportValidationResult result)
-    {
-        var project = document.Project!;
-        var adj = new Dictionary<string, List<string>>();
-
-        foreach (var iteration in project.Iterations)
-        {
-            foreach (var stride in iteration.Strides)
-            {
-                var sKey = $"S:{stride.Id}";
-                if (!adj.ContainsKey(sKey)) adj[sKey] = new List<string>();
-                foreach (var momentId in stride.MomentIds ?? Enumerable.Empty<int>())
-                {
-                    var mKey = $"M:{momentId}";
-                    adj[sKey].Add(mKey);
-                }
-            }
-        }
-
-        foreach (var promise in project.ProductPromises)
-        foreach (var epic in promise.Epics)
-        foreach (var journey in epic.Journeys)
-        foreach (var flow in journey.Flows)
-        foreach (var moment in flow.Moments)
-        {
-            var mKey = $"M:{moment.Id}";
-            if (!adj.ContainsKey(mKey)) adj[mKey] = new List<string>();
-            if (moment.AssignedStrideId.HasValue) adj[mKey].Add($"S:{moment.AssignedStrideId.Value}");
-            if (moment.OriginalStrideId.HasValue) adj[mKey].Add($"S:{moment.OriginalStrideId.Value}");
-        }
-
-        var state = new Dictionary<string, int>();
-        var stack = new List<string>();
-
-        foreach (var node in adj.Keys)
-        {
-            if (state.ContainsKey(node)) continue;
-            if (HasCycle(node, adj, state, stack, out var cycle))
-            {
-                var labels = cycle.Select(GetNodeLabel);
-                result.Errors.Add($"Circular dependency detected: {string.Join(" -> ", labels)}");
-            }
-        }
-    }
-
-    private static bool HasCycle(string node, Dictionary<string, List<string>> adj, Dictionary<string, int> state, List<string> stack, out List<string> cycle)
-    {
-        state[node] = 1;
-        stack.Add(node);
-        cycle = new List<string>();
-
-        if (adj.TryGetValue(node, out var neighbors))
-        {
-            foreach (var nb in neighbors)
-            {
-                if (!state.TryGetValue(nb, out var s))
-                {
-                    if (HasCycle(nb, adj, state, stack, out var innerCycle))
-                    {
-                        cycle = innerCycle;
-                        return true;
-                    }
-                }
-                else if (s == 1)
-                {
-                    var idx = stack.IndexOf(nb);
-                    if (idx >= 0)
-                    {
-                        cycle = stack.Skip(idx).ToList();
-                        cycle.Add(nb);
-                    }
-                    else
-                    {
-                        cycle = new List<string> { nb, node, nb };
-                    }
-
-                    return true;
-                }
-            }
-        }
-
-        state[node] = 2;
-        stack.RemoveAt(stack.Count - 1);
-        return false;
-    }
-
-    private static string GetNodeLabel(string key)
-    {
-        if (key.StartsWith("S:")) return $"Stride {key.Substring(2)}";
-        if (key.StartsWith("M:")) return $"Moment {key.Substring(2)}";
-        return key;
     }
 
     private static int GetId<T>(T item) where T : class

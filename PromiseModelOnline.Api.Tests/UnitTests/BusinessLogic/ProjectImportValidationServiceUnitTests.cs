@@ -72,6 +72,8 @@ public class ProjectImportValidationServiceUnitTests
                                                         Statement = "Moment",
                                                         Type = MomentType.Job,
                                                         Status = MomentStatus.Todo,
+                                                        AssignedStrideId = 80,
+                                                        OriginalStrideId = 80,
                                                         StatusColor = "red",
                                                         Tasks =
                                                         [
