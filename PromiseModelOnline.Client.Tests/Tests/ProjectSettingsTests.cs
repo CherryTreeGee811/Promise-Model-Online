@@ -43,7 +43,9 @@ namespace PromiseModelOnline.Client.Tests.Tests
 
 			WaitForElement(By.Id("project-name-input")).SendKeys(projectName);
 			WaitForElement(By.Id("first-promise-input")).SendKeys("As a tester, validate project deletion.");
-			ScrollElementIntoViewAndClick(By.Id("create-project-btn"));
+
+			((IJavaScriptExecutor)Driver).ExecuteScript(
+				"document.getElementById('add-project-form').requestSubmit();");
 
 			WaitUntil(driver => Regex.IsMatch(driver.Url, @"/projects/\d+/graph$"), 20);
 			var match = Regex.Match(Driver.Url, @"/projects/(\d+)/graph$");
