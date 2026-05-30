@@ -26,6 +26,7 @@ builder.Services.AddCors(options =>
                 "https://promisemodelonlineclient:9000")
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .AllowAnyHeader()
+            .WithExposedHeaders("X-Total-Count")
             .AllowCredentials();
         });
 });

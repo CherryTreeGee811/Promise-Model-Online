@@ -1,11 +1,12 @@
 import { routeHandler } from '../router.mjs';
-import { exportProject, getProjectById, getProjectPromises, deleteProject, updateProjectDetails } from './api.mjs';
+import { exportProject, getProjectAuditHistory, getProjectById, getProjectPromises, deleteProject, updateProjectDetails } from './api.mjs';
 import { getEpicsByPromise } from '../promises/api.mjs';
 import { getJourneysByEpic } from '../epics/api.mjs';
 import { getFlowsByJourney } from '../journeys/api.mjs';
 import { getMomentsByFlow } from '../flows/api.mjs';
 import { getProjectMembers } from '../strides/api.mjs';
 import { renderSummaryTable } from './summary.mjs';
+import { formatTimestamp, getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
 
 export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     const form = document.getElementById('project-settings-form');
@@ -13,6 +14,10 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     const descriptionInput = document.getElementById('project-description-input');
     const summaryPanel = document.getElementById('project-summary-panel');
     const summaryLoading = document.getElementById('project-summary-loading');
+    const auditPanel = document.getElementById('project-audit-panel');
+    const auditLoading = document.getElementById('project-audit-loading');
+    const auditHistoryLink = document.getElementById('project-audit-history-link');
+    const auditDetailsModalContainerId = 'project-audit-details-modal-container';
     const errorText = document.getElementById('error-text');
     const successText = document.getElementById('success-text');
     const exportButton = document.getElementById('export-project-btn');
@@ -35,9 +40,11 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     let exportPopoverHideTimer = null;
     let exportPopover = null;
 
-    if (!form || !titleInput || !descriptionInput || !summaryPanel || !summaryLoading || !errorText || !successText || !exportButton || !deleteButton || !deleteConfirmationInput || !deleteConfirmationText) {
+    if (!form || !titleInput || !descriptionInput || !summaryPanel || !summaryLoading || !auditPanel || !auditLoading || !auditHistoryLink || !errorText || !successText || !exportButton || !deleteButton || !deleteConfirmationInput || !deleteConfirmationText) {
         return;
     }
+
+    ensureAuditModal();
 
     function clearMessages() {
         errorText.textContent = '';
@@ -47,6 +54,38 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     function setSummaryLoading(loading) {
         summaryLoading.hidden = !loading;
         summaryPanel.hidden = loading;
+    }
+
+    function setAuditLoading(loading) {
+        auditLoading.hidden = !loading;
+        auditPanel.hidden = loading;
+    }
+
+    function ensureAuditModal() {
+        let container = document.getElementById(auditDetailsModalContainerId);
+        if (!container) {
+            container = document.createElement('div');
+            container.id = auditDetailsModalContainerId;
+            document.body.appendChild(container);
+        }
+
+        container.innerHTML = renderAuditDetailsModal();
+    }
+
+    function openAuditDetails(item) {
+        const payload = getAuditDetailsPayload(item);
+        const titleEl = document.getElementById('audit-details-modal-title');
+        const bodyEl = document.getElementById('audit-details-modal-body');
+        const modalEl = document.getElementById('audit-details-modal');
+
+        if (!titleEl || !bodyEl || !modalEl) return;
+
+        titleEl.textContent = payload.title;
+        bodyEl.innerHTML = payload.html;
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
     }
 
     function showExportPopover() {
@@ -163,14 +202,41 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         }
     }
 
+    async function loadAuditHistory() {
+        setAuditLoading(true);
+
+        try {
+            const { items } = await getProjectAuditHistory(projectId, 10, 0);
+            auditPanel.innerHTML = renderAuditTable(items, { showEntity: false });
+            bindAuditDetailLinks(items);
+        } catch (error) {
+            auditPanel.innerHTML = '<p class="text-danger mb-0">Failed to load project activity.</p>';
+            console.warn('Failed to load project audit history:', error);
+        } finally {
+            setAuditLoading(false);
+        }
+    }
+
+    function bindAuditDetailLinks(items) {
+        const detailLinks = auditPanel.querySelectorAll('.audit-show-details-link');
+        detailLinks.forEach((link, index) => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                openAuditDetails(items[index]);
+            });
+        });
+    }
+
     async function loadProject() {
         try {
+            auditHistoryLink.href = `/projects/${projectId}/history`;
             const project = await getProjectById(projectId);
             currentProject = project;
             titleInput.value = project.name ?? '';
             descriptionInput.value = project.description ?? '';
             refreshDeleteGate(project.name ?? '');
             await loadSummary(project);
+            await loadAuditHistory();
         } catch (error) {
             errorText.textContent = 'Failed to load project settings.';
             console.error(error);
@@ -200,6 +266,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
             descriptionInput.value = updatedProject.description ?? '';
             refreshDeleteGate(updatedProject.name ?? '');
             renderSummary(updatedProject, summaryState.counts, summaryState.memberCount);
+            await loadAuditHistory();
             successText.textContent = 'Project settings saved.';
         } catch (error) {
             errorText.textContent = error.message || 'Failed to save project settings.';
@@ -242,6 +309,12 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         }
     });
 
+    auditHistoryLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        window.history.pushState({}, '', `/projects/${projectId}/history`);
+        routeHandler(navContentDiv, contentDiv);
+    });
+
     loadProject();
 }
 
@@ -257,10 +330,7 @@ function downloadBlob(blob, filename) {
 }
 
 function formatDate(value) {
-    if (!value) return 'Unknown';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleString();
+    return formatTimestamp(value);
 }
+
 

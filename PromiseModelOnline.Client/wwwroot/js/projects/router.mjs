@@ -5,6 +5,7 @@ import { loadStridesPage } from '../strides/router.mjs';
 import { loadSharePage } from './share.mjs';
 import { loadGraphPage } from './graph.mjs';
 import { loadProjectSettingsPage } from './settings.mjs';
+import { loadProjectAuditHistoryPage } from './history.mjs';
 
 export function handleProjectRoutes(path, navContentDiv, contentDiv) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -50,6 +51,15 @@ export function handleProjectRoutes(path, navContentDiv, contentDiv) {
         loadTemplate('projects/settings.html', contentDiv)
             .then(() => loadProjectSettingsPage(navContentDiv, contentDiv, settingsMatch[1]))
             .catch(err => { contentDiv.innerHTML = '<h1>Error loading project settings</h1>'; });
+        return;
+    }
+
+    // Match /projects/{id}/history
+    const historyMatch = path.match(/^\/projects\/(\d+)\/history$/);
+    if (historyMatch) {
+        loadTemplate('projects/history.html', contentDiv)
+            .then(() => loadProjectAuditHistoryPage(navContentDiv, contentDiv, historyMatch[1]))
+            .catch(err => { contentDiv.innerHTML = '<h1>Error loading project activity</h1>'; });
         return;
     }
 
