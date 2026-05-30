@@ -569,7 +569,7 @@ input[type=button]:hover, input[type=submit]:hover {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
-  align-items: end;
+  align-items: start;
 }
 
 .graph-filter-field {
@@ -582,15 +582,21 @@ input[type=button]:hover, input[type=submit]:hover {
   min-width: 220px;
 }
 
-.graph-filter-checkbox {
-  display: inline-flex;
+.graph-filter-checkbox-field .form-check {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
   min-height: 2.75rem;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: var(--radius-sm);
-  background: #ffffff;
+  margin: 0;
+  padding-left: 2.75rem;
+}
+
+.graph-filter-checkbox-field .form-check-input {
+  float: none;
+  margin: 0;
+}
+
+.graph-filter-checkbox-field .form-check-label {
+  margin: 0;
   color: #334155;
   font-weight: 600;
 }

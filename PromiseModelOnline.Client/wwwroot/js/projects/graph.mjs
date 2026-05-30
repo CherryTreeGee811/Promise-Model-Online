@@ -447,13 +447,13 @@ function renderFilterBar() {
                 <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeAttribute(graphState.filters.search)}" />
             </label>
 
-            <label class="graph-filter-field graph-filter-checkbox-field">
+            <div class="graph-filter-field graph-filter-checkbox-field">
                 <span>Search options</span>
-                <span class="graph-filter-checkbox">
-                    <input id="graph-filter-include-children" type="checkbox" ${graphState.filters.includeChildren ? 'checked' : ''} />
-                    <span>Include Children</span>
-                </span>
-            </label>
+                <div class="form-check form-switch">
+                    <input id="graph-filter-include-children" class="form-check-input" type="checkbox" role="switch" ${graphState.filters.includeChildren ? 'checked' : ''} />
+                    <label class="form-check-label" for="graph-filter-include-children">Include Children</label>
+                </div>
+            </div>
 
             <label class="graph-filter-field">
                 <span>Effort estimate</span>
@@ -481,11 +481,10 @@ function renderFilterBar() {
                 <span>Moment status</span>
                 <select id="graph-filter-status" class="graph-filter-select">
                     <option value="all" ${graphState.filters.status === 'all' ? 'selected' : ''}>All statuses</option>
-                    <option value="todo" ${graphState.filters.status === 'todo' ? 'selected' : ''}>Todo</option>
-                    <option value="inprogress" ${graphState.filters.status === 'inprogress' ? 'selected' : ''}>In Progress</option>
-                    <option value="blocked" ${graphState.filters.status === 'blocked' ? 'selected' : ''}>Blocked</option>
-                    <option value="done" ${graphState.filters.status === 'done' ? 'selected' : ''}>Done</option>
-                    <option value="other" ${graphState.filters.status === 'other' ? 'selected' : ''}>Other</option>
+                    <option value="todo" ${graphState.filters.status === 'todo' ? 'selected' : ''}>🔴 Todo</option>
+                    <option value="inprogress" ${graphState.filters.status === 'inprogress' ? 'selected' : ''}>🟠 In Progress</option>
+                    <option value="blocked" ${graphState.filters.status === 'blocked' ? 'selected' : ''}>⚫️ Blocked</option>
+                    <option value="done" ${graphState.filters.status === 'done' ? 'selected' : ''}>🟢 Done</option>
                 </select>
             </label>
 
