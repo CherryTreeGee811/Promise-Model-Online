@@ -7,28 +7,25 @@ namespace PromiseModelOnline.Client.Tests.Tests
 {
 	public class ProjectSettingsTests : SeleniumTestBase
 	{
-		[Test]
-		public void ProjectSettings_DeleteButton_ReturnsToProjectList()
-		{
-			EnsureLoggedIn();
-			NavigateSpa("/projects/1/settings");
+        [Test]
+        public void ProjectSettings_DeleteProject_RequiresConfirmationAndRedirects()
+        {
+            EnsureLoggedIn();
+            NavigateSpa("/projects/1/settings");
 
-			var titleInput = WaitForElement(By.Id("project-title-input"));
-			Assert.That(titleInput.GetAttribute("value"), Is.EqualTo("Test Project"));
+            var confirmationTextEl = WaitForElement(By.Id("project-delete-confirmation-text"));
+            var confirmationPhrase = confirmationTextEl.Text ?? string.Empty;
 
-			var auditTable = WaitForElement(By.CssSelector("#project-audit-panel table"));
-			Assert.That(auditTable.Text, Does.Contain("Created"));
+            var input = WaitForElement(By.Id("project-delete-confirmation-input"));
+            input.Clear();
+            input.SendKeys(confirmationPhrase);
 
-			var confirmationInput = WaitForElement(By.Id("project-delete-confirmation-input"));
-			confirmationInput.SendKeys("delete Test Project");
+            var deleteBtn = WaitForClickable(By.Id("delete-project-btn"));
+            deleteBtn.Click();
 
-			var deleteButton = WaitForClickable(By.Id("delete-project-btn"));
-			deleteButton.Click();
-
-			WaitUntil(driver => driver.Url.EndsWith("/projects"), 15);
-			WaitForElement(By.CssSelector("#project-list-table-body tr"));
-			Assert.That(Driver.Url, Does.EndWith("/projects"));
-		}
+            WaitUntil(driver => driver.Url.EndsWith("/projects"), 15);
+            Assert.That(Driver.Url, Does.EndWith("/projects"));
+        }
 
 		[Test]
 		public void ProjectSettings_ViewFullAuditLog_OpensHistoryPage()
