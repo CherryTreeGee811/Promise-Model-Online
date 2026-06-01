@@ -385,11 +385,24 @@ input[type=button]:hover, input[type=submit]:hover {
   color: #ecf0f1;
   padding: var(--spacing-md) var(--spacing-lg);
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
 }
 .stride-header h3 { color: inherit; margin: 0; }
+.stride-header-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+.stride-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+  flex-shrink: 0;
+}
 .stride-dates { font-size: var(--font-size-sm); opacity: 0.9; }
 .stride-duration {
   font-size: var(--font-size-xs);
@@ -399,6 +412,36 @@ input[type=button]:hover, input[type=submit]:hover {
 }
 
 .stride-moments { padding: var(--spacing-md) var(--spacing-lg); }
+
+.stride-toggle-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+}
+.stride-toggle-btn:focus,
+.stride-toggle-btn:focus-visible,
+.stride-toggle-btn:hover {
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+.stride-toggle-btn .bi {
+  font-size: 1.25rem;
+}
+
+.stride-card.is-collapsed .stride-moments,
+.backlog-board.is-collapsed .backlog-content {
+  display: none;
+}
 
 /* Backlog card uses same styles as detail cards */
 .backlog-card,
