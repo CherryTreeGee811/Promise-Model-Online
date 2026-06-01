@@ -2,16 +2,26 @@ import { getProjectById } from '../projects/api.mjs';
 import { getIterationsByProject, getIterationBurndown } from './api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { drawBurndownChart } from '../utils/burndown.mjs';
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 
 export function loadIterationHistory(projectId) {
     const listDiv = document.getElementById('iterations-list');
     const detailDiv = document.getElementById('iteration-detail');
     const errorEl = document.getElementById('error-text');
     const projectTitle = document.getElementById('project-title');
+    const createIterationBtn = document.getElementById('create-iteration-btn');
 
     // Start with list visible, detail hidden
     listDiv.classList.remove('hidden');
     detailDiv.classList.add('hidden');
+
+    if (createIterationBtn && createIterationBtn.dataset.bound !== '1') {
+        createIterationBtn.dataset.bound = '1';
+        createIterationBtn.addEventListener('click', async () => {
+            openIterationCreateModal(projectId, () => loadIterationHistory(projectId));
+        });
+    }
 
     listDiv.innerHTML = renderLoadingSpinner('Loading iterations');
     errorEl.textContent = '';
@@ -139,22 +149,6 @@ export function loadIterationHistory(projectId) {
         detailDiv.classList.add('hidden');
         listDiv.classList.remove('hidden');
     });
-}
-
-function renderLoadingSpinner(message) {
-    return `
-        <div class="d-flex w-100 justify-content-center align-items-center py-5" aria-live="polite">
-            <div class="spinner-border text-primary" role="status" aria-label="${escapeHtml(message)}">
-                <span class="visually-hidden">${escapeHtml(message)}</span>
-            </div>
-        </div>
-    `;
-}
-
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
 }
 
 function formatDate(dateStr) {

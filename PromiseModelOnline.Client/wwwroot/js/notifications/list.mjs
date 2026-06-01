@@ -1,5 +1,6 @@
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 
 let liveListenerRegistered = false;
 
@@ -177,15 +178,4 @@ export function loadNotificationsPage(contentDiv) {
     }
 
     refreshNotificationsPage();
-}
-
-/* ---------- Safe escape (FIXED) ---------- */
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[m]));
 }

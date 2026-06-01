@@ -224,23 +224,27 @@ namespace PromiseModelOnline.Api.BusinessLogic
             };
         }
 
-        private async Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
+        private Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
+            => ComputeBurndownAsync(moments, null, null);
+
+        private Task<List<BurndownPointDTO>> ComputeBurndownAsync(
+            List<Moment> moments,
+            DateTime? startDateOverride,
+            DateTime? endDateOverride)
         {
             var result = new List<BurndownPointDTO>();
-            if (moments.Count == 0) return result;
+            if (moments.Count == 0) return Task.FromResult(result);
 
-            var startDate = moments.Min(m => m.CreatedAt).Date;
-            var today = DateTime.UtcNow.Date;
-
-            var completedDates = moments
+            var startDate = (startDateOverride ?? moments.Min(m => m.CreatedAt)).Date;
+            var computedEndDate = moments
                 .Where(m => m.CompletedAt.HasValue)
                 .Select(m => m.CompletedAt!.Value.Date)
-                .ToList();
+                .DefaultIfEmpty(DateTime.UtcNow.Date)
+                .Max();
 
-            DateTime? latestCompleted = completedDates.Count > 0
-                ? completedDates.Max()
-                : null;
-            var endDate = latestCompleted > today ? latestCompleted.Value : today;
+            var endDate = (endDateOverride ?? computedEndDate).Date;
+            if (endDate < startDate)
+                endDate = startDate;
 
             var initialEffort = moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
             var totalDays = (endDate - startDate).Days;
@@ -263,15 +267,31 @@ namespace PromiseModelOnline.Api.BusinessLogic
                     IdealRemaining = idealRemaining
                 });
             }
-            return result;
+
+            return Task.FromResult(result);
         }
 
         public async Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId)
         {
+            var iterationStrides = (await _strideService.GetStridesByIterationAsync(iterationId)).ToList();
             var assigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: false);
             var unassigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: true);
             var allMoments = assigned.Concat(unassigned).GroupBy(m => m.Id).Select(g => g.First()).ToList();
-            return await ComputeBurndownAsync(allMoments);
+
+            if (iterationStrides.Count == 0)
+            {
+                return await ComputeBurndownAsync(allMoments);
+            }
+
+            var startDate = iterationStrides
+                .Select(stride => stride.StartDate.Date)
+                .Min();
+
+            var endDate = iterationStrides
+                .Select(stride => stride.EndDate.Date)
+                .Max();
+
+            return await ComputeBurndownAsync(allMoments, startDate, endDate);
         }
     }
 }

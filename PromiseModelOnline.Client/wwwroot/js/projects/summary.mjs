@@ -1,3 +1,5 @@
+import { escapeHtml } from '../utils/html.mjs';
+
 export function renderSummaryTable(container, rows) {
     if (!container) {
         return;
@@ -19,14 +21,4 @@ export function renderSummaryTable(container, rows) {
             </table>
         </div>
     `;
-}
-
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, character => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[character]));
 }

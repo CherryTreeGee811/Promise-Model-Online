@@ -17,6 +17,7 @@ namespace PromiseModelOnline.Api.Extensions
     {
         public static void AddPromiseModelOnlineScopes(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddHttpContextAccessor();
             services.AddDbContext<PromiseModelOnlineContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("MSSQL")));
 

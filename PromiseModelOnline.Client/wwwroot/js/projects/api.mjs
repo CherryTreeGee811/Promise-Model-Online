@@ -73,6 +73,17 @@ export async function exportProject(projectId) {
     return res.blob();
 }
 
+export async function getProjectAuditHistory(projectId, take = 10, skip = 0) {
+    const res = await authFetch(`${base}/api/audit-events/projects/${projectId}?take=${take}&skip=${skip}`);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const items = await res.json();
+    const totalCount = parseInt(res.headers.get('X-Total-Count') || `${items.length}`, 10);
+
+    return { items, totalCount: Number.isNaN(totalCount) ? items.length : totalCount };
+}
+
 export async function importProject(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
