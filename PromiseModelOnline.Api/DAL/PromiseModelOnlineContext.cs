@@ -120,7 +120,8 @@ namespace PromiseModelOnline.Api.DAL
                 return await base.SaveChangesAsync(cancellationToken);
             }
 
-            var startedTransaction = Database.CurrentTransaction is null;
+            var supportsTransactions = Database.IsRelational();
+            var startedTransaction = supportsTransactions && Database.CurrentTransaction is null;
             if (startedTransaction)
             {
                 await Database.BeginTransactionAsync(cancellationToken);
