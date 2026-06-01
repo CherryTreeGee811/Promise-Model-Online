@@ -10,137 +10,197 @@ import { handlePromiseRoutes } from './promises/router.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleIterationRoutes } from './iterations/router.mjs';
+
 import { isAuthenticated } from './api.mjs';
 import { loadChangePasswordForm } from './auth/change-password.mjs';
+import { escapeHtml } from "./utils/html.mjs";
+import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
 
 // ============================
 // ✅ INIT
 // ============================
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
     const contentDiv = document.getElementById("content");
     const navContentDiv = document.getElementById("main-menu");
 
-    // ✅ Handle browser navigation
     window.addEventListener("popstate", () =>
         routeHandler(navContentDiv, contentDiv)
     );
 
-    // ✅ Initial route
     routeHandler(navContentDiv, contentDiv);
 });
 
 // ============================
-// ✅ TEMPLATE LOADER
+// ✅ NAVIGATION API
 // ============================
 
-export function loadTemplate(templateName, contentDiv) {
-    return fetch(`/templates/${templateName}`)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.text();
-        })
-        .then(html => {
-            contentDiv.innerHTML = html;
-            return Promise.resolve();
-        })
-        .catch(error => {
-            contentDiv.innerHTML = `<h1>Error loading template</h1><p>${error.message}</p>`;
-            return Promise.reject(error);
-        });
+export function navigate(path, navContentDiv, contentDiv) {
+    window.history.pushState({}, "", path);
+    return routeHandler(navContentDiv, contentDiv);
 }
+
+// ============================
+// ✅ TEMPLATE LOADER (Async)
+// ============================
+
+export async function loadTemplate(templateName, contentDiv) {
+    try {
+        const response = await fetch(`/templates/${templateName}`, {
+            credentials: "same-origin",
+            headers: {
+                "Accept": "text/html"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to load template: ${templateName}`);
+        }
+
+        contentDiv.innerHTML = await response.text();
+    } catch (error) {
+        contentDiv.innerHTML = `
+            <h1>Error loading template</h1>
+            <p>${escapeHtml(error.message)}</p>
+        `;
+        throw error;
+    }
+}
+
+// ============================
+// ✅ AUTH GUARD
+// ============================
+
+async function requireAuth(path) {
+    const auth = await isAuthenticated();
+
+    if (!auth) {
+        window.location.href = `/login?returnUrl=${encodeURIComponent(path)}`;
+        return false;
+    }
+
+    return true;
+}
+
+// ============================
+// ✅ ROUTES (DRY + EXTENSIBLE)
+// ============================
+
+const routes = [
+
+    {
+        match: p => p === '/',
+        auth: false,
+        handler: async ({ contentDiv }) => {
+            await loadTemplate("home.html", contentDiv);
+            loadHomePage();
+        }
+    },
+
+    {
+        match: p => p.startsWith('/projects') && p.includes('/iterations'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleIterationRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/projects'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleProjectRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/moments'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleMomentRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/flows'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleFlowRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/journeys'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleJourneyRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/epics'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleEpicRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/promises'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handlePromiseRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/notifications'),
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleNotificationsRoutes(path, navContentDiv, contentDiv)
+    },
+
+    {
+        match: p => p.startsWith('/invitations'),
+        auth: true,
+        handler: ({ path, contentDiv }) =>
+            handleInvitationsRoute(path, contentDiv)
+    },
+
+    {
+        match: p => p === '/change-password',
+        auth: true,
+        handler: async ({ navContentDiv, contentDiv }) => {
+            await loadTemplate("auth/change-password.html", contentDiv);
+            loadChangePasswordForm(navContentDiv, contentDiv);
+        }
+    },
+    {
+        match: p => p === '/knowledge-base',
+        auth: true,
+        handler: ({ path, navContentDiv, contentDiv }) =>
+            handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv)
+    }
+];
 
 // ============================
 // ✅ ROUTER
 // ============================
 
 export async function routeHandler(navContentDiv, contentDiv) {
-    let path = window.location.pathname;
+    const path = window.location.pathname;
 
-    loadNavTemplate(navContentDiv, contentDiv);
+    await loadNavTemplate(navContentDiv, contentDiv);
 
-    // ✅ BFF-style auth guard
-    async function requireAuth(callback) {
-        const auth = await isAuthenticated();
+    const route = routes.find(r => r.match(path));
 
-        if (!auth) {
-            window.location.href = `/login?returnUrl=${encodeURIComponent(path)}`;
-            return;
-        }
-
-        callback();
+    if (!route) {
+        contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
+        return;
     }
 
-    switch (true) {
+    if (route.auth) {
+        const allowed = await requireAuth(path);
+        if (!allowed) return;
+    }
 
-        case path === '/':
-            loadTemplate("home.html", contentDiv)
-                .then(() => loadHomePage());
-            break;
-
-        case path.startsWith('/projects') && path.includes('/iterations'):
-            await requireAuth(() =>
-                handleIterationRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/projects'):
-            await requireAuth(() =>
-                handleProjectRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/moments/'):
-            await requireAuth(() =>
-                handleMomentRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/flows/'):
-            await requireAuth(() =>
-                handleFlowRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/journeys/'):
-            await requireAuth(() =>
-                handleJourneyRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/epics/'):
-            await requireAuth(() =>
-                handleEpicRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/promises/'):
-            await requireAuth(() =>
-                handlePromiseRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/notifications'):
-            await requireAuth(() =>
-                handleNotificationsRoutes(path, navContentDiv, contentDiv)
-            );
-            break;
-
-        case path.startsWith('/invitations'):
-            await requireAuth(() =>
-                handleInvitationsRoute(path, contentDiv)
-            );
-            break;
-        
-        case path === '/change-password':
-            await requireAuth(() =>
-                loadTemplate("auth/change-password.html", contentDiv)
-                    .then(() => loadChangePasswordForm(navContentDiv, contentDiv))
-            );
-            break;
-
-
-        default:
-            contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
+    try {
+        await route.handler({ path, navContentDiv, contentDiv });
+    } catch (err) {
+        console.error(err);
+        contentDiv.innerHTML = `<h1>Error loading page</h1>`;
     }
 }

@@ -1,9 +1,16 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MvcSignInResult = Microsoft.AspNetCore.Mvc.SignInResult;
+using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Auth.Controllers;
 using OpenIddict.Abstractions;
+using OpenIddict.Server;
+using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 {
@@ -17,14 +24,27 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             _controller = new AuthorizationController();
         }
 
-        [TearDown]
-        public void TearDown()
+        private void SetupHttpContext(
+            bool isAuthenticated = true,
+            string? email = "user@test.com",
+            string scope = "openid")
         {
-            _controller?.Dispose();
-        }
+            var httpContext = new DefaultHttpContext();
 
-        private void SetupUser(bool isAuthenticated = true, string? email = "user@test.com")
-        {
+            // OpenIddict request feature.
+            var transaction = new OpenIddictServerTransaction
+            {
+                Request = new OpenIddictRequest
+                {
+                    Scope = scope
+                }
+            };
+
+            httpContext.Features.Set(new OpenIddictServerAspNetCoreFeature
+            {
+                Transaction = transaction
+            });
+
             var claims = new List<Claim>();
 
             if (!string.IsNullOrEmpty(email))
@@ -41,12 +61,34 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             var user = new ClaimsPrincipal(identity);
 
+            httpContext.User = user;
+
+            // Make HttpContext.AuthenticateAsync() work in unit tests.
+            var authService = new Mock<IAuthenticationService>();
+            if (isAuthenticated)
+            {
+                var ticket = new AuthenticationTicket(user, IdentityConstants.ApplicationScheme);
+                authService
+                    .Setup(s => s.AuthenticateAsync(httpContext, IdentityConstants.ApplicationScheme))
+                    .ReturnsAsync(AuthenticateResult.Success(ticket));
+            }
+            else
+            {
+                authService
+                    .Setup(s => s.AuthenticateAsync(httpContext, IdentityConstants.ApplicationScheme))
+                    .ReturnsAsync(AuthenticateResult.Fail("not authenticated"));
+            }
+
+            httpContext.RequestServices = new ServiceCollection()
+                .AddSingleton(authService.Object)
+                .BuildServiceProvider();
+
+            httpContext.Request.Path = "/connect/authorize";
+            httpContext.Request.QueryString = new QueryString("?scope=" + Uri.EscapeDataString(scope));
+
             _controller.ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = user
-                }
+                HttpContext = httpContext
             };
         }
 
@@ -55,16 +97,16 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
-        public void Authorize_WhenUserNotAuthenticated_ReturnsRedirect()
+        public async Task Authorize_WhenUserNotAuthenticated_ReturnsRedirect()
         {
-            SetupUser(isAuthenticated: false);
+            SetupHttpContext(isAuthenticated: false, scope: "openid");
 
-            var result = _controller.Authorize();
+            var result = await _controller.Authorize();
 
             Assert.That(result, Is.InstanceOf<RedirectResult>());
 
             var redirect = result as RedirectResult;
-            Assert.That(redirect!.Url, Does.StartWith("/connect/login"));
+            Assert.That(redirect!.Url, Does.StartWith("/account/login"));
         }
 
         // =========================================
@@ -72,15 +114,13 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
-        public void Authorize_WhenAuthenticated_ReturnsSignIn()
+        public async Task Authorize_WhenAuthenticated_ReturnsSignIn()
         {
-            SetupUser();
+            SetupHttpContext(scope: "openid");
 
-            _controller.Request.QueryString = new QueryString("?scope=openid");
+            var result = await _controller.Authorize();
 
-            var result = _controller.Authorize();
-
-            Assert.That(result, Is.InstanceOf<SignInResult>());
+            Assert.That(result, Is.InstanceOf<MvcSignInResult>());
         }
 
         // =========================================
@@ -88,13 +128,11 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
-        public void Authorize_WithEmail_AddsEmailClaim()
+        public async Task Authorize_WithEmail_AddsEmailClaim()
         {
-            SetupUser(email: "user@test.com");
+            SetupHttpContext(email: "user@test.com", scope: "openid email");
 
-            _controller.Request.QueryString = new QueryString("?scope=openid email");
-
-            var result = _controller.Authorize() as SignInResult;
+            var result = await _controller.Authorize() as MvcSignInResult;
 
             Assert.That(result, Is.Not.Null);
 
@@ -110,13 +148,11 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
-        public void Authorize_WithoutEmail_DoesNotAddEmailClaim()
+        public async Task Authorize_WithoutEmail_DoesNotAddEmailClaim()
         {
-            SetupUser(email: null);
+            SetupHttpContext(email: null, scope: "openid");
 
-            _controller.Request.QueryString = new QueryString("?scope=openid");
-
-            var result = _controller.Authorize() as SignInResult;
+            var result = await _controller.Authorize() as MvcSignInResult;
 
             Assert.That(result, Is.Not.Null);
 
@@ -135,13 +171,11 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
-        public void Authorize_WithScopes_SetsScopesOnPrincipal()
+        public async Task Authorize_WithScopes_SetsScopesOnPrincipal()
         {
-            SetupUser();
+            SetupHttpContext(scope: "openid profile");
 
-            _controller.Request.QueryString = new QueryString("?scope=openid profile");
-
-            var result = _controller.Authorize() as SignInResult;
+            var result = await _controller.Authorize() as MvcSignInResult;
 
             Assert.That(result, Is.Not.Null);
 

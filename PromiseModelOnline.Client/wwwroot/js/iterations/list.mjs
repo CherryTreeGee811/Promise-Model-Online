@@ -1,6 +1,8 @@
 import { getIterationsByProject, getIterationBurndown } from './api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { drawBurndownChart } from '../utils/burndown.mjs';
+import { escapeHtml } from "../utils/html.mjs";
+import { formatDate } from "../utils/date.mjs";
 
 export function loadIterationHistory(projectId) {
     const listDiv = document.getElementById('iterations-list');
@@ -34,7 +36,7 @@ export function loadIterationHistory(projectId) {
                             <tr>
                                 <td>${i.id}</td>
                                 <td>${escapeHtml(i.name)}</td>
-                                <td>${new Date(i.createdAt).toLocaleDateString('en-CA')}</td>
+                                <td>${formatDate(i.createdAt, '–')}</td>
                                 <td><button class="view-iteration-btn view-btn" data-iteration-id="${i.id}">View</button></td>
                             </tr>
                         `).join('')}
@@ -133,14 +135,4 @@ export function loadIterationHistory(projectId) {
         detailDiv.classList.add('hidden');
         listDiv.classList.remove('hidden');
     });
-}
-
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
-
-function formatDate(dateStr) {
-    return dateStr ? new Date(dateStr).toLocaleDateString('en-CA') : 'N/A';
 }

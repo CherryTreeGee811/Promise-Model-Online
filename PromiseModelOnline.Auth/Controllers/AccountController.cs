@@ -6,7 +6,7 @@ using PromiseModelOnline.Auth.ViewModels;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
-[Route("connect/register")]
+[Route("account/register")]
 public class AccountController : Controller
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -62,11 +62,12 @@ public class AccountController : Controller
 
         var returnUrl = Request?.Query["returnUrl"].ToString();
 
-        if (!string.IsNullOrEmpty(returnUrl))
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
         {
-            return LocalRedirect(returnUrl + "&registered=true");
+            var separator = returnUrl.Contains('?') ? "&" : "?";
+            return LocalRedirect(returnUrl + separator + "registered=true");
         }
 
-        return Redirect("/connect/login");
+        return Redirect("/account/login");
     }
 }

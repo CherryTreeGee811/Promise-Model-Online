@@ -1,7 +1,10 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getFlowById, getMomentsByFlow, updateFlow } from './api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
+import { escapeHtml } from "../utils/html.mjs";
+import { getStatusIcon } from "../utils/status.mjs";
+import { formatDate } from "../utils/date.mjs";
 
 export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
@@ -30,8 +33,8 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             </td>
                         </tr>
                         <tr><th>Status</th><td id="flow-status-cell">${getStatusIcon(flow.statusColor)}</td></tr>
-                        <tr><th>Created</th><td>${new Date(flow.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th>Updated</th><td>${flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+                        <tr><th>Created</th><td>${formatDate(flow.createdAt, '–')}</td></tr>
+                        <tr><th>Updated</th><td>${formatDate(flow.updatedAt, '–')}</td></tr>
                     </table>
                     <h3>Moments</h3>
                     <div id="flow-moments-list">
@@ -50,9 +53,8 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                     e.preventDefault();
 
                     const journeyId = journeyLink.getAttribute('journey-id');
-                    window.history.pushState({}, '', `/journeys/${journeyId}`);
 
-                    routeHandler(navContentDiv, contentDiv);
+                    navigate(`/journeys/${journeyId}`, navContentDiv, contentDiv);
                 });
             }
 
@@ -96,9 +98,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             e.preventDefault();
 
                             const momentId = link.getAttribute('moment-id');
-                            window.history.pushState({}, '', `/moments/${momentId}`);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(`/moments/${momentId}`, navContentDiv, contentDiv);
                         });
                     });
                 })
@@ -129,9 +129,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             e.preventDefault();
 
                             const href = link.getAttribute('href');
-                            window.history.pushState({}, '', href);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(href, navContentDiv, contentDiv);
                         });
                     }
                 })
@@ -169,19 +167,4 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load flow details.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-    return '⚪';
 }

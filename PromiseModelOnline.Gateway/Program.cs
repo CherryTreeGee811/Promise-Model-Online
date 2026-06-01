@@ -83,12 +83,11 @@ builder.Services
     })
     .AddCookie("cookie", options =>
     {
-        options.Cookie.Name = "pmo.session";
+        options.Cookie.Name = "__Host-pmo.session";
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-
-        // Lax is safer for OIDC top-level redirects than Strict.
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.Path = "/";
 
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
@@ -147,6 +146,11 @@ builder.Services
 
         options.TokenValidationParameters.NameClaimType = "name";
         options.TokenValidationParameters.RoleClaimType = "role";
+
+        options.ClaimActions.MapUniqueJsonKey("sub", "sub");
+        options.ClaimActions.MapUniqueJsonKey("name", "name");
+        options.ClaimActions.MapUniqueJsonKey("email", "email");
+        options.ClaimActions.MapUniqueJsonKey("role", "role");
 
         options.Events = new OpenIdConnectEvents
         {
@@ -223,7 +227,7 @@ app.MapGet("/login", async (HttpContext ctx) =>
 {
     var returnUrl = ctx.Request.Query["returnUrl"].ToString();
 
-    if (string.IsNullOrWhiteSpace(returnUrl) || !returnUrl.StartsWith("/", StringComparison.Ordinal))
+    if (!IsSafeLocalReturnUrl(returnUrl))
     {
         returnUrl = "/";
     }
@@ -234,14 +238,14 @@ app.MapGet("/login", async (HttpContext ctx) =>
     });
 });
 
-app.MapPost("/logout", async (HttpContext ctx) =>
+app.MapPost("/logout", () =>
 {
-    await ctx.SignOutAsync("cookie");
-
-    await ctx.SignOutAsync("oidc", new AuthenticationProperties
-    {
-        RedirectUri = "/"
-    });
+    return Results.SignOut(
+        new AuthenticationProperties
+        {
+            RedirectUri = "/"
+        },
+        authenticationSchemes: new[] { "cookie", "oidc" });
 });
 
 app.UseWebSockets();
@@ -274,6 +278,8 @@ app.MapReverseProxy(proxyPipeline =>
             return;
         }
 
+        context.User = authenticateResult.Principal!;
+
         await next();
     });
 });
@@ -285,4 +291,29 @@ static bool IsAjax(HttpRequest request)
     return request.Headers["X-Requested-With"] == "XMLHttpRequest"
         || request.Headers.Accept.Any(value =>
             value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
+}
+
+static bool IsSafeLocalReturnUrl(string? returnUrl)
+{
+    if (string.IsNullOrWhiteSpace(returnUrl))
+    {
+        return false;
+    }
+
+    if (!returnUrl.StartsWith("/", StringComparison.Ordinal))
+    {
+        return false;
+    }
+
+    if (returnUrl.StartsWith("//", StringComparison.Ordinal))
+    {
+        return false;
+    }
+
+    if (returnUrl.StartsWith("/\\", StringComparison.Ordinal))
+    {
+        return false;
+    }
+
+    return true;
 }

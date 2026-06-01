@@ -1,0 +1,20 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/permissions/pending"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      {
+        "permissionId": 1,
+        "projectId": 1,
+        "projectName": "Test Project",
+        "level": "Edit",
+        "status": "Pending"
+      }
+    ]
+  }
+}

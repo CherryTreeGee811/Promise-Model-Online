@@ -7,6 +7,7 @@ using PromiseModelOnline.Api.Extensions;
 using PromiseModelOnline.Api.Hubs;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -142,7 +143,11 @@ else
 }
 
 // ---------- MVC & background services ----------------------------------
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 builder.Services.AddSignalR();
 builder.Services.AddHostedService<StrideAutomationService>();
 

@@ -22,12 +22,11 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         // ✅ WRITE scope (important)
-        [Authorize]
         [Authorize(Policy = "Projects.Write")]
         [HttpPost]
         public async Task<IActionResult> Create()
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
 
             if (string.IsNullOrEmpty(email))
                 return Unauthorized();

@@ -1,234 +1,377 @@
-import { routeHandler } from '../router.mjs';
-import { getMomentById, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
+import {
+    getMomentById,
+    updateMomentEstimate,
+    updateMomentStatus,
+    moveMomentToStride,
+    updateMomentType,
+    updateMomentDescription,
+} from './api.mjs';
+
 import { loadComments } from '../comments/comments.mjs';
-import { getAllStrides } from '../strides/api.mjs';
 import { getFlowById } from '../flows/api.mjs';
+import { navigate } from "../router.mjs";
+
+import { escapeHtml } from "../utils/html.mjs";
+import { getStatusIcon } from "../utils/status.mjs";
+import { formatDate } from "../utils/date.mjs";
+
+import { getJourneyById } from '../journeys/api.mjs';
+import { getEpicById } from '../epics/api.mjs';
+import { getPromiseById } from '../promises/api.mjs';
+
+import {
+    getIterationsByProject,
+    getStridesByIterationId
+} from '../strides/api.mjs';
+
+import {
+    insertRowBeforeAddRow, 
+    removeInlineEmptyRow, 
+    renderTableWithInlineAddRow
+} from '../utils/inline-table.mjs';
+
+import { 
+    patchDetailStackGraphNode,
+    destroyDetailStackGraph,
+    mountDetailStackGraph,
+    refreshDetailStackGraph
+} from '../projects/detail-stack-graph.mjs';
+
+import {
+    getGraphProjectIdHintFromUrl,
+    buildGraphViewHref,
+    resolveProjectIdForPromise,
+    upsertGraphViewButton
+} from '../projects/graph-link.mjs';
+
+import { renderMomentTasks } from './moment-tasks.mjs';
 
 export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const loadingEl = document.getElementById('moment-detail-loading');
 
-    loadingEl.textContent = 'Loading moment...';
-    errorEl.textContent = '';
+    if (!detailDiv) {
+        console.error("moment-detail-content not found");
+        return;
+    }
 
+    if (loadingEl) loadingEl.hidden = false;
+    if (errorEl) errorEl.textContent = '';
+    destroyDetailStackGraph();
     getMomentById(momentId)
         .then(async moment => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
+
+            mountDetailStackGraph({
+                nodeType: 'moment',
+                nodeId: momentId,
+                projectIdHint: getGraphProjectIdHintFromUrl(),
+            });
+
             detailDiv.innerHTML = `
-                <div class="moment-detail-card">
+                <div class="detail-card moment-detail-card">
                     <h2>${escapeHtml(moment.statement)}</h2>
-                    <table class="detail-table">
-                        <tr><th>ID</th><td>${moment.id}</td></tr>
-                        <tr><th>Type</th><td>
-                            <select id="moment-type-select">
-                                <option value="Story" ${moment.type === 'Story' ? 'selected' : ''}>Story</option>
-                                <option value="Job" ${moment.type === 'Job' ? 'selected' : ''}>Job</option>
-                            </select>
-                        </td></tr>
-                        <tr><th>Status</th><td>
-                            <select id="moment-status-select">
-                                <option value="Todo" ${moment.status === 'Todo' ? 'selected' : ''}>Todo</option>
-                                <option value="InProgress" ${moment.status === 'InProgress' ? 'selected' : ''}>InProgress</option>
-                                <option value="Blocked" ${moment.status === 'Blocked' ? 'selected' : ''}>Blocked</option>
-                                <option value="Done" ${moment.status === 'Done' ? 'selected' : ''}>Done</option>
-                            </select>
-                        </td></tr>
+
+                    <table class="table table-sm table-striped align-middle detail-table">
                         <tr>
-                            <th>Effort Estimate</th>
+                            <th>Description</th>
                             <td>
-                                <select id="moment-estimate-select">
-                                    <option value="">–</option>
-                                    <option value="XS"  ${moment.effortEstimate === 'XS'  ? 'selected' : ''}>XS</option>
-                                    <option value="S"   ${moment.effortEstimate === 'S'   ? 'selected' : ''}>S</option>
-                                    <option value="M"   ${moment.effortEstimate === 'M'   ? 'selected' : ''}>M</option>
-                                    <option value="L"   ${moment.effortEstimate === 'L'   ? 'selected' : ''}>L</option>
-                                    <option value="XL"  ${moment.effortEstimate === 'XL'  ? 'selected' : ''}>XL</option>
-                                    <option value="XXL" ${moment.effortEstimate === 'XXL' ? 'selected' : ''}>XXL</option>
-                                    <option value="XXXL"${moment.effortEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
+                                <textarea id="moment-description-input" rows="4" class="form-control detail-textarea">${escapeHtml(moment.description || '')}</textarea>
+                                <div class="field-actions">
+                                    <button id="moment-description-save" class="btn btn-primary btn-sm" type="button">
+                                        Save
+                                    </button>
+                                    <span id="moment-description-msg"></span>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Type</th>
+                            <td>
+                                <select id="moment-type-select" class="form-select form-select-sm">
+                                    <option value="Story" ${moment.type === 'Story' ? 'selected' : ''}>Story</option>
+                                    <option value="Job" ${moment.type === 'Job' ? 'selected' : ''}>Job</option>
                                 </select>
                             </td>
                         </tr>
+
+                        <tr>
+                            <th>Status</th>
+                            <td>
+                                <select id="moment-status-select" class="form-select form-select-sm">
+                                    <option value="Todo" ${moment.status === 'Todo' ? 'selected' : ''}>🔴 Todo</option>
+                                    <option value="InProgress" ${moment.status === 'InProgress' ? 'selected' : ''}>🟠 InProgress</option>
+                                    <option value="Blocked" ${moment.status === 'Blocked' ? 'selected' : ''}>⚫ Blocked</option>
+                                    <option value="Done" ${moment.status === 'Done' ? 'selected' : ''}>🟢 Done</option>
+                                </select>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Effort Estimate</th>
+                            <td>
+                                <select id="moment-estimate-select" class="form-select form-select-sm">
+                                    <option value="">–</option>
+                                    <option value="XS" ${moment.effortEstimate === 'XS' ? 'selected' : ''}>XS</option>
+                                    <option value="S" ${moment.effortEstimate === 'S' ? 'selected' : ''}>S</option>
+                                    <option value="M" ${moment.effortEstimate === 'M' ? 'selected' : ''}>M</option>
+                                    <option value="L" ${moment.effortEstimate === 'L' ? 'selected' : ''}>L</option>
+                                    <option value="XL" ${moment.effortEstimate === 'XL' ? 'selected' : ''}>XL</option>
+                                    <option value="XXL" ${moment.effortEstimate === 'XXL' ? 'selected' : ''}>XXL</option>
+                                    <option value="XXXL" ${moment.effortEstimate === 'XXXL' ? 'selected' : ''}>XXXL</option>
+                                </select>
+                            </td>
+                        </tr>
+
                         <tr>
                             <th>Assigned Stride</th>
                             <td>
-                                <select id="moment-stride-select">
+                                <select id="moment-stride-select" class="form-select form-select-sm">
                                     <option value="">Backlog</option>
                                 </select>
                             </td>
                         </tr>
+
                         <tr>
-                            <tr>
-                                <th>Flow</th>
-                                <td id="moment-flow-cell">
-                                    ${
-                                        moment.flowId
-                                            ? `<a href="/flows/${moment.flowId}" flow-id="${moment.flowId}" class="detail-link"></a>`
-                                            : `<span>—</span>`
-                                    }
-                                </td>
-                            </tr>
+                            <th>Flow</th>
+                            <td id="moment-flow-cell">
+                                ${
+                                    moment.flowId
+                                        ? `<a href="/flows/${moment.flowId}" flow-id="${moment.flowId}" class="detail-link"></a>`
+                                        : `<span>—</span>`
+                                }
+                            </td>
                         </tr>
-                        <tr><th>Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th>Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+
+                        <tr>
+                            <th>Created</th>
+                            <td>${formatDate(moment.createdAt, '–')}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Completed</th>
+                            <td id="completed-cell">
+                                ${formatDate(moment.completedAt, '–')}
+                            </td>
+                        </tr>
                     </table>
+
+                    <h3>Moment Tasks</h3>
+                    <div id="moment-tasks"></div>
+
                     <div id="moment-comments"></div>
-                    <button id="back-link" class="back-btn">← Back</button>
+
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">
+                        ← Back
+                    </button>
                 </div>
             `;
 
-            detailDiv.addEventListener('click', (e) => {
-                e.preventDefault();
-                const flowLink = e.target.closest('a.detail-link');
+            const tasksContainer = document.getElementById('moment-tasks');
+            if (tasksContainer) {
+                renderMomentTasks(tasksContainer, momentId, moment.tasks, moment);
+            }
+
+            const descriptionSaveButton = document.getElementById('moment-description-save');
+            const descriptionInput = document.getElementById('moment-description-input');
+            const descriptionMessage = document.getElementById('moment-description-msg');
+            if (descriptionSaveButton && descriptionInput && descriptionMessage) {
+                descriptionSaveButton.addEventListener('click', async () => {
+                    descriptionMessage.textContent = '';
+                    descriptionSaveButton.disabled = true;
+
+                    const newDescription = descriptionInput.value;
+                    try {
+                        const updated = await updateMomentDescription(momentId, newDescription);
+                        moment.description = updated?.description ?? (newDescription.trim() ? newDescription : null);
+                        patchDetailStackGraphNode(`moment-${momentId}`, {
+                            description: moment.description,
+                        });
+                        await refreshDetailStackGraph();
+                        descriptionMessage.textContent = 'Saved';
+                    } catch (err) {
+                        descriptionMessage.textContent = 'Save failed';
+                        console.error(err);
+                    } finally {
+                        descriptionSaveButton.disabled = false;
+                    }
+                });
+            }
+            
+            // Navigation links
+            detailDiv.onclick = null;
+            detailDiv.addEventListener("click", (e) => {
+                const flowLink = e.target.closest("a.detail-link");
                 if (!flowLink) return;
 
-                const flowId = flowLink.getAttribute('flow-id');
-                const url = `/flows/${flowId}`;
+                if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
-                window.history.pushState({}, '', url);
-
-                routeHandler(navContentDiv, contentDiv);
+                e.preventDefault();
+                const flowId = flowLink.getAttribute("flow-id");
+                navigate(`/flows/${flowId}`, navContentDiv, contentDiv);
             });
 
-            // Estimate auto‑save on change
+            // Estimate update
             const estSelect = document.getElementById('moment-estimate-select');
             if (estSelect) {
                 estSelect.addEventListener('change', async () => {
-                    const estimate = estSelect.value === '' ? null : estSelect.value;
+                    const estimate = estSelect.value || null;
+
                     try {
                         await updateMomentEstimate(momentId, estimate);
+
+                        moment.effortEstimate = estimate;
+
+                        patchDetailStackGraphNode(`moment-${momentId}`, {
+                            effortEstimate: estimate
+                        });
+
                     } catch (err) {
-                        alert('Failed to update estimate');
                         console.error(err);
                     }
                 });
             }
 
-            // Populate strides select
+            // Stride population (safe async chain)
             const strideSelect = document.getElementById('moment-stride-select');
-            if (strideSelect) {
+            if (strideSelect && moment.flowId) {
                 try {
-                    const strides = await getAllStrides();
-                    // sort by name
-                    strides.sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')));
+                    const flow = await getFlowById(moment.flowId);
+                    const journey = await getJourneyById(flow.journeyId);
+                    const epic = await getEpicById(journey.epicId);
+                    const promise = await getPromiseById(epic.productPromiseId);
+
+                    const iterations = await getIterationsByProject(promise.projectId);
+                    const latest = iterations.sort((a,b) => b.id - a.id)[0];
+
+                    const strides = await getStridesByIterationId(latest.id);
+
                     strides.forEach(s => {
                         const opt = document.createElement('option');
-                        opt.value = String(s.id);
+                        opt.value = s.id;
                         opt.textContent = s.name || `Stride ${s.id}`;
-                        if (String(s.id) === String(moment.assignedStrideId)) opt.selected = true;
+                        if (s.id === moment.assignedStrideId) opt.selected = true;
                         strideSelect.appendChild(opt);
                     });
-                    if (!moment.assignedStrideId) {
-                        strideSelect.value = '';
-                    }
 
+                    // Persist stride selection
                     strideSelect.addEventListener('change', async () => {
                         const val = strideSelect.value === '' ? null : parseInt(strideSelect.value, 10);
+
                         try {
                             const updated = await moveMomentToStride(momentId, val);
-                            // reflect assigned stride id
-                            const display = updated.assignedStrideId ? String(updated.assignedStrideId) : 'Backlog';
-                            // keep select in sync with returned value
-                            strideSelect.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
+
+                            moment.assignedStrideId = updated.assignedStrideId;
+
+                            patchDetailStackGraphNode(`moment-${momentId}`, {
+                                assignedStrideId: updated.assignedStrideId
+                            });
+
+                            strideSelect.value = updated.assignedStrideId
+                                ? String(updated.assignedStrideId)
+                                : '';
+
                         } catch (err) {
-                            alert('Failed to update assigned stride');
-                            console.error(err);
+                            console.error('Failed to update assigned stride', err);
                         }
                     });
+
                 } catch (err) {
-                    console.error('Failed to load strides', err);
+                    console.warn("Strides load failed (non-blocking)", err);
                 }
             }
 
-            // Status change handler
+            // Status update
             const statusSelect = document.getElementById('moment-status-select');
-            const completedCell = detailDiv.querySelector('tr:nth-last-child(1) td');
+            const completedCell = document.getElementById('completed-cell');
+
             if (statusSelect) {
                 statusSelect.addEventListener('change', async () => {
                     const prev = statusSelect.value;
                     try {
                         const updated = await updateMomentStatus(momentId, statusSelect.value);
-                        // update status and completed fields from returned DTO
-                        // update select value and Completed cell from returned DTO
+
+                        moment.status = updated.status;
+                        moment.statusColor = updated.statusColor;
+                        moment.completedAt = updated.completedAt;
+
                         statusSelect.value = updated.status;
-                        if (updated.completedAt) {
-                            const d = new Date(updated.completedAt);
-                            completedCell.textContent = d.toLocaleDateString('en-CA');
-                        } else {
-                            completedCell.textContent = '–';
+
+                        await refreshDetailStackGraph();
+                        if (completedCell) {
+                            completedCell.textContent = updated.completedAt
+                                ? formatDate(updated.completedAt, '–')
+                                : '–';
                         }
-                    } catch (err) {
+                    } catch {
                         statusSelect.value = prev;
-                        alert('Failed to update status');
                     }
                 });
             }
 
-            // Type change handler
+            // Type update
             const typeSelect = document.getElementById('moment-type-select');
             if (typeSelect) {
                 typeSelect.addEventListener('change', async () => {
-                    const newType = typeSelect.value;
                     try {
-                        const updated = await updateMomentType(momentId, newType);
-                        // keep UI in sync (server may return DTO)
-                        if (updated && updated.type) typeSelect.value = updated.type;
-                    } catch (err) {
-                        alert('Failed to update type');
+                        const updated = await updateMomentType(momentId, typeSelect.value);
+                        if (updated?.type) typeSelect.value = updated.type;
+                    } catch {
                         typeSelect.value = moment.type;
                     }
                 });
             }
 
-            // Load parent flow and show its status emoji
+            // Flow display
             const flowCell = document.getElementById('moment-flow-cell');
-            if (flowCell) {
-                if (moment.flowId !== undefined && moment.flowId !== null) {
-                    try {
-                        const flow = await getFlowById(moment.flowId);
-                        const icon = getStatusIcon(flow.statusColor);
-
-                        flowCell.innerHTML = `
-                            /flows/${flow.id}
-                                ${escapeHtml(flow.statement)}
-                            </a> ${icon}
-                        `;
-                    } catch (err) {
-                        console.warn("Failed to load flow:", err);
-                    }
+            if (flowCell && moment.flowId) {
+                try {
+                    const flow = await getFlowById(moment.flowId);
+                    flowCell.innerHTML = `
+                        <a href="/flows/${flow.id}" flow-id="${flow.id}" class="detail-link">
+                            ${escapeHtml(flow.statement)}
+                        </a> ${getStatusIcon(flow.statusColor)}
+                    `;
+                } catch {
+                    flowCell.innerHTML = '—';
                 }
             }
 
-            // Back button event
+            // Back button
             const backLink = document.getElementById('back-link');
             if (backLink) {
-                backLink.addEventListener('click', () => {
-                    window.history.back();
-                });
+                backLink.addEventListener('click', () => window.history.back());
             }
 
             // Comments
             const commentsContainer = document.getElementById('moment-comments');
-            loadComments(commentsContainer, 'Moment', momentId);
+            if (commentsContainer) {
+                loadComments(commentsContainer, 'Moment', momentId);
+            }
+
+            // Graph View button (deep-link into graph view)
+            if (moment.flowId) {
+                getFlowById(moment.flowId)
+                    .then(flow => getJourneyById(flow.journeyId))
+                    .then(journey => getEpicById(journey.epicId))
+                    .then(epic => resolveProjectIdForPromise(
+                        epic.productPromiseId,
+                        getGraphProjectIdHintFromUrl()
+                    ))
+                    .then(projectId => {
+                        const href = buildGraphViewHref(projectId, `moment-${moment.id}`);
+                        upsertGraphViewButton(detailDiv, href);
+                    })
+                    .catch(err => {
+                        console.error('Unable to resolve graph link for moment detail', err);
+                    });
+            }
         })
         .catch(err => {
-            loadingEl.textContent = '';
-            errorEl.textContent = 'Failed to load moment details.';
+            if (loadingEl) loadingEl.hidden = true;
+            if (errorEl) errorEl.textContent = 'Failed to load moment details.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-    return '⚪';
 }

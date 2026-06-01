@@ -7,7 +7,7 @@ using PromiseModelOnline.Auth.Models;
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("api/users/me")]
+[Route("account/me/password")]
 public class ChangePasswordController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;

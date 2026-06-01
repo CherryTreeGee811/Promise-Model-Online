@@ -77,4 +77,25 @@ CREATE MOMENT
 export function addMoment(moment) {
     return post(`/moments`, moment);
 }
-``
+
+/*
+====================================
+TASK MANAGEMENT
+====================================
+*/
+
+export function addMomentTask(momentId, task) {
+    return post(`/moments/${momentId}/tasks`, task);
+}
+
+export function updateMomentTaskCompletion(momentId, taskId, isCompleted) {
+    return patch(`/moments/${momentId}/tasks/${taskId}/completion`, {
+        isCompleted
+    });
+}
+
+export function updateMomentDescription(momentId, description) {
+    return patch(`/moments/${momentId}/description`, {
+        description
+    });
+}

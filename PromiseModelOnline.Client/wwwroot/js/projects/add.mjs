@@ -1,5 +1,5 @@
 import { addProject } from './api.mjs';
-import { routeHandler } from '../router.mjs';
+import { navigate } from "../router.mjs";
 
 export function loadAddProjectForm(navContentDiv, contentDiv) {
     const form = document.getElementById('add-project-form');
@@ -15,8 +15,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
     if (cancelLink) {
         cancelLink.addEventListener('click', (e) => {
             e.preventDefault();
-            window.history.pushState({}, '', '/projects');
-            routeHandler(navContentDiv, contentDiv);
+            navigate("/projects", navContentDiv, contentDiv);
         });
     }
 }
@@ -49,8 +48,7 @@ function manageAddProjectSubmission(navContentDiv, contentDiv) {
                 return;
             }
 
-            window.history.pushState({}, '', '/projects');
-            routeHandler(navContentDiv, contentDiv);
+            navigate("/projects", navContentDiv, contentDiv);
         })
         .catch((error) => {
             loadingTextElement.textContent = '';

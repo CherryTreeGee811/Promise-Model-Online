@@ -1,0 +1,19 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/projects/\\d+/my-permission",
+    "headers": {
+      "Cookie": {
+        "contains": "pmo_test_user=nonowner"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": "\"View\""
+  }
+}

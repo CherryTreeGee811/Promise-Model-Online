@@ -1,4 +1,6 @@
 import { getMyTasks } from './api.mjs';
+import { navigate } from "../router.mjs";
+import { escapeHtml } from "../utils/html.mjs";
 
 export function loadMyTasksPage(navContentDiv, contentDiv) {
     const content = document.getElementById('my-tasks-content');
@@ -42,17 +44,15 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
                 </table>
             `;
 
-            content.querySelectorAll('.detail-link[moment-id]').forEach(link => {
+            content.querySelectorAll(".view-btn[moment-id]").forEach(link => {
                 link.addEventListener('click', (e) => {
-                    e.preventDefault();
-
                     // allow new tab behavior
                     if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                    
+                    e.preventDefault();
 
                     const momentId = link.getAttribute('moment-id');
-                    window.history.pushState({}, '', `/moments/${momentId}`);
-
-                    routeHandler(navContentDiv, contentDiv);
+                    navigate(`/moments/${momentId}`, navContentDiv, contentDiv);
                 });
             });
         })
@@ -61,10 +61,4 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load your tasks.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
 }

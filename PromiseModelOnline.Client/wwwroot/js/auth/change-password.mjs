@@ -1,72 +1,90 @@
-import { changePassword } from './api.mjs';
-import { routeHandler } from '../router.mjs';
+import { changePasswordAndLogout } from "./api.mjs";
 
 export function loadChangePasswordForm(navContentDiv, contentDiv) {
     const changeBtn = document.getElementById("change-password-btn");
-    if (changeBtn) {
-        changeBtn.addEventListener("click", () => {
-            manageChangeSubmission(navContentDiv, contentDiv);
-        });
-    }
+
+    if (!changeBtn) return;
+
+    changeBtn.addEventListener("click", () => {
+        manageChangeSubmission(navContentDiv, contentDiv);
+    });
 }
 
-function manageChangeSubmission(navContentDiv, contentDiv) {
+async function manageChangeSubmission(navContentDiv, contentDiv) {
     const currentElement = document.getElementById("current-password-input");
     const newElement = document.getElementById("new-password-input");
     const confirmElement = document.getElementById("confirm-password-input");
     const errorContainer = document.getElementById("error-text");
     const successContainer = document.getElementById("success-text");
 
-    // Clear previous messages
-    errorContainer.textContent = "";
-    errorContainer.style.display = "none";
-    successContainer.textContent = "";
-    successContainer.style.display = "none";
+    resetMessage(errorContainer);
+    resetMessage(successContainer);
 
-    const currentPassword = currentElement.value;
-    const newPassword = newElement.value;
-    const confirmPassword = confirmElement.value;
+    const validationError = validatePasswordChange(
+        currentElement.value,
+        newElement.value,
+        confirmElement.value
+    );
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        errorContainer.textContent = "All fields are required.";
-        errorContainer.style.display = "block";
+    if (validationError) {
+        showMessage(errorContainer, validationError);
         return;
+    }
+
+    try {
+        await changePasswordAndLogout(
+            currentElement.value,
+            newElement.value,
+            confirmElement.value
+        );
+
+        currentElement.value = "";
+        newElement.value = "";
+        confirmElement.value = "";
+
+        showMessage(successContainer, "Password changed successfully. Signing out...");
+
+        window.setTimeout(() => {
+            // Password change invalidates the current session. Use a full navigation
+            // to the BFF login endpoint instead of SPA routing so cookies/OIDC state
+            // are handled by the server-side auth flow.
+            window.location.assign("/login");
+        }, 800);
+    } catch (error) {
+        currentElement.value = "";
+        showMessage(
+            errorContainer,
+            error?.message || "An error occurred while changing password."
+        );
+    }
+}
+
+function validatePasswordChange(currentPassword, newPassword, confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        return "All fields are required.";
     }
 
     if (newPassword !== confirmPassword) {
-        errorContainer.textContent = "New passwords do not match.";
-        errorContainer.style.display = "block";
-        newElement.value = "";
-        confirmElement.value = "";
-        return;
+        return "New passwords do not match.";
     }
 
     if (newPassword.length < 6) {
-        errorContainer.textContent = "New password must be at least 6 characters.";
-        errorContainer.style.display = "block";
-        return;
+        return "New password must be at least 6 characters.";
     }
 
-    changePassword(currentPassword, newPassword, confirmPassword)
-        .then(() => {
-            successContainer.textContent = "Password changed successfully. Signing out...";
-            successContainer.style.display = "block";
-            currentElement.value = "";
-            newElement.value = "";
-            confirmElement.value = "";
+    return null;
+}
 
-            clearTokens();
+function resetMessage(element) {
+    if (!element) return;
 
-            setTimeout(() => {
-                window.history.pushState({}, '', '/login');
-                routeHandler(navContentDiv, contentDiv);
-            }, 1200);
-        })
-        .catch((error) => {
-            let errorMessage = "An error occurred while changing password.";
-            if (error && error.message) errorMessage = error.message;
-            errorContainer.textContent = errorMessage;
-            errorContainer.style.display = "block";
-            currentElement.value = "";
-        });
+    element.textContent = "";
+    element.style.display = "none";
+}
+
+function showMessage(element, message) {
+    if (!element) return;
+
+    element.textContent = message;
+    element.style.display = "block";
 }

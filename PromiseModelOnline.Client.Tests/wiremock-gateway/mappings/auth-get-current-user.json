@@ -1,0 +1,20 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/users/me"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": 1,
+      "userName": "ui_test_user",
+      "name": "UI Test User",
+      "email": "ui_test_user@example.com",
+      "role": "User"
+    }
+  }
+}

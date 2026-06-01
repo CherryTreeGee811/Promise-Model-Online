@@ -1,0 +1,24 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/flows/1"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": 1,
+      "statement": "Flow One",
+      "description": "First flow",
+      "journeyId": 1,
+      "ownerId": 1,
+      "displayOrder": 1,
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": null,
+      "statusColor": "red"
+    }
+  }
+}

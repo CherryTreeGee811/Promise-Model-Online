@@ -1,4 +1,5 @@
 import { getPendingInvitations, acceptInvitation } from './api.mjs';
+import { escapeHtml } from "../utils/html.mjs";
 
 export function loadInvitationsPage(contentDiv) {
     const listDiv = document.getElementById('invitations-list');
@@ -66,10 +67,4 @@ export function loadInvitationsPage(contentDiv) {
     }
 
     refresh();
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
 }

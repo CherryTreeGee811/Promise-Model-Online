@@ -1,0 +1,18 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "PATCH",
+    "urlPathPattern": "/api/permissions/1"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": 1,
+      "userId": 2,
+      "userName": "other_user",
+      "projectId": 1,
+      "level": "Edit",
+      "status": "Active"
+    }
+  }
+}

@@ -1,96 +1,55 @@
-import { routeHandler } from '../router.mjs';
-import { isAuthenticated } from '../api.mjs';
-import { startNotificationPolling } from '../notifications/badge.mjs';
+import { navigate, loadTemplate } from "../router.mjs";
+import { isAuthenticated } from "../api.mjs";
+import { logout } from "../auth/api.mjs";
+import { startNotificationPolling } from "../notifications/badge.mjs";
+
+function bindRouteLink(id, path, navContentDiv, contentDiv) {
+    document.getElementById(id)?.addEventListener("click", (event) => {
+        event.preventDefault();
+        navigate(path, navContentDiv, contentDiv);
+    });
+}
 
 function initGeneralLinkListeners(navContentDiv, contentDiv) {
-    document.getElementById("home-link").addEventListener("click", (e) => {
-        e.preventDefault();
-        window.history.pushState({}, '', '/');
-        routeHandler(navContentDiv, contentDiv);
-    });
+    bindRouteLink("home-link", "/", navContentDiv, contentDiv);
 }
 
 function initAuthenticatedLinkListeners(navContentDiv, contentDiv) {
+    bindRouteLink("notifications-link", "/notifications", navContentDiv, contentDiv);
+    bindRouteLink("my-tasks-link", "/moments/my-tasks", navContentDiv, contentDiv);
+    bindRouteLink("projects-link", "/projects", navContentDiv, contentDiv);
+    bindRouteLink("change-password-link", "/change-password", navContentDiv, contentDiv);
+    bindRouteLink("invitations-link", "/invitations", navContentDiv, contentDiv);
+    bindRouteLink("knowledge-base-link", "/knowledge-base", navContentDiv, contentDiv);
 
-    const notificationLink = document.getElementById("notifications-link");
-    if (notificationLink) {
-        notificationLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            window.history.pushState({}, '', '/notifications');
-            routeHandler(navContentDiv, contentDiv);
-        });
-    }
+    document.getElementById("logout-link")?.addEventListener("click", async (event) => {
+        event.preventDefault();
 
-    document.getElementById("my-tasks-link").addEventListener("click", (e) => {
-        e.preventDefault();
-        window.history.pushState({}, '', '/moments/my-tasks');
-        routeHandler(navContentDiv, contentDiv);
+        await logout();
+        navigate("/", navContentDiv, contentDiv);
     });
-
-    // ✅ FIXED
-    document.getElementById("logout-link").addEventListener("click", (e) => {
-        e.preventDefault();
-        window.location.href = "/logout";
-    });
-
-    document.getElementById("projects-link").addEventListener("click", (e) => {
-        e.preventDefault();
-        window.history.pushState({}, '', '/projects');
-        routeHandler(navContentDiv, contentDiv);
-    });
-
-    const changeLink = document.getElementById("change-password-link");
-    if (changeLink) {
-        changeLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            window.history.pushState({}, '', '/change-password');
-            routeHandler(navContentDiv, contentDiv);
-        });
-    }
-
-    const invLink = document.getElementById("invitations-link");
-    if (invLink) {
-        invLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            window.history.pushState({}, '', '/invitations');
-            routeHandler(navContentDiv, contentDiv);
-        });
-    }
 }
 
 export async function loadNavTemplate(navContentDiv, contentDiv) {
-
-    let templateName = "anonymous.html";
-
     const auth = await isAuthenticated();
-    if (auth) {
-        templateName = "authenticated.html";
-    }
+    const templateName = auth ? "authenticated.html" : "anonymous.html";
 
-    return fetch(`/templates/navigation/${templateName}`)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.text();
-        })
-        .then(html => {
-            navContentDiv.innerHTML = html;
+    try {
+        await loadTemplate(`navigation/${templateName}`, navContentDiv);
 
-            if (auth) {
-                startNotificationPolling();
-            }
+        initGeneralLinkListeners(navContentDiv, contentDiv);
 
-            initNavLinkListeners(templateName, navContentDiv, contentDiv);
-        })
-        .catch(error => {
-            navContentDiv.innerHTML =
-                `<h1>Error loading template</h1><p>${error.message}</p>`;
-        });
-}
+        if (auth) {
+            startNotificationPolling();
+            initAuthenticatedLinkListeners(navContentDiv, contentDiv);
+        }
+    } catch (error) {
+        navContentDiv.innerHTML = `
+            <li class="main-menu-item">
+                <span class="main-menu-link">Navigation unavailable</span>
+            </li>
+        `;
 
-function initNavLinkListeners(templateName, navContentDiv, contentDiv) {
-    initGeneralLinkListeners(navContentDiv, contentDiv);
-
-    if (templateName === "authenticated.html") {
-        initAuthenticatedLinkListeners(navContentDiv, contentDiv);
+        console.error("Failed to load navigation template:", error);
     }
 }

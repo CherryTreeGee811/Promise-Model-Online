@@ -8,28 +8,18 @@ services:
       context: ../..
       dockerfile: PromiseModelOnline.Client/Dockerfile
     depends_on:
-      - promisemodelonline.api.mock
+      - promisemodelonline.gateway
 
-  promisemodelonline.api.mock:
+  # Mock the BFF/Gateway that the SPA talks to on the same origin.
+  # Nginx in PromiseModelOnline.Client proxies /api, /login, /logout, /signin-oidc to this host.
+  promisemodelonline.gateway:
     image: wiremock/wiremock:latest
-    container_name: promisemodelonlineapimock
+    container_name: promisemodelonlinegatewaymock
     ports:
-      - "8000:8000/tcp"
+      - "8010:8010/tcp"
     command: >
-      --https-port 8000
+      --https-port 8010
       --verbose
     volumes:
-      - ../../PromiseModelOnline.Client.Tests/wiremock-api/mappings:/home/wiremock/mappings:ro
-      - ../../PromiseModelOnline.Client.Tests/wiremock-api/__files:/home/wiremock/__files:ro
-
-  promisemodelonline.auth.mock:
-    image: wiremock/wiremock:latest
-    container_name: promisemodelonlineauthmock
-    ports:
-      - "8060:8060/tcp"
-    command: >
-      --https-port 8060
-      --verbose
-    volumes:
-      - ../../PromiseModelOnline.Client.Tests/wiremock-auth/mappings:/home/wiremock/mappings:ro
-      - ../../PromiseModelOnline.Client.Tests/wiremock-auth/__files:/home/wiremock/__files:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/mappings:/home/wiremock/mappings:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/__files:/home/wiremock/__files:ro

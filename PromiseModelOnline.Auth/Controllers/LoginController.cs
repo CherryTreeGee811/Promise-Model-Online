@@ -11,7 +11,7 @@ using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
-[Route("connect/login")]
+[Route("account/login")]
 public class LoginController : Controller
 {
     private readonly SignInManager<IdentityUser> _signInManager;
@@ -37,7 +37,8 @@ public class LoginController : Controller
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
-    [HttpPost("/connect/login")]
+    [HttpPost("")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)

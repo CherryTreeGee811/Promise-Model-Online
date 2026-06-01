@@ -113,6 +113,6 @@ public class AccountControllerUnitTests
         var redirect = result as RedirectResult;
         Assert.That(redirect, Is.Not.Null);
 
-        Assert.That(redirect!.Url, Does.StartWith("/connect/login"));
+        Assert.That(redirect!.Url, Does.StartWith("/account/login"));
     }
 }

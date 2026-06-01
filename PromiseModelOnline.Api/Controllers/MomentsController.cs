@@ -129,6 +129,27 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         // =========================================
+        // ✅ WRITE: ESTIMATE
+        // =========================================
+        [Authorize(Policy = "Projects.Write")]
+        [HttpPatch("{id}/estimate")]
+        public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(int id, [FromBody] UpdateMomentEstimateRequest request)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return Unauthorized();
+
+            if (!await UserCanEditMomentAsync(id, user))
+                return Forbid();
+
+            var moment = await _momentService.UpdateMomentEstimateAsync(id, request.Estimate);
+
+            var dto = _mapper.Map(moment, _service);
+            await BroadcastMomentUpdateSafe(id, moment);
+
+            return Ok(dto);
+        }
+
+        // =========================================
         // ✅ WRITE: STRIDE
         // =========================================
 

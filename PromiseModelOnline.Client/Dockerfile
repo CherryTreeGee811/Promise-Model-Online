@@ -18,10 +18,6 @@ COPY PromiseModelOnline.Client/wwwroot /app/wwwroot
 # Ensure Nginx can access its runtime directories
 RUN chown -R appuser:appgroup /var/cache/nginx /var/run
 
-# Configure key and certificate for SSL
-#COPY PromiseModelOnline.Client/cert.pem /etc/nginx/cert.pem
-#COPY PromiseModelOnline.Client/key.pem /etc/nginx/key.pem
-
 # Configure needed mime types
 COPY PromiseModelOnline.Client/mime.types /etc/nginx/mime.types
 

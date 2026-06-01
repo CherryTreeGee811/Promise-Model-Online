@@ -75,7 +75,7 @@ public class LoginControllerUnitTests
         _controller.ModelState.AddModelError("Username", "Required");
         var model = new LoginViewModel { Username = "", Password = "" };
 
-        var result = await _controller.Index(model);
+        var result = await _controller.Login(model);
 
         Assert.That(result, Is.TypeOf<ViewResult>());
         _userManagerMock.Verify(x => x.FindByNameAsync(It.IsAny<string>()), Times.Never);
@@ -87,11 +87,11 @@ public class LoginControllerUnitTests
         var model = new LoginViewModel { Username = "nobody", Password = "pw" };
         _userManagerMock.Setup(x => x.FindByNameAsync("nobody")).ReturnsAsync((IdentityUser?)null);
 
-        var result = await _controller.Index(model);
+        var result = await _controller.Login(model);
 
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
-            Is.EqualTo("Invalid username or password."));
+            Is.EqualTo("Invalid credentials"));
     }
 
     [Test]
@@ -101,14 +101,13 @@ public class LoginControllerUnitTests
         var model = new LoginViewModel { Username = "test", Password = "pw", ReturnUrl = "/home" };
 
         _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
-        _signInManagerMock
-            .Setup(x => x.PasswordSignInAsync(user, "pw", false, false))
-            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
+        _signInManagerMock.Setup(x => x.SignInAsync(user, false, null)).Returns(Task.CompletedTask);
 
-        var result = await _controller.Index(model);
+        var result = await _controller.Login(model);
 
-        Assert.That(result, Is.TypeOf<LocalRedirectResult>());
-        Assert.That(((LocalRedirectResult)result).Url, Is.EqualTo("/home"));
+        Assert.That(result, Is.TypeOf<RedirectResult>());
+        Assert.That(((RedirectResult)result).Url, Is.EqualTo("/home"));
     }
 
     [Test]
@@ -118,10 +117,10 @@ public class LoginControllerUnitTests
         var model = new LoginViewModel { Username = "test", Password = "pw" };
 
         _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
-        _signInManagerMock.Setup(x => x.PasswordSignInAsync(user, "pw", false, false))
-            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
+        _signInManagerMock.Setup(x => x.SignInAsync(user, false, null)).Returns(Task.CompletedTask);
 
-        var result = await _controller.Index(model);
+        var result = await _controller.Login(model);
 
         Assert.That(result, Is.TypeOf<RedirectResult>());
         Assert.That(((RedirectResult)result).Url, Is.EqualTo("/"));

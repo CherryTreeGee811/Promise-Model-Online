@@ -1,13 +1,17 @@
 <h1>Project Graph</h1>
 
 <p id="error-text"></p>
-<p id="loading-text"></p>
 <p id="success-text"></p>
 
 <div id="graph-filter-bar" class="graph-filter-bar">
     <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
 </div>
 
-<div id="graph-viewport" class="graph-viewport">
+<div id="graph-viewport" class="graph-viewport position-relative">
+	<div id="graph-loading-state" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center z-3 d-none" aria-hidden="true" style="pointer-events: none;">
+		<div class="spinner-border text-primary" role="status" aria-live="polite" aria-label="Loading project graph">
+			<span class="visually-hidden">Loading project graph...</span>
+		</div>
+	</div>
 	<div id="graph-content"></div>
 </div>

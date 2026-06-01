@@ -1,21 +1,25 @@
-import { patch, del } from '../api.mjs';
+import { accountApi, logout as bffLogout } from "../api.mjs";
 
-/**
- * Change the current user's password.
- */
 export function changePassword(currentPassword, newPassword, confirmPassword) {
-    return patch(`/users/me`, {
+    return accountApi.patch("/me/password", {
         currentPassword,
         newPassword,
         confirmPassword
     }).then(() => true);
 }
 
-/**
- * Delete the current user's account.
- */
 export function deleteAccount(password) {
-    return del(`/users/me`, {
+    return accountApi.del("/me", {
         password
     }).then(() => true);
+}
+
+export function logout() {
+    return bffLogout();
+}
+
+export async function changePasswordAndLogout(currentPassword, newPassword, confirmPassword) {
+    await changePassword(currentPassword, newPassword, confirmPassword);
+    await logout();
+    return true;
 }

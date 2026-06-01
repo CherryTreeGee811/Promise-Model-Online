@@ -83,4 +83,8 @@ export function progressStride(strideId) {
 export function sendDeadlineNotifications() {
     return post(`/deadline-notification-runs`);
 }
-``
+
+// Add this to the existing file
+export function getStridesByIterationId(iterationId) {
+    return get(`/strides?iterationId=${iterationId}`);
+}

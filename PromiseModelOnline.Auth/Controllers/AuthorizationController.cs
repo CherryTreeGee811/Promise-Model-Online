@@ -14,29 +14,24 @@ namespace PromiseModelOnline.Auth.Controllers
     [Route("connect/authorize")]
     public class AuthorizationController : ControllerBase
     {
+        
         [HttpGet, HttpPost]
         [IgnoreAntiforgeryToken]
-        public IActionResult Authorize()
+        public async Task<IActionResult> Authorize()
         {
-            // ✅ 1. Get OpenIddict request
             var feature = HttpContext.Features.Get<OpenIddictServerAspNetCoreFeature>()
                 ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
             var request = feature.Transaction?.Request
-                ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved");
+                ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-            // ✅ 2. If user is not logged in → redirect to login
-            var result = HttpContext.AuthenticateAsync(
-                IdentityConstants.ApplicationScheme).Result;
+            var result = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
 
             if (result == null || !result.Succeeded)
             {
-                var relativeUrl = Request.Path + Request.QueryString;
-                var returnUrl = Uri.EscapeDataString(relativeUrl);
-
-                return Redirect($"/connect/login?returnUrl={returnUrl}");
+                var returnUrl = Uri.EscapeDataString(Request.Path + Request.QueryString);
+                return Redirect($"/account/login?returnUrl={returnUrl}");
             }
-
 
             // ✅ 3. Resolve subject (user id)
             var subject = User.FindFirstValue(OpenIddictConstants.Claims.Subject)

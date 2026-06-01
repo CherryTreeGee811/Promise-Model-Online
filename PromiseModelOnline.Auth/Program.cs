@@ -57,6 +57,19 @@ builder.Services
     .AddDefaultTokenProviders()
     .AddSignInManager();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "pmo.auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.Path = "/";
+
+    options.LoginPath = "/account/login";
+    options.LogoutPath = "/connect/logout";
+    options.AccessDeniedPath = "/account/access-denied";
+});
+
 // ---------- OpenIddict -------------------------------------------------
 builder.Services.AddOpenIddictServerConfig(
     builder.Configuration,

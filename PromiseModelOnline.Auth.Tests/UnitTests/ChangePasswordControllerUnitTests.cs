@@ -7,8 +7,8 @@ using NUnit.Framework;
 using OpenIddict.Abstractions;
 using PromiseModelOnline.Auth.Controllers;
 using PromiseModelOnline.Auth.Models;
-using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace PromiseModelOnline.Auth.Tests;
 
@@ -32,18 +32,23 @@ public class ChangePasswordControllerUnitTests
 
         // By default, return empty token list
         _tokenManagerMock
-            .Setup(x => x.FindBySubjectAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.FindAsync(
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
             .Returns(AsyncEnumerableFrom<object>());
     }
 
-    private void SetNameIdUser(string userName)
+    private void SetSubjectUser(string userId)
     {
-        var identity = new ClaimsIdentity(new[] { new Claim(JwtRegisteredClaimNames.NameId, userName) }, "TestAuth");
+        var identity = new ClaimsIdentity(new[] { new Claim(Claims.Subject, userId) }, "TestAuth");
         _controller.ControllerContext.HttpContext!.User = new ClaimsPrincipal(identity);
     }
 
     [Test]
-    public async Task ChangePassword_MissingNameIdClaim_ReturnsUnauthorized()
+    public async Task ChangePassword_MissingSubjectClaim_ReturnsUnauthorized()
     {
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
@@ -73,8 +78,8 @@ public class ChangePasswordControllerUnitTests
     [Test]
     public async Task ChangePassword_UserNotFound_ReturnsUnauthorized()
     {
-        SetNameIdUser("ghost");
-        _userManagerMock.Setup(x => x.FindByNameAsync("ghost")).ReturnsAsync((IdentityUser?)null);
+        SetSubjectUser("ghost");
+        _userManagerMock.Setup(x => x.FindByIdAsync("ghost")).ReturnsAsync((IdentityUser?)null);
 
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
@@ -87,8 +92,8 @@ public class ChangePasswordControllerUnitTests
     public async Task ChangePassword_InvalidCurrentPassword_ReturnsUnauthorizedObject()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
-        SetNameIdUser("test");
-        _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
+        SetSubjectUser("1");
+        _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "old")).ReturnsAsync(false);
 
         var result = await _controller.ChangePassword(new ChangePasswordRequest
@@ -102,8 +107,8 @@ public class ChangePasswordControllerUnitTests
     public async Task ChangePassword_ChangeFails_ReturnsBadRequestWithErrors()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
-        SetNameIdUser("test");
-        _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
+        SetSubjectUser("1");
+        _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "old")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.ChangePasswordAsync(user, "old", "new"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "err1" }));
@@ -122,15 +127,20 @@ public class ChangePasswordControllerUnitTests
     public async Task ChangePassword_Success_RevokesTokensAndReturnsNoContent()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
-        SetNameIdUser("test");
-        _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
+        SetSubjectUser("1");
+        _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "old")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.ChangePasswordAsync(user, "old", "new"))
             .ReturnsAsync(IdentityResult.Success);
 
         // Override default to return two tokens
         _tokenManagerMock
-            .Setup(x => x.FindBySubjectAsync("1", It.IsAny<CancellationToken>()))
+            .Setup(x => x.FindAsync(
+                subject: "1",
+                client: null,
+                status: null,
+                type: TokenTypeHints.RefreshToken,
+                cancellationToken: It.IsAny<CancellationToken>()))
             .Returns(AsyncEnumerableFrom(new object(), new object()));
 
         var result = await _controller.ChangePassword(new ChangePasswordRequest

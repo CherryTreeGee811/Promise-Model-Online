@@ -1,0 +1,21 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/notifications"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      {
+        "id": 1,
+        "message": "Test notification",
+        "type": "Mention",
+        "isRead": false,
+        "createdAt": "2026-05-20T00:00:00Z",
+        "link": null
+      }
+    ]
+  }
+}

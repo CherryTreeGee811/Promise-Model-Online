@@ -88,19 +88,18 @@ namespace PromiseModelOnline.Api.Controllers
         // ✅ READ scope (FIXED)
         [Authorize(Policy = "Projects.Read")]
         [HttpGet("{projectId}/my-permission")]
-        public async Task<ActionResult<string>> GetMyPermission(int projectId)
+        public async Task<ActionResult> GetMyPermission(int projectId)
         {
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            if (string.IsNullOrEmpty(email)) return Unauthorized();
-
-            var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
+            var user = await GetCurrentUserAsync();
+            if (user == null) return Unauthorized();
 
             var permission = await _permissionService.GetUserPermissionAsync(user.Id, projectId);
 
             if (permission == null)
                 return NoContent();
 
-            return Ok(permission.ToString());
+            // Must return JsonResult to ensure 'application/json' so the BFF api.mjs can parse it properly.
+            return new JsonResult(permission.ToString());
         }
 
         // ✅ WRITE scope

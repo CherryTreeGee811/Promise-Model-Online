@@ -7,8 +7,8 @@ using NUnit.Framework;
 using OpenIddict.Abstractions;
 using PromiseModelOnline.Auth.Controllers;
 using PromiseModelOnline.Auth.Models;
-using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace PromiseModelOnline.Auth.Tests;
 
@@ -36,14 +36,14 @@ public class DeleteAccountControllerUnitTests
             .Returns(AsyncEnumerableFrom<object>());
     }
 
-    private void SetNameIdUser(string userName)
+    private void SetSubjectUser(string userId)
     {
-        var identity = new ClaimsIdentity(new[] { new Claim(JwtRegisteredClaimNames.NameId, userName) }, "TestAuth");
+        var identity = new ClaimsIdentity(new[] { new Claim(Claims.Subject, userId) }, "TestAuth");
         _controller.ControllerContext.HttpContext!.User = new ClaimsPrincipal(identity);
     }
 
     [Test]
-    public async Task DeleteAccount_MissingNameIdClaim_ReturnsUnauthorized()
+    public async Task DeleteAccount_MissingSubjectClaim_ReturnsUnauthorized()
     {
         var result = await _controller.DeleteAccount(new DeleteAccountRequest { Password = "pw" });
         Assert.That(result, Is.TypeOf<UnauthorizedResult>());
@@ -59,8 +59,8 @@ public class DeleteAccountControllerUnitTests
     [Test]
     public async Task DeleteAccount_UserNotFound_ReturnsUnauthorized()
     {
-        SetNameIdUser("ghost");
-        _userManagerMock.Setup(x => x.FindByNameAsync("ghost")).ReturnsAsync((IdentityUser?)null);
+        SetSubjectUser("ghost");
+        _userManagerMock.Setup(x => x.FindByIdAsync("ghost")).ReturnsAsync((IdentityUser?)null);
 
         var result = await _controller.DeleteAccount(new DeleteAccountRequest { Password = "pw" });
         Assert.That(result, Is.TypeOf<UnauthorizedResult>());
@@ -70,8 +70,8 @@ public class DeleteAccountControllerUnitTests
     public async Task DeleteAccount_InvalidPassword_ReturnsUnauthorized()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
-        SetNameIdUser("test");
-        _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
+        SetSubjectUser("1");
+        _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(false);
 
         var result = await _controller.DeleteAccount(new DeleteAccountRequest { Password = "pw" });
@@ -82,8 +82,8 @@ public class DeleteAccountControllerUnitTests
     public async Task DeleteAccount_DeleteFails_ReturnsBadRequestWithErrors()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
-        SetNameIdUser("test");
-        _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
+        SetSubjectUser("1");
+        _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.DeleteAsync(user))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Cannot delete" }));
@@ -99,8 +99,8 @@ public class DeleteAccountControllerUnitTests
     public async Task DeleteAccount_Success_RevokesTokensAndDeletesUser()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
-        SetNameIdUser("test");
-        _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
+        SetSubjectUser("1");
+        _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.DeleteAsync(user)).ReturnsAsync(IdentityResult.Success);
 

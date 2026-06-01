@@ -1,4 +1,5 @@
 import { getProjectPermissions, inviteUserToProject, revokePermission } from './api.mjs';
+import { escapeHtml } from "../utils/html.mjs";
 
 export function loadSharePage(projectId, contentDiv) {
     const errorEl = document.getElementById('error-text');
@@ -95,5 +96,3 @@ export function loadSharePage(projectId, contentDiv) {
     }
     refreshPermissions();
 }
-
-function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }

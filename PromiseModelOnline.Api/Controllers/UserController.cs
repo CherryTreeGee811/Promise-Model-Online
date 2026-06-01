@@ -12,8 +12,8 @@ public class UsersController : ControllerBase
     [HttpGet("me")]
     public IActionResult Me()
     {
-        var email = User.FindFirstValue(ClaimTypes.Email);
-        var id = User.FindFirstValue("sub");
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
+        var id = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         return Ok(new
         {

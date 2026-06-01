@@ -1,5 +1,7 @@
 import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.mjs';
+import { escapeHtml } from "../utils/html.mjs";
+import { formatDateTime } from "../utils/date.mjs";
 
 let liveListenerRegistered = false;
 
@@ -76,8 +78,8 @@ function renderNotificationsInto(listDiv, notifications) {
                 ${notifications.map(n => `
                     <tr class="${n.isRead ? '' : 'unread'}" data-notification-id="${n.id}">
                         <td>${escapeHtml(n.message)}</td>
-                        <td>${n.type}</td>
-                        <td>${new Date(n.createdAt).toLocaleString('en-CA')}</td>
+                        <td>${escapeHtml(n.type)}</td>
+                        <td>${formatDateTime(n.createdAt, '–')}</td>
                         <td data-actions="1">
                             ${!n.isRead 
                                 ? `<button class="mark-read-btn" data-id="${n.id}">Read</button>` 
@@ -167,22 +169,9 @@ export function loadNotificationsPage(contentDiv) {
         const eventName = getUnreadNotificationsEventName();
 
         window.addEventListener(eventName, async () => {
-            // ✅ Always re-fetch full list (critical)
             await refreshNotificationsPage();
         });
     }
 
     refreshNotificationsPage();
-}
-
-/* ---------- Safe escape ---------- */
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[m]));
 }
