@@ -82,7 +82,14 @@ export async function getMyPermission(projectId) {
     if (res.status === 204) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    return res.json();
+    const text = (await res.text()).trim();
+    if (!text) return null;
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        return text;
+    }
 }
 
 /*

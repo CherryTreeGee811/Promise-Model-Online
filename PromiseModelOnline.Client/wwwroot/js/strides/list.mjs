@@ -17,6 +17,7 @@ let cachedAllStrides = [];
 let cachedIterations = [];
 let cachedCanEdit = false;
 let cachedProjectId = null;
+let strideStickySyncBound = false;
 
 function applyPermissionUI(canEdit) {
     const controls = document.querySelectorAll(
@@ -211,6 +212,27 @@ function bindBoardCollapseToggles(root) {
 
         setBoardCollapsed(board, !board.classList.contains('is-collapsed'));
     });
+}
+
+function syncStrideStickyOffsets() {
+    const appHeader = document.querySelector('.header');
+    const appHeaderHeight = appHeader?.offsetHeight ?? 0;
+
+    document.documentElement.style.setProperty('--stride-sticky-top', `${appHeaderHeight}px`);
+
+    document.querySelectorAll('[data-collapsible-board]').forEach(board => {
+        const header = board.querySelector('.stride-header');
+        const headerHeight = header?.offsetHeight ?? 0;
+        board.style.setProperty('--stride-header-sticky-offset', `${appHeaderHeight}px`);
+        board.style.setProperty('--stride-header-height', `${headerHeight}px`);
+    });
+}
+
+function bindStrideStickyOffsetSync() {
+    if (strideStickySyncBound) return;
+
+    strideStickySyncBound = true;
+    window.addEventListener('resize', syncStrideStickyOffsets);
 }
 
 function renderStrideScrollspy(strides) {
@@ -712,6 +734,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
     bindBoardCollapseToggles(strideBoard);
     bindBoardCollapseToggles(backlogSection);
+    bindStrideStickyOffsetSync();
 
     if (createStrideBtn && createStrideBtn.dataset.bound !== '1') {
         createStrideBtn.dataset.bound = '1';
@@ -915,6 +938,8 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     populateSelectsWithin(backlogSection);
                 }
             }
+
+            requestAnimationFrame(syncStrideStickyOffsets);
 
             // Load project members and populate owner dropdowns
             getProjectMembers(projectId)
