@@ -6,6 +6,7 @@ import { getFlowById } from '../flows/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
@@ -264,12 +265,6 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load moment details.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
 }
 
 function getStatusIcon(statusColor) {

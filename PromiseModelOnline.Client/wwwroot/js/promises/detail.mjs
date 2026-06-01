@@ -4,6 +4,7 @@ import { addEpic } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { loadReactions } from '../reactions/reactions.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
@@ -223,12 +224,6 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load promise details.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
 }
 
 function getStatusIcon(statusColor) {

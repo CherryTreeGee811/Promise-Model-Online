@@ -4,6 +4,7 @@ import { addJourney } from '../journeys/api.mjs';
 import { getPromiseById } from '../promises/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
@@ -247,12 +248,6 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load epic details.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>'"]/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-    }[m]));
 }
 
 function getStatusIcon(statusColor) {

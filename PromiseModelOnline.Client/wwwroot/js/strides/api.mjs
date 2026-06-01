@@ -11,6 +11,20 @@ export function getStridesByIteration(iterationId) {
         .then(handleJsonOrEmpty);
 }
 
+export async function createStride(stride) {
+    const res = await authFetch(`${base}/api/strides`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(stride)
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    return res.json();
+}
+
 export function getAllStrides() {
     return authFetch(`${base}/api/strides`)
         .then(handleJsonOrEmpty);

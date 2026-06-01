@@ -7,6 +7,7 @@ import { getMomentsByFlow } from '../flows/api.mjs';
 import { getProjectMembers } from '../strides/api.mjs';
 import { renderSummaryTable } from './summary.mjs';
 import { formatTimestamp, getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
+import { renderLoadingSpinner } from '../utils/html.mjs';
 
 export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     const form = document.getElementById('project-settings-form');
@@ -57,8 +58,12 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     }
 
     function setAuditLoading(loading) {
-        auditLoading.hidden = !loading;
-        auditPanel.hidden = loading;
+        // use centralized spinner markup inside the panel for visual consistency
+        auditLoading.hidden = true;
+        if (loading) {
+            auditPanel.innerHTML = renderLoadingSpinner('Loading project activity');
+            auditPanel.hidden = false;
+        }
     }
 
     function ensureAuditModal() {

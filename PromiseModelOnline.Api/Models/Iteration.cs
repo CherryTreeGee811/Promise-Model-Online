@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace PromiseModelOnline.Api.Models;
 
@@ -19,6 +20,7 @@ public class Iteration
 
     // Navigation
     [ForeignKey(nameof(ProjectId))]
+    [ValidateNever]
     public Project Project { get; set; } = null!;
 
     public ICollection<Stride> Strides { get; set; } = new List<Stride>();

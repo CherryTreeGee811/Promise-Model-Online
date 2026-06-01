@@ -147,6 +147,76 @@ async function requestJson(url, options) {
     throw new Error(message);
 }
 
+function ensureModal(modalId, modalMarkup) {
+    let modalEl = document.getElementById(modalId);
+    if (modalEl) return modalEl;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = modalMarkup.trim();
+    modalEl = wrapper.firstElementChild;
+
+    if (modalEl) {
+        document.body.appendChild(modalEl);
+    }
+
+    return modalEl;
+}
+
+function openDeleteConfirmationModal(label) {
+    const modalEl = ensureModal('graph-delete-confirmation-modal', `
+        <div class="modal fade" id="graph-delete-confirmation-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="graph-delete-confirmation-modal-title">Delete item</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="graph-delete-confirmation-modal-body"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="graph-delete-confirmation-confirm">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    if (!modalEl) {
+        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    }
+
+    const titleEl = modalEl.querySelector('#graph-delete-confirmation-modal-title');
+    const bodyEl = modalEl.querySelector('#graph-delete-confirmation-modal-body');
+    const confirmButton = modalEl.querySelector('#graph-delete-confirmation-confirm');
+
+    if (!titleEl || !bodyEl || !confirmButton) {
+        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    }
+
+    titleEl.textContent = `Delete ${label}`;
+    bodyEl.textContent = `Delete ${label}? This cannot be undone.`;
+
+    return new Promise(resolve => {
+        let settled = false;
+
+        const settle = value => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+
+        const modalInstance = window.bootstrap?.Modal?.getOrCreateInstance(modalEl);
+
+        confirmButton.onclick = () => {
+            settle(true);
+            modalInstance?.hide();
+        };
+
+        modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
+        modalInstance?.show();
+    });
+}
+
 function createInputField({ name, label, type = 'text', value = '', placeholder = '', rows = 3 }) {
     const field = document.createElement('label');
     field.className = 'graph-context-menu-form__field';
@@ -571,6 +641,7 @@ function buildMenuActions(
     projectId,
     onGraphMutated,
     onProjectDeleted,
+    closeMenus,
     openCreateForm,
     openMomentStatusForm,
     isNodeChildrenHidden,
@@ -623,7 +694,9 @@ function buildMenuActions(
         handler: async () => {
             const label = getNodeLabel(nodeData) || normalizeNodeType(nodeData.nodeType) || 'item';
             const confirmationLabel = nodeData.nodeType === 'root' ? 'project' : label;
-            const confirmed = window.confirm(`Delete ${confirmationLabel}? This cannot be undone.`);
+            closeMenus?.();
+
+            const confirmed = await openDeleteConfirmationModal(confirmationLabel);
             if (!confirmed) {
                 return;
             }
@@ -774,6 +847,7 @@ export function createGraphContextMenuController({
             projectId,
             onGraphMutated,
             onProjectDeleted,
+            closeMenus,
             openCreateForm,
             openMomentStatusForm,
             isNodeChildrenHidden,

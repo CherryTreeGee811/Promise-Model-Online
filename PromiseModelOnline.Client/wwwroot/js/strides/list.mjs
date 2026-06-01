@@ -3,6 +3,9 @@ import { getProjectById } from '../projects/api.mjs';
 import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
 import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
 import { buildGraphViewHref } from '../projects/graph-link.mjs';
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
+import { openStrideCreateModal } from '../utils/stride-create-modal.mjs';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues = {
@@ -11,6 +14,7 @@ const estimateValues = {
 
 let cachedMembers = [];
 let cachedAllStrides = [];
+let cachedIterations = [];
 let cachedCanEdit = false;
 let cachedProjectId = null;
 
@@ -155,16 +159,6 @@ function updateStatusBadge(row, newStatus) {
     const classes = Array.from(badge.classList);
     classes.filter(c => c.startsWith('status-') && c !== 'status-badge').forEach(c => badge.classList.remove(c));
     badge.classList.add(`status-${String(safeStatus).toLowerCase()}`);
-}
-
-function createLoadingSpinner(message) {
-    return `
-        <div class="d-flex w-100 justify-content-center align-items-center py-5" aria-live="polite">
-            <div class="spinner-border text-primary" role="status" aria-label="${escapeHtml(message)}">
-                <span class="visually-hidden">${escapeHtml(message)}</span>
-            </div>
-        </div>
-    `;
 }
 
 function renderStrideScrollspy(strides) {
@@ -649,26 +643,56 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
     const backlogSection = document.getElementById('backlog-section');
     const errorEl = document.getElementById('error-text');
     const projectTitle = document.getElementById('project-title');
+    const createStrideBtn = document.getElementById('create-stride-btn');
 
     cachedProjectId = projectId;
-    strideBoard.innerHTML = createLoadingSpinner('Loading strides');
+    strideBoard.innerHTML = renderLoadingSpinner('Loading strides');
     errorEl.textContent = '';
     if (backlogSection) backlogSection.innerHTML = '';
+
+    if (createStrideBtn && createStrideBtn.dataset.bound !== '1') {
+        createStrideBtn.dataset.bound = '1';
+        createStrideBtn.addEventListener('click', () => {
+            if (!cachedIterations.length) {
+                openIterationCreateModal(projectId, () => loadStridesList(projectId, navContentDiv, contentDiv));
+                return;
+            }
+
+            const latestIteration = cachedIterations[0];
+            openStrideCreateModal({
+                projectId,
+                iterationId: latestIteration.id,
+                iterations: cachedIterations,
+                existingStrides: cachedAllStrides,
+                onCreated: () => loadStridesList(projectId, navContentDiv, contentDiv),
+            });
+        });
+    }
 
     Promise.all([
         getProjectById(projectId).catch(() => null),
         getIterationsByProject(projectId)
     ])
         .then(([project, iterations]) => {
-            if (!iterations || iterations.length === 0) {
+            cachedIterations = Array.isArray(iterations) ? [...iterations].sort((a, b) => b.id - a.id) : [];
+
+            if (!cachedIterations.length) {
                 strideBoard.innerHTML = '';
                 errorEl.textContent = 'No iterations found for this project.';
+                if (projectTitle) {
+                    projectTitle.innerHTML = `<h2>${escapeHtml(project?.name ?? `Project ${projectId}`)}</h2>`;
+                }
+                if (createStrideBtn) {
+                    createStrideBtn.textContent = 'Create First Iteration';
+                }
                 return;
             }
-            iterations.sort((a, b) => b.id - a.id);
-            const latestIteration = iterations[0];
+            const latestIteration = cachedIterations[0];
             const projectName = project?.name ?? `Project ${projectId}`;
             projectTitle.innerHTML = `<h2>${escapeHtml(projectName)} – ${escapeHtml(latestIteration.name)}</h2>`;
+            if (createStrideBtn) {
+                createStrideBtn.textContent = 'New Stride';
+            }
 
             const historyLink = document.getElementById('iteration-history-link');
             if (historyLink) {
@@ -904,16 +928,6 @@ function drawBurndownChart(canvas, points) {
 }
 
 /* ---------- Helpers ---------- */
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[m]));
-}
-
 // Create DOM option element
 function createOption(value, text, selected) {
     const opt = document.createElement('option');

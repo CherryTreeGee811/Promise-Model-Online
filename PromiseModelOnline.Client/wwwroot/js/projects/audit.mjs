@@ -1,3 +1,5 @@
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+
 export function renderAuditTable(items, { showEntity = false } = {}) {
     if (!items || items.length === 0) {
         return '<p class="text-muted mb-0">No activity recorded yet.</p>';
@@ -40,13 +42,7 @@ export function renderAuditTable(items, { showEntity = false } = {}) {
 }
 
 export function renderAuditLoading(message = 'Loading activity') {
-    return `
-        <div class="d-flex justify-content-center align-items-center py-4" aria-live="polite">
-            <div class="spinner-border text-primary" role="status" aria-label="${escapeHtml(message)}">
-                <span class="visually-hidden">${escapeHtml(message)}</span>
-            </div>
-        </div>
-    `;
+    return renderLoadingSpinner(message);
 }
 
 export function renderAuditDetailsModal() {
@@ -223,13 +219,4 @@ function formatValue(value) {
     }
 
     return String(value);
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
 }

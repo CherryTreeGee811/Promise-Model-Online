@@ -1,4 +1,5 @@
 import { getComments, postComment } from './api.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 
 export function loadComments(container, parentType, parentId) {
     container.innerHTML = `
@@ -75,10 +76,4 @@ function createCommentElement(comment) {
 
 function formatCommentText(text) {
     return escapeHtml(text).replace(/@(\w+)/g, '<span class="mention">@$1</span>');
-}
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
 }

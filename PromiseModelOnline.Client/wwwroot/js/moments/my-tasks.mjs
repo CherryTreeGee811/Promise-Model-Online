@@ -1,4 +1,5 @@
 import { getMyTasks } from './api.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 import { routeHandler } from '../router.mjs';
 
 export function loadMyTasksPage(navContentDiv, contentDiv) {
@@ -55,10 +56,4 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load your tasks.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
 }

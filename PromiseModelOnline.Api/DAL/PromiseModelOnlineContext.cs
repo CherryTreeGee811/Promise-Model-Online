@@ -200,6 +200,10 @@ namespace PromiseModelOnline.Api.DAL
                 Epic epic => await ResolveProjectIdFromPromiseIdAsync(epic.ProductPromiseId, cancellationToken),
                 Journey journey => await ResolveProjectIdFromEpicIdAsync(journey.EpicId, cancellationToken),
                 Flow flow => await ResolveProjectIdFromJourneyIdAsync(flow.JourneyId, cancellationToken),
+                Iteration iteration => iteration.ProjectId,
+                Stride stride => stride.IterationId.HasValue
+                    ? await ResolveProjectIdFromIterationIdAsync(stride.IterationId.Value, cancellationToken)
+                    : null,
                 Moment moment => await ResolveProjectIdFromFlowIdAsync(moment.FlowId, cancellationToken),
                 _ => null
             };
@@ -253,6 +257,17 @@ namespace PromiseModelOnline.Api.DAL
                 .FirstOrDefaultAsync(cancellationToken);
 
             return await ResolveProjectIdFromJourneyIdAsync(journeyId, cancellationToken);
+        }
+
+        private async Task<int?> ResolveProjectIdFromIterationIdAsync(int iterationId, CancellationToken cancellationToken)
+        {
+            if (iterationId <= 0)
+                return null;
+
+            return await Iterations.AsNoTracking()
+                .Where(iteration => iteration.Id == iterationId)
+                .Select(iteration => iteration.ProjectId)
+                .FirstOrDefaultAsync(cancellationToken);
         }
 
         private static AuditActionType ResolveActionType(EntityEntry entry)

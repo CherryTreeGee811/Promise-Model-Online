@@ -1,3 +1,5 @@
+import { escapeHtml } from './html.mjs';
+
 export function renderTableWithInlineAddRow(container, {
     headers,
     items,
@@ -43,8 +45,3 @@ export function removeInlineEmptyRow(tbody) {
     tbody.querySelector('.inline-table-empty-row')?.remove();
 }
 
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
