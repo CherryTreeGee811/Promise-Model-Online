@@ -1,11 +1,10 @@
 import { getProjectById, getProjectPromises } from './api.mjs';
-import { getIterationsByProject } from '../iterations/api.mjs';
 import { getEpicsByPromise } from '../promises/api.mjs';
 import { getJourneysByEpic } from '../epics/api.mjs';
 import { getFlowsByJourney } from '../journeys/api.mjs';
-import { getStridesByIteration } from '../strides/api.mjs';
 import { getMomentsByFlow } from '../flows/api.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
+import { loadAvailableStridesForProject } from '../strides/stride-options.mjs';
 import {
     NODE_TYPES,
     NODE_TYPE_INDEX,
@@ -876,24 +875,7 @@ async function reloadGraphData() {
 }
 
 async function loadAvailableStrides(projectId) {
-    const iterations = await getIterationsByProject(projectId);
-    const strideGroups = await Promise.all(
-        (Array.isArray(iterations) ? iterations : []).map(async iteration => ({
-            iteration,
-            strides: await getStridesByIteration(iteration.id),
-        }))
-    );
-
-    const strides = strideGroups
-        .flatMap(group => (Array.isArray(group.strides) ? group.strides : []))
-        .sort((left, right) => {
-            const leftStart = new Date(left.startDate ?? 0).getTime();
-            const rightStart = new Date(right.startDate ?? 0).getTime();
-            if (leftStart !== rightStart) return leftStart - rightStart;
-            return Number(left.id) - Number(right.id);
-        });
-
-    graphState.availableStrides = strides;
+    graphState.availableStrides = await loadAvailableStridesForProject(projectId);
 }
 
 export async function loadGraphPage(projectId, contentDiv) {

@@ -2,6 +2,7 @@ import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
 import { base } from '../api.mjs';
 import { getAccessToken } from '../auth-state.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';
+import { getStrideOptions } from '../strides/stride-options.mjs';
 
 const NODE_CHILD_LABELS = {
     root: 'Promise',
@@ -312,16 +313,6 @@ function getMomentEstimateOptions() {
         { value: 'XL', label: 'XL' },
         { value: 'XXL', label: 'XXL' },
         { value: 'XXXL', label: 'XXXL' },
-    ];
-}
-
-function getStrideOptions(strides = []) {
-    return [
-        { value: '', label: 'Backlog' },
-        ...strides.map(stride => ({
-            value: String(stride.id),
-            label: stride.name ? `Stride #${stride.id} - ${stride.name}` : `Stride #${stride.id}`,
-        })),
     ];
 }
 
