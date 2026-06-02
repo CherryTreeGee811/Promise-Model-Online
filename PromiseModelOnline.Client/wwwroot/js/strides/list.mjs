@@ -167,7 +167,7 @@ function boardContentElement(board) {
 }
 
 function boardToggleButtonHtml(collapsed) {
-    const iconClass = collapsed ? 'bi-plus-square-dotted' : 'bi-dash-square-dotted';
+    const iconClass = collapsed ? 'bi-chevron-down' : 'bi-chevron-up';
     const label = collapsed ? 'Expand board' : 'Collapse board';
 
     return `
@@ -202,7 +202,7 @@ function setBoardCollapsed(board, collapsed) {
     const toggleButton = board.querySelector('.stride-toggle-btn');
     const icon = toggleButton?.querySelector('.bi');
     if (toggleButton && icon) {
-        const iconClass = collapsed ? 'bi-plus-square-dotted' : 'bi-dash-square-dotted';
+        const iconClass = collapsed ? 'bi-chevron-down' : 'bi-chevron-up';
         const label = collapsed ? 'Expand board' : 'Collapse board';
         icon.className = `bi ${iconClass}`;
         toggleButton.setAttribute('aria-label', label);
