@@ -177,6 +177,18 @@ function boardToggleButtonHtml(collapsed) {
     `;
 }
 
+function boardHeaderHtml(title, collapsed, extraActionsHtml = '') {
+    return `
+        <div class="stride-header">
+            <div class="stride-header-main">
+                ${boardToggleButtonHtml(collapsed)}
+                <h3>${escapeHtml(title)}</h3>
+            </div>
+            ${extraActionsHtml ? `<div class="stride-header-actions ms-auto">${extraActionsHtml}</div>` : ''}
+        </div>
+    `;
+}
+
 function setBoardCollapsed(board, collapsed) {
     if (!board) return;
 
@@ -396,6 +408,72 @@ function ensureMoveToStrideModal() {
     return modalEl;
 }
 
+function ensureProgressStrideModal() {
+    let modalEl = document.getElementById('progress-stride-modal');
+    if (modalEl) return modalEl;
+
+    modalEl = document.createElement('div');
+    modalEl.className = 'modal fade';
+    modalEl.id = 'progress-stride-modal';
+    modalEl.tabIndex = -1;
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Progress Stride?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0" id="progress-stride-modal-text"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="progress-stride-modal-confirm">Progress</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modalEl);
+    return modalEl;
+}
+
+function promptProgressStride(strideId) {
+    const modalEl = ensureProgressStrideModal();
+    const modalText = modalEl.querySelector('#progress-stride-modal-text');
+    const confirmButton = modalEl.querySelector('#progress-stride-modal-confirm');
+    if (!modalText || !confirmButton) {
+        return Promise.resolve(window.confirm('Move all unfinished moments to the next stride?'));
+    }
+
+    const strideCard = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
+    const strideName = strideCard?.querySelector('.stride-header h3')?.textContent?.trim();
+    modalText.textContent = strideName
+        ? `Move all unfinished moments in ${strideName} to the next stride?`
+        : 'Move all unfinished moments to the next stride?';
+
+    return new Promise(resolve => {
+        let settled = false;
+
+        const settle = value => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+
+        const modalInstance = window.bootstrap?.Modal?.getOrCreateInstance(modalEl);
+
+        confirmButton.onclick = () => {
+            settle(true);
+            modalInstance?.hide();
+        };
+
+        modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
+        modalInstance?.show();
+    });
+}
+
 function promptMoveToStride(momentId, strideId, onConfirm) {
     const modalEl = ensureMoveToStrideModal();
     const modalText = modalEl.querySelector('#move-to-stride-modal-text');
@@ -443,12 +521,7 @@ function ensureBacklogTbody() {
 
     backlogSection.innerHTML = `
         <div class="stride-card backlog-board is-collapsed" data-collapsible-board="1">
-            <div class="stride-header">
-                <h3>Backlog</h3>
-                <div class="stride-header-actions ms-auto">
-                    ${boardToggleButtonHtml(true)}
-                </div>
-            </div>
+            ${boardHeaderHtml('Backlog', true)}
             <div class="stride-moments backlog-content hidden">
                 <table class="promisemodel-table">
                     <thead>
@@ -686,7 +759,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
         if (btn.classList.contains('progress-stride-btn')) {
             const strideId = parseInt(btn.dataset.strideId, 10);
 
-            if (!confirm('Move all unfinished moments to the next stride?')) return;
+            if (!(await promptProgressStride(strideId))) return;
 
             try {
                 await progressStride(strideId);
@@ -817,9 +890,10 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             const { results, backlogMoments, strides: allStrides } = data;
 
             // Render stride cards
-            results.forEach(({ stride, moments }) => {
+            results.forEach(({ stride, moments }, index) => {
+                const collapsed = index !== 0;
                 const card = document.createElement('div');
-                card.className = 'stride-card is-collapsed';
+                card.className = `stride-card${collapsed ? ' is-collapsed' : ''}`;
                 card.dataset.strideId = stride.id;
                 card.id = `stride-card-${stride.id}`;
                 card.dataset.collapsibleBoard = '1';
@@ -827,6 +901,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 card.innerHTML = `
                     <div class="stride-header">
                         <div class="stride-header-main">
+                            ${boardToggleButtonHtml(collapsed)}
                             <h3>${escapeHtml(stride.name)}</h3>
                             <span class="stride-dates">${formatDate(stride.startDate)} – ${formatDate(stride.endDate)}</span>
                             <span class="stride-duration">(${stride.durationDays} days)</span>
@@ -834,11 +909,10 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                             <span class="stride-total-effort">Total Effort: ${effTotal}</span>
                         </div>
                         <div class="stride-header-actions ms-auto">
-                            ${boardToggleButtonHtml(true)}
-                            <button class="progress-stride-btn btn btn-outline-success btn-sm hidden" data-stride-id="${stride.id}" type="button">Progress</button>
+                            <button class="progress-stride-btn btn btn-outline-success btn-sm hidden" data-stride-id="${stride.id}" type="button">🧟 Progress</button>
                         </div>
                     </div>
-                    <div class="stride-moments hidden">
+                    <div class="stride-moments${collapsed ? ' hidden' : ''}">
                         ${moments.length === 0
                             ? '<p class="no-items">No moments assigned.</p>'
                             : `<table class="promisemodel-table">
@@ -887,30 +961,21 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
             // Render Backlog
             if (backlogSection) {
+                const backlogCollapsed = allStrides && allStrides.length > 0;
                 if (!backlogMoments || backlogMoments.length === 0) {
                     backlogSection.innerHTML = `
-                        <div class="stride-card backlog-board is-collapsed" data-collapsible-board="1">
-                            <div class="stride-header">
-                                <h3>Backlog</h3>
-                                <div class="stride-header-actions ms-auto">
-                                    ${boardToggleButtonHtml(true)}
-                                </div>
-                            </div>
-                            <div class="stride-moments backlog-content hidden">
+                        <div class="stride-card backlog-board${backlogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
+                            ${boardHeaderHtml('Backlog', backlogCollapsed)}
+                            <div class="stride-moments backlog-content${backlogCollapsed ? ' hidden' : ''}">
                                 <p class="no-items">No unassigned moments.</p>
                             </div>
                         </div>
                     `;
                 } else {
                     backlogSection.innerHTML = `
-                        <div class="stride-card backlog-board is-collapsed" data-collapsible-board="1">
-                            <div class="stride-header">
-                                <h3>Backlog</h3>
-                                <div class="stride-header-actions ms-auto">
-                                    ${boardToggleButtonHtml(true)}
-                                </div>
-                            </div>
-                            <div class="stride-moments backlog-content hidden">
+                        <div class="stride-card backlog-board${backlogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
+                            ${boardHeaderHtml('Backlog', backlogCollapsed)}
+                            <div class="stride-moments backlog-content${backlogCollapsed ? ' hidden' : ''}">
                                 <table class="promisemodel-table">
                                     <thead><tr><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead>
                                     <tbody>
@@ -1071,10 +1136,10 @@ function populateStatusSelect(select) {
     if (!select) return;
     const current = select.getAttribute('data-current-status') || select.value || '';
     select.innerHTML = '';
-    select.appendChild(createOption('Todo', 'Todo', current === 'Todo'));
-    select.appendChild(createOption('InProgress', 'InProgress', current === 'InProgress'));
-    select.appendChild(createOption('Blocked', 'Blocked', current === 'Blocked'));
-    select.appendChild(createOption('Done', 'Done', current === 'Done'));
+    select.appendChild(createOption('Todo', '🔴 Todo', current === 'Todo'));
+    select.appendChild(createOption('InProgress', '🟠 In Progress', current === 'InProgress'));
+    select.appendChild(createOption('Blocked', '⚫️ Blocked', current === 'Blocked'));
+    select.appendChild(createOption('Done', '🟢 Done', current === 'Done'));
 }
 
 function populateOwnerSelect(select) {

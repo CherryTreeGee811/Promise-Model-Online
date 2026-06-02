@@ -358,9 +358,10 @@ input[type=button]:hover, input[type=submit]:hover {
   letter-spacing: 0.5px;
   color: #fff;
 }
-.status-todo          { background: #1b4f72; }
+
+.status-todo          { background: #c0392b; }
 .status-inprogress    { background: #e67e22; }
-.status-blocked       { background: #c0392b; }
+.status-blocked       { background: #252525; }
 .status-done          { background: #1e7e34; }
 
 /*********************************************
@@ -413,7 +414,7 @@ input[type=button]:hover, input[type=submit]:hover {
 .stride-header h3 { color: inherit; margin: 0; }
 .stride-header-main {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
 }

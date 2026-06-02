@@ -163,7 +163,6 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                         <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Statement</th>
                                     <th>Actions</th>
                                 </tr>
@@ -171,7 +170,6 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                             <tbody>
                                 ${journeys.map(j => `
                                     <tr>
-                                        <td>${j.id}</td>
                                         <td>${escapeHtml(j.statement)}</td>
                                         <td><a href="/journeys/${j.id}" journey-id="${j.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>

@@ -646,6 +646,7 @@ function buildMenuActions(
     openMomentStatusForm,
     isNodeChildrenHidden,
     setNodeChildrenHidden,
+    revealNextLevel,
 ) {
     const actions = [];
     const childLabel = getChildLabel(nodeData.nodeType);
@@ -672,6 +673,17 @@ function buildMenuActions(
             danger: false,
             handler: async () => {
                 await setNodeChildrenHidden?.(nodeData, !childrenHidden);
+            },
+        });
+    }
+
+    if (childrenHidden && hiddenDescendantCount > 0) {
+        actions.push({
+            id: 'reveal-next-level',
+            label: 'Reveal Next Level',
+            danger: false,
+            handler: async () => {
+                await revealNextLevel?.(nodeData);
             },
         });
     }
@@ -749,6 +761,7 @@ export function createGraphContextMenuController({
     onProjectDeleted,
     isNodeChildrenHidden,
     setNodeChildrenHidden,
+    revealNextLevel,
 } = {}) {
     let referenceRect = null;
     const virtualReference = document.createElement('div');
@@ -852,6 +865,7 @@ export function createGraphContextMenuController({
             openMomentStatusForm,
             isNodeChildrenHidden,
             setNodeChildrenHidden,
+            revealNextLevel,
         );
         menuContent.replaceChildren(buildMenuElement(actions));
 

@@ -29,7 +29,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
             row.innerHTML = `
                 <td>${project.name ?? ''}</td>
                 <td class="d-flex flex-wrap gap-2">
-                    <a href="/projects/${project.id}/strides" class="btn btn-sm btn-outline-primary view-iterations-btn" data-project-id="${project.id}">View Iterations</a>
+                    <a href="/projects/${project.id}/strides" class="btn btn-sm btn-outline-primary view-iterations-btn" data-project-id="${project.id}">View Backlog</a>
                     <a href="/projects/${project.id}/graph" class="btn btn-sm btn-outline-secondary graph-btn" data-project-id="${project.id}" title="Open graph view" aria-label="Open graph view">
                         <i class="bi bi-diagram-3" aria-hidden="true"></i>
                     </a>

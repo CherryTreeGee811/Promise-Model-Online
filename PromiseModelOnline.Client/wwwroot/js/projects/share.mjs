@@ -19,43 +19,52 @@ export function loadSharePage(projectId, contentDiv) {
                 const y = window.scrollY;
                 btn.closest('tr')?.remove();
                 successEl.textContent = 'Permission revoked.';
+                successEl.classList.remove('d-none');
                 window.scrollTo(0, y);
             } catch (err) {
                 errorEl.textContent = 'Failed to revoke permission.';
+                errorEl.classList.remove('d-none');
                 console.error(err);
             }
         });
     }
 
     async function refreshPermissions() {
-        try {
-            const permissions = await getProjectPermissions(projectId);
-            loadingEl.textContent = '';
-            successEl.textContent = '';
-            section.innerHTML = `
+            try {
+                const permissions = await getProjectPermissions(projectId);
+                loadingEl.classList.add('d-none');
+                errorEl.classList.add('d-none');
+                successEl.classList.add('d-none');
+                section.innerHTML = `
                 <h2>Current Permissions</h2>
-                <table class="promisemodel-table">
+                <table class="table table-striped table-sm promisemodel-table">
                     <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>${permissions.map(p => `
                         <tr data-permission-id="${p.id}">
                             <td>${escapeHtml(p.userName)}</td>
                             <td>${p.level}</td>
                             <td>${p.status}</td>
-                            <td><button class="revoke-btn" data-permission-id="${p.id}">Revoke</button></td>
+                            <td><button class="btn btn-outline-danger btn-sm revoke-btn" data-permission-id="${p.id}">Revoke</button></td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
-                <h3>Invite a User</h3>
-                <form id="invite-form">
-                    <label>Email: <input type="email" id="invite-email" required></label>
-                    <label>Permission:
-                        <select id="invite-level">
+                <h3 class="mt-4">Invite a User</h3>
+                <form id="invite-form" class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label class="visually-hidden" for="invite-email">Email</label>
+                        <input type="email" id="invite-email" class="form-control form-control-sm" placeholder="email@example.com" required>
+                    </div>
+                    <div class="col-auto">
+                        <label class="visually-hidden" for="invite-level">Permission</label>
+                        <select id="invite-level" class="form-select form-select-sm">
                             <option value="View">View</option>
                             <option value="Comment">Comment</option>
                             <option value="Edit">Edit</option>
                         </select>
-                    </label>
-                    <button type="submit" class="view-btn">Send Invitation</button>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary btn-sm">Send Invitation</button>
+                    </div>
                 </form>`;
 
             document.querySelectorAll('.revoke-btn').forEach(btn => {
@@ -84,14 +93,17 @@ export function loadSharePage(projectId, contentDiv) {
                         window.scrollTo(0, y);
                     }
                     successEl.textContent = 'Invitation sent.';
+                    successEl.classList.remove('d-none');
                     document.getElementById('invite-email').value = '';
                 } catch (err) {
-                    errorEl.textContent = 'Failed to invite user: ' + err.message;
+                    errorEl.textContent = 'Failed to invite user: ' + (err.message || err);
+                    errorEl.classList.remove('d-none');
                 }
             });
         } catch (err) {
-            loadingEl.textContent = '';
+            loadingEl.classList.add('d-none');
             errorEl.textContent = 'Failed to load permissions.';
+            errorEl.classList.remove('d-none');
         }
     }
     refreshPermissions();

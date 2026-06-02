@@ -152,7 +152,6 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Statement</th>
                                     <th>Actions</th>
                                 </tr>
@@ -160,7 +159,6 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                             <tbody>
                                 ${flows.map(f => `
                                     <tr>
-                                        <td>${f.id}</td>
                                         <td>${escapeHtml(f.statement)}</td>
                                         <td><a href="/flows/${f.id}" flow-id="${f.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>

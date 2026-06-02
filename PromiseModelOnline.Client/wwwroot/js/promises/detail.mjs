@@ -133,7 +133,6 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                         <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Statement</th>
                                     <th>Actions</th>
                                 </tr>
@@ -141,7 +140,6 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                             <tbody>
                                 ${epics.map(e => `
                                     <tr>
-                                        <td>${e.id}</td>
                                         <td>${escapeHtml(e.statement)}</td>
                                         <td><a href="/epics/${e.id}" epic-id="${e.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>

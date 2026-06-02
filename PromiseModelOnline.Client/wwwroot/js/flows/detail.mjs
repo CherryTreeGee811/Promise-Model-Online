@@ -87,7 +87,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             <tr data-moment-id="${m.id}">
                                 <td>${escapeHtml(m.statement)}</td>
                                 <td>${m.type}</td>
-                                <td><span class="badge rounded-pill text-bg-secondary status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                 <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
@@ -148,7 +148,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
                                         <td>${created.type}</td>
-                                        <td><span class="badge rounded-pill text-bg-secondary status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
+                                        <td><span class="status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
                                         <td><a href="/moments/${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
@@ -169,7 +169,6 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                         <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Statement</th>
                                     <th>Type</th>
                                     <th>Status</th>
@@ -179,10 +178,9 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             <tbody>
                                 ${moments.map(m => `
                                     <tr>
-                                        <td>${m.id}</td>
                                         <td>${escapeHtml(m.statement)}</td>
                                         <td>${m.type}</td>
-                                        <td><span class="badge rounded-pill text-bg-secondary status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                        <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                         <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}

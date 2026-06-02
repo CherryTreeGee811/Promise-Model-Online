@@ -96,6 +96,21 @@ function collapseAllBelowPromises() {
     graphState.collapsedNodeIds = nextCollapsed;
 }
 
+function revealNextLevel(nodeData) {
+    if (!graphState.rawTree || !nodeData?.id) return;
+
+    const node = findNodeById(graphState.rawTree, nodeData.id);
+    if (!node) return;
+
+    setNodeCollapsed(node.id, false);
+
+    for (const child of node.children ?? []) {
+        if (hasNodeChildren(child)) {
+            setNodeCollapsed(child.id, true);
+        }
+    }
+}
+
 function expandAllNodes() {
     graphState.collapsedNodeIds.clear();
 }
@@ -449,9 +464,9 @@ function renderFilterBar() {
 
             <div class="graph-filter-field graph-filter-checkbox-field">
                 <span>Search options</span>
-                <div class="form-check form-switch">
+                <div class="form-check form-switch" style="padding-left: 1.75rem;padding-top: 1rem;" >
                     <input id="graph-filter-include-children" class="form-check-input" type="checkbox" role="switch" ${graphState.filters.includeChildren ? 'checked' : ''} />
-                    <label class="form-check-label" for="graph-filter-include-children">Include Children</label>
+                    <label class="form-check-label" for="graph-filter-include-children" style="padding-left: .5rem;">Include Children</label>
                 </div>
             </div>
 
@@ -914,6 +929,10 @@ export async function loadGraphPage(projectId, contentDiv) {
             if (!nodeId) return;
 
             setNodeCollapsed(nodeId, hidden);
+            requestApplyFilters(0);
+        },
+        revealNextLevel: async (nodeData) => {
+            revealNextLevel(nodeData);
             requestApplyFilters(0);
         },
         onProjectDeleted: () => {
