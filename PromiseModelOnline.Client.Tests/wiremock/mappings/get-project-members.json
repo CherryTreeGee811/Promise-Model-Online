@@ -5,7 +5,12 @@
   },
   "response": {
     "status": 200,
-    "headers": { "Content-Type": "application/json" },
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    },
     "jsonBody": [
       { "userId": 1, "userName": "pmo_test", "email": "pmo@test.com" },
       { "userId": 2, "userName": "other_user", "email": "other@test.com" }

@@ -1,8 +1,13 @@
 {
-  "priority": 10,
+  "priority": 2,
   "request": {
-    "method": "POST",
-    "url": "/api/sessions"
+    "method": "GET",
+    "urlPath": "/api/projects/1",
+    "headers": {
+      "Authorization": {
+        "equalTo": "Bearer owner-token-fixed"
+      }
+    }
   },
   "response": {
     "status": 200,
@@ -13,8 +18,11 @@
       "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
     },
     "jsonBody": {
-      "accessToken": "owner-token-fixed",
-      "refreshToken": "refresh-token"
+      "id": 1,
+      "name": "Test Project",
+      "description": "A seeded test project",
+      "ownerId": 1,
+      "createdAt": "2026-05-01T00:00:00Z"
     }
   }
 }

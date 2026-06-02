@@ -15,9 +15,8 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         protected IWebDriver Driver = null!;
         protected WebDriverWait Wait = null!;
         protected string BaseUrl => Environment.GetEnvironmentVariable("TEST_BASE_URL") ?? "https://localhost:9000";
-
-        // ✅ Disable old cookie-based auth
-        protected virtual bool ShouldSetDefaultAuthCookie => false;
+        protected string ApiBase => Environment.GetEnvironmentVariable("TEST_API_BASE_URL") ?? "https://localhost:8000";
+        protected bool IsHeadless => string.Equals(Environment.GetEnvironmentVariable("HEADLESS") ?? "true", "true", StringComparison.OrdinalIgnoreCase);
 
         [SetUp]
         public void Setup()
@@ -26,11 +25,10 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             Directory.CreateDirectory(tempProfile);
 
             var options = new ChromeOptions();
-
-            var headless = Environment.GetEnvironmentVariable("HEADLESS") ?? "true";
-            if (headless == "true") options.AddArgument("--headless=new");
-
             try { options.SetLoggingPreference(LogType.Browser, LogLevel.All); } catch { }
+
+            //if (IsHeadless)
+                //options.AddArgument("--headless=new");
 
             options.AddArgument("--disable-web-security");
             options.AddArgument("--allow-running-insecure-content");
@@ -44,6 +42,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
             Driver = new ChromeDriver(options);
             Driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(2);
+            Driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(30);
             Wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(30));
 
             WaitForAppReady(30);
@@ -52,6 +51,9 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         [TearDown]
         public void Teardown()
         {
+            if (TestContext.CurrentContext.Result.Outcome.Status == NUnit.Framework.Interfaces.TestStatus.Failed)
+                DumpDebugInfo();
+
             try
             {
                 Driver.Quit();
@@ -75,10 +77,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
             LoginViaUi(user, pass);
 
-            ((IJavaScriptExecutor)Driver).ExecuteScript(@"
-                window.history.pushState({}, '', arguments[0]);
-                window.dispatchEvent(new PopStateEvent('popstate'));
-            ", targetPath);
+            NavigateSpaAndWait(targetPath);
         }
 
         protected void LoginViaUi(string username, string password, int timeoutSeconds = 20)
@@ -96,35 +95,31 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
             ScrollToAndClick(By.Id("login-btn"));
 
-            // ✅ Detect success via redirect (NOT cookies anymore)
             var sw = Stopwatch.StartNew();
             while (sw.Elapsed.TotalSeconds < timeoutSeconds)
             {
                 if (!Driver.Url.Contains("/login"))
-                {
                     return;
-                }
 
                 Thread.Sleep(300);
             }
 
-            throw new Exception("Login did not redirect away from /login.");
+            var url = Driver.Url;
+            var pageSource = GetPageSourcePreview();
+            throw new Exception($"Login did not redirect away from /login within {timeoutSeconds}s. URL: {url}. Page preview: {pageSource}");
         }
 
         /*
         ====================================
-        COMPATIBILITY HELPERS (IMPORTANT)
+        COMPATIBILITY HELPERS
         ====================================
         */
 
-        // ✅ Fixes old tests still using this method
         protected void ScrollElementIntoViewAndClick(By by, int timeoutSeconds = 10)
         {
             ScrollToAndClick(by, timeoutSeconds);
         }
 
-        // ✅ Fixes old tests calling SetAuthCookie
-        // NOTE: Now performs REAL login instead of fake cookie injection
         protected void SetAuthCookie(string token, string cookieName = "accessToken")
         {
             var user = Environment.GetEnvironmentVariable("TEST_USER") ?? "testuser";
@@ -170,10 +165,8 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             var element = WaitForElement(by, timeoutSeconds);
 
             ((IJavaScriptExecutor)Driver).ExecuteScript(
-                "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                "arguments[0].scrollIntoView({block: 'center', inline: 'center'}); arguments[0].click();",
                 element);
-
-            element.Click();
         }
 
         protected bool WaitUntil(Func<IWebDriver, bool> predicate, int timeoutSeconds = 10)
@@ -194,11 +187,70 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             }
         }
 
+        protected IWebElement WaitForClickable(By by, int timeoutSeconds = 10)
+        {
+            var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(timeoutSeconds));
+
+            try
+            {
+                return wait.Until(d =>
+                {
+                    try
+                    {
+                        var el = d.FindElement(by);
+                        return (el != null && el.Displayed && el.Enabled) ? el : null;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                });
+            }
+            catch (WebDriverTimeoutException)
+            {
+                DumpDebugInfo();
+                throw;
+            }
+        }
+
+        /*
+        ====================================
+        SPA NAVIGATION
+        ====================================
+        */
+
+        protected void NavigateSpa(string path)
+        {
+            ((IJavaScriptExecutor)Driver).ExecuteScript(@"
+                window.history.pushState({}, '', arguments[0]);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+            ", path);
+        }
+
+        protected void NavigateSpaAndWait(string path, int waitMs = 500)
+        {
+            NavigateSpa(path);
+            Thread.Sleep(waitMs);
+        }
+
         /*
         ====================================
         DEBUG HELPERS
         ====================================
         */
+
+        private string GetPageSourcePreview(int maxChars = 2000)
+        {
+            try
+            {
+                var src = Driver.PageSource ?? "";
+                return src.Length > maxChars ? src.Substring(0, maxChars) : src;
+            }
+            catch
+            {
+                return "(failed to retrieve page source)";
+            }
+        }
 
         private void DumpDebugInfo()
         {
@@ -235,21 +287,29 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
         private void WaitForAppReady(int timeoutSeconds = 30)
         {
+            var sw = Stopwatch.StartNew();
+
+            WaitForEndpoint(BaseUrl + "/health", "Client app", timeoutSeconds, sw);
+            WaitForEndpoint(ApiBase + "/health", "API (WireMock)", timeoutSeconds, sw);
+        }
+
+        private void WaitForEndpoint(string url, string label, int overallTimeoutSeconds, Stopwatch sw)
+        {
+            var remaining = overallTimeoutSeconds - (int)sw.Elapsed.TotalSeconds;
+            if (remaining <= 0)
+                throw new Exception($"{label} at {url} not ready within {overallTimeoutSeconds}s.");
+
             var handler = new HttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
 
-            using var client = new HttpClient(handler)
-            {
-                BaseAddress = new Uri(BaseUrl)
-            };
+            using var client = new HttpClient(handler);
+            var deadline = DateTime.UtcNow.AddSeconds(remaining);
 
-            var sw = Stopwatch.StartNew();
-
-            while (sw.Elapsed.TotalSeconds < timeoutSeconds)
+            while (DateTime.UtcNow < deadline)
             {
                 try
                 {
-                    var resp = client.GetAsync("/health").GetAwaiter().GetResult();
+                    var resp = client.GetAsync(url).GetAwaiter().GetResult();
                     if (resp.IsSuccessStatusCode)
                         return;
                 }
@@ -258,41 +318,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
                 Thread.Sleep(500);
             }
 
-            throw new Exception($"Application at {BaseUrl} did not respond on /health within {timeoutSeconds} seconds.");
-        }
-
-        protected void NavigateSpa(string path)
-        {
-            ((IJavaScriptExecutor)Driver).ExecuteScript(@"
-                window.history.pushState({}, '', arguments[0]);
-                window.dispatchEvent(new PopStateEvent('popstate'));
-            ", path);
-        }
-
-        protected IWebElement WaitForClickable(By by, int timeoutSeconds = 10)
-        {
-            var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(timeoutSeconds));
-
-            try
-            {
-                return wait.Until(d =>
-                {
-                    try
-                    {
-                        var el = d.FindElement(by);
-                        return (el != null && el.Displayed && el.Enabled) ? el : null;
-                    }
-                    catch
-                    {
-                        return null;
-                    }
-                });
-            }
-            catch (WebDriverTimeoutException)
-            {
-                DumpDebugInfo();
-                throw;
-            }
+            throw new Exception($"{label} at {url} did not become healthy within {overallTimeoutSeconds}s.");
         }
     }
 }

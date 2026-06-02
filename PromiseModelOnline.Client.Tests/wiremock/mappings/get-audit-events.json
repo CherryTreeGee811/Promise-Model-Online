@@ -1,8 +1,8 @@
 {
-  "priority": 10,
+  "priority": 2,
   "request": {
-    "method": "POST",
-    "url": "/api/sessions"
+    "method": "GET",
+    "urlPathPattern": "/api/audit-events/projects/1"
   },
   "response": {
     "status": 200,
@@ -10,11 +10,9 @@
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
+      "X-Total-Count": "0"
     },
-    "jsonBody": {
-      "accessToken": "owner-token-fixed",
-      "refreshToken": "refresh-token"
-    }
+    "jsonBody": []
   }
 }

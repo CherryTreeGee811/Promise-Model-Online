@@ -127,6 +127,9 @@ export function routeHandler(navContentDiv, contentDiv) {
                 console.error('Error loading login form js:', error);
             });
             break;
+        case path.startsWith('/projects') && path.includes('/iterations'):
+            handleIterationRoutes(path, navContentDiv, contentDiv);
+            break;
         case path.startsWith('/projects'):
             handleProjectRoutes(path, navContentDiv, contentDiv);
             break;
@@ -144,12 +147,6 @@ export function routeHandler(navContentDiv, contentDiv) {
             break;
         case path.startsWith('/promises/'):
             handlePromiseRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/projects') && path.includes('/iterations'):
-            handleIterationRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/projects'):
-            handleProjectRoutes(path, navContentDiv, contentDiv);
             break;
         case path == '/register':
             loadTemplate("register.html", contentDiv).then(() => {

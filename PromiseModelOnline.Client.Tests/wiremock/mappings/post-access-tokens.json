@@ -1,8 +1,8 @@
 {
-  "priority": 10,
+  "priority": 1,
   "request": {
     "method": "POST",
-    "url": "/api/sessions"
+    "url": "/api/access-tokens"
   },
   "response": {
     "status": 200,

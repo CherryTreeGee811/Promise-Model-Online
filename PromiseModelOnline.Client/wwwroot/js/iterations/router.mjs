@@ -13,7 +13,7 @@ export function handleIterationRoutes(path, navContentDiv, contentDiv) {
     if (match) {
         const projectId = parseInt(match[1], 10);
 
-        return loadTemplate('iteration-history.html', contentDiv)
+        return loadTemplate('iterations/list.html', contentDiv)
             .then(() => {
                 loadIterationHistory(projectId);
             })
