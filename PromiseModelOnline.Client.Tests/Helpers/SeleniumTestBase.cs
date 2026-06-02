@@ -27,8 +27,8 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             var options = new ChromeOptions();
             try { options.SetLoggingPreference(LogType.Browser, LogLevel.All); } catch { }
 
-            //if (IsHeadless)
-                //options.AddArgument("--headless=new");
+            if (IsHeadless)
+                options.AddArgument("--headless=new");
 
             options.AddArgument("--disable-web-security");
             options.AddArgument("--allow-running-insecure-content");
