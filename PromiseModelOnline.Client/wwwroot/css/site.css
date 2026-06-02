@@ -1258,3 +1258,240 @@ input[type=button]:hover, input[type=submit]:hover {
 .light-blur {
   filter: blur(1px);
 }
+
+/*********************************************
+  16. Home Page (Enterprise)
+**********************************************/
+.home-page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Hero */
+.home-hero {
+  background: linear-gradient(135deg, #1a252f 0%, #2c3e50 50%, #34495e 100%);
+  color: #fff;
+  padding: 4rem 2.5rem;
+  border-radius: var(--radius-card);
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.home-hero h1 {
+  color: #fff;
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.home-hero p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.1rem;
+  max-width: 680px;
+  margin: 0 auto 2rem;
+  line-height: 1.7;
+}
+
+/* Section titles */
+.home-section-title {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.home-section-title::after {
+  content: '';
+  display: block;
+  width: 50px;
+  height: 3px;
+  background: var(--color-accent);
+  margin: 0.75rem auto 0;
+  border-radius: 2px;
+}
+
+/* Stats bar */
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.home-stat-card {
+  background: var(--color-panel-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.home-stat-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-accent);
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
+}
+
+.home-stat-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Stack cards */
+.home-stack-card {
+  background: var(--color-panel-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  height: 100%;
+  border-top: 4px solid var(--card-accent, var(--color-accent));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-stack-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.home-stack-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.home-stack-card .home-stack-question {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--card-accent, var(--color-accent));
+  margin-bottom: 0.5rem;
+}
+
+.home-stack-card p,
+.home-stat-desc {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.home-stat-desc {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.home-stack-card--promise  { --card-accent: #3b82f6; }
+.home-stack-card--epic     { --card-accent: #8b5cf6; }
+.home-stack-card--journey  { --card-accent: #06b6d4; }
+.home-stack-card--flow     { --card-accent: #f59e0b; }
+.home-stack-card--moment   { --card-accent: #10b981; }
+
+/* Feature cards */
+.home-feature-card {
+  background: var(--color-panel-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.home-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: #fff;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.home-feature-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.home-feature-card p {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+/* CTA banner */
+.home-cta-banner {
+  background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+  color: #fff;
+  padding: 3rem 2rem;
+  border-radius: var(--radius-card);
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.home-cta-banner h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.home-cta-banner p {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .home-hero {
+    padding: 2.5rem 1.25rem;
+  }
+
+  .home-hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .home-hero p {
+    font-size: 0.95rem;
+  }
+
+  .home-stats {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .home-stat-number {
+    font-size: 1.5rem;
+  }
+
+  .home-cta-banner {
+    padding: 2rem 1.25rem;
+  }
+
+  .home-cta-banner h2 {
+    font-size: 1.25rem;
+  }
+}
