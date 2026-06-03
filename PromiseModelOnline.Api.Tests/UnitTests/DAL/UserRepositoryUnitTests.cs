@@ -7,40 +7,30 @@ using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class UserRepositoryUnitTests
+    public class UserRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private UserRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new UserRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new UserRepository(Context);
         }
 
         [Test]
         public async Task GetUsersByNameAsync_ReturnsMatchingUsers()
         {
-            _context.Users.AddRange(
+            Context.Users.AddRange(
                 new User { Id = 1, Name = "Alice", Email = "alice@example.com" },
                 new User { Id = 2, Name = "Bob", Email = "bob@example.com" },
                 new User { Id = 3, Name = "Alice", Email = "alice2@example.com" }
             );
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetUsersByNameAsync("Alice");
             var list = result.ToList();
@@ -53,8 +43,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetUsersByNameAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Users.Add(new User { Name = "Charlie", Email = "charlie@example.com" });
-            await _context.SaveChangesAsync();
+            Context.Users.Add(new User { Name = "Charlie", Email = "charlie@example.com" });
+            await Context.SaveChangesAsync();
             var result = await _repo.GetUsersByNameAsync("Nobody");
             Assert.That(result, Is.Empty);
         }
@@ -62,11 +52,11 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task FindByEmailAsync_ReturnsMatchingUsers()
         {
-            _context.Users.AddRange(
+            Context.Users.AddRange(
                 new User { Id = 1, Email = "alice@example.com", Name = "Alice" },
                 new User { Id = 2, Email = "bob@example.com", Name = "Bob" }
             );
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
             var result = await _repo.FindByEmailAsync("alice@example.com");
             var list = result.ToList();
@@ -90,7 +80,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(user.Role, Is.EqualTo(UserRole.Professional));
             Assert.That(user.CreatedAt, Is.Not.EqualTo(default(DateTime)));
 
-            var saved = await _context.Users.FirstOrDefaultAsync(u => u.Email == "test@example.com");
+            var saved = await Context.Users.FirstOrDefaultAsync(u => u.Email == "test@example.com");
             Assert.That(saved, Is.Not.Null);
         }
 
@@ -118,14 +108,14 @@ namespace PromiseModelOnline.Api.Tests
                 Role = UserRole.Student,
                 CreatedAt = DateTime.UtcNow.AddDays(-1)
             };
-            _context.Users.Add(existing);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(existing);
+            await Context.SaveChangesAsync();
 
             var user = await _repo.GetOrCreateUserByEmailAsync("old@example.com", "newalias");
             Assert.That(user.Id, Is.EqualTo(existing.Id));
             Assert.That(user.Name, Is.EqualTo("newalias"));
 
-            var saved = await _context.Users.FindAsync(existing.Id);
+            var saved = await Context.Users.FindAsync(existing.Id);
             Assert.That(saved!.Name, Is.EqualTo("newalias"));
         }
 
@@ -139,13 +129,13 @@ namespace PromiseModelOnline.Api.Tests
                 Role = UserRole.Professional,
                 CreatedAt = DateTime.UtcNow
             };
-            _context.Users.Add(existing);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(existing);
+            await Context.SaveChangesAsync();
 
             var user = await _repo.GetOrCreateUserByEmailAsync("keep@example.com", "ignoreme");
             Assert.That(user.Name, Is.EqualTo("KeepMe"));
 
-            var saved = await _context.Users.FindAsync(existing.Id);
+            var saved = await Context.Users.FindAsync(existing.Id);
             Assert.That(saved!.Name, Is.EqualTo("KeepMe"));
         }
 
@@ -158,8 +148,8 @@ namespace PromiseModelOnline.Api.Tests
                 Name = "nulluser@example.com",
                 CreatedAt = DateTime.UtcNow
             };
-            _context.Users.Add(existing);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(existing);
+            await Context.SaveChangesAsync();
 
             var user = await _repo.GetOrCreateUserByEmailAsync("nulluser@example.com", null);
             Assert.That(user.Name, Is.EqualTo("nulluser@example.com"));
@@ -169,8 +159,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var user = new User { Id = 42, Name = "Test", Email = "test@example.com" };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(user);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(42);
             Assert.That(result!.Name, Is.EqualTo("Test"));
@@ -181,9 +171,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var user = new User { Name = "New", Email = "new@example.com", Role = UserRole.Student };
             await _repo.AddAsync(user);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
-            var saved = _context.Users.FirstOrDefault(u => u.Email == "new@example.com");
+            var saved = Context.Users.FirstOrDefault(u => u.Email == "new@example.com");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.Role, Is.EqualTo(UserRole.Student));
         }

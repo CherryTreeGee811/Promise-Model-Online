@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -40,10 +41,6 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectExportService = new Mock<IProjectExportService>();
             _mockProjectImportService = new Mock<IProjectImportService>();
             _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
-        }
-
-        private void InitControllerWithUser(string? email, string? nameid = null)
-        {
             _controller = new ProjectsController(
                 _mockProjectService.Object,
                 _mockMapper.Object,
@@ -54,14 +51,6 @@ namespace PromiseModelOnline.Api.Tests
                 _mockProjectExportService.Object,
                 _mockProjectImportService.Object,
                 _mockProjectImportValidationService.Object);
-            var claims = new List<Claim>();
-            if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
-            if (nameid is not null) claims.Add(new Claim("nameid", nameid));
-            var identity = new ClaimsIdentity(claims, "test");
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-            };
         }
 
         [Test]
@@ -79,7 +68,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper.Setup(m => m.Map(It.IsAny<Project>(), It.IsAny<IGenericService<Project>>()))
                        .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDTO { Id = p.Id, Name = p.Name });
 
-            InitControllerWithUser("a@b.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "a@b.com");
 
             var actionResult = await _controller.GetAll();
 
@@ -95,7 +84,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetAll_MissingEmail_ReturnsUnauthorized()
         {
-            InitControllerWithUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
             var actionResult = await _controller.GetAll();
             Assert.That(actionResult.Result, Is.InstanceOf<UnauthorizedResult>());
         }
@@ -109,7 +98,7 @@ namespace PromiseModelOnline.Api.Tests
             var members = new List<ProjectMemberDTO> { new ProjectMemberDTO { UserId = 5, Email = "m1@e" } };
             _mockProjectService.Setup(s => s.GetProjectMembersAsync(99)).ReturnsAsync(members);
 
-            InitControllerWithUser("x@y.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "x@y.com");
 
             var actionResult = await _controller.GetMembers(99);
 
@@ -125,7 +114,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetMembers_MissingEmail_ReturnsUnauthorized()
         {
-            InitControllerWithUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
             var result = await _controller.GetMembers(1);
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
         }
@@ -138,7 +127,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper.Setup(m => m.Map(project, It.IsAny<IGenericService<Project>>()))
                        .Returns(new ProjectDTO { Id = 7, Name = "P7" });
 
-            InitControllerWithUser("u@u.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "u@u.com");
 
             var result = await _controller.GetById(7);
 
@@ -153,7 +142,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetById_WhenMissing_ReturnsNotFound()
         {
             _mockProjectService.Setup(s => s.GetByIdAsync(99)).ReturnsAsync((Project?)null);
-            InitControllerWithUser("u@u.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "u@u.com");
             var result = await _controller.GetById(99);
             Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
         }
@@ -165,7 +154,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper.Setup(m => m.Map(project, It.IsAny<IGenericService<Project>>()))
                        .Returns(new ProjectDTO { Id = 21, Name = "New" });
 
-            InitControllerWithUser("creator@x.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "creator@x.com");
 
             var result = await _controller.Create(project);
 
@@ -180,7 +169,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task Update_WithMatchingId_ReturnsNoContent()
         {
             var project = new Project { Id = 31, Name = "Up" };
-            InitControllerWithUser("u@u.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "u@u.com");
 
             var result = await _controller.Update(31, project);
 
@@ -192,7 +181,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task Update_IdMismatch_ReturnsBadRequest()
         {
             var project = new Project { Id = 40, Name = "Mismatch" };
-            InitControllerWithUser("u@u.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "u@u.com");
             var result = await _controller.Update(41, project);
             Assert.That(result, Is.InstanceOf<BadRequestResult>());
         }
@@ -201,7 +190,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task Delete_WhenDeleted_ReturnsNoContent()
         {
             _mockProjectService.Setup(s => s.DeleteByIdAsync(55)).ReturnsAsync(true);
-            InitControllerWithUser("u@u.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "u@u.com");
             var result = await _controller.Delete(55);
             Assert.That(result, Is.InstanceOf<NoContentResult>());
         }
@@ -210,7 +199,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task Delete_WhenNotFound_ReturnsNotFound()
         {
             _mockProjectService.Setup(s => s.DeleteByIdAsync(66)).ReturnsAsync(false);
-            InitControllerWithUser("u@u.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "u@u.com");
             var result = await _controller.Delete(66);
             Assert.That(result, Is.InstanceOf<NotFoundResult>());
         }
@@ -231,7 +220,7 @@ namespace PromiseModelOnline.Api.Tests
                 Project = new ProjectExportProject { Id = 55, Name = "Export me" }
             });
 
-            InitControllerWithUser("exporter@x.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "exporter@x.com");
 
             var result = await _controller.Export(55);
 
@@ -249,7 +238,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task Export_MissingEmail_ReturnsUnauthorized()
         {
-            InitControllerWithUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.Export(55);
 
@@ -263,7 +252,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("noaccess@x.com", It.IsAny<string?>())).ReturnsAsync(user);
             _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project>());
 
-            InitControllerWithUser("noaccess@x.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "noaccess@x.com");
 
             var result = await _controller.Export(99);
 
@@ -281,7 +270,7 @@ namespace PromiseModelOnline.Api.Tests
             });
             _mockProjectExportService.Setup(s => s.BuildExportAsync(100)).ThrowsAsync(new KeyNotFoundException());
 
-            InitControllerWithUser("owner@x.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "owner@x.com");
 
             var result = await _controller.Export(100);
 

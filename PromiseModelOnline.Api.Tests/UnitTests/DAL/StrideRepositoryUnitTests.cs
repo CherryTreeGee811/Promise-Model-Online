@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class StrideRepositoryUnitTests
+    public class StrideRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private StrideRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new StrideRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new StrideRepository(Context);
         }
 
         [Test]
@@ -40,8 +30,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Stride { Id = 2, Name = "Sprint 2", IterationId = 10 },
                 new Stride { Id = 3, Name = "Sprint 3", IterationId = 20 }
             };
-            _context.Strides.AddRange(strides);
-            await _context.SaveChangesAsync();
+            Context.Strides.AddRange(strides);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetStridesByIterationAsync(10);
             var list = result.ToList();
@@ -54,8 +44,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetStridesByIterationAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Strides.Add(new Stride { Id = 1, IterationId = 99 });
-            await _context.SaveChangesAsync();
+            Context.Strides.Add(new Stride { Id = 1, IterationId = 99 });
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetStridesByIterationAsync(100);
             Assert.That(result, Is.Empty);
@@ -71,8 +61,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Stride { Id = 2, Name = "Ends earlier", EndDate = new DateTime(2026, 5, 31) },
                 new Stride { Id = 3, Name = "Ends later", EndDate = new DateTime(2026, 6, 2) }
             };
-            _context.Strides.AddRange(strides);
-            await _context.SaveChangesAsync();
+            Context.Strides.AddRange(strides);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetStridesEndingOnAsync(targetDate);
             var list = result.ToList();
@@ -84,8 +74,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetStridesEndingOnAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Strides.Add(new Stride { Id = 1, EndDate = new DateTime(2026, 6, 5) });
-            await _context.SaveChangesAsync();
+            Context.Strides.Add(new Stride { Id = 1, EndDate = new DateTime(2026, 6, 5) });
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetStridesEndingOnAsync(new DateTime(2026, 6, 1));
             Assert.That(result, Is.Empty);
@@ -96,8 +86,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var stride = new Stride { Id = 5, Name = "Stride 5", IterationId = 1 };
-            _context.Strides.Add(stride);
-            await _context.SaveChangesAsync();
+            Context.Strides.Add(stride);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(5);
             Assert.That(result, Is.Not.Null);
@@ -109,9 +99,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var stride = new Stride { Name = "New Stride", IterationId = 2, StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(14) };
             await _repo.AddAsync(stride);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
             
-            var saved = _context.Strides.FirstOrDefault(s => s.Name == "New Stride");
+            var saved = Context.Strides.FirstOrDefault(s => s.Name == "New Stride");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.IterationId, Is.EqualTo(2));
         }

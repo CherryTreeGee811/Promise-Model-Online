@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class ProjectRepositoryUnitTests
+    public class ProjectRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private ProjectRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new ProjectRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new ProjectRepository(Context);
         }
 
         [Test]
@@ -40,8 +30,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Project { Id = 2, Name = "Beta", OwnerId = 200 },
                 new Project { Id = 3, Name = "Gamma", OwnerId = 100 }
             };
-            _context.Projects.AddRange(projects);
-            await _context.SaveChangesAsync();
+            Context.Projects.AddRange(projects);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetProjectsOwnedByUserAsync(100);
             var list = result.ToList();
@@ -54,8 +44,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetProjectsOwnedByUserAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Projects.Add(new Project { Id = 1, OwnerId = 99 });
-            await _context.SaveChangesAsync();
+            Context.Projects.Add(new Project { Id = 1, OwnerId = 99 });
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetProjectsOwnedByUserAsync(100);
             Assert.That(result, Is.Empty);
@@ -73,8 +63,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var project = new Project { Id = 5, Name = "Test Project", OwnerId = 1 };
-            _context.Projects.Add(project);
-            await _context.SaveChangesAsync();
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(5);
             Assert.That(result, Is.Not.Null);
@@ -86,9 +76,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var project = new Project { Name = "New Project", OwnerId = 42 };
             await _repo.AddAsync(project);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
             
-            var saved = _context.Projects.FirstOrDefault(p => p.Name == "New Project");
+            var saved = Context.Projects.FirstOrDefault(p => p.Name == "New Project");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.OwnerId, Is.EqualTo(42));
         }
@@ -108,33 +98,33 @@ namespace PromiseModelOnline.Api.Tests
             var comment = new Comment { Id = 10, UserId = 10, Text = "Moment comment", MomentId = 6 };
             var mention = new CommentMention { Id = 11, CommentId = 10, MentionedUserId = 10 };
 
-            _context.Projects.Add(project);
-            _context.Promises.Add(promise);
-            _context.Epics.Add(epic);
-            _context.Journeys.Add(journey);
-            _context.Flows.Add(flow);
-            _context.Moments.Add(moment);
-            _context.Iterations.Add(iteration);
-            _context.Strides.Add(stride);
-            _context.Set<Permission>().Add(permission);
-            _context.Set<Comment>().Add(comment);
-            _context.Set<CommentMention>().Add(mention);
-            await _context.SaveChangesAsync();
+            Context.Projects.Add(project);
+            Context.Promises.Add(promise);
+            Context.Epics.Add(epic);
+            Context.Journeys.Add(journey);
+            Context.Flows.Add(flow);
+            Context.Moments.Add(moment);
+            Context.Iterations.Add(iteration);
+            Context.Strides.Add(stride);
+            Context.Set<Permission>().Add(permission);
+            Context.Set<Comment>().Add(comment);
+            Context.Set<CommentMention>().Add(mention);
+            await Context.SaveChangesAsync();
 
             var deleted = await _repo.DeleteByIdAsync(1);
 
             Assert.That(deleted, Is.True);
-            Assert.That(_context.Projects.Any(), Is.False);
-            Assert.That(_context.Promises.Any(), Is.False);
-            Assert.That(_context.Epics.Any(), Is.False);
-            Assert.That(_context.Journeys.Any(), Is.False);
-            Assert.That(_context.Flows.Any(), Is.False);
-            Assert.That(_context.Moments.Any(), Is.False);
-            Assert.That(_context.Iterations.Any(), Is.False);
-            Assert.That(_context.Strides.Any(), Is.False);
-            Assert.That(_context.Set<Permission>().Any(), Is.False);
-            Assert.That(_context.Set<Comment>().Any(), Is.False);
-            Assert.That(_context.Set<CommentMention>().Any(), Is.False);
+            Assert.That(Context.Projects.Any(), Is.False);
+            Assert.That(Context.Promises.Any(), Is.False);
+            Assert.That(Context.Epics.Any(), Is.False);
+            Assert.That(Context.Journeys.Any(), Is.False);
+            Assert.That(Context.Flows.Any(), Is.False);
+            Assert.That(Context.Moments.Any(), Is.False);
+            Assert.That(Context.Iterations.Any(), Is.False);
+            Assert.That(Context.Strides.Any(), Is.False);
+            Assert.That(Context.Set<Permission>().Any(), Is.False);
+            Assert.That(Context.Set<Comment>().Any(), Is.False);
+            Assert.That(Context.Set<CommentMention>().Any(), Is.False);
         }
     }
 }

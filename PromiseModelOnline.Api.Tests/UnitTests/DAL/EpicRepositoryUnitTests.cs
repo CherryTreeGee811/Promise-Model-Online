@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class EpicRepositoryUnitTests
+    public class EpicRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private EpicRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new EpicRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new EpicRepository(Context);
         }
 
         [Test]
@@ -40,8 +30,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Epic { Id = 2, Statement = "E2", ProductPromiseId = 20 },
                 new Epic { Id = 3, Statement = "E3", ProductPromiseId = 10 }
             };
-            _context.Epics.AddRange(epics);
-            await _context.SaveChangesAsync();
+            Context.Epics.AddRange(epics);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetEpicsByPromiseAsync(10);
             var list = result.ToList();
@@ -54,8 +44,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetEpicsByPromiseAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Epics.Add(new Epic { Id = 1, ProductPromiseId = 99 });
-            await _context.SaveChangesAsync();
+            Context.Epics.Add(new Epic { Id = 1, ProductPromiseId = 99 });
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetEpicsByPromiseAsync(100);
             Assert.That(result, Is.Empty);
@@ -73,8 +63,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var epic = new Epic { Id = 5, Statement = "Find me" };
-            _context.Epics.Add(epic);
-            await _context.SaveChangesAsync();
+            Context.Epics.Add(epic);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(5);
             Assert.That(result, Is.Not.Null);
@@ -86,9 +76,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var epic = new Epic { Id = 0, Statement = "New Epic", ProductPromiseId = 1 };
             await _repo.AddAsync(epic);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
             
-            var saved = _context.Epics.FirstOrDefault(e => e.Statement == "New Epic");
+            var saved = Context.Epics.FirstOrDefault(e => e.Statement == "New Epic");
             Assert.That(saved, Is.Not.Null);
         }
     }

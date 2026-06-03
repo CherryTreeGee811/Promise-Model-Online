@@ -249,7 +249,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
         {
             // Act
-            var result = await _controller.CreateFromDto(null);
+            var result = await _controller.CreateFromDto(null!);
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
