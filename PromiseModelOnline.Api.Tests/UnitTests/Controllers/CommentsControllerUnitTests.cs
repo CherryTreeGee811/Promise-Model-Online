@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -24,19 +25,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockCommentService = new Mock<ICommentService>();
             _mockUserRepository = new Mock<IUserRepository>();
-        }
-
-        private void InitControllerWithUser(string? email, string? nameid = null)
-        {
             _controller = new CommentsController(_mockCommentService.Object, _mockUserRepository.Object);
-            var claims = new List<Claim>();
-            if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
-            if (nameid is not null) claims.Add(new Claim("nameid", nameid));
-            var identity = new ClaimsIdentity(claims, "test");
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-            };
         }
 
         #region GetComments Tests - Happy Path
@@ -53,7 +42,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.GetCommentsAsync("Promise", 5))
                 .ReturnsAsync(comments);
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Promise", 5);
 
@@ -79,7 +68,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.GetCommentsAsync("Epic", 100))
                 .ReturnsAsync(comments);
 
-            InitControllerWithUser("test@test.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "test@test.com");
 
             var result = await _controller.GetComments("Epic", 100);
 
@@ -97,7 +86,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.GetCommentsAsync("Journey", 50))
                 .ReturnsAsync(comments);
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Journey", 50);
 
@@ -116,7 +105,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithNullType_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments(null!, 5);
 
@@ -130,7 +119,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithEmptyType_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments(string.Empty, 5);
 
@@ -144,7 +133,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithZeroParentId_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Promise", 0);
 
@@ -158,7 +147,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithNegativeParentId_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Epic", -10);
 
@@ -200,7 +189,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ReturnsAsync(createdComment);
 
-            InitControllerWithUser("user@example.com", "testuser");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com", "testuser");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -240,7 +229,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ReturnsAsync(createdComment);
 
-            InitControllerWithUser("replier@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "replier@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -277,7 +266,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ReturnsAsync(createdComment);
 
-            InitControllerWithUser("epic@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "epic@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -300,7 +289,7 @@ namespace PromiseModelOnline.Api.Tests
                 ParentCommentId = null
             };
 
-            InitControllerWithUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.CreateComment(createDto);
 
@@ -331,7 +320,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ThrowsAsync(new System.Exception(exceptionMessage));
 
-            InitControllerWithUser("error@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "error@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -360,7 +349,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ThrowsAsync(new System.Exception("Promise with ID 999 not found"));
 
-            InitControllerWithUser("invalid@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "invalid@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -387,7 +376,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ThrowsAsync(new System.Exception("Comment text cannot be empty"));
 
-            InitControllerWithUser("empty@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "empty@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -410,7 +399,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("failing@example.com", It.IsAny<string?>()))
                 .ThrowsAsync(new System.Exception("Database connection failed"));
 
-            InitControllerWithUser("failing@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "failing@example.com");
 
             var result = await _controller.CreateComment(createDto);
 

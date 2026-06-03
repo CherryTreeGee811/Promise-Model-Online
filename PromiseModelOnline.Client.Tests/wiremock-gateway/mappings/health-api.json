@@ -2,10 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/notifications",
-    "headers": {
-      "Authorization": { "equalTo": "Bearer owner-token-fixed" }
-    }
+    "url": "/api/health"
   },
   "response": {
     "status": 200,
@@ -15,15 +12,8 @@
       "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
       "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
     },
-    "jsonBody": [
-      {
-        "id": 1,
-        "message": "Test notification",
-        "type": "Mention",
-        "isRead": false,
-        "createdAt": "2026-05-20T00:00:00Z",
-        "link": null
-      }
-    ]
+    "jsonBody": {
+      "status": "healthy"
+    }
   }
 }

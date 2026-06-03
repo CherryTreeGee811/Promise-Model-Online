@@ -10,12 +10,12 @@ using System.IO;
 
 namespace PromiseModelOnline.Client.Tests.Helpers
 {
-    public class SeleniumTestBase
+    public abstract class SeleniumTestBase
     {
         protected IWebDriver Driver = null!;
         protected WebDriverWait Wait = null!;
         protected string BaseUrl => Environment.GetEnvironmentVariable("TEST_BASE_URL") ?? "https://localhost:9000";
-        protected string ApiBase => Environment.GetEnvironmentVariable("TEST_API_BASE_URL") ?? "https://localhost:8000";
+        protected string ApiBase => Environment.GetEnvironmentVariable("TEST_API_BASE_URL") ?? "https://localhost:8010";
         protected bool IsHeadless => string.Equals(Environment.GetEnvironmentVariable("HEADLESS") ?? "true", "true", StringComparison.OrdinalIgnoreCase);
 
         [SetUp]
@@ -107,6 +107,25 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             var url = Driver.Url;
             var pageSource = GetPageSourcePreview();
             throw new Exception($"Login did not redirect away from /login within {timeoutSeconds}s. URL: {url}. Page preview: {pageSource}");
+        }
+
+        /*
+        ====================================
+        AUTH TOKEN STUBBING
+        ====================================
+        */
+
+        protected void SetTokenStub(string token = "owner-token-fixed")
+        {
+            Driver.Navigate().GoToUrl(BaseUrl + "/");
+            ((IJavaScriptExecutor)Driver).ExecuteScript(
+                $"sessionStorage.setItem('pmo.accessToken', '{token}');");
+        }
+
+        protected void NavigateAsUser(string path, string token = "owner-token-fixed")
+        {
+            SetTokenStub(token);
+            Driver.Navigate().GoToUrl(BaseUrl + path);
         }
 
         /*
@@ -235,6 +254,22 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
         /*
         ====================================
+        NAVIGATION HELPERS (DRY)
+        ====================================
+        */
+
+        protected void ClickNavLink(string linkId)
+        {
+            ScrollToAndClick(By.Id(linkId));
+        }
+
+        protected void WaitForUrlContains(string expected, int timeoutSeconds = 10)
+        {
+            WaitUntil(d => d.Url.Contains(expected), timeoutSeconds);
+        }
+
+        /*
+        ====================================
         DEBUG HELPERS
         ====================================
         */
@@ -290,7 +325,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             var sw = Stopwatch.StartNew();
 
             WaitForEndpoint(BaseUrl + "/health", "Client app", timeoutSeconds, sw);
-            WaitForEndpoint(ApiBase + "/health", "API (WireMock)", timeoutSeconds, sw);
+            WaitForEndpoint(ApiBase + "/health", "Gateway (WireMock)", timeoutSeconds, sw);
         }
 
         private void WaitForEndpoint(string url, string label, int overallTimeoutSeconds, Stopwatch sw)

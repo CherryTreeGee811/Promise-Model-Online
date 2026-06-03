@@ -1,14 +1,14 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 export function getFlowById(flowId) {
-    return authFetch(`${base}/api/flows/${flowId}`).then(response => {
+    return authFetch(`/api/flows/${flowId}`).then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     });
 }
 
 export function getMomentsByFlow(flowId) {
-    return authFetch(`${base}/api/moments?flowId=${flowId}`).then(response => {
+    return authFetch(`/api/moments?flowId=${flowId}`).then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         if (response.status === 204) return [];
         return response.json();
@@ -16,7 +16,7 @@ export function getMomentsByFlow(flowId) {
 }
 
 export async function addFlow(flow) {
-    const res = await authFetch(`${base}/api/flows`, {
+    const res = await authFetch(`/api/flows`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -30,7 +30,7 @@ export async function addFlow(flow) {
 }
 
 export async function updateFlow(flow) {
-    const res = await authFetch(`${base}/api/flows/${flow.id}`, {
+    const res = await authFetch(`/api/flows/${flow.id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
@@ -43,7 +43,7 @@ export async function updateFlow(flow) {
 }
 
 export async function updateFlowDescription(flowId, description) {
-    const res = await authFetch(`${base}/api/flows/${flowId}/description`, {
+    const res = await authFetch(`/api/flows/${flowId}/description`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'

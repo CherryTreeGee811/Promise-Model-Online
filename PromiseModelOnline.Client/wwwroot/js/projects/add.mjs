@@ -32,7 +32,9 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
 
     function clearMessages() {
         errorTextElement.textContent = '';
+        errorTextElement.style.display = 'none';
         successTextElement.textContent = '';
+        successTextElement.style.display = 'none';
     }
 
     function getSubmitButtonLabel() {
@@ -177,11 +179,13 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
 
         if (!name) {
             errorTextElement.textContent = 'Project name is required.';
+            errorTextElement.style.display = 'block';
             return;
         }
 
         if (!firstPromiseStatement) {
             errorTextElement.textContent = 'The first Product Promise is required when creating from scratch.';
+            errorTextElement.style.display = 'block';
             return;
         }
 
@@ -200,6 +204,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
             routeHandler(navContentDiv, contentDiv);
         } catch (error) {
             errorTextElement.textContent = error.message || 'Failed to create project.';
+            errorTextElement.style.display = 'block';
         } finally {
             setBusyState(false, 'submit');
         }
@@ -211,6 +216,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         const file = importInput.files?.[0];
         if (!file) {
             errorTextElement.textContent = 'Choose a project export to import.';
+            errorTextElement.style.display = 'block';
             return;
         }
 
@@ -223,6 +229,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
             successTextElement.textContent = warnings.length > 0
                 ? `Project imported with ${warnings.length} warning(s).`
                 : 'Project imported successfully.';
+            successTextElement.style.display = 'block';
 
             if (projectId) {
                 window.history.pushState({}, '', `/projects/${projectId}/graph`);
@@ -233,6 +240,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
             }
         } catch (error) {
             errorTextElement.textContent = error.message || 'Failed to import project.';
+            errorTextElement.style.display = 'block';
         } finally {
             setBusyState(false, 'submit');
         }
@@ -273,6 +281,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         } catch (error) {
             resetImportState();
             errorTextElement.textContent = error.message || 'Failed to read imported project.';
+            errorTextElement.style.display = 'block';
         } finally {
             setBusyState(false, 'import');
         }

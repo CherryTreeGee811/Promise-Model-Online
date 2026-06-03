@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 /*
 ====================================
@@ -6,7 +6,7 @@ GET MOMENT
 ====================================
 */
 export function getMomentById(momentId) {
-    return authFetch(`${base}/api/moments/${momentId}`)
+    return authFetch(`/api/moments/${momentId}`)
         .then(handleJson);
 }
 
@@ -16,7 +16,7 @@ MOVE MOMENT
 ====================================
 */
 export async function moveMomentToStride(momentId, targetStrideId) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/stride-assignment`, {
+    const res = await authFetch(`/api/moments/${momentId}/stride-assignment`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -34,7 +34,7 @@ STATUS / ESTIMATE / TYPE
 ====================================
 */
 export async function updateMomentStatus(momentId, newStatus) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/status`, {
+    const res = await authFetch(`/api/moments/${momentId}/status`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -47,7 +47,7 @@ export async function updateMomentStatus(momentId, newStatus) {
 }
 
 export async function updateMomentEstimate(momentId, estimate) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/estimate`, {
+    const res = await authFetch(`/api/moments/${momentId}/estimate`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -60,7 +60,7 @@ export async function updateMomentEstimate(momentId, estimate) {
 }
 
 export async function updateMomentType(momentId, newType) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/type`, {
+    const res = await authFetch(`/api/moments/${momentId}/type`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ OWNER
 */
 
 export async function updateMomentOwner(momentId, userId) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/owner`, {
+    const res = await authFetch(`/api/moments/${momentId}/owner`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -100,7 +100,7 @@ TASKS
 */
 
 export async function getMyTasks() {
-    const res = await authFetch(`${base}/api/moments/assigned-to-me`);
+    const res = await authFetch(`/api/moments/assigned-to-me`);
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
@@ -113,7 +113,7 @@ CREATE MOMENT
 */
 
 export async function addMoment(moment) {
-    const res = await authFetch(`${base}/api/moments`, {
+    const res = await authFetch(`/api/moments`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -143,7 +143,7 @@ function handleJson(response) {
 }
 
 export async function addMomentTask(momentId, task) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/tasks`, {
+    const res = await authFetch(`/api/moments/${momentId}/tasks`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -157,7 +157,7 @@ export async function addMomentTask(momentId, task) {
 }
 
 export async function updateMomentTaskCompletion(momentId, taskId, isCompleted) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/tasks/${taskId}/completion`, {
+    const res = await authFetch(`/api/moments/${momentId}/tasks/${taskId}/completion`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -171,7 +171,7 @@ export async function updateMomentTaskCompletion(momentId, taskId, isCompleted) 
 }
 
 export async function updateMomentDescription(momentId, description) {
-    const res = await authFetch(`${base}/api/moments/${momentId}/description`, {
+    const res = await authFetch(`/api/moments/${momentId}/description`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'

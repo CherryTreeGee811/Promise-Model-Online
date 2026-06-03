@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 /*
 ====================================
@@ -7,7 +7,7 @@ ITERATIONS
 */
 
 export async function getIterationsByProject(projectId) {
-    const res = await authFetch(`${base}/api/iterations?projectId=${projectId}`);
+    const res = await authFetch(`/api/iterations?projectId=${projectId}`);
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -15,7 +15,7 @@ export async function getIterationsByProject(projectId) {
 }
 
 export async function createIteration(projectId, name) {
-    const res = await authFetch(`${base}/api/iterations`, {
+    const res = await authFetch(`/api/iterations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ export async function createIteration(projectId, name) {
 }
 
 export async function getIterationBurndown(iterationId) {
-    const res = await authFetch(`${base}/api/iterations/${iterationId}/burndown`);
+    const res = await authFetch(`/api/iterations/${iterationId}/burndown`);
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

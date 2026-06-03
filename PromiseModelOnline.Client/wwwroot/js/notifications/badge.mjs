@@ -1,5 +1,5 @@
 import { fetchUnreadNotifications } from './api.mjs';
-import { startNotificationPolling as startUnreadPolling } from './poller.mjs';
+import { startNotificationPolling as startUnreadPolling, stopNotificationPolling as stopUnreadPolling } from './poller.mjs';
 
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
 let started = false;
@@ -33,6 +33,11 @@ export async function updateNotificationBadge() {
  * Starts background polling for unread notifications.
  * Updates only the badge and (if present) the notifications list.
  */
+export function stopNotificationPolling() {
+    started = false;
+    stopUnreadPolling();
+}
+
 export function startNotificationPolling() {
     if (started) return;
     started = true;

@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class CommentRepositoryUnitTests
+    public class CommentRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private CommentRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new CommentRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new CommentRepository(Context);
         }
 
         [Test]
@@ -36,7 +26,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             var comment = new Comment { Text = "Hello", UserId = 1, CreatedAt = DateTime.UtcNow };
             await _repo.AddCommentAsync(comment); // already saves
-            var saved = await _context.Set<Comment>().FirstOrDefaultAsync(c => c.Text == "Hello");
+            var saved = await Context.Set<Comment>().FirstOrDefaultAsync(c => c.Text == "Hello");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.Text, Is.EqualTo("Hello"));
         }
@@ -46,7 +36,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             var mention = new CommentMention { CommentId = 10, MentionedUserId = 20 };
             await _repo.AddMentionAsync(mention);
-            var saved = await _context.Set<CommentMention>().FirstOrDefaultAsync(m => m.CommentId == 10);
+            var saved = await Context.Set<CommentMention>().FirstOrDefaultAsync(m => m.CommentId == 10);
             Assert.That(saved, Is.Not.Null);
         }
 
@@ -55,8 +45,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var parentId = 5;
             var user = new User { Id = 1, Email = "a@a.com", Name = "A" };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(user);
+            await Context.SaveChangesAsync();
 
             var topLevel = new Comment
             {
@@ -74,12 +64,12 @@ namespace PromiseModelOnline.Api.Tests
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Set<Comment>().AddRange(topLevel, reply);
-            await _context.SaveChangesAsync();
+            Context.Set<Comment>().AddRange(topLevel, reply);
+            await Context.SaveChangesAsync();
 
             // now link the reply to the topLevel (IDs are generated)
             reply.ParentCommentId = topLevel.Id;
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetCommentsForEntityAsync("moment", parentId);
             var comments = result.ToList();
@@ -92,8 +82,8 @@ namespace PromiseModelOnline.Api.Tests
         {
             var parentId = 10;
             var user = new User { Id = 2, Email = "b@b.com", Name = "B" };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(user);
+            await Context.SaveChangesAsync();
 
             var older = new Comment
             {
@@ -110,8 +100,8 @@ namespace PromiseModelOnline.Api.Tests
                 CreatedAt = new DateTime(2025, 6, 1)
             };
 
-            _context.Set<Comment>().AddRange(older, newer);
-            await _context.SaveChangesAsync();
+            Context.Set<Comment>().AddRange(older, newer);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetCommentsForEntityAsync("epic", parentId);
             var comments = result.ToList();
@@ -138,9 +128,9 @@ namespace PromiseModelOnline.Api.Tests
             var mention = new CommentMention { Id = 1, CommentId = 1, MentionedUserId = 2, MentionedUser = mentioned };
             comment.Mentions = new List<CommentMention> { mention };
 
-            _context.Set<User>().AddRange(user, mentioned);
-            _context.Set<Comment>().Add(comment);
-            await _context.SaveChangesAsync();
+            Context.Set<User>().AddRange(user, mentioned);
+            Context.Set<Comment>().Add(comment);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetCommentsForEntityAsync("promise", parentId);
             var comments = result.ToList();

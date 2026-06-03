@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 /*
 ====================================
@@ -7,7 +7,7 @@ PENDING INVITATIONS
 */
 
 export async function getPendingInvitations() {
-    const res = await authFetch(`${base}/api/permissions/pending`);
+    const res = await authFetch(`/api/permissions/pending`);
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -21,7 +21,7 @@ ACCEPT INVITATION
 */
 
 export async function acceptInvitation(permissionId) {
-    const res = await authFetch(`${base}/api/permissions/${permissionId}`, {
+    const res = await authFetch(`/api/permissions/${permissionId}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'

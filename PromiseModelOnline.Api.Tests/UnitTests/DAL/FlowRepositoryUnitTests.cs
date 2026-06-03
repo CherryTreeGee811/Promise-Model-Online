@@ -7,29 +7,19 @@ using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
 using PMO.Core.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class FlowRepositoryUnitTests
+    public class FlowRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private FlowRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new FlowRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new FlowRepository(Context);
         }
 
         [Test]
@@ -41,8 +31,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Flow { Id = 2, Statement = "Register", JourneyId = 20 },
                 new Flow { Id = 3, Statement = "Logout", JourneyId = 10 }
             };
-            _context.Flows.AddRange(flows);
-            await _context.SaveChangesAsync();
+            Context.Flows.AddRange(flows);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetFlowsByJourneyAsync(10);
             var list = result.ToList();
@@ -55,8 +45,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetFlowsByJourneyAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Flows.Add(new Flow { Id = 1, JourneyId = 99 });
-            await _context.SaveChangesAsync();
+            Context.Flows.Add(new Flow { Id = 1, JourneyId = 99 });
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetFlowsByJourneyAsync(100);
             Assert.That(result, Is.Empty);
@@ -73,8 +63,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var flow = new Flow { Id = 5, Statement = "Test Flow", JourneyId = 1 };
-            _context.Flows.Add(flow);
-            await _context.SaveChangesAsync();
+            Context.Flows.Add(flow);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(5);
             Assert.That(result, Is.Not.Null);
@@ -86,9 +76,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var flow = new Flow { Statement = "New Flow", JourneyId = 2 };
             await _repo.AddAsync(flow);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
             
-            var saved = _context.Flows.FirstOrDefault(f => f.Statement == "New Flow");
+            var saved = Context.Flows.FirstOrDefault(f => f.Statement == "New Flow");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.JourneyId, Is.EqualTo(2));
         }
@@ -102,19 +92,19 @@ namespace PromiseModelOnline.Api.Tests
             var momentComment = new Comment { Id = 4, UserId = 1, Text = "Moment comment", MomentId = 2 };
             var momentTask = new MomentTask { Id = 5, Description = "Task", MomentId = 2 };
 
-            _context.Flows.Add(flow);
-            _context.Moments.Add(moment);
-            _context.Set<Comment>().AddRange(flowComment, momentComment);
-            _context.Set<MomentTask>().Add(momentTask);
-            await _context.SaveChangesAsync();
+            Context.Flows.Add(flow);
+            Context.Moments.Add(moment);
+            Context.Set<Comment>().AddRange(flowComment, momentComment);
+            Context.Set<MomentTask>().Add(momentTask);
+            await Context.SaveChangesAsync();
 
             var deleted = await _repo.DeleteByIdAsync(1);
 
             Assert.That(deleted, Is.True);
-            Assert.That(_context.Flows.Any(), Is.False);
-            Assert.That(_context.Moments.Any(), Is.False);
-            Assert.That(_context.Set<Comment>().Any(), Is.False);
-            Assert.That(_context.Set<MomentTask>().Any(), Is.False);
+            Assert.That(Context.Flows.Any(), Is.False);
+            Assert.That(Context.Moments.Any(), Is.False);
+            Assert.That(Context.Set<Comment>().Any(), Is.False);
+            Assert.That(Context.Set<MomentTask>().Any(), Is.False);
         }
     }
 }

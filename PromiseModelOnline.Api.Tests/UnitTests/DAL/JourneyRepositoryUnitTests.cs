@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class JourneyRepositoryUnitTests
+    public class JourneyRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private JourneyRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new JourneyRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new JourneyRepository(Context);
         }
 
         [Test]
@@ -40,8 +30,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Journey { Id = 2, Statement = "Settings", EpicId = 20 },
                 new Journey { Id = 3, Statement = "Profile", EpicId = 10 }
             };
-            _context.Journeys.AddRange(journeys);
-            await _context.SaveChangesAsync();
+            Context.Journeys.AddRange(journeys);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetJourneysByEpicAsync(10);
             var list = result.ToList();
@@ -54,8 +44,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetJourneysByEpicAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Journeys.Add(new Journey { Id = 1, EpicId = 99 });
-            await _context.SaveChangesAsync();
+            Context.Journeys.Add(new Journey { Id = 1, EpicId = 99 });
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetJourneysByEpicAsync(100);
             Assert.That(result, Is.Empty);
@@ -72,8 +62,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var journey = new Journey { Id = 5, Statement = "Test Journey", EpicId = 1 };
-            _context.Journeys.Add(journey);
-            await _context.SaveChangesAsync();
+            Context.Journeys.Add(journey);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(5);
             Assert.That(result, Is.Not.Null);
@@ -85,9 +75,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var journey = new Journey { Statement = "New Journey", EpicId = 2 };
             await _repo.AddAsync(journey);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
             
-            var saved = _context.Journeys.FirstOrDefault(j => j.Statement == "New Journey");
+            var saved = Context.Journeys.FirstOrDefault(j => j.Statement == "New Journey");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.EpicId, Is.EqualTo(2));
         }

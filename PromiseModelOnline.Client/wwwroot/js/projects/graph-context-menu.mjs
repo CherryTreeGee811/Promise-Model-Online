@@ -1,5 +1,5 @@
 import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
-import { base } from '../api.mjs';
+
 import { getAccessToken } from '../auth-state.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';
 import { getStrideOptions } from '../strides/stride-options.mjs';
@@ -114,7 +114,7 @@ function getCreateFormDefaults(nodeData) {
 async function requestJson(url, options) {
     const accessToken = getAccessToken();
     const { headers: optionHeaders, ...fetchOptions } = options;
-    const response = await fetch(`${base}${url}`, {
+    const response = await fetch(url, {
         mode: 'cors',
         ...fetchOptions,
         headers: {

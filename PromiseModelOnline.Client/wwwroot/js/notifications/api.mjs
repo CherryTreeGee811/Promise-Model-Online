@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 /*
 ====================================
@@ -7,7 +7,7 @@ FETCH NOTIFICATIONS
 */
 
 export async function fetchUnreadNotifications() {
-    const res = await authFetch(`${base}/api/notifications`);
+    const res = await authFetch(`/api/notifications`);
 
     if (!res.ok) return [];
 
@@ -15,7 +15,7 @@ export async function fetchUnreadNotifications() {
 }
 
 export async function fetchAllNotifications() {
-    const res = await authFetch(`${base}/api/notifications`);
+    const res = await authFetch(`/api/notifications`);
 
     if (!res.ok) return [];
 
@@ -29,7 +29,7 @@ MARK READ
 */
 
 export async function markNotificationAsRead(id) {
-    const res = await authFetch(`${base}/api/notifications/${id}`, {
+    const res = await authFetch(`/api/notifications/${id}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -41,7 +41,7 @@ export async function markNotificationAsRead(id) {
 }
 
 export async function markAllNotificationsAsRead() {
-    const res = await authFetch(`${base}/api/notifications`, {
+    const res = await authFetch(`/api/notifications`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'

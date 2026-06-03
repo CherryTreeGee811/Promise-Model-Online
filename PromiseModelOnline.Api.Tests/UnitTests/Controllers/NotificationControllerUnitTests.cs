@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -31,29 +32,6 @@ namespace PromiseModelOnline.Api.Tests
                 NullLogger<NotificationsController>.Instance);
         }
 
-        private void SetCurrentUser(string? email, string? nameId = null)
-        {
-            var claims = new List<Claim>();
-            if (email is not null)
-            {
-                claims.Add(new Claim(ClaimTypes.Email, email));
-            }
-
-            if (nameId is not null)
-            {
-                claims.Add(new Claim("nameid", nameId));
-            }
-
-            var identity = new ClaimsIdentity(claims, "test");
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(identity)
-                }
-            };
-        }
-
         [Test]
         public async Task GetNotifications_WithAuthenticatedUser_ReturnsOkWithNotifications()
         {
@@ -71,7 +49,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.GetUnreadNotificationsAsync(currentUser.Id))
                 .ReturnsAsync(notifications);
 
-            SetCurrentUser("user@example.com", "user-name");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com", "user-name");
 
             var result = await _controller.GetNotifications();
 
@@ -86,7 +64,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetNotifications_MissingEmail_ReturnsUnauthorized()
         {
-            SetCurrentUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.GetNotifications();
 
@@ -107,7 +85,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.MarkAsReadAsync(9, currentUser.Id))
                 .Returns(Task.CompletedTask);
 
-            SetCurrentUser("reader@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com");
 
             var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
 
@@ -118,7 +96,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task UpdateNotification_MissingEmail_ReturnsUnauthorized()
         {
-            SetCurrentUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
 
@@ -138,7 +116,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.MarkAllAsReadAsync(currentUser.Id))
                 .Returns(Task.CompletedTask);
 
-            SetCurrentUser("reader@example.com", "reader-name");
+            ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com", "reader-name");
 
             var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
 
@@ -160,7 +138,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.MarkAsReadAsync(It.IsAny<int>(), currentUser.Id))
                 .Returns(Task.CompletedTask);
 
-            SetCurrentUser("reader@example.com", "reader-name");
+            ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com", "reader-name");
 
             var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO
             {
@@ -177,7 +155,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task UpdateNotifications_MissingEmail_ReturnsUnauthorized()
         {
-            SetCurrentUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
 

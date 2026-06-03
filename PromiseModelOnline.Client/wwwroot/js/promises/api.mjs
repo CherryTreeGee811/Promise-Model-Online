@@ -1,4 +1,4 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 /*
 ====================================
@@ -6,7 +6,7 @@ GET PROMISE
 ====================================
 */
 export function getPromiseById(promiseId) {
-    return authFetch(`${base}/api/promises/${promiseId}`)
+    return authFetch(`/api/promises/${promiseId}`)
         .then(handleJson);
 }
 
@@ -16,7 +16,7 @@ GET EPICS
 ====================================
 */
 export function getEpicsByPromise(promiseId) {
-    return authFetch(`${base}/api/epics?promiseId=${promiseId}`)
+    return authFetch(`/api/epics?promiseId=${promiseId}`)
         .then(handleJsonOrEmpty);
 }
 
@@ -26,7 +26,7 @@ CREATE PROMISE
 ====================================
 */
 export async function addPromise(promise) {
-    const res = await authFetch(`${base}/api/promises/create`, {
+    const res = await authFetch(`/api/promises/create`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -46,7 +46,7 @@ UPDATE PROMISE
 ====================================
 */
 export async function updatePromise(promise) {
-    const res = await authFetch(`${base}/api/promises/${promise.id}`, {
+    const res = await authFetch(`/api/promises/${promise.id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
@@ -73,7 +73,7 @@ function handleJson(response) {
 }
 
 export async function updatePromiseDescription(promiseId, description) {
-    const res = await authFetch(`${base}/api/promises/${promiseId}/description`, {
+    const res = await authFetch(`/api/promises/${promiseId}/description`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',

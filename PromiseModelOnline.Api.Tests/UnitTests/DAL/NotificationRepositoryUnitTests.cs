@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class NotificationRepositoryUnitTests
+    public class NotificationRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private NotificationRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new NotificationRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new NotificationRepository(Context);
         }
 
         private async Task SeedAsync()
@@ -40,8 +30,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Notification { Id = 3, UserId = 20, IsRead = false, Message = "N3" },
                 new Notification { Id = 4, UserId = 10, IsRead = false, Message = "N4" }
             };
-            _context.Set<Notification>().AddRange(notifications);
-            await _context.SaveChangesAsync();
+            Context.Set<Notification>().AddRange(notifications);
+            await Context.SaveChangesAsync();
         }
 
         [Test]
@@ -70,7 +60,7 @@ namespace PromiseModelOnline.Api.Tests
             await SeedAsync();
             await _repo.MarkAsReadAsync(1);
 
-            var notification = await _context.Set<Notification>().FindAsync(1);
+            var notification = await Context.Set<Notification>().FindAsync(1);
             Assert.That(notification!.IsRead, Is.True);
         }
 
@@ -80,7 +70,7 @@ namespace PromiseModelOnline.Api.Tests
             await SeedAsync();
             await _repo.MarkAsReadAsync(999);
             // No exception, just verify that existing notifications unchanged
-            var notification = await _context.Set<Notification>().FindAsync(1);
+            var notification = await Context.Set<Notification>().FindAsync(1);
             Assert.That(notification!.IsRead, Is.False);
         }
 
@@ -90,12 +80,12 @@ namespace PromiseModelOnline.Api.Tests
             await SeedAsync();
             await _repo.MarkAllAsReadAsync(10);
 
-            var unread = await _context.Set<Notification>()
+            var unread = await Context.Set<Notification>()
                 .Where(n => n.UserId == 10 && !n.IsRead)
                 .ToListAsync();
             Assert.That(unread, Is.Empty);
             // User 20's unread should remain
-            var otherUnread = await _context.Set<Notification>().Where(n => n.UserId == 20 && !n.IsRead).ToListAsync();
+            var otherUnread = await Context.Set<Notification>().Where(n => n.UserId == 20 && !n.IsRead).ToListAsync();
             Assert.That(otherUnread.Count, Is.EqualTo(1));
         }
     }

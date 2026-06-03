@@ -4,20 +4,33 @@ services:
     hostname: localhost
     ports:
       - "9000:9000/tcp"
+    depends_on:
+      promisemodelonline.gateway:
+        condition: service_healthy
+    networks:
+      - promisemodelonline-client-ui-test-net
     build:
       context: ../..
       dockerfile: PromiseModelOnline.Client/Dockerfile
-    depends_on:
-      - promisemodelonline.api.mock
 
-  promisemodelonline.api.mock:
+  promisemodelonline.gateway:
     image: wiremock/wiremock:latest
-    container_name: promisemodelonlineapimock
+    container_name: promisemodelonlinegatewaymock
     ports:
-      - "8000:8000/tcp"
+      - "8010:8010/tcp"
     command: >
-      --https-port 8000
+      --https-port 8010
       --verbose
     volumes:
-      - ../../PromiseModelOnline.Client.Tests/wiremock/mappings:/home/wiremock/mappings:ro
-      - ../../PromiseModelOnline.Client.Tests/wiremock/__files:/home/wiremock/__files:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/mappings:/home/wiremock/mappings:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/__files:/home/wiremock/__files:ro
+    networks:
+      - promisemodelonline-client-ui-test-net
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+networks:
+  promisemodelonline-client-ui-test-net:
+    driver: bridge

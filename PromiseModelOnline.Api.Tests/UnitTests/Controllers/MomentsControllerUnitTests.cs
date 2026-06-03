@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DTOs;
@@ -39,25 +40,6 @@ namespace PromiseModelOnline.Api.Tests
                 _mockPermissionService.Object,
                 NullLogger<MomentsController>.Instance);
             _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
-        }
-
-        private void InitControllerWithUser(string? email, string? nameid = null)
-        {
-            _controller = new MomentsController(
-                _mockMomentService.Object,
-                _mockMapper.Object,
-                _mockUserRepo.Object,
-                _mockPermissionService.Object,
-                NullLogger<MomentsController>.Instance);
-
-            var claims = new List<Claim>();
-            if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
-            if (nameid is not null) claims.Add(new Claim("nameid", nameid));
-            var identity = new ClaimsIdentity(claims, "test");
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-            };
         }
 
         [Test]
@@ -225,7 +207,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
         {
-            var result = await _controller.CreateFromDto(null);
+            var result = await _controller.CreateFromDto(null!);
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
@@ -278,7 +260,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper.Setup(m => m.Map(moment, _mockMomentService.Object))
                 .Returns(new MomentDTO { Id = momentId, Type = MomentType.Job, UpdatedAt = System.DateTime.UtcNow });
 
-            InitControllerWithUser("type@test.com", "type-user");
+            ControllerTestHelpers.SetControllerUser(_controller, "type@test.com", "type-user");
 
             // Act
             var result = await _controller.UpdateMomentType(momentId, new UpdateMomentTypeRequest { NewType = MomentType.Job });
@@ -302,7 +284,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(45);
             _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 45)).ReturnsAsync(PermissionLevel.View);
 
-            InitControllerWithUser("readonly@test.com", "readonly-user");
+            ControllerTestHelpers.SetControllerUser(_controller, "readonly@test.com", "readonly-user");
 
             // Act
             var result = await _controller.UpdateMomentType(momentId, new UpdateMomentTypeRequest { NewType = MomentType.Job });
@@ -353,7 +335,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(99);
             _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 99)).ReturnsAsync(PermissionLevel.View);
 
-            InitControllerWithUser("u@u.com", "uname");
+            ControllerTestHelpers.SetControllerUser(_controller, "u@u.com", "uname");
 
             // Act
             var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = 5 });
@@ -380,7 +362,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper.Setup(m => m.Map(returnedMoment, _mockMomentService.Object))
                 .Returns(new MomentDTO { Id = momentId, OwnerId = newOwnerId });
 
-            InitControllerWithUser("a@b.com", "a");
+            ControllerTestHelpers.SetControllerUser(_controller, "a@b.com", "a");
 
             // Act
             var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = newOwnerId });
@@ -406,7 +388,7 @@ namespace PromiseModelOnline.Api.Tests
 
             _mockMomentService.Setup(s => s.AssignOwnerAsync(momentId, 123)).ThrowsAsync(new KeyNotFoundException("not found"));
 
-            InitControllerWithUser("x@y.com", "x");
+            ControllerTestHelpers.SetControllerUser(_controller, "x@y.com", "x");
 
             // Act
             var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = 123 });
@@ -434,7 +416,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper.Setup(m => m.Map(returnedMoment, _mockMomentService.Object))
                 .Returns(new MomentDTO { Id = momentId, OwnerId = null });
 
-            InitControllerWithUser("y@z.com", "y");
+            ControllerTestHelpers.SetControllerUser(_controller, "y@z.com", "y");
 
             // Act
             var result = await _controller.UpdateMomentOwner(momentId, new UpdateMomentOwnerRequest { UserId = null });

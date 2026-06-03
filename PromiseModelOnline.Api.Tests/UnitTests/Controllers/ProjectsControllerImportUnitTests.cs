@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -40,30 +41,17 @@ public class ProjectsControllerImportUnitTests
         _mockPromiseMapper = new Mock<IGenericMapper<Promise, PromiseDTO>>();
         _mockProjectExportService = new Mock<IProjectExportService>();
         _mockProjectImportService = new Mock<IProjectImportService>();
-        _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
-    }
-
-    private void InitControllerWithUser(string? email, string? nameid = null)
-    {
-        _controller = new ProjectsController(
-            _mockProjectService.Object,
-            _mockMapper.Object,
-            _mockUserRepo.Object,
-            _mockPermissionService.Object,
-            _mockPromiseService.Object,
-            _mockPromiseMapper.Object,
-            _mockProjectExportService.Object,
-            _mockProjectImportService.Object,
-            _mockProjectImportValidationService.Object);
-
-        var claims = new List<Claim>();
-        if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
-        if (nameid is not null) claims.Add(new Claim("nameid", nameid));
-        var identity = new ClaimsIdentity(claims, "test");
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-        };
+                    _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
+            _controller = new ProjectsController(
+                _mockProjectService.Object,
+                _mockMapper.Object,
+                _mockUserRepo.Object,
+                _mockPermissionService.Object,
+                _mockPromiseService.Object,
+                _mockPromiseMapper.Object,
+                _mockProjectExportService.Object,
+                _mockProjectImportService.Object,
+                _mockProjectImportValidationService.Object);
     }
 
     [Test]
@@ -81,7 +69,7 @@ public class ProjectsControllerImportUnitTests
             Warnings = new List<string> { "remapped owner" }
         });
 
-        InitControllerWithUser("importer@example.com");
+        ControllerTestHelpers.SetControllerUser(_controller, "importer@example.com");
 
         var file = new FormFile(new MemoryStream(Encoding.UTF8.GetBytes("{\"schemaVersion\":\"1.0\"}")), 0, 28, "file", "import.json");
 
@@ -109,7 +97,7 @@ public class ProjectsControllerImportUnitTests
             Warnings = { "ignored warning" }
         });
 
-        InitControllerWithUser("importer@example.com");
+        ControllerTestHelpers.SetControllerUser(_controller, "importer@example.com");
 
         var file = new FormFile(new MemoryStream(Encoding.UTF8.GetBytes("bad")), 0, 3, "file", "import.json");
 
@@ -122,7 +110,7 @@ public class ProjectsControllerImportUnitTests
     [Test]
     public async Task Import_MissingEmail_ReturnsUnauthorized()
     {
-        InitControllerWithUser(null);
+        ControllerTestHelpers.SetControllerUser(_controller, null);
         var file = new FormFile(new MemoryStream(Encoding.UTF8.GetBytes("{}")), 0, 2, "file", "import.json");
 
         var result = await _controller.Import(file);
