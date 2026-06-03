@@ -29,26 +29,15 @@ jobs:
           ${{ secrets.CLIENT_CI_KEY }}
           PEM
       
-      - name: Add API CI TLS/SSL CERT & KEY
+      - name: Add GATEWAY CI TLS/SSL CERT & KEY
         shell: bash
         run: |
-          mkdir -p PromiseModelOnline.Api
-          cat > PromiseModelOnline.Api/cert.pem <<'PEM'
-          ${{ vars.API_CI_CERT }}
+          mkdir -p PromiseModelOnline.Gateway
+          cat > PromiseModelOnline.Gateway/cert.pem <<'PEM'
+          ${{ vars.GATEWAY_CI_CERT }}
           PEM
-          cat > PromiseModelOnline.Api/key.pem <<'PEM'
-          ${{ secrets.API_CI_KEY }}
-          PEM
-          
-      - name: Add AUTH CI TLS/SSL CERT & KEY
-        shell: bash
-        run: |
-          mkdir -p PromiseModelOnline.Auth
-          cat > PromiseModelOnline.Auth/cert.pem <<'PEM'
-          ${{ vars.AUTH_CI_CERT }}
-          PEM
-          cat > PromiseModelOnline.Auth/key.pem <<'PEM'
-          ${{ secrets.AUTH_CI_KEY }}
+          cat > PromiseModelOnline.Gateway/key.pem <<'PEM'
+          ${{ secrets.GATEWAY_CI_KEY }}
           PEM
       
       - name: Smoke Test Production Environment
@@ -128,9 +117,9 @@ jobs:
           echo "Waiting for Auth Server..."
           AUTH_READY=false
           for i in $(seq 1 20); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8060/health || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8060/health || true)
             if [ "$STATUS" -eq 200 ]; then
-              BODY=$(curl -k -s https://localhost:8060/health)
+              BODY=$(curl -s http://localhost:8060/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "Auth is healthy"
                 AUTH_READY=true
@@ -149,9 +138,9 @@ jobs:
           echo "Waiting for API..."
           API_READY=false
           for i in $(seq 1 30); do
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8000/health || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || true)
             if [ "$STATUS" -eq 200 ]; then
-              BODY=$(curl -k -s https://localhost:8000/health)
+              BODY=$(curl -s http://localhost:8000/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "API is healthy"
                 API_READY=true
@@ -163,6 +152,27 @@ jobs:
           done
           if [ "$API_READY" = false ]; then
             echo "ERROR: API failed to become healthy within 90 seconds"
+            exit 1
+          fi
+
+          # ---- Gateway health ----
+          echo "Waiting for Gateway..."
+          GATEWAY_READY=false
+          for i in $(seq 1 10); do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
+            if [ "$STATUS" -eq 200 ]; then
+              BODY=$(curl -k -s https://localhost:8010/health)
+              if echo "$BODY" | grep -q '"healthy"'; then
+                echo "Gateway is healthy"
+                GATEWAY_READY=true
+                break
+              fi
+            fi
+            echo "Gateway not ready (attempt $i)..."
+            sleep 3
+          done
+          if [ "$GATEWAY_READY" = false ]; then
+            echo "ERROR: Gateway failed to become healthy within 30 seconds"
             exit 1
           fi
 
@@ -283,7 +293,9 @@ jobs:
           docker tag promisemodelonlineapi cherrytree811/promisemodelonlineapi:latest
           docker tag promisemodelonlineclient cherrytree811/promisemodelonlineclient:latest
           docker tag promisemodelonlineauth cherrytree811/promisemodelonlineauth:latest
+          docker tag promisemodelonlinegateway cherrytree811/promisemodelonlinegateway:latest
           docker login -u cherrytree811 -p ${{ secrets.DOCKER_CRED }}
           docker push cherrytree811/promisemodelonlineapi:latest
           docker push cherrytree811/promisemodelonlineclient:latest
           docker push cherrytree811/promisemodelonlineauth:latest
+          docker push cherrytree811/promisemodelonlinegateway:latest

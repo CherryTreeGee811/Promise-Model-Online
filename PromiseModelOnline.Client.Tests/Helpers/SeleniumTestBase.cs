@@ -15,7 +15,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         protected IWebDriver Driver = null!;
         protected WebDriverWait Wait = null!;
         protected string BaseUrl => Environment.GetEnvironmentVariable("TEST_BASE_URL") ?? "https://localhost:9000";
-        protected string ApiBase => Environment.GetEnvironmentVariable("TEST_API_BASE_URL") ?? "https://localhost:8000";
+        protected string ApiBase => Environment.GetEnvironmentVariable("TEST_API_BASE_URL") ?? "https://localhost:8010";
         protected bool IsHeadless => string.Equals(Environment.GetEnvironmentVariable("HEADLESS") ?? "true", "true", StringComparison.OrdinalIgnoreCase);
 
         [SetUp]
@@ -235,6 +235,22 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
         /*
         ====================================
+        NAVIGATION HELPERS (DRY)
+        ====================================
+        */
+
+        protected void ClickNavLink(string linkId)
+        {
+            ScrollToAndClick(By.Id(linkId));
+        }
+
+        protected void WaitForUrlContains(string expected, int timeoutSeconds = 10)
+        {
+            WaitUntil(d => d.Url.Contains(expected), timeoutSeconds);
+        }
+
+        /*
+        ====================================
         DEBUG HELPERS
         ====================================
         */
@@ -290,7 +306,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             var sw = Stopwatch.StartNew();
 
             WaitForEndpoint(BaseUrl + "/health", "Client app", timeoutSeconds, sw);
-            WaitForEndpoint(ApiBase + "/health", "API (WireMock)", timeoutSeconds, sw);
+            WaitForEndpoint(ApiBase + "/health", "Gateway (WireMock)", timeoutSeconds, sw);
         }
 
         private void WaitForEndpoint(string url, string label, int overallTimeoutSeconds, Stopwatch sw)

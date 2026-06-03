@@ -4,6 +4,7 @@ import { loadLoginForm } from './login.mjs';
 import { loadRegistrationForm } from './register.mjs';
 import { loadChangePasswordForm } from './change-password.mjs';
 import { clearTokens, getAccessToken } from './auth-state.mjs';
+import { stopNotificationPolling } from './notifications/badge.mjs';
 import { requestLogout } from './api.mjs';
 import { handleProjectRoutes } from './projects/router.mjs';
 import { handleMomentRoutes } from './moments/router.mjs';
@@ -88,6 +89,7 @@ export function routeHandler(navContentDiv, contentDiv) {
     
     // Handle logout
     if (path === '/logout') {
+    stopNotificationPolling();
     requestLogout()
         .then(() => {
             clearTokens();

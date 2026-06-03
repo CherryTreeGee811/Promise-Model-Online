@@ -41,5 +41,16 @@ namespace PromiseModelOnline.Client.Tests.Tests
 
             Assert.That(Driver.Url, Does.Not.Contain("/login"));
         }
+
+        [Test]
+        public void Login_EmptyFields_ShowsValidationError()
+        {
+            Driver.Navigate().GoToUrl(BaseUrl + "/login");
+
+            ScrollToAndClick(By.Id("login-btn"), 5);
+
+            var error = WaitForElement(By.Id("error-text"), 5);
+            Assert.That(error.Text, Does.Contain("required"));
+        }
     }
 }

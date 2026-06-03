@@ -31,11 +31,4 @@ COPY --from=build /src/pmo_pm /app/pmo_pm
 USER root
 RUN chown -R app:app /app/pmo_pm || true
 USER app
-# Copy SSL certificate and key into the image
-COPY PromiseModelOnline.Api/cert.pem /app/cert.pem
-COPY PromiseModelOnline.Api/key.pem /app/key.pem
-USER root
-RUN chown app:app /app/cert.pem /app/key.pem
-RUN chmod 600 /app/cert.pem /app/key.pem
-USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Api.dll"]

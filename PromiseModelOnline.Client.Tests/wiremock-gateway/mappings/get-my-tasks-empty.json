@@ -1,21 +1,20 @@
 {
   "priority": 1,
   "request": {
-    "method": "PATCH",
-    "urlPath": "/api/users/me",
+    "method": "GET",
+    "urlPath": "/api/moments/assigned-to-me",
     "headers": {
-      "Authorization": {
-        "matches": "Bearer .*"
-      }
+      "Authorization": { "equalTo": "Bearer nonowner-token-fixed" }
     }
   },
   "response": {
-    "status": 204,
+    "status": 200,
     "headers": {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
       "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
-    }
+    },
+    "jsonBody": []
   }
 }

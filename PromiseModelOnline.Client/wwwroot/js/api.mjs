@@ -1,7 +1,7 @@
 import { setTokens, getAccessToken, clearTokens } from './auth-state.mjs';
 import { routeHandler } from './router.mjs';
 
-export const base = "https://localhost:8000";
+export const base = "https://localhost:9000";
 
 function redirectToLogin() {
     const navContentDiv = document.getElementById('main-menu');
