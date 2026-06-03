@@ -1,4 +1,4 @@
-import { routeHandler } from './router.mjs';
+import { navigate, routeHandler } from './router.mjs';
 import { getToken } from './api.mjs';
 import { getAccessToken } from './auth-state.mjs';
 
@@ -22,8 +22,7 @@ export function loadLoginForm(navContentDiv, contentDiv) {
         registerLink.addEventListener("click", (e) => {
             e.preventDefault();
 
-            window.history.pushState({}, '', '/register');
-            routeHandler(navContentDiv, contentDiv);
+            navigate('/register', navContentDiv, contentDiv);
         });
     }
 }
@@ -65,8 +64,7 @@ function manageSubmission(navContentDiv, contentDiv) {
             }
 
             // ✅ GUARANTEE token exists BEFORE routing
-            window.history.pushState({}, '', '/');
-            routeHandler(navContentDiv, contentDiv);
+            navigate('/', navContentDiv, contentDiv);
         })
         .catch(error => {
             console.error("Login error:", error);

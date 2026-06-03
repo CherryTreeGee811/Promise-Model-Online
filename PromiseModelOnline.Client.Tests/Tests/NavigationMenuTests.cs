@@ -31,19 +31,30 @@ namespace PromiseModelOnline.Client.Tests.Tests
         }
 
         [Test]
-        public void Authenticated_ShowsProjectAndLogoutLinks()
+        public void Authenticated_ShowsProjectLinksAndUserDropdown()
         {
             NavigateAsUser("/");
 
             WaitForElement(By.Id("projects-link"), 5);
-            WaitForElement(By.Id("logout-link"), 5);
-            WaitForElement(By.Id("change-password-link"), 5);
-            WaitForElement(By.Id("my-tasks-link"), 5);
 
+            // Primary nav items are always visible
             Assert.That(Driver.FindElement(By.Id("projects-link")).Displayed, Is.True);
+            Assert.That(Driver.FindElement(By.Id("my-tasks-link")).Displayed, Is.True);
+            Assert.That(Driver.FindElement(By.Id("notifications-link")).Displayed, Is.True);
+
+            // User dropdown toggle is visible
+            Assert.That(Driver.FindElement(By.Id("user-dropdown")).Displayed, Is.True);
+
+            // Dropdown items exist in DOM but are hidden initially
+            Assert.That(Driver.FindElement(By.Id("logout-link")).Displayed, Is.False);
+            Assert.That(Driver.FindElement(By.Id("change-password-link")).Displayed, Is.False);
+
+            // Open the dropdown to verify items render correctly
+            Driver.FindElement(By.Id("user-dropdown")).Click();
             Assert.That(Driver.FindElement(By.Id("logout-link")).Displayed, Is.True);
             Assert.That(Driver.FindElement(By.Id("change-password-link")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("my-tasks-link")).Displayed, Is.True);
+            Assert.That(Driver.FindElement(By.Id("invitations-link")).Displayed, Is.True);
+            Assert.That(Driver.FindElement(By.Id("knowledge-base-link")).Displayed, Is.True);
         }
 
         [Test]

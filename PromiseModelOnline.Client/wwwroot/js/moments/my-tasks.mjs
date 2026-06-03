@@ -1,6 +1,6 @@
 import { getMyTasks } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 
 export function loadMyTasksPage(navContentDiv, contentDiv) {
     const content = document.getElementById('my-tasks-content');
@@ -45,10 +45,7 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
 
                     e.preventDefault();
 
-                    const momentId = link.getAttribute('moment-id');
-                    window.history.pushState({}, '', `/moments/${momentId}`);
-
-                    routeHandler(navContentDiv, contentDiv);
+                    navigate(`/moments/${link.getAttribute('moment-id')}`, navContentDiv, contentDiv);
                 });
             });
         })

@@ -1,6 +1,6 @@
 import { addProject, importProject } from './api.mjs';
 import { addPromise } from '../promises/api.mjs';
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { renderSummaryTable } from './summary.mjs';
 
 export function loadAddProjectForm(navContentDiv, contentDiv) {
@@ -200,8 +200,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
                 displayOrder: 0,
             });
 
-            window.history.pushState({}, '', `/projects/${createdProject.id}/graph`);
-            routeHandler(navContentDiv, contentDiv);
+            navigate(`/projects/${createdProject.id}/graph`, navContentDiv, contentDiv);
         } catch (error) {
             errorTextElement.textContent = error.message || 'Failed to create project.';
             errorTextElement.style.display = 'block';
@@ -232,11 +231,9 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
             successTextElement.style.display = 'block';
 
             if (projectId) {
-                window.history.pushState({}, '', `/projects/${projectId}/graph`);
-                routeHandler(navContentDiv, contentDiv);
+                navigate(`/projects/${projectId}/graph`, navContentDiv, contentDiv);
             } else {
-                window.history.pushState({}, '', '/projects');
-                routeHandler(navContentDiv, contentDiv);
+                navigate('/projects', navContentDiv, contentDiv);
             }
         } catch (error) {
             errorTextElement.textContent = error.message || 'Failed to import project.';
@@ -296,8 +293,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
     if (cancelLink) {
         cancelLink.addEventListener('click', (event) => {
             event.preventDefault();
-            window.history.pushState({}, '', '/projects');
-            routeHandler(navContentDiv, contentDiv);
+            navigate('/projects', navContentDiv, contentDiv);
         });
     }
 

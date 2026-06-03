@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getPromiseById, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
 import { addEpic } from '../epics/api.mjs';
 import { loadComments } from '../comments/comments.mjs';
@@ -155,10 +155,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            const epicId = link.getAttribute('epic-id');
-                            window.history.pushState({}, '', `/epics/${epicId}`);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(`/epics/${link.getAttribute('epic-id')}`, navContentDiv, contentDiv);
                         });
                     });
                 })

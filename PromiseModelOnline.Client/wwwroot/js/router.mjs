@@ -1,5 +1,5 @@
 import { loadHomePage } from './home.mjs';
-import { loadNavTemplate } from './navigation/router.mjs';
+import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs';
 import { loadLoginForm } from './login.mjs';
 import { loadRegistrationForm } from './register.mjs';
 import { loadChangePasswordForm } from './change-password.mjs';
@@ -31,12 +31,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const contentDiv = document.getElementById("content");
     const navContentDiv = document.getElementById("main-menu");
 
-    // Handle browser back/forward navigation
+    initNavEventDelegation(navContentDiv, contentDiv);
+
+    document.getElementById("home-link")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        navigate('/', navContentDiv, contentDiv);
+    });
+
     window.addEventListener("popstate", () => {
         routeHandler(navContentDiv, contentDiv);
     });
 
-    // Initial route handling
     routeHandler(navContentDiv, contentDiv);
 });
 
@@ -57,6 +62,11 @@ document.addEventListener("DOMContentLoaded", () => {
 * // Load the home template into the contentDiv
 * loadTemplate("home.html", contentDiv);
 */
+export function navigate(path, navContentDiv, contentDiv) {
+    window.history.pushState({}, "", path);
+    return routeHandler(navContentDiv, contentDiv);
+}
+
 export function loadTemplate(templateName, contentDiv) {
     return fetch(`/templates/${templateName}`)
         .then(response => {
@@ -166,11 +176,7 @@ export function routeHandler(navContentDiv, contentDiv) {
         case path == '/change-password':
             // Protect route: require authentication
             if (!getAccessToken()) {
-                window.history.pushState({}, '', '/login');
-                loadNavTemplate(navContentDiv, contentDiv);
-                loadTemplate("login.html", contentDiv).then(() => {
-                    return loadLoginForm(navContentDiv, contentDiv);
-                });
+                navigate('/login', navContentDiv, contentDiv);
                 break;
             }
             loadTemplate("change-password.html", contentDiv).then(() => {
