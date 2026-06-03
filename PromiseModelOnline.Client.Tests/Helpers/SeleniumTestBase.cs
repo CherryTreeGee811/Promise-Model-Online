@@ -10,7 +10,7 @@ using System.IO;
 
 namespace PromiseModelOnline.Client.Tests.Helpers
 {
-    public class SeleniumTestBase
+    public abstract class SeleniumTestBase
     {
         protected IWebDriver Driver = null!;
         protected WebDriverWait Wait = null!;
@@ -107,6 +107,25 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             var url = Driver.Url;
             var pageSource = GetPageSourcePreview();
             throw new Exception($"Login did not redirect away from /login within {timeoutSeconds}s. URL: {url}. Page preview: {pageSource}");
+        }
+
+        /*
+        ====================================
+        AUTH TOKEN STUBBING
+        ====================================
+        */
+
+        protected void SetTokenStub(string token = "owner-token-fixed")
+        {
+            Driver.Navigate().GoToUrl(BaseUrl + "/");
+            ((IJavaScriptExecutor)Driver).ExecuteScript(
+                $"sessionStorage.setItem('pmo.accessToken', '{token}');");
+        }
+
+        protected void NavigateAsUser(string path, string token = "owner-token-fixed")
+        {
+            SetTokenStub(token);
+            Driver.Navigate().GoToUrl(BaseUrl + path);
         }
 
         /*

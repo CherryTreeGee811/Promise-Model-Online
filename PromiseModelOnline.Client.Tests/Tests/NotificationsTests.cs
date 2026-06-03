@@ -14,7 +14,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
             WaitUntil(d =>
             {
                 var badge = d.FindElement(By.Id("notification-badge"));
-                return badge.Displayed && badge.Text == "1";
+                return badge.Displayed && badge.Text == "2";
             }, 10);
         }
 

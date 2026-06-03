@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/notifications",
+    "urlPath": "/api/permissions",
     "headers": {
       "Authorization": { "equalTo": "Bearer owner-token-fixed" }
     }
@@ -18,19 +18,15 @@
     "jsonBody": [
       {
         "id": 1,
-        "message": "You were mentioned in a comment",
-        "type": "Mention",
-        "isRead": false,
-        "createdAt": "2026-06-02T12:00:00Z",
-        "link": null
+        "userName": "testuser",
+        "level": "Edit",
+        "status": "Accepted"
       },
       {
         "id": 2,
-        "message": "You have a new task assigned",
-        "type": "Assignment",
-        "isRead": false,
-        "createdAt": "2026-06-02T10:00:00Z",
-        "link": null
+        "userName": "nonowner",
+        "level": "View",
+        "status": "Accepted"
       }
     ]
   }
