@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getEpicById, getJourneysByEpic, updateEpicDescription } from './api.mjs';
 import { addJourney } from '../journeys/api.mjs';
 import { getPromiseById } from '../promises/api.mjs';
@@ -72,10 +72,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            const href = link.getAttribute('href');
-                            window.history.pushState({}, '', href);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(link.getAttribute('href'), navContentDiv, contentDiv);
                         });
                     }
                 })
@@ -184,10 +181,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            const journeyId = link.getAttribute('journey-id');
-                            window.history.pushState({}, '', `/journeys/${journeyId}`);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(`/journeys/${link.getAttribute('journey-id')}`, navContentDiv, contentDiv);
                         });
                     });
                 })

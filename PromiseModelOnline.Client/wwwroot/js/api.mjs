@@ -1,12 +1,11 @@
 import { setTokens, getAccessToken, clearTokens } from './auth-state.mjs';
-import { routeHandler } from './router.mjs';
+import { navigate } from './router.mjs';
 
 function redirectToLogin() {
     const navContentDiv = document.getElementById('main-menu');
     const contentDiv = document.getElementById('content');
 
-    window.history.pushState({}, '', '/login');
-    routeHandler(navContentDiv, contentDiv);
+    navigate('/login', navContentDiv, contentDiv);
 }
 
 /*

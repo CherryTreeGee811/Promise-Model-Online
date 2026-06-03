@@ -1,5 +1,5 @@
 import { getAccessToken } from './auth-state.mjs';
-import { routeHandler } from './router.mjs';
+import { navigate, routeHandler } from './router.mjs';
 
 export function loadHomePage() {
   const token = getAccessToken();
@@ -42,8 +42,7 @@ function bindCtaLinks() {
 
     link.addEventListener('click', e => {
       e.preventDefault();
-      window.history.pushState({}, '', link.getAttribute('href'));
-      routeHandler(navContentDiv, contentDiv);
+      navigate(link.getAttribute('href'), navContentDiv, contentDiv);
     });
   });
 }

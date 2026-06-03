@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getMomentById, addMomentTask, updateMomentTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
 import { getAllStrides } from '../strides/api.mjs';
@@ -129,9 +129,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
                 e.preventDefault();
-                const flowId = flowLink.getAttribute('flow-id');
-                window.history.pushState({}, '', `/flows/${flowId}`);
-                routeHandler(navContentDiv, contentDiv);
+                navigate(`/flows/${flowLink.getAttribute('flow-id')}`, navContentDiv, contentDiv);
             });
 
             // Estimate auto‑save on change

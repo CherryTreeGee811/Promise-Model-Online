@@ -1,5 +1,5 @@
 import { registerUser } from './api.mjs';
-import { routeHandler } from './router.mjs';
+import { navigate } from './router.mjs';
 
 export function loadRegistrationForm(navContentDiv, contentDiv) {
     const registerBtn = document.getElementById("register-btn");
@@ -21,8 +21,7 @@ export function loadRegistrationForm(navContentDiv, contentDiv) {
         registerLoginLink.addEventListener("click", (e) => {
             e.preventDefault();
 
-            window.history.pushState({}, '', '/login');
-            routeHandler(navContentDiv, contentDiv);
+            navigate('/login', navContentDiv, contentDiv);
         });
     }
 }
@@ -80,8 +79,7 @@ function manageRegistrationSubmission(navContentDiv, contentDiv) {
 
             // ✅ Redirect
             setTimeout(() => {
-                window.history.pushState({}, '', '/login');
-                routeHandler(navContentDiv, contentDiv);
+                navigate('/login', navContentDiv, contentDiv);
             }, 1500);
         })
         .catch((error) => {

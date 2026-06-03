@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getFlowById, getMomentsByFlow, updateFlowDescription } from './api.mjs';
 import { addMoment } from '../moments/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
@@ -67,10 +67,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 
                     e.preventDefault();
 
-                    const journeyId = journeyLink.getAttribute('journey-id');
-                    window.history.pushState({}, '', `/journeys/${journeyId}`);
-
-                    routeHandler(navContentDiv, contentDiv);
+                    navigate(`/journeys/${journeyLink.getAttribute('journey-id')}`, navContentDiv, contentDiv);
                 });
             }
 
@@ -194,10 +191,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            const momentId = link.getAttribute('moment-id');
-                            window.history.pushState({}, '', `/moments/${momentId}`);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(`/moments/${link.getAttribute('moment-id')}`, navContentDiv, contentDiv);
                         });
                     });
                 })
@@ -227,10 +221,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            const href = link.getAttribute('href');
-                            window.history.pushState({}, '', href);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(link.getAttribute('href'), navContentDiv, contentDiv);
                         });
                     }
                 })

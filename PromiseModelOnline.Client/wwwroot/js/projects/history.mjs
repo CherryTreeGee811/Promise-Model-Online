@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getProjectAuditHistory, getProjectById } from './api.mjs';
 import { getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
 
@@ -149,7 +149,6 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, projectId
     loadProject().then(() => loadEntries(true));
 
     backBtn.addEventListener('click', () => {
-        window.history.pushState({}, '', `/projects/${projectId}/settings`);
-        routeHandler(navContentDiv, contentDiv);
+        navigate(`/projects/${projectId}/settings`, navContentDiv, contentDiv);
     });
 }

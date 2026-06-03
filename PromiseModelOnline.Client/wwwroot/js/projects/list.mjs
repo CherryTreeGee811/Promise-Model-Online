@@ -1,4 +1,4 @@
-import { routeHandler } from "../router.mjs";
+import { navigate } from "../router.mjs";
 import { getAllProjects } from "./api.mjs";
 
 export function loadProjectList(navContentDiv, contentDiv) {
@@ -14,8 +14,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
     if (addProjectLink) {
         addProjectLink.addEventListener('click', (e) => {
             e.preventDefault();
-            window.history.pushState({}, '', '/projects/add');
-            routeHandler(navContentDiv, contentDiv);
+            navigate('/projects/add', navContentDiv, contentDiv);
         });
     }
 
@@ -48,8 +47,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
             viewBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const projectId = viewBtn.getAttribute('data-project-id');
-                window.history.pushState({}, '', `/projects/${projectId}/strides`);
-                routeHandler(navContentDiv, contentDiv);
+                navigate(`/projects/${projectId}/strides`, navContentDiv, contentDiv);
             });
         });
 
@@ -57,8 +55,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
             graphBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const projectId = graphBtn.getAttribute('data-project-id');
-                window.history.pushState({}, '', `/projects/${projectId}/graph`);
-                routeHandler(navContentDiv, contentDiv);
+                navigate(`/projects/${projectId}/graph`, navContentDiv, contentDiv);
             });
         });
 
@@ -66,8 +63,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
             settingsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const projectId = settingsBtn.getAttribute('data-project-id');
-                window.history.pushState({}, '', `/projects/${projectId}/settings`);
-                routeHandler(navContentDiv, contentDiv);
+                navigate(`/projects/${projectId}/settings`, navContentDiv, contentDiv);
             });
         });
 
@@ -75,8 +71,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
             shareBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const projectId = shareBtn.getAttribute('data-project-id');
-                window.history.pushState({}, '', `/projects/${projectId}/share`);
-                routeHandler(navContentDiv, contentDiv);
+                navigate(`/projects/${projectId}/share`, navContentDiv, contentDiv);
             });
         });
     }).catch(error => {

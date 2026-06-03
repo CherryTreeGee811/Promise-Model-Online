@@ -11,6 +11,8 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             EnsureLoggedIn();
 
+            // Open the user dropdown to reveal the logout link
+            WaitForElement(By.Id("user-dropdown"), 5).Click();
             ClickNavLink("logout-link");
 
             WaitForUrlContains("/", 10);
