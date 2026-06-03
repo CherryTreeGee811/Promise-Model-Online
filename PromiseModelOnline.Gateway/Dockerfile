@@ -18,6 +18,10 @@ RUN dotnet publish "./PromiseModelOnline.Gateway.csproj" -c $BUILD_CONFIGURATION
 
 FROM base AS final
 WORKDIR /app
+USER root
+RUN apt-get update && apt-get install -y curl \
+    && rm -rf /var/lib/apt/lists/*
+USER app
 COPY --from=publish /app/publish .
 COPY PromiseModelOnline.Gateway/cert.pem /app/cert.pem
 COPY PromiseModelOnline.Gateway/key.pem /app/key.pem

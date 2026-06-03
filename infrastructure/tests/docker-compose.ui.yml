@@ -4,6 +4,11 @@ services:
     hostname: localhost
     ports:
       - "9000:9000/tcp"
+    depends_on:
+      promisemodelonline.gateway:
+        condition: service_healthy
+    networks:
+      - promisemodelonline-client-ui-test-net
     build:
       context: ../..
       dockerfile: PromiseModelOnline.Client/Dockerfile
@@ -19,7 +24,13 @@ services:
     volumes:
       - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/mappings:/home/wiremock/mappings:ro
       - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/__files:/home/wiremock/__files:ro
-
+    networks:
+      - promisemodelonline-client-ui-test-net
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8010/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 networks:
-  promisemodelonline-net:
+  promisemodelonline-client-ui-test-net:
     driver: bridge

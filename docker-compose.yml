@@ -1,23 +1,4 @@
 services:
-  promisemodelonline.gateway:
-    image: ${DOCKER_REGISTRY-}promisemodelonlinegateway
-    container_name: promisemodelonlinegateway
-    ports:
-      - "8010:8010/tcp"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:8010
-    depends_on:
-      promisemodelonline.api:
-        condition: service_started
-      promisemodelonline.auth:
-        condition: service_started
-    networks:
-      - promisemodelonline-net
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.Gateway/Dockerfile
-
   promisemodelonline.client:
     image: ${DOCKER_REGISTRY-}promisemodelonlineclient
     container_name: promisemodelonlineclient
@@ -31,12 +12,39 @@ services:
     build:
       context: .
       dockerfile: PromiseModelOnline.Client/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  promisemodelonline.gateway:
+    image: ${DOCKER_REGISTRY-}promisemodelonlinegateway
+    container_name: promisemodelonlinegateway
+    ports:
+      - "8010:8010/tcp"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:8010
+    depends_on:
+      promisemodelonline.api:
+        condition: service_healthy
+      promisemodelonline.auth:
+        condition: service_healthy
+    networks:
+      - promisemodelonline-net
+    build:
+      context: .
+      dockerfile: PromiseModelOnline.Gateway/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8010/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   promisemodelonline.api:
     image: ${DOCKER_REGISTRY-}promisemodelonlineapi
     container_name: promisemodelonlineapi
-    ports:
-      - "8000:8000/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8000
@@ -55,12 +63,15 @@ services:
     build:
       context: .
       dockerfile: PromiseModelOnline.Api/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     
   promisemodelonline.auth:
     image: ${DOCKER_REGISTRY-}promisemodelonlineauth
     container_name: promisemodelonlineauth
-    ports:
-      - "8060:8060/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8060
@@ -77,6 +88,11 @@ services:
     build:
       context: .
       dockerfile: PromiseModelOnline.Auth/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "http://localhost:8060/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   promisemodelonline.db:
     image: mcr.microsoft.com/mssql/server:2025-latest
