@@ -90,7 +90,7 @@ services:
       dockerfile: PromiseModelOnline.Auth/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "http://localhost:8060/health"]
-      interval: 15s
+      interval: 20s
       timeout: 5s
       retries: 3
 
