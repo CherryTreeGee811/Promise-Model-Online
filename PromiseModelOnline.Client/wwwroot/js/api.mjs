@@ -1,8 +1,6 @@
 import { setTokens, getAccessToken, clearTokens } from './auth-state.mjs';
 import { routeHandler } from './router.mjs';
 
-export const base = "https://localhost:9000";
-
 function redirectToLogin() {
     const navContentDiv = document.getElementById('main-menu');
     const contentDiv = document.getElementById('content');
@@ -17,12 +15,11 @@ LOGIN
 ====================================
 */
 export function getToken(username, password) {
-    const login_url = `${base}/api/sessions`;
+    const login_url = `/api/sessions`;
 
     return fetch(login_url, {
         method: 'POST',
-        mode: 'cors',
-        credentials: 'include', // ✅ REQUIRED
+        credentials: 'include',
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -51,7 +48,7 @@ REFRESH TOKEN
 ====================================
 */
 export async function refreshAccessToken() {
-    const res = await fetch(`${base}/api/access-tokens`, {
+    const res = await fetch(`/api/access-tokens`, {
         method: 'POST',
         credentials: 'include' // ✅ cookie automatically sent
     });
@@ -122,12 +119,11 @@ LOGOUT
 */
 export function requestLogout() {
     const accessToken = getAccessToken();
-    const logout_url = `${base}/api/sessions/current`;
+    const logout_url = `/api/sessions/current`;
 
     return fetch(logout_url, {
         method: 'DELETE',
-        mode: 'cors',
-        credentials: 'include', // ✅ important
+        credentials: 'include',
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
@@ -144,11 +140,10 @@ REGISTER
 ====================================
 */
 export function registerUser(username, email, password) {
-    const register_url = `${base}/api/users`;
+    const register_url = `/api/users`;
 
     return fetch(register_url, {
         method: 'POST',
-        mode: 'cors',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -173,7 +168,7 @@ CHANGE PASSWORD
 ====================================
 */
 export function changePassword(currentPassword, newPassword, confirmPassword) {
-    return authFetch(`${base}/api/users/me`, {
+    return authFetch(`/api/users/me`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'

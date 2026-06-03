@@ -1,14 +1,14 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 export function getJourneyById(journeyId) {
-    return authFetch(`${base}/api/journeys/${journeyId}`).then(response => {
+    return authFetch(`/api/journeys/${journeyId}`).then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     });
 }
 
 export function getFlowsByJourney(journeyId) {
-    return authFetch(`${base}/api/flows?journeyId=${journeyId}`).then(response => {
+    return authFetch(`/api/flows?journeyId=${journeyId}`).then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         if (response.status === 204) return [];
         return response.json();
@@ -16,7 +16,7 @@ export function getFlowsByJourney(journeyId) {
 }
 
 export async function addJourney(journey) {
-    const res = await authFetch(`${base}/api/journeys`, {
+    const res = await authFetch(`/api/journeys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(journey),
@@ -28,7 +28,7 @@ export async function addJourney(journey) {
 }
 
 export async function updateJourney(journey) {
-    const res = await authFetch(`${base}/api/journeys/${journey.id}`, {
+    const res = await authFetch(`/api/journeys/${journey.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(journey),
@@ -39,7 +39,7 @@ export async function updateJourney(journey) {
 }
 
 export async function updateJourneyDescription(journeyId, description) {
-    const res = await authFetch(`${base}/api/journeys/${journeyId}/description`, {
+    const res = await authFetch(`/api/journeys/${journeyId}/description`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description }),

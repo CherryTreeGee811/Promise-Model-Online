@@ -1,14 +1,14 @@
-import { authFetch, base } from '../api.mjs';
+import { authFetch } from '../api.mjs';
 
 export function getEpicById(epicId) {
-    return authFetch(`${base}/api/epics/${epicId}`).then(response => {
+    return authFetch(`/api/epics/${epicId}`).then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     });
 }
 
 export function getJourneysByEpic(epicId) {
-    return authFetch(`${base}/api/journeys?epicId=${epicId}`).then(response => {
+    return authFetch(`/api/journeys?epicId=${epicId}`).then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         if (response.status === 204) return [];
         return response.json();
@@ -16,7 +16,7 @@ export function getJourneysByEpic(epicId) {
 }
 
 export async function addEpic(epic) {
-    const res = await authFetch(`${base}/api/epics`, {
+    const res = await authFetch(`/api/epics`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(epic),
@@ -28,7 +28,7 @@ export async function addEpic(epic) {
 }
 
 export async function updateEpic(epic) {
-    const res = await authFetch(`${base}/api/epics/${epic.id}`, {
+    const res = await authFetch(`/api/epics/${epic.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(epic),
@@ -39,7 +39,7 @@ export async function updateEpic(epic) {
 }
 
 export async function updateEpicDescription(epicId, description) {
-    const res = await authFetch(`${base}/api/epics/${epicId}/description`, {
+    const res = await authFetch(`/api/epics/${epicId}/description`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description }),
