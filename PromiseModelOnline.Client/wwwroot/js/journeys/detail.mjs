@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getJourneyById, getFlowsByJourney, updateJourneyDescription } from './api.mjs';
 import { addFlow } from '../flows/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
@@ -66,10 +66,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
 
                     e.preventDefault();
 
-                    const epicId = epicLink.getAttribute('epic-id');
-                    window.history.pushState({}, '', `/epics/${epicId}`);
-
-                    routeHandler(navContentDiv, contentDiv);
+                    navigate(`/epics/${epicLink.getAttribute('epic-id')}`, navContentDiv, contentDiv);
                 });
             }
             
@@ -171,10 +168,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         link.addEventListener('click', (e) => {
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
                             e.preventDefault();
-                            const flowId = link.getAttribute('flow-id');
-                            window.history.pushState({}, '', `/flows/${flowId}`);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(`/flows/${link.getAttribute('flow-id')}`, navContentDiv, contentDiv);
                         });
                     });
                 })
@@ -203,10 +197,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            const href = link.getAttribute('href');
-                            window.history.pushState({}, '', href);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(link.getAttribute('href'), navContentDiv, contentDiv);
                         });
                     }
                 })

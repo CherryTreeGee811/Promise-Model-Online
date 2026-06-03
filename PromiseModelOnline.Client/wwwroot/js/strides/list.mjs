@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getProjectById } from '../projects/api.mjs';
 import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
 import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
@@ -691,9 +691,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
         if (viewLink) {
             e.preventDefault();
 
-            const href = viewLink.getAttribute('href');
-            window.history.pushState({}, '', href);
-            routeHandler(navContentDiv, contentDiv);
+            navigate(viewLink.getAttribute('href'), navContentDiv, contentDiv);
 
             return;
         }
@@ -857,8 +855,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             if (historyLink) {
                 historyLink.addEventListener('click', (e) => {
                     e.preventDefault();
-                    window.history.pushState({}, '', `/projects/${projectId}/iterations`);
-                    routeHandler(navContentDiv, contentDiv);
+                    navigate(`/projects/${projectId}/iterations`, navContentDiv, contentDiv);
                 });
             }
             

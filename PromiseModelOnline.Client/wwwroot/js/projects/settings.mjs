@@ -1,4 +1,4 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { exportProject, getProjectAuditHistory, getProjectById, getProjectPromises, deleteProject, updateProjectDetails } from './api.mjs';
 import { getEpicsByPromise } from '../promises/api.mjs';
 import { getJourneysByEpic } from '../epics/api.mjs';
@@ -307,8 +307,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
 
         try {
             await deleteProject(projectId);
-            window.history.pushState({}, '', '/projects');
-            routeHandler(navContentDiv, contentDiv);
+            navigate('/projects', navContentDiv, contentDiv);
         } catch (error) {
             errorText.textContent = error.message || 'Failed to delete project.';
         }
@@ -316,8 +315,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
 
     auditHistoryLink.addEventListener('click', (event) => {
         event.preventDefault();
-        window.history.pushState({}, '', `/projects/${projectId}/history`);
-        routeHandler(navContentDiv, contentDiv);
+        navigate(`/projects/${projectId}/history`, navContentDiv, contentDiv);
     });
 
     loadProject();

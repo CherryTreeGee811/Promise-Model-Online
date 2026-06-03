@@ -1,5 +1,5 @@
 import { changePassword } from './api.mjs';
-import { routeHandler } from './router.mjs';
+import { navigate } from './router.mjs';
 import { clearTokens } from './auth-state.mjs';
 
 export function loadChangePasswordForm(navContentDiv, contentDiv) {
@@ -59,8 +59,7 @@ function manageChangeSubmission(navContentDiv, contentDiv) {
             clearTokens();
 
             setTimeout(() => {
-                window.history.pushState({}, '', '/login');
-                routeHandler(navContentDiv, contentDiv);
+                navigate('/login', navContentDiv, contentDiv);
             }, 1200);
         })
         .catch((error) => {

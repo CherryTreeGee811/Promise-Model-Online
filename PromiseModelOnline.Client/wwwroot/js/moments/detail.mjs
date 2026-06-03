@@ -1,7 +1,7 @@
-import { routeHandler } from '../router.mjs';
+import { navigate } from '../router.mjs';
 import { getMomentById, addMomentTask, updateMomentTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
-import { getStrideOptions, loadAvailableStridesForProject } from '../strides/stride-options.mjs';
+import { getAllStrides } from '../strides/api.mjs';
 import { getFlowById } from '../flows/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
@@ -27,11 +27,6 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
     getMomentById(momentId)
         .then(async moment => {
             if (loadingEl) loadingEl.hidden = true;
-
-            const projectIdPromise = getFlowById(moment.flowId)
-                .then(flow => getJourneyById(flow.journeyId))
-                .then(journey => getEpicById(journey.epicId))
-                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()));
 
             mountDetailStackGraph({
                 nodeType: 'moment',
@@ -134,9 +129,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
                 e.preventDefault();
-                const flowId = flowLink.getAttribute('flow-id');
-                window.history.pushState({}, '', `/flows/${flowId}`);
-                routeHandler(navContentDiv, contentDiv);
+                navigate(`/flows/${flowLink.getAttribute('flow-id')}`, navContentDiv, contentDiv);
             });
 
             // Estimate auto‑save on change
@@ -161,15 +154,14 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             const strideSelect = document.getElementById('moment-stride-select');
             if (strideSelect) {
                 try {
-                    const projectId = await projectIdPromise;
-                    const strides = await loadAvailableStridesForProject(projectId);
-                    const strideOptions = getStrideOptions(strides);
-                    strideSelect.replaceChildren();
-                    strideOptions.forEach(option => {
+                    const strides = await getAllStrides();
+                    // sort by name
+                    strides.sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')));
+                    strides.forEach(s => {
                         const opt = document.createElement('option');
-                        opt.value = option.value;
-                        opt.textContent = option.label;
-                        if (String(option.value) === String(moment.assignedStrideId ?? '')) opt.selected = true;
+                        opt.value = String(s.id);
+                        opt.textContent = s.name || `Stride ${s.id}`;
+                        if (String(s.id) === String(moment.assignedStrideId)) opt.selected = true;
                         strideSelect.appendChild(opt);
                     });
                     if (!moment.assignedStrideId) {
@@ -254,7 +246,10 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             const commentsContainer = document.getElementById('moment-comments');
             loadComments(commentsContainer, 'Moment', momentId);
 
-            projectIdPromise
+            getFlowById(moment.flowId)
+                .then(flow => getJourneyById(flow.journeyId))
+                .then(journey => getEpicById(journey.epicId))
+                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
                 .then(projectId => {
                     const href = buildGraphViewHref(projectId, `moment-${moment.id}`);
                     upsertGraphViewButton(detailDiv, href);
