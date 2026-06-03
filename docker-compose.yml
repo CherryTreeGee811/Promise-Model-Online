@@ -13,7 +13,7 @@ services:
       context: .
       dockerfile: PromiseModelOnline.Client/Dockerfile
     healthcheck:
-      test: ["CMD", "curl", "-kf", "https://localhost:8000/api/health"]
+      test: ["CMD", "curl", "-kf", "https://localhost:9000/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -37,7 +37,7 @@ services:
       context: .
       dockerfile: PromiseModelOnline.Gateway/Dockerfile
     healthcheck:
-      test: ["CMD", "curl", "-kf", "https://localhost:8010/api/health"]
+      test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -64,7 +64,7 @@ services:
       context: .
       dockerfile: PromiseModelOnline.Api/Dockerfile
     healthcheck:
-      test: ["CMD", "curl", "-kf", "http://localhost:8000/api/health"]
+      test: ["CMD", "curl", "-kf", "http://localhost:8000/health"]
       interval: 15s
       timeout: 5s
       retries: 3
