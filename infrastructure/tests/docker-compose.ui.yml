@@ -7,10 +7,8 @@ services:
     build:
       context: ../..
       dockerfile: PromiseModelOnline.Client/Dockerfile
-    depends_on:
-      - promisemodelonline.gateway.mock
 
-  promisemodelonline.gateway.mock:
+  promisemodelonline.gateway:
     image: wiremock/wiremock:latest
     container_name: promisemodelonlinegatewaymock
     ports:
@@ -21,7 +19,7 @@ services:
     volumes:
       - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/mappings:/home/wiremock/mappings:ro
       - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/__files:/home/wiremock/__files:ro
-    networks:
-      default:
-        aliases:
-          - promisemodelonline.gateway
+
+networks:
+  promisemodelonline-net:
+    driver: bridge
