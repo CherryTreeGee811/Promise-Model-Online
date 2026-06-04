@@ -33,7 +33,7 @@ const detailStackState = {
     mountToken: 0,
 };
 
-function loadD3() {
+export function loadD3() {
     if (!d3Promise) {
         d3Promise = import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
     }

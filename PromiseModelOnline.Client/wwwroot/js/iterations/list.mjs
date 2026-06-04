@@ -62,7 +62,8 @@ export function loadIterationHistory(projectId) {
             document.querySelectorAll('.view-iteration-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const iterationId = parseInt(btn.dataset.iterationId, 10);
-                    showIterationDetail(iterationId);
+                    const iteration = iterations.find(i => i.id === iterationId);
+                    showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}` });
                 });
             });
         })
@@ -72,12 +73,14 @@ export function loadIterationHistory(projectId) {
             console.error(err);
         });
 
-    function showIterationDetail(iterationId) {
+    function showIterationDetail(iteration) {
+        const iterationId = iteration.id;
+
         // Hide list, show detail
         listDiv.classList.add('hidden');
         detailDiv.classList.remove('hidden');
 
-        document.getElementById('iteration-title').textContent = `Iteration #${iterationId}`;
+        document.getElementById('iteration-title').textContent = iteration.name;
         const strideDetailsDiv = document.getElementById('stride-details');
         const canvas = document.getElementById('iteration-burndown-canvas');
 
@@ -87,21 +90,24 @@ export function loadIterationHistory(projectId) {
         // Draw iteration burndown
         getIterationBurndown(iterationId)
             .then(points => {
+                // Clear the container first
+                const container = document.getElementById('iteration-burndown-container');
+                const canvasEl = document.getElementById('iteration-burndown-canvas');
+                if (container) {
+                    // Remove any extra message we might have added before
+                    const existingMsg = container.querySelector('.no-items, .error');
+                    if (existingMsg) existingMsg.remove();
+                }
                 if (points && points.length > 0) {
-                    drawBurndownChart(canvas, points);
+                    drawBurndownChart(canvasEl, points);
                 } else {
-                    const container = document.getElementById('iteration-burndown-container');
-                    if (container) {
-                        container.innerHTML += '<p class="no-items">No burndown data available for this iteration.</p>';
-                    }
+                    if (canvasEl) canvasEl.innerHTML = '<p class="no-items">No burndown data available for this iteration.</p>';
                 }
             })
             .catch(err => {
                 console.error('Iteration burndown error', err);
-                const container = document.getElementById('iteration-burndown-container');
-                if (container) {
-                    container.innerHTML += '<p class="error">Failed to load iteration burndown.</p>';
-                }
+                const canvasEl = document.getElementById('iteration-burndown-canvas');
+                if (canvasEl) canvasEl.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
             });
 
         // Load strides for this iteration (no burndown charts)

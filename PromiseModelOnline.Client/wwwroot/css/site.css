@@ -517,20 +517,7 @@ input[type=button]:hover, input[type=submit]:hover {
   12. Back Link & Detail Links
 **********************************************/
 .back-btn {
-  display: inline-block;
-  cursor: pointer;
-  color: var(--color-link);
-  font-weight: 600;
-  background: none;
-  border: none;
-  padding: var(--spacing-xs) 0;
   margin-top: var(--spacing-md);
-  text-decoration: underline;
-  font-size: var(--font-size-base);
-}
-.back-btn:hover,
-.back-btn:focus-visible {
-  color: var(--color-link-hover);
 }
 .detail-link {
   color: var(--color-link);
@@ -1462,6 +1449,33 @@ input[type=button]:hover, input[type=submit]:hover {
 .home-cta-banner p {
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 1.5rem;
+}
+
+.burndown-card {
+    background: var(--color-panel-bg);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    transition: box-shadow 0.2s ease;
+}
+
+.burndown-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Ensure the canvas inside respects the rounded corners */
+#iteration-burndown-canvas svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+    background: #ffffff;
+}
+
+/* Optional: subtle border for the SVG itself */
+#iteration-burndown-canvas {
+    margin-top: var(--spacing-sm);
 }
 
 /* Responsive */
