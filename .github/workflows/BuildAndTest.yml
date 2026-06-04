@@ -52,7 +52,8 @@ jobs:
           PEM
 
       - name: Write secrets from GitHub Secrets
-          run: |
+        shell: bash
+        run: |
             mkdir -p secrets
             echo "${{ secrets.AUTH_DB_PASSWORD }}" > secrets/auth_db_password.txt
             echo "${{ secrets.API_DB_PASSWORD }}" > secrets/api_db_password.txt
