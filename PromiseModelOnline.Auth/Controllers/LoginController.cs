@@ -16,16 +16,21 @@ public class LoginController : Controller
 {
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly IConfiguration _configuration;
 
-    public LoginController(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
+    public LoginController(
+        SignInManager<IdentityUser> signInManager,
+        UserManager<IdentityUser> userManager,
+        IConfiguration configuration)
     {
         _signInManager = signInManager;
         _userManager = userManager;
+        _configuration = configuration;
     }
 
     [AllowAnonymous]
     [HttpGet("")]
-    public IActionResult Index(string? returnUrl)
+    public IActionResult Index(string? returnUrl, string? error = null)
     {
         if (string.IsNullOrEmpty(returnUrl))
         {
@@ -33,7 +38,10 @@ public class LoginController : Controller
         }
 
         ViewBag.Registered = (Request?.Query?["registered"].ToString() ?? "") == "true";
+        ViewBag.Error = error ?? Request?.Query?["error"].ToString();
         ViewBag.ReturnUrl = returnUrl;
+        ViewBag.HasGoogle = !string.IsNullOrWhiteSpace(
+            _configuration["Authentication:Google:ClientId"]);
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 

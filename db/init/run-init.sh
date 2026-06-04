@@ -2,9 +2,22 @@
 
 SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
 API_USER=${PMO_API_DB_USER:-pmo_api}
-API_PASSWORD=${PMO_API_DB_PASSWORD:-ChangeMeApi123!}
 AUTH_USER=${PMO_AUTH_DB_USER:-pmo_auth}
-AUTH_PASSWORD=${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!}
+
+read_secret_file() {
+    if [ ! -f "$1" ]; then
+        echo "FATAL: Secret file $1 not found. Mount a Docker secret at this path." >&2
+        exit 1
+    fi
+    if [ ! -s "$1" ]; then
+        echo "FATAL: Secret file $1 is empty. Populate it with a password." >&2
+        exit 1
+    fi
+    cat "$1"
+}
+
+API_PASSWORD=$(read_secret_file /run/secrets/api_db_password)
+AUTH_PASSWORD=$(read_secret_file /run/secrets/auth_db_password)
 SQLCMD=/opt/mssql-tools/bin/sqlcmd
 
 sql_escape_literal() {

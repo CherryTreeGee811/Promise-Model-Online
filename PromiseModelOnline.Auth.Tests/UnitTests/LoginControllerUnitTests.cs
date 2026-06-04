@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.Extensions.Configuration;
 
 namespace PromiseModelOnline.Auth.Tests;
 
@@ -32,9 +33,13 @@ public class LoginControllerUnitTests
             null!, null!, null!, null!);
 
         // ✅ FIX: create controller
+        var configMock = new Mock<IConfiguration>();
+        configMock.Setup(c => c["Authentication:Google:ClientId"]).Returns((string?)null);
+
         _controller = new LoginController(
             _signInManagerMock.Object,
-            _userManagerMock.Object
+            _userManagerMock.Object,
+            configMock.Object
         );
 
         var httpContext = new DefaultHttpContext();

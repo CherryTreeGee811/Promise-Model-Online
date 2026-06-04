@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
@@ -20,8 +22,6 @@ var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
 AppUrls.BaseUrl = appBaseUrl.TrimEnd('/');
 AppUrls.PublicIssuer = publicIssuer.TrimEnd('/');
 
-// Must happen before reading config values that may use *_FILE.
-builder.Configuration.AddSecretFileResolver();
 
 // ---------- CORS -------------------------------------------------------
 builder.Services.AddCors(options =>
@@ -77,10 +77,41 @@ builder.Services.AddOpenIddictServerConfig(
 
 // Identity already configures the application cookie scheme.
 // This explicit config is acceptable, but not strictly required.
-builder.Services.AddAuthentication(options =>
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+if (!string.IsNullOrWhiteSpace(googleClientId))
 {
-    options.DefaultScheme = IdentityConstants.ApplicationScheme;
-});
+    var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    if (string.IsNullOrEmpty(googleClientSecret))
+    {
+        var secretFile = builder.Configuration["Authentication:Google:ClientSecret_FILE"];
+        if (!string.IsNullOrWhiteSpace(secretFile) && File.Exists(secretFile))
+            googleClientSecret = File.ReadAllText(secretFile).Trim();
+    }
+
+    if (string.IsNullOrWhiteSpace(googleClientSecret))
+        throw new InvalidOperationException("Authentication:Google:ClientSecret is required.");
+
+    builder.Services.AddAuthentication()
+        .AddGoogle(googleOptions =>
+        {
+            googleOptions.ClientId = googleClientId;
+            googleOptions.ClientSecret = googleClientSecret;
+
+            googleOptions.CallbackPath = "/signin-google";
+
+            googleOptions.SaveTokens = false;
+            googleOptions.UsePkce = true;
+
+            googleOptions.Scope.Clear();
+            googleOptions.Scope.Add("openid");
+            googleOptions.Scope.Add("profile");
+            googleOptions.Scope.Add("email");
+
+            googleOptions.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+            googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");
+            googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+        });
+}
 
 builder.Services.AddAuthorization();
 

@@ -50,7 +50,14 @@ jobs:
           cat > PromiseModelOnline.Auth/key.pem <<'PEM'
           ${{ secrets.AUTH_CI_KEY }}
           PEM
-      
+
+      - name: Write secrets from GitHub Secrets
+          run: |
+            mkdir -p secrets
+            echo "${{ secrets.AUTH_DB_PASSWORD }}" > secrets/auth_db_password.txt
+            echo "${{ secrets.API_DB_PASSWORD }}" > secrets/api_db_password.txt
+            echo "${{ secrets.GOOGLE_CLIENT_SECRET }}" > secrets/google_client_secret.txt
+
       - name: Smoke Test Production Environment
         shell: bash
         run: |

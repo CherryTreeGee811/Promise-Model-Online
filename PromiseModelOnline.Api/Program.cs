@@ -15,6 +15,7 @@ using PromiseModelOnline.Api.Auth;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
+
 var config = builder.Configuration;
 
 builder.Services.AddCors(options =>

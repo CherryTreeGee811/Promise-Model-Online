@@ -11,7 +11,7 @@ public static class ConnectionStringExtensions
         {
             if (parts[i].StartsWith("Password_FILE="))
             {
-                var filePath = parts[i].Substring("Password_FILE=".Length);
+                var filePath = parts[i]["Password_FILE=".Length..];
 
                 if (!File.Exists(filePath))
                     throw new InvalidOperationException(
