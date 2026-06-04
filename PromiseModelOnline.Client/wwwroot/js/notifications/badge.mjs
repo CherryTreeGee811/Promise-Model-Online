@@ -39,11 +39,13 @@ export function stopNotificationPolling() {
 }
 
 export function startNotificationPolling() {
+    // Always refresh badge immediately on each call (nav may have been replaced).
+    updateNotificationBadge();
+
+    // Only start background polling once.
     if (started) return;
     started = true;
 
-    // Immediate badge update; then background polling.
-    updateNotificationBadge();
     startUnreadPolling((notifications) => {
         setBadgeCount(Array.isArray(notifications) ? notifications.length : 0);
 

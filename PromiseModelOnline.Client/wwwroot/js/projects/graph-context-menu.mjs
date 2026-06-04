@@ -1,6 +1,6 @@
 import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
 
-import { getAccessToken } from '../auth-state.mjs';
+import { apiFetch } from '../api.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';
 
 const NODE_CHILD_LABELS = {
@@ -111,13 +111,11 @@ function getCreateFormDefaults(nodeData) {
 }
 
 async function requestJson(url, options) {
-    const accessToken = getAccessToken();
     const { headers: optionHeaders, ...fetchOptions } = options;
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
         mode: 'cors',
         ...fetchOptions,
         headers: {
-            'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
             ...(optionHeaders ?? {}),
@@ -128,7 +126,6 @@ async function requestJson(url, options) {
         if (response.status === 204) {
             return null;
         }
-
         return response.json();
     }
 

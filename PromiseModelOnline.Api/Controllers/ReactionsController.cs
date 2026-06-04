@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class ReactionsController : ControllerBase
     {
@@ -29,6 +28,7 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ReactionDTO>>> GetReactions(
             [FromQuery] string type,
@@ -41,6 +41,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Creates a new reaction resource for the current user.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<ReactionDTO>> CreateReaction([FromBody] CreateReactionRequest request)
         {
@@ -69,6 +70,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Partially updates an existing reaction resource (emote only).
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
         public async Task<ActionResult<ReactionDTO>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDTO request)
         {
@@ -103,6 +105,7 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteReaction(int id)
         {

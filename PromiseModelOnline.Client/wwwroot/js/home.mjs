@@ -1,10 +1,10 @@
-import { getAccessToken } from './auth-state.mjs';
-import { navigate, routeHandler } from './router.mjs';
+import { isLoggedIn } from './auth-state.mjs';
+import { navigate } from './router.mjs';
 
 export function loadHomePage() {
-  const token = getAccessToken();
+  const loggedIn = isLoggedIn();
 
-  const ctaHtml = token
+  const ctaHtml = loggedIn
     ? `
       <a href="/projects" class="btn btn-light btn-lg px-4 fw-semibold d-inline-flex align-items-center gap-2">
         <i class="bi bi-folder" aria-hidden="true"></i> Go to Projects
@@ -19,7 +19,7 @@ export function loadHomePage() {
       <a href="/login" class="btn btn-light btn-lg px-4 fw-semibold d-inline-flex align-items-center gap-2">
         <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Login
       </a>
-      <a href="/register" class="btn btn-outline-light btn-lg px-4 fw-semibold d-inline-flex align-items-center gap-2">
+      <a href="/account/register" class="btn btn-outline-light btn-lg px-4 fw-semibold d-inline-flex align-items-center gap-2">
         <i class="bi bi-person-plus" aria-hidden="true"></i> Register
       </a>`;
 
@@ -41,8 +41,12 @@ function bindCtaLinks() {
     link.dataset.homeBound = '1';
 
     link.addEventListener('click', e => {
+      const href = link.getAttribute('href');
+      if (href === '/login' || href === '/logout' || href === '/account/register') {
+        return; // Normal full-page navigation
+      }
       e.preventDefault();
-      navigate(link.getAttribute('href'), navContentDiv, contentDiv);
+      navigate(href, navContentDiv, contentDiv);
     });
   });
 }

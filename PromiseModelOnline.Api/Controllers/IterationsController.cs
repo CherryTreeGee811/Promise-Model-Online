@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class IterationsController : GenericController<Iteration, IterationDTO>
     {
@@ -26,6 +25,7 @@ namespace PromiseModelOnline.Api.Controllers
             _momentService = momentService;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<IterationDTO>>> GetAll()
         {
@@ -44,6 +44,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/burndown")]
         public async Task<ActionResult<List<BurndownPointDTO>>> GetIterationBurndown(int id)
         {

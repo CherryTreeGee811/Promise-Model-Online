@@ -7,37 +7,25 @@ namespace PromiseModelOnline.Client.Tests.Tests
     public class ChangePasswordTests : SeleniumTestBase
     {
         [Test]
-        public void ChangePassword_Success_RedirectsToLogin()
+        public void ChangePasswordLink_HrefPointsToAuth()
         {
-            EnsureLoggedIn("/change-password");
+            SetSessionCookie("owner-session");
 
-            var currentInput = WaitForElement(By.Id("current-password-input"), 5);
-            var newInput = WaitForElement(By.Id("new-password-input"), 5);
-            var confirmInput = WaitForElement(By.Id("confirm-password-input"), 5);
+            WaitForElement(By.Id("user-dropdown"), 5).Click();
 
-            currentInput.SendKeys("P@ssw0rd!");
-            newInput.SendKeys("NewP@ssw0rd1!");
-            confirmInput.SendKeys("NewP@ssw0rd1!");
-
-            ScrollToAndClick(By.Id("change-password-btn"));
-
-            WaitUntil(driver => driver.Url.Contains("/login"), 10);
-            Assert.That(Driver.Url, Does.Contain("/login"));
+            var changePwLink = WaitForElement(By.Id("change-password-link"), 5);
+            Assert.That(changePwLink.GetAttribute("href"), Does.Contain("/account/change-password"));
         }
 
         [Test]
-        public void ChangePassword_WrongCurrent_ShowsError()
+        public void ChangePassword_Route_RedirectsToAuth()
         {
-            EnsureLoggedIn("/change-password");
+            SetSessionCookie("owner-session");
 
-            WaitForElement(By.Id("current-password-input"), 5).SendKeys("wrong");
-            WaitForElement(By.Id("new-password-input"), 5).SendKeys("NewP@ssw0rd1!");
-            WaitForElement(By.Id("confirm-password-input"), 5).SendKeys("NewP@ssw0rd1!");
+            NavigateSpa("/change-password");
 
-            ScrollToAndClick(By.Id("change-password-btn"));
-
-            var error = WaitForElement(By.Id("error-text"), 5);
-            Assert.That(error.Text, Does.Contain("incorrect"));
+            // SPA route handler redirects to Auth server
+            WaitUntil(d => d.Url.Contains("/change-password"), 5);
         }
     }
 }

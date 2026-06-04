@@ -17,7 +17,6 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class ProjectsController : GenericController<Project, ProjectDTO>
     {
@@ -52,6 +51,7 @@ namespace PromiseModelOnline.Api.Controllers
             _projectImportValidationService = projectImportValidationService;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<ProjectDTO>>> GetAll()
         {
@@ -71,6 +71,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Returns the project owner plus all users who have any permission on this project.
         /// </summary>
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/members")]
         public async Task<ActionResult<IEnumerable<ProjectMemberDTO>>> GetMembers(int id)
         {
@@ -81,6 +82,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(members);
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/promises")]
         public async Task<ActionResult<IEnumerable<PromiseDTO>>> GetProjectPromises(int id)
         {
@@ -107,6 +109,7 @@ namespace PromiseModelOnline.Api.Controllers
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{projectId}/my-permission")]
         public async Task<ActionResult<string>> GetMyPermission(int projectId)
         {
@@ -132,6 +135,7 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         // Create endpoint that accepts a lightweight DTO so clients don't have to send Owner/OwnerId.
+        [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<ProjectDTO>> CreateFromDto([FromBody] DTOs.ProjectCreateDTO dto)
         {
@@ -151,6 +155,7 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = project.Id }, _mapper.Map(project, _service));
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/details")]
         public async Task<ActionResult<ProjectDTO>> UpdateDetails(int id, [FromBody] UpdateProjectDetailsRequestDTO request)
         {
@@ -173,6 +178,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(_mapper.Map(project, _service));
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/export")]
         public async Task<IActionResult> Export(int id)
         {
@@ -200,6 +206,7 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost("import")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Import([FromForm] IFormFile file)

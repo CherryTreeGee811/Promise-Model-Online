@@ -11,7 +11,6 @@ using System.Security.Claims;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class CommentsController : ControllerBase
     {
@@ -25,6 +24,7 @@ namespace PromiseModelOnline.Api.Controllers
             _userRepository = userRepository;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CommentDTO>>> GetComments(
             [FromQuery] string? type,
@@ -37,6 +37,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(comments);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
         {
