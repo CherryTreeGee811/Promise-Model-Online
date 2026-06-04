@@ -9,7 +9,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void Notifications_ShowsBadge_WhenUnreadExist()
         {
-            LoginViaUi("testuser", "P@ssw0rd!");
+            SetSessionCookie("owner-session");
 
             WaitUntil(d =>
             {
@@ -21,7 +21,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void Notifications_HidesBadge_WhenNoUnread()
         {
-            LoginViaUi("nonowner", "P@ssw0rd!");
+            SetSessionCookie("nonowner-session");
 
             WaitUntil(d =>
             {

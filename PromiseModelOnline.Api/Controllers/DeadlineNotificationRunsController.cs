@@ -9,7 +9,7 @@ namespace PromiseModelOnline.Api.Controllers
     /// Represents a run/batch that generates deadline notifications.
     /// Creating a run triggers generation of deadline notifications.
     /// </summary>
-    [Authorize]
+    [Authorize(Policy = "projects.write")]
     [Route("api/deadline-notification-runs")]
     [ApiController]
     public class DeadlineNotificationRunsController : ControllerBase

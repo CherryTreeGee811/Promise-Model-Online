@@ -12,19 +12,8 @@ public static class PromiseHierarchySeeder
     private const string TestUserName = "pmo_test";
 
     public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath,
-        ILogger logger, PromiseModelOnline.Api.DAL.Interfaces.IAuthClient authClient)
+        ILogger logger)
     {
-        // --- 0. Ensure test user exists in Auth service (optional) ---
-        try
-        {
-            await authClient.EnsureSeedUserAsync(TestUserName, TestUserEmail,
-                Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!aA1");
-        }
-        catch (Exception ex)
-        {
-            logger?.LogWarning(ex, "Could not ensure test user in Auth service – continuing anyway.");
-        }
-
         // --- 1. Ensure test user exists in API database ---
         var owner = await EnsureTestUserAsync(db);
         var pmoPmDir = ResolvePmoPmDirectory(contentRootPath);

@@ -5,7 +5,7 @@ services:
     ports:
       - "9000:9000/tcp"
     depends_on:
-      promisemodelonline.gateway:
+      promisemodelonline.bff:
         condition: service_healthy
     networks:
       - promisemodelonline-client-ui-test-net
@@ -13,17 +13,17 @@ services:
       context: ../..
       dockerfile: PromiseModelOnline.Client/Dockerfile
 
-  promisemodelonline.gateway:
+  promisemodelonline.bff:
     image: wiremock/wiremock:latest
-    container_name: promisemodelonlinegatewaymock
+    container_name: promisemodelonlinebffmock
     ports:
       - "8010:8010/tcp"
     command: >
       --https-port 8010
       --verbose
     volumes:
-      - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/mappings:/home/wiremock/mappings:ro
-      - ../../PromiseModelOnline.Client.Tests/wiremock-gateway/__files:/home/wiremock/__files:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-bff/mappings:/home/wiremock/mappings:ro
+      - ../../PromiseModelOnline.Client.Tests/wiremock-bff/__files:/home/wiremock/__files:ro
     networks:
       - promisemodelonline-client-ui-test-net
     healthcheck:

@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class JourneysController : GenericController<Journey, JourneyDTO>
     {
@@ -25,6 +24,7 @@ namespace PromiseModelOnline.Api.Controllers
             _journeyService = service;
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<JourneyDTO>> CreateFromDto([FromBody] CreateJourneyRequestDTO request)
         {
@@ -44,6 +44,7 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = journey.Id }, _mapper.Map(journey, _service));
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<JourneyDTO>>> GetAll()
         {
@@ -62,6 +63,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<JourneyDTO>> UpdateDescription(
             int id,

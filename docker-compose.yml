@@ -6,7 +6,7 @@ services:
     ports:
       - "9000:9000/tcp"
     depends_on:
-      - promisemodelonline.gateway
+      - promisemodelonline.bff
     networks:
       - promisemodelonline-net
     build:
@@ -18,14 +18,17 @@ services:
       timeout: 5s
       retries: 3
 
-  promisemodelonline.gateway:
-    image: ${DOCKER_REGISTRY-}promisemodelonlinegateway
-    container_name: promisemodelonlinegateway
+  promisemodelonline.bff:
+    image: ${DOCKER_REGISTRY-}promisemodelonlinebff
+    container_name: promisemodelonlinebff
     ports:
       - "8010:8010/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8010
+      - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
+      - AUTH_METADATA_ADDRESS=https://promisemodelonline.auth:8060/.well-known/openid-configuration
+      - APP_BASE_URL=https://localhost:9000
     depends_on:
       promisemodelonline.api:
         condition: service_healthy
@@ -35,7 +38,7 @@ services:
       - promisemodelonline-net
     build:
       context: .
-      dockerfile: PromiseModelOnline.Gateway/Dockerfile
+      dockerfile: PromiseModelOnline.BFF/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
       interval: 15s
@@ -49,7 +52,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8000
       - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
-      - JwtSettings__Issuer=http://promisemodelonline.auth:8060
+      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
       - JwtSettings__Audience=promisemodelonline.api
       - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER:-pmo_api};Password=${PMO_API_DB_PASSWORD:-ChangeMeApi123!};TrustServerCertificate=true;
@@ -74,9 +77,11 @@ services:
     container_name: promisemodelonlineauth
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8060
+      - ASPNETCORE_URLS=https://+:8060
+      - APP_BASE_URL=https://localhost:9000
+      - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
       - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
-      - JwtSettings__Issuer=http://promisemodelonline.auth:8060
+      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
       - JwtSettings__Audience=promisemodelonline.api
       - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER:-pmo_auth};Password=${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!};TrustServerCertificate=true;
@@ -89,7 +94,7 @@ services:
       context: .
       dockerfile: PromiseModelOnline.Auth/Dockerfile
     healthcheck:
-      test: ["CMD", "curl", "-kf", "http://localhost:8060/health"]
+      test: ["CMD", "curl", "-kf", "https://localhost:8060/health"]
       interval: 20s
       timeout: 5s
       retries: 3

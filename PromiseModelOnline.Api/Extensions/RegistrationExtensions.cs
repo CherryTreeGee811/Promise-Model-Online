@@ -57,22 +57,6 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddStrideAutomation();
             services.AddScoped<IReactionRepository, ReactionRepository>();
             services.AddScoped<IReactionService, ReactionService>();
-            services.AddHttpClient<IAuthClient, AuthClient>(client =>
-            {
-                var issuer = configuration["JwtSettings:Issuer"];
-                if (!string.IsNullOrEmpty(issuer))
-                {
-                    client.BaseAddress = new Uri(issuer);
-                }
-                client.Timeout = TimeSpan.FromSeconds(10);
-            })
-            .ConfigurePrimaryHttpMessageHandler(() =>
-            {
-                var handler = new HttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback =
-                    (sender, cert, chain, sslPolicyErrors) => true;
-                return handler;
-            });
         }
     }
 }

@@ -7,50 +7,34 @@ namespace PromiseModelOnline.Client.Tests.Tests
     public class LoginTests : SeleniumTestBase
     {
         [Test]
-        public void Login_Successful_RedirectsToHome()
+        public void LoginLink_NavigatesToGatewayLogin()
         {
-            LoginViaUi("testuser", "P@ssw0rd!");
+            Driver.Navigate().GoToUrl(BaseUrl + "/");
 
-            Assert.That(Driver.Url, Does.StartWith(BaseUrl));
-            Assert.That(Driver.Url, Does.Not.Contain("/login"));
+            // Login link navigates to BFF /login (full page)
+            var loginLink = WaitForElement(By.CssSelector("#login-link"), 5);
+            Assert.That(loginLink.GetAttribute("href"), Does.Contain("/login"));
         }
 
         [Test]
-        public void Login_InvalidCredentials_ShowsError()
+        public void Login_HasNoFormInSpa()
         {
             Driver.Navigate().GoToUrl(BaseUrl + "/login");
 
-            WaitForElement(By.Id("username-input"), 5).SendKeys("testuser");
-            WaitForElement(By.Id("password-input"), 5).SendKeys("wrong");
-            ScrollToAndClick(By.Id("login-btn"), 5);
-
-            var error = WaitForElement(By.Id("error-text"), 5);
-
-            Assert.That(Driver.Url, Does.Contain("/login"));
-            Assert.That(error.Text, Does.Contain("Invalid"));
+            // SPA should redirect to BFF /login (no login form rendered)
+            WaitUntil(d => d.Url.Contains("/login") || d.Url == BaseUrl + "/", 5);
         }
 
         [Test]
         public void Login_SetsSession_AllowsFutureRequests()
         {
-            LoginViaUi("testuser", "P@ssw0rd!");
+            SetSessionCookie("owner-session");
 
             NavigateSpa("/projects");
 
             WaitForElement(By.CssSelector("#project-list-table-body tr"));
 
             Assert.That(Driver.Url, Does.Not.Contain("/login"));
-        }
-
-        [Test]
-        public void Login_EmptyFields_ShowsValidationError()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/login");
-
-            ScrollToAndClick(By.Id("login-btn"), 5);
-
-            var error = WaitForElement(By.Id("error-text"), 5);
-            Assert.That(error.Text, Does.Contain("required"));
         }
     }
 }

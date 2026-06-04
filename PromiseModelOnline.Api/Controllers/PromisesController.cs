@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class PromisesController : GenericController<Promise, PromiseDTO>
     {
@@ -28,6 +27,7 @@ namespace PromiseModelOnline.Api.Controllers
             _promiseMapper = mapper;
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<PromiseDTO>> CreateFromDto([FromBody] CreatePromiseRequestDTO request)
         {
@@ -53,6 +53,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Returns the total numeric effort for all moments under a given promise.
         /// </summary>
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/total-effort")]
         public async Task<ActionResult<int>> GetTotalEffort(int id)
         {
@@ -60,6 +61,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(effort);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<PromiseDTO>> UpdateDescription(
             int id,

@@ -1,24 +1,23 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PromiseModelOnline.Auth.DAL;
+using OpenIddict.Abstractions;
 using PromiseModelOnline.Auth.Models;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("api/users/me")]
+[Route("account/me/password")]
 public class ChangePasswordController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
-    private readonly AuthorizationDbContext _dbContext;
+    private readonly IOpenIddictTokenManager _tokenManager;
 
-    public ChangePasswordController(UserManager<IdentityUser> userManager, AuthorizationDbContext dbContext)
+    public ChangePasswordController(UserManager<IdentityUser> userManager,
+                                    IOpenIddictTokenManager tokenManager)
     {
         _userManager = userManager;
-        _dbContext = dbContext;
+        _tokenManager = tokenManager;
     }
 
     [HttpPatch]
@@ -38,13 +37,14 @@ public class ChangePasswordController : ControllerBase
             return BadRequest("New password and confirmation password must match.");
         }
 
-        var userName = User.FindFirst(JwtRegisteredClaimNames.NameId)?.Value;
-        if (string.IsNullOrEmpty(userName))
+        var userId = User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value
+                     ?? _userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
 
-        var user = await _userManager.FindByNameAsync(userName);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
             return Unauthorized();
@@ -63,16 +63,18 @@ public class ChangePasswordController : ControllerBase
             return BadRequest(new { message = "Could not change password", errors });
         }
 
-        var activeTokens = await _dbContext.RefreshTokens
-            .Where(r => r.UserId == user.Id && !r.IsRevoked && r.Expires > DateTime.UtcNow)
-            .ToListAsync();
+        // Revoke all existing refresh tokens for this user
+        const string RefreshTokenType = OpenIddictConstants.TokenTypeHints.RefreshToken;
 
-        foreach (var token in activeTokens)
+        await foreach (var token in _tokenManager.FindAsync(
+            subject: user.Id,
+            client: null,
+            status: null,
+            type: RefreshTokenType))
         {
-            token.IsRevoked = true;
+            await _tokenManager.TryRevokeAsync(token);
         }
 
-        await _dbContext.SaveChangesAsync();
         return NoContent();
     }
 }

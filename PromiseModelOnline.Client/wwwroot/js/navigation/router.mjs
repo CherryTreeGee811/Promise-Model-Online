@@ -1,5 +1,5 @@
 import { navigate } from '../router.mjs';
-import { getAccessToken } from '../auth-state.mjs';
+import { isLoggedIn } from '../auth-state.mjs';
 import { startNotificationPolling } from '../notifications/badge.mjs';
 
 function setActiveNavLink() {
@@ -28,7 +28,7 @@ function handleNavClick(e, navContentDiv, contentDiv) {
 }
 
 export function loadNavTemplate(navContentDiv, contentDiv) {
-    const templateName = getAccessToken() ? "authenticated.html" : "anonymous.html";
+    const templateName = isLoggedIn() ? 'authenticated.html' : 'anonymous.html';
 
     return fetch(`/templates/navigation/${templateName}`)
         .then(response => {
@@ -39,7 +39,7 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
             navContentDiv.innerHTML = html;
             setActiveNavLink();
 
-            if (getAccessToken()) {
+            if (isLoggedIn()) {
                 startNotificationPolling();
             }
 

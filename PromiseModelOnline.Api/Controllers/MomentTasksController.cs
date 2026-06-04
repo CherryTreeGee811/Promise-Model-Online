@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/moments/{momentId:int}/tasks")]
     public class MomentTasksController : ControllerBase
     {
@@ -37,6 +36,7 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<MomentTaskDTO>> Create(int momentId, [FromBody] CreateMomentTaskRequestDTO request)
         {
@@ -74,6 +74,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(Map(task));
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{taskId:int}/completion")]
         public async Task<ActionResult<MomentTaskDTO>> UpdateCompletion(int momentId, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDTO request)
         {
