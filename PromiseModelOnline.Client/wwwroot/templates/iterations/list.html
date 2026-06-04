@@ -1,21 +1,20 @@
 <h1>Iteration History</h1>
 <div id="project-title" class="text-secondary mb-3"></div>
-<div class="field-actions mb-3">
-    <button id="create-iteration-btn" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2" type="button">
-        <i class="bi bi-plus-lg" aria-hidden="true"></i>
-        <span>New Iteration</span>
-    </button>
+<div class="field-actions mb-3 hidden">
 </div>
 <p id="error-text"></p>
 <div id="iterations-list"></div>
 
 <div id="iteration-detail" class="hidden">
     <h2 id="iteration-title"></h2>
-    <div id="iteration-burndown-container">
-        <h3>Iteration Burndown</h3>
-        <canvas class="burndown-canvas" id="iteration-burndown-canvas" width="400" height="200"></canvas>
+    <div id="iteration-burndown-container" class="burndown-card mb-4">
+        <div id="iteration-burndown-canvas"></div>
     </div>
     <h3>Strides</h3>
     <div id="stride-details"></div>
     <button id="back-to-iterations-btn" class="back-btn btn btn-outline-secondary btn-sm" type="button">← Back to iterations</button>
 </div>
+
+<!-- <div id="stride-details"> -->
+    <!-- stride table loads here -->
+<!-- </div> -->
