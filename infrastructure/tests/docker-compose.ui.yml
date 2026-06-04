@@ -7,6 +7,8 @@ services:
     depends_on:
       promisemodelonline.bff:
         condition: service_healthy
+      promisemodelonline.auth:
+        condition: service_healthy
     networks:
       - promisemodelonline-client-ui-test-net
     build:
@@ -31,6 +33,25 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+
+  promisemodelonline.auth:
+    image: wiremock/wiremock:latest
+    container_name: promisemodelonlineauthmock
+    ports:
+      - "8060:8060/tcp"
+    command: >
+      --https-port 8060
+      --verbose
+    volumes:
+      - ../../PromiseModelOnline.Client.Tests/wiremock-auth/mappings:/home/wiremock/mappings:ro
+    networks:
+      - promisemodelonline-client-ui-test-net
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8060/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
 networks:
   promisemodelonline-client-ui-test-net:
     driver: bridge
