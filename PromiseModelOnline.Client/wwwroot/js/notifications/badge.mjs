@@ -41,7 +41,6 @@ export function stopNotificationPolling() {
 export function startNotificationPolling() {
     if (started) return;
     started = true;
-
     // Immediate badge update; then background polling.
     updateNotificationBadge();
     startUnreadPolling((notifications) => {
