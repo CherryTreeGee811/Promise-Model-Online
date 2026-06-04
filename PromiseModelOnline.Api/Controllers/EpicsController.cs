@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     public class EpicsController : GenericController<Epic, EpicDTO>
     {
@@ -25,6 +24,7 @@ namespace PromiseModelOnline.Api.Controllers
             _epicService = service;
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<EpicDTO>> CreateFromDto([FromBody] CreateEpicRequestDTO request)
         {
@@ -44,6 +44,7 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = epic.Id }, _mapper.Map(epic, _service));
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<EpicDTO>>> GetAll()
         {
@@ -62,6 +63,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<EpicDTO>> UpdateDescription(
             int id,

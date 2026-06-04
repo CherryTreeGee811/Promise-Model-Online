@@ -1,0 +1,52 @@
+@model LoginViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Sign in";
+}
+
+<h1 id="form-title">Login</h1>
+
+<div class="form-div">
+    <h2>Sign in</h2>
+
+    @if (ViewBag.Registered == true)
+    {
+        <p class="auth-message auth-success">
+            Account created successfully. Please sign in.
+        </p>
+    }
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="auth-message auth-error">
+            <ul>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form method="post" class="auth-form">
+        @Html.AntiForgeryToken()
+        <div class="field-group">
+            <label asp-for="Username" class="field-label">Username</label>
+            <input asp-for="Username" type="text" class="field-input" placeholder="Enter your username" required />
+        </div>
+        <div class="field-group">
+            <label asp-for="Password" class="field-label">Password</label>
+            <div class="password-wrapper">
+                <input asp-for="Password" type="password" class="field-input password-input" placeholder="Enter your password" required />
+                <button type="button" class="password-toggle" aria-label="Show password" tabindex="-1">
+                    <span class="eye-icon"></span>
+                </button>
+            </div>
+        </div>
+        <input type="hidden" asp-for="ReturnUrl" />
+        <button type="submit" class="submit-btn"><span class="btn-text">Login</span><span class="spinner"></span></button>
+    </form>
+
+    <div class="auth-link" id="login-register-text">
+        Don't have an account? <a href="/account/register?returnUrl=@Model.ReturnUrl">Register here</a>
+    </div>
+</div>

@@ -72,60 +72,23 @@ namespace PromiseModelOnline.Client.Tests.Helpers
         {
             WaitForAppReady();
 
-            var user = Environment.GetEnvironmentVariable("TEST_USER") ?? "testuser";
-            var pass = Environment.GetEnvironmentVariable("TEST_PASSWORD") ?? "P@ssw0rd!";
-
-            LoginViaUi(user, pass);
+            SetSessionCookie("owner-session");
 
             NavigateSpaAndWait(targetPath);
         }
 
-        protected void LoginViaUi(string username, string password, int timeoutSeconds = 20)
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/login");
-
-            var userEl = WaitForElement(By.Id("username-input"), timeoutSeconds);
-            var passEl = WaitForElement(By.Id("password-input"), timeoutSeconds);
-
-            userEl.Clear();
-            userEl.SendKeys(username);
-
-            passEl.Clear();
-            passEl.SendKeys(password);
-
-            ScrollToAndClick(By.Id("login-btn"));
-
-            var sw = Stopwatch.StartNew();
-            while (sw.Elapsed.TotalSeconds < timeoutSeconds)
-            {
-                if (!Driver.Url.Contains("/login"))
-                    return;
-
-                Thread.Sleep(300);
-            }
-
-            var url = Driver.Url;
-            var pageSource = GetPageSourcePreview();
-            throw new Exception($"Login did not redirect away from /login within {timeoutSeconds}s. URL: {url}. Page preview: {pageSource}");
-        }
-
-        /*
-        ====================================
-        AUTH TOKEN STUBBING
-        ====================================
-        */
-
-        protected void SetTokenStub(string token = "owner-token-fixed")
+        protected void SetSessionCookie(string sessionValue = "owner-session")
         {
             Driver.Navigate().GoToUrl(BaseUrl + "/");
-            ((IJavaScriptExecutor)Driver).ExecuteScript(
-                $"sessionStorage.setItem('pmo.accessToken', '{token}');");
-        }
 
-        protected void NavigateAsUser(string path, string token = "owner-token-fixed")
-        {
-            SetTokenStub(token);
-            Driver.Navigate().GoToUrl(BaseUrl + path);
+            WaitForElement(By.Id("home-cta-area"), 10);
+
+            ((IJavaScriptExecutor)Driver).ExecuteScript(
+                "document.cookie = '__Host-pmo.session=" + sessionValue + "; path=/; Secure';");
+
+            Driver.Navigate().Refresh();
+
+            WaitForElement(By.Id("home-cta-area"), 10);
         }
 
         /*
@@ -139,12 +102,18 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             ScrollToAndClick(by, timeoutSeconds);
         }
 
-        protected void SetAuthCookie(string token, string cookieName = "accessToken")
+        protected void SetAuthCookie()
         {
-            var user = Environment.GetEnvironmentVariable("TEST_USER") ?? "testuser";
-            var pass = Environment.GetEnvironmentVariable("TEST_PASSWORD") ?? "P@ssw0rd!";
+            SetSessionCookie("owner-session");
+        }
 
-            LoginViaUi(user, pass);
+        protected void NavigateAsUser(string path, string sessionValue = "owner-session")
+        {
+            WaitForAppReady();
+
+            SetSessionCookie(sessionValue);
+
+            NavigateSpaAndWait(path);
         }
 
         /*
@@ -325,7 +294,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
             var sw = Stopwatch.StartNew();
 
             WaitForEndpoint(BaseUrl + "/health", "Client app", timeoutSeconds, sw);
-            WaitForEndpoint(ApiBase + "/health", "Gateway (WireMock)", timeoutSeconds, sw);
+            WaitForEndpoint(ApiBase + "/health", "BFF (WireMock)", timeoutSeconds, sw);
         }
 
         private void WaitForEndpoint(string url, string label, int overallTimeoutSeconds, Stopwatch sw)

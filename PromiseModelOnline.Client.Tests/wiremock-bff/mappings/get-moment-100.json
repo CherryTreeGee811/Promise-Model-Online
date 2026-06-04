@@ -1,0 +1,30 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/moments/100",
+    "headers": {
+      "Cookie": {
+        "contains": "__Host-pmo.session=owner-session"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    },
+    "jsonBody": {
+      "id": 100,
+      "statement": "Moment 100",
+      "type": "Task",
+      "status": "Todo",
+      "effortEstimate": "M",
+      "ownerId": 1,
+      "assignedStrideId": 10
+    }
+  }
+}

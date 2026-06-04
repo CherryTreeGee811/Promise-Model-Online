@@ -19,7 +19,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void MyTasks_Empty_ShowsNoTasksMessage()
         {
-            LoginViaUi("nonowner", "P@ssw0rd!");
+            SetSessionCookie("nonowner-session");
             NavigateSpa("/moments/my-tasks");
 
             var emptyMsg = WaitForElement(By.CssSelector(".no-items"), 10);

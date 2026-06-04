@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers;
 
-[Authorize]
 [Route("api/audit-events")]
+[Authorize(Policy = "projects.read")]
 public class AuditEventsController : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

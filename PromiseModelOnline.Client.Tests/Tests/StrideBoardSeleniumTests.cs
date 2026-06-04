@@ -59,10 +59,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void PermissionEnforcement_NonOwnerCannotEdit()
         {
-            var nonOwnerUser = "nonowner";
-            var nonOwnerPass = "P@ssw0rd!";
-
-            LoginViaUi(nonOwnerUser, nonOwnerPass);
+            SetSessionCookie("nonowner-session");
 
             NavigateSpa("/projects/1/strides");
 

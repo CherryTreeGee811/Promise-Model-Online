@@ -28,4 +28,13 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 USER app
 COPY --from=publish /app/publish .
+# Copy SSL certificate and key into the image
+COPY PromiseModelOnline.Auth/cert.pem /app/cert.pem
+COPY PromiseModelOnline.Auth/key.pem /app/key.pem
+# Copy static files (CSS, JS, images)
+COPY PromiseModelOnline.Auth/wwwroot /app/wwwroot
+USER root
+RUN chown app:app /app/cert.pem /app/key.pem
+RUN chmod 600 /app/cert.pem /app/key.pem
+USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Auth.dll"]

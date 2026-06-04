@@ -22,7 +22,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
 
             var ctaArea = WaitForElement(By.Id("home-cta-area"), 5);
             var loginLink = ctaArea.FindElement(By.CssSelector("a[href='/login']"));
-            var registerLink = ctaArea.FindElement(By.CssSelector("a[href='/register']"));
+            var registerLink = ctaArea.FindElement(By.CssSelector("a[href='/account/register']"));
 
             Assert.That(loginLink.Displayed, Is.True);
             Assert.That(loginLink.Text, Does.Contain("Login"));

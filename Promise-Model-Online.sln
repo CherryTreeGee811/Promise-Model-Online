@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromiseModelOnline.Auth", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromiseModelOnline.Auth.Tests", "PromiseModelOnline.Auth.Tests\PromiseModelOnline.Auth.Tests.csproj", "{F66B4865-7901-47B7-84D6-AA583BBE4976}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromiseModelOnline.Gateway", "PromiseModelOnline.Gateway\PromiseModelOnline.Gateway.csproj", "{F9E1C305-2A46-4B15-9E07-CA7321C63B8D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromiseModelOnline.BFF", "PromiseModelOnline.BFF\PromiseModelOnline.BFF.csproj", "{F9E1C305-2A46-4B15-9E07-CA7321C63B8D}"
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
 EndProject

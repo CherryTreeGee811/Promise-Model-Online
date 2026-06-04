@@ -1,0 +1,26 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "url": "/api/users/me",
+    "headers": {
+      "Cookie": {
+        "contains": "__Host-pmo.session=nonowner-session"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": "999",
+      "name": "nonowner",
+      "email": "nonowner@example.com"
+    },
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    }
+  }
+}

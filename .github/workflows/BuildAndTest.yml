@@ -32,11 +32,11 @@ jobs:
       - name: Add GATEWAY CI TLS/SSL CERT & KEY
         shell: bash
         run: |
-          mkdir -p PromiseModelOnline.Gateway
-          cat > PromiseModelOnline.Gateway/cert.pem <<'PEM'
+          mkdir -p PromiseModelOnline.BFF
+          cat > PromiseModelOnline.BFF/cert.pem <<'PEM'
           ${{ vars.GATEWAY_CI_CERT }}
           PEM
-          cat > PromiseModelOnline.Gateway/key.pem <<'PEM'
+          cat > PromiseModelOnline.BFF/key.pem <<'PEM'
           ${{ secrets.GATEWAY_CI_KEY }}
           PEM
       
@@ -159,9 +159,9 @@ jobs:
           echo "Waiting for Gateway..."
           GATEWAY_READY=false
           for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlinegateway curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
+            STATUS=$(docker exec promisemodelonlinebff curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
             if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlinegateway curl -k -s https://localhost:8010/health)
+              BODY=$(docker exec promisemodelonlinebff curl -k -s https://localhost:8010/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "Gateway is healthy"
                 GATEWAY_READY=true
@@ -204,7 +204,7 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
 
-      - name: Run Auth Tests
+      - name: Run Auth Unit Tests
         shell: bash
         run: |
           mkdir -p AuthTestResults
@@ -212,7 +212,8 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --os linux \
-            --logger "console;verbosity=normal"
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~IntegrationTests"
 
       - name: Run API Tests
         shell: bash
@@ -234,9 +235,9 @@ jobs:
           echo "Waiting for WireMock..."
           WIREMOCK_READY=false
           for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlinegatewaymock curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
+            STATUS=$(docker exec promisemodelonlinebffmock curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
             if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlinegatewaymock curl -k -s https://localhost:8010/health)
+              BODY=$(docker exec promisemodelonlinebffmock curl -k -s https://localhost:8010/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "WireMock is healthy"
                 WIREMOCK_READY=true
@@ -286,6 +287,17 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down --remove-orphans -v
 
+      - name: Run Auth Integration Tests
+        shell: bash
+        run: |
+          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./AuthTestResults \
+            --os linux \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+
       - name: Push Docker Images to DockerHub
         if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash
@@ -293,9 +305,9 @@ jobs:
           docker tag promisemodelonlineapi cherrytree811/promisemodelonlineapi:latest
           docker tag promisemodelonlineclient cherrytree811/promisemodelonlineclient:latest
           docker tag promisemodelonlineauth cherrytree811/promisemodelonlineauth:latest
-          docker tag promisemodelonlinegateway cherrytree811/promisemodelonlinegateway:latest
+          docker tag promisemodelonlinebff cherrytree811/promisemodelonlinebff:latest
           docker login -u cherrytree811 -p ${{ secrets.DOCKER_CRED }}
           docker push cherrytree811/promisemodelonlineapi:latest
           docker push cherrytree811/promisemodelonlineclient:latest
           docker push cherrytree811/promisemodelonlineauth:latest
-          docker push cherrytree811/promisemodelonlinegateway:latest
+          docker push cherrytree811/promisemodelonlinebff:latest

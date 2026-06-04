@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/logout"
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "Location": "/"
+    }
+  }
+}

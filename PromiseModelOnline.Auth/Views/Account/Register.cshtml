@@ -1,0 +1,57 @@
+@model RegisterViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Create Account";
+}
+<h1 id="form-title">Register</h1>
+
+<div class="auth-form form-div">
+    <h2>Create Account</h2>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="auth-message auth-error">
+            <ul>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form method="post" class="auth-form">
+        @Html.AntiForgeryToken()
+        <div class="field-group">
+            <label asp-for="Username" class="field-label">Username</label>
+            <input asp-for="Username" type="text" class="field-input" placeholder="Enter your username" required />
+        </div>
+        <div class="field-group">
+            <label asp-for="Email" class="field-label">Email</label>
+            <input asp-for="Email" type="email" class="field-input" placeholder="Enter your email" required />
+        </div>
+        <div class="field-group">
+            <label asp-for="Password" class="field-label">Password</label>
+            <div class="password-wrapper">
+                <input asp-for="Password" type="password" class="field-input password-input" placeholder="Enter your password" required />
+                <button type="button" class="password-toggle" aria-label="Show password" tabindex="-1">
+                    <span class="eye-icon"></span>
+                </button>
+            </div>
+        </div>
+        <div class="field-group">
+            <label asp-for="ConfirmPassword" class="field-label">Confirm Password</label>
+            <div class="password-wrapper">
+                <input asp-for="ConfirmPassword" type="password" class="field-input password-input" placeholder="Confirm your password" required />
+                <button type="button" class="password-toggle" aria-label="Show password" tabindex="-1">
+                    <span class="eye-icon"></span>
+                </button>
+            </div>
+        </div>
+        <button type="submit" class="submit-btn"><span class="btn-text">Register</span><span class="spinner"></span></button>
+    </form>
+
+    <div class="auth-link" id="register-login-link">
+        Already have an account? <a href="/account/login?returnUrl=@Context.Request.Query["returnUrl"]">Login here</a>
+    </div>
+</div>

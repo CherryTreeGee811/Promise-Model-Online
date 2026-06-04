@@ -7,9 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Filters;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols;
+using PromiseModelOnline.Api.Auth;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
@@ -52,25 +54,36 @@ else
     builder.WebHost.UseUrls(urls);
 }
 
-builder.Services.AddAuthentication(x => 
-{
-    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(x => {
-    x.TokenValidationParameters = new TokenValidationParameters
+var issuer = config["JwtSettings:Issuer"]!;
+var audience = config["JwtSettings:Audience"]!;
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = config["JwtSettings:Issuer"],
-        ValidAudience = config["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey
-            (Encoding.UTF8.GetBytes(config["JwtSettings:Key"]!)),
-    };
+        o.Authority = issuer;
+        o.Audience = audience;
+        o.TokenValidationParameters.ValidateAudience = false;
+        o.TokenValidationParameters.ValidIssuer = issuer;
+
+        if (builder.Environment.IsDevelopment())
+        {
+            o.BackchannelHttpHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+            o.RequireHttpsMetadata = false;
+        }
+    });
+
+builder.Services.AddTransient<IClaimsTransformation, ScopeClaimsTransformer>();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("projects.read", policy =>
+        policy.RequireClaim("scope", "projects.read"));
+    options.AddPolicy("projects.write", policy =>
+        policy.RequireClaim("scope", "projects.write"));
 });
-builder.Services.AddAuthorization();
 
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers(options =>
@@ -115,13 +128,10 @@ if (!app.Environment.IsEnvironment("Testing"))
 
         logger.LogInformation("Running Promise hierarchy seed...");
 
-        var authClient = scope.ServiceProvider.GetRequiredService<IAuthClient>();
-
         await PromiseHierarchySeeder.SeedAsync(
             dbContext,
             app.Environment.ContentRootPath,
-            logger,
-            authClient);
+            logger);
 
         logger.LogInformation("Migration and seed startup step complete.");
     }
