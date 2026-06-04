@@ -39,6 +39,17 @@ jobs:
           cat > PromiseModelOnline.BFF/key.pem <<'PEM'
           ${{ secrets.GATEWAY_CI_KEY }}
           PEM
+
+      - name: Add AUTH CI TLS/SSL CERT & KEY
+        shell: bash
+        run: |
+          mkdir -p PromiseModelOnline.Auth
+          cat > PromiseModelOnline.Auth/cert.pem <<'PEM'
+          ${{ vars.AUTH_CI_CERT }}
+          PEM
+          cat > PromiseModelOnline.Auth/key.pem <<'PEM'
+          ${{ secrets.AUTH_CI_KEY }}
+          PEM
       
       - name: Smoke Test Production Environment
         shell: bash
@@ -117,9 +128,9 @@ jobs:
           echo "Waiting for Auth Server..."
           AUTH_READY=false
           for i in $(seq 1 20); do
-            STATUS=$(docker exec promisemodelonlineauth curl -s -o /dev/null -w "%{http_code}" http://localhost:8060/health || true)
+            STATUS=$(docker exec promisemodelonlineauth curl -s -o /dev/null -w "%{http_code}" https://localhost:8060/health || true)
             if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlineauth curl -s http://localhost:8060/health)
+              BODY=$(docker exec promisemodelonlineauth curl -s https://localhost:8060/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "Auth is healthy"
                 AUTH_READY=true
