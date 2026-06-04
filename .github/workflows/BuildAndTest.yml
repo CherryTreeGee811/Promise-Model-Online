@@ -128,9 +128,9 @@ jobs:
           echo "Waiting for Auth Server..."
           AUTH_READY=false
           for i in $(seq 1 20); do
-            STATUS=$(docker exec promisemodelonlineauth curl -s -o /dev/null -w "%{http_code}" https://localhost:8060/health || true)
+            STATUS=$(docker exec promisemodelonlineauth curl -sk -o /dev/null -w "%{http_code}" https://localhost:8060/health || true)
             if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlineauth curl -s https://localhost:8060/health)
+              BODY=$(docker exec promisemodelonlineauth curl -sk https://localhost:8060/health)
               if echo "$BODY" | grep -q '"healthy"'; then
                 echo "Auth is healthy"
                 AUTH_READY=true
