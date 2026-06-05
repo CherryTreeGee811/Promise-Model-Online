@@ -68,7 +68,7 @@ public sealed class ProjectImportService : IProjectImportService
             {
                 Name = document.Project.Name,
                 Description = document.Project.Description,
-                OwnerId = await ResolveRequiredOwnerIdAsync(document.Project.OwnerId, requestedByUserId, warnings, $"project {document.Project.Id}"),
+                OwnerId = requestedByUserId,
                 CreatedAt = document.Project.CreatedAt
             };
 

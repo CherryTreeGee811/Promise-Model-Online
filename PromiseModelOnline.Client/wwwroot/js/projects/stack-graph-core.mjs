@@ -392,6 +392,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         projectId,
         focusNodeId,
         onContextMenu,
+        enableZoom,
         uniformNodeScale = null,
     } = options;
 
@@ -766,6 +767,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         projectId,
         focusNodeId: resolvedFocusNodeId,
         onContextMenu,
+        enableZoom,
         uniformNodeScale: compact ? cardScale : null,
     };
 

@@ -265,7 +265,7 @@ public class ProjectImportServiceUnitTests
         var result = await _service.ImportAsync(document, 42);
 
         Assert.That(result.ProjectId, Is.EqualTo(100));
-        Assert.That(result.Warnings, Has.Some.Contains("project 1 owner 999"));
+        Assert.That(result.Warnings, Has.Exactly(1).Items);
         Assert.That(result.Warnings, Has.Some.Contains("task 60 owner 999"));
         Assert.That(_addedProject, Is.Not.Null);
         Assert.That(_addedProject!.OwnerId, Is.EqualTo(42));
