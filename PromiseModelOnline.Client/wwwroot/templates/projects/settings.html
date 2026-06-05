@@ -15,7 +15,7 @@
 
             <div class="field-actions">
                 <button id="save-project-settings-btn" class="btn btn-primary" type="submit">Save Changes</button>
-                <a href="/projects" class="btn btn-outline-secondary" id="cancel-project-settings-link">Back to projects</a>
+                <a href="/projects" class="btn btn-outline-secondary" id="cancel-project-settings-link" data-nav>Back to projects</a>
             </div>
         </form>
     </section>
@@ -23,7 +23,7 @@
     <section class="detail-card">
         <h2>Project Summary</h2>
         <div id="project-summary-loading" class="text-center py-4" hidden>
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status" aria-live="polite" aria-label="Loading project summary">
+            <div class="spinner-border text-primary spinner-xl" role="status" aria-live="polite" aria-label="Loading project summary">
                 <span class="visually-hidden">Loading project summary...</span>
             </div>
         </div>
@@ -42,7 +42,7 @@
     <section class="detail-card">
         <h2>Activity</h2>
         <div id="project-audit-loading" class="text-center py-4" hidden>
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status" aria-live="polite" aria-label="Loading project activity">
+            <div class="spinner-border text-primary spinner-xlg" role="status" aria-live="polite" aria-label="Loading project activity">
                 <span class="visually-hidden">Loading project activity...</span>
             </div>
         </div>

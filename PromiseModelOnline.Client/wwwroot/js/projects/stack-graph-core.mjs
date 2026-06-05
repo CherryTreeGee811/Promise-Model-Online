@@ -148,7 +148,9 @@ export function getCardDescription(payload, maxLength = 52) {
 }
 
 export function getStrideLabel(payload) {
-    return payload?.assignedStrideId == null ? 'Stride: Backlog' : `Stride # ${payload.assignedStrideId}`;
+    const id = payload?.assignedStrideId;
+    if (id == null || id === 'unassigned' || id === '') return 'Stride: Backlog';
+    return `Stride # ${id}`;
 }
 
 export function getNodeTitle(nodeData) {
@@ -183,7 +185,9 @@ export function getMomentEffortBucket(effortEstimate) {
 }
 
 export function getMomentStrideBucket(payload) {
-    return payload?.assignedStrideId == null ? 'backlog' : String(payload.assignedStrideId);
+    const id = payload?.assignedStrideId;
+    if (id == null || id === 'unassigned' || id === '') return 'backlog';
+    return String(id);
 }
 
 export function computeChildMetrics(children) {
@@ -447,12 +451,24 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .classed('is-moment', current => current.data.nodeType === 'moment')
         .classed('is-collapsed', current => Boolean(current.data._isCollapsed))
         .classed('is-search-matched', current => Boolean(current.data._searchMatched))
-        .classed('is-focused', current => (focusNodeId != null && current.data.id === focusNodeId));
+        .classed('is-focused', current => (focusNodeId != null && current.data.id === focusNodeId))
+        .attr('tabindex', current => (enableZoom && current.data.nodeType !== 'root') ? 0 : null)
+        .attr('role', current => (enableZoom && current.data.nodeType !== 'root') ? 'treeitem' : null)
+        .attr('aria-label', current => (enableZoom && current.data.nodeType !== 'root') ? (getNodeTitle(current.data) || 'Graph node') : null);
 
     if (onContextMenu) {
         node.on('contextmenu', (event, current) => {
             event.preventDefault();
             onContextMenu(event, current.data);
+        });
+
+        node.on('keydown', (event, current) => {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === 'Space') {
+                event.preventDefault();
+                const rect = event.target?.getBoundingClientRect?.();
+                const fakeEvent = { ...event, clientX: rect?.left ?? 0, clientY: rect?.bottom ?? 0 };
+                onContextMenu(fakeEvent, current.data);
+            }
         });
     }
 
@@ -723,7 +739,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         .attr('preserveAspectRatio', 'xMinYMin meet')
         .attr('width', '100%')
         .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
-        .attr('role', 'img')
+        .attr('role', enableZoom ? 'tree' : 'img')
         .attr('aria-label', ariaLabel);
 
     const contentOffsetX = margin.left - minY;
@@ -753,12 +769,13 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         uniformNodeScale: compact ? cardScale : null,
     };
 
+    let zoom = null;
     if (enableZoom) {
         const zoomLayer = graphLayer;
         const safeViewportWidth = Math.max(viewportWidth, 1);
         const safeViewportHeight = Math.max(viewportHeight, 1);
 
-        const zoom = d3.zoom()
+        zoom = d3.zoom()
             .scaleExtent([0.5, 2.5])
             .extent([[0, 0], [safeViewportWidth, safeViewportHeight]])
             .translateExtent([
@@ -975,5 +992,8 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         });
     }
 
-    return svg.node();
+    return {
+        node: svg.node(),
+        zoom: svg.node() && enableZoom ? zoom : null,
+    };
 }

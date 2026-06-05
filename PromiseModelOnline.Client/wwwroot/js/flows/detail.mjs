@@ -3,7 +3,6 @@ import { getFlowById, getMomentsByFlow, updateFlowDescription } from './api.mjs'
 import { addMoment } from '../moments/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
-import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
@@ -13,6 +12,7 @@ import {
     patchChildMetrics,
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.mjs';
+import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
 
 export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
@@ -37,8 +37,8 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                 <div class="detail-card flow-detail-card">
                     <h2>${escapeHtml(flow.statement)}</h2>
                     <table class="table table-sm table-striped align-middle detail-table">
-                        <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="form-control detail-textarea">${escapeHtml(flow.description || '')}</textarea>
+                        <tr><th scope="row"><label for="description-input">Description</label></th><td>
+                            <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description">${escapeHtml(flow.description || '')}</textarea>
                             <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
@@ -47,16 +47,16 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                                 <a href="/journeys/${flow.journeyId}" journey-id="${flow.journeyId}" class="detail-link link-primary text-decoration-none fw-semibold">Journey ${flow.journeyId}</a>
                             </td>
                         </tr>
-                        <tr><th>Status</th><td id="flow-status-cell">${getStatusIcon(flow.statusColor)}</td></tr>
-                        <tr><th>Created</th><td>${new Date(flow.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th>Updated</th><td>${flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+                        <tr><th scope="row">Status</th><td>${getStatusHtml(flow.statusColor)}</td></tr>
+                        <tr><th scope="row">Created</th><td>${new Date(flow.createdAt).toLocaleDateString('en-CA')}</td></tr>
+                        <tr><th scope="row">Updated</th><td>${flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
                     <h3>Moments</h3>
                     <div id="flow-moments-list">
                         <p>Loading moments...</p>
                     </div>
                     <div id="flow-comments"></div>
-                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
                 </div>
             `;
 
@@ -92,7 +92,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-moment-form" class="inline-add-form">
-                                        <input id="add-moment-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Moment Statement...">
+                                        <input id="add-moment-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Moment Statement..." aria-label="New moment statement">
                                     </form>
                                 </td>
                                 <td>
@@ -200,19 +200,15 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                 });
 
             // Back button event
-            const backLink = document.getElementById('back-link');
-            if (backLink) {
-                backLink.addEventListener('click', () => {
-                    window.history.back();
-                });
-            }
+            initBackLink();
 
             // Load parent journey to show its status emoji
             const journeyCell = document.getElementById('flow-journey-cell');
             getJourneyById(flow.journeyId)
                 .then(journey => {
                     const icon = getStatusIcon(journey.statusColor);
-                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" journey-id="${journey.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(journey.statement)}</a> ${icon}`;
+                    const label = getStatusLabel(journey.statusColor);
+                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" journey-id="${journey.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(journey.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
                     
                     const link = journeyCell.querySelector('a.detail-link');
                     if (link) {
@@ -254,8 +250,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                 });
             }
 
-            const commentsContainer = document.getElementById('flow-comments');
-            loadComments(commentsContainer, 'Flow', flowId);
+            loadCommentsAndReactions(detailDiv, 'Flow', flowId);
 
             getJourneyById(flow.journeyId)
                 .then(journey => getEpicById(journey.epicId))
@@ -273,13 +268,4 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load flow details.';
             console.error(err);
         });
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-    return '⚪';
 }

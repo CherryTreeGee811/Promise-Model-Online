@@ -204,10 +204,10 @@ function openDeleteConfirmationModal(label) {
 
         const modalInstance = window.bootstrap?.Modal?.getOrCreateInstance(modalEl);
 
-        confirmButton.onclick = () => {
+        confirmButton.addEventListener('click', () => {
             settle(true);
             modalInstance?.hide();
-        };
+        }, { once: true });
 
         modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
         modalInstance?.show();

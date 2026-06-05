@@ -8,6 +8,7 @@ import { getEpicById } from '../epics/api.mjs';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { getStatusHtml, getStatusIcon, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
@@ -39,19 +40,19 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                     <h2>${escapeHtml(moment.statement)}</h2>
                     <table class="table table-sm table-striped align-middle detail-table">
                         <tr>
-                            <th>Description</th>
+                            <th scope="row"><label for="moment-description-input">Description</label></th>
                             <td>
-                                <textarea id="moment-description-input" rows="4" class="form-control detail-textarea">${escapeHtml(moment.description || '')}</textarea>
+                                <textarea id="moment-description-input" rows="4" class="form-control detail-textarea" aria-label="Description">${escapeHtml(moment.description || '')}</textarea>
                                 <div class="field-actions"><button id="moment-description-save" class="btn btn-primary btn-sm" type="button">Save</button> <span id="moment-description-msg"></span></div>
                             </td>
                         </tr>
-                        <tr><th>Type</th><td>
+                        <tr><th scope="row"><label for="moment-type-select">Type</label></th><td>
                             <select id="moment-type-select" class="form-select form-select-sm">
                                 <option value="Story" ${moment.type === 'Story' ? 'selected' : ''}>Story</option>
                                 <option value="Job" ${moment.type === 'Job' ? 'selected' : ''}>Job</option>
                             </select>
                         </td></tr>
-                        <tr><th>Status</th><td>
+                        <tr><th scope="row"><label for="moment-status-select">Status</label></th><td>
                             <select id="moment-status-select" class="form-select form-select-sm">
                                 ${getStatusOption('Todo', moment.status)}
                                 ${getStatusOption('InProgress', moment.status)}
@@ -60,7 +61,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                             </select>
                         </td></tr>
                         <tr>
-                            <th>Effort Estimate</th>
+                            <th scope="row"><label for="moment-estimate-select">Effort Estimate</label></th>
                             <td>
                                 <select id="moment-estimate-select" class="form-select form-select-sm">
                                     <option value="-" ${moment.effortEstimate == null ? 'selected' : ''}>-</option>
@@ -75,20 +76,20 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                             </td>
                         </tr>
                         <tr>
-                            <th>Assigned Stride</th>
+                            <th scope="row"><label for="moment-stride-select">Assigned Stride</label></th>
                             <td>
                                 <select id="moment-stride-select" class="form-select form-select-sm">
                                     <option value="">Backlog</option>
                                 </select>
                             </td>
                         </tr>
-                        <tr><th>Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th>Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+                        <tr><th scope="row">Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
+                        <tr><th scope="row">Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
                     <h3>Moment Tasks</h3>
                     <div id="moment-tasks"></div>
                     <div id="moment-comments"></div>
-                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
                 </div>
             `;
 
@@ -235,16 +236,8 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             }
 
             // Back button event
-            const backLink = document.getElementById('back-link');
-            if (backLink) {
-                backLink.addEventListener('click', () => {
-                    window.history.back();
-                });
-            }
-
-            // Comments
-            const commentsContainer = document.getElementById('moment-comments');
-            loadComments(commentsContainer, 'Moment', momentId);
+            initBackLink();
+            loadCommentsAndReactions(detailDiv, 'Moment', momentId);
 
             getFlowById(moment.flowId)
                 .then(flow => getJourneyById(flow.journeyId))
@@ -263,15 +256,6 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load moment details.';
             console.error(err);
         });
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-    return '⚪';
 }
 
 function getStatusOption(value, selectedValue) {

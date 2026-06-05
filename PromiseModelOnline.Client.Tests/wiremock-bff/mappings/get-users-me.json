@@ -1,26 +1,21 @@
 {
-  "priority": 2,
+  "priority": 1,
   "request": {
     "method": "GET",
-    "url": "/api/users/me",
+    "urlPath": "/api/users/me",
     "headers": {
-      "Cookie": {
-        "contains": "__Host-pmo.session=owner-session"
-      }
+      "Cookie": { "matches": "__Host-pmo.session=.*" }
     }
   },
   "response": {
     "status": 200,
     "jsonBody": {
-      "id": "1",
-      "name": "testuser",
-      "email": "testuser@example.com"
+      "name": "Test Owner",
+      "email": "owner@example.com",
+      "sub": "owner-user-id"
     },
     "headers": {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+      "Content-Type": "application/json"
     }
   }
 }

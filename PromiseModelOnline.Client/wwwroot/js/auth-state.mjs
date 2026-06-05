@@ -40,10 +40,6 @@ export function clearAuth() {
     }
 }
 
-export function clearTokens() {
-    clearAuth();
-}
-
 export function isLoggedIn() {
     return isAuthenticated;
 }

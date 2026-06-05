@@ -1,56 +1,7 @@
-import { authFetch } from '../api.mjs';
+import { apiGet, apiPost, apiPut, apiPatch } from '../api.mjs';
 
-export function getFlowById(flowId) {
-    return authFetch(`/api/flows/${flowId}`).then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-    });
-}
-
-export function getMomentsByFlow(flowId) {
-    return authFetch(`/api/moments?flowId=${flowId}`).then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        if (response.status === 204) return [];
-        return response.json();
-    });
-}
-
-export async function addFlow(flow) {
-    const res = await authFetch(`/api/flows`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(flow)
-    });
-
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-}
-
-export async function updateFlow(flow) {
-    const res = await authFetch(`/api/flows/${flow.id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(flow)
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return true;
-}
-
-export async function updateFlowDescription(flowId, description) {
-    const res = await authFetch(`/api/flows/${flowId}/description`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ description }),
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-}
+export const getFlowById = flowId => apiGet(`/api/flows/${flowId}`);
+export const getMomentsByFlow = flowId => apiGet(`/api/moments?flowId=${flowId}`);
+export const addFlow = flow => apiPost('/api/flows', flow);
+export const updateFlow = flow => apiPut(`/api/flows/${flow.id}`, flow);
+export const updateFlowDescription = (flowId, description) => apiPatch(`/api/flows/${flowId}/description`, { description });

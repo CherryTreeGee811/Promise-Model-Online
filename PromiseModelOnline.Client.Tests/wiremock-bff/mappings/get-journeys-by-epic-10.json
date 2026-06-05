@@ -1,8 +1,11 @@
 {
-  "priority": 2,
+  "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/notifications"
+    "urlPath": "/api/journeys",
+    "queryParameters": {
+      "epicId": { "equalTo": "10" }
+    }
   },
   "response": {
     "status": 200,

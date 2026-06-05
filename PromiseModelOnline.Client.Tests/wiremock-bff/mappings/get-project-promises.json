@@ -1,0 +1,23 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/projects/1/promises"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": [
+      {
+        "id": 1,
+        "statement": "Test Promise",
+        "description": "A test promise for graph view",
+        "statusColor": "green",
+        "displayOrder": 1,
+        "createdAt": "2026-01-01T00:00:00Z"
+      }
+    ],
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

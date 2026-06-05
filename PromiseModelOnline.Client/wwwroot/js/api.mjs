@@ -1,12 +1,53 @@
 import { setAuthState, clearAuth } from './auth-state.mjs';
 
-/*
-====================================
-LOGIN
-====================================
-*/
-export function getToken() {
-    window.location.href = '/login';
+export async function apiGet(url) {
+  const res = await apiFetch(url);
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function apiGetList(url) {
+  const data = await apiGet(url);
+  return data ?? [];
+}
+
+export async function apiPost(url, body) {
+  const res = await apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function apiPut(url, body) {
+  const res = await apiFetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return true;
+}
+
+export async function apiPatch(url, body) {
+  const res = await apiFetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function apiDelete(url) {
+  const res = await apiFetch(url, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return true;
 }
 
 /*
@@ -37,54 +78,7 @@ export async function apiFetch(url, options = {}) {
 
 export { apiFetch as authFetch };
 
-/*
-====================================
-LOGOUT
-====================================
-*/
-export function requestLogout() {
-    window.location.href = '/logout';
-}
-
-/*
-====================================
-REGISTER
-====================================
-*/
-export function registerUser() {
-    window.location.href = '/account/register';
-}
-
-/*
-====================================
-CHANGE PASSWORD
-====================================
-*/
-export function changePassword(currentPassword, newPassword, confirmPassword) {
-    return apiFetch('/account/me/password', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            currentPassword,
-            newPassword,
-            confirmPassword
-        })
-    }).then(async response => {
-        if (response.ok) return true;
-
-        const data = await response.json();
-        throw new Error(data.message || 'Change password failed');
-    });
-}
-
-/*
-====================================
-SESSION CHECK (restore auth on page load)
-====================================
-*/
+/* SESSION CHECK (restore auth on page load) */
 export async function checkSession() {
     try {
         const response = await fetch('/api/users/me', {

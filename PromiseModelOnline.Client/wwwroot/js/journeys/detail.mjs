@@ -2,7 +2,6 @@ import { navigate } from '../router.mjs';
 import { getJourneyById, getFlowsByJourney, updateJourneyDescription } from './api.mjs';
 import { addFlow } from '../flows/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
-import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
@@ -12,6 +11,7 @@ import {
     patchChildMetrics,
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.mjs';
+import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
 
 export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
@@ -36,8 +36,8 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                 <div class="detail-card journey-detail-card">
                     <h2>${escapeHtml(journey.statement)}</h2>
                     <table class="table table-sm table-striped align-middle detail-table">
-                        <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="form-control detail-textarea">${escapeHtml(journey.description || '')}</textarea>
+                        <tr><th scope="row"><label for="description-input">Description</label></th><td>
+                            <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description">${escapeHtml(journey.description || '')}</textarea>
                             <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
@@ -46,16 +46,16 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                                 <a href="/epics/${journey.epicId}" epic-id="${journey.epicId}" class="detail-link link-primary text-decoration-none fw-semibold">Epic ${journey.epicId}</a>
                             </td>
                         </tr>
-                        <tr><th>Status</th><td id="journey-status-cell">${getStatusIcon(journey.statusColor)}</td></tr>
-                        <tr><th>Created</th><td>${new Date(journey.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th>Updated</th><td>${journey.updatedAt ? new Date(journey.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+                        <tr><th scope="row">Status</th><td>${getStatusHtml(journey.statusColor)}</td></tr>
+                        <tr><th scope="row">Created</th><td>${new Date(journey.createdAt).toLocaleDateString('en-CA')}</td></tr>
+                        <tr><th scope="row">Updated</th><td>${journey.updatedAt ? new Date(journey.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
                     <h3>Flows</h3>
                     <div id="journey-flows-list">
                         <p>Loading flows...</p>
                     </div>
                     <div id="journey-comments"></div>
-                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
                 </div>
             `;
 
@@ -88,7 +88,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-flow-form" class="inline-add-form">
-                                        <input id="add-flow-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Flow Statement...">
+                                        <input id="add-flow-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Flow Statement..." aria-label="New flow statement">
                                     </form>
                                 </td>
                                 <td>
@@ -176,19 +176,15 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     flowsList.innerHTML = '<p class="error">Failed to load flows.</p>';
                 });
 
-            const backLink = document.getElementById('back-link');
-            if (backLink) {
-                backLink.addEventListener('click', () => {
-                    window.history.back();
-                });
-            }
+            initBackLink();
 
             // Load epic to show its status emoji
             const epicCell = document.getElementById('journey-epic-cell');
             getEpicById(journey.epicId)
                 .then(epic => {
                     const icon = getStatusIcon(epic.statusColor);
-                    epicCell.innerHTML = `<a href="/epics/${epic.id}" epic-id="${epic.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(epic.statement)}</a> ${icon}`;
+                    const label = getStatusLabel(epic.statusColor);
+                    epicCell.innerHTML = `<a href="/epics/${epic.id}" epic-id="${epic.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(epic.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
                     const link = epicCell.querySelector('a.detail-link');
 
                     if (link) {
@@ -230,8 +226,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                 });
             }
 
-            const commentsContainer = document.getElementById('journey-comments');
-            loadComments(commentsContainer, 'Journey', journeyId);
+            loadCommentsAndReactions(detailDiv, 'Journey', journeyId);
 
             getEpicById(journey.epicId)
                 .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
@@ -250,13 +245,4 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load journey details.';
             console.error(err);
         });
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-    return '⚪';
 }
