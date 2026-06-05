@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-              
+               
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
-      
+
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
         run: |
@@ -34,10 +34,10 @@ jobs:
         run: |
           mkdir -p PromiseModelOnline.BFF
           cat > PromiseModelOnline.BFF/cert.pem <<'PEM'
-          ${{ vars.GATEWAY_CI_CERT }}
+          ${{ vars.BFF_CI_CERT }}
           PEM
           cat > PromiseModelOnline.BFF/key.pem <<'PEM'
-          ${{ secrets.GATEWAY_CI_KEY }}
+          ${{ secrets.BFF_CI_KEY }}
           PEM
 
       - name: Add AUTH CI TLS/SSL CERT & KEY
@@ -50,19 +50,46 @@ jobs:
           cat > PromiseModelOnline.Auth/key.pem <<'PEM'
           ${{ secrets.AUTH_CI_KEY }}
           PEM
-      
+
+      - name: Write secrets from GitHub Secrets
+        shell: bash
+        run: |
+            mkdir -p secrets
+            printf '%s' "${{ secrets.PMO_AUTH_DB_PASSWORD }}" > secrets/auth_db_password.txt
+            printf '%s' "${{ secrets.PMO_API_DB_PASSWORD }}" > secrets/api_db_password.txt
+            printf '%s' "${{ secrets.GOOGLE_CLIENT_SECRET }}" > secrets/google_client_secret.txt
+
       - name: Smoke Test Production Environment
         shell: bash
         run: |
+          ls secrets
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
-          export PMO_API_DB_USER="${{ vars.PMO_API_DB_USER }}"
-          export PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}"
-          export PMO_AUTH_DB_USER="${{ vars.PMO_AUTH_DB_USER }}"
-          export PMO_AUTH_DB_PASSWORD="${{ secrets.PMO_AUTH_DB_PASSWORD }}"
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
+          
+          dump_logs() {
+            echo ""
+            echo "========== FAILED SERVICE LOGS =========="
+            for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlinedb promisemodelonlinedbinit; do
+              echo ""
+              echo "--- $svc (last 60 lines) ---"
+              docker logs "$svc" --tail 60 2>&1 || echo "(no logs)"
+            done
+          }
 
           docker compose --project-name promisemodelonline up -d
+
+          # ---- Immediate crash check ----
+          sleep 5
+          for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff; do
+            CID=$(docker ps -aq --filter "name=$svc" --filter "status=exited" 2>/dev/null || true)
+            if [ -n "$CID" ]; then
+              echo "ERROR: $svc exited immediately (code: $(docker inspect "$CID" --format '{{.State.ExitCode}}'))"
+              docker logs "$CID" --tail 60
+              dump_logs
+              exit 1
+            fi
+          done
 
           # ---- Wait for db-init to finish ----
           echo "Waiting for db-init to complete..."
@@ -77,6 +104,7 @@ jobs:
           done
           if [ "$STATUS" != "0" ]; then
             echo "ERROR: db-init did not exit successfully (exit code $STATUS)"
+            dump_logs
             exit 1
           fi
 
@@ -99,6 +127,7 @@ jobs:
           done
           if [ "$SQL_READY" = false ]; then
             echo "ERROR: SQL Server failed to become ready within 60 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -121,6 +150,7 @@ jobs:
           done
           if [ "$AUTH_DB_READY" = false ]; then
             echo "ERROR: Auth database login failed"
+            dump_logs
             exit 1
           fi
 
@@ -142,6 +172,7 @@ jobs:
           done
           if [ "$AUTH_READY" = false ]; then
             echo "ERROR: Auth failed to become healthy within 60 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -163,6 +194,7 @@ jobs:
           done
           if [ "$API_READY" = false ]; then
             echo "ERROR: API failed to become healthy within 90 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -184,6 +216,7 @@ jobs:
           done
           if [ "$GATEWAY_READY" = false ]; then
             echo "ERROR: Gateway failed to become healthy within 30 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -205,6 +238,7 @@ jobs:
           done
           if [ "$CLIENT_READY" = false ]; then
             echo "ERROR: Client failed to become healthy within 30 seconds"
+            dump_logs
             exit 1
           fi
 

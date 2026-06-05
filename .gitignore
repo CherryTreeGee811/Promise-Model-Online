@@ -18,6 +18,9 @@ query
 # SSL certificates (if any)
 *.pem
 
+# Docker secrets (actual values — use .example.txt templates instead)
+secrets/*.txt
+
 # Rider / JetBrains cache files and solution user settings
 **/*.lscache
 **/*.sln.DotSettings.user

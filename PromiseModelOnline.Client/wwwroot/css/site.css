@@ -94,6 +94,10 @@ button {
   z-index: 1030;
 }
 
+#stride-scrollspy-nav > .position-sticky {
+  top: var(--stride-sticky-top) !important;
+}
+
 .navbar .nav-link.active,
 .navbar .nav-link[aria-current="page"] {
   color: #fff;
@@ -355,7 +359,7 @@ input[type=button]:hover, input[type=submit]:hover {
   gap: var(--spacing-sm);
   position: sticky;
   top: var(--stride-sticky-top);
-  z-index: 4;
+  z-index: 1025;
   border-top-left-radius: var(--radius-card);
   border-top-right-radius: var(--radius-card);
 }
@@ -412,7 +416,7 @@ input[type=button]:hover, input[type=submit]:hover {
 .backlog-board .promisemodel-table th {
   position: sticky;
   top: calc(var(--stride-sticky-top) + var(--stride-header-height));
-  z-index: 3;
+  z-index: 1024;
   background: var(--color-accent);
   color: #ecf0f1;
 }

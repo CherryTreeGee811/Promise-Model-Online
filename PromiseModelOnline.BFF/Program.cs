@@ -232,10 +232,27 @@ app.MapGet("/login", async (HttpContext ctx) =>
         returnUrl = "/";
     }
 
-    await ctx.ChallengeAsync("oidc", new AuthenticationProperties
+    try
     {
-        RedirectUri = returnUrl
-    });
+        await ctx.ChallengeAsync("oidc", new AuthenticationProperties
+        {
+            RedirectUri = returnUrl
+        });
+    }
+    catch (Exception ex) when (ex is not OperationCanceledException)
+    {
+        var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "OIDC challenge failed — auth server may not be ready");
+
+        var env = ctx.RequestServices.GetRequiredService<IWebHostEnvironment>();
+        var message = env.IsDevelopment()
+            ? "Authentication service is starting up. Please wait a moment and try again."
+            : "A temporary error occurred. Please try again.";
+
+        ctx.Response.StatusCode = 503;
+        ctx.Response.ContentType = "text/plain";
+        await ctx.Response.WriteAsync(message);
+    }
 });
 
 app.MapGet("/logout", () =>
