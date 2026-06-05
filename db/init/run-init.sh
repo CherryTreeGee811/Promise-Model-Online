@@ -1,8 +1,8 @@
 #!/bin/sh
 
 SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
-API_USER=${PMO_API_DB_USER:-pmo_api}
-AUTH_USER=${PMO_AUTH_DB_USER:-pmo_auth}
+API_USER=${API_DB_USER:-pmo_api}
+AUTH_USER=${AUTH_DB_USER:-pmo_auth}
 
 read_secret_file() {
     if [ ! -f "$1" ]; then

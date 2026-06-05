@@ -81,7 +81,7 @@ services:
       - ASPNETCORE_URLS=https://+:8060
       - APP_BASE_URL=https://localhost:9000
       - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER:-pmo_auth};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER:-pmo_auth};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID:-}
       - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
     secrets:
