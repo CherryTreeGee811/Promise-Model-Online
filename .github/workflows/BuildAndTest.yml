@@ -70,6 +70,16 @@ jobs:
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
 
+          dump_logs() {
+            echo ""
+            echo "========== FAILED SERVICE LOGS =========="
+            for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlinedb promisemodelonlinedbinit; do
+              echo ""
+              echo "--- $svc (last 60 lines) ---"
+              docker logs "$svc" --tail 60 2>&1 || echo "(no logs)"
+            done
+          }
+
           docker compose --project-name promisemodelonline up -d
 
           # ---- Wait for db-init to finish ----
@@ -85,6 +95,7 @@ jobs:
           done
           if [ "$STATUS" != "0" ]; then
             echo "ERROR: db-init did not exit successfully (exit code $STATUS)"
+            dump_logs
             exit 1
           fi
 
@@ -107,6 +118,7 @@ jobs:
           done
           if [ "$SQL_READY" = false ]; then
             echo "ERROR: SQL Server failed to become ready within 60 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -129,6 +141,7 @@ jobs:
           done
           if [ "$AUTH_DB_READY" = false ]; then
             echo "ERROR: Auth database login failed"
+            dump_logs
             exit 1
           fi
 
@@ -150,6 +163,7 @@ jobs:
           done
           if [ "$AUTH_READY" = false ]; then
             echo "ERROR: Auth failed to become healthy within 60 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -171,6 +185,7 @@ jobs:
           done
           if [ "$API_READY" = false ]; then
             echo "ERROR: API failed to become healthy within 90 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -192,6 +207,7 @@ jobs:
           done
           if [ "$GATEWAY_READY" = false ]; then
             echo "ERROR: Gateway failed to become healthy within 30 seconds"
+            dump_logs
             exit 1
           fi
 
@@ -213,6 +229,7 @@ jobs:
           done
           if [ "$CLIENT_READY" = false ]; then
             echo "ERROR: Client failed to become healthy within 30 seconds"
+            dump_logs
             exit 1
           fi
 
