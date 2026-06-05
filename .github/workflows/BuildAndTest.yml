@@ -62,14 +62,13 @@ jobs:
       - name: Smoke Test Production Environment
         shell: bash
         run: |
+          ls
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
           export PMO_API_DB_USER="${{ vars.PMO_API_DB_USER }}"
-          export PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}"
           export PMO_AUTH_DB_USER="${{ vars.PMO_AUTH_DB_USER }}"
-          export PMO_AUTH_DB_PASSWORD="${{ secrets.PMO_AUTH_DB_PASSWORD }}"
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
-
+          
           dump_logs() {
             echo ""
             echo "========== FAILED SERVICE LOGS =========="
