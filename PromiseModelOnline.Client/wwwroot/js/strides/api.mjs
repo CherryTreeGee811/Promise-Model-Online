@@ -1,147 +1,23 @@
-import { authFetch } from '../api.mjs';
+import { apiGet, apiGetList, apiPost, apiPatch } from '../api.mjs';
 
-/*
-====================================
-STRIDES
-====================================
-*/
+export const getStridesByIteration = iterationId => apiGetList(`/api/strides?iterationId=${iterationId}`);
+export const getAllStrides = () => apiGetList('/api/strides');
+export const getMomentsByStride = strideId => apiGetList(`/api/moments?strideId=${strideId}`);
+export const getBacklogMoments = projectId => apiGetList(`/api/moments?projectId=${projectId}&unassigned=true`);
+export const getMomentsByIteration = (iterationId, unassigned = false) => apiGetList(`/api/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`);
+export const getIterationsByProject = projectId => apiGetList(`/api/iterations?projectId=${projectId}`);
 
-export function getStridesByIteration(iterationId) {
-    return authFetch(`/api/strides?iterationId=${iterationId}`)
-        .then(handleJsonOrEmpty);
-}
-
-export async function createStride(stride) {
-    const res = await authFetch(`/api/strides`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(stride)
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
-}
-
-export function getAllStrides() {
-    return authFetch(`/api/strides`)
-        .then(handleJsonOrEmpty);
-}
-
-/*
-====================================
-MOMENTS
-====================================
-*/
-
-export function getMomentsByStride(strideId) {
-    return authFetch(`/api/moments?strideId=${strideId}`)
-        .then(handleJsonOrEmpty);
-}
-
-export function getBacklogMoments(projectId) {
-    return authFetch(`/api/moments?projectId=${projectId}&unassigned=true`)
-        .then(handleJsonOrEmpty);
-}
-
-export function getMomentsByIteration(iterationId, unassigned = false) {
-    return authFetch(
-        `/api/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`
-    ).then(handleJsonOrEmpty);
-}
-
-/*
-====================================
-ITERATIONS
-====================================
-*/
-
-export function getIterationsByProject(projectId) {
-    return authFetch(`/api/iterations?projectId=${projectId}`)
-        .then(handleJsonOrEmpty);
-}
-
-/*
-====================================
-PROJECT MEMBERS / PERMISSIONS
-====================================
-*/
+export const createStride = stride => apiPost('/api/strides', stride);
 
 export async function getProjectMembers(projectId) {
-    const res = await authFetch(`/api/projects/${projectId}/members`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const res = await apiGet(`/api/projects/${projectId}/members`);
+    return res ?? [];
 }
 
 export async function getMyPermission(projectId) {
-    const res = await authFetch(`/api/projects/${projectId}/my-permission`);
-
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const text = (await res.text()).trim();
-    if (!text) return null;
-
-    try {
-        return JSON.parse(text);
-    } catch {
-        return text;
-    }
+    const res = await apiGet(`/api/projects/${projectId}/my-permission`);
+    return res ?? null;
 }
 
-/*
-====================================
-UPDATES
-====================================
-*/
-
-export async function updateMomentOwner(momentId, userId) {
-    const res = await authFetch(`/api/moments/${momentId}/owner`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-}
-
-export async function progressStride(strideId) {
-    const res = await authFetch(`/api/strides/${strideId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ progressUnfinishedMoments: true })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
-
-export async function sendDeadlineNotifications() {
-    const res = await authFetch(`/api/deadline-notification-runs`, {
-        method: 'POST'
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
-
-/*
-====================================
-HELPERS
-====================================
-*/
-
-function handleJsonOrEmpty(response) {
-    if (response.ok) {
-        if (response.status === 204) return [];
-        return response.json();
-    }
-
-    throw new Error(`HTTP error! status: ${response.status}`);
-}
+export const progressStride = strideId => apiPatch(`/api/strides/${strideId}`, { progressUnfinishedMoments: true });
+export const sendDeadlineNotifications = () => apiPost('/api/deadline-notification-runs', {});

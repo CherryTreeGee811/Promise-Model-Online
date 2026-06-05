@@ -1,35 +1,4 @@
-import { authFetch } from '../api.mjs';
+import { apiGet, apiPatch } from '../api.mjs';
 
-/*
-====================================
-PENDING INVITATIONS
-====================================
-*/
-
-export async function getPendingInvitations() {
-    const res = await authFetch(`/api/permissions/pending`);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
-}
-
-/*
-====================================
-ACCEPT INVITATION
-====================================
-*/
-
-export async function acceptInvitation(permissionId) {
-    const res = await authFetch(`/api/permissions/${permissionId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: 'Active' })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return res.json();
-}
+export const getPendingInvitations = () => apiGet('/api/permissions/pending');
+export const acceptInvitation = permissionId => apiPatch(`/api/permissions/${permissionId}`, { status: 'Active' });

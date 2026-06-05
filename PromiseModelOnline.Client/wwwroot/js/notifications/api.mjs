@@ -1,53 +1,15 @@
-import { authFetch } from '../api.mjs';
+import { apiGet, apiPatch } from '../api.mjs';
 
-/*
-====================================
-FETCH NOTIFICATIONS
-====================================
-*/
-
-export async function fetchUnreadNotifications() {
-    const res = await authFetch(`/api/notifications`);
-
-    if (!res.ok) return [];
-
-    return res.json();
+async function fetchNotifications() {
+  try {
+    return await apiGet('/api/notifications') ?? [];
+  } catch {
+    return [];
+  }
 }
 
-export async function fetchAllNotifications() {
-    const res = await authFetch(`/api/notifications`);
+export const fetchUnreadNotifications = fetchNotifications;
+export const fetchAllNotifications = fetchNotifications;
 
-    if (!res.ok) return [];
-
-    return res.json();
-}
-
-/*
-====================================
-MARK READ
-====================================
-*/
-
-export async function markNotificationAsRead(id) {
-    const res = await authFetch(`/api/notifications/${id}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isRead: true })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
-
-export async function markAllNotificationsAsRead() {
-    const res = await authFetch(`/api/notifications`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isRead: true, applyToAll: true })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
+export const markNotificationAsRead = id => apiPatch(`/api/notifications/${id}`, { isRead: true });
+export const markAllNotificationsAsRead = () => apiPatch('/api/notifications', { isRead: true, applyToAll: true });

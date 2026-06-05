@@ -18,9 +18,10 @@ export function loadComments(container, parentType, parentId) {
 
     getComments(parentType, parentId)
         .then(comments => renderComments(commentsList, comments))
-        .catch(err => {
+        .catch(() => {
+            commentsList.removeAttribute('role');
+            commentsList.removeAttribute('aria-label');
             commentsList.innerHTML = '<p class="error">Failed to load comments.</p>';
-            console.error(err);
         });
 
     form.addEventListener('submit', async (e) => {

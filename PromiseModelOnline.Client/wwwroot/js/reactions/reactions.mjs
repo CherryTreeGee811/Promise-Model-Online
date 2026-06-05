@@ -1,5 +1,5 @@
 import { getReactions, createReaction, updateReaction, deleteReaction } from './api.mjs';
-import { getNameFromToken } from '../parser.mjs';
+import { getCurrentUserName } from '../parser.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 
@@ -16,7 +16,7 @@ export function loadReactions(container, parentType, parentId) {
     const summaryEl = container.querySelector('#reactions-summary');
     const buttons = container.querySelectorAll('.emote-btn');
 
-    const myUserName = getNameFromToken();
+    const myUserName = getCurrentUserName();
 
     const state = {
         counts: {},

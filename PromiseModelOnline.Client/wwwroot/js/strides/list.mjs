@@ -137,16 +137,15 @@ function progressStrideDomUpdate(strideId) {
 }
 
 function estimateDropdownHtml(momentId, currentEstimate) {
-    // Return an empty select placeholder; options will be created via DOM to preserve state.
-    return `<select class="estimate-dropdown" data-moment-id="${momentId}" data-current-estimate="${currentEstimate ?? ''}"></select>`;
+    return `<select class="estimate-dropdown" data-moment-id="${momentId}" data-current-estimate="${currentEstimate ?? ''}" aria-label="Effort estimate"></select>`;
 }
 
 function ownerDropdownHtml(momentId, ownerId) {
-    return `<select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}"></select>`;
+    return `<select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}" aria-label="Owner"></select>`;
 }
 
 function statusDropdownHtml(momentId, status) {
-    return `<select class="status-dropdown" data-moment-id="${momentId}" data-current-status="${status ?? ''}"></select>`;
+    return `<select class="status-dropdown" data-moment-id="${momentId}" data-current-status="${status ?? ''}" aria-label="Status"></select>`;
 }
 
 function updateStatusBadge(row, newStatus) {
@@ -230,12 +229,10 @@ function syncStrideStickyOffsets() {
     const appHeader = document.querySelector('.header');
     const appHeaderHeight = appHeader?.offsetHeight ?? 0;
 
-    document.documentElement.style.setProperty('--stride-sticky-top', `${appHeaderHeight}px`);
-
     document.querySelectorAll('[data-collapsible-board]').forEach(board => {
+        board.style.setProperty('--stride-sticky-top', `${appHeaderHeight}px`);
         const header = board.querySelector('.stride-header');
         const headerHeight = header?.offsetHeight ?? 0;
-        board.style.setProperty('--stride-header-sticky-offset', `${appHeaderHeight}px`);
         board.style.setProperty('--stride-header-height', `${headerHeight}px`);
     });
 }
@@ -320,28 +317,28 @@ function momentGraphLinkHtml(momentId) {
     `;
 }
 
-function ensureBacklogMoveModal() {
-    let modalEl = document.getElementById('move-to-backlog-modal');
+function createConfirmModal(id, title, confirmText, confirmClass) {
+    let modalEl = document.getElementById(id);
     if (modalEl) return modalEl;
 
     modalEl = document.createElement('div');
     modalEl.className = 'modal fade';
-    modalEl.id = 'move-to-backlog-modal';
+    modalEl.id = id;
     modalEl.tabIndex = -1;
     modalEl.setAttribute('aria-hidden', 'true');
     modalEl.innerHTML = `
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Move to Backlog?</h5>
+                    <h5 class="modal-title">${title}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0" id="move-to-backlog-modal-text"></p>
+                    <p class="mb-0" id="${id}-text"></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="move-to-backlog-modal-confirm">Move to Backlog</button>
+                    <button type="button" class="btn ${confirmClass}" id="${id}-confirm">${confirmText}</button>
                 </div>
             </div>
         </div>
@@ -349,6 +346,10 @@ function ensureBacklogMoveModal() {
 
     document.body.appendChild(modalEl);
     return modalEl;
+}
+
+function ensureBacklogMoveModal() {
+    return createConfirmModal('move-to-backlog-modal', 'Move to Backlog?', 'Move to Backlog', 'btn-danger');
 }
 
 function promptMoveToBacklog(momentId, onConfirm) {
@@ -378,65 +379,11 @@ function promptMoveToBacklog(momentId, onConfirm) {
 }
 
 function ensureMoveToStrideModal() {
-    let modalEl = document.getElementById('move-to-stride-modal');
-    if (modalEl) return modalEl;
-
-    modalEl = document.createElement('div');
-    modalEl.className = 'modal fade';
-    modalEl.id = 'move-to-stride-modal';
-    modalEl.tabIndex = -1;
-    modalEl.setAttribute('aria-hidden', 'true');
-    modalEl.innerHTML = `
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Move to Stride?</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0" id="move-to-stride-modal-text"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="move-to-stride-modal-confirm">Move</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modalEl);
-    return modalEl;
+    return createConfirmModal('move-to-stride-modal', 'Move to Stride?', 'Move', 'btn-primary');
 }
 
 function ensureProgressStrideModal() {
-    let modalEl = document.getElementById('progress-stride-modal');
-    if (modalEl) return modalEl;
-
-    modalEl = document.createElement('div');
-    modalEl.className = 'modal fade';
-    modalEl.id = 'progress-stride-modal';
-    modalEl.tabIndex = -1;
-    modalEl.setAttribute('aria-hidden', 'true');
-    modalEl.innerHTML = `
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Progress Stride?</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0" id="progress-stride-modal-text"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" id="progress-stride-modal-confirm">Progress</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modalEl);
-    return modalEl;
+    return createConfirmModal('progress-stride-modal', 'Progress Stride?', 'Progress', 'btn-success');
 }
 
 function promptProgressStride(strideId) {
@@ -464,10 +411,10 @@ function promptProgressStride(strideId) {
 
         const modalInstance = window.bootstrap?.Modal?.getOrCreateInstance(modalEl);
 
-        confirmButton.onclick = () => {
+        confirmButton.addEventListener('click', () => {
             settle(true);
             modalInstance?.hide();
-        };
+        }, { once: true });
 
         modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
         modalInstance?.show();
@@ -606,6 +553,7 @@ function createStrideRow(moment) {
         <td>
             <div class="d-inline-flex flex-wrap gap-2 align-items-center">
                 ${statusDropdownHtml(moment.id, moment.status)}
+                <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${moment.id}" data-current-estimate="${moment.effortEstimate ?? ''}"><option value="">–</option></select>
                 <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${moment.id}" type="button">Backlog</button>
                 ${momentGraphLinkHtml(moment.id)}
                 <a href="/moments/${moment.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
@@ -614,10 +562,12 @@ function createStrideRow(moment) {
     `;
     // Populate the selects using DOM methods to avoid innerHTML option rebuilding.
     const estimateSelect = tr.querySelector('.estimate-dropdown');
+    const estimateMobile = tr.querySelector('.estimate-dropdown-mobile');
     const ownerSelect = tr.querySelector('.owner-dropdown');
     const statusSelect = tr.querySelector('.status-dropdown');
 
     if (estimateSelect) populateEstimateSelect(estimateSelect);
+    if (estimateMobile) populateEstimateSelect(estimateMobile);
     if (statusSelect) populateStatusSelect(statusSelect);
     if (ownerSelect) {
         // data-owner-id already set in the placeholder markup; populate will pick it up.
@@ -652,7 +602,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
         }
 
         // ESTIMATE
-        if (target.matches('.estimate-dropdown')) {
+        if (target.matches('.estimate-dropdown') || target.matches('.estimate-dropdown-mobile')) {
             const momentId = parseInt(target.dataset.momentId, 10);
             const previous = target.value;
 
@@ -853,8 +803,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
             const historyLink = document.getElementById('iteration-history-link');
             if (historyLink) {
-                historyLink.addEventListener('click', (e) => {
-                    e.preventDefault();
+                historyLink.addEventListener('click', () => {
                     navigate(`/projects/${projectId}/iterations`, navContentDiv, contentDiv);
                 });
             }
@@ -906,7 +855,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                             <span class="stride-total-effort">Total Effort: ${effTotal}</span>
                         </div>
                         <div class="stride-header-actions ms-auto">
-                            <button class="progress-stride-btn btn btn-outline-success btn-sm hidden" data-stride-id="${stride.id}" type="button">🧟 Progress</button>
+                            <button class="progress-stride-btn btn btn-outline-success btn-sm hidden" data-stride-id="${stride.id}" type="button"><span aria-hidden="true">🧟</span> Progress</button>
                         </div>
                     </div>
                     <div class="stride-moments${collapsed ? ' hidden' : ''}">
@@ -930,19 +879,20 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                             <td>${m.type}</td>
                                             <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                             <td>
-                                                <select class="estimate-dropdown" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}"></select>
+                                                <select class="estimate-dropdown" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"></select>
                                             </td>
                                             <td>
-                                                <select class="owner-dropdown" data-moment-id="${m.id}" data-owner-id="${m.ownerId ?? ''}"></select>
+                                                <select class="owner-dropdown" data-moment-id="${m.id}" data-owner-id="${m.ownerId ?? ''}" aria-label="Owner"></select>
                                             </td>
-                                            <td>
-                                                <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                                                    <select class="status-dropdown form-select form-select-sm" data-moment-id="${m.id}" data-current-status="${m.status ?? ''}"></select>
-                                                    <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${m.id}" type="button">Backlog</button>
-                                                    ${momentGraphLinkHtml(m.id)}
-                                                    <a href="/moments/${m.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
-                                                </div>
-                                            </td>
+            <td>
+                <div class="d-inline-flex flex-wrap gap-2 align-items-center">
+                    <select class="status-dropdown form-select form-select-sm" data-moment-id="${m.id}" data-current-status="${m.status ?? ''}" aria-label="Status"></select>
+                    <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"><option value="">–</option></select>
+                    <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${m.id}" type="button">Backlog</button>
+                    ${momentGraphLinkHtml(m.id)}
+                    <a href="/moments/${m.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+                </div>
+            </td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -1162,6 +1112,7 @@ function populateBacklogStrideSelect(select) {
 function populateSelectsWithin(root) {
     if (!root) return;
     root.querySelectorAll('.estimate-dropdown').forEach(populateEstimateSelect);
+    root.querySelectorAll('.estimate-dropdown-mobile').forEach(populateEstimateSelect);
     root.querySelectorAll('.status-dropdown').forEach(populateStatusSelect);
     root.querySelectorAll('.owner-dropdown').forEach(populateOwnerSelect);
     root.querySelectorAll('.backlog-target-stride').forEach(populateBacklogStrideSelect);
@@ -1183,18 +1134,19 @@ function updateCountdowns() {
         const endDate = new Date(el.dataset.endDate);
         const now = new Date();
         const diffDays = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+        el.classList.remove('stride-countdown--ended', 'stride-countdown--ending', 'stride-countdown--healthy');
         if (diffDays < 0) {
             el.textContent = 'Ended';
-            el.style.color = '#e74c3c';
+            el.classList.add('stride-countdown--ended');
         } else if (diffDays === 0) {
             el.textContent = 'Ends today';
-            el.style.color = '#e67e22';
+            el.classList.add('stride-countdown--ending');
         } else if (diffDays <= 3) {
             el.textContent = `${diffDays} day${diffDays > 1 ? 's' : ''} left`;
-            el.style.color = '#e67e22';
+            el.classList.add('stride-countdown--ending');
         } else {
             el.textContent = `${diffDays} days left`;
-            el.style.color = '#2ecc71';
+            el.classList.add('stride-countdown--healthy');
         }
     });
 }

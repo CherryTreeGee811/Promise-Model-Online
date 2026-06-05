@@ -1,0 +1,25 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/epics",
+    "queryParameters": {
+      "promiseId": { "equalTo": "1" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": [
+      {
+        "id": 10,
+        "statement": "Test Epic",
+        "statusColor": "green",
+        "displayOrder": 1,
+        "productPromiseId": 1
+      }
+    ],
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

@@ -1,25 +1,13 @@
-import { loadTemplate } from '../router.mjs';
+import { loadTemplate, loadTemplateWithError, showNotFound } from '../router.mjs';
 import { loadIterationHistory } from './list.mjs';
 
-/**
- * Handles all iteration-related routes.
- * 
- * Supported routes:
- *  - /projects/:projectId/iterations
- */
 export function handleIterationRoutes(path, navContentDiv, contentDiv) {
     const match = path.match(/^\/projects\/(\d+)\/iterations$/);
-
     if (match) {
-        const projectId = parseInt(match[1], 10);
-
-        return loadTemplate('iterations/list.html', contentDiv)
-            .then(() => {
-                loadIterationHistory(projectId);
-            })
-            .catch(err => {
-                console.error('Failed to load iteration history page', err);
-                contentDiv.innerHTML = '<h1>Error loading iteration history</h1>';
-            });
+        loadTemplate('iterations/list.html', contentDiv)
+            .then(() => loadIterationHistory(parseInt(match[1], 10)))
+            .catch(loadTemplateWithError(contentDiv, 'iteration history'));
+    } else {
+        showNotFound(contentDiv);
     }
 }

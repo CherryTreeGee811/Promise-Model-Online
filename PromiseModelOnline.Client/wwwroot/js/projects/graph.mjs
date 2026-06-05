@@ -5,6 +5,7 @@ import { getJourneysByEpic } from '../epics/api.mjs';
 import { getFlowsByJourney } from '../journeys/api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { getMomentsByFlow } from '../flows/api.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
 import {
     NODE_TYPES,
@@ -35,6 +36,7 @@ const graphState = {
     userZoomTransform: null,
     focusNodeId: null,
     suppressZoomStateUpdate: false,
+    zoomBehavior: null,
     filterDebounceId: null,
     applyTimer: null,
     contextMenu: null,
@@ -440,7 +442,7 @@ function renderFilterBar() {
         `<option value="all" ${graphState.filters.stride === 'all' ? 'selected' : ''}>All strides</option>`,
         `<option value="backlog" ${graphState.filters.stride === 'backlog' ? 'selected' : ''}>Backlog</option>`,
         ...graphState.availableStrides.map(stride => {
-            const label = stride.name ? `Stride #${stride.id} - ${escapeAttribute(stride.name)}` : `Stride #${stride.id}`;
+            const label = stride.name ? `Stride #${stride.id} - ${escapeHtml(stride.name)}` : `Stride #${stride.id}`;
             return `<option value="${String(stride.id)}" ${String(graphState.filters.stride) === String(stride.id) ? 'selected' : ''}>${label}</option>`;
         }),
     ].join('');
@@ -459,14 +461,14 @@ function renderFilterBar() {
         <div class="graph-filter-row">
             <label class="graph-filter-field">
                 <span>Search</span>
-                <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeAttribute(graphState.filters.search)}" />
+                <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeHtml(graphState.filters.search)}" />
             </label>
 
             <div class="graph-filter-field graph-filter-checkbox-field">
                 <span>Search options</span>
-                <div class="form-check form-switch" style="padding-left: 1.75rem;padding-top: 1rem;" >
+                <div class="form-check form-switch graph-filter-switch">
                     <input id="graph-filter-include-children" class="form-check-input" type="checkbox" role="switch" ${graphState.filters.includeChildren ? 'checked' : ''} />
-                    <label class="form-check-label" for="graph-filter-include-children" style="padding-left: .5rem;">Include Children</label>
+                    <label class="form-check-label graph-filter-switch-label" for="graph-filter-include-children">Include Children</label>
                 </div>
             </div>
 
@@ -542,67 +544,27 @@ function setGraphLoading(loading) {
     }
 }
 
-function escapeAttribute(value) {
-    return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('"', '&quot;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;');
+function bindFilter(id, eventType, setter, immediate) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener(eventType, () => {
+        setter(el, graphState.filters);
+        (immediate ? requestApplyFilters : scheduleFilterApply)();
+    });
 }
 
 function bindFilterControls() {
-    const searchInput = document.getElementById('graph-filter-search');
-    const includeChildrenInput = document.getElementById('graph-filter-include-children');
-    const effortSelect = document.getElementById('graph-filter-effort');
-    const strideSelect = document.getElementById('graph-filter-stride');
-    const statusSelect = document.getElementById('graph-filter-status');
-    const assignmentSelect = document.getElementById('graph-filter-assignment');
+    bindFilter('graph-filter-search', 'input', (el, f) => { f.search = normalizeText(el.value); });
+    bindFilter('graph-filter-include-children', 'change', (el, f) => { f.includeChildren = el.checked; }, true);
+    bindFilter('graph-filter-effort', 'change', (el, f) => { f.effort = getEffortFilterValue(el.value); }, true);
+    bindFilter('graph-filter-stride', 'change', (el, f) => { f.stride = getStrideFilterValue(el.value); }, true);
+    bindFilter('graph-filter-status', 'change', (el, f) => { f.status = getStatusFilterValue(el.value); }, true);
+    bindFilter('graph-filter-assignment', 'change', (el, f) => { f.assignment = getAssignmentFilterValue(el.value); }, true);
+
     const resetButton = document.getElementById('graph-filter-reset');
     const hideAllButton = document.getElementById('graph-filter-hide-all');
     const expandAllButton = document.getElementById('graph-filter-expand-all');
     const refreshButton = document.getElementById('graph-filter-refresh');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            graphState.filters.search = normalizeText(searchInput.value);
-            scheduleFilterApply();
-        });
-    }
-
-    if (includeChildrenInput) {
-        includeChildrenInput.addEventListener('change', () => {
-            graphState.filters.includeChildren = includeChildrenInput.checked;
-            requestApplyFilters();
-        });
-    }
-
-    if (effortSelect) {
-        effortSelect.addEventListener('change', () => {
-            graphState.filters.effort = getEffortFilterValue(effortSelect.value);
-            requestApplyFilters();
-        });
-    }
-
-    if (strideSelect) {
-        strideSelect.addEventListener('change', () => {
-            graphState.filters.stride = getStrideFilterValue(strideSelect.value);
-            requestApplyFilters();
-        });
-    }
-
-    if (statusSelect) {
-        statusSelect.addEventListener('change', () => {
-            graphState.filters.status = getStatusFilterValue(statusSelect.value);
-            requestApplyFilters();
-        });
-    }
-
-    if (assignmentSelect) {
-        assignmentSelect.addEventListener('change', () => {
-            graphState.filters.assignment = getAssignmentFilterValue(assignmentSelect.value);
-            requestApplyFilters();
-        });
-    }
 
     document.querySelectorAll('[data-filter-type]').forEach(input => {
         input.addEventListener('change', (e) => {
@@ -667,38 +629,20 @@ function bindFilterControls() {
     }
 }
 
+const FILTER_FIELDS = [
+  ['graph-filter-search', 'value', 'search'],
+  ['graph-filter-include-children', 'checked', 'includeChildren'],
+  ['graph-filter-effort', 'value', 'effort'],
+  ['graph-filter-stride', 'value', 'stride'],
+  ['graph-filter-status', 'value', 'status'],
+  ['graph-filter-assignment', 'value', 'assignment'],
+];
+
 function syncControlsToFilters() {
-    const searchInput = document.getElementById('graph-filter-search');
-    const includeChildrenInput = document.getElementById('graph-filter-include-children');
-    const effortSelect = document.getElementById('graph-filter-effort');
-    const strideSelect = document.getElementById('graph-filter-stride');
-    const statusSelect = document.getElementById('graph-filter-status');
-    const assignmentSelect = document.getElementById('graph-filter-assignment');
-
-    if (searchInput) {
-        searchInput.value = graphState.filters.search;
-    }
-
-    if (includeChildrenInput) {
-        includeChildrenInput.checked = graphState.filters.includeChildren;
-    }
-
-    if (effortSelect) {
-        effortSelect.value = graphState.filters.effort;
-    }
-
-    if (strideSelect) {
-        strideSelect.value = graphState.filters.stride;
-    }
-
-    if (statusSelect) {
-        statusSelect.value = graphState.filters.status;
-    }
-
-    if (assignmentSelect) {
-        assignmentSelect.value = graphState.filters.assignment;
-    }
-
+    FILTER_FIELDS.forEach(([id, prop, key]) => {
+        const el = document.getElementById(id);
+        if (el) el[prop] = graphState.filters[key];
+    });
     document.querySelectorAll('[data-filter-type]').forEach(input => {
         input.checked = graphState.filters.types.has(input.value);
     });
@@ -768,6 +712,24 @@ function findFirstSearchMatch(treeData) {
     return null;
 }
 
+function initZoomControls(zoomBehavior, svgNode, d3Instance) {
+    if (!zoomBehavior || !svgNode || !d3Instance) return;
+
+    const selection = d3Instance.select(svgNode);
+
+    document.getElementById('graph-zoom-in')?.addEventListener('click', () => {
+        selection.transition().duration(200).call(zoomBehavior.scaleBy, 1.4);
+    });
+
+    document.getElementById('graph-zoom-out')?.addEventListener('click', () => {
+        selection.transition().duration(200).call(zoomBehavior.scaleBy, 0.7);
+    });
+
+    document.getElementById('graph-zoom-reset')?.addEventListener('click', () => {
+        selection.transition().duration(300).call(zoomBehavior.transform, d3Instance.zoomIdentity);
+    });
+}
+
 function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null) {
     const graphContent = document.getElementById('graph-content');
     const graphViewport = document.getElementById('graph-viewport');
@@ -775,7 +737,7 @@ function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNod
 
     graphState.contextMenu?.hide();
 
-    renderStackGraph(graphContent, d3, treeData, {
+    const result = renderStackGraph(graphContent, d3, treeData, {
         projectId: graphState.projectId,
         focusNodeId: focusNodeData?.id ?? null,
         focusNodeData,
@@ -796,6 +758,11 @@ function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNod
             graphState.contextMenu?.open(event, nodeData);
         },
     });
+
+    if (result?.zoom) {
+        graphState.zoomBehavior = result.zoom;
+        initZoomControls(result.zoom, result.node, d3);
+    }
 }
 
 function applyFilters() {

@@ -1,0 +1,22 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/promises/1"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": 1,
+      "statement": "Test Promise",
+      "description": "A test promise for UI testing",
+      "statusColor": "green",
+      "displayOrder": 1,
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-15T00:00:00Z"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

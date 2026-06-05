@@ -38,16 +38,11 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
         .then(html => {
             navContentDiv.innerHTML = html;
             setActiveNavLink();
-
-            if (isLoggedIn()) {
-                startNotificationPolling();
-            }
-
-            return Promise.resolve();
+            if (isLoggedIn()) startNotificationPolling();
         })
         .catch(error => {
             navContentDiv.innerHTML = `<h1>Error loading template</h1><p>${error.message}</p>`;
-            return Promise.reject(error);
+            throw error;
         });
 }
 

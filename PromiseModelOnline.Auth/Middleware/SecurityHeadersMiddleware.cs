@@ -22,8 +22,7 @@ public class SecurityHeadersMiddleware
                 "max-age=31536000; includeSubDomains";
         }
 
-        headers["Content-Security-Policy"] =
-            "default-src 'self'; script-src 'self' 'sha256-j7OoGArf6XW6YY4cAyS3riSSvrJRqpSi1fOF9vQ5SrI='; style-src 'self'; form-action 'self'; frame-ancestors 'none';";
+        headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
         await _next(context);
     }

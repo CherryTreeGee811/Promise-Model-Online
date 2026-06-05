@@ -24,17 +24,17 @@
         @Html.AntiForgeryToken()
         <div class="field-group">
             <label asp-for="Username" class="field-label">Username</label>
-            <input asp-for="Username" type="text" class="field-input" placeholder="Enter your username" required />
+            <input asp-for="Username" type="text" class="field-input" placeholder="Enter your username" autocomplete="username" required />
         </div>
         <div class="field-group">
             <label asp-for="Email" class="field-label">Email</label>
-            <input asp-for="Email" type="email" class="field-input" placeholder="Enter your email" required />
+            <input asp-for="Email" type="email" class="field-input" placeholder="Enter your email" autocomplete="email" required />
         </div>
         <div class="field-group">
             <label asp-for="Password" class="field-label">Password</label>
             <div class="password-wrapper">
-                <input asp-for="Password" type="password" class="field-input password-input" placeholder="Enter your password" required />
-                <button type="button" class="password-toggle" aria-label="Show password" tabindex="-1">
+                <input asp-for="Password" type="password" class="field-input password-input" placeholder="Enter your password" autocomplete="new-password" required />
+                <button type="button" class="password-toggle" aria-label="Show password">
                     <span class="eye-icon"></span>
                 </button>
             </div>
@@ -42,8 +42,8 @@
         <div class="field-group">
             <label asp-for="ConfirmPassword" class="field-label">Confirm Password</label>
             <div class="password-wrapper">
-                <input asp-for="ConfirmPassword" type="password" class="field-input password-input" placeholder="Confirm your password" required />
-                <button type="button" class="password-toggle" aria-label="Show password" tabindex="-1">
+                <input asp-for="ConfirmPassword" type="password" class="field-input password-input" placeholder="Confirm your password" autocomplete="new-password" required />
+                <button type="button" class="password-toggle" aria-label="Show password">
                     <span class="eye-icon"></span>
                 </button>
             </div>

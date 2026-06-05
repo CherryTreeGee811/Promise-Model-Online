@@ -1,8 +1,6 @@
 import { navigate } from '../router.mjs';
 import { getPromiseById, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
 import { addEpic } from '../epics/api.mjs';
-import { loadComments } from '../comments/comments.mjs';
-import { loadReactions } from '../reactions/reactions.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
@@ -12,6 +10,7 @@ import {
     patchChildMetrics,
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.mjs';
+import { getStatusHtml, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
 
 export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
@@ -30,20 +29,20 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                 <div class="detail-card promise-detail-card">
                     <h2>${escapeHtml(promise.statement)}</h2>
                     <table class="table table-sm table-striped align-middle detail-table">
-                        <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="form-control detail-textarea">${escapeHtml(promise.description || '')}</textarea>
+                        <tr><th scope="row"><label for="description-input">Description</label></th><td>
+                            <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description">${escapeHtml(promise.description || '')}</textarea>
                             <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
-                        <tr><th>Status</th><td id="promise-status-cell">${getStatusIcon(promise.statusColor)}</td></tr>
-                        <tr><th>Created</th><td>${new Date(promise.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th>Updated</th><td>${promise.updatedAt ? new Date(promise.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+                        <tr><th scope="row">Status</th><td>${getStatusHtml(promise.statusColor)}</td></tr>
+                        <tr><th scope="row">Created</th><td>${new Date(promise.createdAt).toLocaleDateString('en-CA')}</td></tr>
+                        <tr><th scope="row">Updated</th><td>${promise.updatedAt ? new Date(promise.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
                     <h3>Epics</h3>
                     <div id="promise-epics-list">
                         <p>Loading epics…</p>
                     </div>
                     <div id="promise-comments"></div>
-                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
                 </div>
             `;
 
@@ -72,7 +71,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-epic-form" class="inline-add-form">
-                                        <input id="add-epic-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Epic Statement...">
+                                        <input id="add-epic-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Epic Statement..." aria-label="New epic statement">
                                     </form>
                                 </td>
                                 <td>
@@ -133,8 +132,8 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                         <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
-                                    <th>Statement</th>
-                                    <th>Actions</th>
+                                    <th scope="col">Statement</th>
+                                    <th scope="col">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -163,14 +162,8 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     epicsList.innerHTML = '<p class="error">Failed to load epics.</p>';
                 });
 
-            // Comments section
-            const commentsContainer = document.getElementById('promise-comments');
-            loadComments(commentsContainer, 'Promise', promiseId);
-            
-            const reactionsContainer = document.createElement('div');
-            reactionsContainer.id = 'reactions-section';
-            detailDiv.appendChild(reactionsContainer);
-            loadReactions(reactionsContainer, 'Promise', promiseId);
+            // Comments and reactions
+            loadCommentsAndReactions(detailDiv, 'Promise', promiseId);
 
             resolveProjectIdForPromise(promise.id, getGraphProjectIdHintFromUrl())
                 .then(projectId => {
@@ -181,12 +174,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     console.error('Unable to resolve graph link for promise detail', error);
                 });
 
-            const backLink = document.getElementById('back-link');
-            if (backLink) {
-                backLink.addEventListener('click', () => {
-                    window.history.back();
-                });
-            }
+            initBackLink();
 
             // Description save handler
             const saveBtn = document.getElementById('save-desc');
@@ -219,13 +207,4 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
             errorEl.textContent = 'Failed to load promise details.';
             console.error(err);
         });
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-    return '⚪';
 }

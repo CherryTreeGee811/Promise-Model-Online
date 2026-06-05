@@ -11,9 +11,9 @@ function setBadgeCount(count) {
     const safeCount = Number.isFinite(count) ? count : 0;
     if (safeCount > 0) {
         badge.textContent = String(safeCount);
-        badge.style.display = 'inline';
+        badge.classList.remove('d-none');
     } else {
-        badge.style.display = 'none';
+        badge.classList.add('d-none');
     }
 }
 
