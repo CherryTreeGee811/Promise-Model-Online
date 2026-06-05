@@ -2,7 +2,10 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/users/me"
+    "urlPath": "/api/users/me",
+    "headers": {
+      "Cookie": { "contains": "__Host-pmo.session=" }
+    }
   },
   "response": {
     "status": 200,
