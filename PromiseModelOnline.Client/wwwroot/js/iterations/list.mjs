@@ -8,13 +8,13 @@ import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 export function loadIterationHistory(projectId) {
     const listDiv = document.getElementById('iterations-list');
     const detailDiv = document.getElementById('iteration-detail');
+    const loadingEl = document.getElementById('iteration-loading');
     const errorEl = document.getElementById('error-text');
     const projectTitle = document.getElementById('project-title');
     const createIterationBtn = document.getElementById('create-iteration-btn');
 
-    // Start with list visible, detail hidden
-    listDiv.classList.remove('hidden');
-    detailDiv.classList.add('hidden');
+    detailDiv.classList.add('d-none');
+    errorEl.textContent = '';
 
     if (createIterationBtn && createIterationBtn.dataset.bound !== '1') {
         createIterationBtn.dataset.bound = '1';
@@ -24,7 +24,6 @@ export function loadIterationHistory(projectId) {
     }
 
     listDiv.innerHTML = renderLoadingSpinner('Loading iterations');
-    errorEl.textContent = '';
 
     Promise.all([
         getProjectById(projectId).catch(() => null),
@@ -40,25 +39,36 @@ export function loadIterationHistory(projectId) {
                 return;
             }
 
-            // Sort newest first
             iterations.sort((a, b) => b.id - a.id);
 
             listDiv.innerHTML = `
-                <table class="promisemodel-table">
-                    <thead><tr><th>Name</th><th>Created</th><th>Actions</th></tr></thead>
-                    <tbody>
-                        ${iterations.map(i => `
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <td>${escapeHtml(i.name)}</td>
-                                <td>${new Date(i.createdAt).toLocaleDateString('en-CA')}</td>
-                                <td><button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${i.id}" type="button">View</button></td>
+                                <th scope="col">Name</th>
+                                <th scope="col">Created</th>
+                                <th scope="col">Actions</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            ${iterations.map(i => `
+                                <tr>
+                                    <td>${escapeHtml(i.name)}</td>
+                                    <td>${new Date(i.createdAt).toLocaleDateString('en-CA')}</td>
+                                    <td>
+                                        <button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${i.id}" type="button">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
 
-            // Attach click listeners to View buttons
             document.querySelectorAll('.view-iteration-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const iterationId = parseInt(btn.dataset.iterationId, 10);
@@ -76,41 +86,41 @@ export function loadIterationHistory(projectId) {
     function showIterationDetail(iteration) {
         const iterationId = iteration.id;
 
-        // Hide list, show detail
-        listDiv.classList.add('hidden');
-        detailDiv.classList.remove('hidden');
+        listDiv.classList.add('d-none');
+        detailDiv.classList.remove('d-none');
+        if (loadingEl) loadingEl.hidden = false;
 
-        document.getElementById('iteration-title').textContent = iteration.name;
+        const titleEl = document.getElementById('iteration-title');
+        const burndownContainer = document.getElementById('iteration-burndown-container');
+        const burndownCanvas = document.getElementById('iteration-burndown-canvas');
         const strideDetailsDiv = document.getElementById('stride-details');
-        const canvas = document.getElementById('iteration-burndown-canvas');
 
-        // Clear previous content
-        strideDetailsDiv.innerHTML = '<p>Loading strides…</p>';
+        titleEl.textContent = iteration.name;
+        burndownCanvas.innerHTML = '';
+        strideDetailsDiv.innerHTML = renderLoadingSpinner('Loading strides');
 
-        // Draw iteration burndown
         getIterationBurndown(iterationId)
             .then(points => {
-                // Clear the container first
-                const container = document.getElementById('iteration-burndown-container');
-                const canvasEl = document.getElementById('iteration-burndown-canvas');
-                if (container) {
-                    // Remove any extra message we might have added before
-                    const existingMsg = container.querySelector('.no-items, .error');
-                    if (existingMsg) existingMsg.remove();
-                }
+                if (loadingEl) loadingEl.hidden = true;
+
                 if (points && points.length > 0) {
-                    drawBurndownChart(canvasEl, points);
+                    drawBurndownChart(burndownCanvas, points);
                 } else {
-                    if (canvasEl) canvasEl.innerHTML = '<p class="no-items">No burndown data available for this iteration.</p>';
+                    burndownContainer.innerHTML = `
+                        <h3>Burndown</h3>
+                        <p class="no-items">No burndown data available for this iteration.</p>
+                    `;
                 }
             })
             .catch(err => {
                 console.error('Iteration burndown error', err);
-                const canvasEl = document.getElementById('iteration-burndown-canvas');
-                if (canvasEl) canvasEl.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
+                if (loadingEl) loadingEl.hidden = true;
+                burndownContainer.innerHTML = `
+                    <h3>Burndown</h3>
+                    <p class="error">Failed to load iteration burndown.</p>
+                `;
             });
 
-        // Load strides for this iteration (no burndown charts)
         getStridesByIteration(iterationId)
             .then(strides => {
                 if (!strides || strides.length === 0) {
@@ -118,30 +128,31 @@ export function loadIterationHistory(projectId) {
                     return;
                 }
 
-                // Sort by start date
                 strides.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
                 strideDetailsDiv.innerHTML = `
-                    <table class="promisemodel-table">
-                        <thead>
-                            <tr>
-                                <th>Stride</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Duration</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${strides.map(s => `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover align-middle mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <td>${escapeHtml(s.name)}</td>
-                                    <td>${formatDate(s.startDate)}</td>
-                                    <td>${formatDate(s.endDate)}</td>
-                                    <td>${s.durationDays} days</td>
+                                    <th scope="col">Stride</th>
+                                    <th scope="col">Start Date</th>
+                                    <th scope="col">End Date</th>
+                                    <th scope="col">Duration</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${strides.map(s => `
+                                    <tr>
+                                        <td>${escapeHtml(s.name)}</td>
+                                        <td>${formatDate(s.startDate)}</td>
+                                        <td>${formatDate(s.endDate)}</td>
+                                        <td>${s.durationDays} days</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 `;
             })
             .catch(err => {
@@ -150,10 +161,9 @@ export function loadIterationHistory(projectId) {
             });
     }
 
-    // Back button handler
     document.getElementById('back-to-iterations-btn').addEventListener('click', () => {
-        detailDiv.classList.add('hidden');
-        listDiv.classList.remove('hidden');
+        detailDiv.classList.add('d-none');
+        listDiv.classList.remove('d-none');
     });
 }
 
