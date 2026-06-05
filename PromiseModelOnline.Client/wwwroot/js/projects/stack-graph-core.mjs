@@ -453,9 +453,13 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .classed('is-collapsed', current => Boolean(current.data._isCollapsed))
         .classed('is-search-matched', current => Boolean(current.data._searchMatched))
         .classed('is-focused', current => (focusNodeId != null && current.data.id === focusNodeId))
-        .attr('tabindex', current => (enableZoom && current.data.nodeType !== 'root') ? 0 : null)
+        .attr('tabindex', current => {
+            if (current.data.nodeType === 'root') return null;
+            return enableZoom ? 0 : -1;
+        })
         .attr('role', current => (enableZoom && current.data.nodeType !== 'root') ? 'treeitem' : null)
-        .attr('aria-label', current => (enableZoom && current.data.nodeType !== 'root') ? (getNodeTitle(current.data) || 'Graph node') : null);
+        .attr('aria-label', current => (enableZoom && current.data.nodeType !== 'root') ? (getNodeTitle(current.data) || 'Graph node') : null)
+        .attr('focusable', current => (enableZoom && current.data.nodeType !== 'root') ? null : 'false');
 
     if (onContextMenu) {
         node.on('contextmenu', (event, current) => {
@@ -476,6 +480,8 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
     node.append('title')
         .text(current => getNodeTitle(current.data));
 
+    const childAttrs = { focusable: 'false' };
+
     node.append('rect')
         .attr('class', 'graph-card')
         .attr('x', -CARD_WIDTH / 2)
@@ -486,7 +492,8 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('ry', CARD_RADIUS)
         .attr('fill', 'var(--graph-card-bg)')
         .attr('stroke', 'var(--graph-stroke)')
-        .attr('stroke-width', 'var(--graph-stroke-width)');
+        .attr('stroke-width', 'var(--graph-stroke-width)')
+        .attr('focusable', 'false');
 
     node.append('rect')
         .attr('class', 'graph-card-accent')
@@ -497,6 +504,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS)
         .attr('clip-path', `url(#${cardClipPathId})`)
+        .attr('focusable', 'false')
         // Keep the CSS variable for normal styling but also set an inline fill attribute
         // so browser extensions like Dark Reader that may not honor SVG CSS variables
         // still display the accent color correctly.
@@ -506,6 +514,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('class', 'graph-card-statement')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
+        .attr('focusable', 'false')
         .text(current => truncateText(current.data.label, 36));
 
     node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
@@ -516,6 +525,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .attr('font-weight', 600)
+        .attr('focusable', 'false')
         .text(current => getNodeTypeLabel(current.data.payload) ?? '');
 
     node.filter(current => current.data.nodeType !== 'root')
@@ -525,6 +535,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'hanging')
+        .attr('focusable', 'false')
         .text(current => getStatusIcon(current.data.payload?.statusColor));
 
     node.filter(current => {
