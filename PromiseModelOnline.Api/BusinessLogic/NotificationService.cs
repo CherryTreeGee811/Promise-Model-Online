@@ -2,8 +2,10 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
+using PromiseModelOnline.Api.Hubs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +17,16 @@ namespace PromiseModelOnline.Api.BusinessLogic
     {
         private readonly INotificationRepository _notificationRepo;
         private readonly IGenericMapper<Notification, NotificationDTO> _mapper;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
         public NotificationService(
             INotificationRepository notificationRepo,
-            IGenericMapper<Notification, NotificationDTO> mapper)
+            IGenericMapper<Notification, NotificationDTO> mapper,
+            IHubContext<NotificationHub> hubContext)
         {
             _notificationRepo = notificationRepo;
             _mapper = mapper;
+            _hubContext = hubContext;
         }
 
         public async Task<IEnumerable<NotificationDTO>> GetUnreadNotificationsAsync(int userId)
@@ -62,6 +67,9 @@ namespace PromiseModelOnline.Api.BusinessLogic
             };
             await _notificationRepo.AddAsync(notification);
             await _notificationRepo.SaveChangesAsync();
+
+            var dto = _mapper.Map(notification, null!);
+            await _hubContext.Clients.Group($"user-{userId}").SendAsync("ReceiveNotification", dto);
         }
     }
 }

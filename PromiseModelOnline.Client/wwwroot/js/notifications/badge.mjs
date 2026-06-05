@@ -1,5 +1,5 @@
 import { fetchUnreadNotifications } from './api.mjs';
-import { startNotificationPolling as startUnreadPolling, stopNotificationPolling as stopUnreadPolling } from './poller.mjs';
+import { startSignalR, stopSignalR } from './signalr.mjs';
 
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
 let started = false;
@@ -17,42 +17,37 @@ function setBadgeCount(count) {
     }
 }
 
-/**
- * Fetches unread notifications and updates the badge (notification endpoints only).
- */
-export async function updateNotificationBadge() {
+async function handleNotificationUpdate() {
     try {
         const notifications = await fetchUnreadNotifications();
-        setBadgeCount(Array.isArray(notifications) ? notifications.length : 0);
+        const count = Array.isArray(notifications) ? notifications.length : 0;
+        setBadgeCount(count);
+
+        window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
+            detail: { notifications: Array.isArray(notifications) ? notifications : [] }
+        }));
     } catch {
         setBadgeCount(0);
     }
 }
 
-/**
- * Starts background polling for unread notifications.
- * Updates only the badge and (if present) the notifications list.
- */
+export async function updateNotificationBadge() {
+    await handleNotificationUpdate();
+}
+
 export function stopNotificationPolling() {
     started = false;
-    stopUnreadPolling();
+    stopSignalR();
 }
 
 export function startNotificationPolling() {
-    // Always refresh badge immediately on each call (nav may have been replaced).
-    updateNotificationBadge();
+    handleNotificationUpdate();
 
-    // Only start background polling once.
     if (started) return;
     started = true;
 
-    startUnreadPolling((notifications) => {
-        setBadgeCount(Array.isArray(notifications) ? notifications.length : 0);
-
-        // Let the notifications page update itself without navigation/reload.
-        window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
-            detail: { notifications: Array.isArray(notifications) ? notifications : [] }
-        }));
+    startSignalR(() => {
+        handleNotificationUpdate();
     });
 }
 
