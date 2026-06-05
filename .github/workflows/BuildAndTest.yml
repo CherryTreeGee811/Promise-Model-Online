@@ -81,7 +81,7 @@ jobs:
 
           # ---- Immediate crash check ----
           sleep 5
-          for svc in promisemodelonlineapi promisemodelonlineauth; do
+          for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff; do
             CID=$(docker ps -aq --filter "name=$svc" --filter "status=exited" 2>/dev/null || true)
             if [ -n "$CID" ]; then
               echo "ERROR: $svc exited immediately (code: $(docker inspect "$CID" --format '{{.State.ExitCode}}'))"
