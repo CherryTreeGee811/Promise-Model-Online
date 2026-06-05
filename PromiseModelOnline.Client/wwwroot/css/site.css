@@ -1564,7 +1564,6 @@ input, button, a, label, select, textarea {
   box-shadow: var(--shadow-card);
   padding: 1.5rem;
   height: 100%;
-  border-left: 4px solid var(--card-accent, var(--color-accent));
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
