@@ -11,7 +11,12 @@ public class ImportExportTests : SeleniumTestBase
     private static string GetResourcePath(string fileName)
     {
         var baseDir = TestContext.CurrentContext.TestDirectory;
-        var projectDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", ".."));
+        var dir = new DirectoryInfo(baseDir);
+        while (dir != null && !dir.GetDirectories("Resources").Any())
+        {
+            dir = dir.Parent;
+        }
+        var projectDir = dir?.FullName ?? Path.GetFullPath(Path.Combine(baseDir, "..", "..", ".."));
         return Path.Combine(projectDir, "Resources", "ProjectFiles", fileName);
     }
 

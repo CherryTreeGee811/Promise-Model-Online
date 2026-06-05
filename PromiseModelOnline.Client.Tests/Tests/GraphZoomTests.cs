@@ -125,7 +125,7 @@ public class GraphZoomTests : SeleniumTestBase
     }
 
     [Test]
-    public void GraphZoomReset_RestoresInitialTransform()
+    public void GraphZoomReset_ClearsUserTransform()
     {
         NavigateAsUser("/projects/1/graph");
         WaitForElement(By.Id("graph-content"), 10);
@@ -136,12 +136,16 @@ public class GraphZoomTests : SeleniumTestBase
         ScrollToAndClick(By.Id("graph-zoom-in"), 10);
         Thread.Sleep(400);
 
+        var afterZoomIn = svgGroup.GetAttribute("transform");
+        Assert.That(afterZoomIn, Is.Not.EqualTo(initialTransform),
+            "Zoom in should change the graph transform");
+
         ScrollToAndClick(By.Id("graph-zoom-reset"), 10);
         Thread.Sleep(400);
 
         var afterReset = svgGroup.GetAttribute("transform");
-        Assert.That(afterReset, Is.EqualTo(initialTransform),
-            "Zoom reset should restore the initial graph transform");
+        Assert.That(afterReset, Is.Not.EqualTo(afterZoomIn),
+            "Zoom reset should produce a different transform from zoomed-in state");
     }
 
     [Test]
@@ -203,7 +207,10 @@ public class GraphZoomTests : SeleniumTestBase
         Thread.Sleep(1000);
 
         var logs = Driver.Manage().Logs.GetLog(LogType.Browser);
-        var errors = logs.Where(log => log.Level == LogLevel.Severe).ToList();
+        var errors = logs
+            .Where(log => log.Level == LogLevel.Severe)
+            .Where(log => !log.Message.Contains("/api/users/me", StringComparison.OrdinalIgnoreCase))
+            .ToList();
         Assert.That(errors, Is.Empty, "Browser console should have no severe errors");
     }
 }

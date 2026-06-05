@@ -419,22 +419,26 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
                 },
             }));
 
+    const isLink = enableZoom;
+    const containerTag = isLink ? 'a' : 'g';
+
     const node = layer.append('g')
-        .selectAll('a')
+        .selectAll(containerTag)
         .data(renderable)
-        .join('a')
+        .join(containerTag)
         .attr('class', current => `graph-node graph-node--${current.data.nodeType}`)
-        .attr('href', current => getNodeHref(current.data, projectId))
-        .attr('xlink:href', current => getNodeHref(current.data, projectId))
         .attr('transform', current => {
             const x = current.y + contentOffsetX;
             const y = current.x + contentOffsetY;
             return `translate(${x}, ${y}) scale(${nodeScale})`;
         });
 
-    // Expose styling tokens and state via CSS variables and classes on the anchor element so
-    // the visual appearance can be controlled from `site.css` while still allowing JS to
-    // provide the accent color per node type.
+    if (isLink) {
+        node
+            .attr('href', current => getNodeHref(current.data, projectId))
+            .attr('xlink:href', current => getNodeHref(current.data, projectId));
+    }
+
     node.style('--graph-accent', current => getNodeColor(current.data.nodeType))
         .style('--graph-stroke', current => {
             const isFocused = focusNodeId != null && current.data.id === focusNodeId;
@@ -458,8 +462,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
             return enableZoom ? 0 : -1;
         })
         .attr('role', current => (enableZoom && current.data.nodeType !== 'root') ? 'treeitem' : null)
-        .attr('aria-label', current => (enableZoom && current.data.nodeType !== 'root') ? (getNodeTitle(current.data) || 'Graph node') : null)
-        .attr('focusable', current => (enableZoom && current.data.nodeType !== 'root') ? null : 'false');
+        .attr('aria-label', current => (enableZoom && current.data.nodeType !== 'root') ? (getNodeTitle(current.data) || 'Graph node') : null);
 
     if (onContextMenu) {
         node.on('contextmenu', (event, current) => {

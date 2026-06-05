@@ -4,7 +4,7 @@ import { escapeHtml } from '../utils/html.mjs';
 export function loadComments(container, parentType, parentId) {
     container.innerHTML = `
         <h3>Comments</h3>
-        <div id="comments-list" class="comments-list" role="list" aria-label="Comments"></div>
+        <div id="comments-list" class="comments-list"></div>
         <form id="comment-form" class="comment-form" aria-label="Add a comment">
             <label for="comment-textarea" class="sr-only">Your comment</label>
             <textarea id="comment-textarea" class="form-control mb-2" rows="3" required placeholder="Write a comment... Use @name to mention someone."></textarea>
