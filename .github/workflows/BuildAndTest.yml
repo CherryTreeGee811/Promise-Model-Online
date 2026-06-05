@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-              
+               
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
-      
+
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
         run: |
@@ -34,10 +34,10 @@ jobs:
         run: |
           mkdir -p PromiseModelOnline.BFF
           cat > PromiseModelOnline.BFF/cert.pem <<'PEM'
-          ${{ vars.GATEWAY_CI_CERT }}
+          ${{ vars.BFF_CI_CERT }}
           PEM
           cat > PromiseModelOnline.BFF/key.pem <<'PEM'
-          ${{ secrets.GATEWAY_CI_KEY }}
+          ${{ secrets.BFF_CI_KEY }}
           PEM
 
       - name: Add AUTH CI TLS/SSL CERT & KEY
@@ -64,8 +64,6 @@ jobs:
         run: |
           ls secrets
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
-          export PMO_API_DB_USER="${{ vars.PMO_API_DB_USER }}"
-          export PMO_AUTH_DB_USER="${{ vars.PMO_AUTH_DB_USER }}"
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
           
