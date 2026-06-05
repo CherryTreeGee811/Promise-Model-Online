@@ -82,6 +82,18 @@ jobs:
 
           docker compose --project-name promisemodelonline up -d
 
+          # ---- Immediate crash check ----
+          sleep 5
+          for svc in promisemodelonlineapi promisemodelonlineauth; do
+            CID=$(docker ps -aq --filter "name=$svc" --filter "status=exited" 2>/dev/null || true)
+            if [ -n "$CID" ]; then
+              echo "ERROR: $svc exited immediately (code: $(docker inspect "$CID" --format '{{.State.ExitCode}}'))"
+              docker logs "$CID" --tail 60
+              dump_logs
+              exit 1
+            fi
+          done
+
           # ---- Wait for db-init to finish ----
           echo "Waiting for db-init to complete..."
           for i in $(seq 1 10); do
