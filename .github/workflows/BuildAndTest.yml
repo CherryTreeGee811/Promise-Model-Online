@@ -55,9 +55,9 @@ jobs:
         shell: bash
         run: |
             mkdir -p secrets
-            echo "${{ secrets.AUTH_DB_PASSWORD }}" > secrets/auth_db_password.txt
-            echo "${{ secrets.API_DB_PASSWORD }}" > secrets/api_db_password.txt
-            echo "${{ secrets.GOOGLE_CLIENT_SECRET }}" > secrets/google_client_secret.txt
+            printf '%s' "${{ secrets.PMO_AUTH_DB_PASSWORD }}" > secrets/auth_db_password.txt
+            printf '%s' "${{ secrets.PMO_API_DB_PASSWORD }}" > secrets/api_db_password.txt
+            printf '%s' "${{ secrets.GOOGLE_CLIENT_SECRET }}" > secrets/google_client_secret.txt
 
       - name: Smoke Test Production Environment
         shell: bash
