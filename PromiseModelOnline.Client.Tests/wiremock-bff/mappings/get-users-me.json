@@ -4,7 +4,7 @@
     "method": "GET",
     "urlPath": "/api/users/me",
     "headers": {
-      "Cookie": { "contains": "__Host-pmo.session=" }
+      "Cookie": { "matches": "__Host-pmo.session=.*" }
     }
   },
   "response": {
