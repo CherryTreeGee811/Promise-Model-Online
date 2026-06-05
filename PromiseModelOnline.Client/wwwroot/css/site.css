@@ -846,7 +846,8 @@ button {
   gap: 2px;
 }
 
-.kb-nav-link {
+.kb-nav-link,
+.kb-nav-link.nav-link {
   display: block;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
@@ -858,13 +859,16 @@ button {
 }
 
 .kb-nav-link:hover,
-.kb-nav-link:focus-visible {
+.kb-nav-link:focus-visible,
+.kb-nav-link.nav-link:hover,
+.kb-nav-link.nav-link:focus-visible {
   background: rgba(44, 62, 80, 0.08);
   color: var(--color-heading);
   text-decoration: none;
 }
 
-.kb-nav-link[aria-current="true"] {
+.kb-nav-link[aria-current="true"],
+.kb-nav-link.nav-link[aria-current="true"] {
   background: var(--color-accent);
   color: #fff;
 }
