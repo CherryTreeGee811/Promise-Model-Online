@@ -11,11 +11,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             NavigateAsUser("/notifications");
 
-            WaitForElement(By.Id("notifications-list"), 10);
-            WaitForElement(By.CssSelector("#notifications-list table tbody"), 10);
-
-            var rows = Driver.FindElements(By.CssSelector("#notifications-list table tbody tr"));
-            Assert.That(rows.Count, Is.GreaterThanOrEqualTo(1));
+            WaitUntil(d => d.FindElements(By.CssSelector("#notifications-list table tbody tr")).Count >= 1, 10);
         }
 
         [Test]
@@ -23,10 +19,11 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             NavigateAsUser("/notifications");
 
-            var markAllBtn = WaitForElement(By.Id("mark-all-read"), 10);
-
-            Assert.That(Driver.FindElement(By.Id("mark-all-read")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("mark-all-read")).Text, Does.Contain("Mark All as Read"));
+            WaitUntil(d =>
+            {
+                var btn = d.FindElement(By.Id("mark-all-read"));
+                return btn.Displayed && btn.Text.Contains("Mark All as Read");
+            }, 10);
         }
 
         [Test]
@@ -34,10 +31,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             NavigateAsUser("/notifications");
 
-            WaitForElement(By.CssSelector("#notifications-list tbody tr.unread"), 10);
-
-            var unreadRows = Driver.FindElements(By.CssSelector("#notifications-list tbody tr.unread"));
-            Assert.That(unreadRows.Count, Is.EqualTo(2));
+            WaitUntil(d => d.FindElements(By.CssSelector("#notifications-list tbody tr.unread")).Count == 2, 10);
         }
 
         [Test]
@@ -45,11 +39,12 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             NavigateAsUser("/notifications");
 
-            WaitForElement(By.CssSelector("#notifications-list table tbody tr.unread"), 10);
-
-            var rows = Driver.FindElements(By.CssSelector("#notifications-list table tbody tr"));
-            var unreadRows = Driver.FindElements(By.CssSelector("#notifications-list tbody tr.unread"));
-            Assert.That(rows.Count, Is.EqualTo(unreadRows.Count), "Expected all rows to be unread");
+            WaitUntil(d =>
+            {
+                var rows = d.FindElements(By.CssSelector("#notifications-list table tbody tr"));
+                var unreadRows = d.FindElements(By.CssSelector("#notifications-list tbody tr.unread"));
+                return rows.Count > 0 && rows.Count == unreadRows.Count;
+            }, 10);
         }
     }
 }
