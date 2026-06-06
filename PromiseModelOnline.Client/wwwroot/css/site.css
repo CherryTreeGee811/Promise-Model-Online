@@ -181,11 +181,47 @@ button {
   .estimate-dropdown-mobile {
     display: block;
   }
+
+  .stride-card .promisemodel-table td:first-child,
+  .backlog-board .promisemodel-table td:first-child {
+    padding: var(--spacing-sm) var(--spacing-md);
+    line-height: 1.5;
+  }
+
+  .stride-card .promisemodel-table td:nth-child(5),
+  .backlog-board .promisemodel-table td:nth-child(5) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .stride-card .promisemodel-table td:last-child,
+  .backlog-board .promisemodel-table td:last-child {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .stride-card .promisemodel-table td:last-child select,
+  .backlog-board .promisemodel-table td:last-child select,
+  .stride-card .promisemodel-table td:last-child .btn,
+  .backlog-board .promisemodel-table td:last-child .btn {
+    min-height: 38px;
+  }
 }
 
 @media (min-width: 577px) {
   .estimate-dropdown-mobile {
     display: none;
+  }
+}
+
+/* When the navbar is collapsed (mobile), stride headers should scroll normally.
+   The expanded nav changes the header height, but syncStrideStickyOffsets only
+   recalculates on resize/scroll, not on nav toggle — causing the sticky header
+   to appear at the wrong offset. Non-sticky is simpler and the scrollspy is
+   already hidden at this breakpoint. */
+@media (max-width: 767.98px) {
+  .stride-header,
+  .stride-card .promisemodel-table th,
+  .backlog-board .promisemodel-table th {
+    position: static;
   }
 }
 
@@ -302,6 +338,11 @@ button {
   overflow: visible;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.stride-card .promisemodel-table tbody tr,
+.backlog-board .promisemodel-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
 }
 
 [data-collapsible-board] {
@@ -1338,6 +1379,12 @@ input, button, a, label, select, textarea {
 
   .stride-header-main {
     width: 100%;
+    gap: var(--spacing-xs);
+  }
+
+  .stride-header h3 {
+    font-size: var(--font-size-base);
+    line-height: 1.3;
   }
 
   .stride-header-actions {
@@ -1359,14 +1406,25 @@ input, button, a, label, select, textarea {
   .stride-card .promisemodel-table td,
   .backlog-board .promisemodel-table th,
   .backlog-board .promisemodel-table td {
-    padding: var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-sm);
     font-size: var(--font-size-sm);
+  }
+
+  .stride-card .promisemodel-table th,
+  .backlog-board .promisemodel-table th {
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
 
   .stride-card select,
   .backlog-board select {
     max-width: 100px;
+    min-height: 38px;
     font-size: var(--font-size-sm);
+  }
+
+  .stride-card .btn,
+  .backlog-board .btn {
+    min-height: 38px;
   }
 
   .view-btn, .edit-btn, .delete-btn {
@@ -1396,9 +1454,19 @@ input, button, a, label, select, textarea {
     font-size: var(--font-size-sm);
   }
 
-  .stride-card select {
-    max-width: 90px;
-  }
+    .stride-card select {
+      max-width: 90px;
+    }
+
+    .stride-card select,
+    .backlog-board select {
+      min-height: 38px;
+    }
+
+    .stride-card .btn,
+    .backlog-board .btn {
+      min-height: 38px;
+    }
 }
 
 /* ---- Additional components from feature/promises ---- */
