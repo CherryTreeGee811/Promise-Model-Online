@@ -137,21 +137,24 @@ if (!app.Environment.IsEnvironment("Testing"))
 {
     app.ApplyMigrations();
 
-    using (var scope = app.Services.CreateScope())
+    if (app.Environment.IsDevelopment())
     {
-        var dbContext = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
-        var logger = scope.ServiceProvider
-            .GetRequiredService<ILoggerFactory>()
-            .CreateLogger("PromiseHierarchySeeder");
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+            var logger = scope.ServiceProvider
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger("PromiseHierarchySeeder");
 
-        logger.LogInformation("Running Promise hierarchy seed...");
+            logger.LogInformation("Running Promise hierarchy seed...");
 
-        await PromiseHierarchySeeder.SeedAsync(
-            dbContext,
-            app.Environment.ContentRootPath,
-            logger);
+            await PromiseHierarchySeeder.SeedAsync(
+                dbContext,
+                app.Environment.ContentRootPath,
+                logger);
 
-        logger.LogInformation("Migration and seed startup step complete.");
+            logger.LogInformation("Migration and seed startup step complete.");
+        }
     }
 }
 

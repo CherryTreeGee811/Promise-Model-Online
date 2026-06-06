@@ -19,17 +19,25 @@ namespace PromiseModelOnline.Auth.Extensions
 
         private static async Task SeedUsersAsync(UserManager<IdentityUser> userManager)
         {
-            var user = await userManager.FindByNameAsync("pmo_test");
-            if (user == null)
+            var users = new[]
             {
-                var newUser = new IdentityUser
-                {
-                    UserName = "pmo_test",
-                    Email = "pmo@gmail.com",
-                    EmailConfirmed = true
-                };
+                new { UserName = "pmo_test", Email = "pmo@gmail.com" },
+                new { UserName = "pmo_test2", Email = "pmo2@gmail.com" }
+            };
 
-                await userManager.CreateAsync(newUser, "Hello123*");
+            foreach (var u in users)
+            {
+                if (await userManager.FindByNameAsync(u.UserName) == null)
+                {
+                    var newUser = new IdentityUser
+                    {
+                        UserName = u.UserName,
+                        Email = u.Email,
+                        EmailConfirmed = true
+                    };
+
+                    await userManager.CreateAsync(newUser, "Hello123*");
+                }
             }
         }
 
