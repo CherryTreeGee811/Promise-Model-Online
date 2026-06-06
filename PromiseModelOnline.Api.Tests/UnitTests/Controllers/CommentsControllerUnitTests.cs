@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +19,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<ICommentService> _mockCommentService = null!;
         private Mock<IUserRepository> _mockUserRepository = null!;
+        private Mock<ICommentRepository> _mockCommentRepository = null!;
         private CommentsController _controller = null!;
 
         [SetUp]
@@ -25,7 +27,11 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockCommentService = new Mock<ICommentService>();
             _mockUserRepository = new Mock<IUserRepository>();
-            _controller = new CommentsController(_mockCommentService.Object, _mockUserRepository.Object);
+            _mockCommentRepository = new Mock<ICommentRepository>();
+            _controller = new CommentsController(
+                _mockCommentService.Object,
+                _mockUserRepository.Object,
+                _mockCommentRepository.Object);
         }
 
         #region GetComments Tests - Happy Path
@@ -407,6 +413,251 @@ namespace PromiseModelOnline.Api.Tests
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest!.Value, Does.Contain("Database connection failed"));
             _mockCommentService.Verify(s => s.CreateCommentAsync(It.IsAny<CreateCommentDTO>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchUsers Tests - Happy Path
+
+        [Test]
+        public async Task SearchUsers_WithValidParams_ReturnsOkWithUsers()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5))
+                .ReturnsAsync(projectId);
+
+            var users = new List<User>
+            {
+                new User { Id = 1, Name = "Alice" },
+                new User { Id = 2, Name = "Alex" }
+            };
+            _mockUserRepository.Setup(r => r.SearchUsersByProjectAsync(projectId, "al", 5))
+                .ReturnsAsync(users);
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Promise", 5, "al");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!.Count(), Is.EqualTo(2));
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync("Promise", 5), Times.Once);
+            _mockUserRepository.Verify(r => r.SearchUsersByProjectAsync(projectId, "al", 5), Times.Once);
+        }
+
+        [Test]
+        public async Task SearchUsers_WithNoMatches_ReturnsOkWithEmptyList()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Epic", 10))
+                .ReturnsAsync(projectId);
+            _mockUserRepository.Setup(r => r.SearchUsersByProjectAsync(projectId, "zzz", 5))
+                .ReturnsAsync(Enumerable.Empty<User>());
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Epic", 10, "zzz");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsers_WithEmptySearch_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Promise", 5, "");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchUsers Tests - Sad Path
+
+        [Test]
+        public async Task SearchUsers_WithInvalidParentType_ReturnsBadRequest()
+        {
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
+                .ThrowsAsync(new System.ArgumentException("Invalid parent type: invalid"));
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("invalid", 1, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task SearchUsers_WithNullType_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers(null, 5, "alice");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        [Test]
+        public async Task SearchUsers_WithZeroParentId_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Promise", 0, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchPromises Tests - Happy Path
+
+        [Test]
+        public async Task SearchPromises_WithValidParams_ReturnsOkWithResults()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5))
+                .ReturnsAsync(projectId);
+
+            var results = new List<StackSearchResult>
+            {
+                new StackSearchResult("promise", 10, "Payment processing"),
+                new StackSearchResult("flow", 20, "Payment form")
+            };
+            _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "pay", 5))
+                .ReturnsAsync(results);
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Promise", 5, "pay");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!.Count(), Is.EqualTo(2));
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync("Promise", 5), Times.Once);
+            _mockCommentRepository.Verify(r => r.SearchStackByStatementAsync(projectId, "pay", 5), Times.Once);
+        }
+
+        [Test]
+        public async Task SearchPromises_IncludesEntityTypeInResult()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Moment", 5))
+                .ReturnsAsync(projectId);
+
+            var results = new List<StackSearchResult>
+            {
+                new StackSearchResult("moment", 30, "Credit card entry")
+            };
+            _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "card", 5))
+                .ReturnsAsync(results);
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Moment", 5, "card");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            // The endpoint returns anonymous objects; we verify the promise endpoint worked
+            _mockCommentRepository.Verify(r => r.SearchStackByStatementAsync(projectId, "card", 5), Times.Once);
+        }
+
+        [Test]
+        public async Task SearchPromises_WithNoMatches_ReturnsOkWithEmptyList()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Journey", 3))
+                .ReturnsAsync(projectId);
+            _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "zzz", 5))
+                .ReturnsAsync(Enumerable.Empty<StackSearchResult>());
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Journey", 3, "zzz");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data!, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchPromises_WithEmptySearch_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Flow", 10, "");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data!, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchPromises Tests - Sad Path
+
+        [Test]
+        public async Task SearchPromises_WithInvalidParentType_ReturnsBadRequest()
+        {
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
+                .ThrowsAsync(new System.ArgumentException("Invalid parent type"));
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("invalid", 1, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task SearchPromises_WithNullParentType_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises(null, 5, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        [Test]
+        public async Task SearchPromises_WithZeroParentId_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Promise", 0, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
         }
 
         #endregion

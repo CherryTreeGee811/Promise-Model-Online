@@ -153,5 +153,205 @@ namespace PromiseModelOnline.Api.Tests
             var result = await _repo.GetCommentsForEntityAsync("journey", 99);
             Assert.That(result, Is.Empty);
         }
+
+        #region SearchStackByStatementAsync
+
+        [Test]
+        public async Task SearchStackByStatementAsync_SearchesAllLevels()
+        {
+            var project = new Project { Id = 1, Name = "Test", OwnerId = 1 };
+            Context.Projects.Add(project);
+
+            var promise = new Promise { Id = 10, ProjectId = 1, Statement = "Payment processing" };
+            var epic = new Epic { Id = 20, ProductPromiseId = 10, Statement = "Checkout flow" };
+            var journey = new Journey { Id = 30, EpicId = 20, Statement = "Mobile checkout" };
+            var flow = new Flow { Id = 40, JourneyId = 30, Statement = "Payment form" };
+            var moment = new Moment { Id = 50, FlowId = 40, Statement = "Credit card entry" };
+
+            Context.AddRange(promise, epic, journey, flow, moment);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchStackByStatementAsync(1, "pay", 10);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(2));
+            Assert.That(list.Any(r => r.EntityType == "promise" && r.Id == 10), Is.True);
+            Assert.That(list.Any(r => r.EntityType == "flow" && r.Id == 40), Is.True);
+        }
+
+        [Test]
+        public async Task SearchStackByStatementAsync_FiltersByProject()
+        {
+            var projectA = new Project { Id = 10, Name = "Project A", OwnerId = 1 };
+            var projectB = new Project { Id = 11, Name = "Project B", OwnerId = 1 };
+            Context.AddRange(projectA, projectB);
+
+            var promiseA = new Promise { Id = 100, ProjectId = 10, Statement = "Login feature" };
+            var promiseB = new Promise { Id = 101, ProjectId = 11, Statement = "Login feature" };
+            Context.AddRange(promiseA, promiseB);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchStackByStatementAsync(10, "login", 10);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].Id, Is.EqualTo(100));
+        }
+
+        [Test]
+        public async Task SearchStackByStatementAsync_NoMatch_ReturnsEmpty()
+        {
+            var project = new Project { Id = 1, Name = "Test", OwnerId = 1 };
+            Context.Projects.Add(project);
+
+            var promise = new Promise { Id = 1, ProjectId = 1, Statement = "Billing" };
+            Context.Promises.Add(promise);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchStackByStatementAsync(1, "nonexistent", 10);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchStackByStatementAsync_EmptySearch_ReturnsEmpty()
+        {
+            var result = await _repo.SearchStackByStatementAsync(1, "", 5);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchStackByStatementAsync_RespectsMaxResults()
+        {
+            var project = new Project { Id = 1, Name = "Test", OwnerId = 1 };
+            Context.Projects.Add(project);
+
+            for (int i = 1; i <= 10; i++)
+            {
+                Context.Promises.Add(new Promise { Id = i, ProjectId = 1, Statement = "Same statement" });
+            }
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchStackByStatementAsync(1, "same", 3);
+            Assert.That(result.Count(), Is.EqualTo(3));
+        }
+
+        [Test]
+        public async Task SearchStackByStatementAsync_IncludesAllEntityTypes()
+        {
+            var project = new Project { Id = 1, Name = "Test", OwnerId = 1 };
+            Context.Projects.Add(project);
+
+            var promise = new Promise { Id = 1, ProjectId = 1, Statement = "Alpha" };
+            var epic = new Epic { Id = 2, ProductPromiseId = 1, Statement = "Beta" };
+            var journey = new Journey { Id = 3, EpicId = 2, Statement = "Gamma" };
+            var flow = new Flow { Id = 4, JourneyId = 3, Statement = "Without" };
+            var moment = new Moment { Id = 5, FlowId = 4, Statement = "Epsilon" };
+
+            Context.AddRange(promise, epic, journey, flow, moment);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchStackByStatementAsync(1, "", 10);
+            Assert.That(result, Is.Empty);
+
+            result = await _repo.SearchStackByStatementAsync(1, "a", 10);
+            var list = result.ToList();
+            Assert.That(list.Count, Is.EqualTo(3));
+            Assert.That(list.Any(r => r.EntityType == "promise"), Is.True);
+            Assert.That(list.Any(r => r.EntityType == "epic"), Is.True);
+            Assert.That(list.Any(r => r.EntityType == "journey"), Is.True);
+        }
+
+        #endregion
+
+        #region ResolveProjectIdAsync
+
+        [Test]
+        public async Task ResolveProjectIdAsync_ForPromise_ReturnsProjectId()
+        {
+            var project = new Project { Id = 7, Name = "P", OwnerId = 1 };
+            Context.Projects.Add(project);
+            Context.Promises.Add(new Promise { Id = 1, ProjectId = 7, Statement = "Test" });
+            await Context.SaveChangesAsync();
+
+            var projectId = await _repo.ResolveProjectIdAsync("promise", 1);
+            Assert.That(projectId, Is.EqualTo(7));
+        }
+
+        [Test]
+        public async Task ResolveProjectIdAsync_ForEpic_ReturnsProjectId()
+        {
+            var project = new Project { Id = 8, Name = "P", OwnerId = 1 };
+            Context.Projects.Add(project);
+            var promise = new Promise { Id = 2, ProjectId = 8, Statement = "Test" };
+            Context.Promises.Add(promise);
+            Context.Epics.Add(new Epic { Id = 3, ProductPromiseId = 2, Statement = "Test" });
+            await Context.SaveChangesAsync();
+
+            var projectId = await _repo.ResolveProjectIdAsync("epic", 3);
+            Assert.That(projectId, Is.EqualTo(8));
+        }
+
+        [Test]
+        public async Task ResolveProjectIdAsync_ForJourney_ReturnsProjectId()
+        {
+            var project = new Project { Id = 9, Name = "P", OwnerId = 1 };
+            Context.Projects.Add(project);
+            var promise = new Promise { Id = 4, ProjectId = 9, Statement = "Test" };
+            var epic = new Epic { Id = 5, ProductPromiseId = 4, Statement = "Test" };
+            Context.Promises.Add(promise);
+            Context.Epics.Add(epic);
+            Context.Journeys.Add(new Journey { Id = 6, EpicId = 5, Statement = "Test" });
+            await Context.SaveChangesAsync();
+
+            var projectId = await _repo.ResolveProjectIdAsync("journey", 6);
+            Assert.That(projectId, Is.EqualTo(9));
+        }
+
+        [Test]
+        public async Task ResolveProjectIdAsync_ForFlow_ReturnsProjectId()
+        {
+            var project = new Project { Id = 10, Name = "P", OwnerId = 1 };
+            Context.Projects.Add(project);
+            var promise = new Promise { Id = 7, ProjectId = 10, Statement = "Test" };
+            var epic = new Epic { Id = 8, ProductPromiseId = 7, Statement = "Test" };
+            var journey = new Journey { Id = 9, EpicId = 8, Statement = "Test" };
+            Context.AddRange(project, promise, epic, journey);
+            Context.Flows.Add(new Flow { Id = 10, JourneyId = 9, Statement = "Test" });
+            await Context.SaveChangesAsync();
+
+            var projectId = await _repo.ResolveProjectIdAsync("flow", 10);
+            Assert.That(projectId, Is.EqualTo(10));
+        }
+
+        [Test]
+        public async Task ResolveProjectIdAsync_ForMoment_ReturnsProjectId()
+        {
+            var project = new Project { Id = 11, Name = "P", OwnerId = 1 };
+            Context.Projects.Add(project);
+            var promise = new Promise { Id = 11, ProjectId = 11, Statement = "Test" };
+            var epic = new Epic { Id = 12, ProductPromiseId = 11, Statement = "Test" };
+            var journey = new Journey { Id = 13, EpicId = 12, Statement = "Test" };
+            var flow = new Flow { Id = 14, JourneyId = 13, Statement = "Test" };
+            Context.AddRange(project, promise, epic, journey, flow);
+            Context.Moments.Add(new Moment { Id = 15, FlowId = 14, Statement = "Test" });
+            await Context.SaveChangesAsync();
+
+            var projectId = await _repo.ResolveProjectIdAsync("moment", 15);
+            Assert.That(projectId, Is.EqualTo(11));
+        }
+
+        [Test]
+        public void ResolveProjectIdAsync_InvalidType_ThrowsArgumentException()
+        {
+            Assert.ThrowsAsync<ArgumentException>(() => _repo.ResolveProjectIdAsync("invalid", 1));
+        }
+
+        [Test]
+        public void ResolveProjectIdAsync_NonExistentEntity_ThrowsArgumentException()
+        {
+            Assert.ThrowsAsync<ArgumentException>(() => _repo.ResolveProjectIdAsync("promise", 999));
+        }
+
+        #endregion
     }
 }

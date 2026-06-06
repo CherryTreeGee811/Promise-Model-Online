@@ -1,5 +1,6 @@
 import { getComments, postComment } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
+import { createCommentAutocomplete } from './autocomplete.mjs';
 
 export function loadComments(container, parentType, parentId) {
     container.innerHTML = `
@@ -7,7 +8,7 @@ export function loadComments(container, parentType, parentId) {
         <div id="comments-list" class="comments-list"></div>
         <form id="comment-form" class="comment-form" aria-label="Add a comment">
             <label for="comment-textarea" class="sr-only">Your comment</label>
-            <textarea id="comment-textarea" class="form-control mb-2" rows="3" required placeholder="Write a comment... Use @name to mention someone."></textarea>
+            <textarea id="comment-textarea" class="form-control mb-2" rows="3" required placeholder="Write a comment... Use @name to mention someone, #type-id to reference a promise/epic/journey/flow/moment."></textarea>
             <button type="submit" class="btn btn-primary btn-sm">Post</button>
         </form>
     `;
@@ -15,6 +16,8 @@ export function loadComments(container, parentType, parentId) {
     const commentsList = container.querySelector('#comments-list');
     const form = container.querySelector('#comment-form');
     const textarea = container.querySelector('#comment-textarea');
+
+    const autocomplete = createCommentAutocomplete(textarea, parentType, parentId);
 
     getComments(parentType, parentId)
         .then(comments => renderComments(commentsList, comments))
@@ -76,5 +79,8 @@ function createCommentElement(comment) {
 }
 
 function formatCommentText(text) {
-    return escapeHtml(text).replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    let html = escapeHtml(text);
+    html = html.replace(/#(promise|epic|journey|flow|moment)-(\d+)/g, '<a href="/$1s/$2" class="promise-ref">#$1-$2</a>');
+    html = html.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    return html;
 }
