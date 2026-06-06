@@ -756,7 +756,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         .attr('preserveAspectRatio', 'xMinYMin meet')
         .attr('width', '100%')
         .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
-        .attr('role', enableZoom ? 'tree' : 'img')
+        .attr('role', enableZoom ? 'tree' : (enableLinks ? null : 'img'))
         .attr('aria-label', ariaLabel);
 
     const contentOffsetX = margin.left - minY;
