@@ -25,9 +25,18 @@ export function loadIterationHistory(projectId) {
 
     listDiv.innerHTML = renderLoadingSpinner('Loading iterations');
 
-    Promise.all([
-        getProjectById(projectId).catch(() => null),
-        getIterationsByProject(projectId)
+    const LOAD_TIMEOUT_MS = 15000;
+
+    const listTimeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS)
+    );
+
+    Promise.race([
+        Promise.all([
+            getProjectById(projectId).catch(() => null),
+            getIterationsByProject(projectId)
+        ]),
+        listTimeoutPromise
     ])
         .then(([project, iterations]) => {
             if (projectTitle) {
@@ -55,7 +64,7 @@ export function loadIterationHistory(projectId) {
                             ${iterations.map(i => `
                                 <tr>
                                     <td>${escapeHtml(i.name)}</td>
-                                    <td>${new Date(i.createdAt).toLocaleDateString('en-CA')}</td>
+                                    <td>${formatDate(i.createdAt)}</td>
                                     <td>
                                         <button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${i.id}" type="button">
                                             <i class="bi bi-eye" aria-hidden="true"></i>
@@ -99,26 +108,26 @@ export function loadIterationHistory(projectId) {
         burndownCanvas.innerHTML = '';
         strideDetailsDiv.innerHTML = renderLoadingSpinner('Loading strides');
 
-        getIterationBurndown(iterationId)
+        const BURNDOWN_TIMEOUT_MS = 10000;
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS)
+        );
+
+        Promise.race([getIterationBurndown(iterationId), timeoutPromise])
             .then(points => {
                 if (loadingEl) loadingEl.hidden = true;
 
                 if (points && points.length > 0) {
                     drawBurndownChart(burndownCanvas, points);
                 } else {
-                    burndownContainer.innerHTML = `
-                        <h3>Burndown</h3>
-                        <p class="no-items">No burndown data available for this iteration.</p>
-                    `;
+                    burndownCanvas.innerHTML = '<p class="no-items">No burndown data available for this iteration.</p>';
                 }
             })
             .catch(err => {
                 console.error('Iteration burndown error', err);
                 if (loadingEl) loadingEl.hidden = true;
-                burndownContainer.innerHTML = `
-                    <h3>Burndown</h3>
-                    <p class="error">Failed to load iteration burndown.</p>
-                `;
+                burndownCanvas.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
             });
 
         getStridesByIteration(iterationId)
