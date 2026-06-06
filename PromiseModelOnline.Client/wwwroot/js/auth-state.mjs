@@ -2,6 +2,7 @@ const AUTH_STORAGE_KEY = 'pmo.auth';
 
 let isAuthenticated = false;
 let username = null;
+let userId = null;
 
 function loadFromStorage() {
     try {
@@ -10,6 +11,7 @@ function loadFromStorage() {
             const parsed = JSON.parse(stored);
             isAuthenticated = !!parsed.isAuthenticated;
             username = parsed.username || null;
+            userId = parsed.userId ?? null;
         }
     } catch {
         // Ignore storage errors
@@ -18,21 +20,23 @@ function loadFromStorage() {
 
 function saveToStorage() {
     try {
-        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ isAuthenticated, username }));
+        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ isAuthenticated, username, userId }));
     } catch {
         // Ignore storage failures
     }
 }
 
-export function setAuthState({ isAuthenticated: auth, username: name }) {
+export function setAuthState({ isAuthenticated: auth, username: name, userId: id }) {
     isAuthenticated = !!auth;
     username = name || null;
+    userId = id ?? null;
     saveToStorage();
 }
 
 export function clearAuth() {
     isAuthenticated = false;
     username = null;
+    userId = null;
     try {
         sessionStorage.removeItem(AUTH_STORAGE_KEY);
     } catch {
@@ -46,6 +50,10 @@ export function isLoggedIn() {
 
 export function getUsername() {
     return username;
+}
+
+export function getUserId() {
+    return userId;
 }
 
 loadFromStorage();

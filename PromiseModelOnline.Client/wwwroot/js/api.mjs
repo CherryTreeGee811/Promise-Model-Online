@@ -88,7 +88,7 @@ export async function checkSession() {
 
         if (response.ok) {
             const data = await response.json();
-            setAuthState({ isAuthenticated: true, username: data.name });
+            setAuthState({ isAuthenticated: true, username: data.name, userId: data.userId });
             return true;
         }
     } catch {
