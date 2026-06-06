@@ -25,9 +25,18 @@ export function loadIterationHistory(projectId) {
 
     listDiv.innerHTML = renderLoadingSpinner('Loading iterations');
 
-    Promise.all([
-        getProjectById(projectId).catch(() => null),
-        getIterationsByProject(projectId)
+    const LOAD_TIMEOUT_MS = 15000;
+
+    const listTimeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS)
+    );
+
+    Promise.race([
+        Promise.all([
+            getProjectById(projectId).catch(() => null),
+            getIterationsByProject(projectId)
+        ]),
+        listTimeoutPromise
     ])
         .then(([project, iterations]) => {
             if (projectTitle) {
@@ -99,7 +108,13 @@ export function loadIterationHistory(projectId) {
         burndownCanvas.innerHTML = '';
         strideDetailsDiv.innerHTML = renderLoadingSpinner('Loading strides');
 
-        getIterationBurndown(iterationId)
+        const BURNDOWN_TIMEOUT_MS = 10000;
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS)
+        );
+
+        Promise.race([getIterationBurndown(iterationId), timeoutPromise])
             .then(points => {
                 if (loadingEl) loadingEl.hidden = true;
 

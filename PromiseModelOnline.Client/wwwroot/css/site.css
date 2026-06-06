@@ -1317,6 +1317,13 @@ button {
   outline-offset: 2px;
 }
 
+/* The main content region receives programmatic focus after every SPA navigation
+   (for screen readers). Suppress the visual outline so it doesn't look like a
+   page border — keyboard navigation is already served by the skip link. */
+#main-content:focus-visible {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -1771,13 +1778,25 @@ input, button, a, label, select, textarea {
     display: block;
     width: 100%;
     height: auto;
+    max-height: 300px;
     border-radius: var(--radius-sm);
     background: #ffffff;
 }
 
-/* Optional: subtle border for the SVG itself */
 #iteration-burndown-canvas {
     margin-top: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+    #iteration-burndown-canvas svg {
+        max-height: 250px;
+    }
+}
+
+@media (max-width: 576px) {
+    #iteration-burndown-canvas svg {
+        max-height: 200px;
+    }
 }
 
 /* Responsive */
