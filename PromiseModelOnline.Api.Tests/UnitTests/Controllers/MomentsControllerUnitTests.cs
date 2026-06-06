@@ -1,9 +1,12 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using PromiseModelOnline.Api.DAL;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Tests.Infrastructure;
@@ -23,6 +26,7 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IGenericMapper<Moment, MomentDTO>> _mockMapper = null!;
         private Mock<IUserRepository> _mockUserRepo = null!;
         private Mock<IPermissionService> _mockPermissionService = null!;
+        private PromiseModelOnlineContext _testContext = null!;
         private MomentsController _controller = null!;
 
         [SetUp]
@@ -32,14 +36,27 @@ namespace PromiseModelOnline.Api.Tests
             _mockMapper = new Mock<IGenericMapper<Moment, MomentDTO>>();
             _mockUserRepo = new Mock<IUserRepository>();
             _mockPermissionService = new Mock<IPermissionService>();
+
+            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            _testContext = new PromiseModelOnlineContext(options);
+
             // Initialize controller with a default HttpContext to prevent null Request/ControllerContext in tests
             _controller = new MomentsController(
                 _mockMomentService.Object,
                 _mockMapper.Object,
                 _mockUserRepo.Object,
                 _mockPermissionService.Object,
+                _testContext,
                 NullLogger<MomentsController>.Instance);
             _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _testContext.Dispose();
         }
 
         [Test]
@@ -185,6 +202,13 @@ namespace PromiseModelOnline.Api.Tests
         public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
             // Arrange
+            _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Promises.Add(new Promise { Id = 10, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Epics.Add(new Epic { Id = 20, ProductPromiseId = 10, Statement = "Parent Epic", SequenceNumber = 2, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Journeys.Add(new Journey { Id = 30, EpicId = 20, Statement = "Parent Journey", SequenceNumber = 3, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Flows.Add(new Flow { Id = 9, JourneyId = 30, Statement = "Parent Flow", SequenceNumber = 4, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            await _testContext.SaveChangesAsync();
+
             var request = new CreateMomentRequestDTO { Statement = "m1", FlowId = 9, Type = MomentType.Story, Status = MomentStatus.Todo, DisplayOrder = 3 };
 
             _mockMomentService.Setup(s => s.AddAsync(It.IsAny<Moment>()))

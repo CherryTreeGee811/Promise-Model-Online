@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Enums;
@@ -47,6 +48,29 @@ namespace PromiseModelOnline.Api.DAL
             await AddAsync(user);
             await SaveChangesAsync();
             return user;
+        }
+
+        public async Task<IEnumerable<User>> SearchUsersByProjectAsync(int projectId, string searchTerm, int maxResults = 5)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return Enumerable.Empty<User>();
+
+            var project = await _context.Set<Project>().FindAsync(projectId);
+            var ownerId = project?.OwnerId;
+
+            var userIds = await _context.Set<Permission>()
+                .Where(p => p.ProjectId == projectId && p.Status == PermissionStatus.Active)
+                .Select(p => p.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            if (ownerId.HasValue && !userIds.Contains(ownerId.Value))
+                userIds.Add(ownerId.Value);
+
+            return await _dbSet
+                .Where(u => userIds.Contains(u.Id) && u.Name.ToLower().Contains(searchTerm.ToLower()))
+                .Take(maxResults)
+                .ToListAsync();
         }
     }
 }

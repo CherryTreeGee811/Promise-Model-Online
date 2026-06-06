@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
@@ -15,16 +18,19 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IMomentService _momentService;
         private readonly IGenericService<Promise> _promiseService;
         private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
+        private readonly IPromiseModelOnlineContext _context;
 
         public PromisesController(
             IGenericService<Promise> service,
             IGenericMapper<Promise, PromiseDTO> mapper,
-            IMomentService momentService)
+            IMomentService momentService,
+            IPromiseModelOnlineContext context)
             : base(service, mapper)
         {
             _momentService = momentService;
             _promiseService = service;
             _promiseMapper = mapper;
+            _context = context;
         }
 
         [Authorize(Policy = "projects.write")]
@@ -37,11 +43,14 @@ namespace PromiseModelOnline.Api.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
+            var nextSeq = await _context.GetNextSequenceNumberAsync(request.ProjectId);
+
             var promise = new Promise
             {
                 Statement = request.Statement,
                 Description = request.Description,
                 ProjectId = request.ProjectId,
+                SequenceNumber = nextSeq,
                 DisplayOrder = request.DisplayOrder,
                 StatusColor = "red",
             };

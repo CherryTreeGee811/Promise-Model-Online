@@ -73,7 +73,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
             const flowsList = document.getElementById('journey-flows-list');
             getFlowsByJourney(journeyId)
                 .then(flows => {
-                    patchChildMetrics(`journey-${journeyId}`, flows);
+                    patchChildMetrics(`journey-${journey.sequenceNumber}`, flows);
                     const tbody = renderTableWithInlineAddRow(flowsList, {
                         headers: ['Statement', 'Actions'],
                         items: flows || [],
@@ -134,7 +134,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
-                                    patchChildMetrics(`journey-${journeyId}`, [...(flows || []), created]);
+                                    patchChildMetrics(`journey-${journey.sequenceNumber}`, [...(flows || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add flow.';
@@ -213,7 +213,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     try {
                         const updated = await updateJourneyDescription(journeyId, newDesc);
                         journey.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
-                        patchDetailStackGraphNode(`journey-${journeyId}`, {
+                        patchDetailStackGraphNode(`journey-${journey.sequenceNumber}`, {
                             description: journey.description,
                         });
                         descMsg.textContent = 'Saved';
@@ -231,7 +231,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
             getEpicById(journey.epicId)
                 .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
                 .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `journey-${journey.id}`);
+                    const href = buildGraphViewHref(projectId, `journey-${journey.sequenceNumber}`);
                     upsertGraphViewButton(detailDiv, href);
                 })
                 .catch(error => {

@@ -305,12 +305,12 @@ function renderStrideScrollspy(strides) {
     }
 }
 
-function momentGraphLinkHtml(momentId) {
-    const href = buildGraphViewHref(cachedProjectId, `moment-${momentId}`);
+function momentGraphLinkHtml(seqNum) {
+    const href = buildGraphViewHref(cachedProjectId, `moment-${seqNum}`);
     if (!href) return '';
 
     return `
-        <a href="${href}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" aria-label="Open graph view focused on moment ${momentId}">
+        <a href="${href}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" aria-label="Open graph view focused on moment ${seqNum}">
             <i class="bi bi-diagram-3" aria-hidden="true"></i>
             <span>Graph View</span>
         </a>
@@ -502,7 +502,7 @@ function createBacklogRow(moment) {
             <div class="d-inline-flex flex-wrap gap-2 align-items-center">
                 <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${moment.id}"></select>
                 <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${moment.id}" type="button">Move</button>
-                ${momentGraphLinkHtml(moment.id)}
+                ${momentGraphLinkHtml(moment.sequenceNumber)}
                 <a href="/moments/${moment.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
             </div>
         </td>
@@ -555,7 +555,7 @@ function createStrideRow(moment) {
                 ${statusDropdownHtml(moment.id, moment.status)}
                 <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${moment.id}" data-current-estimate="${moment.effortEstimate ?? ''}"><option value="">–</option></select>
                 <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${moment.id}" type="button">Backlog</button>
-                ${momentGraphLinkHtml(moment.id)}
+                ${momentGraphLinkHtml(moment.sequenceNumber)}
                 <a href="/moments/${moment.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
             </div>
         </td>
@@ -889,7 +889,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     <select class="status-dropdown form-select form-select-sm" data-moment-id="${m.id}" data-current-status="${m.status ?? ''}" aria-label="Status"></select>
                     <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"><option value="">–</option></select>
                     <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${m.id}" type="button">Backlog</button>
-                    ${momentGraphLinkHtml(m.id)}
+                    ${momentGraphLinkHtml(m.sequenceNumber)}
                     <a href="/moments/${m.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
                 </div>
             </td>
@@ -936,7 +936,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                                     <div class="d-inline-flex flex-wrap gap-2 align-items-center">
                                                         <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${m.id}"></select>
                                                         <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${m.id}" type="button">Move</button>
-                                                        ${momentGraphLinkHtml(m.id)}
+                                                        ${momentGraphLinkHtml(m.sequenceNumber)}
                                                         <a href="/moments/${m.id}" moment-id="${m.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
                                                     </div>
                                                 </td>

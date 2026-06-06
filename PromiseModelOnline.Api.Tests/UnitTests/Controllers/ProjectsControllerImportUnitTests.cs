@@ -28,6 +28,7 @@ public class ProjectsControllerImportUnitTests
     private Mock<IProjectExportService> _mockProjectExportService = null!;
     private Mock<IProjectImportService> _mockProjectImportService = null!;
     private Mock<IProjectImportValidationService> _mockProjectImportValidationService = null!;
+    private Mock<IPromiseModelOnlineContext> _mockContext = null!;
     private ProjectsController _controller = null!;
 
     [SetUp]
@@ -41,17 +42,19 @@ public class ProjectsControllerImportUnitTests
         _mockPromiseMapper = new Mock<IGenericMapper<Promise, PromiseDTO>>();
         _mockProjectExportService = new Mock<IProjectExportService>();
         _mockProjectImportService = new Mock<IProjectImportService>();
-                    _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
-            _controller = new ProjectsController(
-                _mockProjectService.Object,
-                _mockMapper.Object,
-                _mockUserRepo.Object,
-                _mockPermissionService.Object,
-                _mockPromiseService.Object,
-                _mockPromiseMapper.Object,
-                _mockProjectExportService.Object,
-                _mockProjectImportService.Object,
-                _mockProjectImportValidationService.Object);
+        _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
+        _mockContext = new Mock<IPromiseModelOnlineContext>();
+        _controller = new ProjectsController(
+            _mockProjectService.Object,
+            _mockMapper.Object,
+            _mockUserRepo.Object,
+            _mockPermissionService.Object,
+            _mockPromiseService.Object,
+            _mockPromiseMapper.Object,
+            _mockProjectExportService.Object,
+            _mockProjectImportService.Object,
+            _mockProjectImportValidationService.Object,
+            _mockContext.Object);
     }
 
     [Test]

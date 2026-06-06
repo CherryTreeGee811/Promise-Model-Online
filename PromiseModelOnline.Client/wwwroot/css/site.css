@@ -1484,7 +1484,43 @@ input, button, a, label, select, textarea {
 .comment-mentions { font-size: 0.85rem; color: #076678; }
 .comment-replies { margin-left: 2rem; border-left: 2px solid #ccc; padding-left: 1rem; }
 .mention { background: #e0e0e0; padding: 0 4px; border-radius: 3px; color: #1a1a1a; }
+.promise-ref { color: #0d6efd; text-decoration: underline; font-weight: 600; padding: 0 2px; }
+.promise-ref:hover { color: #0a58ca; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+.comment-autocomplete {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  min-width: 180px;
+  max-width: 400px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 0.9rem;
+}
+.comment-autocomplete__item {
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #1a1a1a;
+  transition: background 0.1s;
+}
+.comment-autocomplete__item:hover {
+  background: #e9ecef;
+}
+.comment-autocomplete__item--highlight {
+  background: #0d6efd;
+  color: #fff;
+}
+.comment-autocomplete__item--highlight:hover {
+  background: #0b5ed7;
+}
 .share-btn { background-color:#3498db; color:#fff; padding:6px 16px; border-radius:6px; font-size:0.85rem; font-weight:600; text-decoration:none; display:inline-block; margin-left:4px; }
 .share-btn:hover { background-color:#2980b9; }
 .revoke-btn { background:#c62828; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; }

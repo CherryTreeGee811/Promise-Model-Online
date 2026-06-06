@@ -27,6 +27,7 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IProjectExportService> _mockProjectExportService = null!;
         private Mock<IProjectImportService> _mockProjectImportService = null!;
         private Mock<IProjectImportValidationService> _mockProjectImportValidationService = null!;
+        private Mock<IPromiseModelOnlineContext> _mockContext = null!;
         private ProjectsController _controller = null!;
 
         [SetUp]
@@ -41,6 +42,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectExportService = new Mock<IProjectExportService>();
             _mockProjectImportService = new Mock<IProjectImportService>();
             _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
+            _mockContext = new Mock<IPromiseModelOnlineContext>();
             _controller = new ProjectsController(
                 _mockProjectService.Object,
                 _mockMapper.Object,
@@ -50,7 +52,8 @@ namespace PromiseModelOnline.Api.Tests
                 _mockPromiseMapper.Object,
                 _mockProjectExportService.Object,
                 _mockProjectImportService.Object,
-                _mockProjectImportValidationService.Object);
+                _mockProjectImportValidationService.Object,
+                _mockContext.Object);
         }
 
         [Test]

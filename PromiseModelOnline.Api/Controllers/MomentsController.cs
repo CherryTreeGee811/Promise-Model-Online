@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -9,6 +10,7 @@ using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IMomentService _momentService;
         private readonly IUserRepository _userRepository;
         private readonly IPermissionService _permissionService;
+        private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<MomentsController> _logger;
 
         public MomentsController(
@@ -28,12 +31,14 @@ namespace PromiseModelOnline.Api.Controllers
             IGenericMapper<Moment, MomentDTO> mapper,
             IUserRepository userRepository,
             IPermissionService permissionService,
+            IPromiseModelOnlineContext context,
             ILogger<MomentsController> logger)
             : base(service, mapper)
         {
             _momentService = service;
             _userRepository = userRepository;
             _permissionService = permissionService;
+            _context = context;
             _logger = logger;
         }
 
@@ -51,6 +56,13 @@ namespace PromiseModelOnline.Api.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
+            var projectId = await _context.Flows
+                .Where(f => f.Id == request.FlowId)
+                .Select(f => f.Journey.Epic.ProductPromise.ProjectId)
+                .FirstAsync();
+
+            var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+
             var moment = new Moment
             {
                 Statement = request.Statement,
@@ -60,6 +72,7 @@ namespace PromiseModelOnline.Api.Controllers
                 Status = request.Status,
                 EffortEstimate = request.EffortEstimate,
                 AssignedStrideId = request.AssignedStrideId,
+                SequenceNumber = nextSeq,
                 DisplayOrder = request.DisplayOrder,
                 StatusColor = StatusColorRules.FromMomentStatus(request.Status),
             };

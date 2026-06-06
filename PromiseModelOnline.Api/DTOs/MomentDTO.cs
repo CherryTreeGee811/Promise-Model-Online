@@ -15,6 +15,7 @@ public class MomentDTO
     public Estimate? EffortEstimate { get; set; }
     public int? OwnerId { get; set; }
     public int? AssignedStrideId { get; set; }
+    public int SequenceNumber { get; set; }
     public int DisplayOrder { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

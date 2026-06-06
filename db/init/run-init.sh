@@ -96,11 +96,7 @@ BEGIN
 END
 GO
 
-IF EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = N'sa' AND is_disabled = 0)
-BEGIN
-  ALTER LOGIN [sa] DISABLE;
-END
-GO
+-- sa deliberately left enabled for db-init restart support
 EOF
 
 "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql

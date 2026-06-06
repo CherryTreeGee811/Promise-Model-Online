@@ -75,6 +75,7 @@ function rerenderDetailStackGraph() {
         projectId: detailStackState.projectId,
         focusNodeId: detailStackState.focusNodeId,
         enableZoom: false,
+        enableLinks: true,
         compact: true,
         uniformNodeScale: getDetailPageNodeScale(detailStackState.activeNodeType),
         viewportElement: container,
@@ -230,10 +231,14 @@ export async function buildAncestorPathTree(nodeType, nodeId, projectIdHint = nu
 
     const pathEntities = await fetchPathEntities(nodeType, nodeId, projectIdHint);
     const metrics = await fetchChildMetricsForPath(pathEntities);
+
+    const focusEntity = pathEntities[nodeType];
+    const focusSeq = focusEntity?.sequenceNumber ?? nodeId;
+
     return {
         tree: buildLinearTree(pathEntities, metrics),
         projectId: pathEntities.projectId,
-        focusNodeId: `${nodeType}-${nodeId}`,
+        focusNodeId: `${nodeType}-${focusSeq}`,
     };
 }
 

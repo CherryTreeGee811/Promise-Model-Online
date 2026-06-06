@@ -39,6 +39,8 @@ public class Moment
     
     public int? AssignedStrideId { get; set; }
     
+    public int SequenceNumber { get; set; }
+
     public int DisplayOrder { get; set; } = 0;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

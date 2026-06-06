@@ -177,5 +177,137 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.Role, Is.EqualTo(UserRole.Student));
         }
+
+        #region SearchUsersByProjectAsync
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_ReturnsMatchingUsers()
+        {
+            var owner = new User { Id = 1, Name = "Alice", Email = "alice@example.com" };
+            var userB = new User { Id = 2, Name = "Bob", Email = "bob@example.com" };
+            var userC = new User { Id = 3, Name = "Charlie", Email = "charlie@example.com" };
+            Context.Users.AddRange(owner, userB, userC);
+
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
+            project.Permissions = new List<Permission>
+            {
+                new Permission { UserId = 2, Level = PermissionLevel.Edit, Status = PermissionStatus.Active },
+                new Permission { UserId = 3, Level = PermissionLevel.View, Status = PermissionStatus.Active },
+            };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "a", 5);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(2));
+            Assert.That(list.Any(u => u.Name == "Alice"), Is.True);
+            Assert.That(list.Any(u => u.Name == "Charlie"), Is.True);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_IncludesProjectOwner()
+        {
+            var owner = new User { Id = 5, Name = "Owner", Email = "owner@example.com" };
+            Context.Users.Add(owner);
+
+            var project = new Project { Id = 10, Name = "Proj", OwnerId = 5 };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(10, "own", 5);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].Name, Is.EqualTo("Owner"));
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_ExcludesPendingPermissions()
+        {
+            var user = new User { Id = 1, Name = "PendingUser", Email = "pending@example.com" };
+            Context.Users.Add(user);
+
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 99 };
+            project.Permissions = new List<Permission>
+            {
+                new Permission { UserId = 1, Level = PermissionLevel.View, Status = PermissionStatus.Pending }
+            };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "pending", 5);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_NameContainsSearch()
+        {
+            var userA = new User { Id = 1, Name = "John", Email = "john@example.com" };
+            var userB = new User { Id = 2, Name = "Johnny", Email = "johnny@example.com" };
+            Context.Users.AddRange(userA, userB);
+
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
+            project.Permissions = new List<Permission>
+            {
+                new Permission { UserId = 2, Level = PermissionLevel.View, Status = PermissionStatus.Active }
+            };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "john", 5);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_NoMatch_ReturnsEmpty()
+        {
+            var owner = new User { Id = 1, Name = "Alice", Email = "alice@example.com" };
+            Context.Users.Add(owner);
+            Context.Projects.Add(new Project { Id = 1, Name = "Proj", OwnerId = 1 });
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "nonexistent", 5);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_EmptySearch_ReturnsEmpty()
+        {
+            var result = await _repo.SearchUsersByProjectAsync(1, "", 5);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_RespectsMaxResults()
+        {
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
+            project.Permissions = new List<Permission>();
+            for (int i = 2; i <= 10; i++)
+            {
+                project.Permissions.Add(new Permission
+                {
+                    UserId = i,
+                    Level = PermissionLevel.View,
+                    Status = PermissionStatus.Active
+                });
+            }
+            Context.Projects.Add(project);
+
+            var users = new List<User>();
+            for (int i = 2; i <= 10; i++)
+            {
+                users.Add(new User { Id = i, Name = "User" + i, Email = "user" + i + "@example.com" });
+            }
+            Context.Users.AddRange(users);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "user", 3);
+            Assert.That(result.Count(), Is.EqualTo(3));
+        }
+
+        #endregion
     }
 }
