@@ -150,7 +150,7 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 
         protected void ScrollToAndClick(By by, int timeoutSeconds = 10)
         {
-            var element = WaitForElement(by, timeoutSeconds);
+            var element = WaitForClickable(by, timeoutSeconds);
 
             ((IJavaScriptExecutor)Driver).ExecuteScript(
                 "arguments[0].scrollIntoView({block: 'center', inline: 'center'}); arguments[0].click();",

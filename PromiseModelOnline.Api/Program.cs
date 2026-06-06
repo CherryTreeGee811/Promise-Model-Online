@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols;
 using PromiseModelOnline.Api.Auth;
+using PromiseModelOnline.Api.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
@@ -66,6 +68,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         o.TokenValidationParameters.ValidateAudience = false;
         o.TokenValidationParameters.ValidIssuer = issuer;
 
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+
         if (builder.Environment.IsDevelopment())
         {
             o.BackchannelHttpHandler = new HttpClientHandler
@@ -86,6 +102,7 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("scope", "projects.write"));
 });
 
+builder.Services.AddSignalR();
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers(options =>
     {
@@ -163,5 +180,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

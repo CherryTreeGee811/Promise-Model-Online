@@ -1,0 +1,26 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/projects/import",
+    "headers": {
+      "Cookie": {
+        "contains": "__Host-pmo.session=owner-session"
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
+      "Location": "/api/projects/123"
+    },
+    "jsonBody": {
+      "projectId": 123,
+      "warnings": []
+    }
+  }
+}

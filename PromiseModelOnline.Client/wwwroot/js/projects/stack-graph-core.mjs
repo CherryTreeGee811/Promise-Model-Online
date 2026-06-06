@@ -392,6 +392,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         projectId,
         focusNodeId,
         onContextMenu,
+        enableZoom,
         uniformNodeScale = null,
     } = options;
 
@@ -418,22 +419,26 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
                 },
             }));
 
+    const isLink = enableZoom;
+    const containerTag = isLink ? 'a' : 'g';
+
     const node = layer.append('g')
-        .selectAll('a')
+        .selectAll(containerTag)
         .data(renderable)
-        .join('a')
+        .join(containerTag)
         .attr('class', current => `graph-node graph-node--${current.data.nodeType}`)
-        .attr('href', current => getNodeHref(current.data, projectId))
-        .attr('xlink:href', current => getNodeHref(current.data, projectId))
         .attr('transform', current => {
             const x = current.y + contentOffsetX;
             const y = current.x + contentOffsetY;
             return `translate(${x}, ${y}) scale(${nodeScale})`;
         });
 
-    // Expose styling tokens and state via CSS variables and classes on the anchor element so
-    // the visual appearance can be controlled from `site.css` while still allowing JS to
-    // provide the accent color per node type.
+    if (isLink) {
+        node
+            .attr('href', current => getNodeHref(current.data, projectId))
+            .attr('xlink:href', current => getNodeHref(current.data, projectId));
+    }
+
     node.style('--graph-accent', current => getNodeColor(current.data.nodeType))
         .style('--graph-stroke', current => {
             const isFocused = focusNodeId != null && current.data.id === focusNodeId;
@@ -452,7 +457,10 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .classed('is-collapsed', current => Boolean(current.data._isCollapsed))
         .classed('is-search-matched', current => Boolean(current.data._searchMatched))
         .classed('is-focused', current => (focusNodeId != null && current.data.id === focusNodeId))
-        .attr('tabindex', current => (enableZoom && current.data.nodeType !== 'root') ? 0 : null)
+        .attr('tabindex', current => {
+            if (current.data.nodeType === 'root') return null;
+            return enableZoom ? 0 : -1;
+        })
         .attr('role', current => (enableZoom && current.data.nodeType !== 'root') ? 'treeitem' : null)
         .attr('aria-label', current => (enableZoom && current.data.nodeType !== 'root') ? (getNodeTitle(current.data) || 'Graph node') : null);
 
@@ -475,6 +483,8 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
     node.append('title')
         .text(current => getNodeTitle(current.data));
 
+    const childAttrs = { focusable: 'false' };
+
     node.append('rect')
         .attr('class', 'graph-card')
         .attr('x', -CARD_WIDTH / 2)
@@ -485,7 +495,8 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('ry', CARD_RADIUS)
         .attr('fill', 'var(--graph-card-bg)')
         .attr('stroke', 'var(--graph-stroke)')
-        .attr('stroke-width', 'var(--graph-stroke-width)');
+        .attr('stroke-width', 'var(--graph-stroke-width)')
+        .attr('focusable', 'false');
 
     node.append('rect')
         .attr('class', 'graph-card-accent')
@@ -496,6 +507,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS)
         .attr('clip-path', `url(#${cardClipPathId})`)
+        .attr('focusable', 'false')
         // Keep the CSS variable for normal styling but also set an inline fill attribute
         // so browser extensions like Dark Reader that may not honor SVG CSS variables
         // still display the accent color correctly.
@@ -505,6 +517,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('class', 'graph-card-statement')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
+        .attr('focusable', 'false')
         .text(current => truncateText(current.data.label, 36));
 
     node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
@@ -515,6 +528,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .attr('font-weight', 600)
+        .attr('focusable', 'false')
         .text(current => getNodeTypeLabel(current.data.payload) ?? '');
 
     node.filter(current => current.data.nodeType !== 'root')
@@ -524,6 +538,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'hanging')
+        .attr('focusable', 'false')
         .text(current => getStatusIcon(current.data.payload?.statusColor));
 
     node.filter(current => {
@@ -766,6 +781,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         projectId,
         focusNodeId: resolvedFocusNodeId,
         onContextMenu,
+        enableZoom,
         uniformNodeScale: compact ? cardScale : null,
     };
 
