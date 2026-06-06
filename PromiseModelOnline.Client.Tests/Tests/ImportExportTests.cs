@@ -50,7 +50,7 @@ public class ImportExportTests : SeleniumTestBase
         var summaryText = summaryPanel.Text;
 
         Assert.That(summaryText, Does.Contain("Uber"));
-        Assert.That(summaryText, Does.Contain("schemaVersion"));
+        Assert.That(summaryText, Does.Contain("Schema Version"));
         Assert.That(summaryText, Does.Contain("Promises"));
         Assert.That(summaryText, Does.Contain("Epics"));
         Assert.That(summaryText, Does.Contain("Journeys"));
@@ -87,7 +87,7 @@ public class ImportExportTests : SeleniumTestBase
 
         ScrollToAndClick(By.Id("create-project-btn"), 5);
 
-        WaitForUrlContains("/projects/", 10);
+        WaitForUrlContains("/graph", 10);
         Assert.That(Driver.Url, Does.Contain("/projects/123/graph"));
     }
 
@@ -101,7 +101,7 @@ public class ImportExportTests : SeleniumTestBase
 
         ScrollToAndClick(By.Id("create-project-btn"), 5);
 
-        WaitForUrlContains("/projects/", 10);
+        WaitForUrlContains("/graph", 10);
         Assert.That(Driver.Url, Does.Contain("/projects/123/graph"));
     }
 
