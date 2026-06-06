@@ -1,33 +1,45 @@
-<h1>Iteration History</h1>
-<div id="project-title" class="text-secondary mb-3"></div>
-<p id="error-text"></p>
+<h1 class="mb-4">Iteration History</h1>
+<div id="project-title" class="text-secondary fs-5 mb-4"></div>
+<p id="error-text" aria-live="polite"></p>
 
-<div id="iterations-list">
+<div class="field-actions mb-4">
+    <button id="create-iteration-btn" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2" type="button">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        New Iteration
+    </button>
+</div>
+
+<div class="detail-card">
+    <div id="iterations-list"></div>
 </div>
 
 <div id="iteration-detail" class="d-none">
-    <div class="detail-card">
-        <h2 id="iteration-title"></h2>
+    <div class="card detail-card">
+        <div class="card-body">
+            <h2 id="iteration-title" class="card-title h4"></h2>
 
-        <div id="iteration-loading" class="d-flex justify-content-center align-items-center py-5" hidden>
-            <div class="spinner-border text-primary" role="status" aria-live="polite" aria-label="Loading iteration details">
-                <span class="visually-hidden">Loading iteration details...</span>
+            <div id="iteration-loading" class="d-flex justify-content-center align-items-center py-5" hidden>
+                <div class="spinner-border text-primary" role="status" aria-label="Loading iteration details">
+                    <span class="visually-hidden">Loading iteration details...</span>
+                </div>
             </div>
-        </div>
 
-        <div id="iteration-burndown-container" class="mb-4">
-            <h3>Burndown</h3>
-            <div id="iteration-burndown-canvas"></div>
-        </div>
+            <section id="iteration-burndown-container" class="mb-4" aria-label="Burndown chart">
+                <h3 class="h5 text-secondary mb-3">Burndown</h3>
+                <div id="iteration-burndown-canvas"></div>
+            </section>
 
-        <h3>Strides</h3>
-        <div id="stride-details" class="mb-3"></div>
+            <section aria-label="Strides in this iteration">
+                <h3 class="h5 text-secondary mb-3">Strides</h3>
+                <div id="stride-details" class="mb-4"></div>
+            </section>
 
-        <div class="field-actions">
-            <button id="back-to-iterations-btn" type="button" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                Back to iterations
-            </button>
+            <div class="field-actions">
+                <button id="back-to-iterations-btn" type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                    Back to iterations
+                </button>
+            </div>
         </div>
     </div>
 </div>

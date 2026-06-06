@@ -55,7 +55,7 @@ export function loadIterationHistory(projectId) {
                             ${iterations.map(i => `
                                 <tr>
                                     <td>${escapeHtml(i.name)}</td>
-                                    <td>${new Date(i.createdAt).toLocaleDateString('en-CA')}</td>
+                                    <td>${formatDate(i.createdAt)}</td>
                                     <td>
                                         <button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${i.id}" type="button">
                                             <i class="bi bi-eye" aria-hidden="true"></i>
@@ -106,19 +106,13 @@ export function loadIterationHistory(projectId) {
                 if (points && points.length > 0) {
                     drawBurndownChart(burndownCanvas, points);
                 } else {
-                    burndownContainer.innerHTML = `
-                        <h3>Burndown</h3>
-                        <p class="no-items">No burndown data available for this iteration.</p>
-                    `;
+                    burndownCanvas.innerHTML = '<p class="no-items">No burndown data available for this iteration.</p>';
                 }
             })
             .catch(err => {
                 console.error('Iteration burndown error', err);
                 if (loadingEl) loadingEl.hidden = true;
-                burndownContainer.innerHTML = `
-                    <h3>Burndown</h3>
-                    <p class="error">Failed to load iteration burndown.</p>
-                `;
+                burndownCanvas.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
             });
 
         getStridesByIteration(iterationId)
