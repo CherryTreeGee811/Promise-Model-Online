@@ -393,6 +393,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         focusNodeId,
         onContextMenu,
         enableZoom,
+        enableLinks = enableZoom,
         uniformNodeScale = null,
     } = options;
 
@@ -419,8 +420,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
                 },
             }));
 
-    const isLink = enableZoom;
-    const containerTag = isLink ? 'a' : 'g';
+    const containerTag = enableLinks ? 'a' : 'g';
 
     const node = layer.append('g')
         .selectAll(containerTag)
@@ -433,10 +433,11 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
             return `translate(${x}, ${y}) scale(${nodeScale})`;
         });
 
-    if (isLink) {
+    if (enableLinks) {
         node
             .attr('href', current => getNodeHref(current.data, projectId))
-            .attr('xlink:href', current => getNodeHref(current.data, projectId));
+            .attr('xlink:href', current => getNodeHref(current.data, projectId))
+            .attr('data-nav', '');
     }
 
     node.style('--graph-accent', current => getNodeColor(current.data.nodeType))
@@ -653,6 +654,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         minGraphHeight = null,
         uniformNodeScale = null,
         renderRootCard = false,
+        enableLinks,
     } = options;
 
     if (!contentDiv) return null;
@@ -782,6 +784,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         focusNodeId: resolvedFocusNodeId,
         onContextMenu,
         enableZoom,
+        enableLinks: enableLinks ?? enableZoom,
         uniformNodeScale: compact ? cardScale : null,
     };
 

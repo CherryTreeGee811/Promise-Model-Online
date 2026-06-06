@@ -75,6 +75,7 @@ function rerenderDetailStackGraph() {
         projectId: detailStackState.projectId,
         focusNodeId: detailStackState.focusNodeId,
         enableZoom: false,
+        enableLinks: true,
         compact: true,
         uniformNodeScale: getDetailPageNodeScale(detailStackState.activeNodeType),
         viewportElement: container,
