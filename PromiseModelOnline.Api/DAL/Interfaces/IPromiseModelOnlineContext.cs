@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces
@@ -62,5 +63,15 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         /// Gets or sets the DbSet for audit events.
         /// </summary>
         DbSet<AuditEvent> AuditEvents { get; set; }
+
+        /// <summary>
+        /// Gets or sets the DbSet for project-scoped sequence counters.
+        /// </summary>
+        DbSet<ProjectSequence> ProjectSequences { get; set; }
+
+        /// <summary>
+        /// Atomically allocates the next sequence number for a project.
+        /// </summary>
+        Task<int> GetNextSequenceNumberAsync(int projectId);
     }
 }

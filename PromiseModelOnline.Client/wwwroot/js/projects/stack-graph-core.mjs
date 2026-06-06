@@ -212,7 +212,7 @@ export function createNode(nodeType, payload, children = []) {
     const strideBucket = nodeType === 'moment' ? getMomentStrideBucket(payload) : null;
 
     return {
-        id: `${nodeType}-${payload.id}`,
+        id: `${nodeType}-${payload.sequenceNumber ?? payload.id}`,
         nodeType,
         label,
         payload,
@@ -266,7 +266,7 @@ export function getNodeHref(node, projectId) {
     if (projectId != null) {
         params.set('graphProjectId', String(projectId));
     }
-    params.set('graphFocus', `${node.nodeType}-${node.payload?.id}`);
+    params.set('graphFocus', node.id);
 
     return `${getAppBasePath()}/${routeSegment}/${node.payload?.id}?${params.toString()}`;
 }

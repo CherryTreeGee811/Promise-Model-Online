@@ -12,5 +12,10 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         Task AddMentionAsync(CommentMention mention);
         Task<IEnumerable<StackSearchResult>> SearchStackByStatementAsync(int projectId, string searchTerm, int maxResults = 5);
         Task<int> ResolveProjectIdAsync(string parentType, int parentId);
+        Task<IEnumerable<Promise>> GetPromisesByProjectAsync(int projectId);
+        Task<IEnumerable<Epic>> GetEpicsByPromiseIdsAsync(List<int> promiseIds);
+        Task<IEnumerable<Journey>> GetJourneysByEpicIdsAsync(List<int> epicIds);
+        Task<IEnumerable<Flow>> GetFlowsByJourneyIdsAsync(List<int> journeyIds);
+        Task<IEnumerable<Moment>> GetMomentsByFlowIdsAsync(List<int> flowIds);
     }
 }

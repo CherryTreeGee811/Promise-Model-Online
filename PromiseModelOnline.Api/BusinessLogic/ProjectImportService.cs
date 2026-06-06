@@ -126,12 +126,15 @@ public sealed class ProjectImportService : IProjectImportService
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
+        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+
         var newPromise = new Promise
         {
             ProjectId = projectId,
             Statement = promise.Statement,
             Description = promise.Description,
             OwnerId = await ResolveOptionalOwnerIdAsync(promise.OwnerId, requestedByUserId, warnings, $"promise {promise.Id}"),
+            SequenceNumber = nextSeq,
             DisplayOrder = promise.DisplayOrder,
             CreatedAt = promise.CreatedAt,
             UpdatedAt = promise.UpdatedAt,
@@ -143,7 +146,7 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var epic in OrderByDisplayOrder(promise.Epics))
         {
-            await ImportEpicAsync(newPromise.Id, epic, requestedByUserId, warnings, strideIdMap);
+            await ImportEpicAsync(projectId, newPromise.Id, epic, requestedByUserId, warnings, strideIdMap);
         }
     }
 
@@ -220,18 +223,22 @@ public sealed class ProjectImportService : IProjectImportService
     }
 
     private async Task ImportEpicAsync(
+        int projectId,
         int promiseId,
         ProjectExportEpic epic,
         int requestedByUserId,
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
+        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+
         var newEpic = new Epic
         {
             ProductPromiseId = promiseId,
             Statement = epic.Statement,
             Description = epic.Description,
             OwnerId = await ResolveOptionalOwnerIdAsync(epic.OwnerId, requestedByUserId, warnings, $"epic {epic.Id}"),
+            SequenceNumber = nextSeq,
             DisplayOrder = epic.DisplayOrder,
             CreatedAt = epic.CreatedAt,
             UpdatedAt = epic.UpdatedAt,
@@ -243,23 +250,27 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var journey in OrderByDisplayOrder(epic.Journeys))
         {
-            await ImportJourneyAsync(newEpic.Id, journey, requestedByUserId, warnings, strideIdMap);
+            await ImportJourneyAsync(projectId, newEpic.Id, journey, requestedByUserId, warnings, strideIdMap);
         }
     }
 
     private async Task ImportJourneyAsync(
+        int projectId,
         int epicId,
         ProjectExportJourney journey,
         int requestedByUserId,
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
+        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+
         var newJourney = new Journey
         {
             EpicId = epicId,
             Statement = journey.Statement,
             Description = journey.Description,
             OwnerId = await ResolveOptionalOwnerIdAsync(journey.OwnerId, requestedByUserId, warnings, $"journey {journey.Id}"),
+            SequenceNumber = nextSeq,
             DisplayOrder = journey.DisplayOrder,
             CreatedAt = journey.CreatedAt,
             UpdatedAt = journey.UpdatedAt,
@@ -271,23 +282,27 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var flow in OrderByDisplayOrder(journey.Flows))
         {
-            await ImportFlowAsync(newJourney.Id, flow, requestedByUserId, warnings, strideIdMap);
+            await ImportFlowAsync(projectId, newJourney.Id, flow, requestedByUserId, warnings, strideIdMap);
         }
     }
 
     private async Task ImportFlowAsync(
+        int projectId,
         int journeyId,
         ProjectExportFlow flow,
         int requestedByUserId,
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
+        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+
         var newFlow = new Flow
         {
             JourneyId = journeyId,
             Statement = flow.Statement,
             Description = flow.Description,
             OwnerId = await ResolveOptionalOwnerIdAsync(flow.OwnerId, requestedByUserId, warnings, $"flow {flow.Id}"),
+            SequenceNumber = nextSeq,
             DisplayOrder = flow.DisplayOrder,
             CreatedAt = flow.CreatedAt,
             UpdatedAt = flow.UpdatedAt,
@@ -299,17 +314,20 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var moment in OrderByDisplayOrder(flow.Moments))
         {
-            await ImportMomentAsync(newFlow.Id, moment, requestedByUserId, warnings, strideIdMap);
+            await ImportMomentAsync(projectId, newFlow.Id, moment, requestedByUserId, warnings, strideIdMap);
         }
     }
 
     private async Task ImportMomentAsync(
+        int projectId,
         int flowId,
         ProjectExportMoment moment,
         int requestedByUserId,
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
+        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+
         var newMoment = new Moment
         {
             FlowId = flowId,
@@ -320,6 +338,7 @@ public sealed class ProjectImportService : IProjectImportService
             EffortEstimate = moment.EffortEstimate,
             OwnerId = await ResolveOptionalOwnerIdAsync(moment.OwnerId, requestedByUserId, warnings, $"moment {moment.Id}"),
             AssignedStrideId = await ResolveStrideIdAsync(moment.AssignedStrideId, strideIdMap, warnings, $"moment {moment.Id}", "assigned"),
+            SequenceNumber = nextSeq,
             DisplayOrder = moment.DisplayOrder,
             CreatedAt = moment.CreatedAt,
             UpdatedAt = moment.UpdatedAt,

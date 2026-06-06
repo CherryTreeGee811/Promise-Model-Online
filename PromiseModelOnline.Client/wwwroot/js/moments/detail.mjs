@@ -108,7 +108,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                     try {
                         const updated = await updateMomentDescription(momentId, newDescription);
                         moment.description = updated?.description ?? (newDescription.trim() ? newDescription : null);
-                        patchDetailStackGraphNode(`moment-${momentId}`, {
+                        patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             description: moment.description,
                         });
                         descriptionMessage.textContent = 'Saved';
@@ -141,7 +141,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                     try {
                         await updateMomentEstimate(momentId, estimate);
                         moment.effortEstimate = estimate;
-                        patchDetailStackGraphNode(`moment-${momentId}`, {
+                        patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             effortEstimate: estimate,
                         });
                     } catch (err) {
@@ -174,7 +174,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                         try {
                             const updated = await moveMomentToStride(momentId, val);
                             moment.assignedStrideId = updated.assignedStrideId;
-                            patchDetailStackGraphNode(`moment-${momentId}`, {
+                            patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                                 assignedStrideId: updated.assignedStrideId,
                             });
                             strideSelect.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
@@ -224,7 +224,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                         if (updated && updated.type) {
                             moment.type = updated.type;
                             typeSelect.value = updated.type;
-                            patchDetailStackGraphNode(`moment-${momentId}`, {
+                            patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                                 type: updated.type,
                             });
                         }
@@ -244,7 +244,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 .then(journey => getEpicById(journey.epicId))
                 .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
                 .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `moment-${moment.id}`);
+                    const href = buildGraphViewHref(projectId, `moment-${moment.sequenceNumber}`);
                     upsertGraphViewButton(detailDiv, href);
                 })
                 .catch(error => {
@@ -378,7 +378,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
 }
 
 function syncMomentTasksToStackGraph(momentId, moment) {
-    patchDetailStackGraphNode(`moment-${momentId}`, {
+    patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
         tasks: Array.isArray(moment?.tasks) ? [...moment.tasks] : [],
     });
 }

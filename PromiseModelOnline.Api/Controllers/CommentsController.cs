@@ -94,6 +94,48 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         [Authorize(Policy = "projects.read")]
+        [HttpGet("entity-map")]
+        public async Task<ActionResult<IEnumerable<object>>> GetEntityMap(
+            [FromQuery] string? parentType,
+            [FromQuery] int parentId)
+        {
+            if (string.IsNullOrEmpty(parentType) || parentId <= 0)
+                return Ok(Array.Empty<object>());
+
+            try
+            {
+                var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
+
+                var entityMap = new List<object>();
+
+                var promises = await _commentRepository.GetPromisesByProjectAsync(projectId);
+                entityMap.AddRange(promises.Select(p => new { EntityType = "promise", p.Id, p.SequenceNumber }));
+
+                var promiseIds = promises.Select(p => p.Id).ToList();
+                var epics = await _commentRepository.GetEpicsByPromiseIdsAsync(promiseIds);
+                entityMap.AddRange(epics.Select(e => new { EntityType = "epic", e.Id, e.SequenceNumber }));
+
+                var epicIds = epics.Select(e => e.Id).ToList();
+                var journeys = await _commentRepository.GetJourneysByEpicIdsAsync(epicIds);
+                entityMap.AddRange(journeys.Select(j => new { EntityType = "journey", j.Id, j.SequenceNumber }));
+
+                var journeyIds = journeys.Select(j => j.Id).ToList();
+                var flows = await _commentRepository.GetFlowsByJourneyIdsAsync(journeyIds);
+                entityMap.AddRange(flows.Select(f => new { EntityType = "flow", f.Id, f.SequenceNumber }));
+
+                var flowIds = flows.Select(f => f.Id).ToList();
+                var moments = await _commentRepository.GetMomentsByFlowIdsAsync(flowIds);
+                entityMap.AddRange(moments.Select(m => new { EntityType = "moment", m.Id, m.SequenceNumber }));
+
+                return Ok(entityMap);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [Authorize(Policy = "projects.read")]
         [HttpGet("search-promises")]
         public async Task<ActionResult<IEnumerable<object>>> SearchPromises(
             [FromQuery] string? parentType,
@@ -107,7 +149,7 @@ namespace PromiseModelOnline.Api.Controllers
             {
                 var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
                 var stackResults = await _commentRepository.SearchStackByStatementAsync(projectId, search);
-                var result = stackResults.Select(r => new { r.EntityType, r.Id, r.Statement });
+                var result = stackResults.Select(r => new { r.EntityType, r.Id, r.SequenceNumber, r.Statement });
                 return Ok(result);
             }
             catch (ArgumentException ex)

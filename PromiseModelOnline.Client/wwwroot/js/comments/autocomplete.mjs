@@ -140,7 +140,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       if (state.trigger === '@') {
         el.textContent = item.name;
       } else {
-        el.textContent = '#' + item.entityType + '-' + item.id + ' \u2014 ' + item.statement;
+        el.textContent = '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id) + ' \u2014 ' + item.statement;
       }
 
       el.dataset.index = i;
@@ -183,7 +183,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     if (state.trigger === '@') {
       insertText = '@' + item.name + ' ';
     } else {
-      insertText = '#' + item.entityType + '-' + item.id + ' ';
+      insertText = '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id) + ' ';
     }
 
     const cursorEnd = textarea.selectionStart;

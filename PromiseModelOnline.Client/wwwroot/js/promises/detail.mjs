@@ -56,7 +56,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
             const epicsList = document.getElementById('promise-epics-list');
             getEpicsByPromise(promiseId)
                 .then(epics => {
-                    patchChildMetrics(`promise-${promiseId}`, epics);
+                    patchChildMetrics(`promise-${promise.sequenceNumber}`, epics);
                     const tbody = renderTableWithInlineAddRow(epicsList, {
                         headers: ['Statement', 'Actions'],
                         items: epics || [],
@@ -117,7 +117,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
-                                    patchChildMetrics(`promise-${promiseId}`, [...(epics || []), created]);
+                                    patchChildMetrics(`promise-${promise.sequenceNumber}`, [...(epics || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add epic.';
@@ -167,7 +167,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
 
             resolveProjectIdForPromise(promise.id, getGraphProjectIdHintFromUrl())
                 .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `promise-${promise.id}`);
+                    const href = buildGraphViewHref(projectId, `promise-${promise.sequenceNumber}`);
                     upsertGraphViewButton(detailDiv, href);
                 })
                 .catch(error => {
@@ -188,7 +188,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     try {
                         const updated = await updatePromiseDescription(promiseId, newDesc);
                         promise.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
-                        patchDetailStackGraphNode(`promise-${promiseId}`, {
+                        patchDetailStackGraphNode(`promise-${promise.sequenceNumber}`, {
                             description: promise.description,
                         });
                         descMsg.textContent = 'Saved';

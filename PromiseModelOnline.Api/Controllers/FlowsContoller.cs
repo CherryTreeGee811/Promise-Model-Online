@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
@@ -15,13 +18,16 @@ namespace PromiseModelOnline.Api.Controllers
     public class FlowsController : GenericController<Flow, FlowDTO>
     {
         private readonly IFlowService _flowService;
+        private readonly IPromiseModelOnlineContext _context;
 
         public FlowsController(
             IFlowService service,
-            IGenericMapper<Flow, FlowDTO> mapper)
+            IGenericMapper<Flow, FlowDTO> mapper,
+            IPromiseModelOnlineContext context)
             : base(service, mapper)
         {
             _flowService = service;
+            _context = context;
         }
 
         [Authorize(Policy = "projects.write")]
@@ -31,11 +37,19 @@ namespace PromiseModelOnline.Api.Controllers
             if (request is null) return BadRequest("Request is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
+            var projectId = await _context.Journeys
+                .Where(j => j.Id == request.JourneyId)
+                .Select(j => j.Epic.ProductPromise.ProjectId)
+                .FirstAsync();
+
+            var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+
             var flow = new Flow
             {
                 Statement = request.Statement,
                 Description = request.Description,
                 JourneyId = request.JourneyId,
+                SequenceNumber = nextSeq,
                 DisplayOrder = request.DisplayOrder,
                 StatusColor = "red"
             };

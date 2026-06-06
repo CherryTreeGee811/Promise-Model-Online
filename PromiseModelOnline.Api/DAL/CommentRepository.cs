@@ -62,12 +62,16 @@ namespace PromiseModelOnline.Api.DAL
                 return Enumerable.Empty<StackSearchResult>();
 
             var results = new List<StackSearchResult>();
+            var lowerSearch = searchTerm.ToLower();
+            var (parsedType, parsedSeq) = ParseEntityReference(searchTerm);
 
             var promises = await _context.Set<Promise>()
-                .Where(p => p.ProjectId == projectId && p.Statement.ToLower().Contains(searchTerm.ToLower()))
+                .Where(p => p.ProjectId == projectId && (
+                    p.Statement.ToLower().Contains(lowerSearch) ||
+                    (parsedType == "promise" && p.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(promises.Select(p => new StackSearchResult("promise", p.Id, p.Statement)));
+            results.AddRange(promises.Select(p => new StackSearchResult("promise", p.Id, p.SequenceNumber, p.Statement)));
 
             var promiseIds = await _context.Set<Promise>()
                 .Where(p => p.ProjectId == projectId)
@@ -75,10 +79,12 @@ namespace PromiseModelOnline.Api.DAL
                 .ToListAsync();
 
             var epics = await _context.Set<Epic>()
-                .Where(e => promiseIds.Contains(e.ProductPromiseId) && e.Statement.ToLower().Contains(searchTerm.ToLower()))
+                .Where(e => promiseIds.Contains(e.ProductPromiseId) && (
+                    e.Statement.ToLower().Contains(lowerSearch) ||
+                    (parsedType == "epic" && e.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(epics.Select(e => new StackSearchResult("epic", e.Id, e.Statement)));
+            results.AddRange(epics.Select(e => new StackSearchResult("epic", e.Id, e.SequenceNumber, e.Statement)));
 
             var epicIds = epics.Select(e => e.Id)
                 .Concat(await _context.Set<Epic>()
@@ -89,10 +95,12 @@ namespace PromiseModelOnline.Api.DAL
                 .ToList();
 
             var journeys = await _context.Set<Journey>()
-                .Where(j => epicIds.Contains(j.EpicId) && j.Statement.ToLower().Contains(searchTerm.ToLower()))
+                .Where(j => epicIds.Contains(j.EpicId) && (
+                    j.Statement.ToLower().Contains(lowerSearch) ||
+                    (parsedType == "journey" && j.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(journeys.Select(j => new StackSearchResult("journey", j.Id, j.Statement)));
+            results.AddRange(journeys.Select(j => new StackSearchResult("journey", j.Id, j.SequenceNumber, j.Statement)));
 
             var journeyIds = journeys.Select(j => j.Id)
                 .Concat(await _context.Set<Journey>()
@@ -103,10 +111,12 @@ namespace PromiseModelOnline.Api.DAL
                 .ToList();
 
             var flows = await _context.Set<Flow>()
-                .Where(f => journeyIds.Contains(f.JourneyId) && f.Statement.ToLower().Contains(searchTerm.ToLower()))
+                .Where(f => journeyIds.Contains(f.JourneyId) && (
+                    f.Statement.ToLower().Contains(lowerSearch) ||
+                    (parsedType == "flow" && f.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(flows.Select(f => new StackSearchResult("flow", f.Id, f.Statement)));
+            results.AddRange(flows.Select(f => new StackSearchResult("flow", f.Id, f.SequenceNumber, f.Statement)));
 
             var flowIds = flows.Select(f => f.Id)
                 .Concat(await _context.Set<Flow>()
@@ -117,12 +127,62 @@ namespace PromiseModelOnline.Api.DAL
                 .ToList();
 
             var moments = await _context.Set<Moment>()
-                .Where(m => flowIds.Contains(m.FlowId) && m.Statement.ToLower().Contains(searchTerm.ToLower()))
+                .Where(m => flowIds.Contains(m.FlowId) && (
+                    m.Statement.ToLower().Contains(lowerSearch) ||
+                    (parsedType == "moment" && m.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(moments.Select(m => new StackSearchResult("moment", m.Id, m.Statement)));
+            results.AddRange(moments.Select(m => new StackSearchResult("moment", m.Id, m.SequenceNumber, m.Statement)));
 
             return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
+        }
+
+        private static (string? type, int? seq) ParseEntityReference(string searchTerm)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(
+                searchTerm.Trim(),
+                @"^(promise|epic|journey|flow|moment)[-\s]?(\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (match.Success)
+                return (match.Groups[1].Value.ToLowerInvariant(), int.Parse(match.Groups[2].Value));
+
+            return (null, null);
+        }
+
+        public async Task<IEnumerable<Promise>> GetPromisesByProjectAsync(int projectId)
+        {
+            return await _context.Set<Promise>()
+                .Where(p => p.ProjectId == projectId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Epic>> GetEpicsByPromiseIdsAsync(List<int> promiseIds)
+        {
+            return await _context.Set<Epic>()
+                .Where(e => promiseIds.Contains(e.ProductPromiseId))
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Journey>> GetJourneysByEpicIdsAsync(List<int> epicIds)
+        {
+            return await _context.Set<Journey>()
+                .Where(j => epicIds.Contains(j.EpicId))
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Flow>> GetFlowsByJourneyIdsAsync(List<int> journeyIds)
+        {
+            return await _context.Set<Flow>()
+                .Where(f => journeyIds.Contains(f.JourneyId))
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Moment>> GetMomentsByFlowIdsAsync(List<int> flowIds)
+        {
+            return await _context.Set<Moment>()
+                .Where(m => flowIds.Contains(m.FlowId))
+                .ToListAsync();
         }
 
         public async Task<int> ResolveProjectIdAsync(string parentType, int parentId)

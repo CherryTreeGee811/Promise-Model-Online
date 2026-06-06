@@ -53,11 +53,13 @@ public static class PromiseHierarchySeeder
         var flowRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Flows.csv"));
         var momentRows  = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Moments.csv"));
 
-        var productLookup  = await SeedProductsAsync(db, project.Id, productRows);
-        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup);
-        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup);
-        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup);
-        var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup);
+        var seq = new SeqCounter { Value = await GetGlobalMaxSequenceAsync(db, project.Id) + 1 };
+
+        var productLookup  = await SeedProductsAsync(db, project.Id, productRows, seq);
+        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup, seq);
+        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup, seq);
+        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup, seq);
+        var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup, seq);
 
         logger?.LogInformation(
             "Promise hierarchy seed complete. ProjectId: {ProjectId}, Products: {ProductsInserted}/{ProductsTotal}, Epics: {EpicsInserted}/{EpicsTotal}, Journeys: {JourneysInserted}/{JourneysTotal}, Flows: {FlowsInserted}/{FlowsTotal}, Moments: {MomentsInserted}/{MomentsTotal}",
@@ -152,7 +154,8 @@ public static class PromiseHierarchySeeder
     private static async Task<(int Inserted, int Total)> SeedMomentsWithIdsAsync(
         PromiseModelOnlineContext db,
         IReadOnlyList<Dictionary<string, string>> rows,
-        SeedLookup flows)
+        SeedLookup flows,
+        SeqCounter seq)
     {
         var validRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise ID"))
@@ -179,10 +182,12 @@ public static class PromiseHierarchySeeder
                 strideId = parsedStrideId;
             }
 
+            var momentSeq = seq.Value++;
+
             var sql = @"
                 SET IDENTITY_INSERT Moments ON;
-                INSERT INTO Moments (Id, FlowId, Statement, Type, Status, DisplayOrder, CreatedAt, AssignedStrideId, StatusColor, IsZombie)
-                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, 0);
+                INSERT INTO Moments (Id, FlowId, SequenceNumber, Statement, Type, Status, DisplayOrder, CreatedAt, AssignedStrideId, StatusColor, IsZombie)
+                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, 0);
                 SET IDENTITY_INSERT Moments OFF;";
 
             object? strideParam = strideId.HasValue ? strideId.Value : null;
@@ -191,6 +196,7 @@ public static class PromiseHierarchySeeder
             {
                 momentId,
                 flowId,
+                momentSeq,
                 statement,
                 (int)MomentType.Story,
                 (int)MomentStatus.Todo,
@@ -208,7 +214,7 @@ public static class PromiseHierarchySeeder
 
     // ======================== Existing Promise Hierarchy Seeders =========================
 
-    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows)
+    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise ID")) && !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise Statement")))
@@ -240,6 +246,7 @@ public static class PromiseHierarchySeeder
                     Statement = statement,
                     ProjectId = projectId,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -255,7 +262,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, seededRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products)
+    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Epic Promise ID"))
@@ -298,6 +305,7 @@ public static class PromiseHierarchySeeder
                     ProductPromiseId = productId,
                     Statement = statement,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -313,7 +321,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics)
+    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Journey Promise ID"))
@@ -356,6 +364,7 @@ public static class PromiseHierarchySeeder
                     EpicId = epicId,
                     Statement = statement,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -371,7 +380,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys)
+    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Flow Promise ID"))
@@ -414,6 +423,7 @@ public static class PromiseHierarchySeeder
                     JourneyId = journeyId,
                     Statement = statement,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -499,6 +509,43 @@ public static class PromiseHierarchySeeder
         return project;
     }
 
+    private static async Task<int> GetGlobalMaxSequenceAsync(PromiseModelOnlineContext db, int projectId)
+    {
+        var maxValues = new List<int>();
+
+        var promiseMax = await db.Promises
+            .Where(p => p.ProjectId == projectId)
+            .Select(p => (int?)p.SequenceNumber)
+            .MaxAsync() ?? 0;
+        maxValues.Add(promiseMax);
+
+        var epicMax = await db.Epics
+            .Where(e => e.ProductPromise.ProjectId == projectId)
+            .Select(e => (int?)e.SequenceNumber)
+            .MaxAsync() ?? 0;
+        maxValues.Add(epicMax);
+
+        var journeyMax = await db.Journeys
+            .Where(j => j.Epic.ProductPromise.ProjectId == projectId)
+            .Select(j => (int?)j.SequenceNumber)
+            .MaxAsync() ?? 0;
+        maxValues.Add(journeyMax);
+
+        var flowMax = await db.Flows
+            .Where(f => f.Journey.Epic.ProductPromise.ProjectId == projectId)
+            .Select(f => (int?)f.SequenceNumber)
+            .MaxAsync() ?? 0;
+        maxValues.Add(flowMax);
+
+        var momentMax = await db.Moments
+            .Where(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectId)
+            .Select(m => (int?)m.SequenceNumber)
+            .MaxAsync() ?? 0;
+        maxValues.Add(momentMax);
+
+        return maxValues.Max();
+    }
+
     private static string ResolvePmoPmDirectory(string contentRootPath)
     {
         var direct = Path.Combine(contentRootPath, "pmo_pm");
@@ -576,4 +623,5 @@ public static class PromiseHierarchySeeder
     private readonly record struct StatementOrder(string Statement, int DisplayOrder);
     private readonly record struct ParentStatement(int ParentId, string Statement, int DisplayOrder);
     private readonly record struct SeedLookup(Dictionary<string, int> IdBySourceId, int Inserted, int Total);
+    private sealed class SeqCounter { public int Value; }
 }

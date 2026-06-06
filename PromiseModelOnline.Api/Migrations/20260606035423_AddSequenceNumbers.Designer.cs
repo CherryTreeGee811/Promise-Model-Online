@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PromiseModelOnline.Api.DAL;
 
@@ -11,9 +12,11 @@ using PromiseModelOnline.Api.DAL;
 namespace PromiseModelOnline.Api.Migrations
 {
     [DbContext(typeof(PromiseModelOnlineContext))]
-    partial class PromiseModelOnlineContextModelSnapshot : ModelSnapshot
+    [Migration("20260606035423_AddSequenceNumbers")]
+    partial class AddSequenceNumbers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -617,21 +620,6 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Projects");
-                });
-
-            modelBuilder.Entity("PromiseModelOnline.Api.Models.ProjectSequence", b =>
-                {
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("NextSequenceNumber")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("ProjectId");
-
-                    b.ToTable("ProjectSequences");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Promise", b =>

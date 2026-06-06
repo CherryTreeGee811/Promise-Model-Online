@@ -8,6 +8,7 @@ public class FlowDTO
     public string? Description { get; set; }
     public int JourneyId { get; set; }
     public int? OwnerId { get; set; }
+    public int SequenceNumber { get; set; }
     public int DisplayOrder { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

@@ -1,11 +1,15 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
+using PromiseModelOnline.Api.DAL;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
@@ -16,6 +20,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IEpicService> _mockEpicService = null!;
         private Mock<IGenericMapper<Epic, EpicDTO>> _mockMapper = null!;
+        private PromiseModelOnlineContext _testContext = null!;
         private EpicsController _controller = null!;
 
         [SetUp]
@@ -23,7 +28,19 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockEpicService = new Mock<IEpicService>();
             _mockMapper = new Mock<IGenericMapper<Epic, EpicDTO>>();
-            _controller = new EpicsController(_mockEpicService.Object, _mockMapper.Object);
+
+            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            _testContext = new PromiseModelOnlineContext(options);
+
+            _controller = new EpicsController(_mockEpicService.Object, _mockMapper.Object, _testContext);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _testContext.Dispose();
         }
 
         #region GetAll Tests
@@ -223,6 +240,10 @@ namespace PromiseModelOnline.Api.Tests
         public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
             // Arrange
+            _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Promises.Add(new Promise { Id = 5, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            await _testContext.SaveChangesAsync();
+
             var request = new CreateEpicRequestDTO { Statement = "New Epic", ProductPromiseId = 5, DisplayOrder = 1 };
 
             _mockEpicService.Setup(s => s.AddAsync(It.IsAny<Epic>()))

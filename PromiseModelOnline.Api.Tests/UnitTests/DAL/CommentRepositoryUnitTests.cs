@@ -261,6 +261,49 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(list.Any(r => r.EntityType == "journey"), Is.True);
         }
 
+        [Test]
+        public async Task SearchStackByStatementAsync_MatchesEntityReferencePattern()
+        {
+            var project = new Project { Id = 1, Name = "Test", OwnerId = 1 };
+            Context.Projects.Add(project);
+
+            var promise = new Promise { Id = 10, ProjectId = 1, Statement = "Payment processing", SequenceNumber = 1 };
+            var promise2 = new Promise { Id = 11, ProjectId = 1, Statement = "User login", SequenceNumber = 2 };
+            var epic = new Epic { Id = 20, ProductPromiseId = 10, Statement = "Checkout flow", SequenceNumber = 1 };
+            var journey = new Journey { Id = 30, EpicId = 20, Statement = "Mobile checkout", SequenceNumber = 3 };
+            var flow = new Flow { Id = 40, JourneyId = 30, Statement = "Payment form", SequenceNumber = 7 };
+
+            Context.AddRange(promise, promise2, epic, journey, flow);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchStackByStatementAsync(1, "promise-1", 10);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].EntityType, Is.EqualTo("promise"));
+            Assert.That(list[0].Id, Is.EqualTo(10));
+            Assert.That(list[0].SequenceNumber, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task SearchStackByStatementAsync_EntityPatternOnlyMatchesCorrectType()
+        {
+            var project = new Project { Id = 1, Name = "Test", OwnerId = 1 };
+            Context.Projects.Add(project);
+
+            var promise = new Promise { Id = 10, ProjectId = 1, Statement = "Payment processing", SequenceNumber = 1 };
+            var epic = new Epic { Id = 20, ProductPromiseId = 10, Statement = "Checkout flow", SequenceNumber = 1 };
+
+            Context.AddRange(promise, epic);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchStackByStatementAsync(1, "epic-1", 10);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].EntityType, Is.EqualTo("epic"));
+        }
+
         #endregion
 
         #region ResolveProjectIdAsync

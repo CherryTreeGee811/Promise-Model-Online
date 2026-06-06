@@ -1,11 +1,15 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
+using PromiseModelOnline.Api.DAL;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
@@ -16,6 +20,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IJourneyService> _mockJourneyService = null!;
         private Mock<IGenericMapper<Journey, JourneyDTO>> _mockMapper = null!;
+        private PromiseModelOnlineContext _testContext = null!;
         private JourneysController _controller = null!;
 
         [SetUp]
@@ -23,7 +28,19 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockJourneyService = new Mock<IJourneyService>();
             _mockMapper = new Mock<IGenericMapper<Journey, JourneyDTO>>();
-            _controller = new JourneysController(_mockJourneyService.Object, _mockMapper.Object);
+
+            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            _testContext = new PromiseModelOnlineContext(options);
+
+            _controller = new JourneysController(_mockJourneyService.Object, _mockMapper.Object, _testContext);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _testContext.Dispose();
         }
 
         #region GetAll Tests
@@ -222,6 +239,11 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
+            _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Promises.Add(new Promise { Id = 10, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Epics.Add(new Epic { Id = 3, ProductPromiseId = 10, Statement = "Parent", SequenceNumber = 2, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            await _testContext.SaveChangesAsync();
+
             var request = new CreateJourneyRequestDTO { Statement = "New Journey", EpicId = 3, DisplayOrder = 2 };
 
             _mockJourneyService.Setup(s => s.AddAsync(It.IsAny<Journey>()))

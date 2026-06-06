@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -28,6 +29,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IProjectExportService _projectExportService;
         private readonly IProjectImportService _projectImportService;
         private readonly IProjectImportValidationService _projectImportValidationService;
+        private readonly IPromiseModelOnlineContext _context;
 
         public ProjectsController(
             IProjectService projectService,
@@ -38,7 +40,8 @@ namespace PromiseModelOnline.Api.Controllers
             IGenericMapper<Promise, PromiseDTO> promiseMapper,
             IProjectExportService projectExportService,
             IProjectImportService projectImportService,
-            IProjectImportValidationService projectImportValidationService)
+            IProjectImportValidationService projectImportValidationService,
+            IPromiseModelOnlineContext context)
             : base(projectService, mapper)
         {
             _projectService = projectService;
@@ -49,6 +52,7 @@ namespace PromiseModelOnline.Api.Controllers
             _projectExportService = projectExportService;
             _projectImportService = projectImportService;
             _projectImportValidationService = projectImportValidationService;
+            _context = context;
         }
 
         [Authorize(Policy = "projects.read")]
@@ -97,6 +101,53 @@ namespace PromiseModelOnline.Api.Controllers
                 .ToList();
 
             return Ok(result);
+        }
+
+        [Authorize(Policy = "projects.read")]
+        [HttpGet("{id}/entity-map")]
+        public async Task<ActionResult<IEnumerable<object>>> GetEntityMap(int id)
+        {
+            var entityMap = new List<object>();
+
+            var promises = await _context.Promises
+                .Where(p => p.ProjectId == id)
+                .Select(p => new { EntityType = "promise", p.Id, p.SequenceNumber })
+                .ToListAsync();
+            entityMap.AddRange(promises);
+
+            var promiseIds = promises.Select(p => p.Id).ToList();
+
+            var epics = await _context.Epics
+                .Where(e => promiseIds.Contains(e.ProductPromiseId))
+                .Select(e => new { EntityType = "epic", e.Id, e.SequenceNumber })
+                .ToListAsync();
+            entityMap.AddRange(epics);
+
+            var epicIds = epics.Select(e => e.Id).ToList();
+
+            var journeys = await _context.Journeys
+                .Where(j => epicIds.Contains(j.EpicId))
+                .Select(j => new { EntityType = "journey", j.Id, j.SequenceNumber })
+                .ToListAsync();
+            entityMap.AddRange(journeys);
+
+            var journeyIds = journeys.Select(j => j.Id).ToList();
+
+            var flows = await _context.Flows
+                .Where(f => journeyIds.Contains(f.JourneyId))
+                .Select(f => new { EntityType = "flow", f.Id, f.SequenceNumber })
+                .ToListAsync();
+            entityMap.AddRange(flows);
+
+            var flowIds = flows.Select(f => f.Id).ToList();
+
+            var moments = await _context.Moments
+                .Where(m => flowIds.Contains(m.FlowId))
+                .Select(m => new { EntityType = "moment", m.Id, m.SequenceNumber })
+                .ToListAsync();
+            entityMap.AddRange(moments);
+
+            return Ok(entityMap);
         }
 
         private async Task<User?> GetCurrentUserAsync()

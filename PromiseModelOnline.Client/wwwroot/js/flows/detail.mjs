@@ -75,7 +75,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
             const momentsList = document.getElementById('flow-moments-list');
             getMomentsByFlow(flowId)
                 .then(moments => {
-                    patchChildMetrics(`flow-${flowId}`, moments);
+                    patchChildMetrics(`flow-${flow.sequenceNumber}`, moments);
                     const tbody = renderTableWithInlineAddRow(momentsList, {
                         headers: ['Statement', 'Type', 'Status', 'Actions'],
                         items: moments || [],
@@ -151,7 +151,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
                                     typeSelect.value = 'Story';
-                                    patchChildMetrics(`flow-${flowId}`, [...(moments || []), created]);
+                                    patchChildMetrics(`flow-${flow.sequenceNumber}`, [...(moments || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add moment.';
@@ -237,7 +237,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                     try {
                         const updated = await updateFlowDescription(flowId, newDesc);
                         flow.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
-                        patchDetailStackGraphNode(`flow-${flowId}`, {
+                        patchDetailStackGraphNode(`flow-${flow.sequenceNumber}`, {
                             description: flow.description,
                         });
                         descMsg.textContent = 'Saved';
@@ -256,7 +256,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                 .then(journey => getEpicById(journey.epicId))
                 .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
                 .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `flow-${flow.id}`);
+                    const href = buildGraphViewHref(projectId, `flow-${flow.sequenceNumber}`);
                     upsertGraphViewButton(detailDiv, href);
                 })
                 .catch(error => {

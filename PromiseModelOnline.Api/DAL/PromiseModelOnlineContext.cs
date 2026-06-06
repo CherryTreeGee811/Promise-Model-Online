@@ -1,14 +1,15 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Reflection;
+using System.Security.Claims;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Security.Claims;
-using System.Text.Json;
 
 namespace PromiseModelOnline.Api.DAL
 {
@@ -90,6 +91,65 @@ namespace PromiseModelOnline.Api.DAL
         public DbSet<AuditEvent> AuditEvents { get; set; } = null!;
 
         /// <summary>
+        /// Gets or sets the DbSet for project-scoped sequence counters.
+        /// </summary>
+        public DbSet<ProjectSequence> ProjectSequences { get; set; } = null!;
+
+        /// <summary>
+        /// Atomically allocates the next sequence number for a project.
+        /// Uses a serializable transaction to prevent duplicates under concurrent creates.
+        /// Falls back to a simple non-transactional approach when using InMemory provider (tests).
+        /// </summary>
+        public async Task<int> GetNextSequenceNumberAsync(int projectId)
+        {
+            if (Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                var seq = await ProjectSequences.FindAsync(projectId);
+                if (seq is null)
+                {
+                    ProjectSequences.Add(new ProjectSequence { ProjectId = projectId, NextSequenceNumber = 2 });
+                    await SaveChangesAsync();
+                    return 1;
+                }
+                var value = seq.NextSequenceNumber;
+                seq.NextSequenceNumber++;
+                await SaveChangesAsync();
+                return value;
+            }
+
+            // If already inside an ambient transaction, skip creating a new one
+            if (Database.CurrentTransaction is not null)
+            {
+                var seq = await ProjectSequences.FindAsync(projectId);
+                if (seq is null)
+                {
+                    ProjectSequences.Add(new ProjectSequence { ProjectId = projectId, NextSequenceNumber = 2 });
+                    await SaveChangesAsync();
+                    return 1;
+                }
+                var value = seq.NextSequenceNumber;
+                seq.NextSequenceNumber++;
+                await SaveChangesAsync();
+                return value;
+            }
+
+            await using var tx = await Database.BeginTransactionAsync(IsolationLevel.Serializable);
+            var seq2 = await ProjectSequences.FindAsync(projectId);
+            if (seq2 is null)
+            {
+                ProjectSequences.Add(new ProjectSequence { ProjectId = projectId, NextSequenceNumber = 2 });
+                await SaveChangesAsync();
+                await tx.CommitAsync();
+                return 1;
+            }
+            var nextValue = seq2.NextSequenceNumber;
+            seq2.NextSequenceNumber++;
+            await SaveChangesAsync();
+            await tx.CommitAsync();
+            return nextValue;
+        }
+
+        /// <summary>
         /// Configures the model and seeds initial data for the database.
         /// </summary>
         /// <param name="builder">The model builder used to configure the model.</param>
@@ -102,6 +162,13 @@ namespace PromiseModelOnline.Api.DAL
             {
                 foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
             }
+
+            modelBuilder.Entity<ProjectSequence>(entity =>
+            {
+                entity.HasKey(e => e.ProjectId);
+                entity.Property(e => e.ProjectId).ValueGeneratedNever();
+                entity.Property(e => e.NextSequenceNumber).HasDefaultValue(1);
+            });
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

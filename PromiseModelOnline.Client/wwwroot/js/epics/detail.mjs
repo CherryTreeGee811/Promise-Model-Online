@@ -85,7 +85,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
             const journeysList = document.getElementById('epic-journeys-list');
             getJourneysByEpic(epicId)
                 .then(journeys => {
-                    patchChildMetrics(`epic-${epicId}`, journeys);
+                    patchChildMetrics(`epic-${epic.sequenceNumber}`, journeys);
                     const tbody = renderTableWithInlineAddRow(journeysList, {
                         headers: ['Statement', 'Actions'],
                         items: journeys || [],
@@ -146,7 +146,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
-                                    patchChildMetrics(`epic-${epicId}`, [...(journeys || []), created]);
+                                    patchChildMetrics(`epic-${epic.sequenceNumber}`, [...(journeys || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add journey.';
@@ -195,7 +195,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
 
             resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl())
                 .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `epic-${epic.id}`);
+                    const href = buildGraphViewHref(projectId, `epic-${epic.sequenceNumber}`);
                     upsertGraphViewButton(detailDiv, href);
                 })
                 .catch(error => {
