@@ -43,6 +43,29 @@ public static class PromiseHierarchySeeder
         if (!projectIdBySourceId.ContainsKey("PRJ-001"))
             projectIdBySourceId["PRJ-001"] = project.Id;
 
+        // --- 2b. Grant edit access to second test user on all seeded projects ---
+        var testUser2 = await db.Users.FirstOrDefaultAsync(u => u.Email == TestUserEmail2);
+        if (testUser2 != null)
+        {
+            var permissions = db.Set<Permission>();
+            var existingPerms = await permissions
+                .Where(p => p.UserId == testUser2.Id)
+                .Select(p => p.ProjectId)
+                .ToListAsync();
+            foreach (var kvp in projectIdBySourceId)
+            {
+                if (existingPerms.Contains(kvp.Value)) continue;
+                permissions.Add(new Permission
+                {
+                    UserId = testUser2.Id,
+                    ProjectId = kvp.Value,
+                    Level = PermissionLevel.Edit,
+                    Status = PermissionStatus.Active
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
         // --- 3. Iterations (predefined IDs) ---
         await SeedIterationsAsync(db, pmoPmDir, projectIdBySourceId);
 
@@ -66,7 +89,9 @@ public static class PromiseHierarchySeeder
         var strideIds = await db.Strides.OrderBy(s => s.Id).Select(s => s.Id).ToListAsync();
         if (strideIds.Count > 0)
         {
-            await ReassignMomentsAndCompleteAsync(db, owner.Id, strideIds, currentStrideId);
+            var owner2 = await db.Users.FirstOrDefaultAsync(u => u.Email == TestUserEmail2);
+            var ownerIds = new[] { owner.Id, owner2?.Id ?? owner.Id };
+            await ReassignMomentsAndCompleteAsync(db, ownerIds, strideIds, currentStrideId);
         }
 
         logger?.LogInformation(
@@ -484,7 +509,7 @@ public static class PromiseHierarchySeeder
     //  and mark moments in completed strides as Done.
     // -----------------------------------------------
     private static async Task ReassignMomentsAndCompleteAsync(
-        PromiseModelOnlineContext db, int ownerId, List<int> strideIds, int currentStrideId)
+        PromiseModelOnlineContext db, int[] ownerIds, List<int> strideIds, int currentStrideId)
     {
         var moments = await db.Moments.OrderBy(m => m.Id).ToListAsync();
         if (moments.Count == 0) return;
@@ -506,18 +531,24 @@ public static class PromiseHierarchySeeder
 
             var isCompleted = strideId < currentStrideId;
 
-            foreach (var moment in batch)
+            if (isCompleted)
             {
-                moment.AssignedStrideId = strideId;
-
-                if (isCompleted)
+                var half = (count + 1) / 2;
+                for (var i = 0; i < batch.Count; i++)
                 {
+                    var moment = batch[i];
+                    moment.AssignedStrideId = strideId;
                     moment.Status = MomentStatus.Done;
-                    moment.OwnerId = ownerId;
+                    moment.OwnerId = i < half ? ownerIds[0] : ownerIds[1];
                     moment.CompletedAt = stride.EndDate;
                     moment.UpdatedAt = stride.EndDate;
                     moment.StatusColor = "green";
                 }
+            }
+            else
+            {
+                foreach (var moment in batch)
+                    moment.AssignedStrideId = strideId;
             }
         }
 
