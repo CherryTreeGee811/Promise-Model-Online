@@ -7,7 +7,7 @@ public class EmailService : IEmailService
 {
     private readonly string _apiKey;
     private readonly ILogger<EmailService> _logger;
-    private const string FromEmail = "no-reply@promisemodelonline.online";
+    private const string FromEmail = "no-reply@promisemodel.online";
     private const string FromName = "Promise Model Online";
 
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
