@@ -763,9 +763,14 @@ export function createGraphContextMenuController({
     let referenceRect = null;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
+    const appendTarget = () => {
+        const viewport = document.getElementById('graph-viewport');
+        if (viewport && document.fullscreenElement === viewport) return viewport;
+        return document.body;
+    };
     const createFormTippy = tippy(document.createElement('div'), {
         trigger: 'manual',
-        appendTo: () => document.body,
+        appendTo: appendTarget,
         content: document.createElement('div'),
         allowHTML: false,
         interactive: true,
@@ -781,7 +786,7 @@ export function createGraphContextMenuController({
 
     const instance = tippy(virtualReference, {
         trigger: 'manual',
-        appendTo: () => document.body,
+        appendTo: appendTarget,
         content: menuContent,
         allowHTML: false,
         interactive: true,

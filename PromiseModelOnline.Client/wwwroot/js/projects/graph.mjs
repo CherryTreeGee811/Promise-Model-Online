@@ -6,6 +6,7 @@ import { getFlowsByJourney } from '../journeys/api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { getMomentsByFlow } from '../flows/api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
+import { getUserId } from '../auth-state.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
 import {
     NODE_TYPES,
@@ -42,6 +43,8 @@ const graphState = {
     contextMenu: null,
     pageShowRefreshHandler: null,
     collapsedNodeIds: new Set(),
+    hasRendered: false,
+    animationSpeed: 0.25,
 };
 
 function hasNodeChildren(node) {
@@ -186,7 +189,7 @@ function getStatusFilterValue(value) {
 
 function getAssignmentFilterValue(value) {
     const normalized = normalizeText(value);
-    if (normalized === 'assigned' || normalized === 'unassigned') return normalized;
+    if (normalized === 'assigned-to-me') return 'assigned-to-me';
     return 'all';
 }
 
@@ -269,12 +272,12 @@ function matchesNode(node, filters) {
         if (statusBucket !== filters.status) return false;
     }
 
-    if (filters.assignment !== 'all') {
+    if (filters.assignment === 'assigned-to-me') {
         if (node.nodeType !== 'moment') return false;
 
-        const hasStride = node.payload?.assignedStrideId != null;
-        if (filters.assignment === 'assigned' && !hasStride) return false;
-        if (filters.assignment === 'unassigned' && hasStride) return false;
+        const currentUserId = getUserId();
+        if (currentUserId == null) return false;
+        if (node.payload?.ownerId !== currentUserId) return false;
     }
 
     if (filters.effort !== 'all') {
@@ -459,16 +462,18 @@ function renderFilterBar() {
 
     filterBar.innerHTML = `
         <div class="graph-filter-row">
-            <label class="graph-filter-field">
-                <span>Search</span>
-                <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeHtml(graphState.filters.search)}" />
-            </label>
+            <div class="graph-filter-search-group">
+                <label class="graph-filter-field">
+                    <span>Search</span>
+                    <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeHtml(graphState.filters.search)}" />
+                </label>
 
-            <div class="graph-filter-field graph-filter-checkbox-field">
-                <span>Search options</span>
-                <div class="form-check form-switch graph-filter-switch">
-                    <input id="graph-filter-include-children" class="form-check-input" type="checkbox" role="switch" ${graphState.filters.includeChildren ? 'checked' : ''} />
-                    <label class="form-check-label graph-filter-switch-label" for="graph-filter-include-children">Include Children</label>
+                <div class="graph-filter-field graph-filter-checkbox-field">
+                    <span>Search options</span>
+                    <div class="form-check form-switch graph-filter-switch">
+                        <input id="graph-filter-include-children" class="form-check-input" type="checkbox" role="switch" ${graphState.filters.includeChildren ? 'checked' : ''} />
+                        <label class="form-check-label graph-filter-switch-label" for="graph-filter-include-children">Include Children</label>
+                    </div>
                 </div>
             </div>
 
@@ -506,30 +511,33 @@ function renderFilterBar() {
             </label>
 
             <label class="graph-filter-field">
-                <span>Moment assignment</span>
+                <span>Assigned to me</span>
                 <select id="graph-filter-assignment" class="graph-filter-select">
-                    <option value="all" ${graphState.filters.assignment === 'all' ? 'selected' : ''}>All moments</option>
-                    <option value="assigned" ${graphState.filters.assignment === 'assigned' ? 'selected' : ''}>Assigned only</option>
-                    <option value="unassigned" ${graphState.filters.assignment === 'unassigned' ? 'selected' : ''}>Unassigned only</option>
+                    <option value="all" ${graphState.filters.assignment === 'all' ? 'selected' : ''}>All</option>
+                    <option value="assigned-to-me" ${graphState.filters.assignment === 'assigned-to-me' ? 'selected' : ''}>Assigned to me</option>
                 </select>
             </label>
-
-            <div class="graph-filter-actions">
-                <button id="graph-filter-reset" type="button" class="btn btn-outline-secondary btn-sm">Reset</button>
-                <button id="graph-filter-hide-all" type="button" class="btn btn-outline-secondary btn-sm">Hide All</button>
-                <button id="graph-filter-expand-all" type="button" class="btn btn-outline-secondary btn-sm">Expand All</button>
-                <button id="graph-filter-refresh" type="button" class="btn btn-outline-primary btn-sm">Refresh</button>
-            </div>
         </div>
 
-        <fieldset class="graph-filter-types">
-            <legend class="graph-filter-group-label">Promise types</legend>
-            <div class="graph-filter-chip-list">
-                ${typeChips}
-            </div>
-        </fieldset>
+        <div class="graph-filter-bottom">
+            <fieldset class="graph-filter-types">
+                <legend class="graph-filter-group-label">Promise types</legend>
+                <div class="graph-filter-chip-list">
+                    ${typeChips}
+                </div>
+            </fieldset>
 
-        <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
+            <div class="graph-filter-bottom-row">
+                <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
+
+                <div class="graph-filter-actions">
+                    <button id="graph-filter-reset" type="button" class="btn btn-outline-danger btn-sm">Reset</button>
+                    <button id="graph-filter-hide-all" type="button" class="btn btn-outline-secondary btn-sm">Hide All</button>
+                    <button id="graph-filter-expand-all" type="button" class="btn btn-outline-secondary btn-sm">Expand All</button>
+                    <button id="graph-filter-refresh" type="button" class="btn btn-outline-primary btn-sm">Refresh</button>
+                </div>
+            </div>
+        </div>
     `;
 
     bindFilterControls();
@@ -726,21 +734,36 @@ function initZoomControls(zoomBehavior, svgNode, d3Instance) {
     });
 
     document.getElementById('graph-zoom-reset')?.addEventListener('click', () => {
-        selection.transition().duration(300).call(zoomBehavior.transform, d3Instance.zoomIdentity);
+        selection.transition().duration(200).call(zoomBehavior.transform, d3Instance.zoomIdentity);
+    });
+
+    const fullscreenBtn = document.getElementById('graph-fullscreen-btn');
+    fullscreenBtn?.addEventListener('click', () => {
+        const viewport = document.getElementById('graph-viewport');
+        if (!document.fullscreenElement) {
+            viewport.requestFullscreen?.()?.catch(() => {});
+        } else {
+            document.exitFullscreen?.()?.catch(() => {});
+        }
     });
 }
 
-function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null) {
+function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null, animate = false) {
     const graphContent = document.getElementById('graph-content');
     const graphViewport = document.getElementById('graph-viewport');
     if (!graphContent) return;
 
     graphState.contextMenu?.hide();
 
+    const speedEl = document.getElementById('graph-animation-speed');
+    graphState.animationSpeed = speedEl ? Number.parseFloat(speedEl.value) || 1 : 1;
+
     const result = renderStackGraph(graphContent, d3, treeData, {
         projectId: graphState.projectId,
         focusNodeId: focusNodeData?.id ?? null,
         focusNodeData,
+        animate,
+        animationSpeed: graphState.animationSpeed,
         enableZoom: true,
         compact: false,
         renderRootCard: true,
@@ -772,6 +795,7 @@ function applyFilters() {
 
     const metrics = { visibleNodes: 0, directMatches: 0, hiddenNodes: 0 };
     graphState.filteredTree = filterTree(graphState.rawTree, graphState.filters, metrics, true);
+    const animate = graphState.hasRendered;
 
     syncFiltersToUrl(graphState.filters);
 
@@ -794,11 +818,12 @@ function applyFilters() {
         });
 
         const restoreTransform = focusNode ? null : (graphState.userZoomTransform ?? graphState.zoomTransform);
-        renderTree(graphContent, graphState.d3, graphState.filteredTree, restoreTransform, focusNode);
+        renderTree(graphContent, graphState.d3, graphState.filteredTree, restoreTransform, focusNode, animate);
     } else {
         renderEmptyState(graphContent, 'No cards match the current filters.');
     }
 
+    graphState.hasRendered = true;
     updateFilterSummary(metrics);
 }
 
@@ -884,6 +909,7 @@ export async function loadGraphPage(projectId, contentDiv) {
     graphState.totalRenderableNodes = 0;
     graphState.availableStrides = [];
     graphState.collapsedNodeIds = new Set();
+    graphState.hasRendered = false;
 
     graphState.contextMenu?.destroy();
     graphState.contextMenu = createGraphContextMenuController({
@@ -912,6 +938,22 @@ export async function loadGraphPage(projectId, contentDiv) {
         reloadGraphData();
     };
     window.addEventListener('pageshow', graphState.pageShowRefreshHandler);
+
+    document.removeEventListener('fullscreenchange', graphState._onFullscreenChange);
+    graphState._onFullscreenChange = () => {
+        const btn = document.getElementById('graph-fullscreen-btn');
+        if (!btn) return;
+        const icon = btn.querySelector('i');
+        if (document.fullscreenElement) {
+            icon?.classList.replace('bi-arrows-angle-expand', 'bi-arrows-angle-contract');
+            btn.setAttribute('aria-label', 'Exit fullscreen');
+        } else {
+            icon?.classList.replace('bi-arrows-angle-contract', 'bi-arrows-angle-expand');
+            btn.setAttribute('aria-label', 'Fullscreen');
+        }
+        applyFilters();
+    };
+    document.addEventListener('fullscreenchange', graphState._onFullscreenChange);
 
     await loadAvailableStrides(projectId);
 

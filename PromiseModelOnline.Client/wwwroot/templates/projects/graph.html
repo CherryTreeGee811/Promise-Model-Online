@@ -16,8 +16,22 @@
 			<i class="bi bi-dash-lg" aria-hidden="true"></i>
 		</button>
 		<button id="graph-zoom-reset" class="btn btn-light border btn-sm graph-zoom-btn" type="button" aria-label="Reset zoom">
+			<i class="bi bi-x-square" aria-hidden="true"></i>
+		</button>
+		<button id="graph-fullscreen-btn" class="btn btn-light border btn-sm graph-zoom-btn" type="button" aria-label="Fullscreen">
 			<i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
 		</button>
+		<div class="vr mx-1"></div>
+		<label class="d-flex align-items-center gap-1" style="font-size:11px;color:#475569;white-space:nowrap">
+			<span>Speed</span>
+			<select id="graph-animation-speed" class="form-select form-select-sm" style="width:auto;min-width:60px;padding:2px 6px;font-size:11px" aria-label="Animation speed">
+				<option value="0.1">0.1×</option>
+				<option value="0.25" selected>0.25×</option>
+				<option value="0.5">0.5×</option>
+				<option value="1">1×</option>
+				<option value="2">2×</option>
+			</select>
+		</label>
 	</div>
 	<div id="graph-loading-state" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center z-3 d-none graph-loading-state" aria-hidden="true">
 		<div class="spinner-border text-primary" role="status" aria-live="polite" aria-label="Loading project graph">

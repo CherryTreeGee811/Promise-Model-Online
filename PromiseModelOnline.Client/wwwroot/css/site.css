@@ -639,6 +639,7 @@ button {
 **********************************************/
 .graph-filter-bar {
   display: grid;
+  grid-template-rows: 1fr auto;
   gap: var(--spacing-md);
   margin: var(--spacing-md) 0 var(--spacing-lg);
   padding: var(--spacing-md);
@@ -649,11 +650,34 @@ button {
   backdrop-filter: blur(10px);
 }
 
+.graph-filter-bottom {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.graph-filter-bottom-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
 .graph-filter-row {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
   align-items: start;
+}
+
+.graph-filter-search-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: start;
+  padding: var(--spacing-sm);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(248, 250, 252, 0.4);
 }
 
 .graph-filter-field {
@@ -671,7 +695,7 @@ button {
   align-items: center;
   min-height: 2.75rem;
   margin: 0;
-  padding-left: 2.75rem;
+  padding-left: 1.25rem;
 }
 
 .graph-filter-checkbox-field .form-check-input {
@@ -732,7 +756,7 @@ button {
 
 .graph-filter-switch {
   padding-left: 1.75rem;
-  padding-top: 1rem;
+  padding-top: 0.25rem;
 }
 
 .graph-filter-switch-label {
@@ -843,6 +867,16 @@ button {
   padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
   touch-action: none;
   cursor: grab;
+}
+
+.graph-viewport:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  cursor: default;
+  overflow: visible;
 }
 
 .graph-loading-state {
@@ -1051,6 +1085,7 @@ button {
   font-family: var(--font-primary);
   pointer-events: none;
   user-select: none;
+  text-decoration: none !important;
 }
 
 /* SVG card theming via CSS variables set on the `.graph-node` elements */

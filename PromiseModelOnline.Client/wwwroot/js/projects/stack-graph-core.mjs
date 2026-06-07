@@ -395,19 +395,28 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         enableZoom,
         enableLinks = enableZoom,
         uniformNodeScale = null,
+        animate = false,
+        animationSpeed = 1,
     } = options;
 
     const nodeScale = uniformNodeScale ?? 1;
+    const containerTag = enableLinks ? 'a' : 'g';
+    const duration = Math.max(0, Math.round(200 / Math.max(0.1, animationSpeed)));
+    const t = d3.transition().duration(duration);
 
-    layer.append('g')
-        .attr('fill', 'none')
-        .attr('stroke', '#94a3b8')
-        .attr('stroke-opacity', 0.65)
-        .attr('stroke-width', 1.5)
-        .selectAll('path')
-        .data(links)
-        .join('path')
-        .attr('d', d => d3.linkHorizontal()
+    function getFinalTransform(d) {
+        return `translate(${d.y + contentOffsetX}, ${d.x + contentOffsetY}) scale(${nodeScale})`;
+    }
+
+    function getParentTransform(d) {
+        const parent = d.parent;
+        const px = parent ? parent.y : 0;
+        const py = parent ? parent.x : 0;
+        return `translate(${px + contentOffsetX}, ${py + contentOffsetY}) scale(${nodeScale})`;
+    }
+
+    function getFinalLinkPath(d) {
+        return d3.linkHorizontal()
             .x(point => point.y)
             .y(point => point.x)({
                 source: {
@@ -418,20 +427,211 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
                     x: d.target.x + contentOffsetY,
                     y: d.target.y + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale),
                 },
-            }));
+            });
+    }
 
-    const containerTag = enableLinks ? 'a' : 'g';
+    // --- Link paths ---
+    const linkGroup = layer.select('g.links').size()
+        ? layer.select('g.links')
+        : layer.append('g')
+            .attr('class', 'links')
+            .attr('fill', 'none')
+            .attr('stroke', '#94a3b8')
+            .attr('stroke-opacity', 0.65)
+            .attr('stroke-width', 1.5);
 
-    const node = layer.append('g')
-        .selectAll(containerTag)
-        .data(renderable)
-        .join(containerTag)
-        .attr('class', current => `graph-node graph-node--${current.data.nodeType}`)
-        .attr('transform', current => {
-            const x = current.y + contentOffsetX;
-            const y = current.x + contentOffsetY;
-            return `translate(${x}, ${y}) scale(${nodeScale})`;
+    const linkBound = linkGroup.selectAll('path')
+        .data(links, l => `${l.source.data.id}->${l.target.data.id}`);
+
+    linkBound.exit().transition(t)
+        .attr('opacity', 0)
+        .remove();
+
+    linkBound.attr('opacity', 1)
+        .attr('d', d => getFinalLinkPath(d));
+
+    const linkEnter = linkBound.enter()
+        .append('path')
+        .attr('opacity', 0)
+        .attr('d', d => getFinalLinkPath(d));
+
+    if (animate) {
+        linkEnter.transition(t).attr('opacity', 1);
+    } else {
+        linkEnter.attr('opacity', 1);
+    }
+
+    // --- Node cards ---
+    const nodeGroup = layer.select('g.nodes').size()
+        ? layer.select('g.nodes')
+        : layer.append('g').attr('class', 'nodes');
+
+    const nodeBound = nodeGroup.selectAll(containerTag)
+        .data(renderable, d => d.data.id);
+
+    nodeBound.exit()
+        .transition(t)
+        .attr('opacity', 0)
+        .attr('transform', d => getParentTransform(d))
+        .remove();
+
+    const nodeEnter = nodeBound.enter()
+        .append(containerTag)
+        .attr('opacity', 0)
+        .attr('transform', d => getParentTransform(d))
+        .style('text-decoration', 'none');
+
+    nodeEnter.append('title')
+        .text(current => getNodeTitle(current.data));
+
+    nodeEnter.append('rect')
+        .attr('class', 'graph-card')
+        .attr('x', -CARD_WIDTH / 2)
+        .attr('y', -CARD_HEIGHT / 2)
+        .attr('width', CARD_WIDTH)
+        .attr('height', CARD_HEIGHT)
+        .attr('rx', CARD_RADIUS)
+        .attr('ry', CARD_RADIUS)
+        .attr('fill', 'var(--graph-card-bg)')
+        .attr('stroke', 'var(--graph-stroke)')
+        .attr('stroke-width', 'var(--graph-stroke-width)')
+        .attr('focusable', 'false');
+
+    nodeEnter.append('rect')
+        .attr('class', 'graph-card-accent')
+        .attr('x', -CARD_WIDTH / 2)
+        .attr('y', -CARD_HEIGHT / 2)
+        .attr('width', 10)
+        .attr('height', CARD_HEIGHT)
+        .attr('rx', CARD_RADIUS)
+        .attr('ry', CARD_RADIUS)
+        .attr('clip-path', `url(#${cardClipPathId})`)
+        .attr('focusable', 'false')
+        .attr('fill', current => getNodeColor(current.data.nodeType));
+
+    nodeEnter.append('text')
+        .attr('class', 'graph-card-statement')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
+        .attr('focusable', 'false')
+        .text(current => truncateText(current.data.label, 36));
+
+    nodeEnter.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
+        .append('text')
+        .attr('class', 'graph-card-line graph-card-line--node-type')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 30)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .attr('font-weight', 600)
+        .attr('focusable', 'false')
+        .text(current => getNodeTypeLabel(current.data.payload) ?? '');
+
+    nodeEnter.filter(current => current.data.nodeType !== 'root')
+        .append('text')
+        .attr('class', 'graph-card-status')
+        .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
+        .attr('text-anchor', 'end')
+        .attr('dominant-baseline', 'hanging')
+        .attr('focusable', 'false')
+        .text(current => getStatusIcon(current.data.payload?.statusColor));
+
+    nodeEnter.filter(current => {
+            const hiddenCount = Number.parseInt(current.data._hiddenDescendantCount ?? 0, 10) || 0;
+            return hiddenCount > 0 && Boolean(current.data._isCollapsed);
+        })
+        .append('text')
+        .attr('class', 'graph-card-collapsed-badge')
+        .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
+        .attr('y', CARD_HEIGHT / 2 - 12)
+        .attr('text-anchor', 'end')
+        .text(current => {
+            const hiddenCount = Number.parseInt(current.data._hiddenDescendantCount ?? 0, 10) || 0;
+            return `${hiddenCount} hidden`;
         });
+
+    nodeEnter.filter(current => current.data.nodeType === 'moment')
+        .append('text')
+        .attr('class', 'graph-card-line graph-card-line--moment-type')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 30)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .attr('font-weight', 600)
+        .text(current => getNodeTypeLabel(current.data.payload) ?? '');
+
+    nodeEnter.append('line')
+        .attr('class', 'graph-card-divider')
+        .attr('x1', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('x2', CARD_WIDTH / 2 - CARD_PADDING_X)
+        .attr('y1', -CARD_HEIGHT / 2 + 42)
+        .attr('y2', -CARD_HEIGHT / 2 + 42)
+        .attr('stroke', '#cbd5e1')
+        .attr('stroke-width', 1);
+
+    nodeEnter.filter(current => current.data.nodeType === 'moment')
+        .append('text')
+        .attr('class', 'graph-card-line')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .text(current => getStrideLabel(current.data.payload));
+
+    nodeEnter.filter(current => current.data.nodeType === 'moment')
+        .append('text')
+        .attr('class', 'graph-card-line')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + DETAIL_LINE_GAP)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .text(current => getCardDescription(current.data.payload, 52));
+
+    nodeEnter.filter(current => current.data.nodeType === 'moment')
+        .append('text')
+        .attr('class', 'graph-card-line')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 2))
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .text(current => `Effort: ${formatEstimate(current.data.payload?.effortEstimate)}`);
+
+    nodeEnter.filter(current => current.data.nodeType === 'moment' && getMomentTaskSummary(current.data.payload))
+        .append('text')
+        .attr('class', 'graph-card-line graph-card-line--moment-tasks')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 3))
+        .attr('fill', '#0f766e')
+        .attr('font-size', 12)
+        .attr('font-weight', 600)
+        .text(current => getMomentTaskSummary(current.data.payload));
+
+    nodeEnter.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
+        .append('text')
+        .attr('class', 'graph-card-line')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 62)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .text(current => getCardDescription(current.data.payload));
+
+    nodeEnter.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
+        .append('text')
+        .attr('class', 'graph-card-line')
+        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
+        .attr('y', -CARD_HEIGHT / 2 + 88)
+        .attr('fill', '#334155')
+        .attr('font-size', 12)
+        .attr('dominant-baseline', 'middle')
+        .text(current => getChildProgressSummary(current.data) ?? 'No child cards');
+
+    const node = nodeEnter.merge(nodeBound);
+
+    node.select('title').text(current => getNodeTitle(current.data));
+    node.select('text.graph-card-statement').text(current => truncateText(current.data.label, 36));
+    node.select('rect.graph-card-accent').attr('fill', current => getNodeColor(current.data.nodeType));
+    node.select('text.graph-card-status').text(current => getStatusIcon(current.data.payload?.statusColor));
 
     if (enableLinks) {
         node
@@ -440,7 +640,9 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
             .attr('data-nav', '');
     }
 
-    node.style('--graph-accent', current => getNodeColor(current.data.nodeType))
+    node.style('text-decoration', 'none')
+        .style('--graph-card-bg', '#ffffff')
+        .style('--graph-accent', current => getNodeColor(current.data.nodeType))
         .style('--graph-stroke', current => {
             const isFocused = focusNodeId != null && current.data.id === focusNodeId;
             const allowFocusHighlight = current.data.nodeType !== 'root';
@@ -453,6 +655,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
             if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return 3;
             return current.depth === 0 ? 2.5 : 1.5;
         })
+        .classed('graph-node', true)
         .classed('is-root', current => current.data.nodeType === 'root')
         .classed('is-moment', current => current.data.nodeType === 'moment')
         .classed('is-collapsed', current => Boolean(current.data._isCollapsed))
@@ -481,155 +684,17 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         });
     }
 
-    node.append('title')
-        .text(current => getNodeTitle(current.data));
+    nodeBound.attr('opacity', 1)
+        .attr('transform', d => getFinalTransform(d));
 
-    const childAttrs = { focusable: 'false' };
-
-    node.append('rect')
-        .attr('class', 'graph-card')
-        .attr('x', -CARD_WIDTH / 2)
-        .attr('y', -CARD_HEIGHT / 2)
-        .attr('width', CARD_WIDTH)
-        .attr('height', CARD_HEIGHT)
-        .attr('rx', CARD_RADIUS)
-        .attr('ry', CARD_RADIUS)
-        .attr('fill', 'var(--graph-card-bg)')
-        .attr('stroke', 'var(--graph-stroke)')
-        .attr('stroke-width', 'var(--graph-stroke-width)')
-        .attr('focusable', 'false');
-
-    node.append('rect')
-        .attr('class', 'graph-card-accent')
-        .attr('x', -CARD_WIDTH / 2)
-        .attr('y', -CARD_HEIGHT / 2)
-        .attr('width', 10)
-        .attr('height', CARD_HEIGHT)
-        .attr('rx', CARD_RADIUS)
-        .attr('ry', CARD_RADIUS)
-        .attr('clip-path', `url(#${cardClipPathId})`)
-        .attr('focusable', 'false')
-        // Keep the CSS variable for normal styling but also set an inline fill attribute
-        // so browser extensions like Dark Reader that may not honor SVG CSS variables
-        // still display the accent color correctly.
-        .attr('fill', current => getNodeColor(current.data.nodeType));
-
-    node.append('text')
-        .attr('class', 'graph-card-statement')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
-        .attr('focusable', 'false')
-        .text(current => truncateText(current.data.label, 36));
-
-    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
-        .append('text')
-        .attr('class', 'graph-card-line graph-card-line--node-type')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + 30)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .attr('font-weight', 600)
-        .attr('focusable', 'false')
-        .text(current => getNodeTypeLabel(current.data.payload) ?? '');
-
-    node.filter(current => current.data.nodeType !== 'root')
-        .append('text')
-        .attr('class', 'graph-card-status')
-        .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'hanging')
-        .attr('focusable', 'false')
-        .text(current => getStatusIcon(current.data.payload?.statusColor));
-
-    node.filter(current => {
-        const hiddenCount = Number.parseInt(current.data._hiddenDescendantCount ?? 0, 10) || 0;
-        return hiddenCount > 0 && Boolean(current.data._isCollapsed);
-    })
-        .append('text')
-        .attr('class', 'graph-card-collapsed-badge')
-        .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
-        .attr('y', CARD_HEIGHT / 2 - 12)
-        .attr('text-anchor', 'end')
-        .text(current => {
-            const hiddenCount = Number.parseInt(current.data._hiddenDescendantCount ?? 0, 10) || 0;
-            return `${hiddenCount} hidden`;
-        });
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line graph-card-line--moment-type')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + 30)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .attr('font-weight', 600)
-        .text(current => getNodeTypeLabel(current.data.payload) ?? '');
-
-    node.append('line')
-        .attr('class', 'graph-card-divider')
-        .attr('x1', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('x2', CARD_WIDTH / 2 - CARD_PADDING_X)
-        .attr('y1', -CARD_HEIGHT / 2 + 42)
-        .attr('y2', -CARD_HEIGHT / 2 + 42)
-        .attr('stroke', '#cbd5e1')
-        .attr('stroke-width', 1);
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => getStrideLabel(current.data.payload));
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + DETAIL_LINE_GAP)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => getCardDescription(current.data.payload, 52));
-
-    node.filter(current => current.data.nodeType === 'moment')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 2))
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => `Effort: ${formatEstimate(current.data.payload?.effortEstimate)}`);
-
-    node.filter(current => current.data.nodeType === 'moment' && getMomentTaskSummary(current.data.payload))
-        .append('text')
-        .attr('class', 'graph-card-line graph-card-line--moment-tasks')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 3))
-        .attr('fill', '#0f766e')
-        .attr('font-size', 12)
-        .attr('font-weight', 600)
-        .text(current => getMomentTaskSummary(current.data.payload));
-
-    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + 62)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .text(current => getCardDescription(current.data.payload));
-
-    node.filter(current => current.data.nodeType !== 'moment' && current.data.nodeType !== 'root')
-        .append('text')
-        .attr('class', 'graph-card-line')
-        .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
-        .attr('y', -CARD_HEIGHT / 2 + 88)
-        .attr('fill', '#334155')
-        .attr('font-size', 12)
-        .attr('dominant-baseline', 'middle')
-        .text(current => getChildProgressSummary(current.data) ?? 'No child cards');
+    if (animate) {
+        nodeEnter.transition(t)
+            .attr('opacity', 1)
+            .attr('transform', d => getFinalTransform(d));
+    } else {
+        nodeEnter.attr('opacity', 1)
+            .attr('transform', d => getFinalTransform(d));
+    }
 }
 
 /**
@@ -655,11 +720,15 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         uniformNodeScale = null,
         renderRootCard = false,
         enableLinks,
+        animate = false,
+        animationSpeed = 1,
     } = options;
 
     if (!contentDiv) return null;
 
-    contentDiv.replaceChildren();
+    const existingSvgEl = animate ? contentDiv.querySelector('svg') : null;
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const resolvedAnimate = animate && !prefersReducedMotion;
 
     const margin = compact
         ? { top: 12, right: 20, bottom: 12, left: 20 }
@@ -751,17 +820,26 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         contentOffsetPreviewY: margin.top - minX + foreheadGap,
     });
 
-    const svg = d3.create('svg')
-        .attr('viewBox', [0, 0, graphWidth, graphHeight])
-        .attr('preserveAspectRatio', 'xMinYMin meet')
-        .attr('width', '100%')
-        .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
-        .attr('role', enableZoom ? 'tree' : (enableLinks ? null : 'img'))
-        .attr('aria-label', ariaLabel);
-
     const contentOffsetX = margin.left - minY;
     const contentOffsetY = margin.top - minX + foreheadGap;
     const cardClipPathId = `${clipPathIdPrefix}-${projectId ?? 'stack'}`;
+
+    let svg;
+    if (existingSvgEl) {
+        svg = d3.select(existingSvgEl);
+        svg.attr('viewBox', [0, 0, graphWidth, graphHeight])
+           .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0));
+        svg.select('defs').remove();
+    } else {
+        contentDiv.replaceChildren();
+        svg = d3.create('svg')
+            .attr('viewBox', [0, 0, graphWidth, graphHeight])
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .attr('width', '100%')
+            .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
+            .attr('role', enableZoom ? 'tree' : (enableLinks ? null : 'img'))
+            .attr('aria-label', ariaLabel);
+    }
 
     svg.append('defs')
         .append('clipPath')
@@ -774,7 +852,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         .attr('rx', CARD_RADIUS)
         .attr('ry', CARD_RADIUS);
 
-    const graphLayer = svg.append('g');
+    const graphLayer = existingSvgEl ? svg.select('g') : svg.append('g');
     let focusedHierarchyNode = null;
     const nodeOptions = {
         contentOffsetX,
@@ -786,6 +864,8 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         enableZoom,
         enableLinks: enableLinks ?? enableZoom,
         uniformNodeScale: compact ? cardScale : null,
+        animate: resolvedAnimate,
+        animationSpeed,
     };
 
     let zoom = null;
@@ -850,10 +930,12 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
                 viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0
             )
             .scale(initialScale);
-        const initialTransform = focusTransform ?? restoreTransform ?? fitTransform;
+        const initialTransform = existingSvgEl
+            ? d3.zoomTransform(svg.node())
+            : (focusTransform ?? restoreTransform ?? fitTransform);
 
         logGraphFocus('initial-transform', {
-            mode: focusTransform ? 'focus' : (restoreTransform ? 'restore' : 'fit'),
+            mode: existingSvgEl ? 'preserve' : (focusTransform ? 'focus' : (restoreTransform ? 'restore' : 'fit')),
             transform: {
                 x: initialTransform?.x,
                 y: initialTransform?.y,
@@ -866,7 +948,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
 
         svg.call(zoom.transform, initialTransform);
 
-        if (focusedHierarchyNode) {
+        if (focusedHierarchyNode && !existingSvgEl) {
             window.requestAnimationFrame(() => {
                 const measuredViewport = getInnerViewportSize(viewportEl);
                 const measuredWidth = Number(measuredViewport.width ?? 0);
@@ -959,7 +1041,9 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         appendGraphNodes(d3, graphLayer, renderable, links, nodeOptions);
     }
 
-    contentDiv.appendChild(svg.node());
+    if (!existingSvgEl) {
+        contentDiv.appendChild(svg.node());
+    }
 
     if (focusedHierarchyNode) {
         window.requestAnimationFrame(() => {
