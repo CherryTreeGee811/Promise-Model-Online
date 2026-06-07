@@ -9,7 +9,13 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
     getMyTasks()
         .then(moments => {
             if (!moments || moments.length === 0) {
-                content.innerHTML = '<p class="no-items">You have no assigned tasks.</p>';
+                content.innerHTML = `
+                    <div class="no-items d-flex flex-column align-items-center gap-3 py-5">
+                        <div class="empty-table-icon"><i class="bi bi-list-task"></i></div>
+                        <h5 class="fw-semibold text-secondary mb-1">You have no assigned tasks.</h5>
+                        <p class="text-muted mb-2">When a moment is assigned to you, it will appear here.</p>
+                    </div>
+                `;
                 return;
             }
 

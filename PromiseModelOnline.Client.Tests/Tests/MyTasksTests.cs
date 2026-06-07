@@ -22,7 +22,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
             SetSessionCookie("nonowner-session");
             NavigateSpa("/moments/my-tasks");
 
-            var emptyMsg = WaitForElement(By.XPath("//div[@id='my-tasks-content']//*[contains(., 'no assigned tasks')]"), 10);
+            var emptyMsg = WaitForElement(By.CssSelector(".no-items"), 10);
             Assert.That(emptyMsg.Text, Does.Contain("no assigned tasks"));
         }
     }
