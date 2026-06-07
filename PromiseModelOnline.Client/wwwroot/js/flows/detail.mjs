@@ -1,6 +1,6 @@
 import { navigate } from '../router.mjs';
 import { getFlowById, getMomentsByFlow, updateFlowDescription } from './api.mjs';
-import { addMoment } from '../moments/api.mjs';
+import { addMoment, updateMomentType } from '../moments/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
@@ -195,9 +195,9 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             </thead>
                             <tbody>
                                 ${moments.map(m => `
-                                    <tr>
+                                    <tr data-moment-id="${m.id}">
                                         <td>${escapeHtml(m.statement)}</td>
-                                        <td>${m.type}</td>
+                                        <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.id}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
                                         <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                         <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
@@ -205,6 +205,22 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             </tbody>
                         </table>
                     `;
+
+                    momentsList.addEventListener('change', async (e) => {
+                        const target = e.target;
+                        if (target.matches('.moment-type-select')) {
+                            const momentId = parseInt(target.dataset.momentId, 10);
+                            const newType = target.value;
+                            const previous = target.dataset.currentType || newType;
+                            try {
+                                await updateMomentType(momentId, newType);
+                                target.dataset.currentType = newType;
+                            } catch (err) {
+                                target.value = previous;
+                                console.error('Failed to update moment type:', err);
+                            }
+                        }
+                    });
 
                     momentsList.querySelectorAll('a[moment-id]').forEach(link => {
                         link.addEventListener('click', (e) => {
