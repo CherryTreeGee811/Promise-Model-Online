@@ -15,7 +15,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
     public async Task Get_LoginPage_ContainsTitle()
     {
         var html = await Client.GetStringAsync("/account/login");
-        Assert.That(html, Does.Contain("<h1 id=\"form-title\">Login</h1>"));
+        Assert.That(html, Does.Contain("<h1 class=\"sr-only\">Sign in to Promise Model Online</h1>"));
     }
 
     [Test]

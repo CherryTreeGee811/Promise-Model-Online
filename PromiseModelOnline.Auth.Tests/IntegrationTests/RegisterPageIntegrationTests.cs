@@ -17,7 +17,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     public async Task Get_RegisterPage_ContainsTitle()
     {
         var html = await Client.GetStringAsync("/account/register");
-        Assert.That(html, Does.Contain("<h1 id=\"form-title\">Register</h1>"));
+        Assert.That(html, Does.Contain("<h1 class=\"sr-only\">Create your Promise Model Online account</h1>"));
     }
 
     [Test]
@@ -35,7 +35,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     public async Task Get_RegisterPage_HasLoginLink()
     {
         var html = await Client.GetStringAsync("/account/register");
-        Assert.That(html, Does.Contain("Login here"));
+        Assert.That(html, Does.Contain("Sign in here"));
     }
 
     [Test]
