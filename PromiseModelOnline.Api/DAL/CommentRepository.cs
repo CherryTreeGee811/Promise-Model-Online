@@ -71,7 +71,7 @@ namespace PromiseModelOnline.Api.DAL
                     (parsedType == "promise" && p.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(promises.Select(p => new StackSearchResult("promise", p.Id, p.SequenceNumber, p.Statement)));
+            results.AddRange(promises.Select(p => new StackSearchResult("promise", p.Id, p.SequenceNumber, p.Statement, p.StatusColor)));
 
             var promiseIds = await _context.Set<Promise>()
                 .Where(p => p.ProjectId == projectId)
@@ -84,7 +84,7 @@ namespace PromiseModelOnline.Api.DAL
                     (parsedType == "epic" && e.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(epics.Select(e => new StackSearchResult("epic", e.Id, e.SequenceNumber, e.Statement)));
+            results.AddRange(epics.Select(e => new StackSearchResult("epic", e.Id, e.SequenceNumber, e.Statement, e.StatusColor)));
 
             var epicIds = epics.Select(e => e.Id)
                 .Concat(await _context.Set<Epic>()
@@ -100,7 +100,7 @@ namespace PromiseModelOnline.Api.DAL
                     (parsedType == "journey" && j.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(journeys.Select(j => new StackSearchResult("journey", j.Id, j.SequenceNumber, j.Statement)));
+            results.AddRange(journeys.Select(j => new StackSearchResult("journey", j.Id, j.SequenceNumber, j.Statement, j.StatusColor)));
 
             var journeyIds = journeys.Select(j => j.Id)
                 .Concat(await _context.Set<Journey>()
@@ -116,7 +116,7 @@ namespace PromiseModelOnline.Api.DAL
                     (parsedType == "flow" && f.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(flows.Select(f => new StackSearchResult("flow", f.Id, f.SequenceNumber, f.Statement)));
+            results.AddRange(flows.Select(f => new StackSearchResult("flow", f.Id, f.SequenceNumber, f.Statement, f.StatusColor)));
 
             var flowIds = flows.Select(f => f.Id)
                 .Concat(await _context.Set<Flow>()
@@ -132,7 +132,7 @@ namespace PromiseModelOnline.Api.DAL
                     (parsedType == "moment" && m.SequenceNumber == parsedSeq)))
                 .Take(maxResults)
                 .ToListAsync();
-            results.AddRange(moments.Select(m => new StackSearchResult("moment", m.Id, m.SequenceNumber, m.Statement)));
+            results.AddRange(moments.Select(m => new StackSearchResult("moment", m.Id, m.SequenceNumber, m.Statement, m.StatusColor)));
 
             return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
         }

@@ -1,9 +1,7 @@
 import { getComments, postComment } from './api.mjs';
-import { apiGet } from '../api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { createCommentAutocomplete } from './autocomplete.mjs';
-
-const entityLookupMap = {};
+import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.mjs';
 
 export function loadComments(container, parentType, parentId) {
     container.innerHTML = `
@@ -23,16 +21,7 @@ export function loadComments(container, parentType, parentId) {
     const autocomplete = createCommentAutocomplete(textarea, parentType, parentId);
 
     // Fetch entity map for reference resolution and comments in parallel
-    const mapPromise = apiGet(`/api/comments/entity-map?parentType=${parentType}&parentId=${parentId}`)
-        .then(entities => {
-            Object.keys(entityLookupMap).forEach(k => delete entityLookupMap[k]);
-            if (Array.isArray(entities)) {
-                for (const e of entities) {
-                    entityLookupMap[`${e.entityType}-${e.sequenceNumber}`] = e.id;
-                }
-            }
-        })
-        .catch(() => {});
+    const mapPromise = loadEntityLookupMap(parentType, parentId);
 
     Promise.all([
         getComments(parentType, parentId),
@@ -96,16 +85,3 @@ function createCommentElement(comment) {
     return div;
 }
 
-function formatCommentText(text) {
-    let html = escapeHtml(text);
-    html = html.replace(/#(promise|epic|journey|flow|moment)-(\d+)/g, (match, type, num) => {
-        const key = `${type}-${num}`;
-        const dbId = entityLookupMap[key];
-        if (dbId != null) {
-            return `<a href="/${type}s/${dbId}" class="promise-ref">${match}</a>`;
-        }
-        return `<a href="/${type}s/${num}" class="promise-ref promise-ref--legacy">${match}</a>`;
-    });
-    html = html.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
-    return html;
-}

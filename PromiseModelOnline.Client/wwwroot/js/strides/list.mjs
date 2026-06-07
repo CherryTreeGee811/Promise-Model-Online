@@ -6,6 +6,7 @@ import { buildGraphViewHref } from '../projects/graph-link.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 import { openStrideCreateModal } from '../utils/stride-create-modal.mjs';
+import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues = {
@@ -1083,10 +1084,9 @@ function populateStatusSelect(select) {
     if (!select) return;
     const current = select.getAttribute('data-current-status') || select.value || '';
     select.innerHTML = '';
-    select.appendChild(createOption('Todo', '🔴 Todo', current === 'Todo'));
-    select.appendChild(createOption('InProgress', '🟠 In Progress', current === 'InProgress'));
-    select.appendChild(createOption('Blocked', '⚫️ Blocked', current === 'Blocked'));
-    select.appendChild(createOption('Done', '🟢 Done', current === 'Done'));
+    for (const opt of STATUS_OPTIONS) {
+        select.appendChild(createOption(opt.value, `${opt.icon} ${opt.label}`, current === opt.value));
+    }
 }
 
 function populateOwnerSelect(select) {

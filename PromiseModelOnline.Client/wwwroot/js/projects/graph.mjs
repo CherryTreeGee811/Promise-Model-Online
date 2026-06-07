@@ -8,6 +8,7 @@ import { getMomentsByFlow } from '../flows/api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { getUserId } from '../auth-state.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
+import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 import {
     NODE_TYPES,
     NODE_TYPE_INDEX,
@@ -503,10 +504,10 @@ function renderFilterBar() {
                 <span>Moment status</span>
                 <select id="graph-filter-status" class="graph-filter-select">
                     <option value="all" ${graphState.filters.status === 'all' ? 'selected' : ''}>All statuses</option>
-                    <option value="todo" ${graphState.filters.status === 'todo' ? 'selected' : ''}>🔴 Todo</option>
-                    <option value="inprogress" ${graphState.filters.status === 'inprogress' ? 'selected' : ''}>🟠 In Progress</option>
-                    <option value="blocked" ${graphState.filters.status === 'blocked' ? 'selected' : ''}>⚫️ Blocked</option>
-                    <option value="done" ${graphState.filters.status === 'done' ? 'selected' : ''}>🟢 Done</option>
+                    ${STATUS_OPTIONS.map(opt => {
+                        const val = opt.value.toLowerCase();
+                        return `<option value="${val}" ${graphState.filters.status === val ? 'selected' : ''}>${opt.icon} ${opt.label}</option>`;
+                    }).join('')}
                 </select>
             </label>
 

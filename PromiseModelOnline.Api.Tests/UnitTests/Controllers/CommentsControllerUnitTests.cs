@@ -541,8 +541,8 @@ namespace PromiseModelOnline.Api.Tests
 
             var results = new List<StackSearchResult>
             {
-                new StackSearchResult("promise", 10, 0, "Payment processing"),
-                new StackSearchResult("flow", 20, 0, "Payment form")
+                new StackSearchResult("promise", 10, 0, "Payment processing", "red"),
+                new StackSearchResult("flow", 20, 0, "Payment form", "orange")
             };
             _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "pay", 5))
                 .ReturnsAsync(results);
@@ -570,7 +570,7 @@ namespace PromiseModelOnline.Api.Tests
 
             var results = new List<StackSearchResult>
             {
-                new StackSearchResult("moment", 30, 0, "Credit card entry")
+                new StackSearchResult("moment", 30, 0, "Credit card entry", "red")
             };
             _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "card", 5))
                 .ReturnsAsync(results);

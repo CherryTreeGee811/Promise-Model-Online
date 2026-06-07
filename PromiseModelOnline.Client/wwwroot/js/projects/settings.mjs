@@ -7,7 +7,10 @@ import { getMomentsByFlow } from '../flows/api.mjs';
 import { getProjectMembers } from '../strides/api.mjs';
 import { renderSummaryTable } from './summary.mjs';
 import { formatTimestamp, getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
-import { renderLoadingSpinner } from '../utils/html.mjs';
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { setupInlineEdit } from '../utils/inline-edit.mjs';
+import { formatCommentText } from '../utils/entity-reference.mjs';
+import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 
 export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     const form = document.getElementById('project-settings-form');
@@ -25,6 +28,22 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
     const deleteButton = document.getElementById('delete-project-btn');
     const deleteConfirmationInput = document.getElementById('project-delete-confirmation-input');
     const deleteConfirmationText = document.getElementById('project-delete-confirmation-text');
+    const saveBtn = document.getElementById('save-project-settings-btn');
+
+    const titleView = document.getElementById('project-title-view');
+    const titleEditBtn = document.getElementById('edit-project-title-btn');
+    const descView = document.getElementById('project-description-view');
+    const descEditBtn = document.getElementById('edit-project-desc-btn');
+    let titleEditor = null;
+    let descEditor = null;
+
+    // Wire inline edit
+    if (titleInput && titleView && titleEditBtn) {
+        titleEditor = setupInlineEdit(titleInput, titleView, titleEditBtn);
+    }
+    if (descriptionInput && descView && descEditBtn) {
+        descEditor = setupInlineEdit(descriptionInput, descView, descEditBtn, saveBtn);
+    }
 
     let currentProject = null;
     let summaryState = {
@@ -239,9 +258,17 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
             currentProject = project;
             titleInput.value = project.name ?? '';
             descriptionInput.value = project.description ?? '';
+            if (titleEditor) titleEditor.showView(escapeHtml(project.name ?? ''));
+            if (descEditor) descEditor.showView(formatCommentText(project.description ?? ''));
             refreshDeleteGate(project.name ?? '');
             await loadSummary(project);
             await loadAuditHistory();
+
+            // Set up autocomplete on description using the first promise as parent
+            const promises = await getProjectPromises(projectId);
+            if (promises && promises.length > 0) {
+                createCommentAutocomplete(descriptionInput, 'Promise', promises[0].id);
+            }
         } catch (error) {
             errorText.textContent = 'Failed to load project settings.';
             console.error(error);
@@ -269,6 +296,8 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
             currentProject = updatedProject;
             titleInput.value = updatedProject.name ?? '';
             descriptionInput.value = updatedProject.description ?? '';
+            if (titleEditor) titleEditor.showView(escapeHtml(updatedProject.name ?? ''));
+            if (descEditor) descEditor.showSavedPopover(formatCommentText(updatedProject.description ?? ''));
             refreshDeleteGate(updatedProject.name ?? '');
             renderSummary(updatedProject, summaryState.counts, summaryState.memberCount);
             await loadAuditHistory();

@@ -2,6 +2,8 @@ import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
 
 import { apiFetch } from '../api.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';
+import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
+import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 
 const NODE_CHILD_LABELS = {
     root: 'Promise',
@@ -271,20 +273,11 @@ function getMomentTypeOptions() {
     ];
 }
 
-function getMomentStatusOptions() {
-    return [
-        { value: 'Todo', label: 'Todo' },
-        { value: 'InProgress', label: 'In Progress' },
-        { value: 'Blocked', label: 'Blocked' },
-        { value: 'Done', label: 'Done' },
-    ];
-}
-
 function getMomentStatusValue(nodeData) {
     const payload = nodeData?.payload ?? {};
     const status = String(payload.status ?? payload.Status ?? '').trim();
     if (status) {
-        const match = getMomentStatusOptions().find(option => option.value.toLowerCase() === status.toLowerCase());
+        const match = STATUS_OPTIONS.find(option => option.value.toLowerCase() === status.toLowerCase());
         if (match) {
             return match.value;
         }
@@ -367,7 +360,7 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
         name: 'status',
         label: 'Status',
         value: 'Todo',
-        options: getMomentStatusOptions(),
+        options: STATUS_OPTIONS.map(o => ({ value: o.value, label: `${o.icon} ${o.label}` })),
     });
 
     const estimateField = createSelectField({
@@ -414,6 +407,9 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
         strideField.field,
         actions
     );
+
+    // Autocomplete for entity references in description
+    createCommentAutocomplete(descriptionField.input, nodeData.nodeType, nodeData.payload?.id);
 
     form.addEventListener('submit', async event => {
         event.preventDefault();
@@ -483,7 +479,7 @@ function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
         name: 'status',
         label: 'Status',
         value: getMomentStatusValue(nodeData),
-        options: getMomentStatusOptions(),
+        options: STATUS_OPTIONS.map(o => ({ value: o.value, label: `${o.icon} ${o.label}` })),
     });
 
     const actions = document.createElement('div');
@@ -583,6 +579,9 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
     actions.append(cancelButton, submitButton);
 
     form.append(title, subtitle, statementField.field, descriptionField.field, actions);
+
+    // Autocomplete for entity references in description
+    createCommentAutocomplete(descriptionField.input, nodeData.nodeType, nodeData.payload?.id);
 
     form.addEventListener('submit', async event => {
         event.preventDefault();

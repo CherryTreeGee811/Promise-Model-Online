@@ -11,6 +11,9 @@ import {
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.mjs';
 import { getStatusHtml, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
+import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
+import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
+import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
 export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
@@ -21,8 +24,11 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
     if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    getPromiseById(promiseId)
-        .then(promise => {
+    Promise.all([
+            getPromiseById(promiseId),
+            loadEntityLookupMap('Promise', promiseId),
+        ])
+        .then(([promise]) => {
             if (loadingEl) loadingEl.hidden = true;
 
             detailDiv.innerHTML = `
@@ -30,7 +36,11 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     <h2>${escapeHtml(promise.statement)}</h2>
                     <table class="table table-sm table-striped align-middle detail-table">
                         <tr><th scope="row"><label for="description-input">Description</label></th><td>
-                            <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description">${escapeHtml(promise.description || '')}</textarea>
+                            <div class="inline-edit-wrapper">
+                                <p id="description-view" class="inline-edit-view">${formatCommentText(promise.description || '')}</p>
+                                <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
+                                <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(promise.description || '')}</textarea>
+                            </div>
                             <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr><th scope="row">Status</th><td>${getStatusHtml(promise.statusColor)}</td></tr>
@@ -47,6 +57,17 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
             `;
 
             if (loadingEl) loadingEl.hidden = true;
+
+            // Autocomplete + inline edit for description
+            const descInput = document.getElementById('description-input');
+            const descView = document.getElementById('description-view');
+            const editBtn = document.getElementById('edit-desc-btn');
+            const saveBtn = document.getElementById('save-desc');
+            let editor = null;
+            if (descInput && descView && editBtn) {
+                createCommentAutocomplete(descInput, 'Promise', promiseId);
+                editor = setupInlineEdit(descInput, descView, editBtn, saveBtn);
+            }
 
             mountDetailStackGraph({
                 nodeType: 'promise',
@@ -177,7 +198,6 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
             initBackLink();
 
             // Description save handler
-            const saveBtn = document.getElementById('save-desc');
             const descMsg = document.getElementById('desc-save-msg');
             if (saveBtn) {
                 saveBtn.addEventListener('click', async (e) => {
@@ -191,7 +211,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                         patchDetailStackGraphNode(`promise-${promise.sequenceNumber}`, {
                             description: promise.description,
                         });
-                        descMsg.textContent = 'Saved';
+                        if (editor) editor.showSavedPopover(formatCommentText(promise.description || ''));
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
                         console.error(err);

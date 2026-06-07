@@ -8,7 +8,11 @@ import { getEpicById } from '../epics/api.mjs';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
-import { getStatusHtml, getStatusIcon, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
+import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
+import { getStatusOptionHtml } from '../utils/status-utils.mjs';
+import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
+import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
+import { setupInlineEdit } from '../utils/inline-edit.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
@@ -25,8 +29,11 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
     if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    getMomentById(momentId)
-        .then(async moment => {
+    Promise.all([
+            getMomentById(momentId),
+            loadEntityLookupMap('Moment', momentId),
+        ])
+        .then(async ([moment]) => {
             if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
@@ -42,7 +49,11 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                         <tr>
                             <th scope="row"><label for="moment-description-input">Description</label></th>
                             <td>
-                                <textarea id="moment-description-input" rows="4" class="form-control detail-textarea" aria-label="Description">${escapeHtml(moment.description || '')}</textarea>
+                                <div class="inline-edit-wrapper">
+                                    <p id="moment-description-view" class="inline-edit-view">${formatCommentText(moment.description || '')}</p>
+                                    <button id="edit-moment-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
+                                    <textarea id="moment-description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(moment.description || '')}</textarea>
+                                </div>
                                 <div class="field-actions"><button id="moment-description-save" class="btn btn-primary btn-sm" type="button">Save</button> <span id="moment-description-msg"></span></div>
                             </td>
                         </tr>
@@ -54,10 +65,10 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                         </td></tr>
                         <tr><th scope="row"><label for="moment-status-select">Status</label></th><td>
                             <select id="moment-status-select" class="form-select form-select-sm">
-                                ${getStatusOption('Todo', moment.status)}
-                                ${getStatusOption('InProgress', moment.status)}
-                                ${getStatusOption('Blocked', moment.status)}
-                                ${getStatusOption('Done', moment.status)}
+                                ${getStatusOptionHtml('Todo', moment.status)}
+                                ${getStatusOptionHtml('InProgress', moment.status)}
+                                ${getStatusOptionHtml('Blocked', moment.status)}
+                                ${getStatusOptionHtml('Done', moment.status)}
                             </select>
                         </td></tr>
                         <tr>
@@ -93,10 +104,20 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 </div>
             `;
 
+            // Autocomplete + inline edit for description
+            const momentDescInput = document.getElementById('moment-description-input');
+            const momentDescView = document.getElementById('moment-description-view');
+            const momentEditBtn = document.getElementById('edit-moment-desc-btn');
+            const descriptionSaveButton = document.getElementById('moment-description-save');
+            let momentEditor = null;
+            if (momentDescInput && momentDescView && momentEditBtn) {
+                createCommentAutocomplete(momentDescInput, 'Moment', momentId);
+                momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditBtn, descriptionSaveButton);
+            }
+
             const tasksContainer = document.getElementById('moment-tasks');
             renderMomentTasks(tasksContainer, momentId, moment.tasks, moment);
 
-            const descriptionSaveButton = document.getElementById('moment-description-save');
             const descriptionInput = document.getElementById('moment-description-input');
             const descriptionMessage = document.getElementById('moment-description-msg');
             if (descriptionSaveButton && descriptionInput && descriptionMessage) {
@@ -111,7 +132,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                         patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             description: moment.description,
                         });
-                        descriptionMessage.textContent = 'Saved';
+                        if (momentEditor) momentEditor.showSavedPopover(formatCommentText(moment.description || ''));
                     } catch (err) {
                         descriptionMessage.textContent = 'Save failed';
                         console.error(err);
@@ -258,22 +279,6 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
         });
 }
 
-function getStatusOption(value, selectedValue) {
-    const icon = getStatusIconForStatus(value);
-    const selected = value === selectedValue ? 'selected' : '';
-    return `<option value="${value}" ${selected}>${icon} ${value}</option>`;
-}
-
-function getStatusIconForStatus(status) {
-    switch (String(status ?? '')) {
-        case 'Todo': return '🔴';
-        case 'InProgress': return '🟠';
-        case 'Blocked': return '⚫️';
-        case 'Done': return '🟢';
-        default: return '⚪';
-    }
-}
-
 function renderMomentTasks(container, momentId, tasks, moment) {
     if (!container) return;
 
@@ -286,7 +291,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
         renderItemRow: task => `
             <tr data-moment-task-id="${task.id}">
                 <td>${escapeHtml(task.name || '')}</td>
-                <td>${escapeHtml(task.description)}</td>
+                <td>${formatCommentText(task.description)}</td>
                 <td>
                     <label class="moment-task-completion">
                             <input type="checkbox" class="moment-task-complete-checkbox form-check-input" data-moment-task-id="${task.id}" ${task.isCompleted ? 'checked' : ''} />
@@ -323,6 +328,9 @@ function renderMomentTasks(container, momentId, tasks, moment) {
     const addTaskButton = container.querySelector('#add-moment-task-submit');
     const addTaskMessage = container.querySelector('#add-moment-task-msg');
 
+    // Autocomplete for entity references in task description
+    if (addTaskDescription) createCommentAutocomplete(addTaskDescription, 'Moment', momentId);
+
     if (addTaskButton && addTaskName && addTaskDescription && addTaskCompleted && addTaskMessage) {
         addTaskButton.addEventListener('click', async () => {
             addTaskMessage.textContent = '';
@@ -348,7 +356,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
                     row.dataset.momentTaskId = created.id;
                     row.innerHTML = `
                         <td>${escapeHtml(created.name || '')}</td>
-                        <td>${escapeHtml(created.description || '')}</td>
+                        <td>${formatCommentText(created.description || '')}</td>
                         <td>
                             <label class="moment-task-completion">
                                 <input type="checkbox" class="moment-task-complete-checkbox" data-moment-task-id="${created.id}" ${created.isCompleted ? 'checked' : ''} />

@@ -12,6 +12,9 @@ import {
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.mjs';
 import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
+import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
+import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
+import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
 export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
@@ -22,8 +25,11 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
     if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    getJourneyById(journeyId)
-        .then(journey => {
+    Promise.all([
+            getJourneyById(journeyId),
+            loadEntityLookupMap('Journey', journeyId),
+        ])
+        .then(([journey]) => {
             if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
@@ -37,7 +43,11 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     <h2>${escapeHtml(journey.statement)}</h2>
                     <table class="table table-sm table-striped align-middle detail-table">
                         <tr><th scope="row"><label for="description-input">Description</label></th><td>
-                            <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description">${escapeHtml(journey.description || '')}</textarea>
+                            <div class="inline-edit-wrapper">
+                                <p id="description-view" class="inline-edit-view">${formatCommentText(journey.description || '')}</p>
+                                <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
+                                <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(journey.description || '')}</textarea>
+                            </div>
                             <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
@@ -58,6 +68,17 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
                 </div>
             `;
+
+            // Autocomplete + inline edit for description
+            const descInput = document.getElementById('description-input');
+            const descView = document.getElementById('description-view');
+            const editBtn = document.getElementById('edit-desc-btn');
+            const saveBtn = document.getElementById('save-desc');
+            let editor = null;
+            if (descInput && descView && editBtn) {
+                createCommentAutocomplete(descInput, 'Journey', journeyId);
+                editor = setupInlineEdit(descInput, descView, editBtn, saveBtn);
+            }
 
             const epicLink = detailDiv.querySelector('a.detail-link[epic-id]');
             if (epicLink) {
@@ -202,7 +223,6 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                 });
 
             // Description save handler
-            const saveBtn = document.getElementById('save-desc');
             const descMsg = document.getElementById('desc-save-msg');
             if (saveBtn) {
                 saveBtn.addEventListener('click', async (e) => {
@@ -216,7 +236,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         patchDetailStackGraphNode(`journey-${journey.sequenceNumber}`, {
                             description: journey.description,
                         });
-                        descMsg.textContent = 'Saved';
+                        if (editor) editor.showSavedPopover(formatCommentText(journey.description || ''));
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
                         console.error(err);

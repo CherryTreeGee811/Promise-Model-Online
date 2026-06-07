@@ -1,0 +1,45 @@
+import { apiGet } from '../api.mjs';
+import { escapeHtml } from './html.mjs';
+
+export const entityLookupMap = {};
+
+export async function loadEntityLookupMap(parentType, parentId) {
+    try {
+        const entities = await apiGet(`/api/comments/entity-map?parentType=${parentType}&parentId=${parentId}`);
+        Object.keys(entityLookupMap).forEach(k => delete entityLookupMap[k]);
+        if (Array.isArray(entities)) {
+            for (const e of entities) {
+                entityLookupMap[`${e.entityType}-${e.sequenceNumber}`] = {
+                    dbId: e.id,
+                    statusColor: e.statusColor,
+                };
+            }
+        }
+    } catch {
+        // silent
+    }
+}
+
+function statusIcon(statusColor) {
+    const normalized = String(statusColor ?? '').toLowerCase();
+    if (normalized.includes('green')) return '\u{1F7E2}';
+    if (normalized.includes('black') || normalized.includes('blocked')) return '\u{26AB}\uFE0F';
+    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '\u{1F7E0}';
+    if (normalized.includes('red') || normalized.includes('todo')) return '\u{1F534}';
+    return '\u26AA';
+}
+
+export function formatCommentText(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/#(promise|epic|journey|flow|moment)-(\d+)/g, (match, type, num) => {
+        const key = `${type}-${num}`;
+        const entry = entityLookupMap[key];
+        if (entry != null) {
+            const emoji = statusIcon(entry.statusColor);
+            return `<a href="/${type}s/${entry.dbId}" class="promise-ref">${match} ${emoji}</a>`;
+        }
+        return `<a href="/${type}s/${num}" class="promise-ref promise-ref--legacy">${match}</a>`;
+    });
+    html = html.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    return html;
+}

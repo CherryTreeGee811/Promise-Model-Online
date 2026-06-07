@@ -603,6 +603,33 @@ button {
   background: transparent;
 }
 .detail-textarea { min-height: 96px; }
+.inline-edit-wrapper { position: relative; }
+.inline-edit-view {
+  min-height: 96px;
+  padding: 6px 48px 6px 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border: 1px solid transparent;
+  border-radius: var(--bs-border-radius);
+  margin: 0;
+}
+.inline-edit-view:empty::before {
+  content: '(no description)';
+  color: #6c757d;
+  font-style: italic;
+}
+.inline-edit-view--input {
+  min-height: 0;
+  padding: 0.375rem 0.75rem;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+}
+.inline-edit-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
 .field-actions { margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .save-btn {
   background: linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
@@ -1527,14 +1554,15 @@ input, button, a, label, select, textarea {
 .comment-mentions { font-size: 0.85rem; color: #076678; }
 .comment-replies { margin-left: 2rem; border-left: 2px solid #ccc; padding-left: 1rem; }
 .mention { background: #e0e0e0; padding: 0 4px; border-radius: 3px; color: #1a1a1a; }
-.promise-ref { color: #0d6efd; text-decoration: underline; font-weight: 600; padding: 0 2px; }
+.promise-ref { color: #0d6efd; font-weight: 600; padding: 0 2px; text-decoration: none; }
 .promise-ref:hover { color: #0a58ca; }
+.promise-ref--legacy { text-decoration: underline; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
 .comment-autocomplete {
   display: none;
   position: fixed;
-  z-index: 9999;
+  z-index: 99999;
   min-width: 180px;
   max-width: 400px;
   max-height: 240px;

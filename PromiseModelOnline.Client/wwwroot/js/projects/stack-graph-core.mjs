@@ -1,3 +1,6 @@
+import { getStatusIcon, getStatusBucket } from '../utils/status-utils.mjs';
+export { getStatusIcon, getStatusBucket };
+
 export const STEP_GAP_X = 360;
 export const STEP_GAP_Y = 190;
 export const CARD_WIDTH = 300;
@@ -52,18 +55,6 @@ function logGraphFocus(stage, details) {
     console.info('[graph-focus]', stage, details);
 }
 
-export function getStatusBucket(statusColor) {
-    const normalized = normalizeText(statusColor);
-
-    if (!normalized || normalized === 'all') return 'other';
-    if (normalized.includes('green') || normalized.includes('done')) return 'done';
-    if (normalized.includes('black') || normalized.includes('blocked')) return 'blocked';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return 'inprogress';
-    if (normalized.includes('red') || normalized.includes('todo')) return 'todo';
-
-    return 'other';
-}
-
 export function getInnerViewportSize(element) {
     if (!element) return { width: 0, height: 0 };
 
@@ -88,17 +79,6 @@ export function truncateText(text, maxLength = 40) {
 
 export function formatEstimate(value) {
     return value == null ? 'Unestimated' : String(value);
-}
-
-export function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-
-    return '⚪';
 }
 
 export function getChildTypeLabel(nodeType) {
