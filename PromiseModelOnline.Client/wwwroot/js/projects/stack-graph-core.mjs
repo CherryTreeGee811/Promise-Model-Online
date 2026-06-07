@@ -655,6 +655,7 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
             if (current.data._searchMatched || (isFocused && allowFocusHighlight)) return 3;
             return current.depth === 0 ? 2.5 : 1.5;
         })
+        .classed('graph-node', true)
         .classed('is-root', current => current.data.nodeType === 'root')
         .classed('is-moment', current => current.data.nodeType === 'moment')
         .classed('is-collapsed', current => Boolean(current.data._isCollapsed))
