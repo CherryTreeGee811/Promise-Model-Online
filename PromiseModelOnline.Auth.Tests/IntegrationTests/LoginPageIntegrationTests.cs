@@ -15,7 +15,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
     public async Task Get_LoginPage_ContainsTitle()
     {
         var html = await Client.GetStringAsync("/account/login");
-        Assert.That(html, Does.Contain("<h1 id=\"form-title\">Login</h1>"));
+        Assert.That(html, Does.Contain("<h1 class=\"sr-only\">Sign in to Promise Model Online</h1>"));
     }
 
     [Test]
@@ -76,7 +76,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_Login_ValidCredentials_WithoutReturnUrl_RedirectsToRoot()
+    public async Task Post_Login_ValidCredentials_WithoutReturnUrl_RedirectsToBff()
     {
         var antiforgery = await GetAntiforgeryData("/account/login");
 
@@ -92,7 +92,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
         var location = await ExtractRedirectLocation(response);
-        Assert.That(location, Is.EqualTo("/"));
+        Assert.That(location, Is.EqualTo("/login"));
     }
 
     [Test]

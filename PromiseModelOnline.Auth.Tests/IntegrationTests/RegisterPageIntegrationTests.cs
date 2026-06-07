@@ -17,7 +17,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     public async Task Get_RegisterPage_ContainsTitle()
     {
         var html = await Client.GetStringAsync("/account/register");
-        Assert.That(html, Does.Contain("<h1 id=\"form-title\">Register</h1>"));
+        Assert.That(html, Does.Contain("<h1 class=\"sr-only\">Create your Promise Model Online account</h1>"));
     }
 
     [Test]
@@ -35,7 +35,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     public async Task Get_RegisterPage_HasLoginLink()
     {
         var html = await Client.GetStringAsync("/account/register");
-        Assert.That(html, Does.Contain("Login here"));
+        Assert.That(html, Does.Contain("Sign in here"));
     }
 
     [Test]
@@ -83,7 +83,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_Register_ValidUser_RedirectsToLogin()
+    public async Task Post_Register_ValidUser_RedirectsToEmailVerification()
     {
         var uniqueUser = "inttest_" + Guid.NewGuid().ToString("N")[..8];
         var uniqueEmail = uniqueUser + "@test.com";
@@ -98,15 +98,14 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
             { "ConfirmPassword", TestPassword }
         };
 
-        // POST with returnUrl in query so redirect includes registered=true
-        var request = CreatePostWithAntiforgery("/account/register?returnUrl=/account/login", antiforgery, formData);
+        var request = CreatePostWithAntiforgery("/account/register", antiforgery, formData);
         var response = await Client.SendAsync(request);
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
         var location = await ExtractRedirectLocation(response);
-        Assert.That(location, Does.Contain("/account/login"));
-        Assert.That(location, Does.Contain("registered=true"));
+        Assert.That(location, Does.Contain("/account/verify-email"));
+        Assert.That(location, Does.Contain("userId="));
     }
 
     [Test]

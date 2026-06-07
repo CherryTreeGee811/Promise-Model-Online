@@ -82,9 +82,9 @@ namespace PromiseModelOnline.Auth.Controllers
             identity.AddClaim(subClaim);
 
             // name
-            if (!string.IsNullOrEmpty(User.Identity.Name))
+            if (User.Identity?.Name is { Length: > 0 } name)
             {
-                var nameClaim = new Claim(OpenIddictConstants.Claims.Name, User.Identity.Name);
+                var nameClaim = new Claim(OpenIddictConstants.Claims.Name, name);
                 nameClaim.SetDestinations(
                     OpenIddictConstants.Destinations.AccessToken,
                     OpenIddictConstants.Destinations.IdentityToken

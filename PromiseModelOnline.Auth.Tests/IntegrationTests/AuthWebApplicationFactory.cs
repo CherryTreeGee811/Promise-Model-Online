@@ -8,10 +8,12 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
 using PromiseModelOnline.Auth.Middleware;
+using PromiseModelOnline.Auth.Services;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;
 
@@ -100,7 +102,45 @@ public class AuthWebApplicationFactory : IAsyncDisposable
                     System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
                 config.QueueLimit = 0;
             });
+
+            options.AddFixedWindowLimiter("RegisterPolicy", config =>
+            {
+                config.PermitLimit = 5;
+                config.Window = TimeSpan.FromMinutes(10);
+                config.QueueProcessingOrder =
+                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                config.QueueLimit = 0;
+            });
+
+            options.AddFixedWindowLimiter("VerifyCodePolicy", config =>
+            {
+                config.PermitLimit = 5;
+                config.Window = TimeSpan.FromMinutes(5);
+                config.QueueProcessingOrder =
+                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                config.QueueLimit = 0;
+            });
+
+            options.AddFixedWindowLimiter("ResendVerificationPolicy", config =>
+            {
+                config.PermitLimit = 3;
+                config.Window = TimeSpan.FromMinutes(5);
+                config.QueueProcessingOrder =
+                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                config.QueueLimit = 0;
+            });
+
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
+
+        // Caching
+        builder.Services.AddMemoryCache();
+
+        // Fake email service (no SendGrid API key needed in tests)
+        builder.Services.AddSingleton<IEmailService>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<StubEmailService>>();
+            return new StubEmailService(logger);
         });
 
         builder.Services.AddControllersWithViews()

@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;
 
@@ -247,6 +249,17 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
                 { "ConfirmPassword", TestPassword }
             }));
         Assert.That(regResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+
+        // Confirm email before login (new requirement)
+        var location = regResponse.Headers.Location?.ToString() ?? "";
+        var userId = ExtractQueryParam(location, "userId");
+        var cache = Factory.Server.Services.GetRequiredService<IMemoryCache>();
+        Assert.That(cache.TryGetValue($"verify_code:{userId}", out string? verificationCode), Is.True);
+        var verifyAntiforgery = await GetAntiforgeryData($"/account/verify-email?userId={userId}");
+        var confirmResponse = await Client.SendAsync(CreatePostWithAntiforgery(
+            "/account/verify-email/confirm", verifyAntiforgery,
+            new Dictionary<string, string> { { "UserId", userId }, { "Code", verificationCode! } }));
+        Assert.That(confirmResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
         // Login as the new user
         var auth = await AuthCookieForAsync(uniqueUser, TestPassword);

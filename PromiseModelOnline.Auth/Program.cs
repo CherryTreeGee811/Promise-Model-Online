@@ -8,6 +8,7 @@ using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
 using PromiseModelOnline.Auth.Middleware;
+using PromiseModelOnline.Auth.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -115,6 +116,12 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
 
 builder.Services.AddAuthorization();
 
+// ---------- Caching --------------------------------------------------
+builder.Services.AddMemoryCache();
+
+// ---------- Email ----------------------------------------------------
+builder.Services.AddSingleton<IEmailService, EmailService>();
+
 // ---------- Rate limiting ----------------------------------------------
 builder.Services.AddRateLimiter(options =>
 {
@@ -122,6 +129,33 @@ builder.Services.AddRateLimiter(options =>
     {
         config.PermitLimit = 30;
         config.Window = TimeSpan.FromMinutes(1);
+        config.QueueProcessingOrder =
+            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("RegisterPolicy", config =>
+    {
+        config.PermitLimit = 5;
+        config.Window = TimeSpan.FromMinutes(10);
+        config.QueueProcessingOrder =
+            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("VerifyCodePolicy", config =>
+    {
+        config.PermitLimit = 5;
+        config.Window = TimeSpan.FromMinutes(5);
+        config.QueueProcessingOrder =
+            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("ResendVerificationPolicy", config =>
+    {
+        config.PermitLimit = 3;
+        config.Window = TimeSpan.FromMinutes(5);
         config.QueueProcessingOrder =
             System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
         config.QueueLimit = 0;

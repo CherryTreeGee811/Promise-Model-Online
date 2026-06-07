@@ -1,17 +1,24 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Auth.Controllers;
+using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
 using System.Threading.Tasks;
-using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Tests;
 
 public class AccountControllerUnitTests
 {
     private Mock<UserManager<IdentityUser>> _userManagerMock = null!;
+    private Mock<IEmailService> _emailServiceMock = null!;
+    private Mock<IConfiguration> _configMock = null!;
+    private Mock<ILogger<AccountController>> _loggerMock = null!;
+    private IMemoryCache _cache = null!;
     private AccountController _controller = null!;
 
     [SetUp]
@@ -20,13 +27,23 @@ public class AccountControllerUnitTests
         var store = new Mock<IUserStore<IdentityUser>>();
         _userManagerMock = new Mock<UserManager<IdentityUser>>(
             store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
-        _controller = new AccountController(_userManagerMock.Object);
+        _emailServiceMock = new Mock<IEmailService>();
+        _configMock = new Mock<IConfiguration>();
+        _loggerMock = new Mock<ILogger<AccountController>>();
+        _cache = new MemoryCache(new MemoryCacheOptions());
+        _controller = new AccountController(
+            _userManagerMock.Object,
+            _emailServiceMock.Object,
+            _configMock.Object,
+            _loggerMock.Object,
+            _cache);
     }
 
     [TearDown]
     public void TearDown()
     {
         _controller.Dispose();
+        _cache.Dispose();
     }
 
     [Test]
@@ -97,7 +114,7 @@ public class AccountControllerUnitTests
     }
 
     [Test]
-    public async Task Register_Post_Success_RedirectsToLogin()
+    public async Task Register_Post_Success_RedirectsToEmailVerification()
     {
         var model = new RegisterViewModel { Username = "new", Email = "new@test.com", Password = "pw", ConfirmPassword = "pw" };
         _userManagerMock.Setup(x => x.FindByNameAsync("new")).ReturnsAsync((IdentityUser?)null);
@@ -107,12 +124,13 @@ public class AccountControllerUnitTests
             .ReturnsAsync(IdentityResult.Success);
 
         var result = await _controller.Register(model);
-        
-        Assert.That(result, Is.TypeOf<RedirectResult>());
 
-        var redirect = result as RedirectResult;
+        Assert.That(result, Is.TypeOf<RedirectToActionResult>());
+
+        var redirect = result as RedirectToActionResult;
         Assert.That(redirect, Is.Not.Null);
-
-        Assert.That(redirect!.Url, Does.StartWith("/account/login"));
+        Assert.That(redirect!.ActionName, Is.EqualTo("Index"));
+        Assert.That(redirect.ControllerName, Is.EqualTo("EmailVerification"));
+        Assert.That(redirect.RouteValues, Contains.Key("userId"));
     }
 }

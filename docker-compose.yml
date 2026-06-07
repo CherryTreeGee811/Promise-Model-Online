@@ -84,9 +84,11 @@ services:
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER:-pmo_auth};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID:-}
       - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
+      - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
     secrets:
       - auth_db_password
       - google_client_secret
+      - sendgrid_api_key
     depends_on:
       promisemodelonline.db-init:
         condition: service_completed_successfully
@@ -152,3 +154,5 @@ secrets:
     file: ./secrets/api_db_password.txt
   google_client_secret:
     file: ./secrets/google_client_secret.txt
+  sendgrid_api_key:
+    file: ./secrets/sendgrid_api_key.txt
