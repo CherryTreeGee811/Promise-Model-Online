@@ -1,15 +1,15 @@
-<h1 class="mb-4">Iteration History</h1>
-<div id="project-title" class="text-secondary fs-5 mb-4"></div>
-<p id="error-text" aria-live="polite"></p>
+<div id="iterations-view">
+    <h1 class="mb-4">Iteration History</h1>
+    <div id="project-title" class="text-secondary fs-5 mb-4"></div>
+    <p id="error-text" aria-live="polite"></p>
 
-<div class="field-actions mb-4">
-    <button id="create-iteration-btn" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2" type="button">
-        <i class="bi bi-plus-lg" aria-hidden="true"></i>
-        New Iteration
-    </button>
-</div>
+    <div class="field-actions mb-4">
+        <button id="create-iteration-btn" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2" type="button">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            New Iteration
+        </button>
+    </div>
 
-<div class="detail-card">
     <div id="iterations-list"></div>
 </div>
 
@@ -18,16 +18,7 @@
         <div class="card-body">
             <h2 id="iteration-title" class="card-title h4"></h2>
 
-            <div id="iteration-loading" class="d-flex justify-content-center align-items-center py-5" hidden>
-                <div class="spinner-border text-primary" role="status" aria-label="Loading iteration details">
-                    <span class="visually-hidden">Loading iteration details...</span>
-                </div>
-            </div>
-
-            <section id="iteration-burndown-container" class="mb-4" aria-label="Burndown chart">
-                <h3 class="h5 text-secondary mb-3">Burndown</h3>
-                <div id="iteration-burndown-canvas"></div>
-            </section>
+            <div id="iteration-burndown-canvas"></div>
 
             <section aria-label="Strides in this iteration">
                 <h3 class="h5 text-secondary mb-3">Strides</h3>

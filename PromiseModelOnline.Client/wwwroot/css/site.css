@@ -508,6 +508,9 @@ button {
   gap: var(--spacing-lg);
 }
 .detail-card h2 { margin: 0; }
+.detail-card form {
+  display: contents;
+}
 
 .project-settings-sections {
   display: grid;
@@ -1355,6 +1358,11 @@ button {
 /* The main content region receives programmatic focus after every SPA navigation
    (for screen readers). Suppress the visual outline so it doesn't look like a
    page border — keyboard navigation is already served by the skip link. */
+#main-content {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
 #main-content:focus-visible {
   outline: none;
 }

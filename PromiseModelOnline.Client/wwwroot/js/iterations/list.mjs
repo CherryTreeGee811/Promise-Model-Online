@@ -6,9 +6,9 @@ import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 
 export function loadIterationHistory(projectId) {
+    const viewDiv = document.getElementById('iterations-view');
     const listDiv = document.getElementById('iterations-list');
     const detailDiv = document.getElementById('iteration-detail');
-    const loadingEl = document.getElementById('iteration-loading');
     const errorEl = document.getElementById('error-text');
     const projectTitle = document.getElementById('project-title');
     const createIterationBtn = document.getElementById('create-iteration-btn');
@@ -95,17 +95,15 @@ export function loadIterationHistory(projectId) {
     function showIterationDetail(iteration) {
         const iterationId = iteration.id;
 
-        listDiv.classList.add('d-none');
+        viewDiv.classList.add('d-none');
         detailDiv.classList.remove('d-none');
-        if (loadingEl) loadingEl.hidden = false;
 
         const titleEl = document.getElementById('iteration-title');
-        const burndownContainer = document.getElementById('iteration-burndown-container');
         const burndownCanvas = document.getElementById('iteration-burndown-canvas');
         const strideDetailsDiv = document.getElementById('stride-details');
 
         titleEl.textContent = iteration.name;
-        burndownCanvas.innerHTML = '';
+        burndownCanvas.innerHTML = renderLoadingSpinner('Loading burndown chart');
         strideDetailsDiv.innerHTML = renderLoadingSpinner('Loading strides');
 
         const BURNDOWN_TIMEOUT_MS = 10000;
@@ -116,8 +114,6 @@ export function loadIterationHistory(projectId) {
 
         Promise.race([getIterationBurndown(iterationId), timeoutPromise])
             .then(points => {
-                if (loadingEl) loadingEl.hidden = true;
-
                 if (points && points.length > 0) {
                     drawBurndownChart(burndownCanvas, points);
                 } else {
@@ -126,7 +122,6 @@ export function loadIterationHistory(projectId) {
             })
             .catch(err => {
                 console.error('Iteration burndown error', err);
-                if (loadingEl) loadingEl.hidden = true;
                 burndownCanvas.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
             });
 
@@ -172,7 +167,7 @@ export function loadIterationHistory(projectId) {
 
     document.getElementById('back-to-iterations-btn').addEventListener('click', () => {
         detailDiv.classList.add('d-none');
-        listDiv.classList.remove('d-none');
+        viewDiv.classList.remove('d-none');
     });
 }
 
