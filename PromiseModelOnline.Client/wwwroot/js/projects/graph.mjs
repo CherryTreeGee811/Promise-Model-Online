@@ -733,8 +733,12 @@ function initZoomControls(zoomBehavior, svgNode, d3Instance) {
         selection.transition().duration(200).call(zoomBehavior.scaleBy, 0.7);
     });
 
-    const zoomResetBtn = document.getElementById('graph-zoom-reset');
-    zoomResetBtn?.addEventListener('click', () => {
+    document.getElementById('graph-zoom-reset')?.addEventListener('click', () => {
+        selection.transition().duration(200).call(zoomBehavior.transform, d3Instance.zoomIdentity);
+    });
+
+    const fullscreenBtn = document.getElementById('graph-fullscreen-btn');
+    fullscreenBtn?.addEventListener('click', () => {
         const viewport = document.getElementById('graph-viewport');
         if (!document.fullscreenElement) {
             viewport.requestFullscreen?.()?.catch(() => {});
@@ -937,7 +941,7 @@ export async function loadGraphPage(projectId, contentDiv) {
 
     document.removeEventListener('fullscreenchange', graphState._onFullscreenChange);
     graphState._onFullscreenChange = () => {
-        const btn = document.getElementById('graph-zoom-reset');
+        const btn = document.getElementById('graph-fullscreen-btn');
         if (!btn) return;
         const icon = btn.querySelector('i');
         if (document.fullscreenElement) {

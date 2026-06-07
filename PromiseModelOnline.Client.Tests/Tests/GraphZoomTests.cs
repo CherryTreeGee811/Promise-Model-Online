@@ -34,6 +34,7 @@ public class GraphZoomTests : SeleniumTestBase
         Assert.That(Driver.FindElement(By.Id("graph-zoom-in")).Displayed, Is.True);
         Assert.That(Driver.FindElement(By.Id("graph-zoom-out")).Displayed, Is.True);
         Assert.That(Driver.FindElement(By.Id("graph-zoom-reset")).Displayed, Is.True);
+        Assert.That(Driver.FindElement(By.Id("graph-fullscreen-btn")).Displayed, Is.True);
     }
 
     [Test]
@@ -42,7 +43,7 @@ public class GraphZoomTests : SeleniumTestBase
         NavigateAsUser("/projects/1/graph");
         WaitForElement(By.Id("graph-content"), 10);
 
-        foreach (var id in new[] { "graph-zoom-in", "graph-zoom-out", "graph-zoom-reset" })
+        foreach (var id in new[] { "graph-zoom-in", "graph-zoom-out", "graph-zoom-reset", "graph-fullscreen-btn" })
         {
             var btn = Driver.FindElement(By.Id(id));
             var w = btn.Size.Width;
@@ -61,6 +62,7 @@ public class GraphZoomTests : SeleniumTestBase
         Assert.That(Driver.FindElement(By.Id("graph-zoom-in")).GetAttribute("aria-label"), Is.EqualTo("Zoom in"));
         Assert.That(Driver.FindElement(By.Id("graph-zoom-out")).GetAttribute("aria-label"), Is.EqualTo("Zoom out"));
         Assert.That(Driver.FindElement(By.Id("graph-zoom-reset")).GetAttribute("aria-label"), Is.EqualTo("Reset zoom"));
+        Assert.That(Driver.FindElement(By.Id("graph-fullscreen-btn")).GetAttribute("aria-label"), Is.EqualTo("Fullscreen"));
     }
 
     [Test]
@@ -161,6 +163,36 @@ public class GraphZoomTests : SeleniumTestBase
         var afterReset = svgGroup.GetAttribute("transform");
         Assert.That(afterReset, Is.Not.EqualTo(afterZoomIn),
             "Zoom reset should produce a different transform from zoomed-in state");
+    }
+
+    [Test]
+    public void GraphFullscreenButton_HasCorrectInitialState()
+    {
+        NavigateAsUser("/projects/1/graph");
+        WaitForElement(By.Id("graph-content"), 10);
+
+        var btn = Driver.FindElement(By.Id("graph-fullscreen-btn"));
+        Assert.That(btn.Displayed, Is.True);
+        Assert.That(btn.GetAttribute("aria-label"), Is.EqualTo("Fullscreen"));
+
+        var icon = btn.FindElement(By.CssSelector("i"));
+        Assert.That(icon.GetAttribute("class"), Does.Contain("bi-arrows-angle-expand"));
+    }
+
+    [Test]
+    public void GraphFullscreenButton_IsInToolbar()
+    {
+        NavigateAsUser("/projects/1/graph");
+        WaitForElement(By.Id("graph-content"), 10);
+
+        var toolbar = Driver.FindElement(By.Id("graph-zoom-controls"));
+        var fullscreenBtn = toolbar.FindElement(By.Id("graph-fullscreen-btn"));
+        Assert.That(fullscreenBtn.Displayed, Is.True);
+        Assert.That(fullscreenBtn.GetAttribute("aria-label"), Is.EqualTo("Fullscreen"));
+
+        var resetBtn = toolbar.FindElement(By.Id("graph-zoom-reset"));
+        Assert.That(resetBtn.Displayed, Is.True);
+        Assert.That(resetBtn.GetAttribute("aria-label"), Is.EqualTo("Reset zoom"));
     }
 
     [Test]
