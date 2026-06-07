@@ -1,5 +1,6 @@
 import { navigate } from "../router.mjs";
 import { getAllProjects } from "./api.mjs";
+import { renderEmptyTableRow } from "../utils/empty-table.mjs";
 
 export function loadProjectList(navContentDiv, contentDiv) {
     const tableBody = document.getElementById('project-list-table-body');
@@ -23,6 +24,28 @@ export function loadProjectList(navContentDiv, contentDiv) {
     tableBody.innerHTML = '';
 
     getAllProjects().then(projects => {
+        if (!projects || projects.length === 0) {
+            tableBody.innerHTML = renderEmptyTableRow({
+                icon: 'bi-folder',
+                title: 'There are no projects yet',
+                description: 'Click "Add Project" to create your first project.',
+                colspan: 2,
+                button: {
+                    text: 'Create your first project',
+                    icon: 'bi-plus-circle',
+                    id: 'empty-state-add-project-btn',
+                },
+            });
+            const emptyBtn = document.getElementById('empty-state-add-project-btn');
+            if (emptyBtn) {
+                emptyBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigate('/projects/add', navContentDiv, contentDiv);
+                });
+            }
+            return;
+        }
+
         projects.forEach(project => {
             const row = document.createElement('tr');
             row.innerHTML = `

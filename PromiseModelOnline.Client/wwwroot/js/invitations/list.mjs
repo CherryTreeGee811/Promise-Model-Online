@@ -1,5 +1,6 @@
 import { getPendingInvitations, acceptInvitation } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 
 export function loadInvitationsPage(contentDiv) {
     const listDiv = document.getElementById('invitations-list');
@@ -11,7 +12,11 @@ export function loadInvitationsPage(contentDiv) {
             const invitations = await getPendingInvitations();
             
             if (!invitations || invitations.length === 0) {
-                listDiv.innerHTML = '<p class="no-items">No pending invitations.</p>';
+                listDiv.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-envelope',
+                    title: 'No pending invitations.',
+                    description: 'When someone invites you to a project, it will appear here.',
+                });
                 return;
             }
 
@@ -50,7 +55,11 @@ export function loadInvitationsPage(contentDiv) {
 
                         const remaining = listDiv.querySelectorAll('tbody tr').length;
                         if (remaining === 0) {
-                            listDiv.innerHTML = '<p class="no-items">No pending invitations.</p>';
+                            listDiv.innerHTML = renderEmptyStateSection({
+                                icon: 'bi-envelope',
+                                title: 'No pending invitations.',
+                                description: 'When someone invites you to a project, it will appear here.',
+                            });
                         }
                         window.scrollTo(0, y);
                     } catch (err) {

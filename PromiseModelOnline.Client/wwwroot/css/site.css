@@ -835,6 +835,11 @@ button {
   color: #475569;
 }
 
+.empty-table-icon {
+  font-size: 4rem;
+  color: #adb5bd;
+}
+
 .graph-empty-state {
   display: grid;
   place-items: center;

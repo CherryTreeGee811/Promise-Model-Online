@@ -4,6 +4,7 @@ import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getM
 import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
 import { buildGraphViewHref } from '../projects/graph-link.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 import { openStrideCreateModal } from '../utils/stride-create-modal.mjs';
 import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
@@ -79,7 +80,11 @@ function ensureNoItemsPlaceholder(card) {
     if (rowCount > 0) return;
 
     // If there is a table but no rows, show the empty state.
-    momentsContainer.innerHTML = '<p class="no-items">No moments assigned.</p>';
+    momentsContainer.innerHTML = renderEmptyStateSection({
+        icon: 'bi-clock',
+        title: 'No moments assigned.',
+        description: 'Move moments from the backlog into this stride.',
+    });
 }
 
 function updateStrideTotalEffortFromDom(card) {
@@ -785,8 +790,11 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             cachedIterations = Array.isArray(iterations) ? [...iterations].sort((a, b) => b.id - a.id) : [];
 
             if (!cachedIterations.length) {
-                strideBoard.innerHTML = '';
-                errorEl.textContent = 'No iterations found for this project.';
+                strideBoard.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-repeat',
+                    title: 'No iterations found for this project.',
+                    description: 'Create the first iteration to start planning your work.',
+                });
                 if (projectTitle) {
                     projectTitle.innerHTML = `<h2>${escapeHtml(project?.name ?? `Project ${projectId}`)}</h2>`;
                 }
@@ -820,7 +828,11 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             strideBoard.innerHTML = '';
 
             if (!strides || strides.length === 0) {
-                strideBoard.innerHTML = '<p>No strides found for this iteration.</p>';
+                strideBoard.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-kanban',
+                    title: 'No strides found for this iteration.',
+                    description: 'Create a stride to organize your moments into sprints.',
+                });
             } else {
                 renderStrideScrollspy(strides);
                 const stridePromises = strides.map(stride =>
@@ -861,7 +873,11 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     </div>
                     <div class="stride-moments${collapsed ? ' hidden' : ''}">
                         ${moments.length === 0
-                            ? '<p class="no-items">No moments assigned.</p>'
+                            ? renderEmptyStateSection({
+                                icon: 'bi-clock',
+                                title: 'No moments assigned.',
+                                description: 'Move moments from the backlog into this stride.',
+                            })
                             : `<table class="promisemodel-table">
                                 <thead>
                                     <tr>
@@ -915,7 +931,11 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                         <div class="stride-card backlog-board${backlogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
                             ${boardHeaderHtml('Backlog', backlogCollapsed)}
                             <div class="stride-moments backlog-content${backlogCollapsed ? ' hidden' : ''}">
-                                <p class="no-items">No unassigned moments.</p>
+                                ${renderEmptyStateSection({
+                                    icon: 'bi-inbox',
+                                    title: 'No unassigned moments.',
+                                    description: 'Create new moments or assign existing ones to this project.',
+                                })}
                             </div>
                         </div>
                     `;

@@ -1,5 +1,6 @@
 import { getMyTasks } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { navigate } from '../router.mjs';
 
 export function loadMyTasksPage(navContentDiv, contentDiv) {
@@ -9,7 +10,11 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
     getMyTasks()
         .then(moments => {
             if (!moments || moments.length === 0) {
-                content.innerHTML = '<p class="no-items">You have no assigned tasks.</p>';
+                content.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-list-task',
+                    title: 'You have no assigned tasks.',
+                    description: 'When a moment is assigned to you, it will appear here.',
+                });
                 return;
             }
 

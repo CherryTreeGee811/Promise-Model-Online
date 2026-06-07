@@ -1,5 +1,6 @@
 import { getComments, postComment } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { createCommentAutocomplete } from './autocomplete.mjs';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.mjs';
 
@@ -54,7 +55,11 @@ export function loadComments(container, parentType, parentId) {
 function renderComments(container, comments) {
     container.innerHTML = '';
     if (!comments || comments.length === 0) {
-        container.innerHTML = '<p class="no-items">No comments yet.</p>';
+        container.innerHTML = renderEmptyStateSection({
+            icon: 'bi-chat-dots',
+            title: 'No comments yet.',
+            description: 'Be the first to share your thoughts.',
+        });
         return;
     }
     comments.forEach(comment => container.appendChild(createCommentElement(comment)));

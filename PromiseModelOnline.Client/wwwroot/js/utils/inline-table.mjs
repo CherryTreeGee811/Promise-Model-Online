@@ -1,16 +1,20 @@
 import { escapeHtml } from './html.mjs';
+import { renderEmptyTableRow } from './empty-table.mjs';
 
 export function renderTableWithInlineAddRow(container, {
     headers,
     items,
     emptyMessage,
+    emptyConfig,
     renderItemRow,
     renderAddRow = () => '',
 }) {
     const columnCount = headers.length;
     const rowsHtml = items && items.length
         ? items.map(renderItemRow).join('')
-        : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`;
+        : emptyConfig
+            ? renderEmptyTableRow({ colspan: columnCount, ...emptyConfig })
+            : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`;
 
     const addRowHtml = renderAddRow ? renderAddRow() : '';
 
