@@ -633,6 +633,27 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
     node.select('rect.graph-card-accent').attr('fill', current => getNodeColor(current.data.nodeType));
     node.select('text.graph-card-status').text(current => getStatusIcon(current.data.payload?.statusColor));
 
+    node.each(function (current) {
+        const badge = d3.select(this).select('text.graph-card-collapsed-badge');
+        const hiddenCount = Number.parseInt(current.data._hiddenDescendantCount ?? 0, 10) || 0;
+        const shouldShowBadge = hiddenCount > 0 && Boolean(current.data._isCollapsed);
+
+        if (shouldShowBadge) {
+            if (badge.empty()) {
+                d3.select(this).append('text')
+                    .attr('class', 'graph-card-collapsed-badge')
+                    .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
+                    .attr('y', CARD_HEIGHT / 2 - 12)
+                    .attr('text-anchor', 'end')
+                    .text(`${hiddenCount} hidden`);
+            } else {
+                badge.text(`${hiddenCount} hidden`);
+            }
+        } else if (!badge.empty()) {
+            badge.remove();
+        }
+    });
+
     if (enableLinks) {
         node
             .attr('href', current => getNodeHref(current.data, projectId))
