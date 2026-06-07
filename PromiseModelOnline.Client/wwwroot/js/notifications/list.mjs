@@ -1,6 +1,7 @@
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.mjs';
 import { escapeHtml } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 
 let liveListenerRegistered = false;
 
@@ -55,7 +56,11 @@ function renderNotificationsInto(listDiv, notifications) {
     if (!listDiv) return;
 
     if (!notifications || notifications.length === 0) {
-        listDiv.innerHTML = '<p class="no-items">No notifications yet.</p>';
+        listDiv.innerHTML = renderEmptyStateSection({
+            icon: 'bi-bell',
+            title: 'No notifications yet.',
+            description: 'You\'ll see notifications here when there is activity related to you.',
+        });
         return;
     }
 

@@ -3,6 +3,7 @@ import { getIterationsByProject, getIterationBurndown } from './api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { drawBurndownChart } from '../utils/burndown.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 
 export function loadIterationHistory(projectId) {
@@ -44,7 +45,11 @@ export function loadIterationHistory(projectId) {
             }
 
             if (!iterations || iterations.length === 0) {
-                listDiv.innerHTML = '<p class="no-items">No iterations found.</p>';
+                listDiv.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-arrow-repeat',
+                    title: 'No iterations found.',
+                    description: 'Create an iteration to start organizing your strides.',
+                });
                 return;
             }
 
@@ -117,7 +122,11 @@ export function loadIterationHistory(projectId) {
                 if (points && points.length > 0) {
                     drawBurndownChart(burndownCanvas, points);
                 } else {
-                    burndownCanvas.innerHTML = '<p class="no-items">No burndown data available for this iteration.</p>';
+                    burndownCanvas.innerHTML = renderEmptyStateSection({
+                        icon: 'bi-graph-down',
+                        title: 'No burndown data available for this iteration.',
+                        description: 'Burndown data will appear once moments have status updates.',
+                    });
                 }
             })
             .catch(err => {
@@ -128,7 +137,11 @@ export function loadIterationHistory(projectId) {
         getStridesByIteration(iterationId)
             .then(strides => {
                 if (!strides || strides.length === 0) {
-                    strideDetailsDiv.innerHTML = '<p class="no-items">No strides in this iteration.</p>';
+                    strideDetailsDiv.innerHTML = renderEmptyStateSection({
+                        icon: 'bi-kanban',
+                        title: 'No strides in this iteration.',
+                        description: 'Create strides to organize your work within this iteration.',
+                    });
                     return;
                 }
 

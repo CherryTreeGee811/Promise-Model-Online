@@ -1,8 +1,13 @@
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 
 export function renderAuditTable(items, { showEntity = false } = {}) {
     if (!items || items.length === 0) {
-        return '<p class="text-muted mb-0">No activity recorded yet.</p>';
+        return renderEmptyStateSection({
+            icon: 'bi-activity',
+            title: 'No activity recorded yet.',
+            description: 'Changes made to this project will appear here.',
+        });
     }
 
     const rows = items.map(item => `

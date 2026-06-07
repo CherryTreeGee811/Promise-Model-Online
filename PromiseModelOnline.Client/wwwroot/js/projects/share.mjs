@@ -1,5 +1,6 @@
 import { getProjectPermissions, inviteUserToProject, revokePermission } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
+import { renderEmptyTableRow } from '../utils/empty-table.mjs';
 
 export function loadSharePage(projectId, contentDiv) {
     const errorEl = document.getElementById('error-text');
@@ -35,18 +36,26 @@ export function loadSharePage(projectId, contentDiv) {
                 loadingEl.classList.add('d-none');
                 errorEl.classList.add('d-none');
                 successEl.classList.add('d-none');
-                section.innerHTML = `
-                <h2>Current Permissions</h2>
-                <table class="table table-striped table-sm promisemodel-table">
-                    <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody>${permissions.map(p => `
+                const tbodyHtml = permissions && permissions.length > 0
+                    ? permissions.map(p => `
                         <tr data-permission-id="${p.id}">
                             <td>${escapeHtml(p.userName)}</td>
                             <td>${p.level}</td>
                             <td>${p.status}</td>
                             <td><button class="btn btn-outline-danger btn-sm revoke-btn" data-permission-id="${p.id}">Revoke</button></td>
-                        </tr>`).join('')}
-                    </tbody>
+                        </tr>`).join('')
+                    : renderEmptyTableRow({
+                        icon: 'bi-share',
+                        title: 'No permissions configured',
+                        description: 'Invite a user above to share this project.',
+                        colspan: 4,
+                    });
+
+                section.innerHTML = `
+                <h2>Current Permissions</h2>
+                <table class="table table-striped table-sm promisemodel-table">
+                    <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>${tbodyHtml}</tbody>
                 </table>
                 <h3 class="mt-4">Invite a User</h3>
                 <form id="invite-form" class="row g-2 align-items-center">
