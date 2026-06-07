@@ -8,10 +8,12 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
 using PromiseModelOnline.Auth.Middleware;
+using PromiseModelOnline.Auth.Services;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;
 
@@ -101,6 +103,16 @@ public class AuthWebApplicationFactory : IAsyncDisposable
                 config.QueueLimit = 0;
             });
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
+
+        // Caching
+        builder.Services.AddMemoryCache();
+
+        // Fake email service (no SendGrid API key needed in tests)
+        builder.Services.AddSingleton<IEmailService>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<StubEmailService>>();
+            return new StubEmailService(logger);
         });
 
         builder.Services.AddControllersWithViews()

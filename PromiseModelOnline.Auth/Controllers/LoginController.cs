@@ -38,6 +38,7 @@ public class LoginController : Controller
         }
 
         ViewBag.Registered = (Request?.Query?["registered"].ToString() ?? "") == "true";
+        ViewBag.Verified = (Request?.Query?["verified"].ToString() ?? "") == "true";
         ViewBag.Error = error ?? Request?.Query?["error"].ToString();
         ViewBag.ReturnUrl = returnUrl;
         ViewBag.HasGoogle = !string.IsNullOrWhiteSpace(
@@ -60,6 +61,12 @@ public class LoginController : Controller
             return View("Index", model);
         }
 
+        if (!await _userManager.IsEmailConfirmedAsync(user))
+        {
+            ModelState.AddModelError("", "Please verify your email address before signing in.");
+            return View("Index", model);
+        }
+
         // ✅ ONLY sign into Identity cookie
         await _signInManager.SignInAsync(user, isPersistent: false);
 
@@ -67,10 +74,9 @@ public class LoginController : Controller
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {
-            // ✅ go back to authorize endpoint
             return Redirect(returnUrl);
         }
 
-        return Redirect("/");
+        return Redirect("/login");
     }
 }

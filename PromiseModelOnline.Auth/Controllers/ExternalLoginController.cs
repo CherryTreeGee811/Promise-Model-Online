@@ -62,7 +62,7 @@ public class ExternalLoginController : Controller
         if (result.Succeeded)
         {
             _logger.LogInformation("User logged in via {Provider}", info.LoginProvider);
-            return LocalRedirect(returnUrl);
+            return RedirectToBff(returnUrl);
         }
 
         var email = info.Principal.FindFirstValue(ClaimTypes.Email);
@@ -109,6 +109,12 @@ public class ExternalLoginController : Controller
         await _signInManager.SignInAsync(user, isPersistent: false);
         _logger.LogInformation("User {UserId} signed in via {Provider}", user.Id, info.LoginProvider);
 
-        return LocalRedirect(returnUrl);
+        return RedirectToBff(returnUrl);
+    }
+
+    private RedirectResult RedirectToBff(string returnUrl)
+    {
+        var safeReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : "/";
+        return Redirect($"/login?returnUrl={Uri.EscapeDataString(safeReturnUrl)}");
     }
 }

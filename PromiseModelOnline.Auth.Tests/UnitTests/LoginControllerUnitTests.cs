@@ -116,7 +116,7 @@ public class LoginControllerUnitTests
     }
 
     [Test]
-    public async Task Index_Post_ValidCredentials_NoReturnUrl_RedirectsToSlash()
+    public async Task Index_Post_ValidCredentials_NoReturnUrl_RedirectsToBffLogin()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
         var model = new LoginViewModel { Username = "test", Password = "pw" };
@@ -128,6 +128,6 @@ public class LoginControllerUnitTests
         var result = await _controller.Login(model);
 
         Assert.That(result, Is.TypeOf<RedirectResult>());
-        Assert.That(((RedirectResult)result).Url, Is.EqualTo("/"));
+        Assert.That(((RedirectResult)result).Url, Is.EqualTo("/login"));
     }
 }

@@ -76,7 +76,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_Login_ValidCredentials_WithoutReturnUrl_RedirectsToRoot()
+    public async Task Post_Login_ValidCredentials_WithoutReturnUrl_RedirectsToBff()
     {
         var antiforgery = await GetAntiforgeryData("/account/login");
 
@@ -92,7 +92,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
         var location = await ExtractRedirectLocation(response);
-        Assert.That(location, Is.EqualTo("/"));
+        Assert.That(location, Is.EqualTo("/login"));
     }
 
     [Test]

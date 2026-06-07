@@ -21,12 +21,26 @@
         </button>
         <nav id="main-nav" aria-label="Main navigation" role="navigation">
             <ul id="main-menu">
-                <li class="main-menu-item">
-                    <a href="/account/login" id="login-link" class="main-menu-link">Login</a>
-                </li>
-                <li class="main-menu-item">
-                    <a href="/account/register" id="register-link" class="main-menu-link">Register</a>
-                </li>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <li class="main-menu-item">
+                        <a href="/" id="home-nav-link" class="main-menu-link">Home</a>
+                    </li>
+                    <li class="main-menu-item">
+                        <form method="post" action="/connect/logout" class="inline-form">
+                            <button type="submit" id="logout-link" class="main-menu-link nav-btn">Logout</button>
+                        </form>
+                    </li>
+                }
+                else
+                {
+                    <li class="main-menu-item">
+                        <a href="/account/login" id="login-link" class="main-menu-link">Login</a>
+                    </li>
+                    <li class="main-menu-item">
+                        <a href="/account/register" id="register-link" class="main-menu-link">Register</a>
+                    </li>
+                }
             </ul>
         </nav>
     </header>
