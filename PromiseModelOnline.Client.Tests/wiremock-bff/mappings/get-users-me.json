@@ -4,7 +4,7 @@
     "method": "GET",
     "urlPath": "/api/users/me",
     "headers": {
-      "Cookie": { "matches": "__Host-pmo.session=.*" }
+      "Cookie": { "contains": "__Host-pmo.session" }
     }
   },
   "response": {
@@ -15,7 +15,10 @@
       "sub": "owner-user-id"
     },
     "headers": {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
     }
   }
 }

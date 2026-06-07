@@ -110,7 +110,7 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
         NavigateAsUser(vp, "/projects/1/strides");
         var header = Driver.FindElement(By.ClassName("stride-header"));
         var flexDirection = ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "return window.getComputedStyle(arguments[0]).flexDirection;", header).ToString();
+            "return window.getComputedStyle(arguments[0]).flexDirection;", header)?.ToString() ?? string.Empty;
         if (vp == Viewport.Mobile)
         {
             Assert.That(flexDirection, Is.EqualTo("column"),
