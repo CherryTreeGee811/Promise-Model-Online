@@ -102,6 +102,34 @@ public class AuthWebApplicationFactory : IAsyncDisposable
                     System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
                 config.QueueLimit = 0;
             });
+
+            options.AddFixedWindowLimiter("RegisterPolicy", config =>
+            {
+                config.PermitLimit = 5;
+                config.Window = TimeSpan.FromMinutes(10);
+                config.QueueProcessingOrder =
+                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                config.QueueLimit = 0;
+            });
+
+            options.AddFixedWindowLimiter("VerifyCodePolicy", config =>
+            {
+                config.PermitLimit = 5;
+                config.Window = TimeSpan.FromMinutes(5);
+                config.QueueProcessingOrder =
+                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                config.QueueLimit = 0;
+            });
+
+            options.AddFixedWindowLimiter("ResendVerificationPolicy", config =>
+            {
+                config.PermitLimit = 3;
+                config.Window = TimeSpan.FromMinutes(5);
+                config.QueueProcessingOrder =
+                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                config.QueueLimit = 0;
+            });
+
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         });
 

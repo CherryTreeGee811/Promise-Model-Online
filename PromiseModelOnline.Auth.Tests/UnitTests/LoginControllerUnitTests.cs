@@ -107,6 +107,7 @@ public class LoginControllerUnitTests
 
         _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
+        _userManagerMock.Setup(x => x.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
         _signInManagerMock.Setup(x => x.SignInAsync(user, false, null)).Returns(Task.CompletedTask);
 
         var result = await _controller.Login(model);
@@ -123,6 +124,7 @@ public class LoginControllerUnitTests
 
         _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
+        _userManagerMock.Setup(x => x.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
         _signInManagerMock.Setup(x => x.SignInAsync(user, false, null)).Returns(Task.CompletedTask);
 
         var result = await _controller.Login(model);
