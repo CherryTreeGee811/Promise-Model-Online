@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class PermissionsController : ControllerBase
     {
         private readonly IPermissionService _permissionService;

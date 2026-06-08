@@ -1,12 +1,12 @@
-import { getProjectById } from '../projects/api.mjs';
-import { getIterationsByProject, getIterationBurndown } from './api.mjs';
+import { getProject } from '../projects/api.mjs';
+import { getIterations, getBurndown } from './api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
 import { drawBurndownChart } from '../utils/burndown.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 
-export function loadIterationHistory(projectId) {
+export function loadIterationHistory(owner, project) {
     const viewDiv = document.getElementById('iterations-view');
     const listDiv = document.getElementById('iterations-list');
     const detailDiv = document.getElementById('iteration-detail');
@@ -20,7 +20,7 @@ export function loadIterationHistory(projectId) {
     if (createIterationBtn && createIterationBtn.dataset.bound !== '1') {
         createIterationBtn.dataset.bound = '1';
         createIterationBtn.addEventListener('click', async () => {
-            openIterationCreateModal(projectId, () => loadIterationHistory(projectId));
+            openIterationCreateModal(owner, project, () => loadIterationHistory(owner, project));
         });
     }
 
@@ -34,14 +34,14 @@ export function loadIterationHistory(projectId) {
 
     Promise.race([
         Promise.all([
-            getProjectById(projectId).catch(() => null),
-            getIterationsByProject(projectId)
+            getProject(owner, project).catch(() => null),
+            getIterations(owner, project)
         ]),
         listTimeoutPromise
     ])
-        .then(([project, iterations]) => {
+        .then(([projectData, iterations]) => {
             if (projectTitle) {
-                projectTitle.textContent = project?.name ?? `Project ${projectId}`;
+                projectTitle.textContent = projectData?.name ?? `Project ${owner}/${project}`;
             }
 
             if (!iterations || iterations.length === 0) {
@@ -117,7 +117,7 @@ export function loadIterationHistory(projectId) {
             setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS)
         );
 
-        Promise.race([getIterationBurndown(iterationId), timeoutPromise])
+        Promise.race([getBurndown(owner, project, iterationId), timeoutPromise])
             .then(points => {
                 if (points && points.length > 0) {
                     drawBurndownChart(burndownCanvas, points);
@@ -134,7 +134,7 @@ export function loadIterationHistory(projectId) {
                 burndownCanvas.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
             });
 
-        getStridesByIteration(iterationId)
+        getStridesByIteration(owner, project, iterationId)
             .then(strides => {
                 if (!strides || strides.length === 0) {
                     strideDetailsDiv.innerHTML = renderEmptyStateSection({

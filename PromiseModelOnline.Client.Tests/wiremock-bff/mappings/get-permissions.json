@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/permissions",
+    "urlPath": "/api/projects/pmo_test/seeded-project/permissions",
     "headers": {
       "Cookie": { "contains": "__Host-pmo.session=owner-session" }
     }

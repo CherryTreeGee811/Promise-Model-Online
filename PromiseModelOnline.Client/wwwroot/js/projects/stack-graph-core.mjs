@@ -231,24 +231,27 @@ export function getAppBasePath() {
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const routeRootIndex = pathSegments.findIndex(segment => Object.prototype.hasOwnProperty.call(NODE_ROUTE_SEGMENTS, segment));
 
-    if (routeRootIndex <= 0) {
-        return '';
+    if (routeRootIndex > 0) {
+        return `/${pathSegments.slice(0, routeRootIndex).join('/')}`;
     }
 
-    return `/${pathSegments.slice(0, routeRootIndex).join('/')}`;
+    // For project-scoped URLs like /{owner}/{project}/..., use the owner/project prefix
+    if (pathSegments.length >= 2) {
+        return `/${pathSegments[0]}/${pathSegments[1]}`;
+    }
+
+    return '';
 }
 
-export function getNodeHref(node, projectId) {
+export function getNodeHref(node, owner, project) {
     const routeSegment = NODE_ROUTE_SEGMENTS[node.nodeType];
     if (!routeSegment) return null;
 
     const params = new URLSearchParams();
-    if (projectId != null) {
-        params.set('graphProjectId', String(projectId));
-    }
     params.set('graphFocus', node.id);
 
-    return `${getAppBasePath()}/${routeSegment}/${node.payload?.id}?${params.toString()}`;
+    const seq = node.payload?.sequenceNumber ?? node.payload?.id;
+    return `${getAppBasePath()}/${routeSegment}/${seq}?${params.toString()}`;
 }
 
 export function getNodeSearchText(node) {
@@ -282,19 +285,19 @@ export function countRenderableNodes(node) {
     return selfCount + (node.children ?? []).reduce((sum, child) => sum + countRenderableNodes(child), 0);
 }
 
-export function parseGraphData(rootPromises, projectId, project = null) {
-    const rawName = project?.name ?? project?.Name ?? '';
+export function parseGraphData(rootPromises, owner, project, projectEntity = null) {
+    const rawName = projectEntity?.name ?? projectEntity?.Name ?? '';
     const normalizedName = String(rawName).trim();
-    const projectLabel = normalizedName || `Project #${projectId}`;
+    const projectLabel = normalizedName || `Project ${owner}/${project}`;
 
     return {
-        id: `root-${projectId}`,
+        id: `root-${owner}-${project}`,
         nodeType: 'root',
         label: projectLabel,
         payload: {
-            id: projectId,
+            id: projectEntity?.id ?? null,
             name: projectLabel,
-            description: project?.description ?? project?.Description ?? null,
+            description: projectEntity?.description ?? projectEntity?.Description ?? null,
         },
         children: rootPromises,
     };
@@ -369,7 +372,8 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         contentOffsetX,
         contentOffsetY,
         cardClipPathId,
-        projectId,
+        owner,
+        project,
         focusNodeId,
         onContextMenu,
         enableZoom,
@@ -636,8 +640,8 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
 
     if (enableLinks) {
         node
-            .attr('href', current => getNodeHref(current.data, projectId))
-            .attr('xlink:href', current => getNodeHref(current.data, projectId))
+            .attr('href', current => getNodeHref(current.data, owner, project))
+            .attr('xlink:href', current => getNodeHref(current.data, owner, project))
             .attr('data-nav', '');
     }
 
@@ -704,7 +708,8 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
  */
 export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
     const {
-        projectId = null,
+        owner = null,
+        project = null,
         focusNodeId = null,
         focusNodeData = null,
         enableZoom = true,
@@ -804,7 +809,8 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
     const graphHeight = Math.max((maxX - minX) + margin.top + margin.bottom + foreheadGap, viewportHeight, minGraphHeight ?? defaultMinHeight);
 
     logGraphFocus('render-start', {
-        projectId,
+        owner,
+        project,
         compact,
         resolvedFocusNodeId,
         nodeCount: renderable.length,
@@ -823,7 +829,7 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
 
     const contentOffsetX = margin.left - minY;
     const contentOffsetY = margin.top - minX + foreheadGap;
-    const cardClipPathId = `${clipPathIdPrefix}-${projectId ?? 'stack'}`;
+    const cardClipPathId = `${clipPathIdPrefix}-${owner ?? 'stack'}-${project ?? 'stack'}`;
 
     let svg;
     if (existingSvgEl) {
@@ -859,7 +865,8 @@ export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
         contentOffsetX,
         contentOffsetY,
         cardClipPathId,
-        projectId,
+        owner,
+        project,
         focusNodeId: resolvedFocusNodeId,
         onContextMenu,
         enableZoom,

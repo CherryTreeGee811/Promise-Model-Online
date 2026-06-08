@@ -2,7 +2,7 @@
   "priority": 2,
   "request": {
     "method": "GET",
-    "urlPath": "/api/projects/1",
+    "urlPath": "/api/projects/pmo_test/seeded-project",
     "headers": {
       "Cookie": {
         "contains": "__Host-pmo.session=nonowner-session"
@@ -20,6 +20,8 @@
     "jsonBody": {
       "id": 1,
       "name": "Test Project",
+      "slug": "seeded-project",
+      "ownerSlug": "pmo_test",
       "description": "A seeded test project",
       "ownerId": 1,
       "createdAt": "2026-05-01T00:00:00Z"

@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class StridesController : GenericController<Stride, StrideDTO>
     {
         private readonly IStrideService _strideService;

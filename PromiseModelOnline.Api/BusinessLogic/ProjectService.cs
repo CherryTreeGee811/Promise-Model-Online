@@ -6,6 +6,7 @@ using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic
@@ -40,7 +41,19 @@ namespace PromiseModelOnline.Api.BusinessLogic
                     sharedProjects.Add(project);
             }
 
-            return ownedProjects.Union(sharedProjects, new ProjectComparer());
+            var allProjects = ownedProjects.Union(sharedProjects, new ProjectComparer()).ToList();
+
+            foreach (var project in allProjects)
+            {
+                if (project.Owner is null)
+                {
+                    var owner = await _userRepo.GetByIdAsync(project.OwnerId);
+                    if (owner is not null)
+                        project.Owner = owner;
+                }
+            }
+
+            return allProjects;
         }
 
         public async Task<IEnumerable<ProjectMemberDTO>> GetProjectMembersAsync(int projectId)
@@ -83,6 +96,33 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
         public async Task<IEnumerable<Promise>> GetProductPromisesAsync(int projectId)
             => await _projectRepo.GetProductPromisesByProjectAsync(projectId);
+
+        public async Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug)
+            => await _projectRepo.GetByOwnerAndSlugAsync(ownerSlug, projectSlug);
+
+        public async Task<string> GenerateProjectSlugAsync(string name, int ownerId)
+        {
+            var baseSlug = Regex.Replace(name.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
+                .Replace(" ", "-")
+                .Replace("--", "-")
+                .Trim('-');
+
+            if (string.IsNullOrEmpty(baseSlug))
+                baseSlug = "project";
+
+            var slug = baseSlug;
+            var suffix = 1;
+            while (true)
+            {
+                var existing = await _projectRepo.GetByOwnerAndSlugAsync(
+                    (await _userRepo.GetByIdAsync(ownerId))?.Slug ?? "", slug);
+                if (existing is null)
+                    return slug;
+
+                suffix++;
+                slug = $"{baseSlug}-{suffix}";
+            }
+        }
 
         private class ProjectComparer : IEqualityComparer<Project>
         {

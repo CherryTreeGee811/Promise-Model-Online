@@ -9,7 +9,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void SharePage_LoadsPermissionsTable()
         {
-            NavigateAsUser("/projects/1/share");
+            NavigateAsUser("/pmo_test/seeded-project/share");
 
             WaitForElement(By.CssSelector("table.promisemodel-table tbody tr"), 10);
 
@@ -21,7 +21,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void SharePage_ShowsInviteForm()
         {
-            NavigateAsUser("/projects/1/share");
+            NavigateAsUser("/pmo_test/seeded-project/share");
 
             WaitForElement(By.Id("invite-form"), 10);
 
@@ -33,7 +33,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void SharePage_ShowsRevokeButtonForPermissions()
         {
-            NavigateAsUser("/projects/1/share");
+            NavigateAsUser("/pmo_test/seeded-project/share");
 
             WaitForElement(By.CssSelector("table.promisemodel-table tbody tr"), 10);
 
@@ -44,7 +44,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         [Test]
         public void SharePage_SendInvite_ShowsNewRow()
         {
-            NavigateAsUser("/projects/1/share");
+            NavigateAsUser("/pmo_test/seeded-project/share");
 
             WaitForElement(By.Id("invite-email"), 10).SendKeys("newuser@example.com");
             var levelSelect = Driver.FindElement(By.Id("invite-level"));

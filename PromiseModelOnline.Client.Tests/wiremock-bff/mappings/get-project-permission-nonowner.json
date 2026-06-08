@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPathPattern": "/api/projects/\\d+/my-permission",
+    "urlPathPattern": "/api/projects/pmo_test/seeded-project/my-permission",
     "headers": {
       "Cookie": {
         "contains": "__Host-pmo.session=nonowner-session"

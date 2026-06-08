@@ -1,5 +1,5 @@
 {
-  "request": { "method": "GET", "url": "/api/iterations" },
+  "request": { "method": "GET", "url": "/api/projects/pmo_test/seeded-project/iterations" },
   "response": { "status": 200, "headers": {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class PromisesController : GenericController<Promise, PromiseDTO>
     {
         private readonly IMomentService _momentService;
@@ -43,7 +43,7 @@ namespace PromiseModelOnline.Api.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
-            var nextSeq = await _context.GetNextSequenceNumberAsync(request.ProjectId);
+            var nextSeq = await _context.GetNextPromiseSequenceAsync(request.ProjectId);
 
             var promise = new Promise
             {

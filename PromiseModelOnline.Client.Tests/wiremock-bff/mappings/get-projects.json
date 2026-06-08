@@ -21,6 +21,8 @@
       {
         "id": 1,
         "name": "Test Project",
+        "slug": "seeded-project",
+        "ownerSlug": "pmo_test",
         "description": "A seeded test project",
         "ownerId": 1,
         "createdAt": "2026-05-01T00:00:00Z"

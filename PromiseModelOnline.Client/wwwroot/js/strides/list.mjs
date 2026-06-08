@@ -1,7 +1,7 @@
 import { navigate } from '../router.mjs';
-import { getProjectById } from '../projects/api.mjs';
-import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
-import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
+import { getProject } from '../projects/api.mjs';
+import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
+import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
 import { buildGraphViewHref } from '../projects/graph-link.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
@@ -18,7 +18,8 @@ let cachedMembers = [];
 let cachedAllStrides = [];
 let cachedIterations = [];
 let cachedCanEdit = false;
-let cachedProjectId = null;
+let cachedOwner = null;
+let cachedProject = null;
 let strideStickySyncBound = false;
 
 function applyPermissionUI(canEdit) {
@@ -142,16 +143,16 @@ function progressStrideDomUpdate(strideId) {
     return { moved: unfinishedRows.length, targetVisible: true };
 }
 
-function estimateDropdownHtml(momentId, currentEstimate) {
-    return `<select class="estimate-dropdown" data-moment-id="${momentId}" data-current-estimate="${currentEstimate ?? ''}" aria-label="Effort estimate"></select>`;
+function estimateDropdownHtml(momentSeq, currentEstimate) {
+    return `<select class="estimate-dropdown" data-moment-id="${momentSeq}" data-current-estimate="${currentEstimate ?? ''}" aria-label="Effort estimate"></select>`;
 }
 
-function ownerDropdownHtml(momentId, ownerId) {
-    return `<select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}" aria-label="Owner"></select>`;
+function ownerDropdownHtml(momentSeq, ownerId) {
+    return `<select class="owner-dropdown" data-moment-id="${momentSeq}" data-owner-id="${ownerId ?? ''}" aria-label="Owner"></select>`;
 }
 
-function statusDropdownHtml(momentId, status) {
-    return `<select class="status-dropdown" data-moment-id="${momentId}" data-current-status="${status ?? ''}" aria-label="Status"></select>`;
+function statusDropdownHtml(momentSeq, status) {
+    return `<select class="status-dropdown" data-moment-id="${momentSeq}" data-current-status="${status ?? ''}" aria-label="Status"></select>`;
 }
 
 function updateStatusBadge(row, newStatus) {
@@ -312,7 +313,7 @@ function renderStrideScrollspy(strides) {
 }
 
 function momentGraphLinkHtml(seqNum) {
-    const href = buildGraphViewHref(cachedProjectId, `moment-${seqNum}`);
+    const href = buildGraphViewHref(cachedOwner, cachedProject, `moment-${seqNum}`);
     if (!href) return '';
 
     return `
@@ -498,7 +499,7 @@ function backlogStrideOptionsHtml() {
 
 function createBacklogRow(moment) {
     const tr = document.createElement('tr');
-    tr.dataset.momentId = moment.id;
+    tr.dataset.momentId = moment.sequenceNumber;
     tr.innerHTML = `
         <td>${escapeHtml(moment.statement)}</td>
         <td>${moment.type}</td>
@@ -506,10 +507,10 @@ function createBacklogRow(moment) {
         <td>${moment.effortEstimate ?? '–'}</td>
         <td>
             <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${moment.id}"></select>
-                <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${moment.id}" type="button">Move</button>
+                <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${moment.sequenceNumber}"></select>
+                <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${moment.sequenceNumber}" type="button">Move</button>
                 ${momentGraphLinkHtml(moment.sequenceNumber)}
-                <a href="/moments/${moment.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+                <a href="/${cachedOwner}/${cachedProject}/moments/${moment.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
             </div>
         </td>
     `;
@@ -549,20 +550,20 @@ function ensureStrideTbody(strideId) {
 
 function createStrideRow(moment) {
     const tr = document.createElement('tr');
-    tr.dataset.momentId = moment.id;
+    tr.dataset.momentId = moment.sequenceNumber;
     tr.innerHTML = `
         <td>${escapeHtml(moment.statement)}</td>
         <td>${moment.type}</td>
         <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
-        <td>${estimateDropdownHtml(moment.id, moment.effortEstimate)}</td>
-        <td>${ownerDropdownHtml(moment.id, moment.ownerId)}</td>
+        <td>${estimateDropdownHtml(moment.sequenceNumber, moment.effortEstimate)}</td>
+        <td>${ownerDropdownHtml(moment.sequenceNumber, moment.ownerId)}</td>
         <td>
             <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                ${statusDropdownHtml(moment.id, moment.status)}
-                <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${moment.id}" data-current-estimate="${moment.effortEstimate ?? ''}"><option value="">–</option></select>
-                <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${moment.id}" type="button">Backlog</button>
+                ${statusDropdownHtml(moment.sequenceNumber, moment.status)}
+                <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${moment.sequenceNumber}" data-current-estimate="${moment.effortEstimate ?? ''}"><option value="">–</option></select>
+                <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${moment.sequenceNumber}" type="button">Backlog</button>
                 ${momentGraphLinkHtml(moment.sequenceNumber)}
-                <a href="/moments/${moment.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+                <a href="/${cachedOwner}/${cachedProject}/moments/${moment.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
             </div>
         </td>
     `;
@@ -582,7 +583,7 @@ function createStrideRow(moment) {
     return tr;
 }
 
-function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
+function bindInlineMomentControls(root, owner, project, navContentDiv, contentDiv) {
     if (!root) return;
 
     // Prevent double binding ON ROOT (not elements)
@@ -598,7 +599,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             const previous = target.value;
 
             try {
-                const updated = await updateMomentStatus(momentId, target.value);
+                const updated = await updateMomentStatus(owner, project, momentId, target.value);
                 const row = findMomentRow(momentId);
                 updateStatusBadge(row, updated.status);
             } catch (err) {
@@ -614,7 +615,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
 
             try {
                 const estimate = target.value === '' ? null : target.value;
-                await updateMomentEstimate(momentId, estimate);
+                await updateMomentEstimate(owner, project, momentId, estimate);
                 // Recalculate totals for the containing stride card immediately
                 const row = findMomentRow(momentId);
                 const card = row ? row.closest('.stride-card') : null;
@@ -632,7 +633,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
 
             try {
                 const newOwnerId = target.value ? parseInt(target.value, 10) : null;
-                const updated = await updateMomentOwner(momentId, newOwnerId);
+                const updated = await updateMomentOwner(owner, project, momentId, newOwnerId);
                 target.value = updated.ownerId ?? '';
             } catch (err) {
                 target.value = previous;
@@ -662,7 +663,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
         if (btn.classList.contains('move-to-backlog-btn')) {
             const momentId = parseInt(btn.dataset.momentId, 10);
             promptMoveToBacklog(momentId, async () => {
-                const updated = await moveMomentToStride(momentId, null);
+                const updated = await assignMomentToStride(owner, project, momentId, null);
                 preserveScroll(() => {
                     const row = findMomentRow(momentId);
                     const origCard = row ? row.closest('.stride-card') : null;
@@ -690,7 +691,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
 
             if (!strideId) return;
             promptMoveToStride(momentId, strideId, async () => {
-                const updated = await moveMomentToStride(momentId, strideId);
+                const updated = await assignMomentToStride(owner, project, momentId, strideId);
                 preserveScroll(() => {
                     // Remove backlog row
                     findMomentRow(momentId)?.remove();
@@ -716,7 +717,7 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             if (!(await promptProgressStride(strideId))) return;
 
             try {
-                await progressStride(strideId);
+                await progressStride(owner, project, strideId);
 
                 const successEl = document.getElementById('success-text');
                 if (successEl) successEl.textContent = '';
@@ -746,7 +747,7 @@ function totalEffort(moments) {
 }
 
 /* ---------- Main export ---------- */
-export function loadStridesList(projectId, navContentDiv, contentDiv) {
+export function loadStridesList(owner, project, navContentDiv, contentDiv) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
     const errorEl = document.getElementById('error-text');
@@ -754,7 +755,8 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
     const createStrideBtn = document.getElementById('create-stride-btn');
     const createStrideBtnLabel = document.getElementById('create-stride-btn-label');
 
-    cachedProjectId = projectId;
+    cachedOwner = owner;
+    cachedProject = project;
     strideBoard.innerHTML = renderLoadingSpinner('Loading strides');
     errorEl.textContent = '';
     if (backlogSection) backlogSection.innerHTML = '';
@@ -767,26 +769,27 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
         createStrideBtn.dataset.bound = '1';
         createStrideBtn.addEventListener('click', () => {
             if (!cachedIterations.length) {
-                openIterationCreateModal(projectId, () => loadStridesList(projectId, navContentDiv, contentDiv));
+                openIterationCreateModal(owner, project, () => loadStridesList(owner, project, navContentDiv, contentDiv));
                 return;
             }
 
             const latestIteration = cachedIterations[0];
             openStrideCreateModal({
-                projectId,
+                owner,
+                project,
                 iterationId: latestIteration.id,
                 iterations: cachedIterations,
                 existingStrides: cachedAllStrides,
-                onCreated: () => loadStridesList(projectId, navContentDiv, contentDiv),
+                onCreated: () => loadStridesList(owner, project, navContentDiv, contentDiv),
             });
         });
     }
 
     Promise.all([
-        getProjectById(projectId).catch(() => null),
-        getIterationsByProject(projectId)
+        getProject(owner, project).catch(() => null),
+        getIterations(owner, project)
     ])
-        .then(([project, iterations]) => {
+        .then(([projectData, iterations]) => {
             cachedIterations = Array.isArray(iterations) ? [...iterations].sort((a, b) => b.id - a.id) : [];
 
             if (!cachedIterations.length) {
@@ -796,7 +799,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                     description: 'Create the first iteration to start planning your work.',
                 });
                 if (projectTitle) {
-                    projectTitle.innerHTML = `<h2>${escapeHtml(project?.name ?? `Project ${projectId}`)}</h2>`;
+                    projectTitle.innerHTML = `<h2>${escapeHtml(projectData?.name ?? `Project ${owner}/${project}`)}</h2>`;
                 }
                 if (createStrideBtnLabel) {
                     createStrideBtnLabel.textContent = 'Create First Iteration';
@@ -804,7 +807,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 return;
             }
             const latestIteration = cachedIterations[0];
-            const projectName = project?.name ?? `Project ${projectId}`;
+            const projectName = projectData?.name ?? `Project ${owner}/${project}`;
             projectTitle.innerHTML = `<h2>${escapeHtml(projectName)} – ${escapeHtml(latestIteration.name)}</h2>`;
             if (createStrideBtnLabel) {
                 createStrideBtnLabel.textContent = 'New Stride';
@@ -813,13 +816,13 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             const historyLink = document.getElementById('iteration-history-link');
             if (historyLink) {
                 historyLink.addEventListener('click', () => {
-                    navigate(`/projects/${projectId}/iterations`, navContentDiv, contentDiv);
+                    navigate(`/${owner}/${project}/iterations`, navContentDiv, contentDiv);
                 });
             }
             
             return Promise.all([
-                getStridesByIteration(latestIteration.id),
-                getMomentsByIteration(latestIteration.id, true)
+                getStridesByIteration(owner, project, latestIteration.id),
+                getMomentsByIteration(owner, project, latestIteration.id, true)
             ]).then(([strides, backlogMoments]) => ({ strides, backlogMoments }));
         })
         .then(data => {
@@ -836,9 +839,9 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             } else {
                 renderStrideScrollspy(strides);
                 const stridePromises = strides.map(stride =>
-                    getMomentsByStride(stride.id)
+                    getMomentsByStride(owner, project, stride.id)
                         .then(moments => ({ stride, moments }))
-                        .catch(() => ({ stride, moments: [] }))
+                        .catch(err => { console.error('Failed to load moments for stride', stride.id, err); return { stride, moments: [] }; })
                 );
                 return Promise.all(stridePromises).then(results => ({ results, backlogMoments, strides }));
             }
@@ -891,23 +894,23 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                 </thead>
                                 <tbody>
                                     ${moments.map(m => `
-                                        <tr data-moment-id="${m.id}">
+                                        <tr data-moment-id="${m.sequenceNumber}">
                                             <td>${escapeHtml(m.statement)}</td>
                                             <td>${m.type}</td>
                                             <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                             <td>
-                                                <select class="estimate-dropdown" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"></select>
+                                                <select class="estimate-dropdown" data-moment-id="${m.sequenceNumber}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"></select>
                                             </td>
                                             <td>
-                                                <select class="owner-dropdown" data-moment-id="${m.id}" data-owner-id="${m.ownerId ?? ''}" aria-label="Owner"></select>
+                                                <select class="owner-dropdown" data-moment-id="${m.sequenceNumber}" data-owner-id="${m.ownerId ?? ''}" aria-label="Owner"></select>
                                             </td>
             <td>
                 <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                    <select class="status-dropdown form-select form-select-sm" data-moment-id="${m.id}" data-current-status="${m.status ?? ''}" aria-label="Status"></select>
-                    <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"><option value="">–</option></select>
-                    <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${m.id}" type="button">Backlog</button>
+                    <select class="status-dropdown form-select form-select-sm" data-moment-id="${m.sequenceNumber}" data-current-status="${m.status ?? ''}" aria-label="Status"></select>
+                    <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${m.sequenceNumber}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"><option value="">–</option></select>
+                    <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${m.sequenceNumber}" type="button">Backlog</button>
                     ${momentGraphLinkHtml(m.sequenceNumber)}
-                    <a href="/moments/${m.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+                    <a href="/${owner}/${project}/moments/${m.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
                 </div>
             </td>
                                         </tr>
@@ -948,17 +951,17 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                     <thead><tr><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead>
                                     <tbody>
                                         ${backlogMoments.map(m => `
-                                            <tr data-moment-id="${m.id}">
+                                            <tr data-moment-id="${m.sequenceNumber}">
                                                 <td>${escapeHtml(m.statement)}</td>
                                                 <td>${m.type}</td>
                                                 <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                                 <td>${m.effortEstimate ?? '–'}</td>
                                                 <td>
                                                     <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                                                        <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${m.id}"></select>
-                                                        <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${m.id}" type="button">Move</button>
+                                                        <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${m.sequenceNumber}"></select>
+                                                        <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${m.sequenceNumber}" type="button">Move</button>
                                                         ${momentGraphLinkHtml(m.sequenceNumber)}
-                                                        <a href="/moments/${m.id}" moment-id="${m.id}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+                                                        <a href="/${owner}/${project}/moments/${m.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -975,7 +978,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             requestAnimationFrame(syncStrideStickyOffsets);
 
             // Load project members and populate owner dropdowns
-            getProjectMembers(projectId)
+            getProjectMembers(owner, project)
                 .then(members => {
                     cachedMembers = Array.isArray(members) ? members : [];
                     // Populate all owner dropdowns now that we have members
@@ -984,7 +987,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 .catch(err => console.error('Failed to load project members', err));
                 
             // Fetch permission and update UI
-            getMyPermission(projectId)
+            getMyPermission(owner, project)
                 .then(level => {
                     cachedCanEdit = (level && level.toLowerCase() === 'edit');
 
@@ -1003,7 +1006,7 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             document.querySelectorAll('.backlog-target-stride').forEach(s => populateBacklogStrideSelect(s));
 
             // Attach planning event listeners (inline updates only; no full reload)
-            attachPlanningListeners(projectId, navContentDiv, contentDiv);
+            attachPlanningListeners(owner, project, navContentDiv, contentDiv);
         })
         .catch(err => {
             strideBoard.innerHTML = '';
@@ -1013,12 +1016,12 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 }
 
 /* ---------- Event listeners ---------- */
-function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
+function attachPlanningListeners(owner, project, navContentDiv, contentDiv) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
 
-    bindInlineMomentControls(strideBoard, projectId, navContentDiv, contentDiv);
-    bindInlineMomentControls(backlogSection, projectId, navContentDiv, contentDiv);
+    bindInlineMomentControls(strideBoard, owner, project, navContentDiv, contentDiv);
+    bindInlineMomentControls(backlogSection, owner, project, navContentDiv, contentDiv);
 }
 
 /* ---------- Burndown drawing ---------- */

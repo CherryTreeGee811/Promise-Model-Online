@@ -106,7 +106,12 @@ namespace PromiseModelOnline.Api.DAL
 
         private IQueryable<Moment> BuildMomentQuery()
         {
-            return _context.Set<Moment>().Include(moment => moment.Tasks);
+            return _context.Set<Moment>()
+                .Include(moment => moment.Flow)
+                    .ThenInclude(flow => flow.Journey)
+                        .ThenInclude(journey => journey.Epic)
+                            .ThenInclude(epic => epic.ProductPromise)
+                .Include(moment => moment.Tasks);
         }
 
         private static bool TryGetMomentId(object id, out int momentId)

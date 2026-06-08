@@ -55,6 +55,11 @@ namespace PromiseModelOnline.Api.Mappers
                     })
                     .ToList();
             }
+
+            if (source is Project project && destination is ProjectDTO projectDto)
+            {
+                projectDto.OwnerSlug = project.Owner?.Slug ?? "";
+            }
             // Example: service can be used here for additional logic
             // e.g., service.GetByIdAsync(...), service.FindAsync(...), etc.
             return destination;

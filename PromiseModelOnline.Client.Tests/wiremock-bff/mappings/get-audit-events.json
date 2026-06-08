@@ -2,7 +2,7 @@
   "priority": 2,
   "request": {
     "method": "GET",
-    "urlPathPattern": "/api/audit-events/projects/1"
+    "urlPathPattern": "/api/projects/pmo_test/seeded-project/audit-events"
   },
   "response": {
     "status": 200,

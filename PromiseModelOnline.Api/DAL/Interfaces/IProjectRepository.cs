@@ -8,5 +8,6 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
     {
         Task<IEnumerable<Project>> GetProjectsOwnedByUserAsync(int userId);
         Task<IEnumerable<Promise>> GetProductPromisesByProjectAsync(int projectId);
+        Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug);
     }
 }

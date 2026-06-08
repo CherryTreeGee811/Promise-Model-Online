@@ -204,9 +204,9 @@ namespace PromiseModelOnline.Api.Tests
             // Arrange
             _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
             _testContext.Promises.Add(new Promise { Id = 10, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
-            _testContext.Epics.Add(new Epic { Id = 20, ProductPromiseId = 10, Statement = "Parent Epic", SequenceNumber = 2, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
-            _testContext.Journeys.Add(new Journey { Id = 30, EpicId = 20, Statement = "Parent Journey", SequenceNumber = 3, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
-            _testContext.Flows.Add(new Flow { Id = 9, JourneyId = 30, Statement = "Parent Flow", SequenceNumber = 4, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Epics.Add(new Epic { Id = 20, ProductPromiseId = 10, Statement = "Parent Epic", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Journeys.Add(new Journey { Id = 30, EpicId = 20, Statement = "Parent Journey", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Flows.Add(new Flow { Id = 9, JourneyId = 30, Statement = "Parent Flow", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
             await _testContext.SaveChangesAsync();
 
             var request = new CreateMomentRequestDTO { Statement = "m1", FlowId = 9, Type = MomentType.Story, Status = MomentStatus.Todo, DisplayOrder = 3 };

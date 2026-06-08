@@ -245,6 +245,25 @@ namespace PromiseModelOnline.Api.Migrations
                     b.ToTable("CommentMention");
                 });
 
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.EntitySequence", b =>
+                {
+                    b.Property<int>("ParentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Scope")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("NextSequenceNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.HasKey("ParentId", "Scope");
+
+                    b.ToTable("EntitySequences");
+                });
+
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Epic", b =>
                 {
                     b.Property<int>("Id")
@@ -612,26 +631,17 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Property<int>("OwnerId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("OwnerId", "Slug")
+                        .IsUnique();
 
                     b.ToTable("Projects");
-                });
-
-            modelBuilder.Entity("PromiseModelOnline.Api.Models.ProjectSequence", b =>
-                {
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("NextSequenceNumber")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("ProjectId");
-
-                    b.ToTable("ProjectSequences");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Promise", b =>
@@ -787,7 +797,15 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

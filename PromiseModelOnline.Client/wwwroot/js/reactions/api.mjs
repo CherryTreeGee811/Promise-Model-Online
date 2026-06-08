@@ -1,6 +1,6 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from '../api.mjs';
 
-export const getReactions = (parentType, parentId) => apiGet(`/api/reactions?type=${parentType}&itemId=${parentId}`);
-export const createReaction = (parentType, parentId, emote) => apiPost('/api/reactions', { emote, stackItemType: parentType, stackItemId: parentId });
-export const updateReaction = (reactionId, emote) => apiPatch(`/api/reactions/${reactionId}`, { emote });
-export const deleteReaction = reactionId => apiDelete(`/api/reactions/${reactionId}`);
+export const getReactions = (_owner, _project, parentType, itemId) => apiGet(`/api/reactions?type=${parentType}&itemId=${itemId}`);
+export const addReaction = (_owner, _project, data) => apiPost('/api/reactions', data);
+export const updateReaction = (_owner, _project, reactionId) => apiPatch(`/api/reactions/${reactionId}`, {});
+export const deleteReaction = (_owner, _project, reactionId) => apiDelete(`/api/reactions/${reactionId}`);

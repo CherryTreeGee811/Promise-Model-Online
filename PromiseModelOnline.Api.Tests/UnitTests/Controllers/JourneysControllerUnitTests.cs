@@ -241,7 +241,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
             _testContext.Promises.Add(new Promise { Id = 10, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
-            _testContext.Epics.Add(new Epic { Id = 3, ProductPromiseId = 10, Statement = "Parent", SequenceNumber = 2, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Epics.Add(new Epic { Id = 3, ProductPromiseId = 10, Statement = "Parent", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
             await _testContext.SaveChangesAsync();
 
             var request = new CreateJourneyRequestDTO { Statement = "New Journey", EpicId = 3, DisplayOrder = 2 };

@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPathPattern": "/api/projects/\\d+/export",
+    "urlPathPattern": "/api/projects/pmo_test/seeded-project/export",
     "headers": {
       "Cookie": {
         "contains": "__Host-pmo.session=owner-session"

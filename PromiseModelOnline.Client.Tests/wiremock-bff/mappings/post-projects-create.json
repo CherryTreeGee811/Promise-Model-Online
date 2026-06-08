@@ -18,6 +18,8 @@
     "jsonBody": {
       "id": 2,
       "name": "My New Project",
+      "slug": "my-new-project",
+      "ownerSlug": "pmo_test",
       "description": null,
       "ownerId": 1,
       "createdAt": "2026-06-03T00:00:00Z"

@@ -1,10 +1,10 @@
-import { getComments, postComment } from './api.mjs';
+import { getComments, addComment } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { createCommentAutocomplete } from './autocomplete.mjs';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.mjs';
 
-export function loadComments(container, parentType, parentId) {
+export function loadComments(container, parentType, parentId, owner, project) {
     container.innerHTML = `
         <h3>Comments</h3>
         <div id="comments-list" class="comments-list"></div>
@@ -22,10 +22,10 @@ export function loadComments(container, parentType, parentId) {
     const autocomplete = createCommentAutocomplete(textarea, parentType, parentId);
 
     // Fetch entity map for reference resolution and comments in parallel
-    const mapPromise = loadEntityLookupMap(parentType, parentId);
+    const mapPromise = loadEntityLookupMap(parentType, parentId, owner, project);
 
     Promise.all([
-        getComments(parentType, parentId),
+        getComments(owner, project, parentType, parentId),
         mapPromise,
     ])
         .then(([comments]) => renderComments(commentsList, comments))
@@ -41,7 +41,7 @@ export function loadComments(container, parentType, parentId) {
         if (!text) return;
         try {
             const y = window.scrollY;
-            const created = await postComment(parentType, parentId, text);
+            const created = await addComment(owner, project, { parentType, parentId, text });
             appendComment(commentsList, created);
             textarea.value = '';
             window.scrollTo(0, y);

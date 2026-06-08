@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/notifications")]
     public class NotificationsController : ControllerBase
     {
         private readonly INotificationService _notificationService;

@@ -1,11 +1,10 @@
 import { navigate } from '../router.mjs';
-import { getFlowById, getMomentsByFlow, updateFlowDescription } from './api.mjs';
-import { addMoment } from '../moments/api.mjs';
+import { getFlow, getMoments, updateFlowDescription } from './api.mjs';
+import { createMoment } from '../moments/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
-import { getEpicById } from '../epics/api.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
@@ -17,7 +16,7 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
+export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('flow-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('flow-detail-loading');
@@ -26,17 +25,19 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
     if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    Promise.all([
-            getFlowById(flowId),
-            loadEntityLookupMap('Flow', flowId),
-        ])
+    getFlow(owner, project, flowId)
+        .then(flow => Promise.all([
+            Promise.resolve(flow),
+            loadEntityLookupMap('Flow', flow.id, owner, project),
+        ]))
         .then(([flow]) => {
             if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'flow',
                 nodeId: flowId,
-                projectIdHint: getGraphProjectIdHintFromUrl(),
+                owner,
+                project,
             });
 
             detailDiv.innerHTML = `
@@ -54,7 +55,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                         <tr>
                             <th>Journey</th>
                             <td id="flow-journey-cell">
-                                <a href="/journeys/${flow.journeyId}" journey-id="${flow.journeyId}" class="detail-link link-primary text-decoration-none fw-semibold">Journey ${flow.journeyId}</a>
+                                <a href="/${owner}/${project}/journeys/${flow.journeyId}" class="detail-link link-primary text-decoration-none fw-semibold">Journey ${flow.journeyId}</a>
                             </td>
                         </tr>
                         <tr><th scope="row">Status</th><td>${getStatusHtml(flow.statusColor)}</td></tr>
@@ -77,7 +78,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
             const saveBtn = document.getElementById('save-desc');
             let editor = null;
             if (descInput && descView && editBtn) {
-                createCommentAutocomplete(descInput, 'Flow', flowId);
+                createCommentAutocomplete(descInput, 'Flow', flow.id);
                 editor = setupInlineEdit(descInput, descView, editBtn, saveBtn);
             }
 
@@ -88,13 +89,13 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 
                     e.preventDefault();
 
-                    navigate(`/journeys/${journeyLink.getAttribute('journey-id')}`, navContentDiv, contentDiv);
+                    navigate(`/${owner}/${project}/journeys/${journeyLink.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
                 });
             }
 
             // Load moments for this flow
             const momentsList = document.getElementById('flow-moments-list');
-            getMomentsByFlow(flowId)
+            getMoments(owner, project, flowId)
                 .then(moments => {
                     patchChildMetrics(`flow-${flow.sequenceNumber}`, moments);
                     const tbody = renderTableWithInlineAddRow(momentsList, {
@@ -102,11 +103,11 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                         items: moments || [],
                         emptyMessage: 'No moments found for this flow.',
                         renderItemRow: m => `
-                            <tr data-moment-id="${m.id}">
+                            <tr data-moment-id="${m.sequenceNumber}">
                                 <td>${escapeHtml(m.statement)}</td>
                                 <td>${m.type}</td>
                                 <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
@@ -151,7 +152,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                             submitBtn.disabled = true;
 
                             try {
-                                const created = await addMoment({
+                                const created = await createMoment(owner, project, {
                                     statement,
                                     flowId,
                                     type: typeSelect.value,
@@ -167,7 +168,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                                         <td>${escapeHtml(created.statement)}</td>
                                         <td>${created.type}</td>
                                         <td><span class="status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
-                                        <td><a href="/moments/${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                        <td><a href="/${owner}/${project}/moments/${created.sequenceNumber}" moment-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
@@ -199,7 +200,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                                         <td>${escapeHtml(m.statement)}</td>
                                         <td>${m.type}</td>
                                         <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                        <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                        <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-id="${m.id}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -212,7 +213,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            navigate(`/moments/${link.getAttribute('moment-id')}`, navContentDiv, contentDiv);
+                            navigate(`/${owner}/${project}/moments/${link.getAttribute('moment-seq')}`, navContentDiv, contentDiv);
                         });
                     });
                 })
@@ -225,11 +226,11 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
 
             // Load parent journey to show its status emoji
             const journeyCell = document.getElementById('flow-journey-cell');
-            getJourneyById(flow.journeyId)
+            getJourneyById(owner, project, flow.journeyId)
                 .then(journey => {
                     const icon = getStatusIcon(journey.statusColor);
                     const label = getStatusLabel(journey.statusColor);
-                    journeyCell.innerHTML = `<a href="/journeys/${journey.id}" journey-id="${journey.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(journey.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
+                    journeyCell.innerHTML = `<a href="/${owner}/${project}/journeys/${journey.sequenceNumber}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(journey.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
                     
                     const link = journeyCell.querySelector('a.detail-link');
                     if (link) {
@@ -255,7 +256,7 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = await updateFlowDescription(flowId, newDesc);
+                        const updated = await updateFlowDescription(owner, project, flowId, newDesc);
                         flow.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
                         patchDetailStackGraphNode(`flow-${flow.sequenceNumber}`, {
                             description: flow.description,
@@ -270,18 +271,13 @@ export function loadFlowDetail(flowId, navContentDiv, contentDiv) {
                 });
             }
 
-            loadCommentsAndReactions(detailDiv, 'Flow', flowId);
+            loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project);
 
-            getJourneyById(flow.journeyId)
-                .then(journey => getEpicById(journey.epicId))
-                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
-                .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `flow-${flow.sequenceNumber}`);
-                    upsertGraphViewButton(detailDiv, href);
-                })
-                .catch(error => {
-                    console.error('Unable to resolve graph link for flow detail', error);
-                });
+            const { owner: go, project: gp } = getOwnerProjectFromPath();
+            if (go && gp) {
+                const href = buildGraphViewHref(go, gp, `flow-${flow.sequenceNumber}`);
+                upsertGraphViewButton(detailDiv, href);
+            }
         })
         .catch(err => {
             if (loadingEl) loadingEl.hidden = true;

@@ -1,10 +1,10 @@
 import { navigate } from '../router.mjs';
-import { getJourneyById, getFlowsByJourney, updateJourneyDescription } from './api.mjs';
-import { addFlow } from '../flows/api.mjs';
+import { getJourney, getFlows, updateJourneyDescription } from './api.mjs';
+import { createFlow } from '../flows/api.mjs';
 import { getEpicById } from '../epics/api.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
@@ -16,7 +16,7 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
+export function loadJourneyDetail(owner, project, journeyId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('journey-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('journey-detail-loading');
@@ -25,17 +25,19 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
     if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    Promise.all([
-            getJourneyById(journeyId),
-            loadEntityLookupMap('Journey', journeyId),
-        ])
+    getJourney(owner, project, journeyId)
+        .then(journey => Promise.all([
+            Promise.resolve(journey),
+            loadEntityLookupMap('Journey', journey.id, owner, project),
+        ]))
         .then(([journey]) => {
             if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'journey',
                 nodeId: journeyId,
-                projectIdHint: getGraphProjectIdHintFromUrl(),
+                owner,
+                project,
             });
 
             detailDiv.innerHTML = `
@@ -53,7 +55,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         <tr>
                             <th>Epic</th>
                             <td id="journey-epic-cell">
-                                <a href="/epics/${journey.epicId}" epic-id="${journey.epicId}" class="detail-link link-primary text-decoration-none fw-semibold">Epic ${journey.epicId}</a>
+                                <a href="/${owner}/${project}/epics/${journey.epicId}" class="detail-link link-primary text-decoration-none fw-semibold">Epic ${journey.epicId}</a>
                             </td>
                         </tr>
                         <tr><th scope="row">Status</th><td>${getStatusHtml(journey.statusColor)}</td></tr>
@@ -76,7 +78,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
             const saveBtn = document.getElementById('save-desc');
             let editor = null;
             if (descInput && descView && editBtn) {
-                createCommentAutocomplete(descInput, 'Journey', journeyId);
+                createCommentAutocomplete(descInput, 'Journey', journey.id);
                 editor = setupInlineEdit(descInput, descView, editBtn, saveBtn);
             }
 
@@ -87,12 +89,12 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
 
                     e.preventDefault();
 
-                    navigate(`/epics/${epicLink.getAttribute('epic-id')}`, navContentDiv, contentDiv);
+                    navigate(`/${owner}/${project}/epics/${epicLink.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
                 });
             }
             
             const flowsList = document.getElementById('journey-flows-list');
-            getFlowsByJourney(journeyId)
+            getFlows(owner, project, journeyId)
                 .then(flows => {
                     patchChildMetrics(`journey-${journey.sequenceNumber}`, flows);
                     const tbody = renderTableWithInlineAddRow(flowsList, {
@@ -102,7 +104,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         renderItemRow: f => `
                             <tr data-flow-id="${f.id}">
                                 <td>${escapeHtml(f.statement)}</td>
-                                <td><a href="/flows/${f.id}" flow-id="${f.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                <td><a href="/${owner}/${project}/flows/${f.sequenceNumber}" flow-id="${f.id}" flow-seq="${f.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
@@ -139,7 +141,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                             submitBtn.disabled = true;
 
                             try {
-                                const created = await addFlow({
+                                const created = await createFlow(owner, project, {
                                     statement,
                                     journeyId,
                                     displayOrder: (flows || []).length + 1,
@@ -151,7 +153,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                                     row.dataset.flowId = created.id;
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
-                                        <td><a href="/flows/${created.id}" flow-id="${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                        <td><a href="/${owner}/${project}/flows/${created.sequenceNumber}" flow-id="${created.id}" flow-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
@@ -178,7 +180,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                                 ${flows.map(f => `
                                     <tr>
                                         <td>${escapeHtml(f.statement)}</td>
-                                        <td><a href="/flows/${f.id}" flow-id="${f.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                        <td><a href="/${owner}/${project}/flows/${f.sequenceNumber}" flow-id="${f.id}" flow-seq="${f.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -189,7 +191,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                         link.addEventListener('click', (e) => {
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
                             e.preventDefault();
-                            navigate(`/flows/${link.getAttribute('flow-id')}`, navContentDiv, contentDiv);
+                            navigate(`/${owner}/${project}/flows/${link.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
                         });
                     });
                 })
@@ -201,11 +203,11 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
 
             // Load epic to show its status emoji
             const epicCell = document.getElementById('journey-epic-cell');
-            getEpicById(journey.epicId)
+            getEpicById(owner, project, journey.epicId)
                 .then(epic => {
                     const icon = getStatusIcon(epic.statusColor);
                     const label = getStatusLabel(epic.statusColor);
-                    epicCell.innerHTML = `<a href="/epics/${epic.id}" epic-id="${epic.id}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(epic.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
+                    epicCell.innerHTML = `<a href="/${owner}/${project}/epics/${epic.sequenceNumber}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(epic.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
                     const link = epicCell.querySelector('a.detail-link');
 
                     if (link) {
@@ -231,7 +233,7 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = await updateJourneyDescription(journeyId, newDesc);
+                        const updated = await updateJourneyDescription(owner, project, journeyId, newDesc);
                         journey.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
                         patchDetailStackGraphNode(`journey-${journey.sequenceNumber}`, {
                             description: journey.description,
@@ -246,17 +248,13 @@ export function loadJourneyDetail(journeyId, navContentDiv, contentDiv) {
                 });
             }
 
-            loadCommentsAndReactions(detailDiv, 'Journey', journeyId);
+            loadCommentsAndReactions(detailDiv, 'Journey', journey.id, owner, project);
 
-            getEpicById(journey.epicId)
-                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
-                .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `journey-${journey.sequenceNumber}`);
-                    upsertGraphViewButton(detailDiv, href);
-                })
-                .catch(error => {
-                    console.error('Unable to resolve graph link for journey detail', error);
-                });
+            const { owner: go, project: gp } = getOwnerProjectFromPath();
+            if (go && gp) {
+                const href = buildGraphViewHref(go, gp, `journey-${journey.sequenceNumber}`);
+                upsertGraphViewButton(detailDiv, href);
+            }
 
             if (loadingEl) loadingEl.hidden = true;
         })

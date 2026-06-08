@@ -16,11 +16,13 @@
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Authorization, Content-Type",
       "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
-      "Location": "/api/projects/123"
+      "Location": "/api/projects/pmo_test/seeded-project"
     },
     "jsonBody": {
       "projectId": 123,
-      "warnings": []
+      "warnings": [],
+      "ownerSlug": "pmo_test",
+      "slug": "seeded-project"
     }
   }
 }

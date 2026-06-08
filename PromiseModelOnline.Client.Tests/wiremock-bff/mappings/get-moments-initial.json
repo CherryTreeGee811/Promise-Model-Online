@@ -1,7 +1,7 @@
 {
   "scenarioName": "move-moment-100",
   "requiredScenarioState": "Started",
-  "request": { "method": "GET", "url": "/api/moments" },
+  "request": { "method": "GET", "url": "/api/projects/pmo_test/seeded-project/moments" },
   "response": { "status": 200, "headers": {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",

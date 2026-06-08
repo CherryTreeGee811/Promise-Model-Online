@@ -88,7 +88,7 @@ public class ImportExportTests : SeleniumTestBase
         ScrollToAndClick(By.Id("create-project-btn"), 5);
 
         WaitForUrlContains("/graph", 10);
-        Assert.That(Driver.Url, Does.Contain("/projects/123/graph"));
+        Assert.That(Driver.Url, Does.Contain("/pmo_test/seeded-project/graph"));
     }
 
     [Test]
@@ -102,7 +102,7 @@ public class ImportExportTests : SeleniumTestBase
         ScrollToAndClick(By.Id("create-project-btn"), 5);
 
         WaitForUrlContains("/graph", 10);
-        Assert.That(Driver.Url, Does.Contain("/projects/123/graph"));
+        Assert.That(Driver.Url, Does.Contain("/pmo_test/seeded-project/graph"));
     }
 
     [Test]
@@ -128,7 +128,7 @@ public class ImportExportTests : SeleniumTestBase
     [Test]
     public void Export_ButtonShowsOnSettingsPage()
     {
-        NavigateAsUser("/projects/1/settings");
+        NavigateAsUser("/pmo_test/seeded-project/settings");
 
         var exportBtn = WaitForElement(By.Id("export-project-btn"), 5);
         Assert.That(exportBtn.Displayed, Is.True);
@@ -138,7 +138,7 @@ public class ImportExportTests : SeleniumTestBase
     [Test]
     public void Export_Download_TriggersSuccessPopover()
     {
-        NavigateAsUser("/projects/1/settings");
+        NavigateAsUser("/pmo_test/seeded-project/settings");
 
         var exportBtn = WaitForElement(By.Id("export-project-btn"), 5);
         ScrollToAndClick(By.Id("export-project-btn"), 5);

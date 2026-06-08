@@ -1,23 +1,17 @@
 import { authFetch } from '../api.mjs';
 
-/*
-====================================
-PROJECTS
-====================================
-*/
-
-export function getAllProjects() {
+export function fetchProjects() {
     return authFetch(`/api/projects`)
         .then(handleJsonOrNull);
 }
 
-export async function addProject(project) {
+export async function createProject(data) {
     const res = await authFetch(`/api/projects/create`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(project)
+        body: JSON.stringify(data)
     });
 
     if (res.status === 204) return null;
@@ -30,13 +24,13 @@ export async function addProject(project) {
     return res.json();
 }
 
-export async function updateProjectDetails(projectId, details) {
-    const res = await authFetch(`/api/projects/${projectId}/details`, {
+export async function updateProjectDetails(owner, project, data) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/details`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(details)
+        body: JSON.stringify(data)
     });
 
     if (!res.ok) {
@@ -47,14 +41,14 @@ export async function updateProjectDetails(projectId, details) {
     return res.json();
 }
 
-export function deleteProject(projectId) {
-    return authFetch(`/api/projects/${projectId}`, {
+export function deleteProject(owner, project) {
+    return authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`, {
         method: 'DELETE'
     }).then(handleJsonOrNull);
 }
 
-export async function getProjectById(projectId) {
-    const res = await authFetch(`/api/projects/${projectId}`);
+export async function getProject(owner, project) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`);
 
     if (res.status === 204) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -62,8 +56,8 @@ export async function getProjectById(projectId) {
     return res.json();
 }
 
-export async function exportProject(projectId) {
-    const res = await authFetch(`/api/projects/${projectId}/export`);
+export async function exportProject(owner, project) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/export`);
 
     if (!res.ok) {
         const body = await safeParse(res);
@@ -73,8 +67,8 @@ export async function exportProject(projectId) {
     return res.blob();
 }
 
-export async function getProjectAuditHistory(projectId, take = 10, skip = 0) {
-    const res = await authFetch(`/api/audit-events/projects/${projectId}?take=${take}&skip=${skip}`);
+export async function getAuditEvents(owner, project, take = 10, skip = 0) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/audit-events?take=${take}&skip=${skip}`);
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -106,58 +100,54 @@ export async function importProject(file) {
     return res.json();
 }
 
-/*
-====================================
-PERMISSIONS
-====================================
-*/
-
-export async function getProjectPermissions(projectId) {
-    const res = await authFetch(`/api/permissions?projectId=${projectId}`);
+export async function getPermissions(owner, project) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`);
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
-export async function inviteUserToProject(userEmail, projectId, level) {
-    const res = await authFetch(`/api/permissions`, {
+export async function inviteUser(owner, project, data) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userEmail, projectId, level })
+        body: JSON.stringify(data)
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
-export async function revokePermission(permissionId) {
-    const res = await authFetch(`/api/permissions/${permissionId}`, {
+export async function removePermission(owner, project, permissionId) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions/${permissionId}`, {
         method: 'DELETE'
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-/*
-====================================
-PROMISES
-====================================
-*/
-
-export async function getProjectPromises(projectId) {
-    const res = await authFetch(`/api/projects/${projectId}/promises`);
+export async function getProjectPromises(owner, project) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/promises`);
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
-/*
-====================================
-HELPERS
-====================================
-*/
+export async function getProjectMembers(owner, project) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res ?? [];
+}
+
+export async function getMyPermission(owner, project) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res ?? null;
+}
 
 function handleJsonOrNull(response) {
     if (!response.ok) {

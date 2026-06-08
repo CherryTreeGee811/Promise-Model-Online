@@ -11,7 +11,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void ProjectSettings_DeleteProject_RequiresConfirmationAndRedirects()
         {
             EnsureLoggedIn();
-            NavigateSpa("/projects/1/settings");
+            NavigateSpa("/pmo_test/seeded-project/settings");
 
             var confirmationTextEl = WaitForElement(By.Id("project-delete-confirmation-text"), 20);
             var confirmationPhrase = confirmationTextEl.Text ?? string.Empty;
@@ -30,13 +30,13 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void ProjectSettings_ViewFullAuditLog_OpensHistoryPage()
         {
             EnsureLoggedIn();
-            NavigateSpa("/projects/1/settings");
+            NavigateSpa("/pmo_test/seeded-project/settings");
 
             ScrollToAndClick(By.Id("project-audit-history-link"));
 
-            WaitUntil(driver => driver.Url.EndsWith("/projects/1/history"), 15);
+            WaitUntil(driver => driver.Url.EndsWith("/pmo_test/seeded-project/history"), 15);
             WaitForElement(By.Id("audit-history-list"));
-            Assert.That(Driver.Url, Does.EndWith("/projects/1/history"));
+            Assert.That(Driver.Url, Does.EndWith("/pmo_test/seeded-project/history"));
         }
     }
 }

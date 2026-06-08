@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class MomentsController : GenericController<Moment, MomentDTO>
     {
         private readonly IMomentService _momentService;
@@ -56,12 +56,7 @@ namespace PromiseModelOnline.Api.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
-            var projectId = await _context.Flows
-                .Where(f => f.Id == request.FlowId)
-                .Select(f => f.Journey.Epic.ProductPromise.ProjectId)
-                .FirstAsync();
-
-            var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+            var nextSeq = await _context.GetNextMomentSequenceAsync(request.FlowId);
 
             var moment = new Moment
             {

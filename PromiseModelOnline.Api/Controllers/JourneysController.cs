@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class JourneysController : GenericController<Journey, JourneyDTO>
     {
         private readonly IJourneyService _journeyService;
@@ -37,12 +37,7 @@ namespace PromiseModelOnline.Api.Controllers
             if (request is null) return BadRequest("Request is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-            var projectId = await _context.Epics
-                .Where(e => e.Id == request.EpicId)
-                .Select(e => e.ProductPromise.ProjectId)
-                .FirstAsync();
-
-            var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+            var nextSeq = await _context.GetNextJourneySequenceAsync(request.EpicId);
 
             var journey = new Journey
             {

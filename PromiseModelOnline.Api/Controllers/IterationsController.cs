@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class IterationsController : GenericController<Iteration, IterationDTO>
     {
         private readonly IIterationService _iterationService;

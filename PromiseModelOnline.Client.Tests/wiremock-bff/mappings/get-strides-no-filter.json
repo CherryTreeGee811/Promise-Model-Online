@@ -2,7 +2,7 @@
   "priority": 2,
   "request": {
     "method": "GET",
-    "urlPath": "/api/strides"
+    "urlPath": "/api/projects/pmo_test/seeded-project/strides"
   },
   "response": {
     "status": 200,

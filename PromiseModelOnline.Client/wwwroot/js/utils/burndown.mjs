@@ -1,4 +1,3 @@
-import { getProjectById } from '../projects/api.mjs';
 import { renderEmptyStateSection } from './empty-table.mjs';
 import { loadD3 } from '../projects/detail-stack-graph.mjs';
 

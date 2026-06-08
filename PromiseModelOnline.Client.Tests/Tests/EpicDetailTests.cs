@@ -11,7 +11,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             EnsureLoggedIn();
 
-            NavigateSpa("/epics/1");
+            NavigateSpa("/pmo_test/seeded-project/epics/1");
 
             var header = WaitForElement(By.CssSelector(".epic-detail-card h2"));
             Assert.That(header.Text, Does.Contain("Epic One"));

@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/epics/1",
+    "urlPath": "/api/projects/pmo_test/seeded-project/epics/1",
     "headers": {
       "Cookie": {
         "contains": "__Host-pmo.session=owner-session"

@@ -91,23 +91,18 @@ namespace PromiseModelOnline.Api.DAL
         public DbSet<AuditEvent> AuditEvents { get; set; } = null!;
 
         /// <summary>
-        /// Gets or sets the DbSet for project-scoped sequence counters.
+        /// Gets or sets the DbSet for entity-scoped sequence counters.
         /// </summary>
-        public DbSet<ProjectSequence> ProjectSequences { get; set; } = null!;
+        public DbSet<EntitySequence> EntitySequences { get; set; } = null!;
 
-        /// <summary>
-        /// Atomically allocates the next sequence number for a project.
-        /// Uses a serializable transaction to prevent duplicates under concurrent creates.
-        /// Falls back to a simple non-transactional approach when using InMemory provider (tests).
-        /// </summary>
-        public async Task<int> GetNextSequenceNumberAsync(int projectId)
+        private async Task<int> GetNextSequenceAsync(int parentId, string scope)
         {
             if (Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
             {
-                var seq = await ProjectSequences.FindAsync(projectId);
+                var seq = await EntitySequences.FindAsync(parentId, scope);
                 if (seq is null)
                 {
-                    ProjectSequences.Add(new ProjectSequence { ProjectId = projectId, NextSequenceNumber = 2 });
+                    EntitySequences.Add(new EntitySequence { ParentId = parentId, Scope = scope, NextSequenceNumber = 2 });
                     await SaveChangesAsync();
                     return 1;
                 }
@@ -117,13 +112,12 @@ namespace PromiseModelOnline.Api.DAL
                 return value;
             }
 
-            // If already inside an ambient transaction, skip creating a new one
             if (Database.CurrentTransaction is not null)
             {
-                var seq = await ProjectSequences.FindAsync(projectId);
+                var seq = await EntitySequences.FindAsync(parentId, scope);
                 if (seq is null)
                 {
-                    ProjectSequences.Add(new ProjectSequence { ProjectId = projectId, NextSequenceNumber = 2 });
+                    EntitySequences.Add(new EntitySequence { ParentId = parentId, Scope = scope, NextSequenceNumber = 2 });
                     await SaveChangesAsync();
                     return 1;
                 }
@@ -134,10 +128,10 @@ namespace PromiseModelOnline.Api.DAL
             }
 
             await using var tx = await Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            var seq2 = await ProjectSequences.FindAsync(projectId);
+            var seq2 = await EntitySequences.FindAsync(parentId, scope);
             if (seq2 is null)
             {
-                ProjectSequences.Add(new ProjectSequence { ProjectId = projectId, NextSequenceNumber = 2 });
+                EntitySequences.Add(new EntitySequence { ParentId = parentId, Scope = scope, NextSequenceNumber = 2 });
                 await SaveChangesAsync();
                 await tx.CommitAsync();
                 return 1;
@@ -148,6 +142,21 @@ namespace PromiseModelOnline.Api.DAL
             await tx.CommitAsync();
             return nextValue;
         }
+
+        public async Task<int> GetNextPromiseSequenceAsync(int projectId)
+            => await GetNextSequenceAsync(projectId, "Promise");
+
+        public async Task<int> GetNextEpicSequenceAsync(int promiseId)
+            => await GetNextSequenceAsync(promiseId, "Epic");
+
+        public async Task<int> GetNextJourneySequenceAsync(int epicId)
+            => await GetNextSequenceAsync(epicId, "Journey");
+
+        public async Task<int> GetNextFlowSequenceAsync(int journeyId)
+            => await GetNextSequenceAsync(journeyId, "Flow");
+
+        public async Task<int> GetNextMomentSequenceAsync(int flowId)
+            => await GetNextSequenceAsync(flowId, "Moment");
 
         /// <summary>
         /// Configures the model and seeds initial data for the database.
@@ -163,10 +172,21 @@ namespace PromiseModelOnline.Api.DAL
                 foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
             }
 
-            modelBuilder.Entity<ProjectSequence>(entity =>
+            modelBuilder.Entity<User>(entity =>
             {
-                entity.HasKey(e => e.ProjectId);
-                entity.Property(e => e.ProjectId).ValueGeneratedNever();
+                entity.HasIndex(e => e.Slug).IsUnique();
+            });
+
+            modelBuilder.Entity<Project>(entity =>
+            {
+                entity.HasIndex(e => new { e.OwnerId, e.Slug }).IsUnique();
+            });
+
+            modelBuilder.Entity<EntitySequence>(entity =>
+            {
+                entity.HasKey(e => new { e.ParentId, e.Scope });
+                entity.Property(e => e.ParentId).ValueGeneratedNever();
+                entity.Property(e => e.Scope).HasMaxLength(50);
                 entity.Property(e => e.NextSequenceNumber).HasDefaultValue(1);
             });
         }

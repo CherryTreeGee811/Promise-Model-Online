@@ -24,4 +24,6 @@ public class MomentDTO
     public int? OriginalStrideId { get; set; }
     public string StatusColor { get; set; } = "red";
     public List<MomentTaskDTO> Tasks { get; set; } = new List<MomentTaskDTO>();
+    public string? OwnerSlug { get; set; }
+    public string? ProjectSlug { get; set; }
 }

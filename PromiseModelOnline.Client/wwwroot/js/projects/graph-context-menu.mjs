@@ -5,6 +5,9 @@ import { updateMomentStatus } from '../moments/api.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 
+let _ctxOwner = null;
+let _ctxProject = null;
+
 const NODE_CHILD_LABELS = {
     root: 'Promise',
     promise: 'Epic',
@@ -13,14 +16,25 @@ const NODE_CHILD_LABELS = {
     flow: 'Moment',
 };
 
-const NODE_DELETE_ROUTES = {
-    root: '/api/projects',
-    promise: '/api/promises',
-    epic: '/api/epics',
-    journey: '/api/journeys',
-    flow: '/api/flows',
-    moment: '/api/moments',
-};
+function getDeleteRoute(nodeType, nodeId) {
+    const normalizedType = normalizeNodeType(nodeType);
+
+    if (normalizedType === 'root') {
+        return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
+    }
+
+    const numericId = Number.parseInt(nodeId, 10);
+    if (Number.isNaN(numericId)) return null;
+
+    switch (normalizedType) {
+        case 'promise': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/promises/${numericId}`;
+        case 'epic': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/epics/${numericId}`;
+        case 'journey': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/journeys/${numericId}`;
+        case 'flow': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/flows/${numericId}`;
+        case 'moment': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/moments/${numericId}`;
+        default: return null;
+    }
+}
 
 function normalizeNodeType(nodeType) {
     return String(nodeType ?? '').trim().toLowerCase();
@@ -35,37 +49,23 @@ function getChildLabel(nodeType) {
     return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? null;
 }
 
-function getDeleteRoute(nodeType, nodeId) {
-    const normalizedType = normalizeNodeType(nodeType);
 
-    if (normalizedType === 'root') {
-        return `${NODE_DELETE_ROUTES.root}/${nodeId}`;
-    }
-
-    const routePrefix = NODE_DELETE_ROUTES[normalizedType];
-    const numericId = Number.parseInt(nodeId, 10);
-
-    if (!routePrefix || Number.isNaN(numericId)) {
-        return null;
-    }
-
-    return `${routePrefix}/${numericId}`;
-}
 
 function getCreateActionMeta(nodeData) {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
 
+    const base = `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
     switch (normalizedType) {
         case 'root':
-            return { entityLabel: 'Promise', endpoint: '/api/promises/create', parentField: 'projectId' };
+            return { entityLabel: 'Promise', endpoint: `${base}/promises/create`, parentField: 'projectId' };
         case 'promise':
-            return { entityLabel: 'Epic', endpoint: '/api/epics/create', parentField: 'productPromiseId' };
+            return { entityLabel: 'Epic', endpoint: `${base}/epics/create`, parentField: 'productPromiseId' };
         case 'epic':
-            return { entityLabel: 'Journey', endpoint: '/api/journeys/create', parentField: 'epicId' };
+            return { entityLabel: 'Journey', endpoint: `${base}/journeys/create`, parentField: 'epicId' };
         case 'journey':
-            return { entityLabel: 'Flow', endpoint: '/api/flows/create', parentField: 'journeyId' };
+            return { entityLabel: 'Flow', endpoint: `${base}/flows/create`, parentField: 'journeyId' };
         case 'flow':
-            return { entityLabel: 'Moment', endpoint: '/api/moments/create', parentField: 'flowId' };
+            return { entityLabel: 'Moment', endpoint: `${base}/moments/create`, parentField: 'flowId' };
         default:
             return null;
     }
@@ -315,7 +315,7 @@ function getStrideOptions(strides = []) {
     ];
 }
 
-function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus) {
+function buildMomentFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus) {
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!createMeta || !defaults) {
@@ -459,8 +459,8 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
 }
 
 function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
-    const momentId = nodeData?.payload?.id;
-    if (momentId == null) {
+    const momentSeq = nodeData?.payload?.sequenceNumber;
+    if (momentSeq == null) {
         return null;
     }
 
@@ -508,7 +508,7 @@ function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
         submitButton.textContent = 'Saving Status...';
 
         try {
-            await updateMomentStatus(momentId, statusField.select.value);
+            await updateMomentStatus(_ctxOwner, _ctxProject, momentSeq, statusField.select.value);
             closeMenus();
             await onGraphMutated?.();
         } catch (error) {
@@ -521,7 +521,7 @@ function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
     return form;
 }
 
-function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus) {
+function buildCreateFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus) {
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!createMeta || !defaults) {
@@ -529,7 +529,7 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
     }
 
     if (createMeta.entityLabel === 'Moment') {
-        return buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus);
+        return buildMomentFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus);
     }
 
     const form = document.createElement('form');
@@ -606,7 +606,7 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
         };
 
         if (createMeta.parentField === 'projectId') {
-            payload.projectId = Number.parseInt(projectId, 10);
+            // projectId context is encoded in the endpoint URL; no separate body field needed
         } else {
             payload[createMeta.parentField] = nodeData.payload?.id;
         }
@@ -634,7 +634,8 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
 
 function buildMenuActions(
     nodeData,
-    projectId,
+    owner,
+    project,
     onGraphMutated,
     onProjectDeleted,
     closeMenus,
@@ -657,7 +658,7 @@ function buildMenuActions(
             label: `Create New ${childLabel}`,
             danger: false,
             handler: async () => {
-                openCreateForm(nodeData, projectId, onGraphMutated);
+                openCreateForm(nodeData, owner, project, onGraphMutated);
             },
         });
     }
@@ -710,7 +711,7 @@ function buildMenuActions(
             }
 
             if (normalizeNodeType(nodeData.nodeType) === 'root') {
-                const deleteRoute = getDeleteRoute('root', projectId);
+                const deleteRoute = getDeleteRoute('root');
                 await requestJson(deleteRoute, { method: 'DELETE' });
                 await onProjectDeleted?.();
                 return;
@@ -751,7 +752,8 @@ function buildMenuElement(actions) {
 }
 
 export function createGraphContextMenuController({
-    projectId,
+    owner,
+    project,
     getAvailableStrides,
     onGraphMutated,
     onProjectDeleted,
@@ -759,6 +761,8 @@ export function createGraphContextMenuController({
     setNodeChildrenHidden,
     revealNextLevel,
 } = {}) {
+    _ctxOwner = owner;
+    _ctxProject = project;
     let referenceRect = null;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
@@ -819,10 +823,10 @@ export function createGraphContextMenuController({
         menuContent.replaceChildren();
     }
 
-    function openCreateForm(nodeData, sourceProjectId, refreshGraph) {
+    function openCreateForm(nodeData, sourceOwner, sourceProject, refreshGraph) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
         const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
-        const form = buildCreateFormElement(nodeData, sourceProjectId, getAvailableStrides, refreshGraph, closeMenus);
+        const form = buildCreateFormElement(nodeData, sourceOwner, sourceProject, getAvailableStrides, refreshGraph, closeMenus);
 
         if (!form) {
             return;
@@ -858,7 +862,8 @@ export function createGraphContextMenuController({
 
         const actions = buildMenuActions(
             nodeData,
-            projectId,
+            owner,
+            project,
             onGraphMutated,
             onProjectDeleted,
             closeMenus,

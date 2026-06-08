@@ -11,7 +11,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             EnsureLoggedIn();
 
-            NavigateSpa("/projects/1/iterations");
+            NavigateSpa("/pmo_test/seeded-project/iterations");
 
             var iterationRow = WaitForElement(By.CssSelector("#iterations-list tbody tr"));
             Assert.That(iterationRow.Text, Does.Contain("Sprint 1"));

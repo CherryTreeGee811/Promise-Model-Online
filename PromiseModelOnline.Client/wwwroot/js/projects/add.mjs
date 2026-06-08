@@ -1,5 +1,5 @@
-import { addProject, importProject } from './api.mjs';
-import { addPromise } from '../promises/api.mjs';
+import { createProject, importProject } from './api.mjs';
+import { createPromise } from '../promises/api.mjs';
 import { navigate } from '../router.mjs';
 import { renderSummaryTable } from './summary.mjs';
 
@@ -191,16 +191,15 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
 
         try {
             setBusyState(true, 'submit');
-            const createdProject = await addProject({ name, description: description || null });
+            const createdProject = await createProject({ name, description: description || null });
 
-            await addPromise({
+            await createPromise(createdProject.ownerSlug, createdProject.slug, {
                 statement: firstPromiseStatement,
                 description: null,
-                projectId: createdProject.id,
                 displayOrder: 0,
             });
 
-            navigate(`/projects/${createdProject.id}/graph`, navContentDiv, contentDiv);
+            navigate(`/${createdProject.ownerSlug}/${createdProject.slug}/graph`, navContentDiv, contentDiv);
         } catch (error) {
             errorTextElement.textContent = error.message || 'Failed to create project.';
             errorTextElement.style.display = 'block';
@@ -222,7 +221,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         try {
             setBusyState(true, 'submit');
             const result = await importProject(file);
-            const projectId = result?.projectId ?? result?.ProjectId;
+            const { ownerSlug, slug } = result ?? {};
             const warnings = Array.isArray(result?.warnings) ? result.warnings : Array.isArray(result?.Warnings) ? result.Warnings : [];
 
             successTextElement.textContent = warnings.length > 0
@@ -230,8 +229,8 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
                 : 'Project imported successfully.';
             successTextElement.style.display = 'block';
 
-            if (projectId) {
-                navigate(`/projects/${projectId}/graph`, navContentDiv, contentDiv);
+            if (ownerSlug && slug) {
+                navigate(`/${ownerSlug}/${slug}/graph`, navContentDiv, contentDiv);
             } else {
                 navigate('/projects', navContentDiv, contentDiv);
             }

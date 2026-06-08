@@ -1,10 +1,10 @@
-import { getProjectById, getProjectPromises } from './api.mjs';
-import { getIterationsByProject } from '../iterations/api.mjs';
+import { getProject, getProjectPromises } from './api.mjs';
+import { getIterations } from '../iterations/api.mjs';
 import { getEpicsByPromise } from '../promises/api.mjs';
-import { getJourneysByEpic } from '../epics/api.mjs';
-import { getFlowsByJourney } from '../journeys/api.mjs';
+import { getJourneys } from '../epics/api.mjs';
+import { getFlows } from '../journeys/api.mjs';
 import { getStridesByIteration } from '../strides/api.mjs';
-import { getMomentsByFlow } from '../flows/api.mjs';
+import { getMoments } from '../flows/api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { getUserId } from '../auth-state.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
@@ -27,7 +27,8 @@ import {
 } from './stack-graph-core.mjs';
 
 const graphState = {
-    projectId: null,
+    owner: null,
+    project: null,
     d3: null,
     rawTree: null,
     filteredTree: null,
@@ -235,25 +236,25 @@ async function buildMomentNode(moment) {
 }
 
 async function buildFlowNode(flow) {
-    const moments = sortByDisplayOrder(await getMomentsByFlow(flow.id));
+    const moments = sortByDisplayOrder(await getMoments(graphState.owner, graphState.project, flow.sequenceNumber));
     const children = await Promise.all(moments.map(buildMomentNode));
     return createNode('flow', flow, children);
 }
 
 async function buildJourneyNode(journey) {
-    const flows = sortByDisplayOrder(await getFlowsByJourney(journey.id));
+    const flows = sortByDisplayOrder(await getFlows(graphState.owner, graphState.project, journey.sequenceNumber));
     const children = await Promise.all(flows.map(buildFlowNode));
     return createNode('journey', journey, children);
 }
 
 async function buildEpicNode(epic) {
-    const journeys = sortByDisplayOrder(await getJourneysByEpic(epic.id));
+    const journeys = sortByDisplayOrder(await getJourneys(graphState.owner, graphState.project, epic.sequenceNumber));
     const children = await Promise.all(journeys.map(buildJourneyNode));
     return createNode('epic', epic, children);
 }
 
 async function buildPromiseNode(promise) {
-    const epics = sortByDisplayOrder(await getEpicsByPromise(promise.id));
+    const epics = sortByDisplayOrder(await getEpicsByPromise(graphState.owner, graphState.project, promise.sequenceNumber));
     const children = await Promise.all(epics.map(buildEpicNode));
     return createNode('promise', promise, children);
 }
@@ -435,7 +436,7 @@ function syncFiltersToUrl(filters) {
     }
 
     const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash || ''}`;
-    window.history.replaceState({ projectId: graphState.projectId }, '', nextUrl);
+    window.history.replaceState({ owner: graphState.owner, project: graphState.project }, '', nextUrl);
 }
 
 function renderFilterBar() {
@@ -760,7 +761,8 @@ function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNod
     graphState.animationSpeed = speedEl ? Number.parseFloat(speedEl.value) || 1 : 1;
 
     const result = renderStackGraph(graphContent, d3, treeData, {
-        projectId: graphState.projectId,
+        owner: graphState.owner,
+        project: graphState.project,
         focusNodeId: focusNodeData?.id ?? null,
         focusNodeData,
         animate,
@@ -838,8 +840,8 @@ async function reloadGraphData() {
 
     try {
         const [projectResult, promisesResult] = await Promise.allSettled([
-            getProjectById(graphState.projectId),
-            getProjectPromises(graphState.projectId),
+            getProject(graphState.owner, graphState.project),
+            getProjectPromises(graphState.owner, graphState.project),
         ]);
 
         if (promisesResult.status !== 'fulfilled') {
@@ -854,7 +856,7 @@ async function reloadGraphData() {
         const rootPromises = sortByDisplayOrder(promisesResult.value);
         const children = await Promise.all(rootPromises.map(buildPromiseNode));
 
-        graphState.rawTree = parseGraphData(children, graphState.projectId, project);
+        graphState.rawTree = parseGraphData(children, graphState.owner, graphState.project, project);
         reconcileCollapsedNodes();
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
         applyFilters();
@@ -868,12 +870,12 @@ async function reloadGraphData() {
     }
 }
 
-async function loadAvailableStrides(projectId) {
-    const iterations = await getIterationsByProject(projectId);
+async function loadAvailableStrides(owner, project) {
+    const iterations = await getIterations(owner, project);
     const strideGroups = await Promise.all(
         (Array.isArray(iterations) ? iterations : []).map(async iteration => ({
             iteration,
-            strides: await getStridesByIteration(iteration.id),
+            strides: await getStridesByIteration(owner, project, iteration.id),
         }))
     );
 
@@ -889,7 +891,7 @@ async function loadAvailableStrides(projectId) {
     graphState.availableStrides = strides;
 }
 
-export async function loadGraphPage(projectId, contentDiv) {
+export async function loadGraphPage(owner, project, contentDiv) {
     const errorEl = document.getElementById('error-text');
     const successEl = document.getElementById('success-text');
 
@@ -898,7 +900,8 @@ export async function loadGraphPage(projectId, contentDiv) {
         graphState.pageShowRefreshHandler = null;
     }
 
-    graphState.projectId = projectId;
+    graphState.owner = owner;
+    graphState.project = project;
     graphState.d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
     graphState.filters = readFiltersFromUrl();
     graphState.focusNodeId = readGraphFocusFromUrl();
@@ -914,7 +917,8 @@ export async function loadGraphPage(projectId, contentDiv) {
 
     graphState.contextMenu?.destroy();
     graphState.contextMenu = createGraphContextMenuController({
-        projectId,
+        owner,
+        project,
         getAvailableStrides: () => graphState.availableStrides,
         onGraphMutated: reloadGraphData,
         isNodeChildrenHidden: (nodeData) => isNodeCollapsed(nodeData?.id),
@@ -956,7 +960,7 @@ export async function loadGraphPage(projectId, contentDiv) {
     };
     document.addEventListener('fullscreenchange', graphState._onFullscreenChange);
 
-    await loadAvailableStrides(projectId);
+    await loadAvailableStrides(owner, project);
 
     renderFilterBar();
     syncControlsToFilters();

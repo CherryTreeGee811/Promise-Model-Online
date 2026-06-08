@@ -36,7 +36,7 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
     [TestCase(Viewport.Mobile)]
     public void StrideBoard_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
-        NavigateAsUser(vp, "/projects/1/strides");
+        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
         AssertNoHorizontalScroll();
         AssertElementVisible(By.Id("stride-board"));
     }
@@ -47,7 +47,7 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
     [TestCase(Viewport.Mobile)]
     public void StrideBoard_EffortDropdown_VisibleOnMobile_HiddenOnDesktop(Viewport vp)
     {
-        NavigateAsUser(vp, "/projects/1/strides");
+        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
         var mobileEstimate = By.ClassName("estimate-dropdown-mobile");
         var desktopEstimate = By.ClassName("estimate-dropdown");
         AssertResponsiveElement(desktopEstimate, mobileEstimate, vp);
@@ -107,7 +107,7 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
     [TestCase(Viewport.Mobile)]
     public void StrideHeader_StacksOnMobile(Viewport vp)
     {
-        NavigateAsUser(vp, "/projects/1/strides");
+        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
         var header = Driver.FindElement(By.ClassName("stride-header"));
         var flexDirection = ((IJavaScriptExecutor)Driver).ExecuteScript(
             "return window.getComputedStyle(arguments[0]).flexDirection;", header).ToString();
@@ -124,7 +124,7 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
     [TestCase(Viewport.Mobile)]
     public void TouchTargets_MinimumSize_OnMobile(Viewport vp)
     {
-        NavigateAsUser(vp, "/projects/1/strides");
+        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
 
         if (vp == Viewport.Mobile)
         {

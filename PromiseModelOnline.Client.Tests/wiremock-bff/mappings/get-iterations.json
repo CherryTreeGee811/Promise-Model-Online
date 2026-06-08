@@ -1,10 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "urlPath": "/api/iterations",
-    "queryParameters": {
-      "projectId": { "equalTo": "1" }
-    }
+    "urlPath": "/api/projects/pmo_test/seeded-project/iterations"
   },
   "response": {
     "status": 200,

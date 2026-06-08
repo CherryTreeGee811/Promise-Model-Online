@@ -3,11 +3,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PromiseModelOnline.Api.Models;
 
-public class ProjectSequence
+public class EntitySequence
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public int ProjectId { get; set; }
+    public int ParentId { get; set; }
+
+    [Key]
+    [MaxLength(50)]
+    public string Scope { get; set; } = null!;
 
     public int NextSequenceNumber { get; set; } = 1;
 }

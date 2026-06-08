@@ -50,6 +50,10 @@ export async function apiDelete(url) {
   return true;
 }
 
+export function projectUrl(owner, project, path = '') {
+  return `/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}${path}`;
+}
+
 /*
 ====================================
 API FETCH (credentials-based, no tokens)

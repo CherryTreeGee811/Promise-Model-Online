@@ -79,13 +79,17 @@ public static class PromiseHierarchySeeder
         var flowRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Flows.csv"));
         var momentRows  = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Moments.csv"));
 
-        var seq = new SeqCounter { Value = await GetGlobalMaxSequenceAsync(db, project.Id) + 1 };
+        var productSeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Promises.Where(p => p.ProjectId == project.Id).Select(p => (int?)p.SequenceNumber)) + 1 };
+        var epicSeq    = new SeqCounter { Value = await GetMaxSequenceAsync(db.Epics.Where(e => e.ProductPromise.ProjectId == project.Id).Select(e => (int?)e.SequenceNumber)) + 1 };
+        var journeySeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Journeys.Where(j => j.Epic.ProductPromise.ProjectId == project.Id).Select(j => (int?)j.SequenceNumber)) + 1 };
+        var flowSeq    = new SeqCounter { Value = await GetMaxSequenceAsync(db.Flows.Where(f => f.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(f => (int?)f.SequenceNumber)) + 1 };
+        var momentSeq  = new SeqCounter { Value = await GetMaxSequenceAsync(db.Moments.Where(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(m => (int?)m.SequenceNumber)) + 1 };
 
-        var productLookup  = await SeedProductsAsync(db, project.Id, productRows, seq);
-        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup, seq);
-        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup, seq);
-        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup, seq);
-        var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup, seq);
+        var productLookup  = await SeedProductsAsync(db, project.Id, productRows, productSeq);
+        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup, epicSeq);
+        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup, journeySeq);
+        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup, flowSeq);
+        var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup, momentSeq);
 
         // --- 6. Redistribute moments evenly and mark prior strides complete ---
         var strideIds = await db.Strides.OrderBy(s => s.Id).Select(s => s.Id).ToListAsync();
@@ -571,12 +575,21 @@ public static class PromiseHierarchySeeder
         email ??= TestUserEmail;
         name ??= TestUserName;
         var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (existing != null) return existing;
+        if (existing != null)
+        {
+            if (string.IsNullOrEmpty(existing.Slug))
+            {
+                existing.Slug = name;
+                await db.SaveChangesAsync();
+            }
+            return existing;
+        }
 
         var user = new User
         {
             Email = email,
             Name = name,
+            Slug = name,
             Role = UserRole.Professional,
             CreatedAt = DateTime.UtcNow
         };
@@ -595,12 +608,18 @@ public static class PromiseHierarchySeeder
                 existing.OwnerId = ownerId;
                 await db.SaveChangesAsync();
             }
+            if (string.IsNullOrEmpty(existing.Slug))
+            {
+                existing.Slug = Slugify("Promise Model Online");
+                await db.SaveChangesAsync();
+            }
             return existing;
         }
 
         var project = new Project
         {
             Name = "Promise Model Online",
+            Slug = Slugify("Promise Model Online"),
             Description = "Seeded from Promise Model tracker CSV sheets.",
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow
@@ -621,12 +640,18 @@ public static class PromiseHierarchySeeder
                 existing.Description = description ?? existing.Description;
                 await db.SaveChangesAsync();
             }
+            if (string.IsNullOrEmpty(existing.Slug))
+            {
+                existing.Slug = Slugify(name);
+                await db.SaveChangesAsync();
+            }
             return existing;
         }
 
         var project = new Project
         {
             Name = name,
+            Slug = Slugify(name),
             Description = description ?? string.Empty,
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow
@@ -636,42 +661,20 @@ public static class PromiseHierarchySeeder
         return project;
     }
 
-    private static async Task<int> GetGlobalMaxSequenceAsync(PromiseModelOnlineContext db, int projectId)
+    private static string Slugify(string text)
     {
-        var maxValues = new List<int>();
+        if (string.IsNullOrWhiteSpace(text)) return "project";
 
-        var promiseMax = await db.Promises
-            .Where(p => p.ProjectId == projectId)
-            .Select(p => (int?)p.SequenceNumber)
-            .MaxAsync() ?? 0;
-        maxValues.Add(promiseMax);
+        var slug = System.Text.RegularExpressions.Regex.Replace(text.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
+            .Replace(" ", "-")
+            .Replace("--", "-")
+            .Trim('-');
 
-        var epicMax = await db.Epics
-            .Where(e => e.ProductPromise.ProjectId == projectId)
-            .Select(e => (int?)e.SequenceNumber)
-            .MaxAsync() ?? 0;
-        maxValues.Add(epicMax);
-
-        var journeyMax = await db.Journeys
-            .Where(j => j.Epic.ProductPromise.ProjectId == projectId)
-            .Select(j => (int?)j.SequenceNumber)
-            .MaxAsync() ?? 0;
-        maxValues.Add(journeyMax);
-
-        var flowMax = await db.Flows
-            .Where(f => f.Journey.Epic.ProductPromise.ProjectId == projectId)
-            .Select(f => (int?)f.SequenceNumber)
-            .MaxAsync() ?? 0;
-        maxValues.Add(flowMax);
-
-        var momentMax = await db.Moments
-            .Where(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectId)
-            .Select(m => (int?)m.SequenceNumber)
-            .MaxAsync() ?? 0;
-        maxValues.Add(momentMax);
-
-        return maxValues.Max();
+        return string.IsNullOrEmpty(slug) ? "project" : slug;
     }
+
+    private static async Task<int> GetMaxSequenceAsync(IQueryable<int?> query)
+        => await query.MaxAsync() ?? 0;
 
     private static string ResolvePmoPmDirectory(string contentRootPath)
     {

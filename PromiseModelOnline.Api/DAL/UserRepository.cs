@@ -21,6 +21,11 @@ namespace PromiseModelOnline.Api.DAL
         public async Task<IEnumerable<User>> FindByEmailAsync(string email)
             => await FindAsync(u => u.Email == email);
 
+        public async Task<User?> GetBySlugAsync(string slug)
+        {
+            return await _dbSet.FirstOrDefaultAsync(u => u.Slug == slug);
+        }
+
         public async Task<User> GetOrCreateUserByEmailAsync(string email, string? username = null)
         {
             var users = await FindByEmailAsync(email);
@@ -28,13 +33,31 @@ namespace PromiseModelOnline.Api.DAL
 
             if (existing is not null)
             {
-                // Update name if we now have a real username and the stored name is still an email
+                if (!string.IsNullOrEmpty(username))
+                {
+                    if (existing.Name == existing.Email)
+                    {
+                        existing.Name = username;
+                    }
+
+                    if (string.IsNullOrEmpty(existing.Slug))
+                    {
+                        existing.Slug = username;
+                    }
+                }
+
                 if (!string.IsNullOrEmpty(username) && existing.Name == existing.Email)
                 {
                     existing.Name = username;
                     Update(existing);
                     await SaveChangesAsync();
                 }
+                else if (string.IsNullOrEmpty(existing.Slug) && !string.IsNullOrEmpty(username))
+                {
+                    Update(existing);
+                    await SaveChangesAsync();
+                }
+
                 return existing;
             }
 
@@ -42,6 +65,7 @@ namespace PromiseModelOnline.Api.DAL
             {
                 Email = email,
                 Name = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
+                Slug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
                 Role = UserRole.Professional,
                 CreatedAt = DateTime.UtcNow
             };

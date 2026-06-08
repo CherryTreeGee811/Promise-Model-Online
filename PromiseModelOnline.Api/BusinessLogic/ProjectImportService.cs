@@ -67,6 +67,7 @@ public sealed class ProjectImportService : IProjectImportService
             var project = new Project
             {
                 Name = document.Project.Name,
+                Slug = Slugify(document.Project.Name),
                 Description = document.Project.Description,
                 OwnerId = requestedByUserId,
                 CreatedAt = document.Project.CreatedAt
@@ -74,6 +75,8 @@ public sealed class ProjectImportService : IProjectImportService
 
             await _projectRepository.AddAsync(project);
             await _projectRepository.SaveChangesAsync();
+
+            var owner = await _userRepository.GetByIdAsync(requestedByUserId);
 
             foreach (var iteration in OrderByIteration(document.Project.Iterations))
             {
@@ -114,7 +117,9 @@ public sealed class ProjectImportService : IProjectImportService
             return new ProjectImportResult
             {
                 ProjectId = project.Id,
-                Warnings = warnings
+                Warnings = warnings,
+                OwnerSlug = owner?.Slug,
+                Slug = project.Slug
             };
         });
     }
@@ -126,7 +131,7 @@ public sealed class ProjectImportService : IProjectImportService
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
-        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+        var nextSeq = await _context.GetNextPromiseSequenceAsync(projectId);
 
         var newPromise = new Promise
         {
@@ -230,7 +235,7 @@ public sealed class ProjectImportService : IProjectImportService
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
-        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+        var nextSeq = await _context.GetNextEpicSequenceAsync(promiseId);
 
         var newEpic = new Epic
         {
@@ -262,7 +267,7 @@ public sealed class ProjectImportService : IProjectImportService
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
-        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+        var nextSeq = await _context.GetNextJourneySequenceAsync(epicId);
 
         var newJourney = new Journey
         {
@@ -294,7 +299,7 @@ public sealed class ProjectImportService : IProjectImportService
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
-        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+        var nextSeq = await _context.GetNextFlowSequenceAsync(journeyId);
 
         var newFlow = new Flow
         {
@@ -326,7 +331,7 @@ public sealed class ProjectImportService : IProjectImportService
         List<string> warnings,
         Dictionary<int, int> strideIdMap)
     {
-        var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+        var nextSeq = await _context.GetNextMomentSequenceAsync(flowId);
 
         var newMoment = new Moment
         {
@@ -376,6 +381,16 @@ public sealed class ProjectImportService : IProjectImportService
 
         await _momentTaskRepository.AddAsync(newTask);
         await _momentTaskRepository.SaveChangesAsync();
+    }
+
+    private static string Slugify(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "project";
+        var slug = System.Text.RegularExpressions.Regex.Replace(text.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
+            .Replace(" ", "-")
+            .Replace("--", "-")
+            .Trim('-');
+        return string.IsNullOrEmpty(slug) ? "project" : slug;
     }
 
     private async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> action)

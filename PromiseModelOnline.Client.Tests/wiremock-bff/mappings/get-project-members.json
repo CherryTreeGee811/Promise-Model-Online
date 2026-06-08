@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "urlPathPattern": "/api/projects/1/members"
+    "urlPathPattern": "/api/projects/pmo_test/seeded-project/members"
   },
   "response": {
     "status": 200,

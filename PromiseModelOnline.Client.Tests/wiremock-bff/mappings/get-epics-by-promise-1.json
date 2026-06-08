@@ -2,9 +2,9 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/epics",
+    "urlPath": "/api/projects/pmo_test/seeded-project/epics",
     "queryParameters": {
-      "promiseId": { "equalTo": "1" }
+      "promiseSeq": { "equalTo": "1" }
     }
   },
   "response": {
