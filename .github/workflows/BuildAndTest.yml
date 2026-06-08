@@ -22,7 +22,7 @@ jobs:
 
       - name: Restore & Build All Projects
         shell: bash
-        run: dotnet build
+        run: dotnet build Promise-Model-Online.sln
 
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
