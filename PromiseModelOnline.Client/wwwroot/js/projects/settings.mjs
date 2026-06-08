@@ -172,7 +172,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         ]);
     }
 
-    async function loadSummary(project) {
+    async function loadSummary(projectObj) {
         setSummaryLoading(true);
 
         try {
@@ -205,7 +205,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
                 memberCount: members.length,
             };
 
-            renderSummary(project, summaryState.counts, summaryState.memberCount);
+            renderSummary(projectObj, summaryState.counts, summaryState.memberCount);
         } catch (error) {
             summaryState = {
                 counts: {
@@ -219,7 +219,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
                 memberCount: 0,
             };
 
-            renderSummary(project, summaryState.counts, summaryState.memberCount);
+            renderSummary(projectObj, summaryState.counts, summaryState.memberCount);
             console.warn('Failed to load project summary:', error);
         } finally {
             setSummaryLoading(false);
