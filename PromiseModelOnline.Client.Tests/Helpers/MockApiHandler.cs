@@ -180,7 +180,7 @@ public static partial class MockApiHandler
                 if (path.EndsWith("/iterations"))
                     return Json(200, """[{"id":1,"name":"Sprint 1","projectId":1,"displayOrder":1,"startDate":"2026-06-01","endDate":"2026-06-14"}]""");
                 if (path.EndsWith("/my-permission"))
-                    return Json(200, """{"level":"Owner","projectId":1}""");
+                    return Json(200, "\"Owner\"");
                 if (path.EndsWith("/details"))
                     return Json(200, """{"id":1,"name":"Test Project","slug":"seeded-project","ownerSlug":"pmo_test","description":"A seeded test project"}""");
                 if (path.EndsWith("/permissions") && resource == "permissions")
