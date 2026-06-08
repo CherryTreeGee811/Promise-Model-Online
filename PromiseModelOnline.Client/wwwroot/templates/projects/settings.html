@@ -66,7 +66,10 @@
         <label id="project-delete-confirmation-label" for="project-delete-confirmation-input">Confirmation phrase:</label>
         <input id="project-delete-confirmation-input" class="form-control" type="text" placeholder="Type the confirmation phrase">
         <div class="field-actions">
-            <button id="delete-project-btn" class="btn btn-danger" type="button" disabled>Delete Project</button>
+            <button id="delete-project-btn" class="btn btn-danger d-inline-flex align-items-center gap-2" type="button" disabled>
+                <span id="delete-project-btn-spinner" class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+                <span id="delete-project-btn-label">Delete Project</span>
+            </button>
         </div>
     </section>
 </div>

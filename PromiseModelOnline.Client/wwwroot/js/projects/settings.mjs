@@ -26,6 +26,8 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
     const successText = document.getElementById('success-text');
     const exportButton = document.getElementById('export-project-btn');
     const deleteButton = document.getElementById('delete-project-btn');
+    const deleteButtonSpinner = document.getElementById('delete-project-btn-spinner');
+    const deleteButtonLabel = document.getElementById('delete-project-btn-label');
     const deleteConfirmationInput = document.getElementById('project-delete-confirmation-input');
     const deleteConfirmationText = document.getElementById('project-delete-confirmation-text');
     const saveBtn = document.getElementById('save-project-settings-btn');
@@ -152,6 +154,12 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         deleteConfirmationInput.value = '';
         deleteButton.disabled = true;
         deleteButton.dataset.confirmationPhrase = phrase;
+    }
+
+    function setDeleteButtonState(busy) {
+        deleteButton.disabled = busy;
+        deleteButtonSpinner.classList.toggle('d-none', !busy);
+        deleteButtonLabel.textContent = busy ? 'Deleting Project...' : 'Delete Project';
     }
 
     function updateDeleteButtonState() {
@@ -334,11 +342,15 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
             return;
         }
 
+        setDeleteButtonState(true);
+
         try {
             await deleteProject(owner, project);
             navigate('/projects', navContentDiv, contentDiv);
         } catch (error) {
             errorText.textContent = error.message || 'Failed to delete project.';
+        } finally {
+            setDeleteButtonState(false);
         }
     });
 

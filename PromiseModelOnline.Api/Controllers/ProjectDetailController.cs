@@ -188,6 +188,21 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(_mapper.Map(projectEntity, _service));
         }
 
+        [Authorize(Policy = "projects.write")]
+        [HttpDelete]
+        public async Task<IActionResult> Delete(string owner, string project)
+        {
+            var projectEntity = await ResolveProjectAsync(owner, project);
+            if (projectEntity is null)
+                return NotFound();
+
+            var deleted = await _service.DeleteByIdAsync(projectEntity.Id);
+            if (!deleted)
+                return NotFound();
+
+            return NoContent();
+        }
+
         [Authorize(Policy = "projects.read")]
         [HttpGet("export")]
         public async Task<IActionResult> Export(string owner, string project)
