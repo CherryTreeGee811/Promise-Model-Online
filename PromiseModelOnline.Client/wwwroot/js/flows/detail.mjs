@@ -1,6 +1,6 @@
 import { navigate } from '../router.mjs';
 import { getFlow, getMoments, updateFlowDescription } from './api.mjs';
-import { createMoment } from '../moments/api.mjs';
+import { createMoment, updateMomentType } from '../moments/api.mjs';
 import { getJourneyById } from '../journeys/api.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
@@ -105,7 +105,7 @@ export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv
                         renderItemRow: m => `
                             <tr data-moment-id="${m.sequenceNumber}">
                                 <td>${escapeHtml(m.statement)}</td>
-                                <td>${m.type}</td>
+                                <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.sequenceNumber}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
                                 <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                 <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
@@ -166,7 +166,7 @@ export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv
                                     row.dataset.momentId = created.id;
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
-                                        <td>${created.type}</td>
+                                        <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${created.sequenceNumber}" data-current-type="${created.type}" aria-label="Moment type"><option value="Story" ${created.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${created.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
                                         <td><span class="status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
                                         <td><a href="/${owner}/${project}/moments/${created.sequenceNumber}" moment-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
@@ -196,9 +196,9 @@ export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv
                             </thead>
                             <tbody>
                                 ${moments.map(m => `
-                                    <tr>
+                                    <tr data-moment-id="${m.sequenceNumber}">
                                         <td>${escapeHtml(m.statement)}</td>
-                                        <td>${m.type}</td>
+                                        <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.sequenceNumber}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
                                         <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                         <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-id="${m.id}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
@@ -206,6 +206,22 @@ export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv
                             </tbody>
                         </table>
                     `;
+
+                    momentsList.addEventListener('change', async (e) => {
+                        const target = e.target;
+                        if (target.matches('.moment-type-select')) {
+                            const momentId = parseInt(target.dataset.momentId, 10);
+                            const newType = target.value;
+                            const previous = target.dataset.currentType || newType;
+                            try {
+                                await updateMomentType(owner, project, momentId, newType);
+                                target.dataset.currentType = newType;
+                            } catch (err) {
+                                target.value = previous;
+                                console.error('Failed to update moment type:', err);
+                            }
+                        }
+                    });
 
                     momentsList.querySelectorAll('a[moment-id]').forEach(link => {
                         link.addEventListener('click', (e) => {

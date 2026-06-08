@@ -1,7 +1,7 @@
 import { navigate } from '../router.mjs';
 import { getProject } from '../projects/api.mjs';
 import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
-import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
+import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner, updateMomentType } from '../moments/api.mjs';
 import { buildGraphViewHref } from '../projects/graph-link.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
@@ -149,6 +149,15 @@ function estimateDropdownHtml(momentSeq, currentEstimate) {
 
 function ownerDropdownHtml(momentSeq, ownerId) {
     return `<select class="owner-dropdown" data-moment-id="${momentSeq}" data-owner-id="${ownerId ?? ''}" aria-label="Owner"></select>`;
+}
+
+function momentTypeDropdownHtml(momentId, currentType) {
+    const storySel = currentType === 'Story' ? 'selected' : '';
+    const jobSel = currentType === 'Job' ? 'selected' : '';
+    return `<select class="moment-type-dropdown form-select form-select-sm" data-moment-id="${momentId}" data-current-type="${currentType}" aria-label="Moment type">
+        <option value="Story" ${storySel}>Story</option>
+        <option value="Job" ${jobSel}>Job</option>
+    </select>`;
 }
 
 function statusDropdownHtml(momentSeq, status) {
@@ -502,7 +511,7 @@ function createBacklogRow(moment) {
     tr.dataset.momentId = moment.sequenceNumber;
     tr.innerHTML = `
         <td>${escapeHtml(moment.statement)}</td>
-        <td>${moment.type}</td>
+        <td>${momentTypeDropdownHtml(moment.id, moment.type)}</td>
         <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
         <td>${moment.effortEstimate ?? '–'}</td>
         <td>
@@ -553,7 +562,7 @@ function createStrideRow(moment) {
     tr.dataset.momentId = moment.sequenceNumber;
     tr.innerHTML = `
         <td>${escapeHtml(moment.statement)}</td>
-        <td>${moment.type}</td>
+        <td>${momentTypeDropdownHtml(moment.id, moment.type)}</td>
         <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
         <td>${estimateDropdownHtml(moment.sequenceNumber, moment.effortEstimate)}</td>
         <td>${ownerDropdownHtml(moment.sequenceNumber, moment.ownerId)}</td>
@@ -638,6 +647,20 @@ function bindInlineMomentControls(root, owner, project, navContentDiv, contentDi
             } catch (err) {
                 target.value = previous;
                 alert('Failed to update owner');
+            }
+        }
+
+        // TYPE
+        if (target.matches('.moment-type-dropdown')) {
+            const momentId = parseInt(target.dataset.momentId, 10);
+            const newType = target.value;
+            const previous = target.dataset.currentType || newType;
+            try {
+                await updateMomentType(owner, project, momentId, newType);
+                target.dataset.currentType = newType;
+            } catch (err) {
+                target.value = previous;
+                alert('Failed to update type');
             }
         }
     });
@@ -893,10 +916,10 @@ export function loadStridesList(owner, project, navContentDiv, contentDiv) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${moments.map(m => `
+                                     ${moments.map(m => `
                                         <tr data-moment-id="${m.sequenceNumber}">
                                             <td>${escapeHtml(m.statement)}</td>
-                                            <td>${m.type}</td>
+                                            <td>${momentTypeDropdownHtml(m.id, m.type)}</td>
                                             <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                             <td>
                                                 <select class="estimate-dropdown" data-moment-id="${m.sequenceNumber}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"></select>
@@ -953,7 +976,7 @@ export function loadStridesList(owner, project, navContentDiv, contentDiv) {
                                         ${backlogMoments.map(m => `
                                             <tr data-moment-id="${m.sequenceNumber}">
                                                 <td>${escapeHtml(m.statement)}</td>
-                                                <td>${m.type}</td>
+                                                <td>${momentTypeDropdownHtml(m.id, m.type)}</td>
                                                 <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                                 <td>${m.effortEstimate ?? '–'}</td>
                                                 <td>
