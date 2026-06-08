@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using PromiseModelOnline.Auth.Common;
@@ -115,6 +116,14 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
 
 builder.Services.AddAuthorization();
 
+// ---------- Data Protection (shared key ring for horizontal scaling) ---
+var dpKeysPath = builder.Configuration["DATA_PROTECTION_KEYS_PATH"]
+    ?? Path.Combine(Directory.GetCurrentDirectory(), "dp-keys");
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
+    .SetApplicationName("PromiseModelOnline.Auth");
+
 // ---------- Caching --------------------------------------------------
 builder.Services.AddMemoryCache();
 
@@ -165,8 +174,6 @@ app.UseForwardedHeaders(forwardedOptions);
 // but keeping it is okay during local debugging.
 app.UseMiddleware<ForwardedHeadersFixMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
-
-app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseStaticFiles();
 

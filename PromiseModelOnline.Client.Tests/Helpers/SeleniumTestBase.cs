@@ -12,52 +12,69 @@ namespace PromiseModelOnline.Client.Tests.Helpers
 {
     public abstract class SeleniumTestBase
     {
-        protected IWebDriver Driver = null!;
-        protected WebDriverWait Wait = null!;
+        protected static IWebDriver Driver = null!;
+        protected static WebDriverWait Wait = null!;
         protected string BaseUrl => Environment.GetEnvironmentVariable("TEST_BASE_URL") ?? "https://localhost:9000";
         protected string ApiBase => Environment.GetEnvironmentVariable("TEST_API_BASE_URL") ?? "https://localhost:8010";
-        protected bool IsHeadless => string.Equals(Environment.GetEnvironmentVariable("HEADLESS") ?? "true", "true", StringComparison.OrdinalIgnoreCase);
+        protected static bool IsHeadless => string.Equals(Environment.GetEnvironmentVariable("HEADLESS") ?? "true", "true", StringComparison.OrdinalIgnoreCase);
+
+        private static readonly object _initLock = new();
+        private static bool _initialized;
+
+        [OneTimeSetUp]
+        public void OneTimeSetup()
+        {
+            if (_initialized) return;
+            lock (_initLock)
+            {
+                if (_initialized) return;
+
+                var tempProfile = Path.Combine(Path.GetTempPath(), "chrome-test-profile-" + Guid.NewGuid());
+                Directory.CreateDirectory(tempProfile);
+
+                var options = new ChromeOptions();
+                try { options.SetLoggingPreference(LogType.Browser, LogLevel.All); } catch { }
+
+                if (IsHeadless)
+                    options.AddArgument("--headless=new");
+
+                options.AddArgument("--disable-web-security");
+                options.AddArgument("--allow-running-insecure-content");
+                options.AddArgument("--no-sandbox");
+                options.AddArgument("--disable-dev-shm-usage");
+                options.AddArgument("--ignore-certificate-errors");
+                options.AddArgument("--disable-features=OutOfBlinkCors");
+                options.AddArgument($"--user-data-dir={tempProfile}");
+                options.AddArgument("--window-size=1366,900");
+                options.AcceptInsecureCertificates = true;
+
+                Driver = new ChromeDriver(options);
+                Driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(30);
+                Wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(30));
+
+                WaitForAppReady(30);
+                _initialized = true;
+            }
+        }
 
         [SetUp]
         public void Setup()
         {
-            var tempProfile = Path.Combine(Path.GetTempPath(), "chrome-test-profile-" + Guid.NewGuid());
-            Directory.CreateDirectory(tempProfile);
-
-            var options = new ChromeOptions();
-            try { options.SetLoggingPreference(LogType.Browser, LogLevel.All); } catch { }
-
-            if (IsHeadless)
-                options.AddArgument("--headless=new");
-
-            options.AddArgument("--disable-web-security");
-            options.AddArgument("--allow-running-insecure-content");
-            options.AddArgument("--no-sandbox");
-            options.AddArgument("--disable-dev-shm-usage");
-            options.AddArgument("--ignore-certificate-errors");
-            options.AddArgument("--disable-features=OutOfBlinkCors");
-            options.AddArgument($"--user-data-dir={tempProfile}");
-            options.AddArgument("--window-size=1366,900");
-            options.AcceptInsecureCertificates = true;
-
-            Driver = new ChromeDriver(options);
-            Driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(2);
-            Driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(30);
-            Wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(30));
-
-            WaitForAppReady(30);
+            try { Driver?.Manage().Cookies.DeleteAllCookies(); } catch { }
         }
 
-        [TearDown]
-        public void Teardown()
+        [OneTimeTearDown]
+        public void OneTimeTeardown()
         {
-            if (TestContext.CurrentContext.Result.Outcome.Status == NUnit.Framework.Interfaces.TestStatus.Failed)
-                DumpDebugInfo();
-
             try
             {
-                Driver.Quit();
-                Driver.Dispose();
+                if (Driver is not null)
+                {
+                    if (TestContext.CurrentContext.Result.Outcome.Status == NUnit.Framework.Interfaces.TestStatus.Failed)
+                        DumpDebugInfo();
+                    Driver.Quit();
+                    Driver.Dispose();
+                }
             }
             catch { }
         }

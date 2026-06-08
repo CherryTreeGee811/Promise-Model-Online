@@ -665,50 +665,6 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     }
 
     // ============================
-    // 🛡️ RATE LIMITING
-    // ============================
-
-    [Test]
-    public async Task Health_RateLimit_NotExceeded_Returns200()
-    {
-        // Verify the rate limiter doesn't block normal traffic
-        for (var i = 0; i < 5; i++)
-        {
-            var response = await Client.GetAsync("/health");
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK),
-                $"Health check {i} should succeed");
-        }
-    }
-
-    [Test]
-    public async Task Token_RateLimit_Exceeded_Returns429()
-    {
-        // The token rate limiter is applied via a global PartitionedRateLimiter
-        // that partitions by request path. Send 35 rapid requests to /connect/token;
-        // the first 30 should be processed (returning 400 from OpenIddict validation),
-        // and at least the last 5 should be blocked with 429.
-        var tasks = new List<Task<HttpResponseMessage>>();
-        for (var i = 0; i < 35; i++)
-        {
-            tasks.Add(Client.PostAsync("/connect/token", new FormUrlEncodedContent(
-                new Dictionary<string, string>
-                {
-                    { "grant_type", "authorization_code" },
-                    { "code", "invalid-code-" + i },
-                    { "client_id", ClientId }
-                }
-            )));
-        }
-
-        var responses = await Task.WhenAll(tasks);
-        var statusCodes = responses.Select(r => r.StatusCode).ToList();
-
-        Assert.That(statusCodes, Does.Contain(HttpStatusCode.TooManyRequests),
-            "Rate limiter should kick in after 30 requests/minute. Got: " +
-            string.Join(", ", statusCodes.Take(35)));
-    }
-
-    // ============================
     // 🛡️ ACCOUNT LOCKOUT
     // ============================
 

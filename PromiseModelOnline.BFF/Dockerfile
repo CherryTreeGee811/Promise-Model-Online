@@ -25,11 +25,10 @@ COPY PromiseModelOnline.BFF/cert.pem /app/cert.pem
 COPY PromiseModelOnline.BFF/key.pem /app/key.pem
 
 USER root
-RUN chown app:app /app/cert.pem /app/key.pem
-RUN chmod 600 /app/cert.pem /app/key.pem
+RUN chown app:app /app/cert.pem /app/key.pem && chmod 600 /app/cert.pem /app/key.pem && \
+    mkdir -p /app/dp-keys && chown app:app /app/dp-keys
 USER app
 
-# Optional: trust dev cert or skip validation handled in code
 EXPOSE 8010
 
 ENTRYPOINT ["dotnet", "PromiseModelOnline.BFF.dll"]

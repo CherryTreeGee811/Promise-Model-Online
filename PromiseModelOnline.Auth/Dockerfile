@@ -34,7 +34,7 @@ COPY PromiseModelOnline.Auth/key.pem /app/key.pem
 # Copy static files (CSS, JS, images)
 COPY PromiseModelOnline.Auth/wwwroot /app/wwwroot
 USER root
-RUN chown app:app /app/cert.pem /app/key.pem
-RUN chmod 600 /app/cert.pem /app/key.pem
+RUN chown app:app /app/cert.pem /app/key.pem && chmod 600 /app/cert.pem /app/key.pem
+RUN mkdir -p /app/dp-keys && chown app:app /app/dp-keys
 USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Auth.dll"]

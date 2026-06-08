@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -92,8 +91,6 @@ public class AuthWebApplicationFactory : IAsyncDisposable
 
         builder.Services.AddAuthorization();
 
-        // Rate limiting is handled by middleware (no AddRateLimiter needed).
-
         // Caching
         builder.Services.AddMemoryCache();
 
@@ -128,7 +125,6 @@ public class AuthWebApplicationFactory : IAsyncDisposable
         _app.UseForwardedHeaders(forwardedOptions);
 
         _app.UseMiddleware<SecurityHeadersMiddleware>();
-        _app.UseMiddleware<RateLimitingMiddleware>();
         _app.UseStaticFiles();
         _app.UseCors("SPA");
         _app.UseAuthentication();

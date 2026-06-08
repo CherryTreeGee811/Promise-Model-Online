@@ -3,6 +3,8 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.DataProtection;
+using PromiseModelOnline.BFF;
 using Yarp.ReverseProxy.Transforms;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +49,17 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+
+// ============================
+// Data Protection (shared key ring for horizontal scaling)
+// ============================
+
+var dpKeysPath = builder.Configuration["DATA_PROTECTION_KEYS_PATH"]
+    ?? Path.Combine(Directory.GetCurrentDirectory(), "dp-keys");
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
+    .SetApplicationName("PromiseModelOnline.BFF");
 
 // ============================
 // Reverse proxy setup
@@ -96,7 +109,7 @@ builder.Services
         {
             OnRedirectToLogin = context =>
             {
-                if (IsAjax(context.Request))
+                if (BffHelpers.IsAjax(context.Request))
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return Task.CompletedTask;
@@ -108,7 +121,7 @@ builder.Services
 
             OnRedirectToAccessDenied = context =>
             {
-                if (IsAjax(context.Request))
+                if (BffHelpers.IsAjax(context.Request))
                 {
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return Task.CompletedTask;
@@ -217,53 +230,7 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
-
-// ============================
-// Auth endpoints
-// ============================
-
-app.MapGet("/login", async (HttpContext ctx) =>
-{
-    var returnUrl = ctx.Request.Query["returnUrl"].ToString();
-
-    if (!IsSafeLocalReturnUrl(returnUrl))
-    {
-        returnUrl = "/";
-    }
-
-    try
-    {
-        await ctx.ChallengeAsync("oidc", new AuthenticationProperties
-        {
-            RedirectUri = returnUrl
-        });
-    }
-    catch (Exception ex) when (ex is not OperationCanceledException)
-    {
-        var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "OIDC challenge failed — auth server may not be ready");
-
-        var env = ctx.RequestServices.GetRequiredService<IWebHostEnvironment>();
-        var message = env.IsDevelopment()
-            ? "Authentication service is starting up. Please wait a moment and try again."
-            : "A temporary error occurred. Please try again.";
-
-        ctx.Response.StatusCode = 503;
-        ctx.Response.ContentType = "text/plain";
-        await ctx.Response.WriteAsync(message);
-    }
-});
-
-app.MapGet("/logout", () =>
-{
-    return Results.SignOut(
-        new AuthenticationProperties
-        {
-            RedirectUri = "/"
-        },
-        authenticationSchemes: new[] { "cookie", "oidc" });
-});
+app.MapBffEndpoints();
 
 app.UseWebSockets();
 
@@ -279,7 +246,7 @@ app.MapReverseProxy(proxyPipeline =>
 
         if (!authenticateResult.Succeeded)
         {
-            if (IsAjax(context.Request))
+            if (BffHelpers.IsAjax(context.Request))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
@@ -303,34 +270,4 @@ app.MapReverseProxy(proxyPipeline =>
 
 app.Run();
 
-static bool IsAjax(HttpRequest request)
-{
-    return request.Headers["X-Requested-With"] == "XMLHttpRequest"
-        || request.Headers.Accept.Any(value =>
-            value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
-}
-
-static bool IsSafeLocalReturnUrl(string? returnUrl)
-{
-    if (string.IsNullOrWhiteSpace(returnUrl))
-    {
-        return false;
-    }
-
-    if (!returnUrl.StartsWith("/", StringComparison.Ordinal))
-    {
-        return false;
-    }
-
-    if (returnUrl.StartsWith("//", StringComparison.Ordinal))
-    {
-        return false;
-    }
-
-    if (returnUrl.StartsWith("/\\", StringComparison.Ordinal))
-    {
-        return false;
-    }
-
-    return true;
-}
+public partial class Program { }
