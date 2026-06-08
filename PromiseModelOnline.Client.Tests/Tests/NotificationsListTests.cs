@@ -1,50 +1,69 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class NotificationsListTests : PlaywrightTestBase
 {
-    public class NotificationsListTests : SeleniumTestBase
+    [Test]
+    public async Task NotificationsPage_ShowsNotificationList()
     {
-        [Test]
-        public void NotificationsPage_ShowsNotificationList()
+        await NavigateAsUser("/notifications");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            NavigateAsUser("/notifications");
+            var count = await Page.Locator("#notifications-list table tbody tr").CountAsync();
+            return count >= 1;
+        }, 10);
 
-            WaitUntil(d => d.FindElements(By.CssSelector("#notifications-list table tbody tr")).Count >= 1, 10);
-        }
+        Assert.That(found, Is.True);
+    }
 
-        [Test]
-        public void NotificationsPage_ShowsMarkAllReadButton()
+    [Test]
+    public async Task NotificationsPage_ShowsMarkAllReadButton()
+    {
+        await NavigateAsUser("/notifications");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            NavigateAsUser("/notifications");
-
-            WaitUntil(d =>
+            try
             {
-                var btn = d.FindElement(By.Id("mark-all-read"));
-                return btn.Displayed && btn.Text.Contains("Mark All as Read");
-            }, 10);
-        }
+                var btn = Page.Locator("#mark-all-read");
+                var visible = await btn.IsVisibleAsync();
+                var text = await btn.TextContentAsync();
+                return visible && text?.Contains("Mark All as Read") == true;
+            }
+            catch { return false; }
+        }, 10);
 
-        [Test]
-        public void NotificationsPage_UnreadRowHasUnreadClass()
+        Assert.That(found, Is.True);
+    }
+
+    [Test]
+    public async Task NotificationsPage_UnreadRowHasUnreadClass()
+    {
+        await NavigateAsUser("/notifications");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            NavigateAsUser("/notifications");
+            var count = await Page.Locator("#notifications-list tbody tr.unread").CountAsync();
+            return count == 2;
+        }, 10);
 
-            WaitUntil(d => d.FindElements(By.CssSelector("#notifications-list tbody tr.unread")).Count == 2, 10);
-        }
+        Assert.That(found, Is.True);
+    }
 
-        [Test]
-        public void NotificationsPage_AllRowsAreUnread()
+    [Test]
+    public async Task NotificationsPage_AllRowsAreUnread()
+    {
+        await NavigateAsUser("/notifications");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            NavigateAsUser("/notifications");
+            var rows = await Page.Locator("#notifications-list table tbody tr").CountAsync();
+            var unreadRows = await Page.Locator("#notifications-list tbody tr.unread").CountAsync();
+            return rows > 0 && rows == unreadRows;
+        }, 10);
 
-            WaitUntil(d =>
-            {
-                var rows = d.FindElements(By.CssSelector("#notifications-list table tbody tr"));
-                var unreadRows = d.FindElements(By.CssSelector("#notifications-list tbody tr.unread"));
-                return rows.Count > 0 && rows.Count == unreadRows.Count;
-            }, 10);
-        }
+        Assert.That(found, Is.True);
     }
 }

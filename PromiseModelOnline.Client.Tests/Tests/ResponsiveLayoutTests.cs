@@ -1,77 +1,76 @@
-using NUnit.Framework;
-using OpenQA.Selenium;
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
 
 [TestFixture]
-public class ResponsiveLayoutTests : ResponsiveTestBase
+public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
 {
     [Test]
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void HomePage_NoHorizontalScroll_AtAnyViewport(Viewport vp)
+    public async Task HomePage_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
-        EnsureLoggedIn(vp);
-        AssertNoHorizontalScroll();
-        AssertElementVisible(By.Id("home-cta-area"));
+        await EnsureLoggedInAsync(vp);
+        await AssertNoHorizontalScrollAsync();
+        await AssertElementVisibleAsync("#home-cta-area");
     }
 
     [Test]
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void ProjectsList_NoHorizontalScroll_AtAnyViewport(Viewport vp)
+    public async Task ProjectsList_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
-        EnsureLoggedIn(vp, "/projects");
-        NavigateSpaAndWait("/projects");
-        AssertNoHorizontalScroll();
-        AssertElementVisible(By.Id("project-list-table"));
+        await EnsureLoggedInAsync(vp, "/projects");
+        await NavigateSpaAsync("/projects");
+        await AssertNoHorizontalScrollAsync();
+        await AssertElementVisibleAsync("#project-list-table");
     }
 
     [Test]
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void StrideBoard_NoHorizontalScroll_AtAnyViewport(Viewport vp)
+    public async Task StrideBoard_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
-        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
-        AssertNoHorizontalScroll();
-        AssertElementVisible(By.Id("stride-board"));
+        await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+        await AssertNoHorizontalScrollAsync();
+        await AssertElementVisibleAsync("#stride-board");
     }
 
     [Test]
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void StrideBoard_EffortDropdown_VisibleOnMobile_HiddenOnDesktop(Viewport vp)
+    public async Task StrideBoard_EffortDropdown_VisibleOnMobile_HiddenOnDesktop(Viewport vp)
     {
-        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
-        var mobileEstimate = By.ClassName("estimate-dropdown-mobile");
-        var desktopEstimate = By.ClassName("estimate-dropdown");
-        AssertResponsiveElement(desktopEstimate, mobileEstimate, vp);
+        await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+        await WaitForSelectorAsync(".stride-header", 10);
+        await AssertResponsiveElementAsync(".estimate-dropdown", ".estimate-dropdown-mobile", vp);
     }
 
     [Test]
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void Navigation_NavbarCollapse_BehavesCorrectly(Viewport vp)
+    public async Task Navigation_NavbarCollapse_BehavesCorrectly(Viewport vp)
     {
-        EnsureLoggedIn(vp);
-        var toggler = By.ClassName("navbar-toggler");
-        var navMenu = By.Id("main-nav");
+        await EnsureLoggedInAsync(vp);
+
         if (vp == Viewport.Mobile)
         {
-            AssertElementVisible(toggler);
-            AssertElementNotVisible(By.CssSelector("#main-nav.collapse.show"));
+            await AssertElementVisibleAsync(".navbar-toggler");
+            await AssertElementNotVisibleAsync("#main-nav.collapse.show");
         }
         else
         {
-            var togglers = Driver.FindElements(toggler);
-            if (togglers.Count > 0)
-                Assert.That(togglers[0].Displayed, Is.False, "Navbar toggler should be hidden on desktop/tablet");
+            var togglerCount = await CountElementsAsync(".navbar-toggler");
+            if (togglerCount > 0)
+            {
+                var visible = await Page.Locator(".navbar-toggler").First.IsVisibleAsync();
+                Assert.That(visible, Is.False, "Navbar toggler should be hidden on desktop/tablet");
+            }
         }
     }
 
@@ -79,24 +78,24 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void HomePage_StatCards_StackOnMobile(Viewport vp)
+    public async Task HomePage_StatCards_StackOnMobile(Viewport vp)
     {
-        EnsureLoggedIn(vp);
-        var stats = Driver.FindElement(By.ClassName("home-stats"));
-        var statsWidth = stats.Size.Width;
-        var containerWidth = Driver.FindElement(By.Id("main-container")).Size.Width;
+        await EnsureLoggedInAsync(vp);
+        var stats = Page.Locator(".home-stats");
+        var container = Page.Locator("#main-container");
+
+        var statsBox = await stats.BoundingBoxAsync();
+        var containerBox = await container.BoundingBoxAsync();
 
         if (vp == Viewport.Mobile)
         {
-            // On mobile the stats grid should span nearly the full container width
-            Assert.That(statsWidth, Is.GreaterThan(containerWidth * 0.8),
+            Assert.That(statsBox!.Width, Is.GreaterThan(containerBox!.Width * 0.8),
                 "Stats grid should fill most of container width on mobile");
         }
         else
         {
-            // On larger screens the stats grid has 3 columns with gaps, so it should be wider than a single column
-            var singleColumnWidth = containerWidth / 3;
-            Assert.That(statsWidth, Is.GreaterThan(singleColumnWidth),
+            var singleColumnWidth = containerBox!.Width / 3;
+            Assert.That(statsBox!.Width, Is.GreaterThan(singleColumnWidth),
                 "Stats grid should be wider than a single column on desktop/tablet");
         }
     }
@@ -105,12 +104,12 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void StrideHeader_StacksOnMobile(Viewport vp)
+    public async Task StrideHeader_StacksOnMobile(Viewport vp)
     {
-        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
-        var header = Driver.FindElement(By.ClassName("stride-header"));
-        var flexDirection = ((IJavaScriptExecutor)Driver).ExecuteScript(
-            "return window.getComputedStyle(arguments[0]).flexDirection;", header)?.ToString() ?? string.Empty;
+        await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+        var header = Page.Locator(".stride-header").First;
+        var flexDirection = await header.EvaluateAsync<string?>("el => window.getComputedStyle(el).flexDirection");
+
         if (vp == Viewport.Mobile)
         {
             Assert.That(flexDirection, Is.EqualTo("column"),
@@ -122,25 +121,30 @@ public class ResponsiveLayoutTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void TouchTargets_MinimumSize_OnMobile(Viewport vp)
+    public async Task TouchTargets_MinimumSize_OnMobile(Viewport vp)
     {
-        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
+        await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
 
         if (vp == Viewport.Mobile)
         {
-            // On mobile, check that at least one visible interactive element meets minimum size
-            var visibleButtons = Driver.FindElements(By.CssSelector(".stride-card .btn, .stride-card select"))
-                .Where(e => e.Displayed).ToList();
+            var buttons = await Page.Locator(".stride-card .btn, .stride-card select").AllAsync();
+            var visibleButtons = new List<ILocator>();
+            foreach (var btn in buttons)
+            {
+                if (await btn.IsVisibleAsync())
+                    visibleButtons.Add(btn);
+            }
 
-            if (visibleButtons.Any())
+            if (visibleButtons.Count > 0)
             {
                 foreach (var btn in visibleButtons.Take(3))
                 {
-                    Assert.That(Math.Max(btn.Size.Width, btn.Size.Height), Is.GreaterThanOrEqualTo(38),
-                        $"Button '{btn.TagName}.{btn.GetAttribute("class")}' should be >= 38px touch target");
+                    var box = await btn.BoundingBoxAsync();
+                    var size = Math.Max(box!.Width, box.Height);
+                    Assert.That(size, Is.GreaterThanOrEqualTo(38),
+                        $"Button should be >= 38px touch target (got {box.Width}x{box.Height})");
                 }
             }
-            // If no visible buttons, the page might be collapsed — that's acceptable
         }
     }
 }

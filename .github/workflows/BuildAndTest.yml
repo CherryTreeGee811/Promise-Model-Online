@@ -76,7 +76,6 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./BffTestResults \
-            --os linux \
             --logger "console;verbosity=normal"
 
       - name: Run Auth Unit Tests
@@ -87,7 +86,6 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
-            --os linux \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~IntegrationTests"
 
@@ -99,7 +97,6 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./ApiTestResults \
-            --os linux \
             --logger "console;verbosity=normal"
 
       # ─── 3. Integration tests (in-memory, no Docker) ───
@@ -111,7 +108,6 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
-            --os linux \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
 
@@ -121,64 +117,33 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
 
-      - name: Smoke Test Client UI Test Environment
+      - name: Wait for Client (Nginx)
         shell: bash
         run: |
-          echo "Waiting for WireMock..."
-          WIREMOCK_READY=false
-          for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlinebffmock curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlinebffmock curl -k -s https://localhost:8010/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "WireMock is healthy"
-                WIREMOCK_READY=true
-                break
-              fi
-            fi
-            echo "WireMock not ready (attempt $i)..."
+          for i in $(seq 1 15); do
+            STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
             sleep 2
           done
-          if [ "$WIREMOCK_READY" = false ]; then
-            echo "ERROR: WireMock failed to become healthy within 20 seconds"
-            exit 1
-          fi
+          echo "ERROR: Client not healthy within 30s"
+          docker logs promisemodelonlineclient --tail 30 2>&1
+          exit 1
 
-          echo "Waiting for Client (Nginx)..."
-          CLIENT_READY=false
-          for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlineclient curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlineclient curl -k -s https://localhost:9000/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "Client is healthy"
-                CLIENT_READY=true
-                break
-              fi
-            fi
-            echo "Client not ready (attempt $i)..."
-            sleep 2
-          done
-          if [ "$CLIENT_READY" = false ]; then
-            echo "ERROR: Client failed to become healthy within 20 seconds"
-            exit 1
-          fi
-          
       - name: Run Client Tests
         shell: bash
         run: |
           mkdir -p ClientTestResults
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
           dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./ClientTestResults \
-            --os linux \
             --logger "console;verbosity=normal"
 
       - name: Teardown Client UI Test Environment
         if: always()
         shell: bash
-        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down --remove-orphans -v
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
       # ─── 5. E2E tests (full Docker stack with SQL Server, slowest) ───
 
@@ -228,7 +193,6 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./E2eTestResults \
-            --os linux \
             --logger "console;verbosity=normal"
 
       - name: Tear Down Production Services

@@ -1,33 +1,37 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class NotificationsTests : PlaywrightTestBase
 {
-    public class NotificationsTests : SeleniumTestBase
+    [Test]
+    public async Task Notifications_ShowsBadge_WhenUnreadExist()
     {
-        [Test]
-        public void Notifications_ShowsBadge_WhenUnreadExist()
+        await SetSessionCookie("owner-session");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            SetSessionCookie("owner-session");
+            var badge = Page.Locator("#notification-badge");
+            var visible = await badge.IsVisibleAsync();
+            var text = await badge.TextContentAsync();
+            return visible && text?.Trim() == "2";
+        }, 10);
 
-            WaitUntil(d =>
-            {
-                var badge = d.FindElement(By.Id("notification-badge"));
-                return badge.Displayed && badge.Text == "2";
-            }, 10);
-        }
+        Assert.That(found, Is.True);
+    }
 
-        [Test]
-        public void Notifications_HidesBadge_WhenNoUnread()
+    [Test]
+    public async Task Notifications_HidesBadge_WhenNoUnread()
+    {
+        await SetSessionCookie("nonowner-session");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            SetSessionCookie("nonowner-session");
+            var badge = Page.Locator("#notification-badge");
+            var visible = await badge.IsVisibleAsync();
+            return !visible;
+        }, 10);
 
-            WaitUntil(d =>
-            {
-                var badge = d.FindElement(By.Id("notification-badge"));
-                return !badge.Displayed;
-            }, 10);
-        }
+        Assert.That(found, Is.True);
     }
 }

@@ -1,20 +1,19 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class LogoutTests : PlaywrightTestBase
 {
-    public class LogoutTests : SeleniumTestBase
+    [Test]
+    public async Task LogoutLink_HrefPointsToGatewayLogout()
     {
-        [Test]
-        public void LogoutLink_HrefPointsToGatewayLogout()
-        {
-            SetSessionCookie("owner-session");
+        await SetSessionCookie("owner-session");
 
-            WaitForElement(By.Id("user-dropdown"), 5).Click();
+        await Page.Locator("#user-dropdown").ClickAsync();
 
-            var logoutLink = WaitForElement(By.Id("logout-link"), 5);
-            Assert.That(logoutLink.GetAttribute("href"), Does.Contain("/logout"));
-        }
+        var logoutLink = await WaitForSelectorAsync("#logout-link", 5);
+        var href = await logoutLink.GetAttributeAsync("href");
+
+        Assert.That(href, Does.Contain("/logout"));
     }
 }

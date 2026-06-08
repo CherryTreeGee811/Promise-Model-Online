@@ -1,42 +1,45 @@
-using NUnit.Framework;
-using OpenQA.Selenium;
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
 
 [TestFixture]
-public class AccessibilityTests : ResponsiveTestBase
+public class AccessibilityTests : ResponsivePlaywrightTestBase
 {
     private const string AxeLocalPath = "/js/axe.min.js";
 
-    private string RunAxeScan()
+    private async Task<string> RunAxeScanAsync()
     {
         try
         {
-            ((IJavaScriptExecutor)Driver).ExecuteScript(
-                "var s = document.createElement('script'); s.src = '" + AxeLocalPath + "'; s.async = false; s.onload = function() { window.__axeReady = true; }; document.head.appendChild(s);");
+            await Page.EvaluateAsync(@"
+                var s = document.createElement('script');
+                s.src = '" + AxeLocalPath + @"';
+                s.async = false;
+                s.onload = function() { window.__axeReady = true; };
+                document.head.appendChild(s);
+            ");
 
-            WaitUntil(d =>
+            await WaitUntilAsync(async () =>
             {
-                var ready = ((IJavaScriptExecutor)Driver).ExecuteScript("return window.__axeReady === true;");
-                return ready is true;
+                var ready = await Page.EvaluateAsync<bool?>("window.__axeReady === true");
+                return ready == true;
             }, 10);
 
-            // Use ExecuteAsyncScript to await the axe.run() promise
-            var result = ((IJavaScriptExecutor)Driver).ExecuteAsyncScript(@"
-                var callback = arguments[arguments.length - 1];
-                axe.run({
-                    runOnly: {
-                        type: 'tag',
-                        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
-                    },
-                    resultTypes: ['violations']
-                }).then(function(results) {
-                    callback(JSON.stringify(results.violations));
-                }).catch(function(err) {
-                    callback('[]');
+            var result = await Page.EvaluateAsync<string?>(@"() => {
+                return new Promise((resolve) => {
+                    axe.run({
+                        runOnly: {
+                            type: 'tag',
+                            values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+                        },
+                        resultTypes: ['violations']
+                    }).then(function(results) {
+                        resolve(JSON.stringify(results.violations));
+                    }).catch(function(err) {
+                        resolve('[]');
+                    });
                 });
-            ")?.ToString() ?? "[]";
+            }") ?? "[]";
 
             return result;
         }
@@ -51,10 +54,10 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void HomePage_NoAccessibilityViolations(Viewport vp)
+    public async Task HomePage_NoAccessibilityViolations(Viewport vp)
     {
-        EnsureLoggedIn(vp);
-        var violations = RunAxeScan();
+        await EnsureLoggedInAsync(vp);
+        var violations = await RunAxeScanAsync();
         AssertViolationCount(violations, "Home page");
     }
 
@@ -62,10 +65,10 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void ProjectsList_NoAccessibilityViolations(Viewport vp)
+    public async Task ProjectsList_NoAccessibilityViolations(Viewport vp)
     {
-        NavigateAsUser(vp, "/projects");
-        var violations = RunAxeScan();
+        await NavigateAsUserAsync(vp, "/projects");
+        var violations = await RunAxeScanAsync();
         AssertViolationCount(violations, "Projects list");
     }
 
@@ -73,10 +76,10 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void StrideBoard_NoAccessibilityViolations(Viewport vp)
+    public async Task StrideBoard_NoAccessibilityViolations(Viewport vp)
     {
-        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
-        var violations = RunAxeScan();
+        await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+        var violations = await RunAxeScanAsync();
         AssertViolationCount(violations, "Stride board");
     }
 
@@ -84,10 +87,10 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void ProjectGraph_NoAccessibilityViolations(Viewport vp)
+    public async Task ProjectGraph_NoAccessibilityViolations(Viewport vp)
     {
-        NavigateAsUser(vp, "/pmo_test/seeded-project/graph");
-        var violations = RunAxeScan();
+        await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/graph");
+        var violations = await RunAxeScanAsync();
         AssertViolationCount(violations, "Project graph");
     }
 
@@ -95,10 +98,10 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public void PromiseDetail_NoAccessibilityViolations(Viewport vp)
+    public async Task PromiseDetail_NoAccessibilityViolations(Viewport vp)
     {
-        NavigateAsUser(vp, "/pmo_test/seeded-project/promises/1");
-        var violations = RunAxeScan();
+        await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/promises/1");
+        var violations = await RunAxeScanAsync();
         AssertViolationCount(violations, "Promise detail");
     }
 
@@ -107,7 +110,6 @@ public class AccessibilityTests : ResponsiveTestBase
         if (violationsJson == "[]" || string.IsNullOrEmpty(violationsJson))
             return;
 
-        // Attach the raw violations JSON to the test output for debugging
         TestContext.Progress.WriteLine($"Accessibility violations on {pageLabel}: {violationsJson}");
         Assert.Fail($"Accessibility violations found on {pageLabel}. See test output for details.");
     }

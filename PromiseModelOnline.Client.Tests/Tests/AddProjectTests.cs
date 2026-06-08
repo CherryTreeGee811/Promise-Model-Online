@@ -1,103 +1,105 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class AddProjectTests : PlaywrightTestBase
 {
-    public class AddProjectTests : SeleniumTestBase
+    [Test]
+    public async Task AddProject_ShowsForm()
     {
-        [Test]
-        public void AddProject_ShowsForm()
+        await NavigateAsUser("/projects/add");
+
+        await WaitForSelectorAsync("#add-project-form", 5);
+
+        Assert.That(await IsVisibleAsync("#project-name-input"), Is.True);
+        Assert.That(await IsVisibleAsync("#project-description-input"), Is.True);
+        Assert.That(await IsVisibleAsync("#first-promise-input"), Is.True);
+        Assert.That(await IsVisibleAsync("#create-project-btn"), Is.True);
+        Assert.That(await IsVisibleAsync("#cancel-add-project-link"), Is.True);
+    }
+
+    [Test]
+    public async Task AddProject_EmptyName_ShowsValidationError()
+    {
+        await NavigateAsUser("/projects/add");
+
+        await WaitForSelectorAsync("#first-promise-input", 10);
+
+        await Page.EvaluateAsync(
+            "document.getElementById('add-project-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            NavigateAsUser("/projects/add");
-
-            WaitForElement(By.Id("add-project-form"), 5);
-
-            Assert.That(Driver.FindElement(By.Id("project-name-input")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("project-description-input")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("first-promise-input")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("create-project-btn")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("cancel-add-project-link")).Displayed, Is.True);
-        }
-
-        [Test]
-        public void AddProject_EmptyName_ShowsValidationError()
-        {
-            NavigateAsUser("/projects/add");
-
-            WaitForElement(By.Id("first-promise-input"), 10);
-
-            ((IJavaScriptExecutor)Driver).ExecuteScript(
-                "document.getElementById('add-project-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));");
-
-            WaitUntil(d =>
+            try
             {
-                try
-                {
-                    var el = d.FindElement(By.Id("error-text"));
-                    var text = el.Text ?? "";
-                    return text.Contains("required") || text.Contains("name");
-                }
-                catch { return false; }
-            }, 5);
-        }
+                var text = await Page.Locator("#error-text").TextContentAsync() ?? "";
+                return text.Contains("required") || text.Contains("name");
+            }
+            catch { return false; }
+        }, 5);
 
-        [Test]
-        public void AddProject_EmptyPromise_ShowsValidationError()
+        Assert.That(found, Is.True);
+    }
+
+    [Test]
+    public async Task AddProject_EmptyPromise_ShowsValidationError()
+    {
+        await NavigateAsUser("/projects/add");
+
+        await FillAsync("#project-name-input", "My Project", 10);
+        await Page.EvaluateAsync(
+            "document.getElementById('add-project-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            NavigateAsUser("/projects/add");
-
-            WaitForElement(By.Id("project-name-input"), 10).SendKeys("My Project");
-            ((IJavaScriptExecutor)Driver).ExecuteScript(
-                "document.getElementById('add-project-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));");
-
-            WaitUntil(d =>
+            try
             {
-                try
-                {
-                    var el = d.FindElement(By.Id("error-text"));
-                    var text = el.Text ?? "";
-                    return text.Contains("Product Promise") || text.Contains("required");
-                }
-                catch { return false; }
-            }, 5);
-        }
+                var text = await Page.Locator("#error-text").TextContentAsync() ?? "";
+                return text.Contains("Product Promise") || text.Contains("required");
+            }
+            catch { return false; }
+        }, 5);
 
-        [Test]
-        public void AddProject_CreatesSuccessfully()
-        {
-            NavigateAsUser("/projects/add");
+        Assert.That(found, Is.True);
+    }
 
-            WaitForElement(By.Id("project-name-input"), 5).SendKeys("My New Project");
-            Driver.FindElement(By.Id("project-description-input")).SendKeys("A test project");
-            Driver.FindElement(By.Id("first-promise-input")).SendKeys("As a user, manage projects efficiently");
-            ScrollToAndClick(By.Id("create-project-btn"), 5);
+    [Test]
+    public async Task AddProject_CreatesSuccessfully()
+    {
+        await NavigateAsUser("/projects/add");
 
-            WaitForUrlContains("/projects/", 10);
-            Assert.That(Driver.Url, Does.Contain("/projects/"));
-        }
+        await FillAsync("#project-name-input", "My New Project", 5);
+        await FillAsync("#project-description-input", "A test project");
+        await FillAsync("#first-promise-input", "As a user, manage projects efficiently");
+        await ClickAsync("#create-project-btn", 5);
 
-        [Test]
-        public void AddProject_Cancel_ReturnsToProjectList()
-        {
-            NavigateAsUser("/projects/add");
+        var contains = await WaitForUrlContainsAsync("/projects/", 10);
+        Assert.That(contains, Is.True);
+        Assert.That(Page.Url, Does.Contain("/projects/"));
+    }
 
-            WaitForElement(By.Id("cancel-add-project-link"), 5);
-            ScrollToAndClick(By.Id("cancel-add-project-link"), 5);
+    [Test]
+    public async Task AddProject_Cancel_ReturnsToProjectList()
+    {
+        await NavigateAsUser("/projects/add");
 
-            WaitForUrlContains("/projects", 10);
-            Assert.That(Driver.Url, Does.Not.Contain("/add"));
-        }
+        await WaitForSelectorAsync("#cancel-add-project-link", 5);
+        await ClickAsync("#cancel-add-project-link", 5);
 
-        [Test]
-        public void AddProject_HasImportSection()
-        {
-            NavigateAsUser("/projects/add");
+        var contains = await WaitForUrlContainsAsync("/projects", 10);
+        Assert.That(contains, Is.True);
+        Assert.That(Page.Url, Does.Not.Contain("/add"));
+    }
 
-            WaitForElement(By.Id("import-project-btn"), 5);
+    [Test]
+    public async Task AddProject_HasImportSection()
+    {
+        await NavigateAsUser("/projects/add");
 
-            Assert.That(Driver.FindElement(By.Id("import-project-btn")).Text, Does.Contain("Import"));
-            Assert.That(Driver.FindElement(By.Id("import-project-input")).Displayed, Is.True);
-        }
+        var importBtn = await WaitForSelectorAsync("#import-project-btn", 5);
+        var text = await importBtn.TextContentAsync();
+
+        Assert.That(text, Does.Contain("Import"));
+        Assert.That(await IsVisibleAsync("#import-project-input"), Is.True);
     }
 }

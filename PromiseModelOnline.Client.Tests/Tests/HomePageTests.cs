@@ -1,60 +1,57 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class HomePageTests : PlaywrightTestBase
 {
-    public class HomePageTests : SeleniumTestBase
+    [Test]
+    public async Task HomePage_ShowsTitle()
     {
-        [Test]
-        public void HomePage_ShowsTitle()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/");
 
-            var title = WaitForElement(By.CssSelector(".home-page h1"), 5);
-            Assert.That(title.Text, Does.Contain("Align Your Teams"));
-        }
+        var title = await WaitForSelectorAsync(".home-page h1", 5);
+        var text = await title.TextContentAsync();
 
-        [Test]
-        public void HomePage_AnonymousUser_ShowsLoginAndRegisterLinks()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/");
+        Assert.That(text, Does.Contain("Align Your Teams"));
+    }
 
-            var ctaArea = WaitForElement(By.Id("home-cta-area"), 5);
-            var loginLink = ctaArea.FindElement(By.CssSelector("a[href='/login']"));
-            var registerLink = ctaArea.FindElement(By.CssSelector("a[href='/account/register']"));
+    [Test]
+    public async Task HomePage_AnonymousUser_ShowsLoginAndRegisterLinks()
+    {
+        await Page.GotoAsync(BaseUrl + "/");
 
-            Assert.That(loginLink.Displayed, Is.True);
-            Assert.That(loginLink.Text, Does.Contain("Login"));
-            Assert.That(registerLink.Displayed, Is.True);
-            Assert.That(registerLink.Text, Does.Contain("Register"));
-        }
+        var ctaArea = await WaitForSelectorAsync("#home-cta-area", 5);
+        var loginLink = ctaArea.Locator("a[href='/login']");
+        var registerLink = ctaArea.Locator("a[href='/account/register']");
 
-        [Test]
-        public void HomePage_AuthenticatedUser_ShowsProjectAndTaskLinks()
-        {
-            NavigateAsUser("/");
+        Assert.That(await loginLink.IsVisibleAsync(), Is.True);
+        Assert.That(await loginLink.TextContentAsync(), Does.Contain("Login"));
+        Assert.That(await registerLink.IsVisibleAsync(), Is.True);
+        Assert.That(await registerLink.TextContentAsync(), Does.Contain("Register"));
+    }
 
-            WaitForElement(By.Id("home-cta-area"), 5);
+    [Test]
+    public async Task HomePage_AuthenticatedUser_ShowsProjectAndTaskLinks()
+    {
+        await NavigateAsUser("/");
 
-            Assert.That(Driver.FindElement(By.CssSelector("#home-cta-area a[href='/projects']")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.CssSelector("#home-cta-area a[href='/moments/my-tasks']")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.CssSelector("#home-cta-area a[href='/knowledge-base']")).Displayed, Is.True);
-        }
+        await WaitForSelectorAsync("#home-cta-area a[href='/projects']", 10);
+        await WaitForSelectorAsync("#home-cta-area a[href='/moments/my-tasks']", 5);
+        await WaitForSelectorAsync("#home-cta-area a[href='/knowledge-base']", 5);
+    }
 
-        [Test]
-        public void HomePage_ShowsStackCards()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/");
+    [Test]
+    public async Task HomePage_ShowsStackCards()
+    {
+        await Page.GotoAsync(BaseUrl + "/");
 
-            WaitForElement(By.CssSelector(".home-stack-card--promise"), 5);
-            WaitForElement(By.CssSelector(".home-stack-card--epic"), 5);
-            WaitForElement(By.CssSelector(".home-stack-card--journey"), 5);
-            WaitForElement(By.CssSelector(".home-stack-card--flow"), 5);
-            WaitForElement(By.CssSelector(".home-stack-card--moment"), 5);
+        await WaitForSelectorAsync(".home-stack-card--promise", 5);
+        await WaitForSelectorAsync(".home-stack-card--epic", 5);
+        await WaitForSelectorAsync(".home-stack-card--journey", 5);
+        await WaitForSelectorAsync(".home-stack-card--flow", 5);
+        await WaitForSelectorAsync(".home-stack-card--moment", 5);
 
-            Assert.That(Driver.FindElement(By.CssSelector(".home-stack-card--promise h3")).Text, Is.EqualTo("Promise"));
-            Assert.That(Driver.FindElement(By.CssSelector(".home-stack-card--moment h3")).Text, Is.EqualTo("Moment"));
-        }
+        Assert.That(await GetTextContentAsync(".home-stack-card--promise h3"), Is.EqualTo("Promise"));
+        Assert.That(await GetTextContentAsync(".home-stack-card--moment h3"), Is.EqualTo("Moment"));
     }
 }

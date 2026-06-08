@@ -4,53 +4,14 @@ services:
     hostname: localhost
     ports:
       - "9000:9000/tcp"
-    depends_on:
-      promisemodelonline.bff:
-        condition: service_healthy
-      promisemodelonline.auth:
-        condition: service_healthy
     networks:
       - promisemodelonline-client-ui-test-net
     build:
       context: ../..
       dockerfile: PromiseModelOnline.Client/Dockerfile
-
-  promisemodelonline.bff:
-    image: wiremock/wiremock:latest
-    container_name: promisemodelonlinebffmock
-    ports:
-      - "8010:8010/tcp"
-    command: >
-      --https-port 8010
-      --verbose
     volumes:
-      - ../../PromiseModelOnline.Client.Tests/wiremock-bff/mappings:/home/wiremock/mappings:ro
-      - ../../PromiseModelOnline.Client.Tests/wiremock-bff/__files:/home/wiremock/__files:ro
-    networks:
-      - promisemodelonline-client-ui-test-net
-    healthcheck:
-      test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-
-  promisemodelonline.auth:
-    image: wiremock/wiremock:latest
-    container_name: promisemodelonlineauthmock
-    ports:
-      - "8060:8060/tcp"
-    command: >
-      --https-port 8060
-      --verbose
-    volumes:
-      - ../../PromiseModelOnline.Client.Tests/wiremock-auth/mappings:/home/wiremock/mappings:ro
-    networks:
-      - promisemodelonline-client-ui-test-net
-    healthcheck:
-      test: ["CMD", "curl", "-kf", "https://localhost:8060/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
+      - ./nginx-test.conf:/etc/nginx/nginx.conf
+      - ./default-test.conf:/etc/nginx/conf.d/default.conf
 
 networks:
   promisemodelonline-client-ui-test-net:
