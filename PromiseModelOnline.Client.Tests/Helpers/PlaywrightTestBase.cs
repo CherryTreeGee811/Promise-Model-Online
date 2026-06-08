@@ -37,7 +37,8 @@ public abstract class PlaywrightTestBase
 
             Context = await _browser.NewContextAsync(new BrowserNewContextOptions
             {
-                IgnoreHTTPSErrors = true
+                IgnoreHTTPSErrors = true,
+                ViewportSize = new ViewportSize { Width = 1280, Height = 720 }
             });
 
             Page = await Context.NewPageAsync();
