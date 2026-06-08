@@ -1,8 +1,8 @@
-import { getProjectPermissions, inviteUserToProject, revokePermission } from './api.mjs';
+import { getPermissions, inviteUser, removePermission } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyTableRow } from '../utils/empty-table.mjs';
 
-export function loadSharePage(projectId, contentDiv) {
+export function loadSharePage(owner, project, contentDiv) {
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
     const successEl = document.getElementById('success-text');
@@ -16,7 +16,7 @@ export function loadSharePage(projectId, contentDiv) {
             if (!Number.isFinite(id)) return;
             if (!confirm('Revoke this permission?')) return;
             try {
-                await revokePermission(id);
+                await removePermission(owner, project, id);
                 const y = window.scrollY;
                 btn.closest('tr')?.remove();
                 successEl.textContent = 'Permission revoked.';
@@ -32,7 +32,7 @@ export function loadSharePage(projectId, contentDiv) {
 
     async function refreshPermissions() {
             try {
-                const permissions = await getProjectPermissions(projectId);
+                const permissions = await getPermissions(owner, project);
                 loadingEl.classList.add('d-none');
                 errorEl.classList.add('d-none');
                 successEl.classList.add('d-none');
@@ -85,7 +85,7 @@ export function loadSharePage(projectId, contentDiv) {
                 const level = document.getElementById('invite-level').value;
                 if (!email) return;
                 try {
-                    const created = await inviteUserToProject(email, projectId, level);
+                    const created = await inviteUser(owner, project, { email, level });
                     const tbody = section.querySelector('table.promisemodel-table tbody');
                     if (tbody && created) {
                         const y = window.scrollY;

@@ -5,7 +5,7 @@
   "newScenarioState": "AfterPost",
   "request": {
     "method": "POST",
-    "urlPath": "/api/comments"
+    "urlPath": "/api/projects/pmo_test/seeded-project/comments"
   },
   "response": {
     "status": 200,

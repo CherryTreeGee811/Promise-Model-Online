@@ -13,7 +13,9 @@ namespace PromiseModelOnline.Api.DAL
 
         public async Task<IEnumerable<Project>> GetProjectsOwnedByUserAsync(int userId)
         {
-            return await FindAsync(p => p.OwnerId == userId);
+            return await _context.Set<Project>()
+                .Where(p => p.OwnerId == userId)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Promise>> GetProductPromisesByProjectAsync(int projectId)
@@ -23,6 +25,13 @@ namespace PromiseModelOnline.Api.DAL
                 .SelectMany(project => project.ProductPromises)
                 .OrderBy(promise => promise.DisplayOrder)
                 .ToListAsync();
+        }
+
+        public async Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug)
+        {
+            return await _context.Set<Project>()
+                .Include(p => p.Owner)
+                .FirstOrDefaultAsync(p => p.Owner.Slug == ownerSlug && p.Slug == projectSlug);
         }
     }
 }

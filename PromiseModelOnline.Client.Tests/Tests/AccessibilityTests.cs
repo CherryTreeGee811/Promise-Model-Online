@@ -75,7 +75,7 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Mobile)]
     public void StrideBoard_NoAccessibilityViolations(Viewport vp)
     {
-        NavigateAsUser(vp, "/projects/1/strides");
+        NavigateAsUser(vp, "/pmo_test/seeded-project/strides");
         var violations = RunAxeScan();
         AssertViolationCount(violations, "Stride board");
     }
@@ -86,7 +86,7 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Mobile)]
     public void ProjectGraph_NoAccessibilityViolations(Viewport vp)
     {
-        NavigateAsUser(vp, "/projects/1/graph");
+        NavigateAsUser(vp, "/pmo_test/seeded-project/graph");
         var violations = RunAxeScan();
         AssertViolationCount(violations, "Project graph");
     }
@@ -97,7 +97,7 @@ public class AccessibilityTests : ResponsiveTestBase
     [TestCase(Viewport.Mobile)]
     public void PromiseDetail_NoAccessibilityViolations(Viewport vp)
     {
-        NavigateAsUser(vp, "/promises/1");
+        NavigateAsUser(vp, "/pmo_test/seeded-project/promises/1");
         var violations = RunAxeScan();
         AssertViolationCount(violations, "Promise detail");
     }

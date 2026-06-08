@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -9,55 +8,41 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
-    public class ProjectsController : GenericController<Project, ProjectDTO>
+    [Route("api/projects")]
+    public class UserProjectsController : ControllerBase
     {
         private readonly IProjectService _projectService;
         private readonly IUserRepository _userRepository;
-        private readonly IPermissionService _permissionService;
-        private readonly IGenericService<Promise> _promiseService;
-        private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
-        private readonly IProjectExportService _projectExportService;
+        private readonly IGenericMapper<Project, ProjectDTO> _mapper;
+        private readonly IGenericService<Project> _service;
         private readonly IProjectImportService _projectImportService;
         private readonly IProjectImportValidationService _projectImportValidationService;
-        private readonly IPromiseModelOnlineContext _context;
 
-        public ProjectsController(
+        public UserProjectsController(
             IProjectService projectService,
-            IGenericMapper<Project, ProjectDTO> mapper,
             IUserRepository userRepository,
-            IPermissionService permissionService,
-            IGenericService<Promise> promiseService,
-            IGenericMapper<Promise, PromiseDTO> promiseMapper,
-            IProjectExportService projectExportService,
+            IGenericMapper<Project, ProjectDTO> mapper,
+            IGenericService<Project> service,
             IProjectImportService projectImportService,
-            IProjectImportValidationService projectImportValidationService,
-            IPromiseModelOnlineContext context)
-            : base(projectService, mapper)
+            IProjectImportValidationService projectImportValidationService)
         {
             _projectService = projectService;
             _userRepository = userRepository;
-            _permissionService = permissionService;
-            _promiseService = promiseService;
-            _promiseMapper = promiseMapper;
-            _projectExportService = projectExportService;
+            _mapper = mapper;
+            _service = service;
             _projectImportService = projectImportService;
             _projectImportValidationService = projectImportValidationService;
-            _context = context;
         }
 
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public override async Task<ActionResult<IEnumerable<ProjectDTO>>> GetAll()
+        public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetAll()
         {
             var user = await GetCurrentUserAsync();
             if (user is null)
@@ -72,189 +57,30 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Returns the project owner plus all users who have any permission on this project.
-        /// </summary>
-        [Authorize(Policy = "projects.read")]
-        [HttpGet("{id}/members")]
-        public async Task<ActionResult<IEnumerable<ProjectMemberDTO>>> GetMembers(int id)
-        {
-            var user = await GetCurrentUserAsync();
-            if (user is null) return Unauthorized();
-
-            var members = await _projectService.GetProjectMembersAsync(id);
-            return Ok(members);
-        }
-
-        [Authorize(Policy = "projects.read")]
-        [HttpGet("{id}/promises")]
-        public async Task<ActionResult<IEnumerable<PromiseDTO>>> GetProjectPromises(int id)
-        {
-            var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
-
-            var promises = await _projectService.GetProductPromisesAsync(id);
-            var result = promises
-                .OrderBy(promise => promise.DisplayOrder)
-                .Select(promise => _promiseMapper.Map(promise, _promiseService))
-                .ToList();
-
-            return Ok(result);
-        }
-
-        [Authorize(Policy = "projects.read")]
-        [HttpGet("{id}/entity-map")]
-        public async Task<ActionResult<IEnumerable<object>>> GetEntityMap(int id)
-        {
-            var entityMap = new List<object>();
-
-            var promises = await _context.Promises
-                .Where(p => p.ProjectId == id)
-                .Select(p => new { EntityType = "promise", p.Id, p.SequenceNumber })
-                .ToListAsync();
-            entityMap.AddRange(promises);
-
-            var promiseIds = promises.Select(p => p.Id).ToList();
-
-            var epics = await _context.Epics
-                .Where(e => promiseIds.Contains(e.ProductPromiseId))
-                .Select(e => new { EntityType = "epic", e.Id, e.SequenceNumber })
-                .ToListAsync();
-            entityMap.AddRange(epics);
-
-            var epicIds = epics.Select(e => e.Id).ToList();
-
-            var journeys = await _context.Journeys
-                .Where(j => epicIds.Contains(j.EpicId))
-                .Select(j => new { EntityType = "journey", j.Id, j.SequenceNumber })
-                .ToListAsync();
-            entityMap.AddRange(journeys);
-
-            var journeyIds = journeys.Select(j => j.Id).ToList();
-
-            var flows = await _context.Flows
-                .Where(f => journeyIds.Contains(f.JourneyId))
-                .Select(f => new { EntityType = "flow", f.Id, f.SequenceNumber })
-                .ToListAsync();
-            entityMap.AddRange(flows);
-
-            var flowIds = flows.Select(f => f.Id).ToList();
-
-            var moments = await _context.Moments
-                .Where(m => flowIds.Contains(m.FlowId))
-                .Select(m => new { EntityType = "moment", m.Id, m.SequenceNumber })
-                .ToListAsync();
-            entityMap.AddRange(moments);
-
-            return Ok(entityMap);
-        }
-
-        private async Task<User?> GetCurrentUserAsync()
-        {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value
-                     ?? User.FindFirst("email")?.Value;
-            if (string.IsNullOrEmpty(email)) return null;
-
-            var username = User.FindFirst("nameid")?.Value;
-            return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
-        }
-
-        [Authorize(Policy = "projects.read")]
-        [HttpGet("{projectId}/my-permission")]
-        public async Task<ActionResult<string>> GetMyPermission(int projectId)
-        {
-            try
-            {
-                var email = User.FindFirstValue(ClaimTypes.Email);
-                if (string.IsNullOrEmpty(email))
-                    return Unauthorized();
-
-                var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
-
-                var permission = await _permissionService.GetUserPermissionAsync(user.Id, projectId);
-
-                if (permission == null)
-                    return NoContent();
-
-                return Ok(permission.ToString());
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        // Create endpoint that accepts a lightweight DTO so clients don't have to send Owner/OwnerId.
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
-        public async Task<ActionResult<ProjectDTO>> CreateFromDto([FromBody] DTOs.ProjectCreateDTO dto)
+        public async Task<ActionResult<ProjectDTO>> CreateFromDto([FromBody] ProjectCreateDTO dto)
         {
             var user = await GetCurrentUserAsync();
             if (user is null) return Unauthorized();
 
             if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Project name is missing");
 
+            var slug = await _projectService.GenerateProjectSlugAsync(dto.Name, user.Id);
+
             var project = new Project
             {
                 Name = dto.Name,
+                Slug = slug,
                 Description = dto.Description,
                 OwnerId = user.Id
             };
 
             await _service.AddAsync(project);
-            return CreatedAtAction(nameof(GetById), new { id = project.Id }, _mapper.Map(project, _service));
-        }
+            var loaded = await _projectService.GetByOwnerAndSlugAsync(user.Slug, slug);
 
-        [Authorize(Policy = "projects.write")]
-        [HttpPatch("{id}/details")]
-        public async Task<ActionResult<ProjectDTO>> UpdateDetails(int id, [FromBody] UpdateProjectDetailsRequestDTO request)
-        {
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (string.IsNullOrWhiteSpace(request.Name))
-                return BadRequest("Project title is required.");
-
-            var project = await _service.GetByIdAsync(id);
-            if (project is null)
-                return NotFound();
-
-            project.Name = request.Name.Trim();
-            project.Description = string.IsNullOrWhiteSpace(request.Description)
-                ? null
-                : request.Description.Trim();
-
-            await _service.UpdateAsync(project);
-            return Ok(_mapper.Map(project, _service));
-        }
-
-        [Authorize(Policy = "projects.read")]
-        [HttpGet("{id}/export")]
-        public async Task<IActionResult> Export(int id)
-        {
-            var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
-
-            var accessibleProjects = await _projectService.GetAccessibleProjectsAsync(user.Id);
-            if (!accessibleProjects.Any(project => project.Id == id))
-                return Forbid();
-
-            try
-            {
-                var exportDocument = await _projectExportService.BuildExportAsync(id);
-                var json = JsonSerializer.Serialize(exportDocument, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                return File(Encoding.UTF8.GetBytes(json), "application/json", $"project-{id}-export.json");
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
+            var dtoResult = _mapper.Map(loaded ?? project, _service);
+            return CreatedAtAction(nameof(GetAll), null, dtoResult);
         }
 
         [Authorize(Policy = "projects.write")]
@@ -281,9 +107,17 @@ namespace PromiseModelOnline.Api.Controllers
             }
 
             var result = await _projectImportService.ImportAsync(validation.Document!, user.Id);
-            return CreatedAtAction(nameof(GetById), new { id = result.ProjectId }, result);
+            return CreatedAtAction(nameof(GetAll), result);
         }
 
-        // Diagnostic endpoint removed. Temporary debug method rolled back.
+        private async Task<User?> GetCurrentUserAsync()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
+                     ?? User.FindFirst("email")?.Value;
+            if (string.IsNullOrEmpty(email)) return null;
+
+            var username = User.FindFirst("nameid")?.Value;
+            return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        }
     }
 }

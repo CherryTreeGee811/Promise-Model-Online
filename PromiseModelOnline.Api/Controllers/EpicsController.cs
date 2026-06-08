@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class EpicsController : GenericController<Epic, EpicDTO>
     {
         private readonly IEpicService _epicService;
@@ -37,12 +37,7 @@ namespace PromiseModelOnline.Api.Controllers
             if (request is null) return BadRequest("Request is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-            var projectId = await _context.Promises
-                .Where(p => p.Id == request.ProductPromiseId)
-                .Select(p => p.ProjectId)
-                .FirstAsync();
-
-            var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+            var nextSeq = await _context.GetNextEpicSequenceAsync(request.ProductPromiseId);
 
             var epic = new Epic
             {

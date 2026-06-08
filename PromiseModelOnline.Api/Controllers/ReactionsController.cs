@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/reactions")]
     public class ReactionsController : ControllerBase
     {
         private readonly IReactionService _reactionService;

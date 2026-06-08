@@ -1,10 +1,10 @@
 import { navigate } from '../router.mjs';
-import { getProjectAuditHistory, getProjectById } from './api.mjs';
+import { getAuditEvents, getProject } from './api.mjs';
 import { getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
 
 const PAGE_SIZE = 25;
 
-export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, projectId) {
+export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, project) {
     const titleEl = document.getElementById('project-title');
     const errorEl = document.getElementById('error-text');
     const listEl = document.getElementById('audit-history-list');
@@ -24,12 +24,12 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, projectId
 
     ensureModal();
 
-    async function loadProject() {
+    async function loadProjectName() {
         try {
-            const project = await getProjectById(projectId);
-            titleEl.textContent = project?.name ? `${project.name} activity` : `Project ${projectId} activity`;
+            const projectData = await getProject(owner, project);
+            titleEl.textContent = projectData?.name ? `${projectData.name} activity` : `Project ${owner}/${project} activity`;
         } catch {
-            titleEl.textContent = `Project ${projectId} activity`;
+            titleEl.textContent = `Project ${owner}/${project} activity`;
         }
     }
 
@@ -117,7 +117,7 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, projectId
 
         try {
             skip = (currentPage - 1) * PAGE_SIZE;
-            const { items, totalCount: total } = await getProjectAuditHistory(projectId, PAGE_SIZE, skip);
+            const { items, totalCount: total } = await getAuditEvents(owner, project, PAGE_SIZE, skip);
             totalCount = total;
             listEl.innerHTML = renderAuditTable(items, { showEntity: true });
             bindAuditDetailLinks(items);
@@ -146,9 +146,9 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, projectId
         });
     }
 
-    loadProject().then(() => loadEntries(true));
+    loadProjectName().then(() => loadEntries(true));
 
     backBtn.addEventListener('click', () => {
-        navigate(`/projects/${projectId}/settings`, navContentDiv, contentDiv);
+        navigate(`/${owner}/${project}/settings`, navContentDiv, contentDiv);
     });
 }

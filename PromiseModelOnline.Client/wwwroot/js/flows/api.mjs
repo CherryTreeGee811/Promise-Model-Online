@@ -1,7 +1,8 @@
 import { apiGet, apiPost, apiPut, apiPatch } from '../api.mjs';
 
-export const getFlowById = flowId => apiGet(`/api/flows/${flowId}`);
-export const getMomentsByFlow = flowId => apiGet(`/api/moments?flowId=${flowId}`);
-export const addFlow = flow => apiPost('/api/flows', flow);
-export const updateFlow = flow => apiPut(`/api/flows/${flow.id}`, flow);
-export const updateFlowDescription = (flowId, description) => apiPatch(`/api/flows/${flowId}/description`, { description });
+export const getFlow = (owner, project, flowSeq) => apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/flows/${flowSeq}`);
+export const getFlowById = (owner, project, id) => apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/flows/by-id/${id}`);
+export const getMoments = (owner, project, flowSeq) => apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?flowSeq=${flowSeq}`);
+export const createFlow = (owner, project, data) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/flows/create`, data);
+export const updateFlow = (owner, project, flowSeq, data) => apiPut(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/flows/${flowSeq}`, data);
+export const updateFlowDescription = (owner, project, flowSeq, description) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/flows/${flowSeq}/description`, { description });

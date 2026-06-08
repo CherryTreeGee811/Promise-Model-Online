@@ -65,13 +65,33 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         DbSet<AuditEvent> AuditEvents { get; set; }
 
         /// <summary>
-        /// Gets or sets the DbSet for project-scoped sequence counters.
+        /// Gets or sets the DbSet for entity-scoped sequence counters.
         /// </summary>
-        DbSet<ProjectSequence> ProjectSequences { get; set; }
+        DbSet<EntitySequence> EntitySequences { get; set; }
 
         /// <summary>
-        /// Atomically allocates the next sequence number for a project.
+        /// Atomically allocates the next sequence number for a promise under a project.
         /// </summary>
-        Task<int> GetNextSequenceNumberAsync(int projectId);
+        Task<int> GetNextPromiseSequenceAsync(int projectId);
+
+        /// <summary>
+        /// Atomically allocates the next sequence number for an epic under a promise.
+        /// </summary>
+        Task<int> GetNextEpicSequenceAsync(int promiseId);
+
+        /// <summary>
+        /// Atomically allocates the next sequence number for a journey under an epic.
+        /// </summary>
+        Task<int> GetNextJourneySequenceAsync(int epicId);
+
+        /// <summary>
+        /// Atomically allocates the next sequence number for a flow under a journey.
+        /// </summary>
+        Task<int> GetNextFlowSequenceAsync(int journeyId);
+
+        /// <summary>
+        /// Atomically allocates the next sequence number for a moment under a flow.
+        /// </summary>
+        Task<int> GetNextMomentSequenceAsync(int flowId);
     }
 }

@@ -3,10 +3,12 @@ import { escapeHtml } from './html.mjs';
 
 export const entityLookupMap = {};
 
-export async function loadEntityLookupMap(parentType, parentId) {
+export async function loadEntityLookupMap(parentType, parentId, owner, project) {
     try {
         const entities = await apiGet(`/api/comments/entity-map?parentType=${parentType}&parentId=${parentId}`);
         Object.keys(entityLookupMap).forEach(k => delete entityLookupMap[k]);
+        entityLookupMap._owner = owner ?? null;
+        entityLookupMap._project = project ?? null;
         if (Array.isArray(entities)) {
             for (const e of entities) {
                 entityLookupMap[`${e.entityType}-${e.sequenceNumber}`] = {
@@ -34,11 +36,20 @@ export function formatCommentText(text) {
     html = html.replace(/#(promise|epic|journey|flow|moment)-(\d+)/g, (match, type, num) => {
         const key = `${type}-${num}`;
         const entry = entityLookupMap[key];
+        const owner = entityLookupMap._owner;
+        const project = entityLookupMap._project;
+        const route = `${type}s`;
         if (entry != null) {
             const emoji = statusIcon(entry.statusColor);
-            return `<a href="/${type}s/${entry.dbId}" class="promise-ref">${match} ${emoji}</a>`;
+            if (owner && project) {
+                return `<a href="/${owner}/${project}/${route}/${num}" class="promise-ref">${match} ${emoji}</a>`;
+            }
+            return `<a href="/${route}/${entry.dbId}" class="promise-ref">${match} ${emoji}</a>`;
         }
-        return `<a href="/${type}s/${num}" class="promise-ref promise-ref--legacy">${match}</a>`;
+        if (owner && project) {
+            return `<a href="/${owner}/${project}/${route}/${num}" class="promise-ref promise-ref--legacy">${match}</a>`;
+        }
+        return `<a href="/${route}/${num}" class="promise-ref promise-ref--legacy">${match}</a>`;
     });
     html = html.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
     return html;

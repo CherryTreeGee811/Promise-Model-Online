@@ -2,9 +2,9 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/journeys",
+    "urlPath": "/api/projects/pmo_test/seeded-project/journeys",
     "queryParameters": {
-      "epicId": { "equalTo": "1" }
+      "epicSeq": { "equalTo": "1" }
     },
     "headers": {
       "Cookie": { "contains": "__Host-pmo.session=owner-session" }

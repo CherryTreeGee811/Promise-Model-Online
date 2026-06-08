@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class FlowsController : GenericController<Flow, FlowDTO>
     {
         private readonly IFlowService _flowService;
@@ -37,12 +37,7 @@ namespace PromiseModelOnline.Api.Controllers
             if (request is null) return BadRequest("Request is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-            var projectId = await _context.Journeys
-                .Where(j => j.Id == request.JourneyId)
-                .Select(j => j.Epic.ProductPromise.ProjectId)
-                .FirstAsync();
-
-            var nextSeq = await _context.GetNextSequenceNumberAsync(projectId);
+            var nextSeq = await _context.GetNextFlowSequenceAsync(request.JourneyId);
 
             var flow = new Flow
             {

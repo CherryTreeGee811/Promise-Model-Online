@@ -10,7 +10,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphPage_LoadsSuccessfully()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         var graphContent = WaitForElement(By.Id("graph-content"), 10);
         Assert.That(graphContent.Displayed, Is.True);
@@ -22,7 +22,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphPage_ShowsZoomControls()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         WaitForElement(By.Id("graph-content"), 10);
 
@@ -40,7 +40,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphZoomControls_MeetTouchTargetSize()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
         WaitForElement(By.Id("graph-content"), 10);
 
         foreach (var id in new[] { "graph-zoom-in", "graph-zoom-out", "graph-zoom-reset", "graph-fullscreen-btn" })
@@ -56,7 +56,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphZoomControls_HaveAccessibleLabels()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
         WaitForElement(By.Id("graph-content"), 10);
 
         Assert.That(Driver.FindElement(By.Id("graph-zoom-in")).GetAttribute("aria-label"), Is.EqualTo("Zoom in"));
@@ -68,7 +68,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphLoadingIndicator_ShowsThenHides()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         WaitUntil(d =>
         {
@@ -84,7 +84,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphPage_ShowsFilterBar()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         var filterBar = WaitForElement(By.Id("graph-filter-bar"), 10);
         Assert.That(filterBar.Displayed, Is.True);
@@ -93,7 +93,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphPage_ShowsFilterSummary()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         WaitUntil(d =>
         {
@@ -109,7 +109,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphZoomIn_TransformsGraph()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         IWebElement? svgGroup = null;
         WaitUntil(d =>
@@ -135,7 +135,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphZoomReset_ClearsUserTransform()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         IWebElement? svgGroup = null;
         WaitUntil(d =>
@@ -168,7 +168,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphFullscreenButton_HasCorrectInitialState()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
         WaitForElement(By.Id("graph-content"), 10);
 
         var btn = Driver.FindElement(By.Id("graph-fullscreen-btn"));
@@ -182,7 +182,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphFullscreenButton_IsInToolbar()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
         WaitForElement(By.Id("graph-content"), 10);
 
         var toolbar = Driver.FindElement(By.Id("graph-zoom-controls"));
@@ -198,7 +198,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphZoomOut_TransformsGraph()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         IWebElement? svgGroup = null;
         WaitUntil(d =>
@@ -224,7 +224,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphNode_HasCardElements()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         WaitUntil(d =>
         {
@@ -240,7 +240,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphNodeCards_HaveAccentColors()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         WaitUntil(d =>
         {
@@ -256,7 +256,7 @@ public class GraphZoomTests : SeleniumTestBase
     [Test]
     public void GraphNode_LinksToDetailPage()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
 
         IWebElement? graphLink = null;
         WaitUntil(d =>
@@ -274,13 +274,13 @@ public class GraphZoomTests : SeleniumTestBase
         var href = ((IJavaScriptExecutor)Driver).ExecuteScript(
             "return arguments[0].getAttribute('href') || arguments[0].getAttributeNS('http://www.w3.org/1999/xlink', 'href');",
             graphLink!) as string;
-        Assert.That(href, Does.Contain("graphProjectId=1"));
+        Assert.That(href, Does.Contain("/pmo_test/seeded-project/"));
     }
 
     [Test]
     public void Graph_NoConsoleErrors()
     {
-        NavigateAsUser("/projects/1/graph");
+        NavigateAsUser("/pmo_test/seeded-project/graph");
         WaitForElement(By.Id("graph-content"), 10);
         Thread.Sleep(1000);
 

@@ -1,23 +1,24 @@
 import { apiGet, apiGetList, apiPost, apiPatch } from '../api.mjs';
 
-export const getStridesByIteration = iterationId => apiGetList(`/api/strides?iterationId=${iterationId}`);
-export const getAllStrides = () => apiGetList('/api/strides');
-export const getMomentsByStride = strideId => apiGetList(`/api/moments?strideId=${strideId}`);
-export const getBacklogMoments = projectId => apiGetList(`/api/moments?projectId=${projectId}&unassigned=true`);
-export const getMomentsByIteration = (iterationId, unassigned = false) => apiGetList(`/api/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`);
-export const getIterationsByProject = projectId => apiGetList(`/api/iterations?projectId=${projectId}`);
+export const getStridesByIteration = (owner, project, iterationId) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides?iterationId=${iterationId}`);
+export const getStrides = (owner, project) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides`);
+export const getMomentsByStride = (owner, project, strideId) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?strideId=${strideId}`);
+export const getUnassignedMoments = (owner, project) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?unassigned=true`);
+export const getMomentsByIteration = (owner, project, iterationId, unassigned = false) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`);
+export const getIterations = (owner, project) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`);
 
-export const createStride = stride => apiPost('/api/strides', stride);
+export const createStride = (owner, project, data) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides`, data);
 
-export async function getProjectMembers(projectId) {
-    const res = await apiGet(`/api/projects/${projectId}/members`);
+export async function getProjectMembers(owner, project) {
+    const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
     return res ?? [];
 }
 
-export async function getMyPermission(projectId) {
-    const res = await apiGet(`/api/projects/${projectId}/my-permission`);
+export async function getMyPermission(owner, project) {
+    const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
     return res ?? null;
 }
 
-export const progressStride = strideId => apiPatch(`/api/strides/${strideId}`, { progressUnfinishedMoments: true });
-export const sendDeadlineNotifications = () => apiPost('/api/deadline-notification-runs', {});
+export const updateStride = (owner, project, strideId, data) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}`, data);
+export const progressStride = (owner, project, strideId) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}/progress`);
+export const triggerDeadlineNotificationRuns = () => apiPost('/api/deadline-notification-runs', {});

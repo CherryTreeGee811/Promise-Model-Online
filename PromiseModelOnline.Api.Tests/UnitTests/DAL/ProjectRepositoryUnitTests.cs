@@ -26,9 +26,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var projects = new List<Project>
             {
-                new Project { Id = 1, Name = "Alpha", OwnerId = 100 },
-                new Project { Id = 2, Name = "Beta", OwnerId = 200 },
-                new Project { Id = 3, Name = "Gamma", OwnerId = 100 }
+                new Project { Id = 1, Name = "Alpha", Slug = "alpha", OwnerId = 100 },
+                new Project { Id = 2, Name = "Beta", Slug = "beta", OwnerId = 200 },
+                new Project { Id = 3, Name = "Gamma", Slug = "gamma", OwnerId = 100 }
             };
             Context.Projects.AddRange(projects);
             await Context.SaveChangesAsync();
@@ -44,7 +44,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetProjectsOwnedByUserAsync_NoMatch_ReturnsEmpty()
         {
-            Context.Projects.Add(new Project { Id = 1, OwnerId = 99 });
+            Context.Projects.Add(new Project { Id = 1, Slug = "test", OwnerId = 99 });
             await Context.SaveChangesAsync();
 
             var result = await _repo.GetProjectsOwnedByUserAsync(100);
@@ -62,7 +62,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetByIdAsync_ReturnsEntity()
         {
-            var project = new Project { Id = 5, Name = "Test Project", OwnerId = 1 };
+            var project = new Project { Id = 5, Name = "Test Project", Slug = "test-project", OwnerId = 1 };
             Context.Projects.Add(project);
             await Context.SaveChangesAsync();
 
@@ -74,7 +74,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task AddAsync_PersistsEntity()
         {
-            var project = new Project { Name = "New Project", OwnerId = 42 };
+            var project = new Project { Name = "New Project", Slug = "new-project", OwnerId = 42 };
             await _repo.AddAsync(project);
             await Context.SaveChangesAsync();
             
@@ -86,7 +86,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task DeleteByIdAsync_WithChildPromisesAndProjectChildren_DeletesProjectTree()
         {
-            var project = new Project { Id = 1, Name = "Project A", OwnerId = 10 };
+            var project = new Project { Id = 1, Name = "Project A", Slug = "project-a", OwnerId = 10 };
             var promise = new Promise { Id = 2, Statement = "Promise", ProjectId = 1, Project = project };
             var epic = new Epic { Id = 3, Statement = "Epic", ProductPromiseId = 2, ProductPromise = promise };
             var journey = new Journey { Id = 4, Statement = "Journey", EpicId = 3, Epic = epic };

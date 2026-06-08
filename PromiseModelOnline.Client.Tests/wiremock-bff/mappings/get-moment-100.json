@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/moments/100",
+    "urlPath": "/api/projects/pmo_test/seeded-project/moments/100",
     "headers": {
       "Cookie": {
         "contains": "__Host-pmo.session=owner-session"

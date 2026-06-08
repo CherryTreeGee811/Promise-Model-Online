@@ -1,10 +1,9 @@
-import { getProjectById } from './api.mjs';
-import { getPromiseById, getEpicsByPromise } from '../promises/api.mjs';
-import { getEpicById, getJourneysByEpic } from '../epics/api.mjs';
-import { getJourneyById, getFlowsByJourney } from '../journeys/api.mjs';
-import { getFlowById, getMomentsByFlow } from '../flows/api.mjs';
-import { getMomentById } from '../moments/api.mjs';
-import { resolveProjectIdForPromise } from './graph-link.mjs';
+import { getProject } from './api.mjs';
+import { getPromise, getEpicsByPromise, getPromiseById } from '../promises/api.mjs';
+import { getEpic, getJourneys, getEpicById } from '../epics/api.mjs';
+import { getJourney, getFlows, getJourneyById } from '../journeys/api.mjs';
+import { getFlow, getMoments, getFlowById } from '../flows/api.mjs';
+import { getMoment, getMomentById } from '../moments/api.mjs';
 import {
     computeChildMetrics,
     createNodeWithMetrics,
@@ -24,11 +23,11 @@ const STACK_NODE_TYPES = ['promise', 'epic', 'journey', 'flow', 'moment'];
 let d3Promise = null;
 const detailStackState = {
     tree: null,
-    projectId: null,
+    owner: null,
+    project: null,
     focusNodeId: null,
     activeNodeType: null,
     activeNodeId: null,
-    projectIdHint: null,
     d3: null,
     mountToken: 0,
 };
@@ -72,7 +71,8 @@ function rerenderDetailStackGraph() {
     if (!container || !detailStackState.tree || !detailStackState.d3) return;
 
     renderStackGraph(container, detailStackState.d3, detailStackState.tree, {
-        projectId: detailStackState.projectId,
+        owner: detailStackState.owner,
+        project: detailStackState.project,
         focusNodeId: detailStackState.focusNodeId,
         enableZoom: false,
         enableLinks: true,
@@ -85,7 +85,7 @@ function rerenderDetailStackGraph() {
     });
 }
 
-async function fetchPathEntities(nodeType, nodeId, projectIdHint) {
+async function fetchPathEntities(nodeType, nodeId, owner, project) {
     const numericId = Number.parseInt(String(nodeId), 10);
     if (Number.isNaN(numericId)) {
         throw new Error(`Invalid ${nodeType} id`);
@@ -99,80 +99,77 @@ async function fetchPathEntities(nodeType, nodeId, projectIdHint) {
 
     switch (nodeType) {
         case 'moment': {
-            moment = await getMomentById(numericId);
-            flow = await getFlowById(moment.flowId);
-            journey = await getJourneyById(flow.journeyId);
-            epic = await getEpicById(journey.epicId);
-            promise = await getPromiseById(epic.productPromiseId);
+            moment = await getMoment(owner, project, numericId);
+            flow = await getFlowById(owner, project, moment.flowId);
+            journey = await getJourneyById(owner, project, flow.journeyId);
+            epic = await getEpicById(owner, project, journey.epicId);
+            promise = await getPromiseById(owner, project, epic.productPromiseId);
             break;
         }
         case 'flow': {
-            flow = await getFlowById(numericId);
-            journey = await getJourneyById(flow.journeyId);
-            epic = await getEpicById(journey.epicId);
-            promise = await getPromiseById(epic.productPromiseId);
+            flow = await getFlow(owner, project, numericId);
+            journey = await getJourneyById(owner, project, flow.journeyId);
+            epic = await getEpicById(owner, project, journey.epicId);
+            promise = await getPromiseById(owner, project, epic.productPromiseId);
             break;
         }
         case 'journey': {
-            journey = await getJourneyById(numericId);
-            epic = await getEpicById(journey.epicId);
-            promise = await getPromiseById(epic.productPromiseId);
+            journey = await getJourney(owner, project, numericId);
+            epic = await getEpicById(owner, project, journey.epicId);
+            promise = await getPromiseById(owner, project, epic.productPromiseId);
             break;
         }
         case 'epic': {
-            epic = await getEpicById(numericId);
-            promise = await getPromiseById(epic.productPromiseId);
+            epic = await getEpic(owner, project, numericId);
+            promise = await getPromiseById(owner, project, epic.productPromiseId);
             break;
         }
         case 'promise': {
-            promise = await getPromiseById(numericId);
+            promise = await getPromise(owner, project, numericId);
             break;
         }
         default:
             throw new Error(`Unsupported node type: ${nodeType}`);
     }
 
-    const projectId = await resolveProjectIdForPromise(promise.id, projectIdHint);
-    let project = null;
-    if (projectId != null) {
-        try {
-            project = await getProjectById(projectId);
-        } catch (error) {
-            console.warn('Unable to load project for detail stack graph:', error);
-        }
+    let projectEntity = null;
+    try {
+        projectEntity = await getProject(owner, project);
+    } catch (error) {
+        console.warn('Unable to load project for detail stack graph:', error);
     }
 
-    return { moment, flow, journey, epic, promise, project, projectId };
+    return { moment, flow, journey, epic, promise, project: projectEntity };
 }
 
-async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }) {
+async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }, owner, project) {
     const metrics = {};
 
     const fetches = [];
     if (promise) {
         fetches.push(
-            getEpicsByPromise(promise.id)
+            getEpicsByPromise(owner, project, promise.sequenceNumber)
                 .then(items => { metrics.promise = computeChildMetrics(items); })
                 .catch(() => { metrics.promise = { childCount: 0, completedChildCount: 0 }; })
         );
     }
     if (epic) {
         fetches.push(
-            getJourneysByEpic(epic.id)
+            getJourneys(owner, project, epic.sequenceNumber)
                 .then(items => { metrics.epic = computeChildMetrics(items); })
                 .catch(() => { metrics.epic = { childCount: 0, completedChildCount: 0 }; })
         );
     }
     if (journey) {
         fetches.push(
-            getFlowsByJourney(journey.id)
+            getFlows(owner, project, journey.sequenceNumber)
                 .then(items => { metrics.journey = computeChildMetrics(items); })
                 .catch(() => { metrics.journey = { childCount: 0, completedChildCount: 0 }; })
         );
     }
     if (flow) {
         fetches.push(
-            getMomentsByFlow(flow.id)
+            getMoments(owner, project, flow.sequenceNumber)
                 .then(items => { metrics.flow = computeChildMetrics(items); })
                 .catch(() => { metrics.flow = { childCount: 0, completedChildCount: 0 }; })
         );
@@ -189,8 +186,8 @@ function wrapWithChild(node, child) {
     };
 }
 
-function buildLinearTree(pathEntities, metrics) {
-    const { moment, flow, journey, epic, promise, project, projectId } = pathEntities;
+function buildLinearTree(pathEntities, metrics, owner, project) {
+    const { moment, flow, journey, epic, promise, project: projectEntity } = pathEntities;
 
     let tip = null;
     if (moment) {
@@ -211,8 +208,8 @@ function buildLinearTree(pathEntities, metrics) {
 
     if (!tip) return null;
 
-    if (projectId != null) {
-        return parseGraphData([tip], projectId, project);
+    if (owner && project) {
+        return parseGraphData([tip], owner, project, projectEntity);
     }
 
     return {
@@ -224,20 +221,19 @@ function buildLinearTree(pathEntities, metrics) {
     };
 }
 
-export async function buildAncestorPathTree(nodeType, nodeId, projectIdHint = null) {
+export async function buildAncestorPathTree(nodeType, nodeId, owner, project) {
     if (!STACK_NODE_TYPES.includes(nodeType)) {
         throw new Error(`Unsupported node type: ${nodeType}`);
     }
 
-    const pathEntities = await fetchPathEntities(nodeType, nodeId, projectIdHint);
-    const metrics = await fetchChildMetricsForPath(pathEntities);
+    const pathEntities = await fetchPathEntities(nodeType, nodeId, owner, project);
+    const metrics = await fetchChildMetricsForPath(pathEntities, owner, project);
 
     const focusEntity = pathEntities[nodeType];
     const focusSeq = focusEntity?.sequenceNumber ?? nodeId;
 
     return {
-        tree: buildLinearTree(pathEntities, metrics),
-        projectId: pathEntities.projectId,
+        tree: buildLinearTree(pathEntities, metrics, owner, project),
         focusNodeId: `${nodeType}-${focusSeq}`,
     };
 }
@@ -245,7 +241,8 @@ export async function buildAncestorPathTree(nodeType, nodeId, projectIdHint = nu
 export function destroyDetailStackGraph() {
     detailStackState.mountToken += 1;
     detailStackState.tree = null;
-    detailStackState.projectId = null;
+    detailStackState.owner = null;
+    detailStackState.project = null;
     detailStackState.focusNodeId = null;
     detailStackState.activeNodeType = null;
     detailStackState.activeNodeId = null;
@@ -299,13 +296,12 @@ export function patchDetailStackGraphNode(nodeId, payloadPatch = {}) {
  * after a moment status change, which rolls up statusColor on the server).
  */
 export async function refreshDetailStackGraph() {
-    const { activeNodeType, activeNodeId, projectIdHint, d3 } = detailStackState;
+    const { activeNodeType, activeNodeId, owner, project, d3 } = detailStackState;
     if (!activeNodeType || activeNodeId == null || !d3) return;
 
     try {
-        const pathResult = await buildAncestorPathTree(activeNodeType, activeNodeId, projectIdHint);
+        const pathResult = await buildAncestorPathTree(activeNodeType, activeNodeId, owner, project);
         detailStackState.tree = pathResult.tree;
-        detailStackState.projectId = pathResult.projectId;
         detailStackState.focusNodeId = pathResult.focusNodeId;
         rerenderDetailStackGraph();
     } catch (error) {
@@ -313,7 +309,7 @@ export async function refreshDetailStackGraph() {
     }
 }
 
-export async function mountDetailStackGraph({ nodeType, nodeId, projectIdHint = null }) {
+export async function mountDetailStackGraph({ nodeType, nodeId, owner, project }) {
     const container = getContainer();
     if (!container) return;
 
@@ -324,18 +320,18 @@ export async function mountDetailStackGraph({ nodeType, nodeId, projectIdHint = 
     try {
         const [d3, pathResult] = await Promise.all([
             loadD3(),
-            buildAncestorPathTree(nodeType, nodeId, projectIdHint),
+            buildAncestorPathTree(nodeType, nodeId, owner, project),
         ]);
 
         if (mountToken !== detailStackState.mountToken) return;
 
         detailStackState.d3 = d3;
         detailStackState.tree = pathResult.tree;
-        detailStackState.projectId = pathResult.projectId;
         detailStackState.focusNodeId = pathResult.focusNodeId;
         detailStackState.activeNodeType = nodeType;
         detailStackState.activeNodeId = nodeId;
-        detailStackState.projectIdHint = projectIdHint;
+        detailStackState.owner = owner;
+        detailStackState.project = project;
 
         container.classList.remove('detail-stack-graph--loading');
 

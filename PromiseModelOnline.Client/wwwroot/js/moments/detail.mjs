@@ -1,13 +1,13 @@
 import { navigate } from '../router.mjs';
-import { getMomentById, addMomentTask, updateMomentTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, moveMomentToStride, updateMomentType } from './api.mjs';
+import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.mjs';
 import { loadComments } from '../comments/comments.mjs';
-import { getAllStrides } from '../strides/api.mjs';
-import { getFlowById } from '../flows/api.mjs';
-import { getJourneyById } from '../journeys/api.mjs';
-import { getEpicById } from '../epics/api.mjs';
+import { getStrides } from '../strides/api.mjs';
+import { getFlow } from '../flows/api.mjs';
+import { getJourney } from '../journeys/api.mjs';
+import { getEpic } from '../epics/api.mjs';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
 import { getStatusOptionHtml } from '../utils/status-utils.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
@@ -20,7 +20,7 @@ import {
     refreshDetailStackGraph,
 } from '../projects/detail-stack-graph.mjs';
 
-export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
+export function loadMomentDetail(owner, project, momentId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('moment-detail-loading');
@@ -29,17 +29,19 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
     if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    Promise.all([
-            getMomentById(momentId),
-            loadEntityLookupMap('Moment', momentId),
-        ])
+    getMoment(owner, project, momentId)
+        .then(moment => Promise.all([
+            Promise.resolve(moment),
+            loadEntityLookupMap('Moment', moment.id, owner, project),
+        ]))
         .then(async ([moment]) => {
             if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'moment',
                 nodeId: momentId,
-                projectIdHint: getGraphProjectIdHintFromUrl(),
+                owner,
+                project,
             });
 
             detailDiv.innerHTML = `
@@ -111,7 +113,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             const descriptionSaveButton = document.getElementById('moment-description-save');
             let momentEditor = null;
             if (momentDescInput && momentDescView && momentEditBtn) {
-                createCommentAutocomplete(momentDescInput, 'Moment', momentId);
+                createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
                 momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditBtn, descriptionSaveButton);
             }
 
@@ -127,7 +129,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
 
                     const newDescription = descriptionInput.value;
                     try {
-                        const updated = await updateMomentDescription(momentId, newDescription);
+                        const updated = await updateMomentDescription(owner, project, momentId, newDescription);
                         moment.description = updated?.description ?? (newDescription.trim() ? newDescription : null);
                         patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             description: moment.description,
@@ -151,7 +153,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
                 e.preventDefault();
-                navigate(`/flows/${flowLink.getAttribute('flow-id')}`, navContentDiv, contentDiv);
+                navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
             });
 
             // Estimate auto‑save on change
@@ -160,7 +162,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 estSelect.addEventListener('change', async () => {
                     const estimate = estSelect.value === '-' ? null : estSelect.value;
                     try {
-                        await updateMomentEstimate(momentId, estimate);
+                        await updateMomentEstimate(owner, project, momentId, estimate);
                         moment.effortEstimate = estimate;
                         patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             effortEstimate: estimate,
@@ -176,7 +178,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
             const strideSelect = document.getElementById('moment-stride-select');
             if (strideSelect) {
                 try {
-                    const strides = await getAllStrides();
+                    const strides = await getStrides(owner, project);
                     // sort by name
                     strides.sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')));
                     strides.forEach(s => {
@@ -193,7 +195,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                     strideSelect.addEventListener('change', async () => {
                         const val = strideSelect.value === '' ? null : parseInt(strideSelect.value, 10);
                         try {
-                            const updated = await moveMomentToStride(momentId, val);
+                            const updated = await assignMomentToStride(owner, project, momentId, val);
                             moment.assignedStrideId = updated.assignedStrideId;
                             patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                                 assignedStrideId: updated.assignedStrideId,
@@ -216,7 +218,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 statusSelect.addEventListener('change', async () => {
                     const prev = statusSelect.value;
                     try {
-                        const updated = await updateMomentStatus(momentId, statusSelect.value);
+                        const updated = await updateMomentStatus(owner, project, momentId, statusSelect.value);
                         moment.status = updated.status;
                         moment.statusColor = updated.statusColor;
                         moment.completedAt = updated.completedAt;
@@ -241,7 +243,7 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
                 typeSelect.addEventListener('change', async () => {
                     const newType = typeSelect.value;
                     try {
-                        const updated = await updateMomentType(momentId, newType);
+                        const updated = await updateMomentType(owner, project, momentId, newType);
                         if (updated && updated.type) {
                             moment.type = updated.type;
                             typeSelect.value = updated.type;
@@ -258,19 +260,13 @@ export function loadMomentDetail(momentId, navContentDiv, contentDiv) {
 
             // Back button event
             initBackLink();
-            loadCommentsAndReactions(detailDiv, 'Moment', momentId);
+            loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project);
 
-            getFlowById(moment.flowId)
-                .then(flow => getJourneyById(flow.journeyId))
-                .then(journey => getEpicById(journey.epicId))
-                .then(epic => resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl()))
-                .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `moment-${moment.sequenceNumber}`);
-                    upsertGraphViewButton(detailDiv, href);
-                })
-                .catch(error => {
-                    console.error('Unable to resolve graph link for moment detail', error);
-                });
+            const { owner: go, project: gp } = getOwnerProjectFromPath();
+            if (go && gp) {
+                const href = buildGraphViewHref(go, gp, `moment-${moment.sequenceNumber}`);
+                upsertGraphViewButton(detailDiv, href);
+            }
         })
         .catch(err => {
             if (loadingEl) loadingEl.hidden = true;
@@ -329,7 +325,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
     const addTaskMessage = container.querySelector('#add-moment-task-msg');
 
     // Autocomplete for entity references in task description
-    if (addTaskDescription) createCommentAutocomplete(addTaskDescription, 'Moment', momentId);
+    if (addTaskDescription) createCommentAutocomplete(addTaskDescription, 'Moment', moment.id);
 
     if (addTaskButton && addTaskName && addTaskDescription && addTaskCompleted && addTaskMessage) {
         addTaskButton.addEventListener('click', async () => {
@@ -344,7 +340,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
             addTaskButton.disabled = true;
 
             try {
-                const created = await addMomentTask(momentId, {
+                const created = await createTask(owner, project, momentId, {
                     name,
                     description: addTaskDescription.value.trim(),
                     isCompleted: addTaskCompleted.checked,
@@ -406,7 +402,7 @@ function bindMomentTaskCompletionToggle(tbody, momentId, moment) {
             checkbox.disabled = true;
 
             try {
-                const updated = await updateMomentTaskCompletion(momentId, taskId, checkbox.checked);
+                const updated = await updateTaskCompletion(owner, project, momentId, taskId, checkbox.checked);
                 if (updated) {
                     checkbox.checked = Boolean(updated.isCompleted);
                     if (label) label.textContent = updated.isCompleted ? 'Completed' : 'Open';

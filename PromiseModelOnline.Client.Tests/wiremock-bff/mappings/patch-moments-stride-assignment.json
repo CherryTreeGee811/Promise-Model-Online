@@ -5,7 +5,7 @@
   "newScenarioState": "moved-100-20",
   "request": {
     "method": "PATCH",
-    "urlPathPattern": "/api/moments/100/stride-assignment"
+    "urlPathPattern": "/api/projects/pmo_test/seeded-project/moments/100/stride-assignment"
   },
   "response": {
     "status": 200,

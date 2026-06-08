@@ -1,9 +1,9 @@
 import { navigate } from '../router.mjs';
-import { exportProject, getProjectAuditHistory, getProjectById, getProjectPromises, deleteProject, updateProjectDetails } from './api.mjs';
+import { exportProject, getAuditEvents, getProject, getProjectPromises, deleteProject, updateProjectDetails } from './api.mjs';
 import { getEpicsByPromise } from '../promises/api.mjs';
-import { getJourneysByEpic } from '../epics/api.mjs';
-import { getFlowsByJourney } from '../journeys/api.mjs';
-import { getMomentsByFlow } from '../flows/api.mjs';
+import { getJourneys } from '../epics/api.mjs';
+import { getFlows } from '../journeys/api.mjs';
+import { getMoments } from '../flows/api.mjs';
 import { getProjectMembers } from '../strides/api.mjs';
 import { renderSummaryTable } from './summary.mjs';
 import { formatTimestamp, getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
@@ -12,7 +12,7 @@ import { setupInlineEdit } from '../utils/inline-edit.mjs';
 import { formatCommentText } from '../utils/entity-reference.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 
-export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
+export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, project) {
     const form = document.getElementById('project-settings-form');
     const titleInput = document.getElementById('project-title-input');
     const descriptionInput = document.getElementById('project-description-input');
@@ -177,20 +177,20 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
 
         try {
             const [promises, members] = await Promise.all([
-                getProjectPromises(projectId),
-                getProjectMembers(projectId).catch(() => []),
+                getProjectPromises(owner, project),
+                getProjectMembers(owner, project).catch(() => []),
             ]);
 
-            const epicsNested = await Promise.all(promises.map(promise => getEpicsByPromise(promise.id).catch(() => [])));
+            const epicsNested = await Promise.all(promises.map(promise => getEpicsByPromise(owner, project, promise.sequenceNumber).catch(() => [])));
             const epics = epicsNested.flat();
 
-            const journeysNested = await Promise.all(epics.map(epic => getJourneysByEpic(epic.id).catch(() => [])));
+            const journeysNested = await Promise.all(epics.map(epic => getJourneys(owner, project, epic.sequenceNumber).catch(() => [])));
             const journeys = journeysNested.flat();
 
-            const flowsNested = await Promise.all(journeys.map(journey => getFlowsByJourney(journey.id).catch(() => [])));
+            const flowsNested = await Promise.all(journeys.map(journey => getFlows(owner, project, journey.sequenceNumber).catch(() => [])));
             const flows = flowsNested.flat();
 
-            const momentsNested = await Promise.all(flows.map(flow => getMomentsByFlow(flow.id).catch(() => [])));
+            const momentsNested = await Promise.all(flows.map(flow => getMoments(owner, project, flow.sequenceNumber).catch(() => [])));
             const moments = momentsNested.flat();
 
             summaryState = {
@@ -230,7 +230,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         setAuditLoading(true);
 
         try {
-            const { items } = await getProjectAuditHistory(projectId, 10, 0);
+            const { items } = await getAuditEvents(owner, project, 10, 0);
             auditPanel.innerHTML = renderAuditTable(items, { showEntity: false });
             bindAuditDetailLinks(items);
         } catch (error) {
@@ -253,19 +253,19 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
 
     async function loadProject() {
         try {
-            auditHistoryLink.href = `/projects/${projectId}/history`;
-            const project = await getProjectById(projectId);
-            currentProject = project;
-            titleInput.value = project.name ?? '';
-            descriptionInput.value = project.description ?? '';
-            if (titleEditor) titleEditor.showView(escapeHtml(project.name ?? ''));
-            if (descEditor) descEditor.showView(formatCommentText(project.description ?? ''));
-            refreshDeleteGate(project.name ?? '');
-            await loadSummary(project);
+            auditHistoryLink.href = `/${owner}/${project}/history`;
+            const projectData = await getProject(owner, project);
+            currentProject = projectData;
+            titleInput.value = projectData.name ?? '';
+            descriptionInput.value = projectData.description ?? '';
+            if (titleEditor) titleEditor.showView(escapeHtml(projectData.name ?? ''));
+            if (descEditor) descEditor.showView(formatCommentText(projectData.description ?? ''));
+            refreshDeleteGate(projectData.name ?? '');
+            await loadSummary(projectData);
             await loadAuditHistory();
 
             // Set up autocomplete on description using the first promise as parent
-            const promises = await getProjectPromises(projectId);
+            const promises = await getProjectPromises(owner, project);
             if (promises && promises.length > 0) {
                 createCommentAutocomplete(descriptionInput, 'Promise', promises[0].id);
             }
@@ -288,7 +288,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         }
 
         try {
-            const updatedProject = await updateProjectDetails(projectId, {
+            const updatedProject = await updateProjectDetails(owner, project, {
                 name,
                 description: description || null,
             });
@@ -313,8 +313,8 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         clearMessages();
 
         try {
-            const blob = await exportProject(projectId);
-            downloadBlob(blob, `project-${projectId}-export.json`);
+            const blob = await exportProject(owner, project);
+            downloadBlob(blob, `project-${owner}-${project}-export.json`);
             showExportPopover();
         } catch (error) {
             errorText.textContent = error.message || 'Failed to export project.';
@@ -335,7 +335,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
         }
 
         try {
-            await deleteProject(projectId);
+            await deleteProject(owner, project);
             navigate('/projects', navContentDiv, contentDiv);
         } catch (error) {
             errorText.textContent = error.message || 'Failed to delete project.';
@@ -344,7 +344,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, projectId) {
 
     auditHistoryLink.addEventListener('click', (event) => {
         event.preventDefault();
-        navigate(`/projects/${projectId}/history`, navContentDiv, contentDiv);
+        navigate(`/${owner}/${project}/history`, navContentDiv, contentDiv);
     });
 
     loadProject();

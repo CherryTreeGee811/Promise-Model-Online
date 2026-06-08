@@ -1,5 +1,5 @@
 import { apiGet, apiGetList, apiPost } from '../api.mjs';
 
-export const getIterationsByProject = projectId => apiGetList(`/api/iterations?projectId=${projectId}`);
-export const createIteration = (projectId, name) => apiPost('/api/iterations', { projectId, name });
-export const getIterationBurndown = iterationId => apiGet(`/api/iterations/${iterationId}/burndown`);
+export const getIterations = (owner, project) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`);
+export const createIteration = (owner, project, data) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`, data);
+export const getBurndown = (owner, project, iterationId) => apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations/${iterationId}/burndown`);

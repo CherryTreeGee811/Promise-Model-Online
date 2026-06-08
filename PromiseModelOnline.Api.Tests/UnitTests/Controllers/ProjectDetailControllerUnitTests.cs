@@ -1,0 +1,332 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
+using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.Controllers;
+using PromiseModelOnline.Api.DAL.Interfaces;
+using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
+using PromiseModelOnline.Api.Mappers.Interfaces;
+using PromiseModelOnline.Api.Models;
+
+namespace PromiseModelOnline.Api.Tests
+{
+    public class ProjectDetailControllerTests
+    {
+        private Mock<IProjectService> _mockProjectService = null!;
+        private Mock<IUserRepository> _mockUserRepo = null!;
+        private Mock<IPermissionService> _mockPermissionService = null!;
+        private Mock<IGenericService<Promise>> _mockPromiseService = null!;
+        private Mock<IGenericMapper<Project, ProjectDTO>> _mockMapper = null!;
+        private Mock<IGenericMapper<Promise, PromiseDTO>> _mockPromiseMapper = null!;
+        private Mock<IGenericService<Project>> _mockGenericService = null!;
+        private Mock<IProjectExportService> _mockExportService = null!;
+        private Mock<IPromiseModelOnlineContext> _mockContext = null!;
+        private ProjectDetailController _controller = null!;
+        private const string OwnerSlug = "testowner";
+        private const string ProjectSlug = "test-project";
+
+        [SetUp]
+        public void SetUp()
+        {
+            _mockProjectService = new Mock<IProjectService>();
+            _mockUserRepo = new Mock<IUserRepository>();
+            _mockPermissionService = new Mock<IPermissionService>();
+            _mockPromiseService = new Mock<IGenericService<Promise>>();
+            _mockMapper = new Mock<IGenericMapper<Project, ProjectDTO>>();
+            _mockPromiseMapper = new Mock<IGenericMapper<Promise, PromiseDTO>>();
+            _mockGenericService = new Mock<IGenericService<Project>>();
+            _mockExportService = new Mock<IProjectExportService>();
+            _mockContext = new Mock<IPromiseModelOnlineContext>();
+
+            _controller = new ProjectDetailController(
+                _mockProjectService.Object,
+                _mockUserRepo.Object,
+                _mockPermissionService.Object,
+                _mockPromiseService.Object,
+                _mockMapper.Object,
+                _mockPromiseMapper.Object,
+                _mockGenericService.Object,
+                _mockExportService.Object,
+                _mockContext.Object);
+        }
+
+        private void SetUpProjectResolve(Project? project)
+        {
+            _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(OwnerSlug, ProjectSlug))
+                .ReturnsAsync(project);
+        }
+
+        private void SetControllerUser(string? email, string? nameid = null)
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, email, nameid);
+        }
+
+        [Test]
+        public async Task GetBySlug_WhenExists_ReturnsOkDto()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 7, Name = "P7", Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            _mockMapper.Setup(m => m.Map(project, It.IsAny<IGenericService<Project>>()))
+                       .Returns(new ProjectDTO { Id = 7, Name = "P7", Slug = ProjectSlug, OwnerSlug = OwnerSlug });
+
+            SetControllerUser("u@u.com");
+            var result = await _controller.GetBySlug(OwnerSlug, ProjectSlug);
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            var dto = ok!.Value as ProjectDTO;
+            Assert.That(dto, Is.Not.Null);
+            Assert.That(dto!.Id, Is.EqualTo(7));
+        }
+
+        [Test]
+        public async Task GetBySlug_WhenProjectNotFound_ReturnsNotFound()
+        {
+            SetUpProjectResolve(null);
+            SetControllerUser("u@u.com");
+            var result = await _controller.GetBySlug(OwnerSlug, ProjectSlug);
+            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+        }
+
+        [Test]
+        public async Task GetMembers_WithAuthenticatedUser_ReturnsOkMembers()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 99, Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            var user = new User { Id = 2, Email = "x@y.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("x@y.com", It.IsAny<string?>())).ReturnsAsync(user);
+
+            var members = new List<ProjectMemberDTO> { new ProjectMemberDTO { UserId = 5, Email = "m1@e" } };
+            _mockProjectService.Setup(s => s.GetProjectMembersAsync(99)).ReturnsAsync(members);
+
+            SetControllerUser("x@y.com");
+            var actionResult = await _controller.GetMembers(OwnerSlug, ProjectSlug);
+
+            Assert.That(actionResult.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = actionResult.Result as OkObjectResult;
+            var returned = ok!.Value as List<ProjectMemberDTO>;
+            Assert.That(returned, Is.Not.Null);
+            Assert.That(returned!.Count, Is.EqualTo(1));
+            Assert.That(returned[0].UserId, Is.EqualTo(5));
+        }
+
+        [Test]
+        public async Task GetMembers_WhenProjectNotFound_ReturnsNotFound()
+        {
+            SetUpProjectResolve(null);
+            SetControllerUser("x@y.com");
+            var result = await _controller.GetMembers(OwnerSlug, ProjectSlug);
+            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+        }
+
+        [Test]
+        public async Task GetMembers_MissingEmail_ReturnsUnauthorized()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            SetUpProjectResolve(new Project { Id = 1, Slug = ProjectSlug, Owner = owner });
+            SetControllerUser(null);
+            var result = await _controller.GetMembers(OwnerSlug, ProjectSlug);
+            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
+        }
+
+        [Test]
+        public async Task UpdateDetails_WithNullRequest_ReturnsBadRequest()
+        {
+            SetControllerUser("u@u.com");
+            var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, null!);
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task UpdateDetails_WithEmptyName_ReturnsBadRequest()
+        {
+            SetControllerUser("u@u.com");
+            var request = new UpdateProjectDetailsRequestDTO { Name = "", Description = "" };
+            var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task UpdateDetails_WhenProjectNotFound_ReturnsNotFound()
+        {
+            SetUpProjectResolve(null);
+            SetControllerUser("u@u.com");
+            var request = new UpdateProjectDetailsRequestDTO { Name = "Updated", Description = "" };
+            var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
+            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+        }
+
+        [Test]
+        public async Task UpdateDetails_WithValidData_ReturnsOk()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 31, Name = "Old", Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            _mockMapper.Setup(m => m.Map(project, It.IsAny<IGenericService<Project>>()))
+                       .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDTO { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
+
+            SetControllerUser("u@u.com");
+            var request = new UpdateProjectDetailsRequestDTO { Name = "Updated", Description = "New desc" };
+            var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            Assert.That(project.Name, Is.EqualTo("Updated"));
+        }
+
+        [Test]
+        public async Task Export_WithAccessibleProject_ReturnsJsonFile()
+        {
+            var owner = new User { Id = 77, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 55, Name = "Export me", Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            var user = new User { Id = 77, Email = "exporter@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("exporter@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project> { project });
+
+            _mockExportService.Setup(s => s.BuildExportAsync(55)).ReturnsAsync(new ProjectExportDocument
+            {
+                SchemaVersion = "1.0",
+                Project = new ProjectExportProject { Id = 55, Name = "Export me" }
+            });
+
+            SetControllerUser("exporter@x.com");
+            var result = await _controller.Export(OwnerSlug, ProjectSlug);
+
+            Assert.That(result, Is.InstanceOf<FileContentResult>());
+            var file = result as FileContentResult;
+            Assert.That(file, Is.Not.Null);
+            Assert.That(file!.ContentType, Is.EqualTo("application/json"));
+            Assert.That(file.FileDownloadName, Is.EqualTo($"{ProjectSlug}-export.json"));
+
+            var json = Encoding.UTF8.GetString(file.FileContents);
+            Assert.That(json, Does.Contain("schemaVersion"));
+            Assert.That(json, Does.Contain("Export me"));
+        }
+
+        [Test]
+        public async Task Export_MissingEmail_ReturnsUnauthorized()
+        {
+            var owner = new User { Id = 77, Slug = OwnerSlug, Email = "o@x.com" };
+            SetUpProjectResolve(new Project { Id = 55, Slug = ProjectSlug, Owner = owner });
+            SetControllerUser(null);
+            var result = await _controller.Export(OwnerSlug, ProjectSlug);
+            Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
+        }
+
+        [Test]
+        public async Task Export_WithoutAccess_ReturnsForbid()
+        {
+            var owner = new User { Id = 88, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 99, Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            var user = new User { Id = 88, Email = "noaccess@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("noaccess@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project>());
+
+            SetControllerUser("noaccess@x.com");
+            var result = await _controller.Export(OwnerSlug, ProjectSlug);
+            Assert.That(result, Is.InstanceOf<ForbidResult>());
+        }
+
+        [Test]
+        public async Task Export_MissingProject_ReturnsNotFound()
+        {
+            var owner = new User { Id = 99, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 100, Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            var user = new User { Id = 99, Email = "owner@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("owner@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project> { project });
+            _mockExportService.Setup(s => s.BuildExportAsync(100)).ThrowsAsync(new KeyNotFoundException());
+
+            SetControllerUser("owner@x.com");
+            var result = await _controller.Export(OwnerSlug, ProjectSlug);
+            Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        }
+
+        [Test]
+        public async Task GetMyPermission_WithPermission_ReturnsOk()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 5, Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            var user = new User { Id = 2, Email = "user@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("user@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockPermissionService.Setup(s => s.GetUserPermissionAsync(2, 5)).ReturnsAsync(PermissionLevel.Edit);
+
+            SetControllerUser("user@x.com");
+            var result = await _controller.GetMyPermission(OwnerSlug, ProjectSlug);
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok!.Value, Is.EqualTo("Edit"));
+        }
+
+        [Test]
+        public async Task GetMyPermission_WhenNoEmail_ReturnsUnauthorized()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            SetUpProjectResolve(new Project { Id = 5, Slug = ProjectSlug, Owner = owner });
+            SetControllerUser(null);
+            var result = await _controller.GetMyPermission(OwnerSlug, ProjectSlug);
+            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
+        }
+
+        [Test]
+        public async Task GetMyPermission_WhenNoPermission_ReturnsNoContent()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 5, Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            var user = new User { Id = 2, Email = "user@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("user@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockPermissionService.Setup(s => s.GetUserPermissionAsync(2, 5)).ReturnsAsync((PermissionLevel?)null);
+
+            SetControllerUser("user@x.com");
+            var result = await _controller.GetMyPermission(OwnerSlug, ProjectSlug);
+            Assert.That(result.Result, Is.InstanceOf<NoContentResult>());
+        }
+
+        [Test]
+        public async Task GetProjectPromises_WithValidProject_ReturnsOk()
+        {
+            var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
+            var project = new Project { Id = 10, Slug = ProjectSlug, Owner = owner };
+            SetUpProjectResolve(project);
+
+            var user = new User { Id = 2, Email = "user@x.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("user@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+
+            var promises = new List<Promise>
+            {
+                new Promise { Id = 1, Statement = "P1", ProjectId = 10, SequenceNumber = 1, DisplayOrder = 0 }
+            };
+            _mockProjectService.Setup(s => s.GetProductPromisesAsync(10)).ReturnsAsync(promises);
+            _mockPromiseMapper.Setup(m => m.Map(It.IsAny<Promise>(), It.IsAny<IGenericService<Promise>>()))
+                .Returns<Promise, IGenericService<Promise>>((p, svc) => new PromiseDTO { Id = p.Id, Statement = p.Statement });
+
+            SetControllerUser("user@x.com");
+            var result = await _controller.GetProjectPromises(OwnerSlug, ProjectSlug);
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        }
+    }
+}

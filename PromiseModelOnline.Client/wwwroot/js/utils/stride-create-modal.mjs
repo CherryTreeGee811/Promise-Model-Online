@@ -48,7 +48,8 @@ function getNewStrideDefaults(existingStrides = []) {
 }
 
 export function openStrideCreateModal({
-    projectId,
+    owner,
+    project,
     iterationId,
     iterations = [],
     existingStrides = [],
@@ -181,7 +182,7 @@ export function openStrideCreateModal({
         liveSubmitBtn.textContent = 'Creating...';
 
         try {
-            await createStride({
+            await createStride(owner, project, {
                 name,
                 iterationId: selectedIterationId,
                 startDate,

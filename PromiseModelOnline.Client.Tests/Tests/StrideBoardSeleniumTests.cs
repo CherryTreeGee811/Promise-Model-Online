@@ -45,7 +45,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void OwnerCanEditDropdowns()
         {
             EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            NavigateSpa("/pmo_test/seeded-project/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);
@@ -61,7 +61,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         {
             SetSessionCookie("nonowner-session");
 
-            NavigateSpa("/projects/1/strides");
+            NavigateSpa("/pmo_test/seeded-project/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);
@@ -75,7 +75,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void EstimatePersistence()
         {
             EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            NavigateSpa("/pmo_test/seeded-project/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);
@@ -105,7 +105,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void StatusChangePersistence()
         {
             EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            NavigateSpa("/pmo_test/seeded-project/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);
@@ -135,7 +135,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void OwnerAssignmentPersistence()
         {
             EnsureLoggedIn();
-            NavigateSpa("/projects/1/strides");
+            NavigateSpa("/pmo_test/seeded-project/strides");
 
             var row = GetFirstMomentRow();
             var mid = GetMomentId(row);

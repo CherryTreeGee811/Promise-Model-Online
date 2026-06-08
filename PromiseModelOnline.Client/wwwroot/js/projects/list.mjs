@@ -1,5 +1,5 @@
 import { navigate } from "../router.mjs";
-import { getAllProjects } from "./api.mjs";
+import { fetchProjects } from "./api.mjs";
 import { renderEmptyTableRow } from "../utils/empty-table.mjs";
 
 export function loadProjectList(navContentDiv, contentDiv) {
@@ -23,7 +23,7 @@ export function loadProjectList(navContentDiv, contentDiv) {
     successTextElement.textContent = '';
     tableBody.innerHTML = '';
 
-    getAllProjects().then(projects => {
+    fetchProjects().then(projects => {
         if (!projects || projects.length === 0) {
             tableBody.innerHTML = renderEmptyTableRow({
                 icon: 'bi-folder',
@@ -51,14 +51,14 @@ export function loadProjectList(navContentDiv, contentDiv) {
             row.innerHTML = `
                 <td>${project.name ?? ''}</td>
                 <td class="d-flex flex-wrap gap-2">
-                    <a href="/projects/${project.id}/strides" class="btn btn-sm btn-outline-primary view-iterations-btn" data-project-id="${project.id}">View Backlog</a>
-                    <a href="/projects/${project.id}/graph" class="btn btn-sm btn-outline-secondary graph-btn" data-project-id="${project.id}" title="Open graph view" aria-label="Open graph view">
+                    <a href="/${project.ownerSlug}/${project.slug}/strides" class="btn btn-sm btn-outline-primary view-iterations-btn" data-owner-slug="${project.ownerSlug}" data-project-slug="${project.slug}">View Backlog</a>
+                    <a href="/${project.ownerSlug}/${project.slug}/graph" class="btn btn-sm btn-outline-secondary graph-btn" data-owner-slug="${project.ownerSlug}" data-project-slug="${project.slug}" title="Open graph view" aria-label="Open graph view">
                         <i class="bi bi-diagram-3" aria-hidden="true"></i>
                     </a>
-                    <a href="/projects/${project.id}/settings" class="btn btn-sm btn-outline-secondary settings-btn" data-project-id="${project.id}" title="Open project settings" aria-label="Open project settings">
+                    <a href="/${project.ownerSlug}/${project.slug}/settings" class="btn btn-sm btn-outline-secondary settings-btn" data-owner-slug="${project.ownerSlug}" data-project-slug="${project.slug}" title="Open project settings" aria-label="Open project settings">
                         <i class="bi bi-gear" aria-hidden="true"></i>
                     </a>
-                    <a href="/projects/${project.id}/share" class="btn btn-sm btn-outline-secondary share-btn" data-project-id="${project.id}" title="Manage sharing permissions" aria-label="Manage sharing permissions">
+                    <a href="/${project.ownerSlug}/${project.slug}/share" class="btn btn-sm btn-outline-secondary share-btn" data-owner-slug="${project.ownerSlug}" data-project-slug="${project.slug}" title="Manage sharing permissions" aria-label="Manage sharing permissions">
                         <i class="bi bi-share" aria-hidden="true"></i>
                     </a>
                 </td>
@@ -66,35 +66,39 @@ export function loadProjectList(navContentDiv, contentDiv) {
             tableBody.appendChild(row);
         });
 
-        tableBody.querySelectorAll('.view-iterations-btn[data-project-id]').forEach(viewBtn => {
+        tableBody.querySelectorAll('.view-iterations-btn[data-owner-slug]').forEach(viewBtn => {
             viewBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const projectId = viewBtn.getAttribute('data-project-id');
-                navigate(`/projects/${projectId}/strides`, navContentDiv, contentDiv);
+                const owner = viewBtn.getAttribute('data-owner-slug');
+                const project = viewBtn.getAttribute('data-project-slug');
+                navigate(`/${owner}/${project}/strides`, navContentDiv, contentDiv);
             });
         });
 
-        tableBody.querySelectorAll('.graph-btn[data-project-id]').forEach(graphBtn => {
+        tableBody.querySelectorAll('.graph-btn[data-owner-slug]').forEach(graphBtn => {
             graphBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const projectId = graphBtn.getAttribute('data-project-id');
-                navigate(`/projects/${projectId}/graph`, navContentDiv, contentDiv);
+                const owner = graphBtn.getAttribute('data-owner-slug');
+                const project = graphBtn.getAttribute('data-project-slug');
+                navigate(`/${owner}/${project}/graph`, navContentDiv, contentDiv);
             });
         });
 
-        tableBody.querySelectorAll('.settings-btn[data-project-id]').forEach(settingsBtn => {
+        tableBody.querySelectorAll('.settings-btn[data-owner-slug]').forEach(settingsBtn => {
             settingsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const projectId = settingsBtn.getAttribute('data-project-id');
-                navigate(`/projects/${projectId}/settings`, navContentDiv, contentDiv);
+                const owner = settingsBtn.getAttribute('data-owner-slug');
+                const project = settingsBtn.getAttribute('data-project-slug');
+                navigate(`/${owner}/${project}/settings`, navContentDiv, contentDiv);
             });
         });
 
-        tableBody.querySelectorAll('.share-btn[data-project-id]').forEach(shareBtn => {
+        tableBody.querySelectorAll('.share-btn[data-owner-slug]').forEach(shareBtn => {
             shareBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const projectId = shareBtn.getAttribute('data-project-id');
-                navigate(`/projects/${projectId}/share`, navContentDiv, contentDiv);
+                const owner = shareBtn.getAttribute('data-owner-slug');
+                const project = shareBtn.getAttribute('data-project-slug');
+                navigate(`/${owner}/${project}/share`, navContentDiv, contentDiv);
             });
         });
     }).catch(error => {

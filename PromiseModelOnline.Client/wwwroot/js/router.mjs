@@ -3,15 +3,10 @@ import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs
 import { clearAuth, isLoggedIn } from './auth-state.mjs';
 import { stopNotificationPolling } from './notifications/badge.mjs';
 import { checkSession } from './api.mjs';
-import { handleProjectRoutes } from './projects/router.mjs';
-import { handleMomentRoutes } from './moments/router.mjs';
-import { handleFlowRoutes } from './flows/router.mjs';
-import { handleJourneyRoutes } from './journeys/router.mjs';
-import { handleEpicRoutes } from './epics/router.mjs';
-import { handlePromiseRoutes } from './promises/router.mjs';
+import { handleLegacyProjectRoutes, handleProjectScopedRoutes } from './projects/router.mjs';
+import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
-import { handleIterationRoutes } from './iterations/router.mjs';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -148,26 +143,13 @@ export function routeHandler(navContentDiv, contentDiv) {
                 return loadHomePage();
             });
             break;
-        case path.startsWith('/projects') && path.includes('/iterations'):
-            handleIterationRoutes(path, navContentDiv, contentDiv);
-            break;
         case path.startsWith('/projects'):
-            handleProjectRoutes(path, navContentDiv, contentDiv);
+            handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
             break;
-        case path.startsWith('/moments/'):
-            handleMomentRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/flows/'):
-            handleFlowRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/journeys/'):
-            handleJourneyRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/epics/'):
-            handleEpicRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/promises/'):
-            handlePromiseRoutes(path, navContentDiv, contentDiv);
+        case path === '/moments/my-tasks':
+            loadTemplate('moments/my-tasks.html', contentDiv)
+                .then(() => loadMyTasksPage(navContentDiv, contentDiv))
+                .catch(loadTemplateWithError(contentDiv, 'my tasks'));
             break;
         case path.startsWith('/notifications'):
             handleNotificationsRoutes(path, navContentDiv, contentDiv);
@@ -185,12 +167,31 @@ export function routeHandler(navContentDiv, contentDiv) {
         case path == '/knowledge-base':
             handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv);
             break;
-        default:
-            loadTemplate('404.html', contentDiv)
-                .catch(() => {
-                    contentDiv.innerHTML = '<h1>Page not found</h1>';
-                    setPageTitle(path);
-                    announceAndFocus();
-                });
+        default: {
+            const projectPattern = path.match(/^\/([^\/]+)\/([^\/]+)(\/.*)?$/);
+            if (projectPattern) {
+                const owner = projectPattern[1];
+                const project = projectPattern[2];
+                const subPath = projectPattern[3] || '';
+
+                if (owner === 'account' || owner === 'moments' || owner === 'knowledge-base') {
+                    loadTemplate('404.html', contentDiv)
+                        .catch(() => {
+                            contentDiv.innerHTML = '<h1>Page not found</h1>';
+                            setPageTitle(path);
+                            announceAndFocus();
+                        });
+                } else {
+                    handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+                }
+            } else {
+                loadTemplate('404.html', contentDiv)
+                    .catch(() => {
+                        contentDiv.innerHTML = '<h1>Page not found</h1>';
+                        setPageTitle(path);
+                        announceAndFocus();
+                    });
+            }
+        }
     }
 }

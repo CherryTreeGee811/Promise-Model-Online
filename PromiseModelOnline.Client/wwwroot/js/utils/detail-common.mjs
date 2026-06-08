@@ -10,9 +10,9 @@ export function initBackLink() {
     }
 }
 
-export function loadCommentsAndReactions(detailDiv, entityType, entityId) {
+export function loadCommentsAndReactions(detailDiv, entityType, entityId, owner, project) {
     const commentsContainer = document.getElementById(`${entityType.toLowerCase()}-comments`);
-    if (commentsContainer) loadComments(commentsContainer, entityType, entityId);
+    if (commentsContainer) loadComments(commentsContainer, entityType, entityId, owner, project);
 
     let reactionsContainer = document.getElementById('reactions-section');
     if (!reactionsContainer) {
@@ -21,6 +21,6 @@ export function loadCommentsAndReactions(detailDiv, entityType, entityId) {
     }
     if (detailDiv) {
         if (!reactionsContainer.parentNode) detailDiv.appendChild(reactionsContainer);
-        loadReactions(reactionsContainer, entityType, entityId);
+        loadReactions(reactionsContainer, entityType, entityId, owner, project);
     }
 }

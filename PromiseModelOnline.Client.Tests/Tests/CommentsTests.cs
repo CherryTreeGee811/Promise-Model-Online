@@ -11,7 +11,7 @@ namespace PromiseModelOnline.Client.Tests.Tests
         public void Comments_PostComment_AppearsInList()
         {
             EnsureLoggedIn();
-            NavigateSpa("/moments/100");
+            NavigateSpa("/pmo_test/seeded-project/moments/100");
 
             var existingComment = WaitForElement(By.CssSelector(".comment-item .comment-text"));
             Assert.That(existingComment.Text, Does.Contain("Existing comment"));

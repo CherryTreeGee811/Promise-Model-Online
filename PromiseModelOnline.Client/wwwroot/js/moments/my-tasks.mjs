@@ -1,4 +1,4 @@
-import { getMyTasks } from './api.mjs';
+import { getMyAssignedMoments } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { navigate } from '../router.mjs';
@@ -7,7 +7,7 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
     const content = document.getElementById('my-tasks-content');
     const errorEl = document.getElementById('error-text');
 
-    getMyTasks()
+    getMyAssignedMoments()
         .then(moments => {
             if (!moments || moments.length === 0) {
                 content.innerHTML = `
@@ -38,21 +38,23 @@ export function loadMyTasksPage(navContentDiv, contentDiv) {
                                 <td>${m.type}</td>
                                 <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                 <td>${m.effortEstimate ?? '–'}</td>
-                                <td><a href="/moments/${m.id}" moment-id="${m.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                <td>${m.ownerSlug && m.projectSlug
+                                    ? `<a href="/${m.ownerSlug}/${m.projectSlug}/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" data-owner="${m.ownerSlug}" data-project="${m.projectSlug}" class="btn btn-sm btn-outline-primary">View</a>`
+                                    : `<a href="/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a>`}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
             `;
 
-            content.querySelectorAll('a[moment-id]').forEach(link => {
+            content.querySelectorAll('a[moment-seq]').forEach(link => {
                 link.addEventListener('click', (e) => {
-                    // allow new tab behavior
                     if (e.ctrlKey || e.metaKey || e.button === 1) return;
-
                     e.preventDefault();
-
-                    navigate(`/moments/${link.getAttribute('moment-id')}`, navContentDiv, contentDiv);
+                    const owner = link.getAttribute('data-owner');
+                    const project = link.getAttribute('data-project');
+                    const seq = link.getAttribute('moment-seq');
+                    navigate(`/${owner}/${project}/moments/${seq}`, navContentDiv, contentDiv);
                 });
             });
         })

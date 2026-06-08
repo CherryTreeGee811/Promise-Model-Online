@@ -18,4 +18,8 @@ public sealed class ProjectImportResult
     public int ProjectId { get; set; }
 
     public List<string> Warnings { get; set; } = new();
+
+    public string? OwnerSlug { get; set; }
+
+    public string? Slug { get; set; }
 }

@@ -4,7 +4,7 @@
   "requiredScenarioState": "AfterPost",
   "request": {
     "method": "GET",
-    "urlPath": "/api/comments",
+    "urlPath": "/api/projects/pmo_test/seeded-project/comments",
     "queryParameters": {
       "type": { "equalTo": "Moment" },
       "parentId": { "equalTo": "100" }

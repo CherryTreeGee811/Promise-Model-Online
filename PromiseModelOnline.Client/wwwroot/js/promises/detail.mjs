@@ -1,9 +1,9 @@
 import { navigate } from '../router.mjs';
-import { getPromiseById, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
-import { addEpic } from '../epics/api.mjs';
+import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
+import { createEpic } from '../epics/api.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
@@ -15,7 +15,7 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
+export function loadPromiseDetail(owner, project, promiseId, navContentDiv, contentDiv) {
     const detailDiv = document.getElementById('promise-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('promise-detail-loading');
@@ -24,10 +24,11 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
     if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    Promise.all([
-            getPromiseById(promiseId),
-            loadEntityLookupMap('Promise', promiseId),
-        ])
+    getPromise(owner, project, promiseId)
+        .then(promise => Promise.all([
+            Promise.resolve(promise),
+            loadEntityLookupMap('Promise', promise.id, owner, project),
+        ]))
         .then(([promise]) => {
             if (loadingEl) loadingEl.hidden = true;
 
@@ -65,17 +66,18 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
             const saveBtn = document.getElementById('save-desc');
             let editor = null;
             if (descInput && descView && editBtn) {
-                createCommentAutocomplete(descInput, 'Promise', promiseId);
+                createCommentAutocomplete(descInput, 'Promise', promise.id);
                 editor = setupInlineEdit(descInput, descView, editBtn, saveBtn);
             }
 
             mountDetailStackGraph({
                 nodeType: 'promise',
                 nodeId: promiseId,
-                projectIdHint: getGraphProjectIdHintFromUrl(),
+                owner,
+                project,
             });
             const epicsList = document.getElementById('promise-epics-list');
-            getEpicsByPromise(promiseId)
+            getEpicsByPromise(owner, project, promiseId)
                 .then(epics => {
                     patchChildMetrics(`promise-${promise.sequenceNumber}`, epics);
                     const tbody = renderTableWithInlineAddRow(epicsList, {
@@ -85,7 +87,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                         renderItemRow: e => `
                             <tr data-epic-id="${e.id}">
                                 <td>${escapeHtml(e.statement)}</td>
-                                <td><a href="/epics/${e.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                <td><a href="/${owner}/${project}/epics/${e.sequenceNumber}" epic-seq="${e.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
@@ -122,7 +124,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                             submitBtn.disabled = true;
 
                             try {
-                                const created = await addEpic({
+                                const created = await createEpic(owner, project, {
                                     statement,
                                     productPromiseId: promiseId,
                                     displayOrder: (epics || []).length + 1,
@@ -134,7 +136,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                                     row.dataset.epicId = created.id;
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
-                                        <td><a href="/epics/${created.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                        <td><a href="/${owner}/${project}/epics/${created.sequenceNumber}" epic-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
@@ -161,7 +163,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                                 ${epics.map(e => `
                                     <tr>
                                         <td>${escapeHtml(e.statement)}</td>
-                                        <td><a href="/epics/${e.id}" epic-id="${e.id}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                        <td><a href="/${owner}/${project}/epics/${e.sequenceNumber}" epic-id="${e.id}" epic-seq="${e.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -175,7 +177,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            navigate(`/epics/${link.getAttribute('epic-id')}`, navContentDiv, contentDiv);
+                            navigate(`/${owner}/${project}/epics/${link.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
                         });
                     });
                 })
@@ -184,16 +186,13 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                 });
 
             // Comments and reactions
-            loadCommentsAndReactions(detailDiv, 'Promise', promiseId);
+            loadCommentsAndReactions(detailDiv, 'Promise', promise.id, owner, project);
 
-            resolveProjectIdForPromise(promise.id, getGraphProjectIdHintFromUrl())
-                .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `promise-${promise.sequenceNumber}`);
-                    upsertGraphViewButton(detailDiv, href);
-                })
-                .catch(error => {
-                    console.error('Unable to resolve graph link for promise detail', error);
-                });
+            const { owner: go, project: gp } = getOwnerProjectFromPath();
+            if (go && gp) {
+                const href = buildGraphViewHref(go, gp, `promise-${promise.sequenceNumber}`);
+                upsertGraphViewButton(detailDiv, href);
+            }
 
             initBackLink();
 
@@ -206,7 +205,7 @@ export function loadPromiseDetail(promiseId, navContentDiv, contentDiv) {
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = await updatePromiseDescription(promiseId, newDesc);
+                        const updated = await updatePromiseDescription(owner, project, promiseId, newDesc);
                         promise.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
                         patchDetailStackGraphNode(`promise-${promise.sequenceNumber}`, {
                             description: promise.description,

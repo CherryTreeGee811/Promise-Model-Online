@@ -15,7 +15,7 @@ function ensureModal(modalId, modalMarkup) {
     return modalEl;
 }
 
-export function openIterationCreateModal(projectId, onCreated) {
+export function openIterationCreateModal(owner, project, onCreated) {
     const modalEl = ensureModal('iteration-create-modal', `
         <div class="modal fade" id="iteration-create-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -74,7 +74,7 @@ export function openIterationCreateModal(projectId, onCreated) {
         liveSubmitBtn.textContent = 'Creating...';
 
         try {
-            await createIteration(projectId, name);
+            await createIteration(owner, project, { name });
             window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
             await onCreated?.();
         } catch (error) {

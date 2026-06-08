@@ -1,9 +1,9 @@
-import { getReactions, createReaction, updateReaction, deleteReaction } from './api.mjs';
+import { getReactions, addReaction, updateReaction, deleteReaction } from './api.mjs';
 import { getCurrentUserName } from '../parser.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 
-export function loadReactions(container, parentType, parentId) {
+export function loadReactions(container, parentType, parentId, owner, project) {
     container.innerHTML = `
         <div class="reactions-bar">
             <span class="reactions-summary" id="reactions-summary"></span>
@@ -33,7 +33,7 @@ export function loadReactions(container, parentType, parentId) {
 
     async function refresh() {
         try {
-            const reactions = await getReactions(parentType, parentId);
+            const reactions = await getReactions(owner, project, parentType, parentId);
             state.counts = {};
             (reactions || []).forEach(r => {
                 state.counts[r.emote] = (state.counts[r.emote] || 0) + 1;
@@ -59,8 +59,8 @@ export function loadReactions(container, parentType, parentId) {
             try {
                 const y = window.scrollY;
                 const updated = state.myReactionId
-                    ? await updateReaction(state.myReactionId, emote)
-                    : await createReaction(parentType, parentId, emote);
+                    ? await updateReaction(owner, project, state.myReactionId, emote)
+                    : await addReaction(owner, project, { parentType, parentId, emote });
 
                 const previous = state.myEmote;
                 const next = updated?.emote ?? emote;
