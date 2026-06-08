@@ -29,6 +29,9 @@ services:
       - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
       - AUTH_METADATA_ADDRESS=https://promisemodelonline.auth:8060/.well-known/openid-configuration
       - APP_BASE_URL=https://localhost:9000
+      - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
+    volumes:
+      - bff-dp-keys:/app/dp-keys
     depends_on:
       promisemodelonline.api:
         condition: service_healthy
@@ -44,6 +47,15 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
   promisemodelonline.api:
     image: ${DOCKER_REGISTRY-}promisemodelonlineapi
@@ -81,10 +93,13 @@ services:
       - ASPNETCORE_URLS=https://+:8060
       - APP_BASE_URL=https://localhost:9000
       - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
+      - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER:-pmo_auth};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID:-}
       - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
       - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
+    volumes:
+      - auth-dp-keys:/app/dp-keys
     secrets:
       - auth_db_password
       - google_client_secret
@@ -145,6 +160,12 @@ networks:
 volumes:
   mssql-data:
     name: mssqldata
+    driver: local
+  bff-dp-keys:
+    name: bffdpkeys
+    driver: local
+  auth-dp-keys:
+    name: authdpkeys
     driver: local
 
 secrets:

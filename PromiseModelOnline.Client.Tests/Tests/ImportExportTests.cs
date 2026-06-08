@@ -1,12 +1,8 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
-using System.IO;
-using System;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
 
-public class ImportExportTests : SeleniumTestBase
+public class ImportExportTests : PlaywrightTestBase
 {
     private static string GetResourcePath(string fileName)
     {
@@ -20,34 +16,33 @@ public class ImportExportTests : SeleniumTestBase
         return Path.Combine(projectDir, "Resources", "ProjectFiles", fileName);
     }
 
-    private void UploadImportFile(string fileName)
+    private async Task UploadImportFileAsync(string fileName)
     {
         var filePath = GetResourcePath(fileName);
-        var fileInput = WaitForElement(By.Id("import-project-input"), 5);
-        fileInput.SendKeys(filePath);
+        var fileInput = await WaitForSelectorAsync("#import-project-input", 5);
+        await fileInput.SetInputFilesAsync(filePath);
     }
 
     [Test]
-    public void ImportPage_HasImportSection()
+    public async Task ImportPage_HasImportSection()
     {
-        NavigateAsUser("/projects/add");
+        await NavigateAsUser("/projects/add");
 
-        var importBtn = WaitForElement(By.Id("import-project-btn"), 5);
-        Assert.That(importBtn.Displayed, Is.True);
-        Assert.That(importBtn.Text, Does.Contain("Import"));
+        var importBtn = await WaitForSelectorAsync("#import-project-btn", 5);
+        Assert.That(await importBtn.IsVisibleAsync(), Is.True);
+        Assert.That(await importBtn.TextContentAsync(), Does.Contain("Import"));
 
-        var fileInput = Driver.FindElement(By.Id("import-project-input"));
-        Assert.That(fileInput.Displayed, Is.True);
+        Assert.That(await IsVisibleAsync("#import-project-input"), Is.True);
     }
 
     [Test]
-    public void Import_UberJson_ShowsPreview()
+    public async Task Import_UberJson_ShowsPreview()
     {
-        NavigateAsUser("/projects/add");
-        UploadImportFile("uber.json");
+        await NavigateAsUser("/projects/add");
+        await UploadImportFileAsync("uber.json");
 
-        var summaryPanel = WaitForElement(By.Id("project-import-summary-panel"), 5);
-        var summaryText = summaryPanel.Text;
+        var summaryPanel = await WaitForSelectorAsync("#project-import-summary-panel", 5);
+        var summaryText = await summaryPanel.TextContentAsync();
 
         Assert.That(summaryText, Does.Contain("Uber"));
         Assert.That(summaryText, Does.Contain("Schema Version"));
@@ -62,13 +57,13 @@ public class ImportExportTests : SeleniumTestBase
     }
 
     [Test]
-    public void Import_NetflixJson_ShowsPreview()
+    public async Task Import_NetflixJson_ShowsPreview()
     {
-        NavigateAsUser("/projects/add");
-        UploadImportFile("netflix.json");
+        await NavigateAsUser("/projects/add");
+        await UploadImportFileAsync("netflix.json");
 
-        var summaryPanel = WaitForElement(By.Id("project-import-summary-panel"), 5);
-        var summaryText = summaryPanel.Text;
+        var summaryPanel = await WaitForSelectorAsync("#project-import-summary-panel", 5);
+        var summaryText = await summaryPanel.TextContentAsync();
 
         Assert.That(summaryText, Does.Contain("Netflix"));
         Assert.That(summaryText, Does.Contain("Promises"));
@@ -78,125 +73,123 @@ public class ImportExportTests : SeleniumTestBase
     }
 
     [Test]
-    public void Import_UberJson_SubmitSuccessfully()
+    public async Task Import_UberJson_SubmitSuccessfully()
     {
-        NavigateAsUser("/projects/add");
-        UploadImportFile("uber.json");
+        await NavigateAsUser("/projects/add");
+        await UploadImportFileAsync("uber.json");
 
-        WaitForElement(By.CssSelector("#project-import-summary-panel table"), 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
+        await ClickAsync("#create-project-btn", 5);
 
-        ScrollToAndClick(By.Id("create-project-btn"), 5);
-
-        WaitForUrlContains("/graph", 10);
-        Assert.That(Driver.Url, Does.Contain("/pmo_test/seeded-project/graph"));
+        var contains = await WaitForUrlContainsAsync("/graph", 10);
+        Assert.That(contains, Is.True);
+        Assert.That(Page.Url, Does.Contain("/pmo_test/seeded-project/graph"));
     }
 
     [Test]
-    public void Import_NetflixJson_SubmitSuccessfully()
+    public async Task Import_NetflixJson_SubmitSuccessfully()
     {
-        NavigateAsUser("/projects/add");
-        UploadImportFile("netflix.json");
+        await NavigateAsUser("/projects/add");
+        await UploadImportFileAsync("netflix.json");
 
-        WaitForElement(By.CssSelector("#project-import-summary-panel table"), 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
+        await ClickAsync("#create-project-btn", 5);
 
-        ScrollToAndClick(By.Id("create-project-btn"), 5);
-
-        WaitForUrlContains("/graph", 10);
-        Assert.That(Driver.Url, Does.Contain("/pmo_test/seeded-project/graph"));
+        var contains = await WaitForUrlContainsAsync("/graph", 10);
+        Assert.That(contains, Is.True);
+        Assert.That(Page.Url, Does.Contain("/pmo_test/seeded-project/graph"));
     }
 
     [Test]
-    public void Import_CancelImport_ResetsForm()
+    public async Task Import_CancelImport_ResetsForm()
     {
-        NavigateAsUser("/projects/add");
-        UploadImportFile("uber.json");
+        await NavigateAsUser("/projects/add");
+        await UploadImportFileAsync("uber.json");
 
-        WaitForElement(By.CssSelector("#project-import-summary-panel table"), 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
 
-        var clearBtn = WaitForElement(By.Id("clear-import-btn"), 5);
-        Assert.That(clearBtn.Displayed, Is.True);
+        var clearBtn = await WaitForSelectorAsync("#clear-import-btn", 5);
+        Assert.That(await clearBtn.IsVisibleAsync(), Is.True);
 
-        ScrollToAndClick(By.Id("clear-import-btn"), 5);
+        await ClickAsync("#clear-import-btn", 5);
 
-        var summaryPanel = Driver.FindElement(By.Id("project-import-summary-panel"));
-        Assert.That(summaryPanel.Text, Is.Empty);
+        var summaryText = await Page.Locator("#project-import-summary-panel").TextContentAsync();
+        Assert.That(summaryText, Is.Empty);
 
-        var nameInput = Driver.FindElement(By.Id("project-name-input"));
-        Assert.That(nameInput.GetAttribute("value"), Is.Empty);
+        var nameValue = await Page.Locator("#project-name-input").InputValueAsync();
+        Assert.That(nameValue, Is.Empty);
     }
 
     [Test]
-    public void Export_ButtonShowsOnSettingsPage()
+    public async Task Export_ButtonShowsOnSettingsPage()
     {
-        NavigateAsUser("/pmo_test/seeded-project/settings");
+        await NavigateAsUser("/pmo_test/seeded-project/settings");
 
-        var exportBtn = WaitForElement(By.Id("export-project-btn"), 5);
-        Assert.That(exportBtn.Displayed, Is.True);
-        Assert.That(exportBtn.Text, Does.Contain("Export"));
+        var exportBtn = await WaitForSelectorAsync("#export-project-btn", 5);
+        Assert.That(await exportBtn.IsVisibleAsync(), Is.True);
+        Assert.That(await exportBtn.TextContentAsync(), Does.Contain("Export"));
     }
 
     [Test]
-    public void Export_Download_TriggersSuccessPopover()
+    public async Task Export_Download_TriggersSuccessPopover()
     {
-        NavigateAsUser("/pmo_test/seeded-project/settings");
+        await NavigateAsUser("/pmo_test/seeded-project/settings");
 
-        var exportBtn = WaitForElement(By.Id("export-project-btn"), 5);
-        ScrollToAndClick(By.Id("export-project-btn"), 5);
+        await WaitForSelectorAsync("#export-project-btn", 5);
+        await ClickAsync("#export-project-btn", 5);
 
-        var popover = WaitForElement(By.CssSelector(".popover, [data-bs-content]"), 5);
+        var popover = await WaitForSelectorAsync(".popover, [data-bs-content]", 5);
         Assert.That(popover, Is.Not.Null);
     }
 
     [Test]
-    public void Import_FileInput_AcceptsJsonExtension()
+    public async Task Import_FileInput_AcceptsJsonExtension()
     {
-        NavigateAsUser("/projects/add");
+        await NavigateAsUser("/projects/add");
 
-        var fileInput = Driver.FindElement(By.Id("import-project-input"));
-        var acceptAttr = fileInput.GetAttribute("accept");
+        var acceptAttr = await Page.Locator("#import-project-input").GetAttributeAsync("accept");
         Assert.That(acceptAttr, Does.Contain(".json"));
         Assert.That(acceptAttr, Does.Contain("application/json"));
     }
 
     [Test]
-    public void Import_UberJson_NameAndDescriptionPopulated()
+    public async Task Import_UberJson_NameAndDescriptionPopulated()
     {
-        NavigateAsUser("/projects/add");
-        UploadImportFile("uber.json");
+        await NavigateAsUser("/projects/add");
+        await UploadImportFileAsync("uber.json");
 
-        var nameInput = WaitForElement(By.Id("project-name-input"), 5);
-        Assert.That(nameInput.GetAttribute("value"), Is.EqualTo("Uber"));
+        var nameInput = await WaitForSelectorAsync("#project-name-input", 5);
+        Assert.That(await nameInput.InputValueAsync(), Is.EqualTo("Uber"));
 
-        var descriptionInput = Driver.FindElement(By.Id("project-description-input"));
-        Assert.That(descriptionInput.GetAttribute("value"), Does.Contain("Promise-Driven Development refactor of Uber"));
+        var descriptionValue = await Page.Locator("#project-description-input").InputValueAsync();
+        Assert.That(descriptionValue, Does.Contain("Promise-Driven Development refactor of Uber"));
     }
 
     [Test]
-    public void Import_Mode_SubmitButtonLabelChanges()
+    public async Task Import_Mode_SubmitButtonLabelChanges()
     {
-        NavigateAsUser("/projects/add");
+        await NavigateAsUser("/projects/add");
 
-        var submitBtn = WaitForElement(By.Id("create-project-btn"), 5);
-        var label = Driver.FindElement(By.Id("create-project-btn-label"));
-        Assert.That(label.Text, Is.EqualTo("Create Project"));
+        var label = Page.Locator("#create-project-btn-label");
+        Assert.That(await label.TextContentAsync(), Is.EqualTo("Create Project"));
 
-        UploadImportFile("uber.json");
-        WaitForElement(By.CssSelector("#project-import-summary-panel table"), 5);
+        await UploadImportFileAsync("uber.json");
+        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
 
-        Assert.That(label.Text, Is.EqualTo("Import Project"));
+        Assert.That(await label.TextContentAsync(), Is.EqualTo("Import Project"));
     }
 
     [Test]
-    public void Import_FirstPromiseHidden_InImportMode()
+    public async Task Import_FirstPromiseHidden_InImportMode()
     {
-        NavigateAsUser("/projects/add");
+        await NavigateAsUser("/projects/add");
 
-        var firstPromisePanel = Driver.FindElement(By.Id("first-promise-panel"));
-        Assert.That(firstPromisePanel.Displayed, Is.True);
+        await WaitForSelectorAsync("#first-promise-panel", 5);
+        Assert.That(await IsVisibleAsync("#first-promise-panel"), Is.True);
 
-        UploadImportFile("uber.json");
-        WaitForElement(By.CssSelector("#project-import-summary-panel table"), 5);
+        await UploadImportFileAsync("uber.json");
+        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
 
-        Assert.That(firstPromisePanel.Displayed, Is.False);
+        Assert.That(await IsVisibleAsync("#first-promise-panel"), Is.False);
     }
 }

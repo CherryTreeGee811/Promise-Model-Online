@@ -23,7 +23,9 @@
     "jsonBody": [
       {
         "id": 100,
+        "sequenceNumber": 100,
         "statement": "Moment 100",
+        "type": "Job",
         "ownerId": 999,
         "assignedStrideId": 20,
         "status": "Todo"

@@ -27,7 +27,9 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         private void SetupHttpContext(
             bool isAuthenticated = true,
             string? email = "user@test.com",
-            string scope = "openid")
+            string scope = "openid",
+            bool includeSubject = true,
+            string? codeChallengeMethod = "S256")
         {
             var httpContext = new DefaultHttpContext();
 
@@ -36,7 +38,8 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             {
                 Request = new OpenIddictRequest
                 {
-                    Scope = scope
+                    Scope = scope,
+                    CodeChallengeMethod = codeChallengeMethod
                 }
             };
 
@@ -52,8 +55,8 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             claims.Add(new Claim(ClaimTypes.Name, "tester"));
 
-            // ✅ REQUIRED
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, "123"));
+            if (includeSubject)
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, "123"));
 
             var identity = new ClaimsIdentity(
                 isAuthenticated ? claims : new List<Claim>(),
@@ -93,7 +96,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         // =========================================
-        // ✅ Unauthorized
+        // ✅ Happy path
         // =========================================
 
         [Test]
@@ -109,10 +112,6 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             Assert.That(redirect!.Url, Does.StartWith("/account/login"));
         }
 
-        // =========================================
-        // ✅ Authenticated (no scope)
-        // =========================================
-
         [Test]
         public async Task Authorize_WhenAuthenticated_ReturnsSignIn()
         {
@@ -122,10 +121,6 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             Assert.That(result, Is.InstanceOf<MvcSignInResult>());
         }
-
-        // =========================================
-        // ✅ Includes email claim
-        // =========================================
 
         [Test]
         public async Task Authorize_WithEmail_AddsEmailClaim()
@@ -143,10 +138,6 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             Assert.That(emailClaim!.Value, Is.EqualTo("user@test.com"));
         }
 
-        // =========================================
-        // ✅ Without email (optional behavior)
-        // =========================================
-
         [Test]
         public async Task Authorize_WithoutEmail_DoesNotAddEmailClaim()
         {
@@ -158,17 +149,12 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             var principal = result!.Principal;
 
-            // ✅ look at identity instead of flattened principal
             var emailClaim = principal.Identities
                 .SelectMany(i => i.Claims)
                 .FirstOrDefault(c => c.Type == ClaimTypes.Email);
 
             Assert.That(emailClaim, Is.Null);
         }
-
-        // =========================================
-        // ✅ Scopes applied
-        // =========================================
 
         [Test]
         public async Task Authorize_WithScopes_SetsScopesOnPrincipal()
@@ -181,11 +167,191 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             var principal = result!.Principal;
 
-            // Note: scopes are stored as claims in OpenIddict
             var scopes = principal.GetScopes().ToList();
 
             Assert.That(scopes, Does.Contain("openid"));
             Assert.That(scopes, Does.Contain("profile"));
+        }
+
+        // =========================================
+        // 🚫 Misuse cases
+        // =========================================
+
+        [Test]
+        public void Authorize_WhenFeatureMissing_ThrowsInvalidOperation()
+        {
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Path = "/connect/authorize";
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _controller.Authorize());
+            Assert.That(ex!.Message, Does.Contain("request cannot be retrieved"));
+        }
+
+        [Test]
+        public void Authorize_WhenTransactionRequestNull_ThrowsInvalidOperation()
+        {
+            var httpContext = new DefaultHttpContext();
+            httpContext.Features.Set(new OpenIddictServerAspNetCoreFeature
+            {
+                Transaction = new OpenIddictServerTransaction()
+            });
+            httpContext.Request.Path = "/connect/authorize";
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _controller.Authorize());
+            Assert.That(ex!.Message, Does.Contain("request cannot be retrieved"));
+        }
+
+        [Test]
+        public async Task Authorize_WithoutSubject_ReturnsForbid()
+        {
+            // Authenticated user but missing NameIdentifier claim
+            SetupHttpContext(scope: "openid", includeSubject: false);
+
+            var result = await _controller.Authorize();
+
+            Assert.That(result, Is.InstanceOf<ForbidResult>());
+        }
+
+        [Test]
+        public async Task Authorize_WithoutOpenIdScope_ReturnsBadRequest()
+        {
+            // scope = "profile" not "openid"
+            SetupHttpContext(scope: "profile");
+
+            var result = await _controller.Authorize();
+
+            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+
+            var badRequest = result as BadRequestObjectResult;
+            Assert.That(badRequest!.Value, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task Authorize_WithEmptyScope_ReturnsBadRequest()
+        {
+            SetupHttpContext(scope: "");
+
+            var result = await _controller.Authorize();
+
+            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task Authorize_WithPlainPkceMethod_ReturnsBadRequest()
+        {
+            var httpContext = new DefaultHttpContext();
+
+            var transaction = new OpenIddictServerTransaction
+            {
+                Request = new OpenIddictRequest
+                {
+                    Scope = "openid",
+                    CodeChallengeMethod = "plain"
+                }
+            };
+
+            httpContext.Features.Set(new OpenIddictServerAspNetCoreFeature
+            {
+                Transaction = transaction
+            });
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, "123"),
+                new(ClaimTypes.Name, "tester")
+            };
+
+            var identity = new ClaimsIdentity(claims, "test");
+            httpContext.User = new ClaimsPrincipal(identity);
+
+            var authService = new Mock<IAuthenticationService>();
+            authService
+                .Setup(s => s.AuthenticateAsync(httpContext, IdentityConstants.ApplicationScheme))
+                .ReturnsAsync(AuthenticateResult.Success(new AuthenticationTicket(httpContext.User, IdentityConstants.ApplicationScheme)));
+
+            httpContext.RequestServices = new ServiceCollection()
+                .AddSingleton(authService.Object)
+                .BuildServiceProvider();
+
+            httpContext.Request.Path = "/connect/authorize";
+            httpContext.Request.QueryString = new QueryString("?scope=openid&code_challenge_method=plain");
+
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            var result = await _controller.Authorize();
+
+            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task Authorize_WithRole_AddsRoleClaim()
+        {
+            var httpContext = new DefaultHttpContext();
+
+            var transaction = new OpenIddictServerTransaction
+            {
+                Request = new OpenIddictRequest
+                {
+                    Scope = "openid",
+                    CodeChallengeMethod = "S256"
+                }
+            };
+
+            httpContext.Features.Set(new OpenIddictServerAspNetCoreFeature
+            {
+                Transaction = transaction
+            });
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, "123"),
+                new(ClaimTypes.Name, "tester"),
+                new(ClaimTypes.Role, "admin"),
+                new(ClaimTypes.Role, "moderator")
+            };
+
+            var identity = new ClaimsIdentity(claims, "test");
+            var user = new ClaimsPrincipal(identity);
+            httpContext.User = user;
+
+            var authService = new Mock<IAuthenticationService>();
+            var ticket = new AuthenticationTicket(user, IdentityConstants.ApplicationScheme);
+            authService
+                .Setup(s => s.AuthenticateAsync(httpContext, IdentityConstants.ApplicationScheme))
+                .ReturnsAsync(AuthenticateResult.Success(ticket));
+
+            httpContext.RequestServices = new ServiceCollection()
+                .AddSingleton(authService.Object)
+                .BuildServiceProvider();
+
+            httpContext.Request.Path = "/connect/authorize";
+            httpContext.Request.QueryString = new QueryString("?scope=openid");
+
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            var result = await _controller.Authorize() as MvcSignInResult;
+            Assert.That(result, Is.Not.Null);
+
+            var principal = result!.Principal;
+            var roleClaims = principal.FindAll(OpenIddictConstants.Claims.Role).ToList();
+
+            Assert.That(roleClaims, Has.Count.EqualTo(2));
+            Assert.That(roleClaims.Select(c => c.Value), Does.Contain("admin"));
+            Assert.That(roleClaims.Select(c => c.Value), Does.Contain("moderator"));
         }
     }
 }

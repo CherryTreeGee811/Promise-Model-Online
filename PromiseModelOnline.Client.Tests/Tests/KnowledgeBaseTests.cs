@@ -1,45 +1,44 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class KnowledgeBaseTests : PlaywrightTestBase
 {
-    public class KnowledgeBaseTests : SeleniumTestBase
+    [Test]
+    public async Task KnowledgeBase_ShowsSidebar()
     {
-        [Test]
-        public void KnowledgeBase_ShowsSidebar()
-        {
-            NavigateAsUser("/knowledge-base");
+        await NavigateAsUser("/knowledge-base");
 
-            var sidebar = WaitForElement(By.Id("navbar-kb"), 10);
+        var sidebar = await WaitForSelectorAsync("#navbar-kb", 10);
 
-            Assert.That(sidebar.Displayed, Is.True);
-            Assert.That(sidebar.Text, Does.Contain("Promise Stack KB"));
-            Assert.That(sidebar.FindElements(By.CssSelector(".nav-link")).Count, Is.GreaterThanOrEqualTo(5));
-        }
+        Assert.That(await sidebar.IsVisibleAsync(), Is.True);
+        Assert.That(await sidebar.TextContentAsync(), Does.Contain("Promise Stack KB"));
 
-        [Test]
-        public void KnowledgeBase_ShowsContent()
-        {
-            NavigateAsUser("/knowledge-base");
+        var navLinks = await sidebar.Locator(".nav-link").AllAsync();
+        Assert.That(navLinks.Count, Is.GreaterThanOrEqualTo(5));
+    }
 
-            var kbContent = WaitForElement(By.Id("kb-content"), 10);
+    [Test]
+    public async Task KnowledgeBase_ShowsContent()
+    {
+        await NavigateAsUser("/knowledge-base");
 
-            Assert.That(kbContent.Displayed, Is.True);
-            Assert.That(kbContent.Text, Does.Contain("Promise Stack Overview"));
-        }
+        var kbContent = await WaitForSelectorAsync("#kb-content", 10);
 
-        [Test]
-        public void KnowledgeBase_Navigation_ScrollsToSection()
-        {
-            NavigateAsUser("/knowledge-base");
+        Assert.That(await kbContent.IsVisibleAsync(), Is.True);
+        Assert.That(await kbContent.TextContentAsync(), Does.Contain("Promise Stack Overview"));
+    }
 
-            var sectionLink = WaitForElement(By.CssSelector("#navbar-kb a[href='#section6']"), 10);
-            sectionLink.Click();
+    [Test]
+    public async Task KnowledgeBase_Navigation_ScrollsToSection()
+    {
+        await NavigateAsUser("/knowledge-base");
 
-            var section = WaitForElement(By.Id("section6"), 10);
-            Assert.That(section.Displayed, Is.True);
-            Assert.That(section.Text, Does.Contain("Moments"));
-        }
+        var sectionLink = await WaitForSelectorAsync("#navbar-kb a[href='#section6']", 10);
+        await sectionLink.ClickAsync();
+
+        var section = await WaitForSelectorAsync("#section6", 10);
+        Assert.That(await section.IsVisibleAsync(), Is.True);
+        Assert.That(await section.TextContentAsync(), Does.Contain("Moments"));
     }
 }

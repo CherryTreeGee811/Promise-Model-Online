@@ -1,27 +1,26 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class RegistrationTests : PlaywrightTestBase
 {
-    public class RegistrationTests : SeleniumTestBase
+    [Test]
+    public async Task RegisterLink_NavigatesToAuthRegister()
     {
-        [Test]
-        public void RegisterLink_NavigatesToAuthRegister()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/");
 
-            var registerLink = WaitForElement(By.CssSelector("#register-link"), 5);
-            Assert.That(registerLink.GetAttribute("href"), Does.Contain("/account/register"));
-        }
+        var registerLink = await WaitForSelectorAsync("#register-link", 5);
+        var href = await registerLink.GetAttributeAsync("href");
 
-        [Test]
-        public void Register_InSpa_RedirectsToAuth()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/register");
+        Assert.That(href, Does.Contain("/account/register"));
+    }
 
-            // SPA route handler redirects to Auth server
-            WaitUntil(d => d.Url.Contains("/register"), 5);
-        }
+    [Test]
+    public async Task Register_InSpa_RedirectsToAuth()
+    {
+        await Page.GotoAsync(BaseUrl + "/register");
+
+        var contains = await WaitForUrlContainsAsync("/register", 5);
+        Assert.That(contains, Is.True);
     }
 }

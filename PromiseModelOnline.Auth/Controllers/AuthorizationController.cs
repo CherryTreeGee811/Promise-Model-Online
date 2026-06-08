@@ -65,7 +65,20 @@ namespace PromiseModelOnline.Auth.Controllers
 
             principal.SetScopes(scopes.ToList());
 
-            // ✅ 6. Assign API resource
+            // ✅ 6. Enforce S256 PKCE method (OAuth 2.1 best practice)
+            // Missing or non-S256 method is rejected — `plain` is deprecated
+            // and should not be accepted even by omission.
+            var codeChallengeMethod = request.CodeChallengeMethod;
+            if (!string.Equals(codeChallengeMethod, "S256", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    error = OpenIddictConstants.Errors.InvalidRequest,
+                    error_description = "S256 PKCE challenge method is required."
+                });
+            }
+
+            // ✅ 7. Assign API resource
             if (scopes.Contains("projects.read") || scopes.Contains("projects.write"))
             {
                 principal.SetResources("promisemodelonline.api");

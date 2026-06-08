@@ -1,0 +1,4 @@
+services:
+  promisemodelonline.client:
+    volumes:
+      - ./infrastructure/tests/default-e2e.conf:/etc/nginx/conf.d/default.conf

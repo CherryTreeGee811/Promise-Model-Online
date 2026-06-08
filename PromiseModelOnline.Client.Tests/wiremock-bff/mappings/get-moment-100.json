@@ -20,7 +20,7 @@
     "jsonBody": {
       "id": 100,
       "statement": "Moment 100",
-      "type": "Task",
+      "type": "Story",
       "status": "Todo",
       "effortEstimate": "M",
       "ownerId": 1,

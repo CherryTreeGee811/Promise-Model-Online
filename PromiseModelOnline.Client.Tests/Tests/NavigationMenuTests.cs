@@ -1,99 +1,91 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class NavigationMenuTests : PlaywrightTestBase
 {
-    public class NavigationMenuTests : SeleniumTestBase
+    [Test]
+    public async Task Anonymous_ShowsLoginAndRegisterLinks()
     {
-        [Test]
-        public void Anonymous_ShowsLoginAndRegisterLinks()
+        await Page.GotoAsync(BaseUrl + "/");
+
+        await WaitForSelectorAsync("#login-link", 5);
+        await WaitForSelectorAsync("#register-link", 5);
+
+        Assert.That(await IsVisibleAsync("#login-link"), Is.True);
+        Assert.That(await IsVisibleAsync("#register-link"), Is.True);
+    }
+
+    [Test]
+    public async Task Anonymous_DoesNotShowAuthenticatedLinks()
+    {
+        await Page.GotoAsync(BaseUrl + "/");
+        await WaitForSelectorAsync("#login-link", 5);
+
+        Assert.That(await CountElementsAsync("#projects-link"), Is.EqualTo(0));
+        Assert.That(await CountElementsAsync("#logout-link"), Is.EqualTo(0));
+        Assert.That(await CountElementsAsync("#notifications-link"), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task Authenticated_ShowsProjectLinksAndUserDropdown()
+    {
+        await NavigateAsUser("/");
+
+        await WaitForSelectorAsync("#projects-link", 5);
+
+        Assert.That(await IsVisibleAsync("#projects-link"), Is.True);
+        Assert.That(await IsVisibleAsync("#my-tasks-link"), Is.True);
+        Assert.That(await IsVisibleAsync("#notifications-link"), Is.True);
+
+        Assert.That(await IsVisibleAsync("#user-dropdown"), Is.True);
+
+        Assert.That(await IsVisibleAsync("#logout-link"), Is.False);
+        Assert.That(await IsVisibleAsync("#change-password-link"), Is.False);
+
+        await Page.Locator("#user-dropdown").ClickAsync();
+        Assert.That(await IsVisibleAsync("#logout-link"), Is.True);
+        Assert.That(await IsVisibleAsync("#change-password-link"), Is.True);
+        Assert.That(await IsVisibleAsync("#invitations-link"), Is.True);
+        Assert.That(await IsVisibleAsync("#knowledge-base-link"), Is.True);
+    }
+
+    [Test]
+    public async Task Authenticated_DoesNotShowLoginAndRegisterLinks()
+    {
+        await NavigateAsUser("/");
+
+        await WaitForSelectorAsync("#projects-link", 5);
+
+        Assert.That(await CountElementsAsync("#login-link"), Is.EqualTo(0));
+        Assert.That(await CountElementsAsync("#register-link"), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task Authenticated_NotificationsLink_ShowsBadge()
+    {
+        await NavigateAsUser("/");
+
+        var notificationsLink = await WaitForSelectorAsync("#notifications-link", 5);
+
+        var badgeVisible = await WaitUntilAsync(async () =>
         {
-            Driver.Navigate().GoToUrl(BaseUrl + "/");
+            var badge = Page.Locator("#notification-badge");
+            var visible = await badge.IsVisibleAsync();
+            var text = await badge.TextContentAsync();
+            return visible && text?.Trim() == "2";
+        }, 10);
 
-            WaitForElement(By.Id("login-link"), 5);
-            WaitForElement(By.Id("register-link"), 5);
+        Assert.That(badgeVisible, Is.True);
+    }
 
-            Assert.That(Driver.FindElement(By.Id("login-link")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("register-link")).Displayed, Is.True);
-        }
+    [Test]
+    public async Task ClickProjectLink_NavigatesToProjects()
+    {
+        await NavigateAsUser("/");
+        await ClickAsync("#projects-link", 5);
 
-        [Test]
-        public void Anonymous_DoesNotShowAuthenticatedLinks()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/");
-
-            WaitForElement(By.Id("login-link"), 5);
-
-            Assert.That(Driver.FindElements(By.Id("projects-link")).Count, Is.EqualTo(0));
-            Assert.That(Driver.FindElements(By.Id("logout-link")).Count, Is.EqualTo(0));
-            Assert.That(Driver.FindElements(By.Id("notifications-link")).Count, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void Authenticated_ShowsProjectLinksAndUserDropdown()
-        {
-            NavigateAsUser("/");
-
-            WaitForElement(By.Id("projects-link"), 5);
-
-            // Primary nav items are always visible
-            Assert.That(Driver.FindElement(By.Id("projects-link")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("my-tasks-link")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("notifications-link")).Displayed, Is.True);
-
-            // User dropdown toggle is visible
-            Assert.That(Driver.FindElement(By.Id("user-dropdown")).Displayed, Is.True);
-
-            // Dropdown items exist in DOM but are hidden initially
-            Assert.That(Driver.FindElement(By.Id("logout-link")).Displayed, Is.False);
-            Assert.That(Driver.FindElement(By.Id("change-password-link")).Displayed, Is.False);
-
-            // Open the dropdown to verify items render correctly
-            Driver.FindElement(By.Id("user-dropdown")).Click();
-            Assert.That(Driver.FindElement(By.Id("logout-link")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("change-password-link")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("invitations-link")).Displayed, Is.True);
-            Assert.That(Driver.FindElement(By.Id("knowledge-base-link")).Displayed, Is.True);
-        }
-
-        [Test]
-        public void Authenticated_DoesNotShowLoginAndRegisterLinks()
-        {
-            NavigateAsUser("/");
-
-            WaitForElement(By.Id("projects-link"), 5);
-
-            Assert.That(Driver.FindElements(By.Id("login-link")).Count, Is.EqualTo(0));
-            Assert.That(Driver.FindElements(By.Id("register-link")).Count, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void Authenticated_NotificationsLink_ShowsBadge()
-        {
-            NavigateAsUser("/");
-
-            var notificationsLink = WaitForElement(By.Id("notifications-link"), 5);
-            var badge = notificationsLink.FindElement(By.Id("notification-badge"));
-
-            WaitUntil(d =>
-            {
-                try
-                {
-                    var b = d.FindElement(By.Id("notification-badge"));
-                    return b.Displayed && b.Text == "2";
-                }
-                catch { return false; }
-            }, 10);
-        }
-
-        [Test]
-        public void ClickProjectLink_NavigatesToProjects()
-        {
-            NavigateAsUser("/");
-            ScrollToAndClick(By.Id("projects-link"), 5);
-
-            WaitForUrlContains("/projects", 10);
-        }
+        var contains = await WaitForUrlContainsAsync("/projects", 10);
+        Assert.That(contains, Is.True);
     }
 }

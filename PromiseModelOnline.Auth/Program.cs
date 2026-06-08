@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using PromiseModelOnline.Auth.Common;
@@ -116,6 +116,14 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
 
 builder.Services.AddAuthorization();
 
+// ---------- Data Protection (shared key ring for horizontal scaling) ---
+var dpKeysPath = builder.Configuration["DATA_PROTECTION_KEYS_PATH"]
+    ?? Path.Combine(Directory.GetCurrentDirectory(), "dp-keys");
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
+    .SetApplicationName("PromiseModelOnline.Auth");
+
 // ---------- Caching --------------------------------------------------
 builder.Services.AddMemoryCache();
 
@@ -123,46 +131,13 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
 // ---------- Rate limiting ----------------------------------------------
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("TokenEndpointPolicy", config =>
-    {
-        config.PermitLimit = 30;
-        config.Window = TimeSpan.FromMinutes(1);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("RegisterPolicy", config =>
-    {
-        config.PermitLimit = 5;
-        config.Window = TimeSpan.FromMinutes(10);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("VerifyCodePolicy", config =>
-    {
-        config.PermitLimit = 5;
-        config.Window = TimeSpan.FromMinutes(5);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("ResendVerificationPolicy", config =>
-    {
-        config.PermitLimit = 3;
-        config.Window = TimeSpan.FromMinutes(5);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-});
+// Custom middleware instead of AddRateLimiter/UseRateLimiter because
+// OpenIddict's internal token endpoint handler processes requests before
+// the built-in rate limiter middleware can intercept them. The custom
+// middleware runs at the top of the pipeline and uses FixedWindowRateLimiter
+// instances directly.
+// (No services registration needed; the middleware creates limiter instances
+//  at construction time.)
 
 // ---------- HTTPS / MVC ------------------------------------------------
 builder.ConfigureHttps();
@@ -206,8 +181,6 @@ app.UseCors("SPA");
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseRateLimiter();
 
 app.MapDefaultControllerRoute();
 

@@ -1,40 +1,36 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class LoginTests : PlaywrightTestBase
 {
-    public class LoginTests : SeleniumTestBase
+    [Test]
+    public async Task LoginLink_NavigatesToGatewayLogin()
     {
-        [Test]
-        public void LoginLink_NavigatesToGatewayLogin()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/");
 
-            // Login link navigates to BFF /login (full page)
-            var loginLink = WaitForElement(By.CssSelector("#login-link"), 5);
-            Assert.That(loginLink.GetAttribute("href"), Does.Contain("/login"));
-        }
+        var loginLink = await WaitForSelectorAsync("#login-link", 5);
+        var href = await loginLink.GetAttributeAsync("href");
 
-        [Test]
-        public void Login_HasNoFormInSpa()
-        {
-            Driver.Navigate().GoToUrl(BaseUrl + "/login");
+        Assert.That(href, Does.Contain("/login"));
+    }
 
-            // SPA should redirect to BFF /login (no login form rendered)
-            WaitUntil(d => d.Url.Contains("/login") || d.Url == BaseUrl + "/", 5);
-        }
+    [Test]
+    public async Task Login_HasNoFormInSpa()
+    {
+        await Page.GotoAsync(BaseUrl + "/login");
 
-        [Test]
-        public void Login_SetsSession_AllowsFutureRequests()
-        {
-            SetSessionCookie("owner-session");
+        var urlContains = await WaitForUrlContainsAsync("/login", 5);
+        Assert.That(urlContains, Is.True);
+    }
 
-            NavigateSpa("/projects");
+    [Test]
+    public async Task Login_SetsSession_AllowsFutureRequests()
+    {
+        await NavigateAsUser("/projects");
 
-            WaitForElement(By.CssSelector("#project-list-table-body tr"));
+        await WaitForSelectorAsync("#project-list-table-body tr");
 
-            Assert.That(Driver.Url, Does.Not.Contain("/login"));
-        }
+        Assert.That(Page.Url, Does.Not.Contain("/login"));
     }
 }

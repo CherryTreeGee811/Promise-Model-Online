@@ -12,11 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-               
+                
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
+
+      # ─── 1. Build all projects (fail fast on compilation errors) ───
+
+      - name: Restore & Build All Projects
+        shell: bash
+        run: dotnet build Promise-Model-Online.sln
 
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
@@ -60,278 +66,31 @@ jobs:
             printf '%s' "${{ secrets.GOOGLE_CLIENT_SECRET }}" > secrets/google_client_secret.txt
             printf '%s' "${{ secrets.SENDGRID_API_KEY }}" > secrets/sendgrid_api_key.txt
 
-      - name: Smoke Test Production Environment
-        shell: bash
-        run: |
-          ls secrets
-          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
-          export JWT__KEY="${{ secrets.JWT__KEY }}"
-          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
-          
-          dump_logs() {
-            echo ""
-            echo "========== FAILED SERVICE LOGS =========="
-            for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlinedb promisemodelonlinedbinit; do
-              echo ""
-              echo "--- $svc (last 60 lines) ---"
-              docker logs "$svc" --tail 60 2>&1 || echo "(no logs)"
-            done
-          }
-
-          docker compose --project-name promisemodelonline up -d
-
-          # ---- Immediate crash check ----
-          sleep 5
-          for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff; do
-            CID=$(docker ps -aq --filter "name=$svc" --filter "status=exited" 2>/dev/null || true)
-            if [ -n "$CID" ]; then
-              echo "ERROR: $svc exited immediately (code: $(docker inspect "$CID" --format '{{.State.ExitCode}}'))"
-              docker logs "$CID" --tail 60
-              dump_logs
-              exit 1
-            fi
-          done
-
-          # ---- Wait for db-init to finish ----
-          echo "Waiting for db-init to complete..."
-          for i in $(seq 1 10); do
-            STATUS=$(docker inspect promisemodelonlinedbinit --format='{{.State.ExitCode}}')
-            if [ "$STATUS" -eq 0 ]; then
-              echo "db-init completed successfully"
-              break
-            fi
-            echo "db-init not finished yet (attempt $i)..."
-            sleep 5
-          done
-          if [ "$STATUS" != "0" ]; then
-            echo "ERROR: db-init did not exit successfully (exit code $STATUS)"
-            dump_logs
-            exit 1
-          fi
-
-          # ---- SQL Server health check using API login ----
-          echo "Waiting for SQL Server (login: ${{ vars.PMO_API_DB_USER }})..."
-          SQL_READY=false
-          for i in $(seq 1 20); do
-            if docker run --rm --network promisemodelonline_promisemodelonline-net mcr.microsoft.com/mssql-tools \
-              /opt/mssql-tools/bin/sqlcmd -S promisemodelonline.db,1433 \
-                -U "${{ vars.PMO_API_DB_USER }}" \
-                -P "${{ secrets.PMO_API_DB_PASSWORD }}" \
-                -d PromiseModelOnline \
-                -Q "SELECT 1" &>/dev/null; then
-              echo "SQL Server is ready"
-              SQL_READY=true
-              break
-            fi
-            echo "SQL Server not ready yet, waiting..."
-            sleep 3
-          done
-          if [ "$SQL_READY" = false ]; then
-            echo "ERROR: SQL Server failed to become ready within 60 seconds"
-            dump_logs
-            exit 1
-          fi
-
-          # ---- Verify Auth database login ----
-          echo "Verifying Auth database login..."
-          AUTH_DB_READY=false
-          for i in $(seq 1 5); do
-            if docker run --rm --network promisemodelonline_promisemodelonline-net mcr.microsoft.com/mssql-tools \
-              /opt/mssql-tools/bin/sqlcmd -S promisemodelonline.db,1433 \
-                -U "${{ vars.PMO_AUTH_DB_USER }}" \
-                -P "${{ secrets.PMO_AUTH_DB_PASSWORD }}" \
-                -d PromiseModelOnlineAuth \
-                -Q "SELECT 1" &>/dev/null; then
-              echo "Auth database login OK"
-              AUTH_DB_READY=true
-              break
-            fi
-            echo "Auth login check attempt $i..."
-            sleep 2
-          done
-          if [ "$AUTH_DB_READY" = false ]; then
-            echo "ERROR: Auth database login failed"
-            dump_logs
-            exit 1
-          fi
-
-          # ---- Auth service health ----
-          echo "Waiting for Auth Server..."
-          AUTH_READY=false
-          for i in $(seq 1 20); do
-            STATUS=$(docker exec promisemodelonlineauth curl -sk -o /dev/null -w "%{http_code}" https://localhost:8060/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlineauth curl -sk https://localhost:8060/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "Auth is healthy"
-                AUTH_READY=true
-                break
-              fi
-            fi
-            echo "Attempt $i: Auth not ready yet, waiting..."
-            sleep 3
-          done
-          if [ "$AUTH_READY" = false ]; then
-            echo "ERROR: Auth failed to become healthy within 60 seconds"
-            dump_logs
-            exit 1
-          fi
-
-          # ---- API service health ----
-          echo "Waiting for API..."
-          API_READY=false
-          for i in $(seq 1 30); do
-            STATUS=$(docker exec promisemodelonlineapi curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlineapi curl -s http://localhost:8000/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "API is healthy"
-                API_READY=true
-                break
-              fi
-            fi
-            echo "Attempt $i: API not ready yet, waiting..."
-            sleep 3
-          done
-          if [ "$API_READY" = false ]; then
-            echo "ERROR: API failed to become healthy within 90 seconds"
-            dump_logs
-            exit 1
-          fi
-
-          # ---- Gateway health ----
-          echo "Waiting for Gateway..."
-          GATEWAY_READY=false
-          for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlinebff curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlinebff curl -k -s https://localhost:8010/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "Gateway is healthy"
-                GATEWAY_READY=true
-                break
-              fi
-            fi
-            echo "Gateway not ready (attempt $i)..."
-            sleep 3
-          done
-          if [ "$GATEWAY_READY" = false ]; then
-            echo "ERROR: Gateway failed to become healthy within 30 seconds"
-            dump_logs
-            exit 1
-          fi
-
-          # ---- Client (Nginx) ----
-          echo "Waiting for Client..."
-          CLIENT_READY=false
-          for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlineclient curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlineclient curl -k -s https://localhost:9000/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "Client is healthy"
-                CLIENT_READY=true
-                break
-              fi
-            fi
-            echo "Client not ready (attempt $i)..."
-            sleep 3
-          done
-          if [ "$CLIENT_READY" = false ]; then
-            echo "ERROR: Client failed to become healthy within 30 seconds"
-            dump_logs
-            exit 1
-          fi
-
-          echo "All production services are healthy!"
-
-      - name: Tear Down Production Services
-        if: always()
-        shell: bash
-        run: docker compose --project-name promisemodelonline down -v
+      # ─── 2. Unit tests (no infrastructure needed) ───
 
       - name: Run Auth Unit Tests
         shell: bash
         run: |
           mkdir -p AuthTestResults
           dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+            --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
-            --os linux \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~IntegrationTests"
 
-      - name: Run API Tests
+      - name: Run API Unit Tests
         shell: bash
         run: |
-          mkdir -p ApiTestResults
+          mkdir -p ApiUnitTestResults
           dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --no-build \
             --collect:"XPlat Code Coverage" \
-            --results-directory ./ApiTestResults \
-            --os linux \
-            --logger "console;verbosity=normal"
-    
-      - name: Run Client UI Test Environment
-        shell: bash
-        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
+            --results-directory ./ApiUnitTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~IntegrationTests"
 
-      - name: Smoke Test Client UI Test Environment
-        shell: bash
-        run: |
-          echo "Waiting for WireMock..."
-          WIREMOCK_READY=false
-          for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlinebffmock curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8010/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlinebffmock curl -k -s https://localhost:8010/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "WireMock is healthy"
-                WIREMOCK_READY=true
-                break
-              fi
-            fi
-            echo "WireMock not ready (attempt $i)..."
-            sleep 2
-          done
-          if [ "$WIREMOCK_READY" = false ]; then
-            echo "ERROR: WireMock failed to become healthy within 20 seconds"
-            exit 1
-          fi
-
-          echo "Waiting for Client (Nginx)..."
-          CLIENT_READY=false
-          for i in $(seq 1 10); do
-            STATUS=$(docker exec promisemodelonlineclient curl -k -s -o /dev/null -w "%{http_code}" https://localhost:9000/health || true)
-            if [ "$STATUS" -eq 200 ]; then
-              BODY=$(docker exec promisemodelonlineclient curl -k -s https://localhost:9000/health)
-              if echo "$BODY" | grep -q '"healthy"'; then
-                echo "Client is healthy"
-                CLIENT_READY=true
-                break
-              fi
-            fi
-            echo "Client not ready (attempt $i)..."
-            sleep 2
-          done
-          if [ "$CLIENT_READY" = false ]; then
-            echo "ERROR: Client failed to become healthy within 20 seconds"
-            exit 1
-          fi
-          
-      - name: Run Client Tests
-        shell: bash
-        run: |
-          mkdir -p ClientTestResults
-          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ClientTestResults \
-            --os linux \
-            --logger "console;verbosity=normal"
-
-      - name: Teardown Client UI Test Environment
-        if: always()
-        shell: bash
-        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down --remove-orphans -v
+      # ─── 3. Integration tests (in-memory, no Docker) ───
 
       - name: Run Auth Integration Tests
         shell: bash
@@ -340,9 +99,163 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
-            --os linux \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
+
+      - name: Run BFF Integration Tests
+        shell: bash
+        run: |
+          mkdir -p BffTestResults
+          dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./BffTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+
+      - name: Run API Integration Tests
+        shell: bash
+        run: |
+          mkdir -p ApiIntegrationTestResults
+          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ApiIntegrationTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+
+      # ─── 4. Client/UI tests (WireMock Docker, lightweight) ───
+
+      - name: Run Client UI Test Environment
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
+
+      - name: Wait for Client (Nginx)
+        shell: bash
+        run: |
+          for i in $(seq 1 15); do
+            STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
+            sleep 2
+          done
+          echo "ERROR: Client not healthy within 30s"
+          docker logs promisemodelonlineclient --tail 30 2>&1
+          exit 1
+
+      - name: Run Client Tests
+        shell: bash
+        run: |
+          mkdir -p ClientTestResults
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ClientTestResults \
+            --logger "console;verbosity=normal"
+
+      - name: Teardown Client UI Test Environment
+        if: always()
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
+
+      # ─── 5. E2E tests — Core (no rate limiting, fast) ───
+
+      - name: Start E2E Stack (without rate limiting)
+        shell: bash
+        run: |
+          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
+          export JWT__KEY="${{ secrets.JWT__KEY }}"
+          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
+
+          docker compose --project-name promisemodelonline \
+            -f docker-compose.yml \
+            -f infrastructure/tests/docker-compose.e2e-override.yml \
+            up -d
+
+          for i in $(seq 1 40); do
+            HEALTHY=$(docker inspect \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient \
+              --format '{{.State.Health.Status}}' 2>/dev/null || true)
+            if [ "$(echo "$HEALTHY" | grep -c 'healthy')" -eq 4 ]; then
+              echo "All services healthy"
+              exit 0
+            fi
+            EXITED=$(docker inspect \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient \
+              --format '{{.State.Status}}' 2>/dev/null | grep 'exited' || true)
+            if [ -n "$EXITED" ]; then
+              echo "ERROR: A service exited during startup"
+              for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient; do
+                docker logs "$svc" --tail 60 2>&1
+              done
+              exit 1
+            fi
+            sleep 5
+          done
+
+          echo "ERROR: Timed out waiting for services"
+          for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient; do
+            echo "--- $svc ---"
+            docker logs "$svc" --tail 60 2>&1
+          done
+          exit 1
+
+      - name: Run E2E Tests — Core (no rate-limiting)
+        shell: bash
+        run: |
+          mkdir -p E2eTestResults
+          pwsh ./PromiseModelOnline.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+          dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./E2eTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~RateLimitingTests"
+
+      - name: Tear Down E2E Stack
+        if: always()
+        shell: bash
+        run: docker compose --project-name promisemodelonline down -v
+
+      # ─── 6. E2E tests — Rate Limiting (production config, isolated) ───
+
+      - name: Start E2E Stack for Rate-Limit Tests
+        shell: bash
+        run: |
+          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
+          export JWT__KEY="${{ secrets.JWT__KEY }}"
+          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
+
+          docker compose --project-name promisemodelonline up -d
+
+          for i in $(seq 1 40); do
+            HEALTHY=$(docker inspect \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient \
+              --format '{{.State.Health.Status}}' 2>/dev/null || true)
+            if [ "$(echo "$HEALTHY" | grep -c 'healthy')" -eq 4 ]; then
+              echo "All services healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Timed out waiting for services"
+          exit 1
+
+      - name: Run E2E Tests — Rate Limiting only
+        shell: bash
+        run: |
+          pwsh ./PromiseModelOnline.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+          dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./E2eTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~RateLimitingTests"
+
+      - name: Tear Down E2E Stack (Rate-Limit)
+        if: always()
+        shell: bash
+        run: docker compose --project-name promisemodelonline down -v
 
       - name: Push Docker Images to DockerHub
         if: ${{ github.ref == 'refs/heads/main' }}

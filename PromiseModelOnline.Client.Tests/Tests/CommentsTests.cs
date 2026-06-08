@@ -1,45 +1,41 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
-using System.Linq;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class CommentsTests : PlaywrightTestBase
 {
-    public class CommentsTests : SeleniumTestBase
+    [Test]
+    public async Task Comments_PostComment_AppearsInList()
     {
-        [Test]
-        public void Comments_PostComment_AppearsInList()
+        await NavigateAsUser("/pmo_test/seeded-project/moments/100");
+
+        var existingComment = await WaitForSelectorAsync(".comment-item .comment-text");
+        var existingText = await existingComment.TextContentAsync();
+        Assert.That(existingText, Does.Contain("Existing comment"));
+
+        await FillAsync("#comment-textarea", "New comment");
+
+        await ClickAsync("#comment-form button[type='submit']");
+
+        var found = await WaitUntilAsync(async () =>
         {
-            EnsureLoggedIn();
-            NavigateSpa("/pmo_test/seeded-project/moments/100");
-
-            var existingComment = WaitForElement(By.CssSelector(".comment-item .comment-text"));
-            Assert.That(existingComment.Text, Does.Contain("Existing comment"));
-
-            var textarea = WaitForElement(By.Id("comment-textarea"));
-            textarea.SendKeys("New comment");
-
-            // Ensure the Post button is visible and enabled (like a real user would see)
-            WaitForClickable(By.CssSelector("#comment-form button[type='submit']"));
-
-            // Trigger form submission via requestSubmit – the exact same DOM API
-            // that a user‑initiated click invokes, but headless‑safe.
-            ((IJavaScriptExecutor)Driver).ExecuteScript(
-                "document.getElementById('comment-form').requestSubmit();");
-
-            // Wait for the new comment to appear
-            WaitUntil(driver =>
+            try
             {
-                try
+                var comments = await Page.Locator(".comment-item .comment-text").AllAsync();
+                foreach (var c in comments)
                 {
-                    return driver.FindElements(By.CssSelector(".comment-item .comment-text"))
-                                    .Any(e => e.Text.Contains("New comment"));
+                    var text = await c.TextContentAsync();
+                    if (text?.Contains("New comment") == true)
+                        return true;
                 }
-                catch { return false; }
-            }, 10);
+                return false;
+            }
+            catch { return false; }
+        }, 10);
 
-            var allComments = Driver.FindElements(By.CssSelector(".comment-item .comment-text"));
-            Assert.That(allComments.Count, Is.GreaterThanOrEqualTo(2));
-        }
+        Assert.That(found, Is.True, "New comment should appear in the list");
+
+        var allCount = await Page.Locator(".comment-item .comment-text").CountAsync();
+        Assert.That(allCount, Is.GreaterThanOrEqualTo(2));
     }
 }

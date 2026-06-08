@@ -1,9 +1,10 @@
 [
   {
     "id": 100,
+    "sequenceNumber": 100,
     "statement": "Moment 100",
     "flowId": 2,
-    "type": "Task",
+    "type": "Job",
     "status": "Todo",
     "effortEstimate": "S",
     "ownerId": 1,

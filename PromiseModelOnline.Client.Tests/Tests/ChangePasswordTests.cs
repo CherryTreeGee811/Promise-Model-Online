@@ -1,31 +1,29 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class ChangePasswordTests : PlaywrightTestBase
 {
-    public class ChangePasswordTests : SeleniumTestBase
+    [Test]
+    public async Task ChangePasswordLink_HrefPointsToAuth()
     {
-        [Test]
-        public void ChangePasswordLink_HrefPointsToAuth()
-        {
-            SetSessionCookie("owner-session");
+        await NavigateAsUser("/");
 
-            WaitForElement(By.Id("user-dropdown"), 5).Click();
+        await Page.Locator("#user-dropdown").ClickAsync();
 
-            var changePwLink = WaitForElement(By.Id("change-password-link"), 5);
-            Assert.That(changePwLink.GetAttribute("href"), Does.Contain("/account/change-password"));
-        }
+        var changePwLink = await WaitForSelectorAsync("#change-password-link", 5);
+        var href = await changePwLink.GetAttributeAsync("href");
 
-        [Test]
-        public void ChangePassword_Route_RedirectsToAuth()
-        {
-            SetSessionCookie("owner-session");
+        Assert.That(href, Does.Contain("/account/change-password"));
+    }
 
-            NavigateSpa("/change-password");
+    [Test]
+    public async Task ChangePassword_Route_RedirectsToAuth()
+    {
+        await NavigateAsUser("/");
+        await Page.GotoAsync(BaseUrl + "/account/change-password");
 
-            // SPA route handler redirects to Auth server
-            WaitUntil(d => d.Url.Contains("/change-password"), 5);
-        }
+        var contains = await WaitForUrlContainsAsync("/change-password", 5);
+        Assert.That(contains, Is.True);
     }
 }

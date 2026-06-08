@@ -53,22 +53,33 @@ public class LoginController : Controller
         if (!ModelState.IsValid)
             return View("Index", model);
 
-        var user = await _userManager.FindByNameAsync(model.Username);
+        // Uses PasswordSignInAsync with lockoutOnFailure: true so that
+        // Identity's lockout mechanism (5 failed attempts → 5 min lockout)
+        // is enforced. Returns LockedOut result when the account is locked.
+        var result = await _signInManager.PasswordSignInAsync(
+            model.Username, model.Password,
+            isPersistent: false, lockoutOnFailure: true);
 
-        if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError("", "Account is locked. Try again later.");
+            return View("Index", model);
+        }
+
+        if (!result.Succeeded)
         {
             ModelState.AddModelError("", "Invalid credentials");
             return View("Index", model);
         }
 
-        if (!await _userManager.IsEmailConfirmedAsync(user))
+        var user = await _userManager.FindByNameAsync(model.Username);
+
+        if (user != null && !await _userManager.IsEmailConfirmedAsync(user))
         {
+            await _signInManager.SignOutAsync();
             ModelState.AddModelError("", "Please verify your email address before signing in.");
             return View("Index", model);
         }
-
-        // ✅ ONLY sign into Identity cookie
-        await _signInManager.SignInAsync(user, isPersistent: false);
 
         var returnUrl = model.ReturnUrl;
 
