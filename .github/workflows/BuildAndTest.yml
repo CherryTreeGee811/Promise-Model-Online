@@ -250,7 +250,7 @@ jobs:
         run: |
           mkdir -p E2eTestResults
           dotnet build ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj
-          pwsh ./PromiseModelOnline.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
+          pwsh ./PromiseModelOnline.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
