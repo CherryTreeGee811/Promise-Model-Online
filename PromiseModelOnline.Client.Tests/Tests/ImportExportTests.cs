@@ -190,6 +190,6 @@ public class ImportExportTests : PlaywrightTestBase
         await UploadImportFileAsync("uber.json");
         await WaitForSelectorAsync("#project-import-summary-panel table", 5);
 
-        Assert.That(await firstPromisePanel.IsVisibleAsync(), Is.False);
+        Assert.That(await IsVisibleAsync("#first-promise-panel"), Is.False);
     }
 }
