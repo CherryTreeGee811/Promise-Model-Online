@@ -7,8 +7,26 @@ public class BffTestServer : IAsyncDisposable
 
     public HttpClient Client { get; }
 
+    private static readonly object _lock = new();
+    private static bool _varsSet;
+
+    private static void SetEnvVars()
+    {
+        if (_varsSet) return;
+        lock (_lock)
+        {
+            if (_varsSet) return;
+            Environment.SetEnvironmentVariable("AUTH_PUBLIC_ISSUER", "http://localhost");
+            Environment.SetEnvironmentVariable("AUTH_METADATA_ADDRESS", "http://localhost/.well-known/openid-configuration");
+            Environment.SetEnvironmentVariable("APP_BASE_URL", "http://localhost");
+            _varsSet = true;
+        }
+    }
+
     public BffTestServer()
     {
+        SetEnvVars();
+
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
             EnvironmentName = "Development"
