@@ -68,7 +68,9 @@ public abstract class PlaywrightTestBase
     [SetUp]
     public async Task Setup()
     {
+        await Page.GotoAsync(BaseUrl + "/");
         await Context.ClearCookiesAsync();
+        await Page.SetViewportSizeAsync(1280, 720);
     }
 
     [TearDown]

@@ -7,7 +7,7 @@ public class NotificationsTests : PlaywrightTestBase
     [Test]
     public async Task Notifications_ShowsBadge_WhenUnreadExist()
     {
-        await SetSessionCookie("owner-session");
+        await NavigateAsUser("/");
 
         var found = await WaitUntilAsync(async () =>
         {
@@ -23,7 +23,7 @@ public class NotificationsTests : PlaywrightTestBase
     [Test]
     public async Task Notifications_HidesBadge_WhenNoUnread()
     {
-        await SetSessionCookie("nonowner-session");
+        await NavigateAsUser("/", "nonowner-session");
 
         var found = await WaitUntilAsync(async () =>
         {

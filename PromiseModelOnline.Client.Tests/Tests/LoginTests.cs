@@ -27,8 +27,7 @@ public class LoginTests : PlaywrightTestBase
     [Test]
     public async Task Login_SetsSession_AllowsFutureRequests()
     {
-        await SetSessionCookie("owner-session");
-        await NavigateSpaAsync("/projects");
+        await NavigateAsUser("/projects");
 
         await WaitForSelectorAsync("#project-list-table-body tr");
 

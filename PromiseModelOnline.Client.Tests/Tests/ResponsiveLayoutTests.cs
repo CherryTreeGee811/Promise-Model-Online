@@ -35,8 +35,8 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     public async Task StrideBoard_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+        await WaitForSelectorAsync(".stride-card", 10);
         await AssertNoHorizontalScrollAsync();
-        await AssertElementVisibleAsync("#stride-board");
     }
 
     [Test]

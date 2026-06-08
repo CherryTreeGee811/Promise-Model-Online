@@ -7,7 +7,7 @@ public class LogoutTests : PlaywrightTestBase
     [Test]
     public async Task LogoutLink_HrefPointsToGatewayLogout()
     {
-        await SetSessionCookie("owner-session");
+        await NavigateAsUser("/");
 
         await Page.Locator("#user-dropdown").ClickAsync();
 

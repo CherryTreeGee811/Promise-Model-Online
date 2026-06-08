@@ -378,7 +378,7 @@ button {
   flex-shrink: 0;
 }
 .stride-dates { font-size: var(--font-size-sm); opacity: 0.9; }
-.stride-countdown--ended { color: #e74c3c; }
+.stride-countdown--ended { color: #f1948a; font-weight: var(--font-weight-semibold); }
 .stride-countdown--ending { color: #e67e22; }
 .stride-countdown--healthy { color: #2ecc71; }
 .stride-duration {

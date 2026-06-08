@@ -7,7 +7,7 @@ public class ChangePasswordTests : PlaywrightTestBase
     [Test]
     public async Task ChangePasswordLink_HrefPointsToAuth()
     {
-        await SetSessionCookie("owner-session");
+        await NavigateAsUser("/");
 
         await Page.Locator("#user-dropdown").ClickAsync();
 
@@ -20,8 +20,8 @@ public class ChangePasswordTests : PlaywrightTestBase
     [Test]
     public async Task ChangePassword_Route_RedirectsToAuth()
     {
-        await SetSessionCookie("owner-session");
-        await NavigateSpaAsync("/change-password");
+        await NavigateAsUser("/");
+        await Page.GotoAsync(BaseUrl + "/account/change-password");
 
         var contains = await WaitForUrlContainsAsync("/change-password", 5);
         Assert.That(contains, Is.True);

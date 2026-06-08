@@ -184,8 +184,8 @@ public class ImportExportTests : PlaywrightTestBase
     {
         await NavigateAsUser("/projects/add");
 
-        var firstPromisePanel = Page.Locator("#first-promise-panel");
-        Assert.That(await firstPromisePanel.IsVisibleAsync(), Is.True);
+        await WaitForSelectorAsync("#first-promise-panel", 5);
+        Assert.That(await IsVisibleAsync("#first-promise-panel"), Is.True);
 
         await UploadImportFileAsync("uber.json");
         await WaitForSelectorAsync("#project-import-summary-panel table", 5);
