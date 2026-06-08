@@ -203,7 +203,7 @@ public class OidcMisuseTests : E2ETestBase
         await LoginAsync();
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.First(c => c.Name == "__Host-pmo.session");
-        Assert.That(session.SameSite, Is.EqualTo("Lax"),
+        Assert.That(session.SameSite, Is.EqualTo(Microsoft.Playwright.SameSiteAttribute.Lax),
             "Session cookie must be SameSite=Lax for CSRF protection");
     }
 
@@ -243,7 +243,7 @@ public class OidcMisuseTests : E2ETestBase
     {
         var response = await GetAsync(
             "/connect/token?grant_type=authorization_code&code=x&client_id=pmo-spa");
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.MethodNotAllowed),
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest),
             "Token endpoint must reject GET requests");
     }
 

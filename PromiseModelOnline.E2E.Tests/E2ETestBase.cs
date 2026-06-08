@@ -68,6 +68,9 @@ public abstract class E2ETestBase
 
     private async Task LoginAsUser(string username, string password)
     {
+        // Clear any existing session so the BFF challenges via OIDC
+        await _context.ClearCookiesAsync();
+
         for (var attempt = 1; attempt <= 3; attempt++)
         {
             try

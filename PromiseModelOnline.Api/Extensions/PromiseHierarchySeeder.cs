@@ -54,6 +54,9 @@ public static class PromiseHierarchySeeder
                 .ToListAsync();
             foreach (var kvp in projectIdBySourceId)
             {
+                // Skip PRJ-001 (Promise Model Online) so pmo_test2 cannot access it.
+                // This enables cross-tenant authorization testing.
+                if (kvp.Key == "PRJ-001") continue;
                 if (existingPerms.Contains(kvp.Value)) continue;
                 permissions.Add(new Permission
                 {
