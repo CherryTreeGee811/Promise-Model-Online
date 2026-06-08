@@ -92,46 +92,7 @@ public class AuthWebApplicationFactory : IAsyncDisposable
 
         builder.Services.AddAuthorization();
 
-        builder.Services.AddRateLimiter(options =>
-        {
-            options.AddFixedWindowLimiter("TokenEndpointPolicy", config =>
-            {
-                config.PermitLimit = 30;
-                config.Window = TimeSpan.FromMinutes(1);
-                config.QueueProcessingOrder =
-                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-                config.QueueLimit = 0;
-            });
-
-            options.AddFixedWindowLimiter("RegisterPolicy", config =>
-            {
-                config.PermitLimit = 5;
-                config.Window = TimeSpan.FromMinutes(10);
-                config.QueueProcessingOrder =
-                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-                config.QueueLimit = 0;
-            });
-
-            options.AddFixedWindowLimiter("VerifyCodePolicy", config =>
-            {
-                config.PermitLimit = 5;
-                config.Window = TimeSpan.FromMinutes(5);
-                config.QueueProcessingOrder =
-                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-                config.QueueLimit = 0;
-            });
-
-            options.AddFixedWindowLimiter("ResendVerificationPolicy", config =>
-            {
-                config.PermitLimit = 3;
-                config.Window = TimeSpan.FromMinutes(5);
-                config.QueueProcessingOrder =
-                    System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-                config.QueueLimit = 0;
-            });
-
-            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-        });
+        // Rate limiting is handled by middleware (no AddRateLimiter needed).
 
         // Caching
         builder.Services.AddMemoryCache();
@@ -167,11 +128,11 @@ public class AuthWebApplicationFactory : IAsyncDisposable
         _app.UseForwardedHeaders(forwardedOptions);
 
         _app.UseMiddleware<SecurityHeadersMiddleware>();
+        _app.UseMiddleware<RateLimitingMiddleware>();
         _app.UseStaticFiles();
         _app.UseCors("SPA");
         _app.UseAuthentication();
         _app.UseAuthorization();
-        _app.UseRateLimiter();
         _app.MapDefaultControllerRoute();
 
         await _app.StartAsync();

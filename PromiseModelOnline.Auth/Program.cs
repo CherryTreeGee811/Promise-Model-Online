@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
@@ -123,46 +124,13 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
 // ---------- Rate limiting ----------------------------------------------
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("TokenEndpointPolicy", config =>
-    {
-        config.PermitLimit = 30;
-        config.Window = TimeSpan.FromMinutes(1);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("RegisterPolicy", config =>
-    {
-        config.PermitLimit = 5;
-        config.Window = TimeSpan.FromMinutes(10);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("VerifyCodePolicy", config =>
-    {
-        config.PermitLimit = 5;
-        config.Window = TimeSpan.FromMinutes(5);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("ResendVerificationPolicy", config =>
-    {
-        config.PermitLimit = 3;
-        config.Window = TimeSpan.FromMinutes(5);
-        config.QueueProcessingOrder =
-            System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        config.QueueLimit = 0;
-    });
-
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-});
+// Custom middleware instead of AddRateLimiter/UseRateLimiter because
+// OpenIddict's internal token endpoint handler processes requests before
+// the built-in rate limiter middleware can intercept them. The custom
+// middleware runs at the top of the pipeline and uses FixedWindowRateLimiter
+// instances directly.
+// (No services registration needed; the middleware creates limiter instances
+//  at construction time.)
 
 // ---------- HTTPS / MVC ------------------------------------------------
 builder.ConfigureHttps();
@@ -200,14 +168,14 @@ app.UseForwardedHeaders(forwardedOptions);
 app.UseMiddleware<ForwardedHeadersFixMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
+app.UseMiddleware<RateLimitingMiddleware>();
+
 app.UseStaticFiles();
 
 app.UseCors("SPA");
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseRateLimiter();
 
 app.MapDefaultControllerRoute();
 

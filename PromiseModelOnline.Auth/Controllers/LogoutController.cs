@@ -13,15 +13,10 @@ public class LogoutController : ControllerBase
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Logout()
     {
-        var feature = HttpContext.Features.Get<OpenIddictServerAspNetCoreFeature>();
-        var request = feature?.Transaction?.Request;
-
         await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
 
-        var postLogoutUri = request?.PostLogoutRedirectUri;
-        if (!string.IsNullOrEmpty(postLogoutUri))
-            return Redirect(postLogoutUri);
-
-        return Redirect("/");
+        // Let OpenIddict handle the end_session response, which validates
+        // post_logout_redirect_uri against registered URIs before redirecting.
+        return SignOut(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 }

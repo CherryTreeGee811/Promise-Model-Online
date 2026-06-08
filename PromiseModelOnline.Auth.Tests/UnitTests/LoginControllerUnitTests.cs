@@ -90,7 +90,10 @@ public class LoginControllerUnitTests
     public async Task Index_Post_UserNotFound_ReturnsViewWithError()
     {
         var model = new LoginViewModel { Username = "nobody", Password = "pw" };
-        _userManagerMock.Setup(x => x.FindByNameAsync("nobody")).ReturnsAsync((IdentityUser?)null);
+
+        _signInManagerMock
+            .Setup(x => x.PasswordSignInAsync("nobody", "pw", false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
 
         var result = await _controller.Login(model);
 
@@ -100,15 +103,32 @@ public class LoginControllerUnitTests
     }
 
     [Test]
+    public async Task Index_Post_LockedOut_ReturnsViewWithLockoutError()
+    {
+        var model = new LoginViewModel { Username = "locked_user", Password = "pw" };
+
+        _signInManagerMock
+            .Setup(x => x.PasswordSignInAsync("locked_user", "pw", false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+
+        var result = await _controller.Login(model);
+
+        Assert.That(result, Is.TypeOf<ViewResult>());
+        Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
+            Does.Contain("locked").IgnoreCase);
+    }
+
+    [Test]
     public async Task Index_Post_ValidCredentials_RedirectsToReturnUrl()
     {
         var user = new IdentityUser { Id = "1", UserName = "test" };
         var model = new LoginViewModel { Username = "test", Password = "pw", ReturnUrl = "/home" };
 
+        _signInManagerMock
+            .Setup(x => x.PasswordSignInAsync("test", "pw", false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
         _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
-        _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
-        _signInManagerMock.Setup(x => x.SignInAsync(user, false, null)).Returns(Task.CompletedTask);
 
         var result = await _controller.Login(model);
 
@@ -122,14 +142,34 @@ public class LoginControllerUnitTests
         var user = new IdentityUser { Id = "1", UserName = "test" };
         var model = new LoginViewModel { Username = "test", Password = "pw" };
 
+        _signInManagerMock
+            .Setup(x => x.PasswordSignInAsync("test", "pw", false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
         _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
-        _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "pw")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
-        _signInManagerMock.Setup(x => x.SignInAsync(user, false, null)).Returns(Task.CompletedTask);
 
         var result = await _controller.Login(model);
 
         Assert.That(result, Is.TypeOf<RedirectResult>());
         Assert.That(((RedirectResult)result).Url, Is.EqualTo("/login"));
+    }
+
+    [Test]
+    public async Task Index_Post_NotEmailConfirmed_ReturnsViewWithError()
+    {
+        var user = new IdentityUser { Id = "1", UserName = "test" };
+        var model = new LoginViewModel { Username = "test", Password = "pw" };
+
+        _signInManagerMock
+            .Setup(x => x.PasswordSignInAsync("test", "pw", false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        _userManagerMock.Setup(x => x.FindByNameAsync("test")).ReturnsAsync(user);
+        _userManagerMock.Setup(x => x.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
+
+        var result = await _controller.Login(model);
+
+        Assert.That(result, Is.TypeOf<ViewResult>());
+        Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
+            Does.Contain("verify").IgnoreCase);
     }
 }
