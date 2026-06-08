@@ -10,9 +10,10 @@
   "response": {
     "status": 200,
     "jsonBody": {
+      "id": "owner-user-id",
       "name": "Test Owner",
       "email": "owner@example.com",
-      "sub": "owner-user-id"
+      "userId": 1
     },
     "headers": {
       "Content-Type": "application/json",
