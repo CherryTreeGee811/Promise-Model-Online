@@ -18,6 +18,7 @@
     "jsonBody": [
       {
         "id": 100,
+        "sequenceNumber": 100,
         "statement": "My Task",
         "type": "Story",
         "status": "Todo",

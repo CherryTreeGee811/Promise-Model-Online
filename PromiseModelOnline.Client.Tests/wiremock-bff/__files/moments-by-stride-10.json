@@ -1,6 +1,7 @@
 [
   {
     "id": 101,
+    "sequenceNumber": 101,
     "statement": "Moment 101",
     "flowId": 1,
     "type": "Story",
