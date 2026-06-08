@@ -19,7 +19,7 @@
       {
         "id": 100,
         "statement": "My Task",
-        "type": "Task",
+        "type": "Story",
         "status": "Todo",
         "effortEstimate": "M",
         "ownerId": 1,

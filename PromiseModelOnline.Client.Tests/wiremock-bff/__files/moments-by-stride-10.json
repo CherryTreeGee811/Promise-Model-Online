@@ -3,7 +3,7 @@
     "id": 101,
     "statement": "Moment 101",
     "flowId": 1,
-    "type": "Task",
+    "type": "Story",
     "status": "Todo",
     "effortEstimate": "M",
     "ownerId": 1,

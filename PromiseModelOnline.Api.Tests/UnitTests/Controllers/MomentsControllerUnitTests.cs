@@ -320,6 +320,22 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
+        public async Task UpdateMomentType_NullRequest_ReturnsBadRequest()
+        {
+            int momentId = 93;
+            var user = new User { Id = 23, Email = "nullreq@test.com", Name = "Null Req" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("nullreq@test.com", It.IsAny<string?>()))
+                .ReturnsAsync(user);
+            _mockMomentService.Setup(s => s.GetProjectIdForMomentAsync(momentId)).ReturnsAsync(46);
+            _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, 46)).ReturnsAsync(PermissionLevel.Edit);
+
+            ControllerTestHelpers.SetControllerUser(_controller, "nullreq@test.com", "nullreq-user");
+
+            var result = await _controller.UpdateMomentType(momentId, null!);
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
         public async Task Delete_WithValidId_ReturnsNoContent()
         {
             // Arrange

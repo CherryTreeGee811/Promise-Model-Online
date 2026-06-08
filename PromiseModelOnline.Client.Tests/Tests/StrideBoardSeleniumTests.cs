@@ -171,5 +171,71 @@ namespace PromiseModelOnline.Client.Tests.Tests
                 "Owner assignment did not update in the UI"
             );
         }
+
+        [Test]
+        public void MomentTypeDropdown_Renders()
+        {
+            EnsureLoggedIn();
+            NavigateSpa("/pmo_test/seeded-project/strides");
+
+            var row = GetFirstMomentRow();
+            var mid = GetMomentId(row);
+
+            var typeEl = FindControl($".moment-type-dropdown[data-moment-id='{mid}']");
+
+            Assert.That(typeEl, Is.Not.Null, "No moment type dropdown found");
+            Assert.That(typeEl.Enabled, Is.True, "Moment type dropdown should be enabled for owner");
+        }
+
+        [Test]
+        public void MomentTypeChangePersistence_StoryToJob()
+        {
+            EnsureLoggedIn();
+            NavigateSpa("/pmo_test/seeded-project/strides");
+
+            var row = GetFirstMomentRow();
+            var mid = GetMomentId(row);
+
+            var selector = $".moment-type-dropdown[data-moment-id='{mid}']";
+            var typeEl = FindControl(selector);
+
+            Assert.That(typeEl, Is.Not.Null, "No moment type dropdown found");
+
+            var select = new SelectElement(typeEl);
+
+            var beforeValue = select.SelectedOption?.GetAttribute("value") ?? "";
+            var optionToSelect = select.Options
+                .FirstOrDefault(o => o.GetAttribute("value") != beforeValue);
+
+            if (optionToSelect == null)
+                Assert.Ignore("No different type option available.");
+
+            var valueToSelect = optionToSelect.GetAttribute("value");
+            if (valueToSelect == null)
+                Assert.Ignore("Option has no value.");
+
+            select.SelectByValue(valueToSelect);
+
+            Assert.That(
+                WaitForSelectChange(selector, beforeValue),
+                Is.True,
+                "Moment type did not update in the UI"
+            );
+        }
+
+        [Test]
+        public void MomentTypeChangePersistence_NonOwnerCannotEdit()
+        {
+            SetSessionCookie("nonowner-session");
+            NavigateSpa("/pmo_test/seeded-project/strides");
+
+            var row = GetFirstMomentRow();
+            var mid = GetMomentId(row);
+
+            var typeEl = FindControl($".moment-type-dropdown[data-moment-id='{mid}']");
+
+            Assert.That(typeEl.Enabled, Is.False,
+                "Moment type dropdown should be disabled for non-owner");
+        }
     }
 }
