@@ -68,16 +68,6 @@ jobs:
 
       # ─── 2. Unit tests (no infrastructure needed) ───
 
-      - name: Run BFF Tests
-        shell: bash
-        run: |
-          mkdir -p BffTestResults
-          dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./BffTestResults \
-            --logger "console;verbosity=normal"
-
       - name: Run Auth Unit Tests
         shell: bash
         run: |
@@ -89,15 +79,16 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~IntegrationTests"
 
-      - name: Run API Tests
+      - name: Run API Unit Tests
         shell: bash
         run: |
-          mkdir -p ApiTestResults
+          mkdir -p ApiUnitTestResults
           dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
-            --results-directory ./ApiTestResults \
-            --logger "console;verbosity=normal"
+            --results-directory ./ApiUnitTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~IntegrationTests"
 
       # ─── 3. Integration tests (in-memory, no Docker) ───
 
@@ -108,6 +99,28 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+
+      - name: Run BFF Integration Tests
+        shell: bash
+        run: |
+          mkdir -p BffTestResults
+          dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./BffTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+
+      - name: Run API Integration Tests
+        shell: bash
+        run: |
+          mkdir -p ApiIntegrationTestResults
+          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ApiIntegrationTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
 
