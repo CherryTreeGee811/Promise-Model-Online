@@ -145,16 +145,19 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
-      # ─── 5. E2E tests (full Docker stack with SQL Server, slowest) ───
+      # ─── 5. E2E tests — Core (no rate limiting, fast) ───
 
-      - name: Start Stack & Wait for Health
+      - name: Start E2E Stack (without rate limiting)
         shell: bash
         run: |
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
           export JWT__KEY="${{ secrets.JWT__KEY }}"
           export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
 
-          docker compose --project-name promisemodelonline up -d
+          docker compose --project-name promisemodelonline \
+            -f docker-compose.yml \
+            -f infrastructure/tests/docker-compose.e2e-override.yml \
+            up -d
 
           for i in $(seq 1 40); do
             HEALTHY=$(docker inspect \
@@ -196,9 +199,34 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~RateLimitingTests"
 
-      - name: Restart Nginx (clear rate-limit counters)
+      - name: Tear Down E2E Stack
+        if: always()
         shell: bash
-        run: docker compose --project-name promisemodelonline restart promisemodelonline.client
+        run: docker compose --project-name promisemodelonline down -v
+
+      # ─── 6. E2E tests — Rate Limiting (production config, isolated) ───
+
+      - name: Start E2E Stack for Rate-Limit Tests
+        shell: bash
+        run: |
+          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
+          export JWT__KEY="${{ secrets.JWT__KEY }}"
+          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
+
+          docker compose --project-name promisemodelonline up -d
+
+          for i in $(seq 1 40); do
+            HEALTHY=$(docker inspect \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient \
+              --format '{{.State.Health.Status}}' 2>/dev/null || true)
+            if [ "$(echo "$HEALTHY" | grep -c 'healthy')" -eq 4 ]; then
+              echo "All services healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Timed out waiting for services"
+          exit 1
 
       - name: Run E2E Tests — Rate Limiting only
         shell: bash
@@ -210,7 +238,7 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~RateLimitingTests"
 
-      - name: Tear Down Production Services
+      - name: Tear Down E2E Stack (Rate-Limit)
         if: always()
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
