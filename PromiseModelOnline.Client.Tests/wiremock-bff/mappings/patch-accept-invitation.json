@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "PATCH",
-    "urlPathPattern": "/api/projects/pmo_test/seeded-project/permissions/1",
+    "urlPathPattern": "/api/permissions/1",
     "headers": {
       "Cookie": { "contains": "__Host-pmo.session=owner-session" }
     }

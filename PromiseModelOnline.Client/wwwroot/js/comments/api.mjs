@@ -1,4 +1,6 @@
-import { apiGet, apiPost } from '../api.mjs';
+import { apiGet, apiPost, projectUrl } from '../api.mjs';
 
-export const getComments = (_owner, _project, parentType, parentId) => apiGet(`/api/comments?type=${parentType}&parentId=${parentId}`);
-export const addComment = (_owner, _project, data) => apiPost('/api/comments', data);
+export const getComments = (owner, project, parentType, parentId) =>
+    apiGet(`${projectUrl(owner, project)}/comments?type=${parentType}&parentId=${parentId}`);
+export const addComment = (owner, project, data) =>
+    apiPost(`${projectUrl(owner, project)}/comments`, data);

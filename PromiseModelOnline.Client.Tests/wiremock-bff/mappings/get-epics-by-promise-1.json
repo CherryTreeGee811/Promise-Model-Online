@@ -15,7 +15,8 @@
         "statement": "Test Epic",
         "statusColor": "green",
         "displayOrder": 1,
-        "productPromiseId": 1
+        "productPromiseId": 1,
+        "sequenceNumber": 10
       }
     ],
     "headers": {
