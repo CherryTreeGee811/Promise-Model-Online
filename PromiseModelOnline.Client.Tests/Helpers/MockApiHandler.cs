@@ -102,6 +102,7 @@ public static partial class MockApiHandler
             ("GET", "/api/project-export") => Json(200, """{"schemaVersion":"1.0","project":{"name":"Test Project"}}"""),
             ("GET", "/api/project-members") => Json(200, """[{"userId":1,"email":"owner@example.com","name":"Test Owner"}]"""),
             ("GET", "/api/hubs/negotiate") => Json(200, """{"url":"","accessToken":"mock-token"}"""),
+            ("GET", "/hubs/notifications") => Json(200, "{}"),
             ("GET", "/api/reactions") => Json(200, "[]"),
 
             // POST mutations
@@ -111,6 +112,7 @@ public static partial class MockApiHandler
             ("POST", "/api/projects/pmo_test/seeded-project/permissions") when isOwner => Json(200, """{"id":5,"userName":"newuser@example.com","level":"Edit","status":"Pending"}"""),
             ("POST", "/api/projects/pmo_test/seeded-project/promises/create") when isOwner => Json(200, """{"id":10,"statement":"As a user, manage projects efficiently","description":null,"projectId":2,"displayOrder":0,"createdAt":"2026-06-03T00:00:00Z"}"""),
             ("POST", "/hubs/notifications/negotiate") => Json(200, """{"connectionId":"test-connection-id","availableTransports":[{"transport":"LongPolling","transferFormats":["Text"]}]}"""),
+            ("POST", "/hubs/notifications") => Json(200, "{}"),
             ("POST", "/api/deadline-notification-runs") => Json(204, ""),
 
             // PATCH mutations
@@ -120,6 +122,7 @@ public static partial class MockApiHandler
 
             // DELETE mutations
             ("DELETE", "/api/projects/pmo_test/seeded-project") => Json(204, ""),
+            ("DELETE", "/hubs/notifications") => Json(204, ""),
 
             _ => null
         };

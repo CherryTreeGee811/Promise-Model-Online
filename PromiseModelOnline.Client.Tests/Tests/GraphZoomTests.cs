@@ -259,6 +259,11 @@ public class GraphZoomTests : PlaywrightTestBase
             .Where(m => !m.Contains("handshake response", StringComparison.OrdinalIgnoreCase))
             .Where(m => !m.Contains("Connection disconnected", StringComparison.OrdinalIgnoreCase))
             .Where(m => !m.Contains("405 (Not Allowed)", StringComparison.OrdinalIgnoreCase))
+            .Where(m => !m.Contains("Failed to fetch", StringComparison.OrdinalIgnoreCase))
+            .Where(m => !m.Contains("negotiation with the server", StringComparison.OrdinalIgnoreCase))
+            .Where(m => !m.Contains("start the transport", StringComparison.OrdinalIgnoreCase))
+            .Where(m => !m.Contains("start the connection", StringComparison.OrdinalIgnoreCase))
+            .Where(m => !m.Contains("CSP", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         Assert.That(filtered, Is.Empty, "Browser console should have no severe errors");

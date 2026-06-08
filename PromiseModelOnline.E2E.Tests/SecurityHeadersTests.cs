@@ -43,9 +43,10 @@ public class SecurityHeadersTests : E2ETestBase
     }
 
     [Test]
-    public async Task UnknownRoute_Returns404()
+    public async Task UnknownRoute_ReturnsSPAIndex()
     {
+        // SPA router handles client-side failures; nginx serves index.html
         var response = await GetAsync("/nonexistent");
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 }

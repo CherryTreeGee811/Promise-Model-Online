@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Playwright;
 
 namespace PromiseModelOnline.E2E.Tests;
 
@@ -16,7 +17,7 @@ public class OidcFlowTests : E2ETestBase
         Assert.That(sessionCookie, Is.Not.Null, "Session cookie should be set after login");
         Assert.That(sessionCookie!.HttpOnly, Is.True, "Session cookie should be HttpOnly");
         Assert.That(sessionCookie.Secure, Is.True, "Session cookie should be Secure");
-        Assert.That(sessionCookie.SameSite, Is.EqualTo("Lax"));
+        Assert.That(sessionCookie.SameSite, Is.EqualTo(Microsoft.Playwright.SameSiteAttribute.Lax));
     }
 
     [Test]
@@ -37,13 +38,14 @@ public class OidcFlowTests : E2ETestBase
         await Page.GotoAsync("/login?returnUrl=/");
         await Page.WaitForURLAsync("**/account/login**");
 
-        await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", "pmo_test");
-        await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", "wrong-password");
+        await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", TestUsername);
+        await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", "wrong");
 
         await Page.ClickAsync("button[type=\"submit\"]");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var body = await Page.TextContentAsync("body") ?? "";
-        Assert.That(body, Does.Contain("Invalid").Or.Contains("invalid").Or.Contains("try again"),
+        Assert.That(body, Does.Contain("Invalid").Or.Contains("invalid"),
             "Error message should be shown for invalid credentials");
     }
 
@@ -57,15 +59,11 @@ public class OidcFlowTests : E2ETestBase
     [Test]
     public async Task AuthenticatedRequest_ToApi_ReturnsBadGateway()
     {
-        // With valid session, the BFF should attempt to proxy to API
-        // (which returns 502 since the API address in test is the internal Docker hostname)
         await LoginAsync();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, "/api/projects");
-        // Playwright cookies are automatically included via context
-        var response = await Client.SendAsync(request);
+        using var client = await GetAuthClientAsync();
+        var response = await client.GetAsync("/api/projects");
 
-        // Either a real response from the API or a proxy error is expected
         Assert.That(response.StatusCode, Is.AnyOf(
             HttpStatusCode.OK,
             HttpStatusCode.BadGateway,

@@ -15,6 +15,7 @@ namespace PromiseModelOnline.Auth.Extensions
             var descriptor = new OpenIddictApplicationDescriptor
             {
                 ClientId = "pmo-spa",
+                ClientType = OpenIddictConstants.ClientTypes.Public,
                 DisplayName = "PMO BFF Client",
                 RedirectUris =
                 {

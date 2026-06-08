@@ -184,7 +184,7 @@ jobs:
           done
           exit 1
 
-      - name: Run E2E Tests (full stack through nginx)
+      - name: Run E2E Tests — Core (no rate-limiting)
         shell: bash
         run: |
           mkdir -p E2eTestResults
@@ -193,7 +193,22 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./E2eTestResults \
-            --logger "console;verbosity=normal"
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~RateLimitingTests"
+
+      - name: Restart Nginx (clear rate-limit counters)
+        shell: bash
+        run: docker compose --project-name promisemodelonline restart promisemodelonline.client
+
+      - name: Run E2E Tests — Rate Limiting only
+        shell: bash
+        run: |
+          dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./E2eTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~RateLimitingTests"
 
       - name: Tear Down Production Services
         if: always()
