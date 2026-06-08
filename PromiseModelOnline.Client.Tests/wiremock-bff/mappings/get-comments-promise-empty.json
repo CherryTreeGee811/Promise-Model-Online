@@ -2,7 +2,7 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/api/projects/pmo_test/seeded-project/comments",
+    "urlPath": "/api/comments",
     "queryParameters": {
       "type": { "equalTo": "Promise" }
     }

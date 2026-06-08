@@ -71,5 +71,48 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        [Authorize(Policy = "projects.read")]
+        [HttpGet("search-users")]
+        public async Task<ActionResult<IEnumerable<object>>> SearchUsers(
+            [FromQuery] string? parentType,
+            [FromQuery] int parentId,
+            [FromQuery] string? search)
+        {
+            if (string.IsNullOrEmpty(parentType) || parentId <= 0 || string.IsNullOrWhiteSpace(search))
+                return Ok(Array.Empty<object>());
+
+            try
+            {
+                var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
+                var users = await _userRepository.SearchUsersByProjectAsync(projectId, search);
+                return Ok(users.Select(u => new { u.Id, u.Name }));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [Authorize(Policy = "projects.read")]
+        [HttpGet("search-promises")]
+        public async Task<ActionResult<IEnumerable<StackSearchResult>>> SearchPromises(
+            [FromQuery] string? parentType,
+            [FromQuery] int parentId,
+            [FromQuery] string? search)
+        {
+            if (string.IsNullOrEmpty(parentType) || parentId <= 0 || string.IsNullOrWhiteSpace(search))
+                return Ok(Enumerable.Empty<StackSearchResult>());
+
+            try
+            {
+                var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
+                var results = await _commentRepository.SearchStackByStatementAsync(projectId, search);
+                return Ok(results);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
