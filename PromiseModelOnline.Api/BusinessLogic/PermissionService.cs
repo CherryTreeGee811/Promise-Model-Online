@@ -47,7 +47,8 @@ namespace PromiseModelOnline.Api.BusinessLogic
             if (project.OwnerId != ownerUserId)
                 throw new UnauthorizedAccessException("Only the project owner can invite users.");
 
-            var invitedUser = await _userRepo.GetOrCreateUserByEmailAsync(request.Email);
+            var invitedUser = await FindInvitedUserAsync(request.Email)
+                              ?? throw new InvalidOperationException($"User '{request.Email}' not found. Please use their registered email address.");
 
             var existing = await _permissionRepo.GetByUserAndProjectAsync(invitedUser.Id, project.Id);
             if (existing != null)
@@ -139,6 +140,20 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 return perm.Level;
 
             return null; // no access]
+        }
+
+        private async Task<User?> FindInvitedUserAsync(string emailOrName)
+        {
+            var users = await _userRepo.FindByEmailAsync(emailOrName);
+            var user = users.FirstOrDefault();
+
+            if (user == null)
+            {
+                var nameMatches = await _userRepo.GetUsersByNameAsync(emailOrName);
+                user = nameMatches.FirstOrDefault();
+            }
+
+            return user;
         }
     }
 }

@@ -1,4 +1,4 @@
-import { authFetch } from '../api.mjs';
+import { authFetch, apiGet } from '../api.mjs';
 
 export function fetchProjects() {
     return authFetch(`/api/projects`)
@@ -118,6 +118,11 @@ export async function inviteUser(owner, project, data) {
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
+}
+
+export async function searchUsers(query) {
+    const params = new URLSearchParams({ q: query, max: 10 });
+    return apiGet(`/api/users/search?${params}`);
 }
 
 export async function removePermission(owner, project, permissionId) {

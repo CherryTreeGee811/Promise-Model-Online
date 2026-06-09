@@ -41,4 +41,20 @@ public class UsersController : ControllerBase
             userId
         });
     }
+
+    [Authorize(Policy = "projects.read")]
+    [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<object>>> SearchUsers([FromQuery] string q, [FromQuery] int max = 10)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return Ok(Array.Empty<object>());
+
+        var users = await _userRepository.SearchUsersAsync(q, max);
+        return Ok(users.Select(u => new
+        {
+            u.Id,
+            u.Name,
+            u.Email
+        }));
+    }
 }

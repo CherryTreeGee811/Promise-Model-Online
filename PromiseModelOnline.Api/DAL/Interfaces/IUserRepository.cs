@@ -14,6 +14,8 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
 
         Task<IEnumerable<User>> SearchUsersByProjectAsync(int projectId, string searchTerm, int maxResults = 5);
 
+        Task<IEnumerable<User>> SearchUsersAsync(string searchTerm, int maxResults = 10);
+
         Task<User?> GetBySlugAsync(string slug);
     }
 }

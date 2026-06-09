@@ -105,5 +105,17 @@ namespace PromiseModelOnline.Api.DAL
                 .Take(maxResults)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<User>> SearchUsersAsync(string searchTerm, int maxResults = 10)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return Enumerable.Empty<User>();
+
+            var lower = searchTerm.ToLower();
+            return await _dbSet
+                .Where(u => u.Name.ToLower().Contains(lower) || u.Email.ToLower().Contains(lower))
+                .Take(maxResults)
+                .ToListAsync();
+        }
     }
 }

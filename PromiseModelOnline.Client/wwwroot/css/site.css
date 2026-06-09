@@ -1611,6 +1611,7 @@ input, button, a, label, select, textarea {
 .share-btn { background-color:#3498db; color:#fff; padding:6px 16px; border-radius:6px; font-size:0.85rem; font-weight:600; text-decoration:none; display:inline-block; margin-left:4px; }
 .share-btn:hover { background-color:#2980b9; }
 .revoke-btn { background:#c62828; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; }
+#invite-autocomplete { position: absolute; top: 100%; left: 0; right: 0; min-width: 260px; }
 
 .unread {
     font-weight: bold;
