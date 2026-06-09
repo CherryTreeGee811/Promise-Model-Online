@@ -73,10 +73,10 @@ public abstract class ApiIntegrationTestBase
                     services.Configure<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions>(
                         "Bearer", options =>
                     {
-                        options.Authority = null;
-                        options.MetadataAddress = null;
+                        options.Authority = null!;
+                        options.MetadataAddress = null!;
                         options.RequireHttpsMetadata = false;
-                        options.BackchannelHttpHandler = null;
+                        options.BackchannelHttpHandler = null!;
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
                             ValidateIssuer = true,

@@ -10,7 +10,7 @@ import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.mjs', { scope: '/' });
+  navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(() => {});
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
