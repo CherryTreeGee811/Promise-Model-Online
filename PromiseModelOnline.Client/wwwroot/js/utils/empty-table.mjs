@@ -43,7 +43,7 @@ export function renderEmptyStateSection({ icon, title, description, button }) {
         : '';
 
     return `
-        <div class="d-flex flex-column align-items-center gap-3 py-5">
+        <div class="no-items d-flex flex-column align-items-center gap-3 py-5">
             ${iconHtml}
             ${titleHtml}
             ${descHtml}

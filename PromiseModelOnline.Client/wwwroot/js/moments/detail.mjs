@@ -56,7 +56,7 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
                                     <button id="edit-moment-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
                                     <textarea id="moment-description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(moment.description || '')}</textarea>
                                 </div>
-                                <div class="field-actions"><button id="moment-description-save" class="btn btn-primary btn-sm" type="button">Save</button> <span id="moment-description-msg"></span></div>
+                                <div class="field-actions"><button id="moment-description-cancel" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="moment-description-save" class="btn btn-primary btn-sm" type="button">Save</button> <span id="moment-description-msg"></span></div>
                             </td>
                         </tr>
                         <tr><th scope="row"><label for="moment-type-select">Type</label></th><td>
@@ -111,10 +111,11 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
             const momentDescView = document.getElementById('moment-description-view');
             const momentEditBtn = document.getElementById('edit-moment-desc-btn');
             const descriptionSaveButton = document.getElementById('moment-description-save');
+            const momentDescriptionCancelBtn = document.getElementById('moment-description-cancel');
             let momentEditor = null;
             if (momentDescInput && momentDescView && momentEditBtn) {
                 createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
-                momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditBtn, descriptionSaveButton);
+                momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditBtn, descriptionSaveButton, momentDescriptionCancelBtn);
             }
 
             const tasksContainer = document.getElementById('moment-tasks');

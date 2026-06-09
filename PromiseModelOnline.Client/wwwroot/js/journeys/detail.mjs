@@ -50,7 +50,7 @@ export function loadJourneyDetail(owner, project, journeyId, navContentDiv, cont
                                 <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
                                 <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(journey.description || '')}</textarea>
                             </div>
-                            <div class="field-actions"><button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
+                            <div class="field-actions"><button id="cancel-desc" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Epic</th>
@@ -76,10 +76,11 @@ export function loadJourneyDetail(owner, project, journeyId, navContentDiv, cont
             const descView = document.getElementById('description-view');
             const editBtn = document.getElementById('edit-desc-btn');
             const saveBtn = document.getElementById('save-desc');
+            const cancelBtn = document.getElementById('cancel-desc');
             let editor = null;
             if (descInput && descView && editBtn) {
                 createCommentAutocomplete(descInput, 'Journey', journey.id);
-                editor = setupInlineEdit(descInput, descView, editBtn, saveBtn);
+                editor = setupInlineEdit(descInput, descView, editBtn, saveBtn, cancelBtn);
             }
 
             const epicLink = detailDiv.querySelector('a.detail-link[epic-id]');

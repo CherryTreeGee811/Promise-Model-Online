@@ -1,17 +1,24 @@
-export function setupInlineEdit(inputEl, viewEl, editBtn, saveBtn) {
+export function setupInlineEdit(inputEl, viewEl, editBtn, saveBtn, cancelBtn) {
+  let cancelValue = '';
+  let cancelViewHtml = '';
+
   function showView(value) {
     viewEl.innerHTML = value || '';
     viewEl.style.display = '';
     inputEl.style.display = 'none';
     if (saveBtn) saveBtn.style.display = 'none';
     editBtn.style.display = '';
+    if (cancelBtn) cancelBtn.style.display = 'none';
   }
 
   function showEdit() {
+    cancelValue = inputEl.value;
+    cancelViewHtml = viewEl.innerHTML;
     viewEl.style.display = 'none';
     inputEl.style.display = '';
     editBtn.style.display = 'none';
     if (saveBtn) saveBtn.style.display = '';
+    if (cancelBtn) cancelBtn.style.display = '';
     inputEl.focus();
   }
 
@@ -20,8 +27,16 @@ export function setupInlineEdit(inputEl, viewEl, editBtn, saveBtn) {
   inputEl.style.display = 'none';
   editBtn.style.display = '';
   if (saveBtn) saveBtn.style.display = 'none';
+  if (cancelBtn) cancelBtn.style.display = 'none';
 
   editBtn.addEventListener('click', showEdit);
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      inputEl.value = cancelValue;
+      showView(cancelViewHtml);
+    });
+  }
 
   return {
     showView,
