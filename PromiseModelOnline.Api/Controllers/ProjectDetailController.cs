@@ -58,6 +58,14 @@ namespace PromiseModelOnline.Api.Controllers
             if (projectEntity is null)
                 return NotFound();
 
+            var user = await GetCurrentUserAsync();
+            if (user is null)
+                return Unauthorized();
+
+            var accessibleProjects = await _projectService.GetAccessibleProjectsAsync(user.Id);
+            if (!accessibleProjects.Any(p => p.Id == projectEntity.Id))
+                return Forbid();
+
             return Ok(_mapper.Map(projectEntity, _service));
         }
 

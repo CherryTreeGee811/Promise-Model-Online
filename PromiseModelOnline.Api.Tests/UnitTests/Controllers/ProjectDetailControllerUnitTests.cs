@@ -76,6 +76,10 @@ namespace PromiseModelOnline.Api.Tests
             var project = new Project { Id = 7, Name = "P7", Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
 
+            var user = new User { Id = 1, Email = "u@u.com" };
+            _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("u@u.com", It.IsAny<string?>())).ReturnsAsync(user);
+            _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project> { project });
+
             _mockMapper.Setup(m => m.Map(project, It.IsAny<IGenericService<Project>>()))
                        .Returns(new ProjectDTO { Id = 7, Name = "P7", Slug = ProjectSlug, OwnerSlug = OwnerSlug });
 

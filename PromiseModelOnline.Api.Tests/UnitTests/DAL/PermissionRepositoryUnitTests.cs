@@ -85,13 +85,23 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectIdsForUserAsync_ReturnsDistinctProjectIds()
+        public async Task GetProjectIdsForUserAsync_ReturnsDistinctActiveProjectIds()
         {
             await SeedAsync();
             var ids = await _repo.GetProjectIdsForUserAsync(1);
             var list = ids.ToList();
             Assert.That(list.Count, Is.EqualTo(2));
             Assert.That(list, Is.EquivalentTo(new[] { 10, 20 }));
+        }
+
+        [Test]
+        public async Task GetProjectIdsForUserAsync_ExcludesPendingPermissions()
+        {
+            await SeedAsync();
+            var ids = await _repo.GetProjectIdsForUserAsync(2);
+            var list = ids.ToList();
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list, Is.EquivalentTo(new[] { 10 }));
         }
 
         [Test]
