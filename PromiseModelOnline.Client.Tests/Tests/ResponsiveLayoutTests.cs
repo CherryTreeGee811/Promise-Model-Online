@@ -12,6 +12,7 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     public async Task HomePage_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
         await EnsureLoggedInAsync(vp);
+        await WaitForSelectorAsync("#home-cta-area", 10);
         await AssertNoHorizontalScrollAsync();
         await AssertElementVisibleAsync("#home-cta-area");
     }
@@ -24,6 +25,7 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     {
         await EnsureLoggedInAsync(vp, "/projects");
         await NavigateSpaAsync("/projects");
+        await WaitForSelectorAsync("#project-list-table", 10);
         await AssertNoHorizontalScrollAsync();
         await AssertElementVisibleAsync("#project-list-table");
     }
