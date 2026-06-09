@@ -96,10 +96,9 @@ button {
   4. Header & Navigation
 **********************************************/
 .header {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
+  width: 100%;
   z-index: 1030;
 }
 
@@ -1400,7 +1399,6 @@ button {
    page border — keyboard navigation is already served by the skip link. */
 #main-container {
   flex-grow: 1;
-  padding-top: 56px;
 }
 
 #main-content {
@@ -1740,6 +1738,7 @@ input, button, a, label, select, textarea {
   padding: 1.5rem 1rem;
   text-align: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .home-stat-card:hover {
@@ -1771,6 +1770,7 @@ input, button, a, label, select, textarea {
   padding: 1.5rem;
   height: 100%;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .home-stack-card:hover {
@@ -1821,6 +1821,7 @@ input, button, a, label, select, textarea {
   text-align: center;
   height: 100%;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .home-feature-card:hover {

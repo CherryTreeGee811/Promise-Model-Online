@@ -67,7 +67,7 @@ const PAGE_TITLES = {
 
 function announceAndFocus() {
   const mainEl = document.getElementById('main-content');
-  if (mainEl) mainEl.focus();
+  if (mainEl) { requestAnimationFrame(() => mainEl.focus()); }
 }
 
 function setPageTitle(path) {
