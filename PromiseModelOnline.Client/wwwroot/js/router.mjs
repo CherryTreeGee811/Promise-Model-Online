@@ -153,7 +153,7 @@ export function routeHandler(navContentDiv, contentDiv) {
         case path.startsWith('/projects'):
             loadProjectRoutes().then(({ handleLegacyProjectRoutes }) => {
                 handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
-            });
+            }).catch(loadTemplateWithError(contentDiv, 'projects'));
             break;
         case path === '/moments/my-tasks':
             loadTemplate('moments/my-tasks.html', contentDiv)
@@ -193,6 +193,10 @@ export function routeHandler(navContentDiv, contentDiv) {
                 } else {
                     loadProjectRoutes().then(({ handleProjectScopedRoutes }) => {
                         handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+                    }).catch(() => {
+                        contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
+                        setPageTitle(path);
+                        announceAndFocus();
                     });
                 }
             } else {
