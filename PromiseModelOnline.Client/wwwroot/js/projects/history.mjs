@@ -10,7 +10,7 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
     const listEl = document.getElementById('audit-history-list');
     const loadingEl = document.getElementById('audit-history-loading');
     const paginationEl = document.getElementById('audit-history-pagination');
-    const backBtn = document.getElementById('back-to-project-settings-btn');
+    const backBtn = document.getElementById('back-to-projects-btn');
     const modalContainerId = 'project-history-audit-modal-container';
 
     let currentPage = 1;
@@ -149,6 +149,6 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
     loadProjectName().then(() => loadEntries(true));
 
     backBtn.addEventListener('click', () => {
-        navigate(`/${owner}/${project}/settings`, navContentDiv, contentDiv);
+        navigate('/projects', navContentDiv, contentDiv);
     });
 }

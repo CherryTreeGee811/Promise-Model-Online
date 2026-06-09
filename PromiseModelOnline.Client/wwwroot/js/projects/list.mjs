@@ -61,6 +61,9 @@ export function loadProjectList(navContentDiv, contentDiv) {
                     <a href="/${project.ownerSlug}/${project.slug}/share" class="btn btn-sm btn-outline-secondary share-btn" data-owner-slug="${project.ownerSlug}" data-project-slug="${project.slug}" title="Manage sharing permissions" aria-label="Manage sharing permissions">
                         <i class="bi bi-share" aria-hidden="true"></i>
                     </a>
+                    <a href="/${project.ownerSlug}/${project.slug}/history" class="btn btn-sm btn-outline-secondary audit-log-btn" data-owner-slug="${project.ownerSlug}" data-project-slug="${project.slug}" title="View project activity" aria-label="View project activity">
+                        <i class="bi bi-eye" aria-hidden="true"></i>
+                    </a>
                 </td>
             `;
             tableBody.appendChild(row);
@@ -99,6 +102,15 @@ export function loadProjectList(navContentDiv, contentDiv) {
                 const owner = shareBtn.getAttribute('data-owner-slug');
                 const project = shareBtn.getAttribute('data-project-slug');
                 navigate(`/${owner}/${project}/share`, navContentDiv, contentDiv);
+            });
+        });
+
+        tableBody.querySelectorAll('.audit-log-btn[data-owner-slug]').forEach(auditBtn => {
+            auditBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const owner = auditBtn.getAttribute('data-owner-slug');
+                const project = auditBtn.getAttribute('data-project-slug');
+                navigate(`/${owner}/${project}/history`, navContentDiv, contentDiv);
             });
         });
     }).catch(error => {

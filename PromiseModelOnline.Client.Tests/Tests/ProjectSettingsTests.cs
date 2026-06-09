@@ -23,18 +23,4 @@ public class ProjectSettingsTests : PlaywrightTestBase
         Assert.That(Page.Url, Does.EndWith("/projects"));
     }
 
-    [Test]
-    public async Task ProjectSettings_ViewFullAuditLog_OpensHistoryPage()
-    {
-        await EnsureLoggedIn();
-        await NavigateSpaAsync("/pmo_test/seeded-project/settings");
-
-        await ClickAsync("#project-audit-history-link");
-
-        var ends = await WaitForUrlContainsAsync("/pmo_test/seeded-project/history", 15);
-        var historyList = await WaitForSelectorAsync("#audit-history-list");
-
-        Assert.That(ends, Is.True);
-        Assert.That(Page.Url, Does.EndWith("/pmo_test/seeded-project/history"));
-    }
 }

@@ -1,9 +1,9 @@
 import { navigate } from '../router.mjs';
-import { exportProject, getAuditEvents, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.mjs';
+import { exportProject, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.mjs';
 import { getProjectMembers } from '../strides/api.mjs';
 import { renderSummaryTable } from './summary.mjs';
-import { formatTimestamp, getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
-import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { formatTimestamp } from './audit.mjs';
+import { escapeHtml } from '../utils/html.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 import { formatCommentText } from '../utils/entity-reference.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
@@ -14,10 +14,6 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
     const descriptionInput = document.getElementById('project-description-input');
     const summaryPanel = document.getElementById('project-summary-panel');
     const summaryLoading = document.getElementById('project-summary-loading');
-    const auditPanel = document.getElementById('project-audit-panel');
-    const auditLoading = document.getElementById('project-audit-loading');
-    const auditHistoryLink = document.getElementById('project-audit-history-link');
-    const auditDetailsModalContainerId = 'project-audit-details-modal-container';
     const errorText = document.getElementById('error-text');
     const successText = document.getElementById('success-text');
     const exportButton = document.getElementById('export-project-btn');
@@ -59,11 +55,9 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
     let exportPopoverHideTimer = null;
     let exportPopover = null;
 
-    if (!form || !titleInput || !descriptionInput || !summaryPanel || !summaryLoading || !auditPanel || !auditLoading || !auditHistoryLink || !errorText || !successText || !exportButton || !deleteButton || !deleteConfirmationInput || !deleteConfirmationText) {
+    if (!form || !titleInput || !descriptionInput || !summaryPanel || !summaryLoading || !errorText || !successText || !exportButton || !deleteButton || !deleteConfirmationInput || !deleteConfirmationText) {
         return;
     }
-
-    ensureAuditModal();
 
     function clearMessages() {
         errorText.textContent = '';
@@ -73,42 +67,6 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
     function setSummaryLoading(loading) {
         summaryLoading.hidden = !loading;
         summaryPanel.hidden = loading;
-    }
-
-    function setAuditLoading(loading) {
-        // use centralized spinner markup inside the panel for visual consistency
-        auditLoading.hidden = true;
-        if (loading) {
-            auditPanel.innerHTML = renderLoadingSpinner('Loading project activity');
-            auditPanel.hidden = false;
-        }
-    }
-
-    function ensureAuditModal() {
-        let container = document.getElementById(auditDetailsModalContainerId);
-        if (!container) {
-            container = document.createElement('div');
-            container.id = auditDetailsModalContainerId;
-            document.body.appendChild(container);
-        }
-
-        container.innerHTML = renderAuditDetailsModal();
-    }
-
-    function openAuditDetails(item) {
-        const payload = getAuditDetailsPayload(item);
-        const titleEl = document.getElementById('audit-details-modal-title');
-        const bodyEl = document.getElementById('audit-details-modal-body');
-        const modalEl = document.getElementById('audit-details-modal');
-
-        if (!titleEl || !bodyEl || !modalEl) return;
-
-        titleEl.textContent = payload.title;
-        bodyEl.innerHTML = payload.html;
-
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            bootstrap.Modal.getOrCreateInstance(modalEl).show();
-        }
     }
 
     function showExportPopover() {
@@ -226,34 +184,8 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         }
     }
 
-    async function loadAuditHistory() {
-        setAuditLoading(true);
-
-        try {
-            const { items } = await getAuditEvents(owner, project, 10, 0);
-            auditPanel.innerHTML = renderAuditTable(items, { showEntity: false });
-            bindAuditDetailLinks(items);
-        } catch (error) {
-            auditPanel.innerHTML = '<p class="text-danger mb-0">Failed to load project activity.</p>';
-            console.warn('Failed to load project audit history:', error);
-        } finally {
-            setAuditLoading(false);
-        }
-    }
-
-    function bindAuditDetailLinks(items) {
-        const detailLinks = auditPanel.querySelectorAll('.audit-show-details-link');
-        detailLinks.forEach((link, index) => {
-            link.addEventListener('click', (event) => {
-                event.preventDefault();
-                openAuditDetails(items[index]);
-            });
-        });
-    }
-
     async function loadProject() {
         try {
-            auditHistoryLink.href = `/${owner}/${project}/history`;
             const projectData = await getProject(owner, project);
             currentProject = projectData;
             titleInput.value = projectData.name ?? '';
@@ -262,7 +194,6 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
             if (descEditor) descEditor.showView(formatCommentText(projectData.description ?? ''));
             refreshDeleteGate(projectData.name ?? '');
             await loadSummary(projectData);
-            await loadAuditHistory();
 
             // Set up autocomplete on description using the first promise as parent
             if (summaryState.firstPromise) {
@@ -299,7 +230,6 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
             if (descEditor) descEditor.showSavedPopover(formatCommentText(updatedProject.description ?? ''));
             refreshDeleteGate(updatedProject.name ?? '');
             renderSummary(updatedProject, summaryState.counts, summaryState.memberCount);
-            await loadAuditHistory();
             successText.textContent = 'Project settings saved.';
         } catch (error) {
             errorText.textContent = error.message || 'Failed to save project settings.';
@@ -343,11 +273,6 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         } finally {
             setDeleteButtonState(false);
         }
-    });
-
-    auditHistoryLink.addEventListener('click', (event) => {
-        event.preventDefault();
-        navigate(`/${owner}/${project}/history`, navContentDiv, contentDiv);
     });
 
     loadProject();
