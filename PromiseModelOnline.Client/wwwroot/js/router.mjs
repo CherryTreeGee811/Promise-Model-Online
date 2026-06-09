@@ -9,6 +9,10 @@ import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.mjs', { scope: '/' });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const contentDiv = document.getElementById('content');
     const navContentDiv = document.getElementById('main-menu');
