@@ -1,13 +1,20 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs';
 import { clearAuth, isLoggedIn } from './auth-state.mjs';
-import { stopNotificationPolling } from './notifications/badge.mjs';
 import { checkSession } from './api.mjs';
-import { handleLegacyProjectRoutes, handleProjectScopedRoutes } from './projects/router.mjs';
 import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
+
+let _projectRoutes;
+function loadProjectRoutes() {
+  return _projectRoutes || (_projectRoutes = import('./projects/router.mjs'));
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(() => {});
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     const contentDiv = document.getElementById('content');
@@ -63,7 +70,7 @@ const PAGE_TITLES = {
 
 function announceAndFocus() {
   const mainEl = document.getElementById('main-content');
-  if (mainEl) mainEl.focus();
+  if (mainEl) { requestAnimationFrame(() => mainEl.focus()); }
 }
 
 function setPageTitle(path) {
@@ -144,7 +151,9 @@ export function routeHandler(navContentDiv, contentDiv) {
             });
             break;
         case path.startsWith('/projects'):
-            handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
+            loadProjectRoutes().then(({ handleLegacyProjectRoutes }) => {
+                handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
+            }).catch(loadTemplateWithError(contentDiv, 'projects'));
             break;
         case path === '/moments/my-tasks':
             loadTemplate('moments/my-tasks.html', contentDiv)
@@ -182,7 +191,13 @@ export function routeHandler(navContentDiv, contentDiv) {
                             announceAndFocus();
                         });
                 } else {
-                    handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+                    loadProjectRoutes().then(({ handleProjectScopedRoutes }) => {
+                        handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+                    }).catch(() => {
+                        contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
+                        setPageTitle(path);
+                        announceAndFocus();
+                    });
                 }
             } else {
                 loadTemplate('404.html', contentDiv)

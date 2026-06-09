@@ -3,6 +3,7 @@ types {
 	text/css                              css;
 	application/javascript                js mjs;
 	application/json                      json;
+	text/plain                            txt;
 	image/png                             png;
 	image/jpeg                            jpeg jpg;
 	image/gif                             gif;

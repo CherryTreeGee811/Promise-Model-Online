@@ -49,4 +49,62 @@ public class SecurityHeadersTests : E2ETestBase
         var response = await GetAsync("/nonexistent");
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
+
+    [Test]
+    public async Task CSP_IncludesManifestSrc()
+    {
+        var response = await GetAsync("/");
+        var csp = response.Headers.GetValues("Content-Security-Policy").FirstOrDefault();
+        Assert.That(csp, Does.Contain("manifest-src 'self'"), "CSP should allow manifest-src 'self'");
+    }
+
+    [Test]
+    public async Task ManifestJson_ServedCorrectly()
+    {
+        var response = await GetAsync("/manifest.json");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/json"));
+    }
+
+    [Test]
+    public async Task ServiceWorker_ServedCorrectly()
+    {
+        var response = await GetAsync("/sw.mjs");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var contentType = response.Content.Headers.ContentType?.MediaType;
+        Assert.That(contentType, Is.EqualTo("application/javascript").Or.EqualTo("text/javascript"));
+    }
+
+    [Test]
+    public async Task SPA_IncludesManifestLink()
+    {
+        var html = await Client.GetStringAsync("/");
+        Assert.That(html, Does.Contain("rel=\"manifest\" href=\"/manifest.json\""));
+    }
+
+    [Test]
+    public async Task RobotsTxt_ServedCorrectly()
+    {
+        var response = await GetAsync("/robots.txt");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("text/plain"));
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.That(body, Does.Contain("User-agent: *"));
+        Assert.That(body, Does.Contain("Disallow: /api/"));
+        Assert.That(body, Does.Contain("Disallow: /login"));
+        Assert.That(body, Does.Contain("Sitemap: https://localhost/sitemap.xml"));
+        Assert.That(body, Does.Not.Contain("Allow: /"));
+    }
+
+    [Test]
+    public async Task SitemapXml_ServedCorrectly()
+    {
+        var response = await GetAsync("/sitemap.xml");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/xml"));
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.That(body, Does.Contain("<loc>https://localhost/</loc>"));
+        Assert.That(body, Does.Contain("<changefreq>weekly</changefreq>"));
+        Assert.That(body, Does.Contain("<priority>1.0</priority>"));
+    }
 }

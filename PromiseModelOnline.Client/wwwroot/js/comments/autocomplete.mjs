@@ -3,6 +3,7 @@ import { searchUsers, searchPromises } from './autocomplete.api.mjs';
 export function createCommentAutocomplete(textarea, parentType, parentId) {
   const dropdown = document.createElement('div');
   dropdown.className = 'comment-autocomplete';
+  dropdown.role = 'listbox';
   dropdown.style.display = 'none';
   document.body.appendChild(dropdown);
 
@@ -136,6 +137,8 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       const el = document.createElement('div');
       el.className = 'comment-autocomplete__item'
         + (i === state.highlightedIndex ? ' comment-autocomplete__item--highlight' : '');
+      el.role = 'option';
+      el.ariaSelected = String(i === state.highlightedIndex);
 
       if (state.trigger === '@') {
         el.textContent = item.name;

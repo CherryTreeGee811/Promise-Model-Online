@@ -55,6 +55,13 @@ body {
   overflow-x: hidden;
   line-height: 1.5;
 }
+
+@font-face {
+  font-family: "bootstrap-icons";
+  src: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/fonts/bootstrap-icons.woff2?e34853135f9e39acf64315236852cd5a") format("woff2");
+  font-display: swap;
+}
+
 a {
   color: var(--color-link);
   text-decoration: underline;
@@ -1390,6 +1397,10 @@ button {
 /* The main content region receives programmatic focus after every SPA navigation
    (for screen readers). Suppress the visual outline so it doesn't look like a
    page border — keyboard navigation is already served by the skip link. */
+#main-container {
+  flex-grow: 1;
+}
+
 #main-content {
   padding-top: 1em;
   padding-bottom: 1em;
@@ -1727,6 +1738,7 @@ input, button, a, label, select, textarea {
   padding: 1.5rem 1rem;
   text-align: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .home-stat-card:hover {
@@ -1758,6 +1770,7 @@ input, button, a, label, select, textarea {
   padding: 1.5rem;
   height: 100%;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .home-stack-card:hover {
@@ -1808,6 +1821,7 @@ input, button, a, label, select, textarea {
   text-align: center;
   height: 100%;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .home-feature-card:hover {
