@@ -61,11 +61,20 @@ namespace PromiseModelOnline.Api.DAL
                 return existing;
             }
 
+            var baseSlug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown");
+            var slug = baseSlug;
+            var counter = 1;
+            while (await _dbSet.AnyAsync(u => u.Slug == slug))
+            {
+                slug = $"{baseSlug}_{counter}";
+                counter++;
+            }
+
             var user = new User
             {
                 Email = email,
                 Name = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
-                Slug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
+                Slug = slug,
                 Role = UserRole.Professional,
                 CreatedAt = DateTime.UtcNow
             };

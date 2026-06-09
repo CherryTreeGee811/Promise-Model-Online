@@ -47,7 +47,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
             if (project.OwnerId != ownerUserId)
                 throw new UnauthorizedAccessException("Only the project owner can invite users.");
 
-            var invitedUser = await _userRepo.GetOrCreateUserByEmailAsync(request.UserEmail);
+            var invitedUser = await _userRepo.GetOrCreateUserByEmailAsync(request.Email);
 
             var existing = await _permissionRepo.GetByUserAndProjectAsync(invitedUser.Id, project.Id);
             if (existing != null)
@@ -72,8 +72,15 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 "/invitations"
             );
 
-            var created = await _permissionRepo.GetByIdAsync(permission.Id);
-            return _mapper.Map(created!, null!);
+            return new PermissionDTO
+            {
+                Id = permission.Id,
+                UserId = invitedUser.Id,
+                UserName = invitedUser.Name,
+                ProjectId = project.Id,
+                Level = permission.Level.ToString(),
+                Status = permission.Status.ToString()
+            };
         }
 
         public async Task<PermissionDTO> AcceptInvitationAsync(int permissionId, int userId)

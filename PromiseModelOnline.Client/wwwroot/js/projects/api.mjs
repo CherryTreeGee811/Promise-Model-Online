@@ -135,6 +135,15 @@ export async function getProjectPromises(owner, project) {
     return res.json();
 }
 
+export async function getGraphData(owner, project) {
+    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/graph`);
+
+    if (res.status === 204) return null;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    return res.json();
+}
+
 export async function getProjectMembers(owner, project) {
     const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
 

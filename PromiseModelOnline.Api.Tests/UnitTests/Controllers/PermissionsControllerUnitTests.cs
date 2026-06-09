@@ -81,7 +81,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             var request = new CreatePermissionRequestDTO
             {
-                UserEmail = "invitee@example.com",
+                Email = "invitee@example.com",
                 ProjectId = 42,
                 Level = PermissionLevel.Edit
             };

@@ -136,7 +136,7 @@ namespace PromiseModelOnline.Api.Controllers
                 return ValidationProblem(ModelState);
 
             var flow = await _context.Flows
-                .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == request.FlowId);
+                .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.Id == request.FlowId);
 
             if (flow is null)
                 return NotFound("Flow not found.");

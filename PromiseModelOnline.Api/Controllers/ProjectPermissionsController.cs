@@ -67,7 +67,7 @@ namespace PromiseModelOnline.Api.Controllers
                     userId.Value,
                     result.Id,
                     DateTime.UtcNow,
-                    new { request.ProjectId, request.UserEmail, request.Level });
+                    new { request.ProjectId, request.Email, request.Level });
 
                 return CreatedAtAction(nameof(GetPermissions), new { owner, project }, result);
             }

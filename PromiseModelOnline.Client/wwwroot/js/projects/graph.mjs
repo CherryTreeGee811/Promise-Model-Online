@@ -1,10 +1,5 @@
-import { getProject, getProjectPromises } from './api.mjs';
-import { getIterations } from '../iterations/api.mjs';
-import { getEpicsByPromise } from '../promises/api.mjs';
-import { getJourneys } from '../epics/api.mjs';
-import { getFlows } from '../journeys/api.mjs';
-import { getStridesByIteration } from '../strides/api.mjs';
-import { getMoments } from '../flows/api.mjs';
+import { getGraphData } from './api.mjs';
+import { getStrides } from '../strides/api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { getUserId } from '../auth-state.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
@@ -17,7 +12,6 @@ import {
     getNodeSearchText,
     getMomentEffortBucket,
     getMomentStrideBucket,
-    sortByDisplayOrder,
     createNode,
     findNodeById,
     countRenderableNodes,
@@ -231,32 +225,28 @@ function getTypeShortLabel(nodeType) {
     }
 }
 
-async function buildMomentNode(moment) {
+function buildMomentNode(moment) {
     return createNode('moment', moment, []);
 }
 
-async function buildFlowNode(flow) {
-    const moments = sortByDisplayOrder(await getMoments(graphState.owner, graphState.project, flow.sequenceNumber));
-    const children = await Promise.all(moments.map(buildMomentNode));
-    return createNode('flow', flow, children);
+function buildFlowNode(flow) {
+    const moments = (flow.moments ?? []).map(buildMomentNode);
+    return createNode('flow', flow, moments);
 }
 
-async function buildJourneyNode(journey) {
-    const flows = sortByDisplayOrder(await getFlows(graphState.owner, graphState.project, journey.sequenceNumber));
-    const children = await Promise.all(flows.map(buildFlowNode));
-    return createNode('journey', journey, children);
+function buildJourneyNode(journey) {
+    const flows = (journey.flows ?? []).map(buildFlowNode);
+    return createNode('journey', journey, flows);
 }
 
-async function buildEpicNode(epic) {
-    const journeys = sortByDisplayOrder(await getJourneys(graphState.owner, graphState.project, epic.sequenceNumber));
-    const children = await Promise.all(journeys.map(buildJourneyNode));
-    return createNode('epic', epic, children);
+function buildEpicNode(epic) {
+    const journeys = (epic.journeys ?? []).map(buildJourneyNode);
+    return createNode('epic', epic, journeys);
 }
 
-async function buildPromiseNode(promise) {
-    const epics = sortByDisplayOrder(await getEpicsByPromise(graphState.owner, graphState.project, promise.sequenceNumber));
-    const children = await Promise.all(epics.map(buildEpicNode));
-    return createNode('promise', promise, children);
+function buildPromiseNode(promise) {
+    const epics = (promise.epics ?? []).map(buildEpicNode);
+    return createNode('promise', promise, epics);
 }
 
 function matchesNode(node, filters) {
@@ -839,29 +829,22 @@ async function reloadGraphData() {
     if (successEl) successEl.textContent = '';
 
     try {
-        const [projectResult, promisesResult] = await Promise.allSettled([
-            getProject(graphState.owner, graphState.project),
-            getProjectPromises(graphState.owner, graphState.project),
-        ]);
+        const graphData = await getGraphData(graphState.owner, graphState.project);
 
-        if (promisesResult.status !== 'fulfilled') {
-            throw promisesResult.reason;
-        }
+        const project = {
+            id: graphData.id ?? graphData.Id,
+            name: graphData.name ?? graphData.Name,
+            description: graphData.description ?? graphData.Description,
+        };
 
-        if (projectResult.status === 'rejected') {
-            console.warn('Unable to load project details for graph root card label:', projectResult.reason);
-        }
+        const rootPromises = (graphData.promises ?? graphData.Promises ?? []).map(buildPromiseNode);
 
-        const project = projectResult.status === 'fulfilled' ? projectResult.value : null;
-        const rootPromises = sortByDisplayOrder(promisesResult.value);
-        const children = await Promise.all(rootPromises.map(buildPromiseNode));
-
-        graphState.rawTree = parseGraphData(children, graphState.owner, graphState.project, project);
+        graphState.rawTree = parseGraphData(rootPromises, graphState.owner, graphState.project, project);
         reconcileCollapsedNodes();
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
         applyFilters();
 
-        if (successEl) successEl.textContent = `Loaded ${children.length} top-level promise${children.length === 1 ? '' : 's'}.`;
+        if (successEl) successEl.textContent = `Loaded ${rootPromises.length} top-level promise${rootPromises.length === 1 ? '' : 's'}.`;
     } catch (error) {
         console.error('Error loading project graph:', error);
         if (errorEl) errorEl.textContent = 'Unable to load the project graph.';
@@ -871,24 +854,14 @@ async function reloadGraphData() {
 }
 
 async function loadAvailableStrides(owner, project) {
-    const iterations = await getIterations(owner, project);
-    const strideGroups = await Promise.all(
-        (Array.isArray(iterations) ? iterations : []).map(async iteration => ({
-            iteration,
-            strides: await getStridesByIteration(owner, project, iteration.id),
-        }))
-    );
-
-    const strides = strideGroups
-        .flatMap(group => (Array.isArray(group.strides) ? group.strides : []))
+    const strides = await getStrides(owner, project);
+    graphState.availableStrides = (Array.isArray(strides) ? strides : [])
         .sort((left, right) => {
             const leftStart = new Date(left.startDate ?? 0).getTime();
             const rightStart = new Date(right.startDate ?? 0).getTime();
             if (leftStart !== rightStart) return leftStart - rightStart;
             return Number(left.id) - Number(right.id);
         });
-
-    graphState.availableStrides = strides;
 }
 
 export async function loadGraphPage(owner, project, contentDiv) {

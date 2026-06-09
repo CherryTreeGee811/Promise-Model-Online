@@ -1,9 +1,5 @@
 import { navigate } from '../router.mjs';
-import { exportProject, getAuditEvents, getProject, getProjectPromises, deleteProject, updateProjectDetails } from './api.mjs';
-import { getEpicsByPromise } from '../promises/api.mjs';
-import { getJourneys } from '../epics/api.mjs';
-import { getFlows } from '../journeys/api.mjs';
-import { getMoments } from '../flows/api.mjs';
+import { exportProject, getAuditEvents, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.mjs';
 import { getProjectMembers } from '../strides/api.mjs';
 import { renderSummaryTable } from './summary.mjs';
 import { formatTimestamp, getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
@@ -58,6 +54,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
             totalPromises: 0,
         },
         memberCount: 0,
+        firstPromise: null,
     };
     let exportPopoverHideTimer = null;
     let exportPopover = null;
@@ -184,33 +181,27 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         setSummaryLoading(true);
 
         try {
-            const [promises, members] = await Promise.all([
-                getProjectPromises(owner, project),
+            const [graphData, members] = await Promise.all([
+                getGraphData(owner, project),
                 getProjectMembers(owner, project).catch(() => []),
             ]);
 
-            const epicsNested = await Promise.all(promises.map(promise => getEpicsByPromise(owner, project, promise.sequenceNumber).catch(() => [])));
-            const epics = epicsNested.flat();
-
-            const journeysNested = await Promise.all(epics.map(epic => getJourneys(owner, project, epic.sequenceNumber).catch(() => [])));
-            const journeys = journeysNested.flat();
-
-            const flowsNested = await Promise.all(journeys.map(journey => getFlows(owner, project, journey.sequenceNumber).catch(() => [])));
-            const flows = flowsNested.flat();
-
-            const momentsNested = await Promise.all(flows.map(flow => getMoments(owner, project, flow.sequenceNumber).catch(() => [])));
-            const moments = momentsNested.flat();
+            const epics = (graphData.promises ?? []).flatMap(p => p.epics ?? []);
+            const journeys = epics.flatMap(e => e.journeys ?? []);
+            const flows = journeys.flatMap(j => j.flows ?? []);
+            const moments = flows.flatMap(f => f.moments ?? []);
 
             summaryState = {
                 counts: {
-                    promises: promises.length,
+                    promises: (graphData.promises ?? []).length,
                     epics: epics.length,
                     journeys: journeys.length,
                     flows: flows.length,
                     moments: moments.length,
-                    totalPromises: promises.length + epics.length + journeys.length + flows.length + moments.length,
+                    totalPromises: (graphData.promises ?? []).length + epics.length + journeys.length + flows.length + moments.length,
                 },
                 memberCount: members.length,
+                firstPromise: (graphData.promises ?? [])[0] ?? null,
             };
 
             renderSummary(projectObj, summaryState.counts, summaryState.memberCount);
@@ -225,6 +216,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
                     totalPromises: 0,
                 },
                 memberCount: 0,
+                firstPromise: null,
             };
 
             renderSummary(projectObj, summaryState.counts, summaryState.memberCount);
@@ -273,9 +265,8 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
             await loadAuditHistory();
 
             // Set up autocomplete on description using the first promise as parent
-            const promises = await getProjectPromises(owner, project);
-            if (promises && promises.length > 0) {
-                createCommentAutocomplete(descriptionInput, 'Promise', promises[0].id);
+            if (summaryState.firstPromise) {
+                createCommentAutocomplete(descriptionInput, 'Promise', summaryState.firstPromise.id);
             }
         } catch (error) {
             errorText.textContent = 'Failed to load project settings.';

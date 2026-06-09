@@ -82,7 +82,7 @@ namespace PromiseModelOnline.Api.Tests
         public void InviteUserAsync_ProjectNotFound_Throws()
         {
             _projectRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Project?)null);
-            var request = new CreatePermissionRequestDTO { ProjectId = 99, UserEmail = "test@test.com", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDTO { ProjectId = 99, Email = "test@test.com", Level = PermissionLevel.View };
 
             Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, 1));
         }
@@ -92,7 +92,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             var project = new Project { Id = 10, OwnerId = 55 };
             _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, UserEmail = "test@test.com", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "test@test.com", Level = PermissionLevel.View };
 
             Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.InviteUserAsync(request, 1));
         }
@@ -108,7 +108,7 @@ namespace PromiseModelOnline.Api.Tests
             _userRepoMock.Setup(r => r.GetOrCreateUserByEmailAsync("invited@test.com")).ReturnsAsync(invitedUser);
             _permRepoMock.Setup(r => r.GetByUserAndProjectAsync(200, 10)).ReturnsAsync(new Permission { Id = 99 });
 
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, UserEmail = "invited@test.com", Level = PermissionLevel.Comment };
+            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
 
             Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, ownerId));
         }
@@ -131,7 +131,7 @@ namespace PromiseModelOnline.Api.Tests
 
             _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDTO { Id = 0, Level = "Comment" });
 
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, UserEmail = "invited@test.com", Level = PermissionLevel.Comment };
+            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
 
             var result = await _service.InviteUserAsync(request, ownerId);
 

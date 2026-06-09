@@ -88,6 +88,7 @@ export function loadSharePage(owner, project, contentDiv) {
                     const created = await inviteUser(owner, project, { email, level });
                     const tbody = section.querySelector('table.promisemodel-table tbody');
                     if (tbody && created) {
+                        tbody.querySelector('.inline-table-empty-row')?.remove();
                         const y = window.scrollY;
                         const row = document.createElement('tr');
                         row.dataset.permissionId = created.id;
