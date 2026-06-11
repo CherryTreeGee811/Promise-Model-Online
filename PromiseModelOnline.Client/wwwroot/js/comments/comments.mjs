@@ -4,22 +4,27 @@ import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { createCommentAutocomplete } from './autocomplete.mjs';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.mjs';
 
-export function loadComments(container, parentType, parentId, owner, project) {
+export function loadComments(container, parentType, parentId, owner, project, permission) {
+    const canComment = permission?.permission === 'Comment' || permission?.permission === 'Edit';
+
     container.innerHTML = `
         <h3>Comments</h3>
         <div id="comments-list" class="comments-list"></div>
+        ${canComment ? `
         <form id="comment-form" class="comment-form" aria-label="Add a comment">
             <label for="comment-textarea" class="sr-only">Your comment</label>
             <textarea id="comment-textarea" class="form-control mb-2" rows="3" required placeholder="Write a comment... Use @name to mention someone, #type-id to reference a promise/epic/journey/flow/moment."></textarea>
             <button type="submit" class="btn btn-primary btn-sm">Post</button>
-        </form>
+        </form>` : ''}
     `;
 
     const commentsList = container.querySelector('#comments-list');
     const form = container.querySelector('#comment-form');
     const textarea = container.querySelector('#comment-textarea');
 
-    const autocomplete = createCommentAutocomplete(textarea, parentType, parentId);
+    if (textarea) {
+        createCommentAutocomplete(textarea, parentType, parentId);
+    }
 
     // Fetch entity map for reference resolution and comments in parallel
     const mapPromise = loadEntityLookupMap(parentType, parentId, owner, project);
@@ -28,37 +33,39 @@ export function loadComments(container, parentType, parentId, owner, project) {
         getComments(owner, project, parentType, parentId),
         mapPromise,
     ])
-        .then(([comments]) => renderComments(commentsList, comments))
+        .then(([comments]) => renderComments(commentsList, comments, canComment))
         .catch(() => {
             commentsList.removeAttribute('role');
             commentsList.removeAttribute('aria-label');
             commentsList.innerHTML = '<p class="error">Failed to load comments.</p>';
         });
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const text = textarea.value.trim();
-        if (!text) return;
-        try {
-            const y = window.scrollY;
-            const created = await addComment(owner, project, { parentType, parentId, text });
-            appendComment(commentsList, created);
-            textarea.value = '';
-            window.scrollTo(0, y);
-        } catch (err) {
-            alert('Failed to post comment.');
-            console.error(err);
-        }
-    });
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = textarea.value.trim();
+            if (!text) return;
+            try {
+                const y = window.scrollY;
+                const created = await addComment(owner, project, { parentType, parentId, text });
+                appendComment(commentsList, created);
+                textarea.value = '';
+                window.scrollTo(0, y);
+            } catch (err) {
+                alert('Failed to post comment.');
+                console.error(err);
+            }
+        });
+    }
 }
 
-function renderComments(container, comments) {
+function renderComments(container, comments, canComment) {
     container.innerHTML = '';
     if (!comments || comments.length === 0) {
         container.innerHTML = renderEmptyStateSection({
             icon: 'bi-chat-dots',
             title: 'No comments yet.',
-            description: 'Be the first to share your thoughts.',
+            description: canComment ? 'Be the first to share your thoughts.' : '',
         });
         return;
     }

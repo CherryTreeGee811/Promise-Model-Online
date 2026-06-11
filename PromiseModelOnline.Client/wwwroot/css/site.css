@@ -319,6 +319,9 @@ button {
 }
 
 .status-todo          { background: #c0392b; }
+.status-inprogress    { background: #e67e22; }
+.status-blocked       { background: #7f8c8d; }
+.status-done          { background: #27ae60; }
 
 /*********************************************
   11. Stride Cards, Backlog, Detail Cards

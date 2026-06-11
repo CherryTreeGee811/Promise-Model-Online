@@ -10,9 +10,9 @@ export function initBackLink() {
     }
 }
 
-export function loadCommentsAndReactions(detailDiv, entityType, entityId, owner, project) {
+export function loadCommentsAndReactions(detailDiv, entityType, entityId, owner, project, permission) {
     const commentsContainer = document.getElementById(`${entityType.toLowerCase()}-comments`);
-    if (commentsContainer) loadComments(commentsContainer, entityType, entityId, owner, project);
+    if (commentsContainer) loadComments(commentsContainer, entityType, entityId, owner, project, permission);
 
     let reactionsContainer = document.getElementById('reactions-section');
     if (!reactionsContainer) {
@@ -21,6 +21,6 @@ export function loadCommentsAndReactions(detailDiv, entityType, entityId, owner,
     }
     if (detailDiv) {
         if (!reactionsContainer.parentNode) detailDiv.appendChild(reactionsContainer);
-        loadReactions(reactionsContainer, entityType, entityId, owner, project);
+        loadReactions(reactionsContainer, entityType, entityId, owner, project, permission);
     }
 }

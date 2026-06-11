@@ -21,11 +21,13 @@ public class ProjectShareTests : PlaywrightTestBase
     {
         await NavigateAsUser("/pmo_test/seeded-project/share");
 
-        await WaitForSelectorAsync("#invite-form", 10);
+        await WaitForSelectorAsync("#invite-btn-top", 10);
+        await Page.Locator("#invite-btn-top").ClickAsync();
 
+        await WaitForSelectorAsync("#invite-modal", 10);
         Assert.That(await IsVisibleAsync("#invite-email"), Is.True);
         Assert.That(await IsVisibleAsync("#invite-level"), Is.True);
-        Assert.That(await IsVisibleAsync("#invite-form button[type='submit']"), Is.True);
+        Assert.That(await IsVisibleAsync("#invite-modal-form button[type='submit']"), Is.True);
     }
 
     [Test]
@@ -44,13 +46,16 @@ public class ProjectShareTests : PlaywrightTestBase
     {
         await NavigateAsUser("/pmo_test/seeded-project/share");
 
+        await Page.Locator("#invite-btn-top").ClickAsync();
+        await WaitForSelectorAsync("#invite-modal", 10);
+
         var emailInput = await WaitForSelectorAsync("#invite-email", 10);
         await emailInput.FillAsync("newuser@example.com");
 
         var levelSelect = await WaitForSelectorAsync("#invite-level", 10);
         await levelSelect.SelectOptionAsync(new SelectOptionValue { Value = "Edit" });
 
-        await Page.Locator("#invite-form button[type='submit']").ClickAsync();
+        await Page.Locator("#invite-modal-form button[type='submit']").ClickAsync();
 
         var found = await WaitUntilAsync(async () =>
         {

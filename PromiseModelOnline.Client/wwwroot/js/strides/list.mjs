@@ -770,7 +770,7 @@ function totalEffort(moments) {
 }
 
 /* ---------- Main export ---------- */
-export function loadStridesList(owner, project, navContentDiv, contentDiv) {
+export function loadStridesList(owner, project, navContentDiv, contentDiv, permission) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
     const errorEl = document.getElementById('error-text');
@@ -788,9 +788,14 @@ export function loadStridesList(owner, project, navContentDiv, contentDiv) {
     bindBoardCollapseToggles(backlogSection);
     bindStrideStickyOffsetSync();
 
-    if (createStrideBtn && createStrideBtn.dataset.bound !== '1') {
-        createStrideBtn.dataset.bound = '1';
-        createStrideBtn.addEventListener('click', () => {
+    const canEdit = permission?.permission === 'Edit';
+
+    if (createStrideBtn) {
+        if (!canEdit) {
+            createStrideBtn.classList.add('d-none');
+        } else if (createStrideBtn.dataset.bound !== '1') {
+            createStrideBtn.dataset.bound = '1';
+            createStrideBtn.addEventListener('click', () => {
             if (!cachedIterations.length) {
                 openIterationCreateModal(owner, project, () => loadStridesList(owner, project, navContentDiv, contentDiv));
                 return;
@@ -806,6 +811,7 @@ export function loadStridesList(owner, project, navContentDiv, contentDiv) {
                 onCreated: () => loadStridesList(owner, project, navContentDiv, contentDiv),
             });
         });
+    }
     }
 
     Promise.all([

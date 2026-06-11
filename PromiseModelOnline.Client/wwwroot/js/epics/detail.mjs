@@ -16,7 +16,7 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadEpicDetail(owner, project, epicId, navContentDiv, contentDiv) {
+export function loadEpicDetail(owner, project, epicId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('epic-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('epic-detail-loading');
@@ -215,7 +215,25 @@ export function loadEpicDetail(owner, project, epicId, navContentDiv, contentDiv
                 });
 
             initBackLink();
-            loadCommentsAndReactions(detailDiv, 'Epic', epic.id, owner, project);
+            // Permission gating
+            (function gateEpicDetailControls() {
+                const canEdit = permission?.permission === 'Edit';
+                if (!canEdit) {
+                    const editBtn = document.getElementById('edit-desc-btn');
+                    const saveBtn = document.getElementById('save-desc');
+                    const descInput = document.getElementById('description-input');
+                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
+                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
+                    if (descInput) descInput.disabled = true;
+
+                    const addJourneyInput = document.getElementById('add-journey-statement');
+                    const addJourneySubmit = document.getElementById('add-journey-submit');
+                    if (addJourneyInput) addJourneyInput.disabled = true;
+                    if (addJourneySubmit) { addJourneySubmit.disabled = true; addJourneySubmit.title = 'Requires Edit permission.'; }
+                }
+            })();
+
+            loadCommentsAndReactions(detailDiv, 'Epic', epic.id, owner, project, permission);
 
             // Description save handler
             const descMsg = document.getElementById('desc-save-msg');

@@ -8,7 +8,7 @@ import { setupInlineEdit } from '../utils/inline-edit.mjs';
 import { formatCommentText } from '../utils/entity-reference.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 
-export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, project) {
+export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, permission) {
     const form = document.getElementById('project-settings-form');
     const titleInput = document.getElementById('project-title-input');
     const descriptionInput = document.getElementById('project-description-input');
@@ -37,6 +37,35 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
     }
     if (descriptionInput && descView && descEditBtn) {
         descEditor = setupInlineEdit(descriptionInput, descView, descEditBtn, saveBtn);
+    }
+
+    function applyPermissionGating() {
+        const canEdit = permission?.permission === 'Edit';
+        const isOwner = permission?.isOwner === true;
+
+        if (!canEdit) {
+            const titleEditBtn = document.getElementById('edit-project-title-btn');
+            const descEditBtn = document.getElementById('edit-project-desc-btn');
+            const saveBtn = document.getElementById('save-project-settings-btn');
+            const titleInput = document.getElementById('project-title-input');
+            const descInput = document.getElementById('project-description-input');
+
+            if (titleEditBtn) { titleEditBtn.disabled = true; titleEditBtn.title = 'Requires Edit permission.'; }
+            if (descEditBtn) { descEditBtn.disabled = true; descEditBtn.title = 'Requires Edit permission.'; }
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
+            if (titleInput) titleInput.disabled = true;
+            if (descInput) descInput.disabled = true;
+        }
+
+        if (!isOwner) {
+            const deleteSection = document.querySelector('.detail-card:last-child');
+            if (deleteSection) {
+                const deleteBtn = deleteSection.querySelector('#delete-project-btn');
+                const deleteInput = deleteSection.querySelector('#project-delete-confirmation-input');
+                if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.title = 'Only the project owner can delete this project.'; }
+                if (deleteInput) deleteInput.disabled = true;
+            }
+        }
     }
 
     let currentProject = null;
@@ -275,6 +304,7 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         }
     });
 
+    applyPermissionGating();
     loadProject();
 }
 

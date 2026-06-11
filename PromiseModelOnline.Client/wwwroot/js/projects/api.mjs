@@ -159,8 +159,9 @@ export async function getProjectMembers(owner, project) {
 export async function getMyPermission(owner, project) {
     const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
 
+    if (res.status === 204) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res ?? null;
+    return res.json();
 }
 
 function handleJsonOrNull(response) {

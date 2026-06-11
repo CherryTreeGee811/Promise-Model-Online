@@ -280,7 +280,8 @@ namespace PromiseModelOnline.Api.Tests
 
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
-            Assert.That(ok!.Value, Is.EqualTo("Edit"));
+            Assert.That(ok!.Value, Has.Property("permission").EqualTo("Edit"));
+            Assert.That(ok.Value, Has.Property("isOwner").EqualTo(false));
         }
 
         [Test]

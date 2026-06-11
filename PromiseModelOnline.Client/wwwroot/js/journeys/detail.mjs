@@ -16,7 +16,7 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadJourneyDetail(owner, project, journeyId, navContentDiv, contentDiv) {
+export function loadJourneyDetail(owner, project, journeyId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('journey-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('journey-detail-loading');
@@ -249,7 +249,25 @@ export function loadJourneyDetail(owner, project, journeyId, navContentDiv, cont
                 });
             }
 
-            loadCommentsAndReactions(detailDiv, 'Journey', journey.id, owner, project);
+            // Permission gating
+            (function gateJourneyDetailControls() {
+                const canEdit = permission?.permission === 'Edit';
+                if (!canEdit) {
+                    const editBtn = document.getElementById('edit-desc-btn');
+                    const saveBtn = document.getElementById('save-desc');
+                    const descInput = document.getElementById('description-input');
+                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
+                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
+                    if (descInput) descInput.disabled = true;
+
+                    const addFlowInput = document.getElementById('add-flow-statement');
+                    const addFlowSubmit = document.getElementById('add-flow-submit');
+                    if (addFlowInput) addFlowInput.disabled = true;
+                    if (addFlowSubmit) { addFlowSubmit.disabled = true; addFlowSubmit.title = 'Requires Edit permission.'; }
+                }
+            })();
+
+            loadCommentsAndReactions(detailDiv, 'Journey', journey.id, owner, project, permission);
 
             const { owner: go, project: gp } = getOwnerProjectFromPath();
             if (go && gp) {

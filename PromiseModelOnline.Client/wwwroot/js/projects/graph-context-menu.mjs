@@ -7,6 +7,7 @@ import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 
 let _ctxOwner = null;
 let _ctxProject = null;
+let _ctxPermission = null;
 
 const NODE_CHILD_LABELS = {
     root: 'Promise',
@@ -644,7 +645,9 @@ function buildMenuActions(
     isNodeChildrenHidden,
     setNodeChildrenHidden,
     revealNextLevel,
+    permission,
 ) {
+    const canEdit = permission?.permission === 'Edit';
     const actions = [];
     const childLabel = getChildLabel(nodeData.nodeType);
     const childCount = Number.parseInt(nodeData?.childCount ?? 0, 10) || 0;
@@ -657,6 +660,8 @@ function buildMenuActions(
             id: 'create-child',
             label: `Create New ${childLabel}`,
             danger: false,
+            disabled: !canEdit,
+            disabledReason: 'Requires Edit permission.',
             handler: async () => {
                 openCreateForm(nodeData, owner, project, onGraphMutated);
             },
@@ -690,6 +695,8 @@ function buildMenuActions(
             id: 'change-status',
             label: 'Change Status',
             danger: false,
+            disabled: !canEdit,
+            disabledReason: 'Requires Edit permission.',
             handler: async () => {
                 openMomentStatusForm(nodeData, onGraphMutated);
             },
@@ -700,6 +707,8 @@ function buildMenuActions(
         id: 'delete',
         label: 'Delete',
         danger: true,
+        disabled: !canEdit,
+        disabledReason: 'Requires Edit permission.',
         handler: async () => {
             const label = getNodeLabel(nodeData) || normalizeNodeType(nodeData.nodeType) || 'item';
             const confirmationLabel = nodeData.nodeType === 'root' ? 'project' : label;
@@ -739,9 +748,19 @@ function buildMenuElement(actions) {
         button.type = 'button';
         button.className = `graph-context-menu__item${action.danger ? ' graph-context-menu__item--danger' : ''}`;
         button.textContent = action.label;
+
+        if (action.disabled) {
+            button.disabled = true;
+            button.className += ' graph-context-menu__item--disabled';
+            if (action.disabledReason) {
+                button.title = action.disabledReason;
+            }
+        }
+
         button.addEventListener('click', async event => {
             event.preventDefault();
             event.stopPropagation();
+            if (action.disabled) return;
             await action.handler();
         });
 
@@ -760,9 +779,11 @@ export function createGraphContextMenuController({
     isNodeChildrenHidden,
     setNodeChildrenHidden,
     revealNextLevel,
+    permission,
 } = {}) {
     _ctxOwner = owner;
     _ctxProject = project;
+    _ctxPermission = permission;
     let referenceRect = null;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
@@ -872,6 +893,7 @@ export function createGraphContextMenuController({
             isNodeChildrenHidden,
             setNodeChildrenHidden,
             revealNextLevel,
+            _ctxPermission,
         );
         menuContent.replaceChildren(buildMenuElement(actions));
 

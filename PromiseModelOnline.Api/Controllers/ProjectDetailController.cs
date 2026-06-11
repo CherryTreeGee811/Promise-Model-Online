@@ -155,7 +155,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         [Authorize(Policy = "projects.read")]
         [HttpGet("my-permission")]
-        public async Task<ActionResult<string>> GetMyPermission(string owner, string project)
+        public async Task<ActionResult<object>> GetMyPermission(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null) return NotFound();
@@ -170,7 +170,11 @@ namespace PromiseModelOnline.Api.Controllers
             if (permission == null)
                 return NoContent();
 
-            return Ok(permission.ToString());
+            return Ok(new
+            {
+                permission = permission.ToString(),
+                isOwner = projectEntity.OwnerId == user.Id,
+            });
         }
 
         [Authorize(Policy = "projects.write")]

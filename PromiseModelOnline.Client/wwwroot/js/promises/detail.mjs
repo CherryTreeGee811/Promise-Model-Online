@@ -15,7 +15,7 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadPromiseDetail(owner, project, promiseId, navContentDiv, contentDiv) {
+export function loadPromiseDetail(owner, project, promiseId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('promise-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('promise-detail-loading');
@@ -186,8 +186,26 @@ export function loadPromiseDetail(owner, project, promiseId, navContentDiv, cont
                     epicsList.innerHTML = '<p class="error">Failed to load epics.</p>';
                 });
 
+            // Permission gating
+            (function gatePromiseDetailControls() {
+                const canEdit = permission?.permission === 'Edit';
+                if (!canEdit) {
+                    const editBtn = document.getElementById('edit-desc-btn');
+                    const saveBtn = document.getElementById('save-desc');
+                    const descInput = document.getElementById('description-input');
+                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
+                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
+                    if (descInput) descInput.disabled = true;
+
+                    const addEpicInput = document.getElementById('add-epic-statement');
+                    const addEpicSubmit = document.getElementById('add-epic-submit');
+                    if (addEpicInput) addEpicInput.disabled = true;
+                    if (addEpicSubmit) { addEpicSubmit.disabled = true; addEpicSubmit.title = 'Requires Edit permission.'; }
+                }
+            })();
+
             // Comments and reactions
-            loadCommentsAndReactions(detailDiv, 'Promise', promise.id, owner, project);
+            loadCommentsAndReactions(detailDiv, 'Promise', promise.id, owner, project, permission);
 
             const { owner: go, project: gp } = getOwnerProjectFromPath();
             if (go && gp) {

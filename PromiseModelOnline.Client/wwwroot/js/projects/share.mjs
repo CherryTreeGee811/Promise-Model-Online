@@ -2,7 +2,39 @@ import { getPermissions, inviteUser, removePermission, searchUsers } from './api
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyTableRow } from '../utils/empty-table.mjs';
 
-export function loadSharePage(owner, project, contentDiv) {
+function ensureModal(modalId, modalMarkup) {
+    let modalEl = document.getElementById(modalId);
+    if (modalEl) return modalEl;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = modalMarkup.trim();
+    modalEl = wrapper.firstElementChild;
+    if (modalEl) document.body.appendChild(modalEl);
+    return modalEl;
+}
+
+function ensureRevokeModal() {
+    return ensureModal('revoke-modal', `
+        <div class="modal fade" id="revoke-modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Revoke Permission</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0" id="revoke-modal-text">Revoke this permission?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="revoke-modal-confirm">Revoke</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+}
+
+export function loadSharePage(owner, project, contentDiv, permission) {
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');
     const successEl = document.getElementById('success-text');
@@ -14,19 +46,33 @@ export function loadSharePage(owner, project, contentDiv) {
         btn.addEventListener('click', async () => {
             const id = parseInt(btn.dataset.permissionId);
             if (!Number.isFinite(id)) return;
-            if (!confirm('Revoke this permission?')) return;
-            try {
-                await removePermission(owner, project, id);
-                const y = window.scrollY;
-                btn.closest('tr')?.remove();
-                successEl.textContent = 'Permission revoked.';
-                successEl.classList.remove('d-none');
-                window.scrollTo(0, y);
-            } catch (err) {
-                errorEl.textContent = 'Failed to revoke permission.';
-                errorEl.classList.remove('d-none');
-                console.error(err);
-            }
+
+            const modalEl = ensureRevokeModal();
+            const confirmButton = modalEl.querySelector('#revoke-modal-confirm');
+            if (!confirmButton) return;
+
+            const nextButton = confirmButton.cloneNode(true);
+            confirmButton.parentElement.replaceChild(nextButton, confirmButton);
+            nextButton.addEventListener('click', async () => {
+                nextButton.disabled = true;
+                try {
+                    await removePermission(owner, project, id);
+                    window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
+                    const y = window.scrollY;
+                    btn.closest('tr')?.remove();
+                    successEl.textContent = 'Permission revoked.';
+                    successEl.classList.remove('d-none');
+                    window.scrollTo(0, y);
+                } catch (err) {
+                    errorEl.textContent = 'Failed to revoke permission.';
+                    errorEl.classList.remove('d-none');
+                    console.error(err);
+                } finally {
+                    nextButton.disabled = false;
+                }
+            }, { once: true });
+
+            window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
         });
     }
 
@@ -163,8 +209,98 @@ export function loadSharePage(owner, project, contentDiv) {
         });
     }
 
+    function openInviteModal({ owner, project, onInvited }) {
+        const modalEl = ensureModal('invite-modal', `
+            <div class="modal fade" id="invite-modal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form id="invite-modal-form">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Invite a User</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label" for="invite-email">Email or username</label>
+                                    <input type="text" id="invite-email" class="form-control" placeholder="Enter name or email" required autocomplete="off">
+                                    <div id="invite-autocomplete" class="comment-autocomplete" role="listbox" style="display:none;"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="invite-level">Permission</label>
+                                    <select id="invite-level" class="form-select">
+                                        <option value="View">View</option>
+                                        <option value="Comment">Comment</option>
+                                        <option value="Edit">Edit</option>
+                                    </select>
+                                </div>
+                                <div id="invite-modal-error" class="text-danger small d-none"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary" id="invite-modal-submit">Send Invitation</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        const form = modalEl?.querySelector('#invite-modal-form');
+        const emailInput = modalEl?.querySelector('#invite-email');
+        const levelSelect = modalEl?.querySelector('#invite-level');
+        const errorEl = modalEl?.querySelector('#invite-modal-error');
+        const submitBtn = modalEl?.querySelector('#invite-modal-submit');
+        if (!form || !emailInput || !levelSelect || !errorEl || !submitBtn) return;
+
+        form.replaceWith(form.cloneNode(true));
+
+        const liveForm = modalEl.querySelector('#invite-modal-form');
+        const liveEmailInput = modalEl.querySelector('#invite-email');
+        const liveLevelSelect = modalEl.querySelector('#invite-level');
+        const liveErrorEl = modalEl.querySelector('#invite-modal-error');
+        const liveSubmitBtn = modalEl.querySelector('#invite-modal-submit');
+
+        liveEmailInput.value = '';
+        liveLevelSelect.value = 'View';
+        liveErrorEl.textContent = '';
+        liveErrorEl.classList.add('d-none');
+        liveSubmitBtn.disabled = false;
+        liveSubmitBtn.textContent = 'Send Invitation';
+        closeAutocomplete();
+
+        setupInviteAutocomplete();
+
+        liveForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = liveEmailInput.value.trim();
+            const level = liveLevelSelect.value;
+            if (!email) return;
+
+            liveSubmitBtn.disabled = true;
+            liveSubmitBtn.textContent = 'Sending...';
+            liveErrorEl.classList.add('d-none');
+
+            try {
+                await inviteUser(owner, project, { email, level });
+                window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
+                successEl.textContent = 'Invitation sent.';
+                successEl.classList.remove('d-none');
+                await onInvited?.();
+            } catch (err) {
+                liveErrorEl.textContent = err?.message || 'Failed to invite user.';
+                liveErrorEl.classList.remove('d-none');
+            } finally {
+                liveSubmitBtn.disabled = false;
+                liveSubmitBtn.textContent = 'Send Invitation';
+            }
+        });
+
+        window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
+    }
+
     async function refreshPermissions() {
             try {
+                const isOwner = permission?.isOwner === true;
                 const permissions = await getPermissions(owner, project);
                 loadingEl.classList.add('d-none');
                 errorEl.classList.add('d-none');
@@ -175,78 +311,43 @@ export function loadSharePage(owner, project, contentDiv) {
                             <td>${escapeHtml(p.userName)}</td>
                             <td>${p.level}</td>
                             <td>${p.status}</td>
-                            <td><button class="btn btn-outline-danger btn-sm revoke-btn" data-permission-id="${p.id}">Revoke</button></td>
+                            <td>${isOwner ? `<button class="btn btn-outline-danger btn-sm revoke-btn" data-permission-id="${p.id}">Revoke</button>` : '-'}</td>
                         </tr>`).join('')
                     : renderEmptyTableRow({
                         icon: 'bi-share',
                         title: 'No permissions configured',
-                        description: 'Invite a user above to share this project.',
+                        description: isOwner ? 'Invite a user to get started.' : '',
                         colspan: 4,
+                        button: isOwner ? {
+                            text: 'Invite',
+                            icon: 'bi-plus-circle',
+                            id: 'empty-state-invite-btn',
+                        } : undefined,
                     });
 
                 section.innerHTML = `
-                <h2>Current Permissions</h2>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2>Current Permissions</h2>
+                    ${isOwner ? '<button id="invite-btn-top" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Invite</button>' : ''}
+                </div>
                 <table class="table table-striped table-sm promisemodel-table">
                     <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>${tbodyHtml}</tbody>
                 </table>
-                <h3 class="mt-4">Invite a User</h3>
-                <form id="invite-form" class="row g-2 align-items-center">
-                    <div class="col-auto position-relative">
-                        <label class="visually-hidden" for="invite-email">Email or username</label>
-                        <input type="text" id="invite-email" class="form-control form-control-sm" placeholder="Enter name or email" required autocomplete="off">
-                        <div id="invite-autocomplete" class="comment-autocomplete" role="listbox" style="display:none;"></div>
-                    </div>
-                    <div class="col-auto">
-                        <label class="visually-hidden" for="invite-level">Permission</label>
-                        <select id="invite-level" class="form-select form-select-sm">
-                            <option value="View">View</option>
-                            <option value="Comment">Comment</option>
-                            <option value="Edit">Edit</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-primary btn-sm">Send Invitation</button>
-                    </div>
-                </form>`;
+                ${!isOwner ? '<p class="text-muted mt-4">Only the project owner can manage permissions.</p>' : ''}`;
 
             document.querySelectorAll('.revoke-btn').forEach(btn => {
                 bindRevokeButton(btn);
             });
-            document.getElementById('invite-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('invite-email').value.trim();
-                const level = document.getElementById('invite-level').value;
-                if (!email) return;
-                try {
-                    const created = await inviteUser(owner, project, { email, level });
-                    const tbody = section.querySelector('table.promisemodel-table tbody');
-                    if (tbody && created) {
-                        tbody.querySelector('.inline-table-empty-row')?.remove();
-                        const y = window.scrollY;
-                        const row = document.createElement('tr');
-                        row.dataset.permissionId = created.id;
-                        row.innerHTML = `
-                            <td>${escapeHtml(created.userName)}</td>
-                            <td>${created.level}</td>
-                            <td>${created.status}</td>
-                            <td><button class="revoke-btn" data-permission-id="${created.id}">Revoke</button></td>
-                        `;
-                        tbody.appendChild(row);
-                        bindRevokeButton(row.querySelector('.revoke-btn'));
-                        window.scrollTo(0, y);
-                    }
-                    successEl.textContent = 'Invitation sent.';
-                    successEl.classList.remove('d-none');
-                    document.getElementById('invite-email').value = '';
-                    closeAutocomplete();
-                } catch (err) {
-                    errorEl.textContent = 'Failed to invite user: ' + (err.message || err);
-                    errorEl.classList.remove('d-none');
-                }
-            });
 
-            setupInviteAutocomplete();
+            const topInviteBtn = document.getElementById('invite-btn-top');
+            topInviteBtn?.addEventListener('click', () => {
+                openInviteModal({ owner, project, onInvited: refreshPermissions });
+            });
+            const emptyInviteBtn = document.getElementById('empty-state-invite-btn');
+            emptyInviteBtn?.addEventListener('click', () => {
+                openInviteModal({ owner, project, onInvited: refreshPermissions });
+            });
         } catch (err) {
             loadingEl.classList.add('d-none');
             errorEl.textContent = 'Failed to load permissions.';

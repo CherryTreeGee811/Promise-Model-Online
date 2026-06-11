@@ -16,7 +16,7 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv) {
+export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('flow-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('flow-detail-loading');
@@ -288,7 +288,28 @@ export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv
                 });
             }
 
-            loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project);
+            // Permission gating
+            (function gateFlowDetailControls() {
+                const canEdit = permission?.permission === 'Edit';
+                if (!canEdit) {
+                    const editBtn = document.getElementById('edit-desc-btn');
+                    const saveBtn = document.getElementById('save-desc');
+                    const descInput = document.getElementById('description-input');
+                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
+                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
+                    if (descInput) descInput.disabled = true;
+
+                    const addMomentInput = document.getElementById('add-moment-statement');
+                    const addMomentSubmit = document.getElementById('add-moment-submit');
+                    if (addMomentInput) addMomentInput.disabled = true;
+                    if (addMomentSubmit) { addMomentSubmit.disabled = true; addMomentSubmit.title = 'Requires Edit permission.'; }
+
+                    const addMomentType = document.getElementById('add-moment-type');
+                    if (addMomentType) addMomentType.disabled = true;
+                }
+            })();
+
+            loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
 
             const { owner: go, project: gp } = getOwnerProjectFromPath();
             if (go && gp) {

@@ -20,7 +20,7 @@ import {
     refreshDetailStackGraph,
 } from '../projects/detail-stack-graph.mjs';
 
-export function loadMomentDetail(owner, project, momentId, navContentDiv, contentDiv) {
+export function loadMomentDetail(owner, project, momentId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('moment-detail-loading');
@@ -118,8 +118,30 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
                 momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditBtn, descriptionSaveButton, momentDescriptionCancelBtn);
             }
 
+            // Permission gating for moment controls
+            (function gateMomentDetailControls() {
+                const canEdit = permission?.permission === 'Edit';
+                if (!canEdit) {
+                    const editBtn = document.getElementById('edit-moment-desc-btn');
+                    const saveBtn = document.getElementById('moment-description-save');
+                    const descInput = document.getElementById('moment-description-input');
+                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
+                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
+                    if (descInput) descInput.disabled = true;
+
+                    const typeSelect = document.getElementById('moment-type-select');
+                    const statusSelect = document.getElementById('moment-status-select');
+                    const estSelect = document.getElementById('moment-estimate-select');
+                    const strideSelect = document.getElementById('moment-stride-select');
+                    if (typeSelect) { typeSelect.disabled = true; typeSelect.title = 'Requires Edit permission.'; }
+                    if (statusSelect) { statusSelect.disabled = true; statusSelect.title = 'Requires Edit permission.'; }
+                    if (estSelect) { estSelect.disabled = true; estSelect.title = 'Requires Edit permission.'; }
+                    if (strideSelect) { strideSelect.disabled = true; strideSelect.title = 'Requires Edit permission.'; }
+                }
+            })();
+
             const tasksContainer = document.getElementById('moment-tasks');
-            renderMomentTasks(tasksContainer, momentId, moment.tasks, moment);
+            renderMomentTasks(tasksContainer, momentId, moment.tasks, moment, permission);
 
             const descriptionInput = document.getElementById('moment-description-input');
             const descriptionMessage = document.getElementById('moment-description-msg');
@@ -261,7 +283,7 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
 
             // Back button event
             initBackLink();
-            loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project);
+            loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
 
             const { owner: go, project: gp } = getOwnerProjectFromPath();
             if (go && gp) {
@@ -276,7 +298,7 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
         });
 }
 
-function renderMomentTasks(container, momentId, tasks, moment) {
+function renderMomentTasks(container, momentId, tasks, moment, permission) {
     if (!container) return;
 
     const taskList = Array.isArray(tasks) ? tasks : [];
@@ -327,6 +349,15 @@ function renderMomentTasks(container, momentId, tasks, moment) {
 
     // Autocomplete for entity references in task description
     if (addTaskDescription) createCommentAutocomplete(addTaskDescription, 'Moment', moment.id);
+
+    // Permission gating for task controls
+    const canEdit = permission?.permission === 'Edit';
+    if (!canEdit) {
+        if (addTaskName) addTaskName.disabled = true;
+        if (addTaskDescription) addTaskDescription.disabled = true;
+        if (addTaskCompleted) addTaskCompleted.disabled = true;
+        if (addTaskButton) { addTaskButton.disabled = true; addTaskButton.title = 'Requires Edit permission.'; }
+    }
 
     if (addTaskButton && addTaskName && addTaskDescription && addTaskCompleted && addTaskMessage) {
         addTaskButton.addEventListener('click', async () => {
@@ -379,7 +410,7 @@ function renderMomentTasks(container, momentId, tasks, moment) {
         });
     }
 
-    bindMomentTaskCompletionToggle(tbody, momentId, moment);
+    bindMomentTaskCompletionToggle(tbody, momentId, moment, permission);
 }
 
 function syncMomentTasksToStackGraph(momentId, moment) {
@@ -388,12 +419,20 @@ function syncMomentTasksToStackGraph(momentId, moment) {
     });
 }
 
-function bindMomentTaskCompletionToggle(tbody, momentId, moment) {
+function bindMomentTaskCompletionToggle(tbody, momentId, moment, permission) {
     if (!tbody) return;
+
+    const canEdit = permission?.permission === 'Edit';
 
     tbody.querySelectorAll('.moment-task-complete-checkbox').forEach(checkbox => {
         if (checkbox.dataset.bound === '1') return;
         checkbox.dataset.bound = '1';
+
+        if (!canEdit) {
+            checkbox.disabled = true;
+            checkbox.title = 'Requires Edit permission.';
+            return;
+        }
 
         checkbox.addEventListener('change', async () => {
             const taskId = Number.parseInt(String(checkbox.dataset.momentTaskId ?? ''), 10);

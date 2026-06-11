@@ -6,7 +6,7 @@ import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 
-export function loadIterationHistory(owner, project) {
+export function loadIterationHistory(owner, project, permission) {
     const viewDiv = document.getElementById('iterations-view');
     const listDiv = document.getElementById('iterations-list');
     const detailDiv = document.getElementById('iteration-detail');
@@ -14,14 +14,20 @@ export function loadIterationHistory(owner, project) {
     const projectTitle = document.getElementById('project-title');
     const createIterationBtn = document.getElementById('create-iteration-btn');
 
+    const canEdit = permission?.permission === 'Edit';
+
     detailDiv.classList.add('d-none');
     errorEl.textContent = '';
 
-    if (createIterationBtn && createIterationBtn.dataset.bound !== '1') {
-        createIterationBtn.dataset.bound = '1';
-        createIterationBtn.addEventListener('click', async () => {
-            openIterationCreateModal(owner, project, () => loadIterationHistory(owner, project));
-        });
+    if (createIterationBtn) {
+        if (!canEdit) {
+            createIterationBtn.classList.add('d-none');
+        } else if (createIterationBtn.dataset.bound !== '1') {
+            createIterationBtn.dataset.bound = '1';
+            createIterationBtn.addEventListener('click', async () => {
+                openIterationCreateModal(owner, project, () => loadIterationHistory(owner, project, permission));
+            });
+        }
     }
 
     listDiv.innerHTML = renderLoadingSpinner('Loading iterations');

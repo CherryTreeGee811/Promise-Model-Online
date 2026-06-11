@@ -864,7 +864,7 @@ async function loadAvailableStrides(owner, project) {
         });
 }
 
-export async function loadGraphPage(owner, project, contentDiv) {
+export async function loadGraphPage(owner, project, contentDiv, permission) {
     const errorEl = document.getElementById('error-text');
     const successEl = document.getElementById('success-text');
 
@@ -909,6 +909,7 @@ export async function loadGraphPage(owner, project, contentDiv) {
         onProjectDeleted: () => {
             window.location.assign('/projects');
         },
+        permission,
     });
 
     graphState.pageShowRefreshHandler = event => {

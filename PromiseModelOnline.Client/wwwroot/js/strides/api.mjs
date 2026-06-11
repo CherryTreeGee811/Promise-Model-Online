@@ -16,7 +16,8 @@ export async function getProjectMembers(owner, project) {
 
 export async function getMyPermission(owner, project) {
     const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
-    return res ?? null;
+    if (!res) return null;
+    return res.permission ?? null;
 }
 
 export const updateStride = (owner, project, strideId, data) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}`, data);
