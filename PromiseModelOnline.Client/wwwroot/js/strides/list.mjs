@@ -1018,7 +1018,7 @@ export function loadStridesList(owner, project, navContentDiv, contentDiv, permi
             // Fetch permission and update UI
             getMyPermission(owner, project)
                 .then(level => {
-                    cachedCanEdit = (level && level.toLowerCase() === 'edit');
+                    cachedCanEdit = (level && (level.toLowerCase() === 'edit' || level.toLowerCase() === 'owner'));
 
                     applyPermissionUI(cachedCanEdit); // ✅ SINGLE source of truth
                 })

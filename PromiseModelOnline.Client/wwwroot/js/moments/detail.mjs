@@ -12,6 +12,7 @@ import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.m
 import { getStatusOptionHtml } from '../utils/status-utils.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
+import { isAtLeast } from '../utils/permissions.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 import {
     destroyDetailStackGraph,
@@ -120,7 +121,7 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
 
             // Permission gating for moment controls
             (function gateMomentDetailControls() {
-                const canEdit = permission?.permission === 'Edit';
+                const canEdit = isAtLeast(permission?.permission, 'Edit');
                 if (!canEdit) {
                     const editBtn = document.getElementById('edit-moment-desc-btn');
                     const saveBtn = document.getElementById('moment-description-save');
@@ -351,7 +352,7 @@ function renderMomentTasks(container, momentId, tasks, moment, permission) {
     if (addTaskDescription) createCommentAutocomplete(addTaskDescription, 'Moment', moment.id);
 
     // Permission gating for task controls
-    const canEdit = permission?.permission === 'Edit';
+    const canEdit = isAtLeast(permission?.permission, 'Edit');
     if (!canEdit) {
         if (addTaskName) addTaskName.disabled = true;
         if (addTaskDescription) addTaskDescription.disabled = true;
@@ -422,7 +423,7 @@ function syncMomentTasksToStackGraph(momentId, moment) {
 function bindMomentTaskCompletionToggle(tbody, momentId, moment, permission) {
     if (!tbody) return;
 
-    const canEdit = permission?.permission === 'Edit';
+    const canEdit = isAtLeast(permission?.permission, 'Edit');
 
     tbody.querySelectorAll('.moment-task-complete-checkbox').forEach(checkbox => {
         if (checkbox.dataset.bound === '1') return;

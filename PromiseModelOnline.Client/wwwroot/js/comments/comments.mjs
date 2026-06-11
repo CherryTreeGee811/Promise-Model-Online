@@ -3,9 +3,10 @@ import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { createCommentAutocomplete } from './autocomplete.mjs';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.mjs';
+import { isAtLeast } from '../utils/permissions.mjs';
 
 export function loadComments(container, parentType, parentId, owner, project, permission) {
-    const canComment = permission?.permission === 'Comment' || permission?.permission === 'Edit';
+    const canComment = isAtLeast(permission?.permission, 'Comment');
 
     container.innerHTML = `
         <h3>Comments</h3>
@@ -82,15 +83,16 @@ function appendComment(container, comment) {
 function createCommentElement(comment) {
     const div = document.createElement('div');
     div.className = 'comment-item';
+    const userName = comment.userName || comment.authorName || 'Unknown';
     div.innerHTML = `
         <div class="comment-meta">
-            <strong>${escapeHtml(comment.userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
+            <strong>${escapeHtml(userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
         </div>
         <div class="comment-text">${formatCommentText(comment.text)}</div>
         ${comment.mentionedUsers && comment.mentionedUsers.length ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
         ${comment.replies && comment.replies.length ? `<div class="comment-replies">${comment.replies.map(r => `
             <div class="comment-item reply">
-                <strong>${escapeHtml(r.userName)}</strong>: ${escapeHtml(r.text)}
+                <strong>${escapeHtml(r.userName || r.authorName || 'Unknown')}</strong>: ${escapeHtml(r.text)}
             </div>
         `).join('')}</div>` : ''}
     `;

@@ -1,6 +1,6 @@
 import { getMyPermission } from '../projects/api.mjs';
 
-const PERMISSION_HIERARCHY = { View: 0, Comment: 1, Edit: 2 };
+const PERMISSION_HIERARCHY = { View: 0, Comment: 1, Edit: 2, Owner: 3 };
 
 export function canComment(permissionLevel) {
     return (PERMISSION_HIERARCHY[permissionLevel] ?? 0) >= PERMISSION_HIERARCHY.Comment;
@@ -19,7 +19,7 @@ export async function fetchMyPermission(owner, project) {
         const data = await getMyPermission(owner, project);
         if (!data) return { permission: null, isOwner: false };
         if (typeof data === 'string') {
-            return { permission: data, isOwner: false };
+            return { permission: data, isOwner: data === 'Owner' };
         }
         return {
             permission: data.permission ?? null,

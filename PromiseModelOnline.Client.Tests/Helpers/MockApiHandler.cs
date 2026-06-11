@@ -80,7 +80,7 @@ public static partial class MockApiHandler
 
             ("GET", "/api/backlog-moments") => Json(200, "[]"),
 
-            ("GET", "/api/moments/assigned-to-me") when isOwner => Json(200, """[{"id":100,"sequenceNumber":100,"statement":"My Task","type":"Story","status":"Todo","effortEstimate":"M","ownerId":1,"assignedStrideId":10,"displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"}]"""),
+            ("GET", "/api/moments/assigned-to-me") when isOwner => Json(200, """[{"id":100,"sequenceNumber":100,"statement":"My Task","type":"Story","status":"Todo","effortEstimate":"M","ownerId":1,"assignedStrideId":10,"displayOrder":1,"ownerSlug":"pmo_test","projectSlug":"seeded-project","createdAt":"2026-05-01T00:00:00Z"}]"""),
             ("GET", "/api/moments/assigned-to-me") when isNonOwner => Json(200, "[]"),
 
             ("GET", "/api/moments/100") => Json(200, s_moment100),
@@ -104,11 +104,12 @@ public static partial class MockApiHandler
             ("GET", "/api/hubs/negotiate") => Json(200, """{"url":"","accessToken":"mock-token"}"""),
             ("GET", "/hubs/notifications") => Json(200, "{}"),
             ("GET", "/api/reactions") => Json(200, "[]"),
+            ("GET", "/api/comments/entity-map") => Json(200, "[]"),
 
             // POST mutations
             ("POST", "/api/projects/create") when isOwner => Json(200, """{"id":2,"name":"My New Project","slug":"my-new-project","ownerSlug":"pmo_test","description":null,"ownerId":1,"createdAt":"2026-06-03T00:00:00Z"}"""),
             ("POST", "/api/projects/import") when isOwner => Json(201, """{"projectId":123,"warnings":[],"ownerSlug":"pmo_test","slug":"seeded-project"}"""),
-            ("POST", "/api/comments") => Json(200, """{"id":2,"text":"New comment","createdAt":"2026-05-20T00:00:00Z","userName":"pmo_test","mentionedUsers":[],"parentCommentId":null,"replies":[]}"""),
+            ("POST", "/api/comments") => Json(200, """{"id":2,"text":"New comment","createdAt":"2026-05-20T00:00:00Z","userName":"Test Owner","mentionedUsers":[],"parentCommentId":null,"replies":[]}"""),
             ("POST", "/api/projects/pmo_test/seeded-project/permissions") when isOwner => Json(200, """{"id":5,"userName":"newuser@example.com","level":"Edit","status":"Pending"}"""),
             ("POST", "/api/projects/pmo_test/seeded-project/promises/create") when isOwner => Json(200, """{"id":10,"statement":"As a user, manage projects efficiently","description":null,"projectId":2,"displayOrder":0,"createdAt":"2026-06-03T00:00:00Z"}"""),
             ("POST", "/hubs/notifications/negotiate") => Json(200, """{"connectionId":"test-connection-id","availableTransports":[{"transport":"LongPolling","transferFormats":["Text"]}]}"""),
@@ -290,5 +291,5 @@ public static partial class MockApiHandler
         """{"id":100,"sequenceNumber":100,"statement":"Moment 100","flowId":2,"type":"Story","status":"Todo","effortEstimate":"S","ownerId":1,"assignedStrideId":10,"displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"}""";
 
     private const string s_commentsMoment100 =
-        """[{"id":1,"text":"Existing comment","authorName":"Test Owner","authorId":1,"createdAt":"2026-06-01T00:00:00Z"}]""";
+        """[{"id":1,"text":"Existing comment","userName":"Test Owner","authorId":1,"createdAt":"2026-06-01T00:00:00Z"}]""";
 }
