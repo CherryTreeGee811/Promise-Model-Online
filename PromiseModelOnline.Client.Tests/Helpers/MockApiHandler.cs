@@ -71,6 +71,8 @@ public static partial class MockApiHandler
             ("GET", "/api/project-permissions") when isOwner => Json(200, """[{"id":1,"userId":1,"email":"owner@example.com","userName":"Test Owner","level":"Owner","status":"Active"},{"id":2,"userId":2,"email":"nonowner@example.com","userName":"Test NonOwner","level":"Edit","status":"Active"}]"""),
             ("GET", "/api/project-permissions") when isNonOwner => Json(200, """[{"id":2,"userId":2,"email":"nonowner@example.com","userName":"Test NonOwner","level":"Edit","status":"Active"}]"""),
 
+            ("GET", "/api/projects/pmo_test/seeded-project/graph") when isOwner => Json(200, s_graphData),
+
             ("GET", "/api/strides") when isOwner => Json(200, """[{"id":10,"name":"Stride One","iterationId":1,"startDate":"2026-05-01T00:00:00Z","endDate":"2026-05-07T00:00:00Z","durationDays":7,"isActive":true,"status":"Planned","displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"},{"id":20,"name":"Stride Two","iterationId":1,"startDate":"2026-05-08T00:00:00Z","endDate":"2026-05-15T00:00:00Z","durationDays":8,"isActive":true,"status":"InProgress","displayOrder":2,"createdAt":"2026-05-01T00:00:00Z"}]"""),
             ("GET", "/api/strides") when isNonOwner => Json(200, """[{"id":10,"name":"Stride One","iterationId":1,"startDate":"2026-05-01T00:00:00Z","endDate":"2026-05-07T00:00:00Z","durationDays":7,"isActive":true,"status":"Planned","displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"}]"""),
 
@@ -189,7 +191,7 @@ public static partial class MockApiHandler
                     return Json(200, """{"id":1,"name":"Test Project","slug":"seeded-project","ownerSlug":"pmo_test","description":"A seeded test project"}""");
                 if (path.EndsWith("/permissions") && resource == "permissions")
                     return isOwner
-                        ? Json(200, """[{"id":1,"userId":1,"userName":"Test Owner","email":"owner@example.com","level":"Owner","status":"Active"},{"id":2,"userId":2,"userName":"Test NonOwner","email":"nonowner@example.com","level":"Edit","status":"Active"}]""")
+                        ? Json(200, """[{"id":1,"userId":1,"userName":"Test Owner","email":"owner@example.com","level":"Owner","status":"Active"},{"id":2,"userId":2,"userName":"Test NonOwner","email":"nonowner@example.com","level":"Edit","status":"Active"},{"id":5,"userId":null,"userName":"newuser@example.com","level":"Edit","status":"Pending"}]""")
                         : Json(200, """[{"id":2,"userId":2,"userName":"Test NonOwner","email":"nonowner@example.com","level":"Edit","status":"Active"}]""");
                 if (path.EndsWith("/promises") && resource == "promises")
                     return Json(200, """[{"id":1,"statement":"Project Promise One","projectId":1,"displayOrder":1}]""");
@@ -227,6 +229,8 @@ public static partial class MockApiHandler
                     return Json(200, """[{"id":100,"sequenceNumber":100,"statement":"Moment 100","flowId":2,"type":"Story","status":"Todo","effortEstimate":"S","ownerId":1,"assignedStrideId":10,"displayOrder":1}]""");
                 if (resource == "promises" && string.IsNullOrEmpty(extraPath))
                     return Json(200, """[{"id":1,"statement":"Project Promise One","projectId":1,"displayOrder":1}]""");
+                if (resource == "graph")
+                    return Json(200, s_graphData);
             }
             if (method == "PATCH" && path.EndsWith("/details"))
                 return Json(200, """{"id":1,"name":"Test Project","slug":"seeded-project","ownerSlug":"pmo_test","description":"A seeded test project"}""");
@@ -289,6 +293,9 @@ public static partial class MockApiHandler
 
     private const string s_moment100 =
         """{"id":100,"sequenceNumber":100,"statement":"Moment 100","flowId":2,"type":"Story","status":"Todo","effortEstimate":"S","ownerId":1,"assignedStrideId":10,"displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"}""";
+
+    private const string s_graphData =
+        """{"id":1,"name":"Test Project","slug":"seeded-project","description":"A seeded test project","ownerId":1,"ownerSlug":"pmo_test","createdAt":"2026-05-01T00:00:00Z","promises":[{"id":1,"type":"Promise","statement":"Project Promise One","description":"A seeded promise","projectId":1,"ownerId":1,"sequenceNumber":1,"displayOrder":1,"statusColor":"green","createdAt":"2026-05-01T00:00:00Z","epics":[{"id":1,"type":"Epic","statement":"Epic One","description":null,"productPromiseId":1,"ownerId":1,"sequenceNumber":1,"displayOrder":1,"statusColor":"green","createdAt":"2026-05-01T00:00:00Z","journeys":[{"id":1,"type":"Journey","statement":"Journey One","description":null,"epicId":1,"ownerId":1,"sequenceNumber":1,"displayOrder":1,"statusColor":"green","createdAt":"2026-05-01T00:00:00Z","flows":[{"id":1,"type":"Flow","statement":"Flow One","description":null,"journeyId":1,"ownerId":1,"sequenceNumber":1,"displayOrder":1,"statusColor":"green","createdAt":"2026-05-01T00:00:00Z","moments":[{"id":100,"type":"Story","statement":"Moment 100","description":null,"flowId":1,"ownerId":1,"sequenceNumber":100,"displayOrder":1,"statusColor":"red","effortEstimate":"S","assignedStrideId":10,"createdAt":"2026-05-01T00:00:00Z","isZombie":false,"tasks":[]},{"id":101,"type":"Job","statement":"Moment 101","description":null,"flowId":1,"ownerId":1,"sequenceNumber":101,"displayOrder":2,"statusColor":"green","effortEstimate":"M","assignedStrideId":10,"createdAt":"2026-05-01T00:00:00Z","isZombie":false,"tasks":[]}]}]}]}]}]}""";
 
     private const string s_commentsMoment100 =
         """[{"id":1,"text":"Existing comment","userName":"Test Owner","authorId":1,"createdAt":"2026-06-01T00:00:00Z"}]""";
