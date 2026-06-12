@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+<<<<<<< HEAD
     [Route("api/reactions")]
     public class ReactionsController : ControllerBase
     {
@@ -106,6 +107,100 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         [Authorize(Policy = "projects.write")]
+||||||| 1bedf4f
+=======
+    [Authorize]
+    [Route("api/[controller]")]
+    public class ReactionsController : ControllerBase
+    {
+        private readonly IReactionService _reactionService;
+        private readonly IUserRepository _userRepository;
+        private readonly ILogger<ReactionsController> _logger;
+
+        public ReactionsController(IReactionService reactionService,
+                                   IUserRepository userRepository,
+                                   ILogger<ReactionsController> logger)
+        {
+            _reactionService = reactionService;
+            _userRepository = userRepository;
+            _logger = logger;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<ReactionDTO>>> GetReactions(
+            [FromQuery] string type,
+            [FromQuery] int itemId)
+        {
+            var reactions = await _reactionService.GetReactionsAsync(type, itemId);
+            return Ok(reactions);
+        }
+
+        /// <summary>
+        /// Creates a new reaction resource for the current user.
+        /// </summary>
+        [HttpPost]
+        public async Task<ActionResult<ReactionDTO>> CreateReaction([FromBody] CreateReactionRequest request)
+        {
+            var userId = await GetCurrentUserIdAsync();
+            if (userId is null) return Unauthorized();
+
+            try
+            {
+                var result = await _reactionService.CreateReactionAsync(request, userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} created Reaction {ReactionId} at {UtcTimestamp}: {Details}",
+                    userId.Value,
+                    result.Id,
+                    DateTime.UtcNow,
+                    new { result.StackItemType, result.StackItemId, result.Emote });
+
+                return CreatedAtAction(nameof(GetReactions), new { type = request.StackItemType, itemId = request.StackItemId }, result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Partially updates an existing reaction resource (emote only).
+        /// </summary>
+        [HttpPatch("{id}")]
+        public async Task<ActionResult<ReactionDTO>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDTO request)
+        {
+            var userId = await GetCurrentUserIdAsync();
+            if (userId is null) return Unauthorized();
+
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var result = await _reactionService.UpdateReactionAsync(id, request, userId.Value);
+
+                _logger.LogInformation(
+                    "User {UserId} updated Reaction {ReactionId} at {UtcTimestamp}: {Changes}",
+                    userId.Value,
+                    id,
+                    DateTime.UtcNow,
+                    new { request.Emote });
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                    return NotFound(ex.Message);
+
+                return BadRequest(ex.Message);
+            }
+        }
+
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteReaction(int id)
         {

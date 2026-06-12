@@ -55,6 +55,7 @@ namespace PromiseModelOnline.Api.Mappers
                     })
                     .ToList();
             }
+<<<<<<< HEAD
 
             if (source is Project project && destination is ProjectDTO projectDto)
             {
@@ -65,6 +66,9 @@ namespace PromiseModelOnline.Api.Mappers
             {
                 notificationDto.Type = notification.Type.ToString();
             }
+||||||| 1bedf4f
+=======
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
             // Example: service can be used here for additional logic
             // e.g., service.GetByIdAsync(...), service.FindAsync(...), etc.
             return destination;

@@ -37,7 +37,12 @@ namespace PromiseModelOnline.Api.DAL
         public async Task<IEnumerable<int>> GetProjectIdsForUserAsync(int userId)
         {
             return await _dbSet
+<<<<<<< HEAD
                 .Where(p => p.UserId == userId && p.Status == PermissionStatus.Active)
+||||||| 1bedf4f
+=======
+                .Where(p => p.UserId == userId)
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
                 .Select(p => p.ProjectId)
                 .Distinct()
                 .ToListAsync();

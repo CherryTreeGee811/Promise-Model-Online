@@ -1,4 +1,5 @@
 import { loadHomePage } from './home.mjs';
+<<<<<<< HEAD
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs';
 import { clearAuth, isLoggedIn } from './auth-state.mjs';
 import { checkSession } from './api.mjs';
@@ -6,12 +7,31 @@ import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
+||||||| 1bedf4f
+=======
+import { loadNavTemplate } from './navigation/router.mjs';
+import { loadLoginForm } from './login.mjs';
+import { loadRegistrationForm } from './register.mjs';
+import { loadChangePasswordForm } from './change-password.mjs';
+import { clearTokens, getAccessToken } from './auth-state.mjs';
+import { requestLogout } from './api.mjs';
+import { handleProjectRoutes } from './projects/router.mjs';
+import { handleMomentRoutes } from './moments/router.mjs';
+import { handleFlowRoutes } from './flows/router.mjs';
+import { handleJourneyRoutes } from './journeys/router.mjs';
+import { handleEpicRoutes } from './epics/router.mjs';
+import { handlePromiseRoutes } from './promises/router.mjs';
+import { handleNotificationsRoutes } from './notifications/router.mjs';
+import { handleInvitationsRoute } from './invitations/router.mjs';
+import { handleIterationRoutes } from './iterations/router.mjs';
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 
 let _projectRoutes;
 function loadProjectRoutes() {
   return _projectRoutes || (_projectRoutes = import('./projects/router.mjs'));
 }
 
+<<<<<<< HEAD
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(() => {});
 }
@@ -48,6 +68,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     window.addEventListener('popstate', () => {
+||||||| 1bedf4f
+    // Handle browser back/forward navigation
+    window.addEventListener("popstate", routeHandler);
+=======
+    // Handle browser back/forward navigation
+    window.addEventListener("popstate", () => {
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
         routeHandler(navContentDiv, contentDiv);
     });
 
@@ -136,12 +163,44 @@ export function loadTemplateWithError(contentDiv, label) {
 
 export function routeHandler(navContentDiv, contentDiv) {
     let path = window.location.pathname;
+<<<<<<< HEAD
 
     if (path === '/login' || path === '/logout' || path === '/register') {
         window.location.href = path;
         return;
     }
 
+||||||| 1bedf4f
+    const path = window.location.pathname;
+=======
+    
+    // Handle logout
+    if (path === '/logout') {
+    requestLogout()
+        .then(() => {
+            clearTokens();
+            window.history.replaceState({}, '', '/');
+            path = '/';
+            loadNavTemplate(navContentDiv, contentDiv);
+            loadTemplate("home.html", contentDiv).then(() => {
+                return loadHomePage();
+            });
+        })
+        .catch((error) => {
+            console.error('Logout failed:', error);
+            // Still clear cookies and redirect even if API call fails
+            clearTokens();
+            window.history.replaceState({}, '', '/');
+            path = '/';
+            loadNavTemplate(navContentDiv, contentDiv);
+            loadTemplate("home.html", contentDiv).then(() => {
+                return loadHomePage();
+            });
+        });
+        return;
+    }
+    
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
@@ -150,6 +209,7 @@ export function routeHandler(navContentDiv, contentDiv) {
                 return loadHomePage();
             });
             break;
+<<<<<<< HEAD
         case path.startsWith('/projects'):
             loadProjectRoutes().then(({ handleLegacyProjectRoutes }) => {
                 handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
@@ -208,5 +268,73 @@ export function routeHandler(navContentDiv, contentDiv) {
                     });
             }
         }
+||||||| 1bedf4f
+        default:
+            contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
+=======
+        case path == '/login':
+            loadTemplate("login.html", contentDiv).then(() => {
+                return loadLoginForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading login form js:', error);
+            });
+            break;
+        case path.startsWith('/projects'):
+            handleProjectRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/moments/'):
+            handleMomentRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/flows/'):
+            handleFlowRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/journeys/'):
+            handleJourneyRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/epics/'):
+            handleEpicRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/promises/'):
+            handlePromiseRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/projects') && path.includes('/iterations'):
+            handleIterationRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/projects'):
+            handleProjectRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path == '/register':
+            loadTemplate("register.html", contentDiv).then(() => {
+                return loadRegistrationForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading registration form js:', error);
+            });
+            break;
+        case path.startsWith('/notifications'):
+            handleNotificationsRoutes(path, navContentDiv, contentDiv);
+            break;
+        case path.startsWith('/invitations'):
+            handleInvitationsRoute(path, contentDiv);
+            break;
+        case path == '/change-password':
+            // Protect route: require authentication
+            if (!getAccessToken()) {
+                window.history.pushState({}, '', '/login');
+                loadNavTemplate(navContentDiv, contentDiv);
+                loadTemplate("login.html", contentDiv).then(() => {
+                    return loadLoginForm(navContentDiv, contentDiv);
+                });
+                break;
+            }
+
+            loadTemplate("change-password.html", contentDiv).then(() => {
+                return loadChangePasswordForm(navContentDiv, contentDiv);
+            }).catch((error) => {
+                console.error('Error loading change password form js:', error);
+            });
+            break;
+        default:
+            contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     }
 }

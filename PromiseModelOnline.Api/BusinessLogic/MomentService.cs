@@ -224,6 +224,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
             };
         }
 
+<<<<<<< HEAD
         private Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
             => ComputeBurndownAsync(moments, null, null);
 
@@ -292,6 +293,57 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 .Max();
 
             return await ComputeBurndownAsync(allMoments, startDate, endDate);
+||||||| 1bedf4f
+=======
+        private async Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
+        {
+            var result = new List<BurndownPointDTO>();
+            if (moments.Count == 0) return result;
+
+            var startDate = moments.Min(m => m.CreatedAt).Date;
+            var today = DateTime.UtcNow.Date;
+
+            var completedDates = moments
+                .Where(m => m.CompletedAt.HasValue)
+                .Select(m => m.CompletedAt!.Value.Date)
+                .ToList();
+
+            DateTime? latestCompleted = completedDates.Count > 0
+                ? completedDates.Max()
+                : null;
+            var endDate = latestCompleted > today ? latestCompleted.Value : today;
+
+            var initialEffort = moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
+            var totalDays = (endDate - startDate).Days;
+            if (totalDays <= 0) totalDays = 1;
+
+            for (var date = startDate; date <= endDate; date = date.AddDays(1))
+            {
+                var remaining = moments
+                    .Where(m => m.CompletedAt == null || m.CompletedAt.Value.Date > date)
+                    .Sum(m => EstimateToNumeric(m.EffortEstimate));
+
+                var dayNumber = (date - startDate).Days;
+                var idealRemaining = initialEffort - (initialEffort * dayNumber / totalDays);
+                if (idealRemaining < 0) idealRemaining = 0;
+
+                result.Add(new BurndownPointDTO
+                {
+                    Date = date,
+                    RemainingEffort = remaining,
+                    IdealRemaining = idealRemaining
+                });
+            }
+            return result;
+        }
+
+        public async Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId)
+        {
+            var assigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: false);
+            var unassigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: true);
+            var allMoments = assigned.Concat(unassigned).GroupBy(m => m.Id).Select(g => g.First()).ToList();
+            return await ComputeBurndownAsync(allMoments);
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
         }
     }
 }

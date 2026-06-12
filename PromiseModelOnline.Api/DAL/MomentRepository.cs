@@ -44,6 +44,7 @@ namespace PromiseModelOnline.Api.DAL
 
         public async Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false)
         {
+<<<<<<< HEAD
             var iteration = await _context.Set<Iteration>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(i => i.Id == iterationId);
@@ -112,6 +113,57 @@ namespace PromiseModelOnline.Api.DAL
                         .ThenInclude(journey => journey.Epic)
                             .ThenInclude(epic => epic.ProductPromise)
                 .Include(moment => moment.Tasks);
+||||||| 1bedf4f
+=======
+            var strideIds = await _context.Set<Stride>()
+                .Where(s => s.IterationId == iterationId)
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            if (strideIds.Count == 0)
+                return Enumerable.Empty<Moment>();
+
+            var query = BuildMomentQuery().Where(moment => moment.AssignedStrideId.HasValue && strideIds.Contains(moment.AssignedStrideId.Value));
+
+            if (unassignedOnly)
+                query = BuildMomentQuery().Where(moment => moment.AssignedStrideId == null);
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId)
+        {
+            return await BuildMomentQuery()
+                .Where(moment => moment.OwnerId == ownerId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Moment>> GetMomentsByPromiseIdAsync(int promiseId)
+        {
+            return await BuildMomentQuery()
+                .Where(moment => moment.Flow.Journey.Epic.ProductPromiseId == promiseId)
+                .ToListAsync();
+        }
+
+        public async Task<int?> GetProjectIdForMomentAsync(int momentId)
+        {
+            return await _dbSet
+                .Where(m => m.Id == momentId)
+                .Select(m => m.Flow.Journey.Epic.ProductPromise.ProjectId)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId)
+        {
+            return await BuildMomentQuery()
+                .Where(moment => moment.AssignedStrideId == strideId && moment.Status != MomentStatus.Done)
+                .ToListAsync();
+        }
+
+        private IQueryable<Moment> BuildMomentQuery()
+        {
+            return _context.Set<Moment>().Include(moment => moment.Tasks);
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
         }
 
         private static bool TryGetMomentId(object id, out int momentId)

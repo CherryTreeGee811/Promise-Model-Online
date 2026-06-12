@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/moments",
+    "queryParameters": {
+      "strideId": { "equalTo": "20" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "bodyFileName": "moments-by-stride-20.json"
+  }
+}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const AUTH_STORAGE_KEY = 'pmo.auth';
 
 let isAuthenticated = false;
@@ -57,3 +58,49 @@ export function getUserId() {
 }
 
 loadFromStorage();
+||||||| 1bedf4f
+=======
+const ACCESS_TOKEN_STORAGE_KEY = 'pmo.accessToken';
+let accessToken = null;
+
+function readStoredAccessToken() {
+    try {
+        return sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+    } catch {
+        return null;
+    }
+}
+
+export function setTokens(access) {
+    accessToken = access;
+
+    try {
+        if (access) {
+            sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, access);
+        } else {
+            sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+        }
+    } catch {
+        // Ignore storage failures and keep the in-memory token as the source of truth.
+    }
+}
+
+export function getAccessToken() {
+    if (accessToken) {
+        return accessToken;
+    }
+
+    accessToken = readStoredAccessToken();
+    return accessToken;
+}
+
+export function clearTokens() {
+    accessToken = null;
+
+    try {
+        sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    } catch {
+        // Ignore storage failures.
+    }
+}
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e

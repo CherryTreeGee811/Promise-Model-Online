@@ -1,0 +1,28 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/moments",
+    "queryParameters": {
+      "strideId": { "equalTo": "10" }
+    },
+    "headers": {
+      "Authorization": {
+        "equalTo": "Bearer nonowner-token-fixed"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      {
+        "id": 101,
+        "statement": "Moment 101",
+        "ownerId": 999,
+        "assignedStrideId": 10,
+        "status": "Todo"
+      }
+    ]
+  }
+}

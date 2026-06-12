@@ -1,0 +1,4 @@
+{
+  "request": { "method": "POST", "urlPath": "/api/deadline-notification-runs" },
+  "response": { "status": 204 }
+}

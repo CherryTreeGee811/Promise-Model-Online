@@ -1,0 +1,10 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "DELETE",
+    "urlPathPattern": "/api/projects/1"
+  },
+  "response": {
+    "status": 204
+  }
+}

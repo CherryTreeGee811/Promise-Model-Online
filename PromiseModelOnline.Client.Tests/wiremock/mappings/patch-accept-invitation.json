@@ -1,0 +1,21 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "PATCH",
+    "urlPathPattern": "/api/permissions/1",
+    "headers": {
+      "Authorization": { "equalTo": "Bearer owner-token-fixed" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": 1,
+      "userId": 2,
+      "userName": "other_user",
+      "projectId": 1,
+      "level": "Edit",
+      "status": "Active"
+    }
+  }
+}

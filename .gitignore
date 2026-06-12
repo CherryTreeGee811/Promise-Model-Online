@@ -18,9 +18,54 @@ query
 # SSL certificates (if any)
 *.pem
 
+<<<<<<< HEAD
 # Docker secrets (actual values — use .example.txt templates instead)
 secrets/*.txt
 
+||||||| 1bedf4f
+# Visual Studio cache/options directory
+.vs/
+
+# JetBrains cache/options directory
+.idea/
+
+# User-specific files
+PromiseModelOnline.Api/*.user
+PromiseModelOnline.Auth/*.user
+PromiseModelOnline.Client/*.user
+PromiseModelOnline.Api.Tests/*.user
+PromiseModelOnline.Client.Tests/*.user
+
+# Build outputs and intermediate objects
+**/bin/
+**/obj/
+# Generated with debug and execute
+PromiseModelOnline.Api/bin
+PromiseModelOnline.Api/obj
+
+PromiseModelOnline.Auth/bin
+PromiseModelOnline.Auth/obj
+
+PromiseModelOnline.Client/bin
+PromiseModelOnline.Client/obj
+
+PromiseModelOnline.Api.Tests/bin
+PromiseModelOnline.Api.Tests/obj
+
+PromiseModelOnline.Client.Tests/bin
+PromiseModelOnline.Client.Tests/obj
+
+/PromiseModelOnline
+/bin
+/obj
+PromiseModelOnline.Api/cert.pem
+PromiseModelOnline.Api/key.pem
+PromiseModelOnline.Client/cert.pem
+PromiseModelOnline.Client/key.pem
+PromiseModelOnline.Auth/cert.pem
+PromiseModelOnline.Auth/key.pem
+=======
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 # Rider / JetBrains cache files and solution user settings
 **/*.lscache
 **/*.sln.DotSettings.user

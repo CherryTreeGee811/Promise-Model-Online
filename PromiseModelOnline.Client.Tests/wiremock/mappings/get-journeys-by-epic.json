@@ -1,0 +1,30 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/journeys",
+    "queryParameters": {
+      "epicId": { "equalTo": "1" }
+    },
+    "headers": {
+      "Authorization": { "equalTo": "Bearer owner-token-fixed" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      {
+        "id": 1,
+        "statement": "Journey One",
+        "description": "First journey",
+        "epicId": 1,
+        "ownerId": 1,
+        "displayOrder": 1,
+        "createdAt": "2026-05-01T00:00:00Z",
+        "updatedAt": null,
+        "statusColor": "red"
+      }
+    ]
+  }
+}

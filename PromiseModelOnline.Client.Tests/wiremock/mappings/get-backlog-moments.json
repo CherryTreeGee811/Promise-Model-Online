@@ -1,0 +1,17 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/moments",
+    "queryParameters": {
+      "iterationId": { "matches": "\\d+" },
+      "unassigned": { "equalTo": "true" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "bodyFileName": "backlog-moments.json"
+  }
+}

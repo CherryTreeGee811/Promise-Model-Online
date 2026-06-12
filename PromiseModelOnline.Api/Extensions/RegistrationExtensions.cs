@@ -17,6 +17,7 @@ namespace PromiseModelOnline.Api.Extensions
     {
         public static void AddPromiseModelOnlineScopes(this IServiceCollection services, IConfiguration configuration)
         {
+<<<<<<< HEAD
             services.AddHttpContextAccessor();
 
             var connectionString = (configuration.GetConnectionString("MSSQL") ?? "").ResolveSecrets();
@@ -59,6 +60,64 @@ namespace PromiseModelOnline.Api.Extensions
             services.AddStrideAutomation();
             services.AddScoped<IReactionRepository, ReactionRepository>();
             services.AddScoped<IReactionService, ReactionService>();
+||||||| 1bedf4f
+=======
+            services.AddDbContext<PromiseModelOnlineContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("MSSQL")));
+
+            services.AddScoped<IPromiseModelOnlineContext, PromiseModelOnlineContext>();
+            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
+            services.AddScoped(typeof(IGenericMapper<,>), typeof(GenericMapper<,>));
+            services.AddScoped<IHierarchyStatusService, HierarchyStatusService>();
+            services.AddScoped<IEpicRepository, EpicRepository>();
+            services.AddScoped<IEpicService, EpicService>();
+            services.AddScoped<IJourneyRepository, JourneyRepository>();
+            services.AddScoped<IJourneyService, JourneyService>();
+            services.AddScoped<IFlowRepository, FlowRepository>();
+            services.AddScoped<IFlowService, FlowService>();
+            services.AddScoped<IMomentRepository, MomentRepository>();
+            services.AddScoped<IMomentService, MomentService>();
+            services.AddScoped<IMomentTaskRepository, MomentTaskRepository>();
+            services.AddScoped<IMomentTaskService, MomentTaskService>();
+            services.AddScoped<IStrideRepository, StrideRepository>();
+            services.AddScoped<IStrideService, StrideService>();
+            services.AddScoped<IIterationRepository, IterationRepository>();
+            services.AddScoped<IIterationService, IterationService>();
+            services.AddScoped<ICommentRepository, CommentRepository>();
+            services.AddScoped<ICommentService, CommentService>();
+            services.AddScoped<IGenericMapper<Comment, CommentDTO>, CommentMapper>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IPermissionRepository, PermissionRepository>();
+            services.AddScoped<IPermissionService, PermissionService>();
+            services.AddScoped<IGenericMapper<Permission, PermissionDTO>, PermissionMapper>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<IProjectService, ProjectService>();
+            services.AddScoped<IProjectExportService, ProjectExportService>();
+            services.AddScoped<IProjectImportValidationService, ProjectImportValidationService>();
+            services.AddScoped<IProjectImportService, ProjectImportService>();
+            services.AddStrideAutomation();
+            services.AddScoped<IReactionRepository, ReactionRepository>();
+            services.AddScoped<IReactionService, ReactionService>();
+            services.AddHttpClient<IAuthClient, AuthClient>(client =>
+            {
+                var issuer = configuration["JwtSettings:Issuer"];
+                if (!string.IsNullOrEmpty(issuer))
+                {
+                    client.BaseAddress = new Uri(issuer);
+                }
+                client.Timeout = TimeSpan.FromSeconds(10);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback =
+                    (sender, cert, chain, sslPolicyErrors) => true;
+                return handler;
+            });
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
         }
     }
 }

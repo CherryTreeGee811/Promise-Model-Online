@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+<<<<<<< HEAD
     [Route("api/moments/{momentId:int}/tasks")]
     public class MomentTasksController : ControllerBase
     {
@@ -75,6 +76,70 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         [Authorize(Policy = "projects.write")]
+||||||| 1bedf4f
+=======
+    [Authorize]
+    [Route("api/moments/{momentId:int}/tasks")]
+    public class MomentTasksController : ControllerBase
+    {
+        private readonly IMomentService _momentService;
+        private readonly IMomentTaskService _momentTaskService;
+        private readonly IUserRepository _userRepository;
+        private readonly IPermissionService _permissionService;
+        private readonly ILogger<MomentTasksController> _logger;
+
+        public MomentTasksController(
+            IMomentService momentService,
+            IMomentTaskService momentTaskService,
+            IUserRepository userRepository,
+            IPermissionService permissionService,
+            ILogger<MomentTasksController> logger)
+        {
+            _momentService = momentService;
+            _momentTaskService = momentTaskService;
+            _userRepository = userRepository;
+            _permissionService = permissionService;
+            _logger = logger;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<MomentTaskDTO>> Create(int momentId, [FromBody] CreateMomentTaskRequestDTO request)
+        {
+            if (!await UserCanEditMomentAsync(momentId))
+                return Forbid();
+
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var moment = await _momentService.GetByIdAsync(momentId);
+            if (moment is null)
+                return NotFound($"Moment with ID {momentId} not found.");
+
+            var task = new MomentTask
+            {
+                MomentId = momentId,
+                Name = request.Name.Trim(),
+                Description = string.IsNullOrWhiteSpace(request.Description) ? string.Empty : request.Description.Trim(),
+                IsCompleted = request.IsCompleted,
+                CreatedAt = DateTime.UtcNow,
+                CompletedAt = request.IsCompleted ? DateTime.UtcNow : null,
+            };
+
+            await _momentTaskService.CreateAsync(task);
+
+            _logger.LogInformation(
+                "Created MomentTask {MomentTaskId} for Moment {MomentId} at {UtcTimestamp}",
+                task.Id,
+                momentId,
+                DateTime.UtcNow);
+
+            return Ok(Map(task));
+        }
+
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
         [HttpPatch("{taskId:int}/completion")]
         public async Task<ActionResult<MomentTaskDTO>> UpdateCompletion(int momentId, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDTO request)
         {

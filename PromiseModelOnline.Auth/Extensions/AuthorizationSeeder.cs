@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+<<<<<<< HEAD
 using OpenIddict.Abstractions;
 
 namespace PromiseModelOnline.Auth.Extensions
@@ -59,6 +60,36 @@ namespace PromiseModelOnline.Auth.Extensions
                     Name = "projects.write",
                     DisplayName = "Write projects"
                 });
+||||||| 1bedf4f
+=======
+
+namespace PromiseModelOnline.Auth.Extensions
+{
+    public static class AuthorizationSeeder
+    {
+        public static async Task SeedAsync(IServiceProvider services)
+        {
+            using var scope = services.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            await SeedUsersAsync(userManager);
+        }
+
+        private static async Task SeedUsersAsync(UserManager<IdentityUser> userManager)
+        {
+            var soTestUser = await userManager.FindByNameAsync("pmo_test");
+            if (soTestUser == null)
+            {
+                var newTestUser = new IdentityUser
+                {
+                    UserName = "pmo_test",
+                    Email = "pmo@gmail.com",
+                    NormalizedUserName = "PMO_TEST",
+                    NormalizedEmail = "PMO@GMAIL.COM",
+                    EmailConfirmed = true,
+                };
+
+                await userManager.CreateAsync(newTestUser, "Hello123*");
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
             }
         }
     }

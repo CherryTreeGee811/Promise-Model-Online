@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
@@ -41,3 +42,26 @@ public class MyTasksTests : PlaywrightTestBase
         Assert.That(typeValue, Is.EqualTo("Story"), "My task moment should be type Story");
     }
 }
+||||||| 1bedf4f
+=======
+using NUnit.Framework;
+using PromiseModelOnline.Client.Tests.Helpers;
+using OpenQA.Selenium;
+
+namespace PromiseModelOnline.Client.Tests.Tests
+{
+    public class MyTasksTests : SeleniumTestBase
+    {
+        [Test]
+        public void MyTasks_DisplaysAssignedTasks()
+        {
+            EnsureLoggedIn();
+            NavigateSpa("/moments/my-tasks");
+
+            var row = WaitForElement(By.CssSelector("#my-tasks-content tbody tr"));
+
+            Assert.That(row.Text, Does.Contain("My Task"));
+        }
+    }
+}
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e

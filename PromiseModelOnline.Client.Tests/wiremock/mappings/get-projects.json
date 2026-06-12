@@ -1,0 +1,25 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/projects",
+    "headers": {
+      "Authorization": {
+        "equalTo": "Bearer owner-token-fixed"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      {
+        "id": 1,
+        "name": "Test Project",
+        "description": "A seeded test project",
+        "ownerId": 1,
+        "createdAt": "2026-05-01T00:00:00Z"
+      }
+    ]
+  }
+}

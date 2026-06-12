@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+<<<<<<< HEAD
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -71,6 +72,69 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         [Authorize(Policy = "projects.write")]
+||||||| 1bedf4f
+=======
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Mappers.Interfaces;
+using PromiseModelOnline.Api.Models;
+using System;
+using System.Threading.Tasks;
+
+namespace PromiseModelOnline.Api.Controllers
+{
+    [Authorize]
+    [Route("api/[controller]")]
+    public class PromisesController : GenericController<Promise, PromiseDTO>
+    {
+        private readonly IMomentService _momentService;
+        private readonly IGenericService<Promise> _promiseService;
+        private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
+
+        public PromisesController(
+            IGenericService<Promise> service,
+            IGenericMapper<Promise, PromiseDTO> mapper,
+            IMomentService momentService)
+            : base(service, mapper)
+        {
+            _momentService = momentService;
+            _promiseService = service;
+            _promiseMapper = mapper;
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult<PromiseDTO>> CreateFromDto([FromBody] CreatePromiseRequestDTO request)
+        {
+            if (request is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var promise = new Promise
+            {
+                Statement = request.Statement,
+                Description = request.Description,
+                ProjectId = request.ProjectId,
+                DisplayOrder = request.DisplayOrder,
+                StatusColor = "red",
+            };
+
+            await _promiseService.AddAsync(promise);
+            return CreatedAtAction(nameof(GetById), new { id = promise.Id }, _promiseMapper.Map(promise, _promiseService));
+        }
+
+        /// <summary>
+        /// Returns the total numeric effort for all moments under a given promise.
+        /// </summary>
+        [HttpGet("{id}/total-effort")]
+        public async Task<ActionResult<int>> GetTotalEffort(int id)
+        {
+            var effort = await _momentService.GetTotalEffortForPromiseAsync(id);
+            return Ok(effort);
+        }
+
+>>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<PromiseDTO>> UpdateDescription(
             int id,

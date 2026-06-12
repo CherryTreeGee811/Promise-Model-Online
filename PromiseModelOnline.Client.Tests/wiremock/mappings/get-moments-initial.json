@@ -1,0 +1,6 @@
+{
+  "scenarioName": "move-moment-100",
+  "requiredScenarioState": "Started",
+  "request": { "method": "GET", "url": "/api/moments" },
+  "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "bodyFileName": "moments-initial.json" }
+}

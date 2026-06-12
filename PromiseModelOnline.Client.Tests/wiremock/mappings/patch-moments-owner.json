@@ -1,0 +1,29 @@
+{
+  "request": {
+    "method": "PATCH",
+    "urlPathPattern": "/api/moments/\\d+/owner"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language", "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS" },
+    "jsonBody": {
+      "id": "{{request.pathSegments.[2]}}",
+      "title": "Moment {{request.pathSegments.[2]}}",
+      "strideId": 10,
+      "owner": "pmo_test",
+      "status": "Todo",
+      "estimate": "M"
+    },
+    "jsonBody": {
+      "id": 100,
+      "title": "Moment 100",
+      "strideId": 10,
+      "owner": "pmo_test",
+      "estimate": "M",
+      "status": "Todo",
+      "statement": "Moment 100 statement",
+      "type": "Feature",
+      "effortEstimate": "M"
+    }
+  }
+}

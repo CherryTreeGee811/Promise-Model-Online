@@ -1,0 +1,19 @@
+[
+  {
+    "id": 101,
+    "statement": "Moment 101",
+    "flowId": 1,
+    "type": "Task",
+    "status": "Todo",
+    "effortEstimate": "M",
+    "ownerId": 1,
+    "assignedStrideId": 10,
+    "displayOrder": 1,
+    "createdAt": "2026-05-01T00:00:00Z",
+    "updatedAt": null,
+    "completedAt": null,
+    "isZombie": false,
+    "originalStrideId": null,
+    "statusColor": "red"
+  }
+]

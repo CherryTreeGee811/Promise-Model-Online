@@ -1,0 +1,10 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "PATCH",
+    "urlPathPattern": "/api/notifications/1"
+  },
+  "response": {
+    "status": 200
+  }
+}
