@@ -59,7 +59,6 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
             await _commentRepo.AddCommentAsync(comment);
 
-<<<<<<< HEAD
             var currentUser = await _userRepo.GetByIdAsync(userId);
             var currentUserName = currentUser?.Name ?? "Unknown";
 
@@ -82,28 +81,6 @@ namespace PromiseModelOnline.Api.BusinessLogic
                         mentionedUser.Id,
                         NotificationType.Mention,
                         $"You were mentioned in a comment by {currentUserName}",
-||||||| 1bedf4f
-=======
-            var mentions = Regex.Matches(dto.Text, @"@(\w+)")
-                                .Select(m => m.Groups[1].Value)
-                                .Distinct();
-            foreach (var mentionedUsername in mentions)
-            {
-                var mentionedUsers = await _userRepo.GetUsersByNameAsync(mentionedUsername);
-                var mentionedUser = mentionedUsers.FirstOrDefault();
-                if (mentionedUser != null)
-                {
-                    await _commentRepo.AddMentionAsync(new CommentMention
-                    {
-                        CommentId = comment.Id,
-                        MentionedUserId = mentionedUser.Id
-                    });
-
-                    await _notificationService.CreateNotificationAsync(
-                        mentionedUser.Id,
-                        NotificationType.Mention,
-                        $"You were mentioned in a comment by user {userId}",
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
                         $"/moments/{dto.ParentId}?type={dto.ParentType}"
                     );
                 }

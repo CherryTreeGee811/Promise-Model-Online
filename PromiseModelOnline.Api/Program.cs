@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Filters;
-<<<<<<< HEAD
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -15,21 +14,10 @@ using Microsoft.IdentityModel.Protocols;
 using PromiseModelOnline.Api.Auth;
 using PromiseModelOnline.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
-||||||| 1bedf4f
-=======
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
-<<<<<<< HEAD
 
-||||||| 1bedf4f
-var AllowedHeaders = new[] { "Content-Type", "Accept", "Accept-Language", "Authorization" };
-=======
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 var config = builder.Configuration;
 
 builder.Services.AddCors(options =>
@@ -43,14 +31,7 @@ builder.Services.AddCors(options =>
                 "https://promisemodelonlineclient:9000")
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .AllowAnyHeader()
-<<<<<<< HEAD
             .WithExposedHeaders("X-Total-Count")
-||||||| 1bedf4f
-            .AllowAnyOrigin()
-            .WithMethods("GET", "POST", "OPTIONS")
-            .WithHeaders(AllowedHeaders);
-=======
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
             .AllowCredentials();
         });
 });
@@ -76,7 +57,6 @@ else
     builder.WebHost.UseUrls(urls);
 }
 
-<<<<<<< HEAD
 var issuer = config["JwtSettings:Issuer"]!;
 var audience = config["JwtSettings:Audience"]!;
 
@@ -123,31 +103,6 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddSignalR();
-||||||| 1bedf4f
-        var cert = X509Certificate2.CreateFromPemFile("cert.pem", "key.pem");
-        listenOptions.UseHttps(cert);
-=======
-builder.Services.AddAuthentication(x => 
-{
-    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(x => {
-    x.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = config["JwtSettings:Issuer"],
-        ValidAudience = config["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey
-            (Encoding.UTF8.GetBytes(config["JwtSettings:Key"]!)),
-    };
-});
-builder.Services.AddAuthorization();
-
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers(options =>
     {
@@ -182,7 +137,6 @@ if (!app.Environment.IsEnvironment("Testing"))
 {
     app.ApplyMigrations();
 
-<<<<<<< HEAD
     if (app.Environment.IsDevelopment())
     {
         using (var scope = app.Services.CreateScope())
@@ -201,27 +155,6 @@ if (!app.Environment.IsEnvironment("Testing"))
 
             logger.LogInformation("Migration and seed startup step complete.");
         }
-||||||| 1bedf4f
-=======
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
-        var logger = scope.ServiceProvider
-            .GetRequiredService<ILoggerFactory>()
-            .CreateLogger("PromiseHierarchySeeder");
-
-        logger.LogInformation("Running Promise hierarchy seed...");
-
-        var authClient = scope.ServiceProvider.GetRequiredService<IAuthClient>();
-
-        await PromiseHierarchySeeder.SeedAsync(
-            dbContext,
-            app.Environment.ContentRootPath,
-            logger,
-            authClient);
-
-        logger.LogInformation("Migration and seed startup step complete.");
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     }
 }
 

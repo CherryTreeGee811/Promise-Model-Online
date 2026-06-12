@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-<<<<<<< HEAD
 using OpenIddict.EntityFrameworkCore.Models;
 using PromiseModelOnline.Auth.DAL.Interfaces;
 
@@ -51,27 +50,5 @@ namespace PromiseModelOnline.Auth.DAL
                 entity.HasKey(token => token.Id);
             });
         }
-||||||| 1bedf4f
-=======
-using PromiseModelOnline.Auth.DAL.Interfaces;
-using PromiseModelOnline.Auth.Models;
-
-namespace PromiseModelOnline.Auth.DAL
-{
-    public class AuthorizationDbContext : IdentityDbContext<IdentityUser>, IAuthorizationDbContext
-    {
-        public AuthorizationDbContext(DbContextOptions<AuthorizationDbContext> options)
-            : base(options)
-        {
-        }
-
-        // Parameterless ctor for design-time tools
-        protected AuthorizationDbContext() { }
-
-        // Expose EF Core DbSet directly (keep EF coupling as requested)
-        public new DbSet<IdentityUser> Users { get; set; } = null!;
-        
-        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     }
 }

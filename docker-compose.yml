@@ -62,7 +62,6 @@ services:
     container_name: promisemodelonlineapi
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-<<<<<<< HEAD
       - ASPNETCORE_URLS=http://+:8000
       - JwtSettings__Issuer=https://promisemodelonline.auth:8060
       - JwtSettings__Audience=promisemodelonline.api
@@ -70,16 +69,6 @@ services:
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER:-pmo_api};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
     secrets:
       - api_db_password
-||||||| 1bedf4f
-      - ASPNETCORE_URLS=https://+:8000
-=======
-      - ASPNETCORE_URLS=https://+:8000
-      - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
-      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
-      - JwtSettings__Audience=promisemodelonline.api
-      - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER:-pmo_api};Password=${PMO_API_DB_PASSWORD:-ChangeMeApi123!};TrustServerCertificate=true;
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     depends_on:
       promisemodelonline.auth:
         condition: service_started
@@ -102,7 +91,6 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8060
-<<<<<<< HEAD
       - APP_BASE_URL=https://localhost:9000
       - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
       - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
@@ -116,14 +104,6 @@ services:
       - auth_db_password
       - google_client_secret
       - sendgrid_api_key
-||||||| 1bedf4f
-=======
-      - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
-      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
-      - JwtSettings__Audience=promisemodelonline.api
-      - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER:-pmo_auth};Password=${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!};TrustServerCertificate=true;
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     depends_on:
       promisemodelonline.db-init:
         condition: service_completed_successfully
@@ -158,7 +138,6 @@ services:
       - promisemodelonline.db
     networks:
       - promisemodelonline-net
-<<<<<<< HEAD
     secrets:
       - auth_db_password
       - api_db_password
@@ -166,15 +145,6 @@ services:
       DB_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}
       PMO_API_DB_USER: ${PMO_API_DB_USER:-pmo_api}
       PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER:-pmo_auth}
-||||||| 1bedf4f
-=======
-    environment:
-      DB_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}
-      PMO_API_DB_USER: ${PMO_API_DB_USER:-pmo_api}
-      PMO_API_DB_PASSWORD: ${PMO_API_DB_PASSWORD:-ChangeMeApi123!}
-      PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER:-pmo_auth}
-      PMO_AUTH_DB_PASSWORD: ${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!}
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     volumes:
       - ./db/init/run-init.sh:/init/run-init.sh:ro
     entrypoint:

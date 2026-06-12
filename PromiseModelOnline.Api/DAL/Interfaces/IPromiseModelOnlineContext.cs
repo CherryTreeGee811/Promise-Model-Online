@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ﻿using System.Data;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.Models;
@@ -94,67 +93,5 @@ namespace PromiseModelOnline.Api.DAL.Interfaces
         /// Atomically allocates the next sequence number for a moment under a flow.
         /// </summary>
         Task<int> GetNextMomentSequenceAsync(int flowId);
-||||||| 1bedf4f
-=======
-﻿using Microsoft.EntityFrameworkCore;
-using PromiseModelOnline.Api.Models;
-
-namespace PromiseModelOnline.Api.DAL.Interfaces
-{
-    /// <summary>
-    /// Defines the contract for the Promise Model Online database context.
-    /// </summary>
-    public interface IPromiseModelOnlineContext
-    {
-        /// <summary>
-        /// Gets or sets the DbSet for promise records.
-        /// </summary>
-        DbSet<Promise> Promises { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for epic records.
-        /// </summary>
-        DbSet<Epic> Epics { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for journey records.
-        /// </summary>
-        DbSet<Journey> Journeys { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for flow records.
-        /// </summary>
-        DbSet<Flow> Flows { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for moment records.
-        /// </summary>
-        DbSet<Moment> Moments { get; set; }
-
-         /// <summary>
-        /// Gets or sets the DbSet for project records.
-        /// </summary>
-        DbSet<Project> Projects { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for stride records.
-        /// </summary>
-        DbSet<Stride> Strides { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for iteration records.
-        /// </summary>
-        DbSet<Iteration> Iterations { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for user records.
-        /// </summary>
-        DbSet<User> Users { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DbSet for reaction records.
-        /// </summary>
-        DbSet<Reaction> Reactions { get; set; }
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
     }
 }

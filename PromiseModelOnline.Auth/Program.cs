@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -10,29 +9,8 @@ using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
 using PromiseModelOnline.Auth.Middleware;
 using PromiseModelOnline.Auth.Services;
-||||||| 1bedf4f
-using Microsoft.OpenApi;
-using System.Security.Cryptography.X509Certificates;
-=======
-using PromiseModelOnline.Auth.DAL;
-using PromiseModelOnline.Auth.Extensions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
-using Microsoft.OpenApi;
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 
-<<<<<<< HEAD
-||||||| 1bedf4f
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-=======
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 var builder = WebApplication.CreateBuilder(args);
-<<<<<<< HEAD
 
 // ---------- Auth/public URL config -------------------------------------
 var appBaseUrl = builder.Configuration["APP_BASE_URL"]
@@ -59,68 +37,14 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-||||||| 1bedf4f
-var AllowedHeaders = new[] { "Content-Type", "Accept", "Accept-Language", "Authorization" };
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-        policy =>
-        {
-            policy
-            .AllowAnyOrigin()
-            .WithMethods("GET", "POST", "OPTIONS")
-            .WithHeaders(AllowedHeaders);
-        });
-});
-
-// Configure Kestrel to use SSL with PEM files
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(8060, listenOptions =>
-    {
-        var cert = X509Certificate2.CreateFromPemFile("cert.pem", "key.pem");
-        listenOptions.UseHttps(cert);
-    });
-});
-=======
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
-
-<<<<<<< HEAD
 // ---------- Database ---------------------------------------------------
 var connectionString = builder.Configuration
     .GetConnectionString("MSSQL")?
     .ResolveSecrets();
 
 if (string.IsNullOrWhiteSpace(connectionString))
-||||||| 1bedf4f
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-=======
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>{
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "Enter your JWT token",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
-
-    // Use the new overload that takes a document parameter
-    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-    });
-});
-builder.Services.AddCors(options =>
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 {
-<<<<<<< HEAD
     throw new InvalidOperationException("ConnectionStrings:MSSQL is required.");
 }
 
@@ -145,73 +69,6 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/account/login";
     options.LogoutPath = "/connect/logout";
     options.AccessDeniedPath = "/account/access-denied";
-||||||| 1bedf4f
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Promise Model Online Auth", Version = "v1" });
-=======
-        options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
-        {
-        policy.WithOrigins(
-            "https://localhost:9000",
-            "https://promisemodelonlineclient:9000")
-                .WithMethods("POST")
-        .AllowAnyHeader()
-        .AllowCredentials();
-        });
-});
-
-// Configure Kestrel to use SSL with PEM files when available; otherwise fall back to HTTP
-var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
-var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
-if (File.Exists(certPath) && File.Exists(keyPath))
-{
-    builder.WebHost.ConfigureKestrel(options =>
-    {
-        options.ListenAnyIP(8060, listenOptions =>
-        {
-            var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-            listenOptions.UseHttps(cert);
-        });
-    });
-}
-else
-{
-    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://+:8060";
-    if (urls.Contains("https://")) urls = urls.Replace("https://", "http://");
-    builder.WebHost.UseUrls(urls);
-}
-
-builder.Services.AddAuthScopes(builder.Configuration);
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.MapInboundClaims = false;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]!))
-    };
-
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(context.Exception, "JWT Authentication Failed: {Message}", context.Exception.Message);
-            return Task.CompletedTask;
-        }
-    };
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 });
 
 // ---------- OpenIddict -------------------------------------------------
@@ -288,49 +145,16 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-<<<<<<< HEAD
-||||||| 1bedf4f
-app.UseCors(MyAllowSpecificOrigins);
-=======
-// apply migrations (if any) for the Auth database
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 app.ApplyMigrations();
 
 if (app.Environment.IsDevelopment())
 {
-<<<<<<< HEAD
     using var scope = app.Services.CreateScope();
 
     await OpenIddictSeeder.SeedAsync(scope.ServiceProvider);
     await AuthorizationSeeder.SeedAsync(scope.ServiceProvider);
-||||||| 1bedf4f
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Promise Model Online Auth v1");
-        c.RoutePrefix = string.Empty;
-    });
-=======
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Authorization Server");
-        c.RoutePrefix = string.Empty;
-        var registrationKey = app.Configuration["Auth:RegistrationKey"];
-
-        if (!string.IsNullOrEmpty(registrationKey))
-        {
-            // Escape single quotes so the JavaScript string is valid
-            var escapedKey = registrationKey.Replace("'", "\\'");
-            c.UseRequestInterceptor($"(req) => {{ req.headers['X-Registration-Key'] = '{escapedKey}'; return req; }}");
-        }
-    });
-
-    await AuthorizationSeeder.SeedAsync(app.Services);
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 }
 
-<<<<<<< HEAD
 // ---------- Forwarded headers ------------------------------------------
 var forwardedOptions = new ForwardedHeadersOptions
 {
@@ -355,21 +179,9 @@ app.UseStaticFiles();
 
 app.UseCors("SPA");
 
-||||||| 1bedf4f
-app.UseHttpsRedirection();
-=======
-app.UseCors(MyAllowSpecificOrigins);
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 app.UseAuthentication();
 app.UseAuthorization();
-<<<<<<< HEAD
 
 app.MapDefaultControllerRoute();
 
-||||||| 1bedf4f
-app.MapControllers();
-
-=======
-app.MapControllers();
->>>>>>> 3d9d1e58bc450b19abee31d15bed7ffeb3de730e
 app.Run();
