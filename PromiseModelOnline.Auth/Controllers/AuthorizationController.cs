@@ -1,0 +1,148 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Server.AspNetCore;
+using OpenIddict.Abstractions;
+using Microsoft.AspNetCore.Http;
+using static OpenIddict.Abstractions.OpenIddictConstants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication;
+
+namespace PromiseModelOnline.Auth.Controllers
+{
+    [ApiController]
+    [Route("connect/authorize")]
+    public class AuthorizationController : ControllerBase
+    {
+        
+        [HttpGet, HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Authorize()
+        {
+            var feature = HttpContext.Features.Get<OpenIddictServerAspNetCoreFeature>()
+                ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+
+            var request = feature.Transaction?.Request
+                ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+
+            var result = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+
+            if (result == null || !result.Succeeded)
+            {
+                var returnUrl = Uri.EscapeDataString(Request.Path + Request.QueryString);
+                return Redirect($"/account/login?returnUrl={returnUrl}");
+            }
+
+            // ✅ 3. Resolve subject (user id)
+            var subject = User.FindFirstValue(OpenIddictConstants.Claims.Subject)
+                ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(subject))
+            {
+                return Forbid();
+            }
+
+            // ✅ 4. Create identity for OpenIddict
+            var identity = new ClaimsIdentity(
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                OpenIddictConstants.Claims.Name,
+                OpenIddictConstants.Claims.Role
+            );
+
+            var principal = new ClaimsPrincipal(identity);
+
+            // ✅ 5. Get scopes from request
+            var scopes = request.GetScopes();
+
+            if (!scopes.Contains(OpenIddictConstants.Scopes.OpenId))
+            {
+                return BadRequest(new
+                {
+                    error = OpenIddictConstants.Errors.InvalidRequest,
+                    error_description = "The 'openid' scope is required."
+                });
+            }
+
+            principal.SetScopes(scopes.ToList());
+
+            // ✅ 6. Enforce S256 PKCE method (OAuth 2.1 best practice)
+            // Missing or non-S256 method is rejected — `plain` is deprecated
+            // and should not be accepted even by omission.
+            var codeChallengeMethod = request.CodeChallengeMethod;
+            if (!string.Equals(codeChallengeMethod, "S256", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    error = OpenIddictConstants.Errors.InvalidRequest,
+                    error_description = "S256 PKCE challenge method is required."
+                });
+            }
+
+            // ✅ 7. Assign API resource
+            if (scopes.Contains("projects.read") || scopes.Contains("projects.write"))
+            {
+                principal.SetResources("promisemodelonline.api");
+            }
+
+            // ✅ 7. Add required claims
+
+            // sub
+            var subClaim = new Claim(OpenIddictConstants.Claims.Subject, subject);
+            subClaim.SetDestinations(
+                OpenIddictConstants.Destinations.AccessToken,
+                OpenIddictConstants.Destinations.IdentityToken
+            );
+            identity.AddClaim(subClaim);
+
+            // name
+            if (User.Identity?.Name is { Length: > 0 } name)
+            {
+                var nameClaim = new Claim(OpenIddictConstants.Claims.Name, name);
+                nameClaim.SetDestinations(
+                    OpenIddictConstants.Destinations.AccessToken,
+                    OpenIddictConstants.Destinations.IdentityToken
+                );
+                identity.AddClaim(nameClaim);
+            }
+
+            // email
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (!string.IsNullOrEmpty(email))
+            {
+                var emailClaim = new Claim(OpenIddictConstants.Claims.Email, email);
+                emailClaim.SetDestinations(
+                    OpenIddictConstants.Destinations.AccessToken,
+                    OpenIddictConstants.Destinations.IdentityToken
+                );
+                identity.AddClaim(emailClaim);
+            }
+
+            // roles
+            foreach (var role in User.FindAll(ClaimTypes.Role))
+            {
+                var roleClaim = new Claim(OpenIddictConstants.Claims.Role, role.Value);
+                roleClaim.SetDestinations(
+                    OpenIddictConstants.Destinations.AccessToken,
+                    OpenIddictConstants.Destinations.IdentityToken
+                );
+                identity.AddClaim(roleClaim);
+            }
+
+            // ✅ ✅ ✅ CRITICAL FIX: return with AuthenticationProperties
+            return SignIn(
+                principal,
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme
+            );
+        }
+
+        private static IEnumerable<string> GetDestinations(string scope, ClaimsPrincipal principal)
+        {
+            yield return Destinations.AccessToken;
+
+            if (principal.HasScope(scope))
+            {
+                yield return Destinations.IdentityToken;
+            }
+        }
+    }
+}

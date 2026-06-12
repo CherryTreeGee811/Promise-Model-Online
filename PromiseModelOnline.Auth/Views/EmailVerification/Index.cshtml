@@ -1,0 +1,63 @@
+@model VerifyEmailViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Verify your email address";
+}
+
+<h1 id="form-title" class="sr-only">Email Verification</h1>
+
+<div class="form-div verify-card">
+    <div class="verify-icon" aria-hidden="true">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="M22 6l-10 7L2 6" />
+        </svg>
+    </div>
+
+    <h2 class="verify-heading">Enter verification code</h2>
+
+    @if (ViewBag.Resent == true)
+    {
+        <p class="auth-message auth-success" role="status">Verification code resent. Please check your inbox.</p>
+    }
+
+    <p class="verify-intro">We sent a 6-digit code to:</p>
+    <p class="verify-email-address" aria-label="Email address: @Model.Email">@Model.Email</p>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="auth-message auth-error" role="alert">
+            <ul>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form method="post" action="/account/verify-email/confirm" class="verify-code-form" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="UserId" />
+        <div class="field-group">
+            <label asp-for="Code" class="field-label">Verification code</label>
+            <input asp-for="Code" type="text" class="field-input verify-code-input" placeholder="000000" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required aria-required="true" aria-describedby="code-hint" />
+            <p id="code-hint" class="field-hint">Enter the 6-digit code from the email. This code expires in 24 hours.</p>
+        </div>
+        <button type="submit" class="submit-btn"><span class="btn-text">Verify email</span><span class="spinner" aria-hidden="true"></span></button>
+    </form>
+
+    <form method="post" action="/account/verify-email/resend" class="verify-resend-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="userId" value="@Model.UserId" />
+        <button type="submit" class="verify-resend-btn">Resend verification code</button>
+    </form>
+
+    <p class="verify-help">
+        Wrong email address? <a href="/account/register">Register with a different email</a>.
+    </p>
+
+    <div class="auth-link">
+        <a href="/account/login" class="verify-return-link">Return to login</a>
+    </div>
+</div>

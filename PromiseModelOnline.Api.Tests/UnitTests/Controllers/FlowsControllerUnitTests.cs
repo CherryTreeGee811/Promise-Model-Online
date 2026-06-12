@@ -1,11 +1,15 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
+using PromiseModelOnline.Api.DAL;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
@@ -16,6 +20,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IFlowService> _mockFlowService = null!;
         private Mock<IGenericMapper<Flow, FlowDTO>> _mockMapper = null!;
+        private PromiseModelOnlineContext _testContext = null!;
         private FlowsController _controller = null!;
 
         [SetUp]
@@ -23,7 +28,19 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockFlowService = new Mock<IFlowService>();
             _mockMapper = new Mock<IGenericMapper<Flow, FlowDTO>>();
-            _controller = new FlowsController(_mockFlowService.Object, _mockMapper.Object);
+
+            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            _testContext = new PromiseModelOnlineContext(options);
+
+            _controller = new FlowsController(_mockFlowService.Object, _mockMapper.Object, _testContext);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _testContext.Dispose();
         }
 
         #region GetAll Tests
@@ -252,6 +269,12 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
+            _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Promises.Add(new Promise { Id = 10, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Epics.Add(new Epic { Id = 20, ProductPromiseId = 10, Statement = "Parent Epic", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            _testContext.Journeys.Add(new Journey { Id = 7, EpicId = 20, Statement = "Parent Journey", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
+            await _testContext.SaveChangesAsync();
+
             var request = new CreateFlowRequestDTO { Statement = "New Flow", JourneyId = 7, DisplayOrder = 1 };
 
             _mockFlowService.Setup(s => s.AddAsync(It.IsAny<Flow>()))
@@ -272,7 +295,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
         {
-            var result = await _controller.CreateFromDto(null);
+            var result = await _controller.CreateFromDto(null!);
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 

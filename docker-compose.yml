@@ -6,24 +6,69 @@ services:
     ports:
       - "9000:9000/tcp"
     depends_on:
-      - promisemodelonline.api
+      - promisemodelonline.bff
+    networks:
+      - promisemodelonline-net
     build:
       context: .
       dockerfile: PromiseModelOnline.Client/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:9000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  promisemodelonline.bff:
+    image: ${DOCKER_REGISTRY-}promisemodelonlinebff
+    container_name: promisemodelonlinebff
+    ports:
+      - "8010:8010/tcp"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:8010
+      - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
+      - AUTH_METADATA_ADDRESS=https://promisemodelonline.auth:8060/.well-known/openid-configuration
+      - APP_BASE_URL=https://localhost:9000
+      - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
+    volumes:
+      - bff-dp-keys:/app/dp-keys
+    depends_on:
+      promisemodelonline.api:
+        condition: service_healthy
+      promisemodelonline.auth:
+        condition: service_healthy
+    networks:
+      - promisemodelonline-net
+    build:
+      context: .
+      dockerfile: PromiseModelOnline.BFF/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
   promisemodelonline.api:
     image: ${DOCKER_REGISTRY-}promisemodelonlineapi
     container_name: promisemodelonlineapi
-    ports:
-      - "8000:8000/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:8000
-      - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
+      - ASPNETCORE_URLS=http://+:8000
       - JwtSettings__Issuer=https://promisemodelonline.auth:8060
       - JwtSettings__Audience=promisemodelonline.api
-      - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER:-pmo_api};Password=${PMO_API_DB_PASSWORD:-ChangeMeApi123!};TrustServerCertificate=true;
+      - Auth__RegistrationKey=${AUTH__REG_KEY:-}
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER:-pmo_api};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+    secrets:
+      - api_db_password
     depends_on:
       promisemodelonline.auth:
         condition: service_started
@@ -34,20 +79,31 @@ services:
     build:
       context: .
       dockerfile: PromiseModelOnline.Api/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     
   promisemodelonline.auth:
     image: ${DOCKER_REGISTRY-}promisemodelonlineauth
     container_name: promisemodelonlineauth
-    ports:
-      - "8060:8060/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8060
-      - JwtSettings__Key=${JWT__KEY:-my-secret-key-for-development-only}
-      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
-      - JwtSettings__Audience=promisemodelonline.api
-      - Auth__RegistrationKey=${AUTH__REG_KEY:-dev-reg-key}
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER:-pmo_auth};Password=${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!};TrustServerCertificate=true;
+      - APP_BASE_URL=https://localhost:9000
+      - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
+      - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER:-pmo_auth};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID:-}
+      - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
+      - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
+    volumes:
+      - auth-dp-keys:/app/dp-keys
+    secrets:
+      - auth_db_password
+      - google_client_secret
+      - sendgrid_api_key
     depends_on:
       promisemodelonline.db-init:
         condition: service_completed_successfully
@@ -56,6 +112,11 @@ services:
     build:
       context: .
       dockerfile: PromiseModelOnline.Auth/Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8060/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
 
   promisemodelonline.db:
     image: mcr.microsoft.com/mssql/server:2025-latest
@@ -77,12 +138,13 @@ services:
       - promisemodelonline.db
     networks:
       - promisemodelonline-net
+    secrets:
+      - auth_db_password
+      - api_db_password
     environment:
       DB_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}
       PMO_API_DB_USER: ${PMO_API_DB_USER:-pmo_api}
-      PMO_API_DB_PASSWORD: ${PMO_API_DB_PASSWORD:-ChangeMeApi123!}
       PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER:-pmo_auth}
-      PMO_AUTH_DB_PASSWORD: ${PMO_AUTH_DB_PASSWORD:-ChangeMeAuth123!}
     volumes:
       - ./db/init/run-init.sh:/init/run-init.sh:ro
     entrypoint:
@@ -99,3 +161,19 @@ volumes:
   mssql-data:
     name: mssqldata
     driver: local
+  bff-dp-keys:
+    name: bffdpkeys
+    driver: local
+  auth-dp-keys:
+    name: authdpkeys
+    driver: local
+
+secrets:
+  auth_db_password:
+    file: ./secrets/auth_db_password.txt
+  api_db_password:
+    file: ./secrets/api_db_password.txt
+  google_client_secret:
+    file: ./secrets/google_client_secret.txt
+  sendgrid_api_key:
+    file: ./secrets/sendgrid_api_key.txt

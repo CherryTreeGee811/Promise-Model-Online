@@ -1,0 +1,59 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Change Password";
+}
+<h1 id="form-title">Change Password</h1>
+
+<div class="form-div">
+    @if (ViewBag.Success == true)
+    {
+        <p class="auth-message auth-success">Password changed successfully. Please sign in again.</p>
+        <p class="auth-link"><a href="/account/login">Go to Login</a></p>
+    }
+    else
+    {
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="auth-message auth-error">
+                <ul>
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form method="post" class="auth-form">
+            @Html.AntiForgeryToken()
+            <div class="field-group">
+                <label for="currentPassword" class="field-label">Current Password</label>
+                <div class="password-wrapper">
+                    <input id="currentPassword" name="currentPassword" type="password" class="field-input password-input" placeholder="Enter current password" autocomplete="current-password" required />
+                    <button type="button" class="password-toggle" aria-label="Show password">
+                        <span class="eye-icon"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="field-group">
+                <label for="newPassword" class="field-label">New Password</label>
+                <div class="password-wrapper">
+                    <input id="newPassword" name="newPassword" type="password" class="field-input password-input" placeholder="Enter new password" autocomplete="new-password" required />
+                    <button type="button" class="password-toggle" aria-label="Show password">
+                        <span class="eye-icon"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="field-group">
+                <label for="confirmPassword" class="field-label">Confirm New Password</label>
+                <div class="password-wrapper">
+                    <input id="confirmPassword" name="confirmPassword" type="password" class="field-input password-input" placeholder="Confirm new password" autocomplete="new-password" required />
+                    <button type="button" class="password-toggle" aria-label="Show password">
+                        <span class="eye-icon"></span>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="submit-btn"><span class="btn-text">Change Password</span><span class="spinner"></span></button>
+        </form>
+    }
+</div>

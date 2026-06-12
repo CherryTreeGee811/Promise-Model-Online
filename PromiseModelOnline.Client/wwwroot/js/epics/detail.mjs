@@ -1,68 +1,93 @@
-import { routeHandler } from '../router.mjs';
-import { getEpicById, getJourneysByEpic, updateEpicDescription } from './api.mjs';
-import { addJourney } from '../journeys/api.mjs';
+import { navigate } from '../router.mjs';
+import { getEpic, getJourneys, updateEpicDescription } from './api.mjs';
+import { createJourney } from '../journeys/api.mjs';
 import { getPromiseById } from '../promises/api.mjs';
-import { loadComments } from '../comments/comments.mjs';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { escapeHtml } from '../utils/html.mjs';
+import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
     patchChildMetrics,
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.mjs';
+import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
+import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
+import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
+import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
-export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
+export function loadEpicDetail(owner, project, epicId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('epic-detail-content');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
+    const loadingEl = document.getElementById('epic-detail-loading');
 
     destroyDetailStackGraph();
-    loadingEl.textContent = 'Loading epic…';
+    if (loadingEl) loadingEl.hidden = false;
     errorEl.textContent = '';
 
-    getEpicById(epicId)
-        .then(epic => {
-            loadingEl.textContent = '';
+    getEpic(owner, project, epicId)
+        .then(epic => Promise.all([
+            Promise.resolve(epic),
+            loadEntityLookupMap('Epic', epic.id, owner, project),
+        ]))
+        .then(([epic]) => {
+            if (loadingEl) loadingEl.hidden = true;
 
             mountDetailStackGraph({
                 nodeType: 'epic',
                 nodeId: epicId,
-                projectIdHint: getGraphProjectIdHintFromUrl(),
+                owner,
+                project,
             });
 
             detailDiv.innerHTML = `
                 <div class="detail-card epic-detail-card">
                     <h2>${escapeHtml(epic.statement)}</h2>
-                    <table class="detail-table">
-                        <tr><th>ID</th><td>${epic.id}</td></tr>
-                        <tr><th>Description</th><td>
-                            <textarea id="description-input" rows="4" class="detail-textarea">${escapeHtml(epic.description || '')}</textarea>
-                            <div class="field-actions"><button id="save-desc" class="save-btn">Save</button> <span id="desc-save-msg"></span></div>
+                    <table class="table table-sm table-striped align-middle detail-table">
+                        <tr><th scope="row"><label for="description-input">Description</label></th><td>
+                            <div class="inline-edit-wrapper">
+                                <p id="description-view" class="inline-edit-view">${formatCommentText(epic.description || '')}</p>
+                                <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
+                                <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(epic.description || '')}</textarea>
+                            </div>
+                            <div class="field-actions"><button id="cancel-desc" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
                         </td></tr>
                         <tr>
                             <th>Parent Promise</th>
                             <td id="epic-parent-promise">Loading…</td>
                         </tr>
-                        <tr><th>Status</th><td id="epic-status-cell">${getStatusIcon(epic.statusColor)}</td></tr>
-                        <tr><th>Created</th><td>${new Date(epic.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th>Updated</th><td>${epic.updatedAt ? new Date(epic.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
+                        <tr><th scope="row">Status</th><td>${getStatusHtml(epic.statusColor)}</td></tr>
+                        <tr><th scope="row">Created</th><td>${new Date(epic.createdAt).toLocaleDateString('en-CA')}</td></tr>
+                        <tr><th scope="row">Updated</th><td>${epic.updatedAt ? new Date(epic.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
                     </table>
                     <h3>Journeys</h3>
                     <div id="epic-journeys-list">
                         <p>Loading journeys…</p>
                     </div>
                     <div id="epic-comments"></div>
-                    <button id="back-link" class="back-btn">← Back</button>
+                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
                 </div>
             `;
 
+            // Autocomplete + inline edit for description
+            const descInput = document.getElementById('description-input');
+            const descView = document.getElementById('description-view');
+            const editBtn = document.getElementById('edit-desc-btn');
+            const saveBtn = document.getElementById('save-desc');
+            const cancelBtn = document.getElementById('cancel-desc');
+            let editor = null;
+            if (descInput && descView && editBtn) {
+                createCommentAutocomplete(descInput, 'Epic', epic.id);
+                editor = setupInlineEdit(descInput, descView, editBtn, saveBtn, cancelBtn);
+            }
+
             // Load parent promise name asynchronously and show its status emoji
             const parentCell = document.getElementById('epic-parent-promise');
-            getPromiseById(epic.productPromiseId)
+            getPromiseById(owner, project, epic.productPromiseId)
                 .then(promise => {
                     const icon = getStatusIcon(promise.statusColor);
-                    parentCell.innerHTML = `<a href="/promises/${promise.id}" promise-id="${promise.id}" class="detail-link">${escapeHtml(promise.statement)}</a> ${icon}`;
+                    const label = getStatusLabel(promise.statusColor);
+                    parentCell.innerHTML = `<a href="/${owner}/${project}/promises/${promise.sequenceNumber}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(promise.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
 
                     const link = parentCell.querySelector('a.detail-link');
 
@@ -72,10 +97,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
 
                             e.preventDefault();
 
-                            const href = link.getAttribute('href');
-                            window.history.pushState({}, '', href);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(link.getAttribute('href'), navContentDiv, contentDiv);
                         });
                     }
                 })
@@ -85,9 +107,9 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
 
             // Load journeys
             const journeysList = document.getElementById('epic-journeys-list');
-            getJourneysByEpic(epicId)
+            getJourneys(owner, project, epicId)
                 .then(journeys => {
-                    patchChildMetrics(`epic-${epicId}`, journeys);
+                    patchChildMetrics(`epic-${epic.sequenceNumber}`, journeys);
                     const tbody = renderTableWithInlineAddRow(journeysList, {
                         headers: ['Statement', 'Actions'],
                         items: journeys || [],
@@ -95,18 +117,18 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                         renderItemRow: j => `
                             <tr data-journey-id="${j.id}">
                                 <td>${escapeHtml(j.statement)}</td>
-                                <td><a href="/journeys/${j.id}" journey-id="${j.id}" class="view-btn">View</a></td>
+                                <td><a href="/${owner}/${project}/journeys/${j.sequenceNumber}" journey-id="${j.id}" journey-seq="${j.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                         `,
                         renderAddRow: () => `
                             <tr data-inline-add-row="1">
                                 <td>
                                     <form id="add-journey-form" class="inline-add-form">
-                                        <input id="add-journey-statement" class="inline-add-input" type="text" maxlength="500" required placeholder="New Journey Statement...">
+                                        <input id="add-journey-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Journey Statement..." aria-label="New journey statement">
                                     </form>
                                 </td>
                                 <td>
-                                    <button id="add-journey-submit" type="submit" form="add-journey-form" class="view-btn">Add</button>
+                                    <button id="add-journey-submit" type="submit" form="add-journey-form" class="btn btn-sm btn-outline-primary">Add</button>
                                     <span id="add-journey-msg"></span>
                                 </td>
                             </tr>
@@ -132,7 +154,7 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                             submitBtn.disabled = true;
 
                             try {
-                                const created = await addJourney({
+                                const created = await createJourney(owner, project, {
                                     statement,
                                     epicId,
                                     displayOrder: (journeys || []).length + 1,
@@ -144,11 +166,11 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                                     row.dataset.journeyId = created.id;
                                     row.innerHTML = `
                                         <td>${escapeHtml(created.statement)}</td>
-                                        <td><a href="/journeys/${created.id}" journey-id="${created.id}" class="view-btn">View</a></td>
+                                        <td><a href="/${owner}/${project}/journeys/${created.sequenceNumber}" journey-id="${created.id}" journey-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     `;
                                     insertRowBeforeAddRow(tbody, row);
                                     statementInput.value = '';
-                                    patchChildMetrics(`epic-${epicId}`, [...(journeys || []), created]);
+                                    patchChildMetrics(`epic-${epic.sequenceNumber}`, [...(journeys || []), created]);
                                 }
                             } catch (err) {
                                 msg.textContent = 'Failed to add journey.';
@@ -160,10 +182,9 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                     }
 
                     journeysList.innerHTML = `
-                        <table class="promisemodel-table">
+                        <table class="table table-sm table-striped align-middle promisemodel-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Statement</th>
                                     <th>Actions</th>
                                 </tr>
@@ -171,25 +192,21 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                             <tbody>
                                 ${journeys.map(j => `
                                     <tr>
-                                        <td>${j.id}</td>
                                         <td>${escapeHtml(j.statement)}</td>
-                                        <td><a href="/journeys/${j.id}" journey-id="${j.id}" class="view-btn">View</a></td>
+                                        <td><a href="/${owner}/${project}/journeys/${j.sequenceNumber}" journey-id="${j.id}" journey-seq="${j.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     `;
 
-                    journeysList.querySelectorAll('.view-btn[journey-id]').forEach(link => {
+                    journeysList.querySelectorAll('a[journey-id]').forEach(link => {
                         link.addEventListener('click', (e) => {
                             if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
                             e.preventDefault();
 
-                            const journeyId = link.getAttribute('journey-id');
-                            window.history.pushState({}, '', `/journeys/${journeyId}`);
-
-                            routeHandler(navContentDiv, contentDiv);
+                            navigate(`/${owner}/${project}/journeys/${link.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
                         });
                     });
                 })
@@ -197,30 +214,42 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                     journeysList.innerHTML = '<p class="error">Failed to load journeys.</p>';
                 });
 
-            // Back button
-            const backLink = document.getElementById('back-link');
-            if (backLink) {
-                backLink.addEventListener('click', () => {
-                    window.history.back();
-                });
-            }
+            initBackLink();
+            // Permission gating
+            (function gateEpicDetailControls() {
+                const canEdit = permission?.permission === 'Edit';
+                if (!canEdit) {
+                    const editBtn = document.getElementById('edit-desc-btn');
+                    const saveBtn = document.getElementById('save-desc');
+                    const descInput = document.getElementById('description-input');
+                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
+                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
+                    if (descInput) descInput.disabled = true;
+
+                    const addJourneyInput = document.getElementById('add-journey-statement');
+                    const addJourneySubmit = document.getElementById('add-journey-submit');
+                    if (addJourneyInput) addJourneyInput.disabled = true;
+                    if (addJourneySubmit) { addJourneySubmit.disabled = true; addJourneySubmit.title = 'Requires Edit permission.'; }
+                }
+            })();
+
+            loadCommentsAndReactions(detailDiv, 'Epic', epic.id, owner, project, permission);
 
             // Description save handler
-            const saveBtn = document.getElementById('save-desc');
             const descMsg = document.getElementById('desc-save-msg');
             if (saveBtn) {
                 saveBtn.addEventListener('click', async (e) => {
-                    e.preventDefault()
+                    e.preventDefault();
                     descMsg.textContent = '';
                     saveBtn.disabled = true;
                     const newDesc = document.getElementById('description-input').value;
                     try {
-                        const updated = await updateEpicDescription(epicId, newDesc);
+                        const updated = await updateEpicDescription(owner, project, epicId, newDesc);
                         epic.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
-                        patchDetailStackGraphNode(`epic-${epicId}`, {
+                        patchDetailStackGraphNode(`epic-${epic.sequenceNumber}`, {
                             description: epic.description,
                         });
-                        descMsg.textContent = 'Saved';
+                        if (editor) editor.showSavedPopover(formatCommentText(epic.description || ''));
                     } catch (err) {
                         descMsg.textContent = 'Save failed';
                         console.error(err);
@@ -230,37 +259,15 @@ export function loadEpicDetail(epicId, navContentDiv, contentDiv) {
                 });
             }
 
-            // Comments
-            const commentsContainer = document.getElementById('epic-comments');
-            loadComments(commentsContainer, 'Epic', epicId);
-
-            resolveProjectIdForPromise(epic.productPromiseId, getGraphProjectIdHintFromUrl())
-                .then(projectId => {
-                    const href = buildGraphViewHref(projectId, `epic-${epic.id}`);
-                    upsertGraphViewButton(detailDiv, href);
-                })
-                .catch(error => {
-                    console.error('Unable to resolve graph link for epic detail', error);
-                });
+            const { owner: go, project: gp } = getOwnerProjectFromPath();
+            if (go && gp) {
+                const href = buildGraphViewHref(go, gp, `epic-${epic.sequenceNumber}`);
+                upsertGraphViewButton(detailDiv, href);
+            }
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            if (loadingEl) loadingEl.hidden = true;
             errorEl.textContent = 'Failed to load epic details.';
             console.error(err);
         });
-}
-
-function escapeHtml(str) {
-    return String(str).replace(/[&<>'"]/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-    }[m]));
-}
-
-function getStatusIcon(statusColor) {
-    const normalized = String(statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '🟢';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '⚫️';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '🟠';
-    if (normalized.includes('red') || normalized.includes('todo')) return '🔴';
-    return '⚪';
 }

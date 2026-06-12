@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -25,34 +26,10 @@ namespace PromiseModelOnline.Api.Tests
         {
             _reactionServiceMock = new Mock<IReactionService>();
             _userRepositoryMock = new Mock<IUserRepository>();
-        }
-
-        private void InitControllerWithUser(string? email, string? nameid = null)
-        {
             _controller = new ReactionsController(
                 _reactionServiceMock.Object,
                 _userRepositoryMock.Object,
                 NullLogger<ReactionsController>.Instance);
-
-            var claims = new List<Claim>();
-            if (email is not null)
-            {
-                claims.Add(new Claim(ClaimTypes.Email, email));
-            }
-
-            if (nameid is not null)
-            {
-                claims.Add(new Claim("nameid", nameid));
-            }
-
-            var identity = new ClaimsIdentity(claims, "test");
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(identity)
-                }
-            };
         }
 
         [Test]
@@ -85,7 +62,7 @@ namespace PromiseModelOnline.Api.Tests
             _reactionServiceMock.Setup(s => s.GetReactionsAsync("Promise", 42))
                 .ReturnsAsync(reactions);
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetReactions("Promise", 42);
 
@@ -125,7 +102,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.CreateReactionAsync(request, currentUser.Id))
                 .ReturnsAsync(createdReaction);
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.CreateReaction(request);
 
@@ -147,7 +124,7 @@ namespace PromiseModelOnline.Api.Tests
                 StackItemId = 42
             };
 
-            InitControllerWithUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.CreateReaction(request);
 
@@ -168,7 +145,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.RemoveReactionAsync(15, currentUser.Id))
                 .Returns(Task.CompletedTask);
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.DeleteReaction(15);
 
@@ -180,7 +157,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task DeleteReaction_WhenNoEmailClaim_ReturnsUnauthorized()
         {
-            InitControllerWithUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.DeleteReaction(15);
 
@@ -201,7 +178,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.RemoveReactionAsync(15, currentUser.Id))
                 .ThrowsAsync(new System.Exception("remove failed"));
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.DeleteReaction(15);
 

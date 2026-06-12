@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -9,19 +10,20 @@ using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class MomentsController : GenericController<Moment, MomentDTO>
     {
         private readonly IMomentService _momentService;
         private readonly IUserRepository _userRepository;
         private readonly IPermissionService _permissionService;
+        private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<MomentsController> _logger;
 
         public MomentsController(
@@ -29,12 +31,14 @@ namespace PromiseModelOnline.Api.Controllers
             IGenericMapper<Moment, MomentDTO> mapper,
             IUserRepository userRepository,
             IPermissionService permissionService,
+            IPromiseModelOnlineContext context,
             ILogger<MomentsController> logger)
             : base(service, mapper)
         {
             _momentService = service;
             _userRepository = userRepository;
             _permissionService = permissionService;
+            _context = context;
             _logger = logger;
         }
 
@@ -42,6 +46,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Creates a new moment from a lightweight request DTO.
         /// The client only supplies the parent FlowId; the entity navigation property stays server-owned.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<MomentDTO>> CreateFromDto([FromBody] CreateMomentRequestDTO request)
         {
@@ -50,6 +55,8 @@ namespace PromiseModelOnline.Api.Controllers
 
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
+
+            var nextSeq = await _context.GetNextMomentSequenceAsync(request.FlowId);
 
             var moment = new Moment
             {
@@ -60,6 +67,7 @@ namespace PromiseModelOnline.Api.Controllers
                 Status = request.Status,
                 EffortEstimate = request.EffortEstimate,
                 AssignedStrideId = request.AssignedStrideId,
+                SequenceNumber = nextSeq,
                 DisplayOrder = request.DisplayOrder,
                 StatusColor = StatusColorRules.FromMomentStatus(request.Status),
             };
@@ -72,6 +80,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Returns moments filtered by optional query parameters:
         /// strideId, flowId, iterationId (with unassigned flag)
         /// </summary>
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<MomentDTO>>> GetAll()
         {
@@ -111,6 +120,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Assign a moment to a stride or move it to the backlog (strideId = null).
         /// Requires Edit permission on the project.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/stride-assignment")]
         public async Task<ActionResult<MomentDTO>> AssignMomentToStride(
             int id,
@@ -155,6 +165,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Update the status of a moment.
         /// Requires Edit permission on the project.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/status")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(
             int id,
@@ -195,6 +206,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Updates only the description of a moment.
         /// Requires Edit permission on the project.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentDescription(
             int id,
@@ -244,6 +256,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Updates the T‑shirt size estimate for a moment (partial update).
         /// Requires Edit permission on the project.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/estimate")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(
             int id,
@@ -284,6 +297,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Updates the type of a moment.
         /// Requires Edit permission on the project.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/type")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentType(
             int id,
@@ -331,6 +345,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// Assigns a specific user as the owner of the moment, or clears the owner when UserId is null.
         /// Requires Edit permission on the project.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/owner")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(
             int id,
@@ -370,6 +385,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Returns all moments assigned to the currently authenticated user.
         /// </summary>
+        [Authorize(Policy = "projects.read")]
         [HttpGet("assigned-to-me")]
         public async Task<ActionResult<IEnumerable<MomentDTO>>> GetMyAssignedMoments()
         {

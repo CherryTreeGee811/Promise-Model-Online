@@ -3,28 +3,33 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Security.Claims;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("api/comments")]
+    [ApiController]
     public class CommentsController : ControllerBase
     {
         private readonly ICommentService _commentService;
         private readonly IUserRepository _userRepository;
+        private readonly ICommentRepository _commentRepository;
 
         public CommentsController(ICommentService commentService,
-                                  IUserRepository userRepository)
+                                  IUserRepository userRepository,
+                                  ICommentRepository commentRepository)
         {
             _commentService = commentService;
             _userRepository = userRepository;
+            _commentRepository = commentRepository;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CommentDTO>>> GetComments(
             [FromQuery] string? type,
@@ -37,6 +42,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(comments);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
         {
@@ -60,6 +66,50 @@ namespace PromiseModelOnline.Api.Controllers
                     new { type = dto.ParentType, parentId = dto.ParentId }, comment);
             }
             catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [Authorize(Policy = "projects.read")]
+        [HttpGet("search-users")]
+        public async Task<ActionResult<IEnumerable<object>>> SearchUsers(
+            [FromQuery] string? parentType,
+            [FromQuery] int parentId,
+            [FromQuery] string? search)
+        {
+            if (string.IsNullOrEmpty(parentType) || parentId <= 0 || string.IsNullOrWhiteSpace(search))
+                return Ok(Array.Empty<object>());
+
+            try
+            {
+                var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
+                var users = await _userRepository.SearchUsersByProjectAsync(projectId, search);
+                return Ok(users.Select(u => new { u.Id, u.Name }));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [Authorize(Policy = "projects.read")]
+        [HttpGet("search-promises")]
+        public async Task<ActionResult<IEnumerable<StackSearchResult>>> SearchPromises(
+            [FromQuery] string? parentType,
+            [FromQuery] int parentId,
+            [FromQuery] string? search)
+        {
+            if (string.IsNullOrEmpty(parentType) || parentId <= 0 || string.IsNullOrWhiteSpace(search))
+                return Ok(Enumerable.Empty<StackSearchResult>());
+
+            try
+            {
+                var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
+                var results = await _commentRepository.SearchStackByStatementAsync(projectId, search);
+                return Ok(results);
+            }
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }

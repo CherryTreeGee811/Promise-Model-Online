@@ -1,35 +1,27 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class InvitationsTests : PlaywrightTestBase
 {
-    public class InvitationsTests : SeleniumTestBase
+    [Test]
+    public async Task Invitations_AcceptInvitation_RemovesRow()
     {
-        [Test]
-        public void Invitations_AcceptInvitation_RemovesRow()
+        await NavigateAsUser("/invitations");
+
+        var acceptBtn = await WaitForSelectorAsync(".accept-btn");
+        await acceptBtn.ClickAsync();
+
+        var removed = await WaitUntilAsync(async () =>
         {
-            EnsureLoggedIn();
-
-            NavigateSpa("/invitations");
-
-            var acceptBtn = WaitForElement(By.CssSelector(".accept-btn"));
-            acceptBtn.Click();
-
-            // After accepting, the row should be removed
-            var removed = WaitUntil(driver =>
+            try
             {
-                try
-                {
-                    return driver.FindElements(By.CssSelector("tbody tr")).Count == 0;
-                }
-                catch
-                {
-                    return false;
-                }
-            }, 5);
+                var count = await Page.Locator("tbody tr").CountAsync();
+                return count == 0;
+            }
+            catch { return false; }
+        }, 5);
 
-            Assert.That(removed, Is.True, "Invitation row was not removed after accept");
-        }
+        Assert.That(removed, Is.True, "Invitation row was not removed after accept");
     }
 }

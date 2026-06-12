@@ -1,41 +1,50 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class FlowsController : GenericController<Flow, FlowDTO>
     {
         private readonly IFlowService _flowService;
+        private readonly IPromiseModelOnlineContext _context;
 
         public FlowsController(
             IFlowService service,
-            IGenericMapper<Flow, FlowDTO> mapper)
+            IGenericMapper<Flow, FlowDTO> mapper,
+            IPromiseModelOnlineContext context)
             : base(service, mapper)
         {
             _flowService = service;
+            _context = context;
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<FlowDTO>> CreateFromDto([FromBody] CreateFlowRequestDTO request)
         {
             if (request is null) return BadRequest("Request is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
+            var nextSeq = await _context.GetNextFlowSequenceAsync(request.JourneyId);
+
             var flow = new Flow
             {
                 Statement = request.Statement,
                 Description = request.Description,
                 JourneyId = request.JourneyId,
+                SequenceNumber = nextSeq,
                 DisplayOrder = request.DisplayOrder,
                 StatusColor = "red"
             };
@@ -44,6 +53,7 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = flow.Id }, _mapper.Map(flow, _service));
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<FlowDTO>>> GetAll()
         {
@@ -62,6 +72,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<FlowDTO>> UpdateDescription(
             int id,

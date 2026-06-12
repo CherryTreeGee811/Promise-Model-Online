@@ -1,192 +1,104 @@
-import { setTokens, getAccessToken, clearTokens } from './auth-state.mjs';
-import { routeHandler } from './router.mjs';
+import { setAuthState, clearAuth } from './auth-state.mjs';
 
-export const base = "https://localhost:8000";
+export async function apiGet(url) {
+  const res = await apiFetch(url);
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 
-function redirectToLogin() {
-    const navContentDiv = document.getElementById('main-menu');
-    const contentDiv = document.getElementById('content');
+export async function apiGetList(url) {
+  const data = await apiGet(url);
+  return data ?? [];
+}
 
-    window.history.pushState({}, '', '/login');
-    routeHandler(navContentDiv, contentDiv);
+export async function apiPost(url, body) {
+  const res = await apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function apiPut(url, body) {
+  const res = await apiFetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return true;
+}
+
+export async function apiPatch(url, body) {
+  const res = await apiFetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function apiDelete(url) {
+  const res = await apiFetch(url, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return true;
+}
+
+export function projectUrl(owner, project, path = '') {
+  return `/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}${path}`;
 }
 
 /*
 ====================================
-LOGIN
+API FETCH (credentials-based, no tokens)
 ====================================
 */
-export function getToken(username, password) {
-    const login_url = `${base}/api/sessions`;
-
-    return fetch(login_url, {
-        method: 'POST',
-        mode: 'cors',
-        credentials: 'include', // ✅ REQUIRED
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-    })
-    .then(response => {
-        if (response.ok) return response.json();
-
-        if (response.status === 401) {
-            throw new Error("Unauthorized");
-        }
-
-        throw new Error(`HTTP error! status: ${response.status}`);
-    })
-    .then(data => {
-        if (data && data.accessToken) {
-            setTokens(data.accessToken);
-        }
-    });
-}
-
-/*
-====================================
-REFRESH TOKEN
-====================================
-*/
-export async function refreshAccessToken() {
-    const res = await fetch(`${base}/api/access-tokens`, {
-        method: 'POST',
-        credentials: 'include' // ✅ cookie automatically sent
-    });
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    setTokens(data.accessToken);
-
-    return data.accessToken;
-}
-
-/*
-====================================
-AUTH FETCH (AUTO REFRESH)
-====================================
-*/
-export async function authFetch(url, options = {}) {
-    let token = getAccessToken();
-
-    if (!token) {
-        token = await refreshAccessToken();
-
-        if (!token) {
-            // Only redirect if we KNOW user is not logged in
-            if (!window.location.pathname.startsWith('/login')) {
-                redirectToLogin();
-            }
-
-            throw new Error("Missing auth token");
-        }
-    }
-
+export async function apiFetch(url, options = {}) {
     let response = await fetch(url, {
         ...options,
         credentials: 'include',
         headers: {
+            'Accept': 'application/json',
             ...options.headers,
-            Authorization: `Bearer ${token}`
         }
     });
 
-    if (response.status !== 401) return response;
-
-    // 🔁 try refresh
-    token = await refreshAccessToken();
-
-    if (!token) {
-        redirectToLogin();
-        return;
+    if (response.status === 401) {
+        clearAuth();
+        if (!window.location.pathname.startsWith('/login')) {
+            window.location.href = '/login';
+        }
+        throw new Error('Unauthorized');
     }
 
-    // 🔁 retry request
-    return fetch(url, {
-        ...options,
-        credentials: 'include',
-        headers: {
-            ...options.headers,
-            Authorization: `Bearer ${token}`
-        }
-    });
+    return response;
 }
 
-/*
-====================================
-LOGOUT
-====================================
-*/
-export function requestLogout() {
-    const accessToken = getAccessToken();
-    const logout_url = `${base}/api/sessions/current`;
+export { apiFetch as authFetch };
 
-    return fetch(logout_url, {
-        method: 'DELETE',
-        mode: 'cors',
-        credentials: 'include', // ✅ important
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
+/* SESSION CHECK (restore auth on page load) */
+export async function checkSession() {
+    try {
+        const response = await fetch('/api/users/me', {
+            method: 'GET',
+            credentials: 'include',
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            setAuthState({ isAuthenticated: true, username: data.name, userId: data.userId });
+            return true;
         }
-    })
-    .then(() => {
-        clearTokens();
-        redirectToLogin();
-    });
-}
+    } catch {
+        // No session
+    }
 
-/*
-====================================
-REGISTER
-====================================
-*/
-export function registerUser(username, email, password) {
-    const register_url = `${base}/api/users`;
-
-    return fetch(register_url, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userName: username, email, password }),
-    })
-    .then(response => {
-        if (response.ok) return response.json();
-
-        if (response.status === 409) {
-            return response.json().then(data => {
-                throw new Error(data.message || "User exists");
-            });
-        }
-
-        throw new Error("Registration failed");
-    });
-}
-
-/*
-====================================
-CHANGE PASSWORD
-====================================
-*/
-export function changePassword(currentPassword, newPassword, confirmPassword) {
-    return authFetch(`${base}/api/users/me`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            currentPassword,
-            newPassword,
-            confirmPassword
-        })
-    }).then(async response => {
-        if (response.ok) return true;
-
-        const data = await response.json();
-        throw new Error(data.message || "Change password failed");
-    });
+    clearAuth();
+    return false;
 }

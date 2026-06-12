@@ -15,5 +15,9 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
         Task<IEnumerable<ProjectMemberDTO>> GetProjectMembersAsync(int projectId);
 
         Task<IEnumerable<Promise>> GetProductPromisesAsync(int projectId);
+
+        Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug);
+
+        Task<string> GenerateProjectSlugAsync(string name, int ownerId);
     }
 }

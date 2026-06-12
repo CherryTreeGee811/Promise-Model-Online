@@ -1,7 +1,13 @@
 import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
-import { base } from '../api.mjs';
-import { getAccessToken } from '../auth-state.mjs';
+
+import { apiFetch } from '../api.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';
+import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
+import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
+
+let _ctxOwner = null;
+let _ctxProject = null;
+let _ctxPermission = null;
 
 const NODE_CHILD_LABELS = {
     root: 'Promise',
@@ -11,14 +17,25 @@ const NODE_CHILD_LABELS = {
     flow: 'Moment',
 };
 
-const NODE_DELETE_ROUTES = {
-    root: '/api/projects',
-    promise: '/api/promises',
-    epic: '/api/epics',
-    journey: '/api/journeys',
-    flow: '/api/flows',
-    moment: '/api/moments',
-};
+function getDeleteRoute(nodeType, nodeId) {
+    const normalizedType = normalizeNodeType(nodeType);
+
+    if (normalizedType === 'root') {
+        return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
+    }
+
+    const numericId = Number.parseInt(nodeId, 10);
+    if (Number.isNaN(numericId)) return null;
+
+    switch (normalizedType) {
+        case 'promise': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/promises/${numericId}`;
+        case 'epic': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/epics/${numericId}`;
+        case 'journey': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/journeys/${numericId}`;
+        case 'flow': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/flows/${numericId}`;
+        case 'moment': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/moments/${numericId}`;
+        default: return null;
+    }
+}
 
 function normalizeNodeType(nodeType) {
     return String(nodeType ?? '').trim().toLowerCase();
@@ -33,37 +50,23 @@ function getChildLabel(nodeType) {
     return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? null;
 }
 
-function getDeleteRoute(nodeType, nodeId) {
-    const normalizedType = normalizeNodeType(nodeType);
 
-    if (normalizedType === 'root') {
-        return `${NODE_DELETE_ROUTES.root}/${nodeId}`;
-    }
-
-    const routePrefix = NODE_DELETE_ROUTES[normalizedType];
-    const numericId = Number.parseInt(nodeId, 10);
-
-    if (!routePrefix || Number.isNaN(numericId)) {
-        return null;
-    }
-
-    return `${routePrefix}/${numericId}`;
-}
 
 function getCreateActionMeta(nodeData) {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
 
+    const base = `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
     switch (normalizedType) {
         case 'root':
-            return { entityLabel: 'Promise', endpoint: '/api/promises/create', parentField: 'projectId' };
+            return { entityLabel: 'Promise', endpoint: `${base}/promises/create`, parentField: 'projectId' };
         case 'promise':
-            return { entityLabel: 'Epic', endpoint: '/api/epics/create', parentField: 'productPromiseId' };
+            return { entityLabel: 'Epic', endpoint: `${base}/epics/create`, parentField: 'productPromiseId' };
         case 'epic':
-            return { entityLabel: 'Journey', endpoint: '/api/journeys/create', parentField: 'epicId' };
+            return { entityLabel: 'Journey', endpoint: `${base}/journeys/create`, parentField: 'epicId' };
         case 'journey':
-            return { entityLabel: 'Flow', endpoint: '/api/flows/create', parentField: 'journeyId' };
+            return { entityLabel: 'Flow', endpoint: `${base}/flows/create`, parentField: 'journeyId' };
         case 'flow':
-            return { entityLabel: 'Moment', endpoint: '/api/moments/create', parentField: 'flowId' };
+            return { entityLabel: 'Moment', endpoint: `${base}/moments/create`, parentField: 'flowId' };
         default:
             return null;
     }
@@ -111,13 +114,11 @@ function getCreateFormDefaults(nodeData) {
 }
 
 async function requestJson(url, options) {
-    const accessToken = getAccessToken();
     const { headers: optionHeaders, ...fetchOptions } = options;
-    const response = await fetch(`${base}${url}`, {
+    const response = await apiFetch(url, {
         mode: 'cors',
         ...fetchOptions,
         headers: {
-            'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
             ...(optionHeaders ?? {}),
@@ -128,7 +129,6 @@ async function requestJson(url, options) {
         if (response.status === 204) {
             return null;
         }
-
         return response.json();
     }
 
@@ -145,6 +145,76 @@ async function requestJson(url, options) {
     }
 
     throw new Error(message);
+}
+
+function ensureModal(modalId, modalMarkup) {
+    let modalEl = document.getElementById(modalId);
+    if (modalEl) return modalEl;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = modalMarkup.trim();
+    modalEl = wrapper.firstElementChild;
+
+    if (modalEl) {
+        document.body.appendChild(modalEl);
+    }
+
+    return modalEl;
+}
+
+function openDeleteConfirmationModal(label) {
+    const modalEl = ensureModal('graph-delete-confirmation-modal', `
+        <div class="modal fade" id="graph-delete-confirmation-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="graph-delete-confirmation-modal-title">Delete item</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="graph-delete-confirmation-modal-body"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="graph-delete-confirmation-confirm">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    if (!modalEl) {
+        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    }
+
+    const titleEl = modalEl.querySelector('#graph-delete-confirmation-modal-title');
+    const bodyEl = modalEl.querySelector('#graph-delete-confirmation-modal-body');
+    const confirmButton = modalEl.querySelector('#graph-delete-confirmation-confirm');
+
+    if (!titleEl || !bodyEl || !confirmButton) {
+        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    }
+
+    titleEl.textContent = `Delete ${label}`;
+    bodyEl.textContent = `Delete ${label}? This cannot be undone.`;
+
+    return new Promise(resolve => {
+        let settled = false;
+
+        const settle = value => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+
+        const modalInstance = window.bootstrap?.Modal?.getOrCreateInstance(modalEl);
+
+        confirmButton.addEventListener('click', () => {
+            settle(true);
+            modalInstance?.hide();
+        }, { once: true });
+
+        modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
+        modalInstance?.show();
+    });
 }
 
 function createInputField({ name, label, type = 'text', value = '', placeholder = '', rows = 3 }) {
@@ -204,20 +274,11 @@ function getMomentTypeOptions() {
     ];
 }
 
-function getMomentStatusOptions() {
-    return [
-        { value: 'Todo', label: 'Todo' },
-        { value: 'InProgress', label: 'In Progress' },
-        { value: 'Blocked', label: 'Blocked' },
-        { value: 'Done', label: 'Done' },
-    ];
-}
-
 function getMomentStatusValue(nodeData) {
     const payload = nodeData?.payload ?? {};
     const status = String(payload.status ?? payload.Status ?? '').trim();
     if (status) {
-        const match = getMomentStatusOptions().find(option => option.value.toLowerCase() === status.toLowerCase());
+        const match = STATUS_OPTIONS.find(option => option.value.toLowerCase() === status.toLowerCase());
         if (match) {
             return match.value;
         }
@@ -255,7 +316,7 @@ function getStrideOptions(strides = []) {
     ];
 }
 
-function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus) {
+function buildMomentFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus) {
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!createMeta || !defaults) {
@@ -300,7 +361,7 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
         name: 'status',
         label: 'Status',
         value: 'Todo',
-        options: getMomentStatusOptions(),
+        options: STATUS_OPTIONS.map(o => ({ value: o.value, label: `${o.icon} ${o.label}` })),
     });
 
     const estimateField = createSelectField({
@@ -347,6 +408,9 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
         strideField.field,
         actions
     );
+
+    // Autocomplete for entity references in description
+    createCommentAutocomplete(descriptionField.input, nodeData.nodeType, nodeData.payload?.id);
 
     form.addEventListener('submit', async event => {
         event.preventDefault();
@@ -396,8 +460,8 @@ function buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGrap
 }
 
 function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
-    const momentId = nodeData?.payload?.id;
-    if (momentId == null) {
+    const momentSeq = nodeData?.payload?.sequenceNumber;
+    if (momentSeq == null) {
         return null;
     }
 
@@ -416,7 +480,7 @@ function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
         name: 'status',
         label: 'Status',
         value: getMomentStatusValue(nodeData),
-        options: getMomentStatusOptions(),
+        options: STATUS_OPTIONS.map(o => ({ value: o.value, label: `${o.icon} ${o.label}` })),
     });
 
     const actions = document.createElement('div');
@@ -445,7 +509,7 @@ function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
         submitButton.textContent = 'Saving Status...';
 
         try {
-            await updateMomentStatus(momentId, statusField.select.value);
+            await updateMomentStatus(_ctxOwner, _ctxProject, momentSeq, statusField.select.value);
             closeMenus();
             await onGraphMutated?.();
         } catch (error) {
@@ -458,7 +522,7 @@ function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
     return form;
 }
 
-function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus) {
+function buildCreateFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus) {
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!createMeta || !defaults) {
@@ -466,7 +530,7 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
     }
 
     if (createMeta.entityLabel === 'Moment') {
-        return buildMomentFormElement(nodeData, projectId, getAvailableStrides, onGraphMutated, closeMenus);
+        return buildMomentFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus);
     }
 
     const form = document.createElement('form');
@@ -517,6 +581,9 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
 
     form.append(title, subtitle, statementField.field, descriptionField.field, actions);
 
+    // Autocomplete for entity references in description
+    createCommentAutocomplete(descriptionField.input, nodeData.nodeType, nodeData.payload?.id);
+
     form.addEventListener('submit', async event => {
         event.preventDefault();
         submitButton.disabled = true;
@@ -540,7 +607,7 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
         };
 
         if (createMeta.parentField === 'projectId') {
-            payload.projectId = Number.parseInt(projectId, 10);
+            // projectId context is encoded in the endpoint URL; no separate body field needed
         } else {
             payload[createMeta.parentField] = nodeData.payload?.id;
         }
@@ -568,14 +635,19 @@ function buildCreateFormElement(nodeData, projectId, getAvailableStrides, onGrap
 
 function buildMenuActions(
     nodeData,
-    projectId,
+    owner,
+    project,
     onGraphMutated,
     onProjectDeleted,
+    closeMenus,
     openCreateForm,
     openMomentStatusForm,
     isNodeChildrenHidden,
     setNodeChildrenHidden,
+    revealNextLevel,
+    permission,
 ) {
+    const canEdit = permission?.permission === 'Edit';
     const actions = [];
     const childLabel = getChildLabel(nodeData.nodeType);
     const childCount = Number.parseInt(nodeData?.childCount ?? 0, 10) || 0;
@@ -588,8 +660,10 @@ function buildMenuActions(
             id: 'create-child',
             label: `Create New ${childLabel}`,
             danger: false,
+            disabled: !canEdit,
+            disabledReason: 'Requires Edit permission.',
             handler: async () => {
-                openCreateForm(nodeData, projectId, onGraphMutated);
+                openCreateForm(nodeData, owner, project, onGraphMutated);
             },
         });
     }
@@ -605,11 +679,24 @@ function buildMenuActions(
         });
     }
 
+    if (childrenHidden && hiddenDescendantCount > 0) {
+        actions.push({
+            id: 'reveal-next-level',
+            label: 'Reveal Next Level',
+            danger: false,
+            handler: async () => {
+                await revealNextLevel?.(nodeData);
+            },
+        });
+    }
+
     if (normalizeNodeType(nodeData.nodeType) === 'moment') {
         actions.push({
             id: 'change-status',
             label: 'Change Status',
             danger: false,
+            disabled: !canEdit,
+            disabledReason: 'Requires Edit permission.',
             handler: async () => {
                 openMomentStatusForm(nodeData, onGraphMutated);
             },
@@ -620,16 +707,20 @@ function buildMenuActions(
         id: 'delete',
         label: 'Delete',
         danger: true,
+        disabled: !canEdit,
+        disabledReason: 'Requires Edit permission.',
         handler: async () => {
             const label = getNodeLabel(nodeData) || normalizeNodeType(nodeData.nodeType) || 'item';
             const confirmationLabel = nodeData.nodeType === 'root' ? 'project' : label;
-            const confirmed = window.confirm(`Delete ${confirmationLabel}? This cannot be undone.`);
+            closeMenus?.();
+
+            const confirmed = await openDeleteConfirmationModal(confirmationLabel);
             if (!confirmed) {
                 return;
             }
 
             if (normalizeNodeType(nodeData.nodeType) === 'root') {
-                const deleteRoute = getDeleteRoute('root', projectId);
+                const deleteRoute = getDeleteRoute('root');
                 await requestJson(deleteRoute, { method: 'DELETE' });
                 await onProjectDeleted?.();
                 return;
@@ -657,9 +748,19 @@ function buildMenuElement(actions) {
         button.type = 'button';
         button.className = `graph-context-menu__item${action.danger ? ' graph-context-menu__item--danger' : ''}`;
         button.textContent = action.label;
+
+        if (action.disabled) {
+            button.disabled = true;
+            button.className += ' graph-context-menu__item--disabled';
+            if (action.disabledReason) {
+                button.title = action.disabledReason;
+            }
+        }
+
         button.addEventListener('click', async event => {
             event.preventDefault();
             event.stopPropagation();
+            if (action.disabled) return;
             await action.handler();
         });
 
@@ -670,19 +771,30 @@ function buildMenuElement(actions) {
 }
 
 export function createGraphContextMenuController({
-    projectId,
+    owner,
+    project,
     getAvailableStrides,
     onGraphMutated,
     onProjectDeleted,
     isNodeChildrenHidden,
     setNodeChildrenHidden,
+    revealNextLevel,
+    permission,
 } = {}) {
+    _ctxOwner = owner;
+    _ctxProject = project;
+    _ctxPermission = permission;
     let referenceRect = null;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
+    const appendTarget = () => {
+        const viewport = document.getElementById('graph-viewport');
+        if (viewport && document.fullscreenElement === viewport) return viewport;
+        return document.body;
+    };
     const createFormTippy = tippy(document.createElement('div'), {
         trigger: 'manual',
-        appendTo: () => document.body,
+        appendTo: appendTarget,
         content: document.createElement('div'),
         allowHTML: false,
         interactive: true,
@@ -698,7 +810,7 @@ export function createGraphContextMenuController({
 
     const instance = tippy(virtualReference, {
         trigger: 'manual',
-        appendTo: () => document.body,
+        appendTo: appendTarget,
         content: menuContent,
         allowHTML: false,
         interactive: true,
@@ -732,10 +844,10 @@ export function createGraphContextMenuController({
         menuContent.replaceChildren();
     }
 
-    function openCreateForm(nodeData, sourceProjectId, refreshGraph) {
+    function openCreateForm(nodeData, sourceOwner, sourceProject, refreshGraph) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
         const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
-        const form = buildCreateFormElement(nodeData, sourceProjectId, getAvailableStrides, refreshGraph, closeMenus);
+        const form = buildCreateFormElement(nodeData, sourceOwner, sourceProject, getAvailableStrides, refreshGraph, closeMenus);
 
         if (!form) {
             return;
@@ -771,13 +883,17 @@ export function createGraphContextMenuController({
 
         const actions = buildMenuActions(
             nodeData,
-            projectId,
+            owner,
+            project,
             onGraphMutated,
             onProjectDeleted,
+            closeMenus,
             openCreateForm,
             openMomentStatusForm,
             isNodeChildrenHidden,
             setNodeChildrenHidden,
+            revealNextLevel,
+            _ctxPermission,
         );
         menuContent.replaceChildren(buildMenuElement(actions));
 

@@ -1,0 +1,40 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/projects/pmo_test/seeded-project/strides",
+    "queryParameters": {
+      "iterationId": { "matches": "\\d+" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    },
+    "jsonBody": [
+      {
+        "id": 10,
+        "name": "Stride One",
+        "iterationId": 1,
+        "startDate": "2026-05-01T00:00:00Z",
+        "endDate": "2026-05-07T00:00:00Z",
+        "durationDays": 7,
+        "isActive": true,
+        "createdAt": "2026-05-01T00:00:00Z"
+      },
+      {
+        "id": 20,
+        "name": "Stride Two",
+        "iterationId": 1,
+        "startDate": "2026-05-08T00:00:00Z",
+        "endDate": "2026-05-15T00:00:00Z",
+        "durationDays": 8,
+        "isActive": true,
+        "createdAt": "2026-05-01T00:00:00Z"
+      }
+    ]
+  }
+}

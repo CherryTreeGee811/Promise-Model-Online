@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
@@ -9,8 +10,10 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
+using PromiseModelOnline.Api.Hubs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
+using Microsoft.AspNetCore.SignalR;
 
 namespace PromiseModelOnline.Api.Tests
 {
@@ -19,6 +22,9 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<INotificationRepository> _notificationRepoMock = null!;
         private Mock<IGenericMapper<Notification, NotificationDTO>> _mapperMock = null!;
+        private Mock<IHubContext<NotificationHub>> _hubContextMock = null!;
+        private Mock<IHubClients> _hubClientsMock = null!;
+        private Mock<IClientProxy> _clientProxyMock = null!;
         private NotificationService _service = null!;
 
         [SetUp]
@@ -26,7 +32,26 @@ namespace PromiseModelOnline.Api.Tests
         {
             _notificationRepoMock = new Mock<INotificationRepository>();
             _mapperMock = new Mock<IGenericMapper<Notification, NotificationDTO>>();
-            _service = new NotificationService(_notificationRepoMock.Object, _mapperMock.Object);
+
+            _clientProxyMock = new Mock<IClientProxy>();
+            _clientProxyMock
+                .Setup(p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            _hubClientsMock = new Mock<IHubClients>();
+            _hubClientsMock
+                .Setup(c => c.Group(It.IsAny<string>()))
+                .Returns(_clientProxyMock.Object);
+
+            _hubContextMock = new Mock<IHubContext<NotificationHub>>();
+            _hubContextMock
+                .Setup(h => h.Clients)
+                .Returns(_hubClientsMock.Object);
+
+            _service = new NotificationService(
+                _notificationRepoMock.Object,
+                _mapperMock.Object,
+                _hubContextMock.Object);
         }
 
         #region GetUnreadNotificationsAsync
@@ -164,6 +189,12 @@ namespace PromiseModelOnline.Api.Tests
                                  .Callback<Notification>(n => savedNotification = n)
                                  .Returns(Task.CompletedTask);
             _notificationRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+            _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
+                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDTO
+                       {
+                           Id = n.Id,
+                           Message = n.Message
+                       });
 
             // Act
             await _service.CreateNotificationAsync(77, NotificationType.Mention, "You were mentioned", "/moments/5");
@@ -177,6 +208,10 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(savedNotification.CreatedAt, Is.Not.EqualTo(default(DateTime)));
             _notificationRepoMock.Verify(r => r.AddAsync(It.IsAny<Notification>()), Times.Once);
             _notificationRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+            _clientProxyMock.Verify(p => p.SendCoreAsync(
+                "ReceiveNotification",
+                It.Is<object?[]>(args => args.Length == 1 && args[0] != null && ((NotificationDTO)args[0]!).Message!.Contains("You were mentioned")),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -187,6 +222,12 @@ namespace PromiseModelOnline.Api.Tests
                                  .Callback<Notification>(n => savedNotification = n)
                                  .Returns(Task.CompletedTask);
             _notificationRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+            _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
+                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDTO
+                       {
+                           Id = n.Id,
+                           Message = n.Message
+                       });
 
             await _service.CreateNotificationAsync(1, NotificationType.Deadline, "Stride ending");
 

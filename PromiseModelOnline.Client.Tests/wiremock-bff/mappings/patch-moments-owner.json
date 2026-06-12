@@ -1,0 +1,26 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "PATCH",
+    "urlPathPattern": "/api/projects/pmo_test/seeded-project/moments/\\d+/owner"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept-Language",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    },
+    "jsonBody": {
+      "id": 100,
+      "sequenceNumber": 100,
+      "statement": "Moment 100 statement",
+      "type": "Job",
+      "status": "Todo",
+      "effortEstimate": "M",
+      "ownerId": 1,
+      "assignedStrideId": 10
+    }
+  }
+}

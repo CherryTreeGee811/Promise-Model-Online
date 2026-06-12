@@ -11,8 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class StridesController : GenericController<Stride, StrideDTO>
     {
         private readonly IStrideService _strideService;
@@ -31,6 +30,7 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<StrideDTO>>> GetAll()
         {
@@ -52,6 +52,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Partially updates a stride.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
         public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDTO request)
         {
@@ -81,6 +82,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Moves unfinished moments from this stride to the next stride.
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPost("{id}/progress")]
         public async Task<ActionResult> ProgressStride(int id)
         {

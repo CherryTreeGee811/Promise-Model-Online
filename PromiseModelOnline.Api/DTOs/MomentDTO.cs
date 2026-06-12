@@ -15,6 +15,7 @@ public class MomentDTO
     public Estimate? EffortEstimate { get; set; }
     public int? OwnerId { get; set; }
     public int? AssignedStrideId { get; set; }
+    public int SequenceNumber { get; set; }
     public int DisplayOrder { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
@@ -23,4 +24,6 @@ public class MomentDTO
     public int? OriginalStrideId { get; set; }
     public string StatusColor { get; set; } = "red";
     public List<MomentTaskDTO> Tasks { get; set; } = new List<MomentTaskDTO>();
+    public string? OwnerSlug { get; set; }
+    public string? ProjectSlug { get; set; }
 }

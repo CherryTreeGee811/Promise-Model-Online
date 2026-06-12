@@ -44,18 +44,33 @@ namespace PromiseModelOnline.Api.DAL
 
         public async Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false)
         {
+            var iteration = await _context.Set<Iteration>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == iterationId);
+
+            if (iteration is null)
+                return Enumerable.Empty<Moment>();
+
             var strideIds = await _context.Set<Stride>()
                 .Where(s => s.IterationId == iterationId)
                 .Select(s => s.Id)
                 .ToListAsync();
 
-            if (strideIds.Count == 0)
-                return Enumerable.Empty<Moment>();
-
-            var query = BuildMomentQuery().Where(moment => moment.AssignedStrideId.HasValue && strideIds.Contains(moment.AssignedStrideId.Value));
+            var query = BuildMomentQuery()
+                .Where(moment => moment.Flow.Journey.Epic.ProductPromise.ProjectId == iteration.ProjectId);
 
             if (unassignedOnly)
-                query = BuildMomentQuery().Where(moment => moment.AssignedStrideId == null);
+            {
+                query = query.Where(moment => moment.AssignedStrideId == null);
+            }
+            else if (strideIds.Count > 0)
+            {
+                query = query.Where(moment => moment.AssignedStrideId.HasValue && strideIds.Contains(moment.AssignedStrideId.Value));
+            }
+            else
+            {
+                return Enumerable.Empty<Moment>();
+            }
 
             return await query.ToListAsync();
         }
@@ -91,7 +106,12 @@ namespace PromiseModelOnline.Api.DAL
 
         private IQueryable<Moment> BuildMomentQuery()
         {
-            return _context.Set<Moment>().Include(moment => moment.Tasks);
+            return _context.Set<Moment>()
+                .Include(moment => moment.Flow)
+                    .ThenInclude(flow => flow.Journey)
+                        .ThenInclude(journey => journey.Epic)
+                            .ThenInclude(epic => epic.ProductPromise)
+                .Include(moment => moment.Tasks);
         }
 
         private static bool TryGetMomentId(object id, out int momentId)

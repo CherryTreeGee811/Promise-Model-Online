@@ -1,60 +1,90 @@
 import { loadHomePage } from './home.mjs';
-import { loadNavTemplate } from './navigation/router.mjs';
-import { loadLoginForm } from './login.mjs';
-import { loadRegistrationForm } from './register.mjs';
-import { loadChangePasswordForm } from './change-password.mjs';
-import { clearTokens, getAccessToken } from './auth-state.mjs';
-import { requestLogout } from './api.mjs';
-import { handleProjectRoutes } from './projects/router.mjs';
-import { handleMomentRoutes } from './moments/router.mjs';
-import { handleFlowRoutes } from './flows/router.mjs';
-import { handleJourneyRoutes } from './journeys/router.mjs';
-import { handleEpicRoutes } from './epics/router.mjs';
-import { handlePromiseRoutes } from './promises/router.mjs';
+import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs';
+import { clearAuth, isLoggedIn } from './auth-state.mjs';
+import { checkSession } from './api.mjs';
+import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
-import { handleIterationRoutes } from './iterations/router.mjs';
+import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
 
-/**
- * Initializes the application when the DOM is fully loaded.
- * 
- * This function sets up the main content area, initializes event listeners for 
- * navigation links, and handles routing based on the current URL path. It also 
- * loads the appropriate templates and data.
- * 
- * @function
- * @returns {void} This function does not return a value.
- */
-document.addEventListener("DOMContentLoaded", () => {
-    const contentDiv = document.getElementById("content");
-    const navContentDiv = document.getElementById("main-menu");
+let _projectRoutes;
+function loadProjectRoutes() {
+  return _projectRoutes || (_projectRoutes = import('./projects/router.mjs'));
+}
 
-    // Handle browser back/forward navigation
-    window.addEventListener("popstate", () => {
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const contentDiv = document.getElementById('content');
+    const navContentDiv = document.getElementById('main-menu');
+
+    await checkSession();
+
+    initNavEventDelegation(navContentDiv, contentDiv);
+
+    document.addEventListener('click', e => {
+      const navLink = e.target.closest('a[data-nav]');
+      if (navLink) {
+        const path = navLink.getAttribute('href');
+        if (path && path !== '#') {
+          e.preventDefault();
+          navigate(path, navContentDiv, contentDiv);
+          return;
+        }
+      }
+
+      const backBtn = e.target.closest('[data-action="back"]');
+      if (backBtn) {
+        e.preventDefault();
+        window.history.back();
+      }
+    });
+
+    document.getElementById('home-link')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigate('/', navContentDiv, contentDiv);
+    });
+
+    window.addEventListener('popstate', () => {
         routeHandler(navContentDiv, contentDiv);
     });
 
-    // Initial route handling
     routeHandler(navContentDiv, contentDiv);
 });
 
+export function navigate(path, navContentDiv, contentDiv) {
+    window.history.pushState({}, '', path);
+    return routeHandler(navContentDiv, contentDiv);
+}
 
-/**
-* Loads an HTML template and updates the specified contentDiv with the fetched content.
-* 
-* This function fetches the specified template from the server and updates the 
-* inner HTML of the provided contentDiv. If the fetch operation fails, it displays 
-* an error message in the contentDiv.
-* 
-* @function loadTemplate
-* @param {string} templateName - The name of the template file to load.
-* @param {HTMLElement} contentDiv - The HTML element where the template will be loaded.
-* @returns {void} This function does not return a value.
-* 
-* @example
-* // Load the home template into the contentDiv
-* loadTemplate("home.html", contentDiv);
-*/
+const PAGE_TITLES = {
+  '/': 'Home',
+  '/projects': 'Projects',
+  '/notifications': 'Notifications',
+  '/invitations': 'Invitations',
+  '/knowledge-base': 'Knowledge Base',
+  '/moments/my-tasks': 'My Tasks',
+};
+
+function announceAndFocus() {
+  const mainEl = document.getElementById('main-content');
+  if (mainEl) { requestAnimationFrame(() => mainEl.focus()); }
+}
+
+function setPageTitle(path) {
+  const titleEl = document.getElementById('page-title');
+  if (!titleEl) return;
+  let title = PAGE_TITLES[path];
+  if (!title) {
+    const segments = path.split('/').filter(Boolean);
+    title = segments.length ? segments[segments.length - 1] : 'Home';
+    title = title.charAt(0).toUpperCase() + title.slice(1).replace(/-/g, ' ');
+  }
+  titleEl.textContent = `${title} - Promise Model Online`;
+}
+
 export function loadTemplate(templateName, contentDiv) {
     return fetch(`/templates/${templateName}`)
         .then(response => {
@@ -63,99 +93,72 @@ export function loadTemplate(templateName, contentDiv) {
         })
         .then(html => {
             contentDiv.innerHTML = html;
-            return Promise.resolve();
-        })
-        .catch(error => {
-            contentDiv.innerHTML = `<h1>Error loading template</h1><p>${error.message}</p>`;
-            return Promise.reject(error);
+            setPageTitle(window.location.pathname);
+            announceAndFocus();
         });
 }
 
+export function handleDetailRoute(path, contentDiv, routePrefix, templateName, loadFn, navContentDiv, label) {
+  const segments = path.split('/').filter(Boolean);
+  if (segments.length === 2 && segments[0] === routePrefix) {
+    loadTemplate(templateName, contentDiv)
+      .then(() => loadFn(segments[1], navContentDiv, contentDiv))
+      .catch(loadTemplateWithError(contentDiv, label));
+    return true;
+  }
+  return false;
+}
 
-/**
-* Handles routing based on the current URL path.
-* 
-* This function determines which template to load and which data to fetch based 
-* on the current URL path. It updates the contentDiv with the appropriate template 
-* and data.
-* 
-* @function routeHandler
-* @returns {void} This function does not return a value.
-*/
+export function showNotFound(contentDiv) {
+  loadTemplate('404.html', contentDiv);
+}
+
+export function loadTemplateWithError(contentDiv, label) {
+  return () => {
+    return fetch('/templates/error.html')
+      .then(r => r.text())
+      .then(html => {
+        contentDiv.innerHTML = html;
+        setPageTitle(window.location.pathname);
+        const titleEl = document.getElementById('error-title');
+        const msgEl = document.getElementById('error-message');
+        if (titleEl) titleEl.textContent = 'Something went wrong';
+        if (msgEl) msgEl.textContent = `Failed to load ${label}. Please try again.`;
+        announceAndFocus();
+      })
+      .catch(() => {
+        contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Please try again.</p>';
+        setPageTitle(window.location.pathname);
+        announceAndFocus();
+      });
+  };
+}
+
 export function routeHandler(navContentDiv, contentDiv) {
     let path = window.location.pathname;
-    
-    // Handle logout
-    if (path === '/logout') {
-    requestLogout()
-        .then(() => {
-            clearTokens();
-            window.history.replaceState({}, '', '/');
-            path = '/';
-            loadNavTemplate(navContentDiv, contentDiv);
-            loadTemplate("home.html", contentDiv).then(() => {
-                return loadHomePage();
-            });
-        })
-        .catch((error) => {
-            console.error('Logout failed:', error);
-            // Still clear cookies and redirect even if API call fails
-            clearTokens();
-            window.history.replaceState({}, '', '/');
-            path = '/';
-            loadNavTemplate(navContentDiv, contentDiv);
-            loadTemplate("home.html", contentDiv).then(() => {
-                return loadHomePage();
-            });
-        });
+
+    if (path === '/login' || path === '/logout' || path === '/register') {
+        window.location.href = path;
         return;
     }
-    
+
     loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
         case path == '/':
-            loadTemplate("home.html", contentDiv).then(() => {
+            loadTemplate('home.html', contentDiv).then(() => {
                 return loadHomePage();
             });
             break;
-        case path == '/login':
-            loadTemplate("login.html", contentDiv).then(() => {
-                return loadLoginForm(navContentDiv, contentDiv);
-            }).catch((error) => {
-                console.error('Error loading login form js:', error);
-            });
-            break;
         case path.startsWith('/projects'):
-            handleProjectRoutes(path, navContentDiv, contentDiv);
+            loadProjectRoutes().then(({ handleLegacyProjectRoutes }) => {
+                handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
+            }).catch(loadTemplateWithError(contentDiv, 'projects'));
             break;
-        case path.startsWith('/moments/'):
-            handleMomentRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/flows/'):
-            handleFlowRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/journeys/'):
-            handleJourneyRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/epics/'):
-            handleEpicRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/promises/'):
-            handlePromiseRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/projects') && path.includes('/iterations'):
-            handleIterationRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/projects'):
-            handleProjectRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path == '/register':
-            loadTemplate("register.html", contentDiv).then(() => {
-                return loadRegistrationForm(navContentDiv, contentDiv);
-            }).catch((error) => {
-                console.error('Error loading registration form js:', error);
-            });
+        case path === '/moments/my-tasks':
+            loadTemplate('moments/my-tasks.html', contentDiv)
+                .then(() => loadMyTasksPage(navContentDiv, contentDiv))
+                .catch(loadTemplateWithError(contentDiv, 'my tasks'));
             break;
         case path.startsWith('/notifications'):
             handleNotificationsRoutes(path, navContentDiv, contentDiv);
@@ -164,23 +167,46 @@ export function routeHandler(navContentDiv, contentDiv) {
             handleInvitationsRoute(path, contentDiv);
             break;
         case path == '/change-password':
-            // Protect route: require authentication
-            if (!getAccessToken()) {
-                window.history.pushState({}, '', '/login');
-                loadNavTemplate(navContentDiv, contentDiv);
-                loadTemplate("login.html", contentDiv).then(() => {
-                    return loadLoginForm(navContentDiv, contentDiv);
-                });
+            if (!isLoggedIn()) {
+                navigate('/login', navContentDiv, contentDiv);
                 break;
             }
-
-            loadTemplate("change-password.html", contentDiv).then(() => {
-                return loadChangePasswordForm(navContentDiv, contentDiv);
-            }).catch((error) => {
-                console.error('Error loading change password form js:', error);
-            });
+            window.location.href = '/account/change-password';
             break;
-        default:
-            contentDiv.innerHTML = `<h1>404 Not Found</h1>`;
+        case path == '/knowledge-base':
+            handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv);
+            break;
+        default: {
+            const projectPattern = path.match(/^\/([^\/]+)\/([^\/]+)(\/.*)?$/);
+            if (projectPattern) {
+                const owner = projectPattern[1];
+                const project = projectPattern[2];
+                const subPath = projectPattern[3] || '';
+
+                if (owner === 'account' || owner === 'moments' || owner === 'knowledge-base') {
+                    loadTemplate('404.html', contentDiv)
+                        .catch(() => {
+                            contentDiv.innerHTML = '<h1>Page not found</h1>';
+                            setPageTitle(path);
+                            announceAndFocus();
+                        });
+                } else {
+                    loadProjectRoutes().then(({ handleProjectScopedRoutes }) => {
+                        handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+                    }).catch(() => {
+                        contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
+                        setPageTitle(path);
+                        announceAndFocus();
+                    });
+                }
+            } else {
+                loadTemplate('404.html', contentDiv)
+                    .catch(() => {
+                        contentDiv.innerHTML = '<h1>Page not found</h1>';
+                        setPageTitle(path);
+                        announceAndFocus();
+                    });
+            }
+        }
     }
 }

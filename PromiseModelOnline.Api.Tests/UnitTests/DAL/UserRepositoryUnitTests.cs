@@ -7,40 +7,30 @@ using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class UserRepositoryUnitTests
+    public class UserRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private UserRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new UserRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new UserRepository(Context);
         }
 
         [Test]
         public async Task GetUsersByNameAsync_ReturnsMatchingUsers()
         {
-            _context.Users.AddRange(
+            Context.Users.AddRange(
                 new User { Id = 1, Name = "Alice", Email = "alice@example.com" },
                 new User { Id = 2, Name = "Bob", Email = "bob@example.com" },
                 new User { Id = 3, Name = "Alice", Email = "alice2@example.com" }
             );
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetUsersByNameAsync("Alice");
             var list = result.ToList();
@@ -53,8 +43,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetUsersByNameAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Users.Add(new User { Name = "Charlie", Email = "charlie@example.com" });
-            await _context.SaveChangesAsync();
+            Context.Users.Add(new User { Name = "Charlie", Email = "charlie@example.com" });
+            await Context.SaveChangesAsync();
             var result = await _repo.GetUsersByNameAsync("Nobody");
             Assert.That(result, Is.Empty);
         }
@@ -62,11 +52,11 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task FindByEmailAsync_ReturnsMatchingUsers()
         {
-            _context.Users.AddRange(
+            Context.Users.AddRange(
                 new User { Id = 1, Email = "alice@example.com", Name = "Alice" },
                 new User { Id = 2, Email = "bob@example.com", Name = "Bob" }
             );
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
             var result = await _repo.FindByEmailAsync("alice@example.com");
             var list = result.ToList();
@@ -90,7 +80,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(user.Role, Is.EqualTo(UserRole.Professional));
             Assert.That(user.CreatedAt, Is.Not.EqualTo(default(DateTime)));
 
-            var saved = await _context.Users.FirstOrDefaultAsync(u => u.Email == "test@example.com");
+            var saved = await Context.Users.FirstOrDefaultAsync(u => u.Email == "test@example.com");
             Assert.That(saved, Is.Not.Null);
         }
 
@@ -118,14 +108,14 @@ namespace PromiseModelOnline.Api.Tests
                 Role = UserRole.Student,
                 CreatedAt = DateTime.UtcNow.AddDays(-1)
             };
-            _context.Users.Add(existing);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(existing);
+            await Context.SaveChangesAsync();
 
             var user = await _repo.GetOrCreateUserByEmailAsync("old@example.com", "newalias");
             Assert.That(user.Id, Is.EqualTo(existing.Id));
             Assert.That(user.Name, Is.EqualTo("newalias"));
 
-            var saved = await _context.Users.FindAsync(existing.Id);
+            var saved = await Context.Users.FindAsync(existing.Id);
             Assert.That(saved!.Name, Is.EqualTo("newalias"));
         }
 
@@ -139,13 +129,13 @@ namespace PromiseModelOnline.Api.Tests
                 Role = UserRole.Professional,
                 CreatedAt = DateTime.UtcNow
             };
-            _context.Users.Add(existing);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(existing);
+            await Context.SaveChangesAsync();
 
             var user = await _repo.GetOrCreateUserByEmailAsync("keep@example.com", "ignoreme");
             Assert.That(user.Name, Is.EqualTo("KeepMe"));
 
-            var saved = await _context.Users.FindAsync(existing.Id);
+            var saved = await Context.Users.FindAsync(existing.Id);
             Assert.That(saved!.Name, Is.EqualTo("KeepMe"));
         }
 
@@ -158,8 +148,8 @@ namespace PromiseModelOnline.Api.Tests
                 Name = "nulluser@example.com",
                 CreatedAt = DateTime.UtcNow
             };
-            _context.Users.Add(existing);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(existing);
+            await Context.SaveChangesAsync();
 
             var user = await _repo.GetOrCreateUserByEmailAsync("nulluser@example.com", null);
             Assert.That(user.Name, Is.EqualTo("nulluser@example.com"));
@@ -169,8 +159,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var user = new User { Id = 42, Name = "Test", Email = "test@example.com" };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            Context.Users.Add(user);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(42);
             Assert.That(result!.Name, Is.EqualTo("Test"));
@@ -181,11 +171,236 @@ namespace PromiseModelOnline.Api.Tests
         {
             var user = new User { Name = "New", Email = "new@example.com", Role = UserRole.Student };
             await _repo.AddAsync(user);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
-            var saved = _context.Users.FirstOrDefault(u => u.Email == "new@example.com");
+            var saved = Context.Users.FirstOrDefault(u => u.Email == "new@example.com");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.Role, Is.EqualTo(UserRole.Student));
         }
+
+        #region SearchUsersByProjectAsync
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_ReturnsMatchingUsers()
+        {
+            var owner = new User { Id = 1, Name = "Alice", Email = "alice@example.com" };
+            var userB = new User { Id = 2, Name = "Bob", Email = "bob@example.com" };
+            var userC = new User { Id = 3, Name = "Charlie", Email = "charlie@example.com" };
+            Context.Users.AddRange(owner, userB, userC);
+
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
+            project.Permissions = new List<Permission>
+            {
+                new Permission { UserId = 2, Level = PermissionLevel.Edit, Status = PermissionStatus.Active },
+                new Permission { UserId = 3, Level = PermissionLevel.View, Status = PermissionStatus.Active },
+            };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "a", 5);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(2));
+            Assert.That(list.Any(u => u.Name == "Alice"), Is.True);
+            Assert.That(list.Any(u => u.Name == "Charlie"), Is.True);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_IncludesProjectOwner()
+        {
+            var owner = new User { Id = 5, Name = "Owner", Email = "owner@example.com" };
+            Context.Users.Add(owner);
+
+            var project = new Project { Id = 10, Name = "Proj", OwnerId = 5 };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(10, "own", 5);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].Name, Is.EqualTo("Owner"));
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_ExcludesPendingPermissions()
+        {
+            var user = new User { Id = 1, Name = "PendingUser", Email = "pending@example.com" };
+            Context.Users.Add(user);
+
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 99 };
+            project.Permissions = new List<Permission>
+            {
+                new Permission { UserId = 1, Level = PermissionLevel.View, Status = PermissionStatus.Pending }
+            };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "pending", 5);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_NameContainsSearch()
+        {
+            var userA = new User { Id = 1, Name = "John", Email = "john@example.com" };
+            var userB = new User { Id = 2, Name = "Johnny", Email = "johnny@example.com" };
+            Context.Users.AddRange(userA, userB);
+
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
+            project.Permissions = new List<Permission>
+            {
+                new Permission { UserId = 2, Level = PermissionLevel.View, Status = PermissionStatus.Active }
+            };
+            Context.Projects.Add(project);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "john", 5);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_NoMatch_ReturnsEmpty()
+        {
+            var owner = new User { Id = 1, Name = "Alice", Email = "alice@example.com" };
+            Context.Users.Add(owner);
+            Context.Projects.Add(new Project { Id = 1, Name = "Proj", OwnerId = 1 });
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "nonexistent", 5);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_EmptySearch_ReturnsEmpty()
+        {
+            var result = await _repo.SearchUsersByProjectAsync(1, "", 5);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersByProjectAsync_RespectsMaxResults()
+        {
+            var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
+            project.Permissions = new List<Permission>();
+            for (int i = 2; i <= 10; i++)
+            {
+                project.Permissions.Add(new Permission
+                {
+                    UserId = i,
+                    Level = PermissionLevel.View,
+                    Status = PermissionStatus.Active
+                });
+            }
+            Context.Projects.Add(project);
+
+            var users = new List<User>();
+            for (int i = 2; i <= 10; i++)
+            {
+                users.Add(new User { Id = i, Name = "User" + i, Email = "user" + i + "@example.com" });
+            }
+            Context.Users.AddRange(users);
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersByProjectAsync(1, "user", 3);
+            Assert.That(result.Count(), Is.EqualTo(3));
+        }
+
+        #endregion
+
+        #region SearchUsersAsync
+
+        [Test]
+        public async Task SearchUsersAsync_MatchesByName()
+        {
+            Context.Users.AddRange(
+                new User { Id = 1, Name = "Alice", Email = "alice@example.com" },
+                new User { Id = 2, Name = "Bob", Email = "bob@example.com" }
+            );
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersAsync("ali", 10);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].Name, Is.EqualTo("Alice"));
+        }
+
+        [Test]
+        public async Task SearchUsersAsync_MatchesByEmail()
+        {
+            Context.Users.AddRange(
+                new User { Id = 1, Name = "Alice", Email = "alice@example.com" },
+                new User { Id = 2, Name = "Bob", Email = "bob@example.com" }
+            );
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersAsync("bob@example", 10);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].Name, Is.EqualTo("Bob"));
+        }
+
+        [Test]
+        public async Task SearchUsersAsync_MatchesNameOrEmail()
+        {
+            Context.Users.AddRange(
+                new User { Id = 1, Name = "Alice", Email = "alice@example.com" },
+                new User { Id = 2, Name = "Charlie", Email = "charlie@test.com" },
+                new User { Id = 3, Name = "Bob", Email = "bob@example.com" }
+            );
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersAsync("charlie", 10);
+            var list = result.ToList();
+
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list[0].Email, Is.EqualTo("charlie@test.com"));
+        }
+
+        [Test]
+        public async Task SearchUsersAsync_NoMatch_ReturnsEmpty()
+        {
+            Context.Users.Add(new User { Name = "Alice", Email = "alice@example.com" });
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersAsync("nonexistent", 10);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersAsync_EmptySearch_ReturnsEmpty()
+        {
+            var result = await _repo.SearchUsersAsync("", 10);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsersAsync_RespectsMaxResults()
+        {
+            for (int i = 1; i <= 10; i++)
+            {
+                Context.Users.Add(new User { Id = i, Name = "User" + i, Email = "user" + i + "@example.com" });
+            }
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersAsync("user", 3);
+            Assert.That(result.Count(), Is.EqualTo(3));
+        }
+
+        [Test]
+        public async Task SearchUsersAsync_CaseInsensitive()
+        {
+            Context.Users.Add(new User { Id = 1, Name = "Alice", Email = "alice@EXAMPLE.com" });
+            await Context.SaveChangesAsync();
+
+            var result = await _repo.SearchUsersAsync("ALICE", 10);
+            Assert.That(result.Count(), Is.EqualTo(1));
+        }
+
+        #endregion
     }
 }

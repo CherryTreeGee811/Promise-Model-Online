@@ -1,24 +1,23 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PromiseModelOnline.Auth.DAL;
+using OpenIddict.Abstractions;
 using PromiseModelOnline.Auth.Models;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("api/users/me")]
+[Route("account/me")]
 public class DeleteAccountController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
-    private readonly AuthorizationDbContext _dbContext;
+    private readonly IOpenIddictTokenManager _tokenManager;
 
-    public DeleteAccountController(UserManager<IdentityUser> userManager, AuthorizationDbContext dbContext)
+    public DeleteAccountController(UserManager<IdentityUser> userManager,
+                                   IOpenIddictTokenManager tokenManager)
     {
         _userManager = userManager;
-        _dbContext = dbContext;
+        _tokenManager = tokenManager;
     }
 
     [HttpDelete]
@@ -30,13 +29,14 @@ public class DeleteAccountController : ControllerBase
             return BadRequest("Password is required.");
         }
 
-        var userName = User.FindFirst(JwtRegisteredClaimNames.NameId)?.Value;
-        if (string.IsNullOrEmpty(userName))
+        var userId = User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value
+                     ?? _userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
 
-        var user = await _userManager.FindByNameAsync(userName);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
             return Unauthorized();
@@ -48,16 +48,11 @@ public class DeleteAccountController : ControllerBase
             return Unauthorized("Invalid password");
         }
 
-        var activeTokens = await _dbContext.RefreshTokens
-            .Where(r => r.UserId == user.Id && !r.IsRevoked && r.Expires > DateTime.UtcNow)
-            .ToListAsync();
-
-        foreach (var token in activeTokens)
+        // Revoke all tokens for this user
+        await foreach (var token in _tokenManager.FindBySubjectAsync(user.Id))
         {
-            token.IsRevoked = true;
+            await _tokenManager.TryRevokeAsync(token);
         }
-
-        await _dbContext.SaveChangesAsync();
 
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)

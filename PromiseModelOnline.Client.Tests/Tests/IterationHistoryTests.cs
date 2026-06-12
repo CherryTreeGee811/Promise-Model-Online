@@ -1,26 +1,22 @@
-using NUnit.Framework;
 using PromiseModelOnline.Client.Tests.Helpers;
-using OpenQA.Selenium;
 
-namespace PromiseModelOnline.Client.Tests.Tests
+namespace PromiseModelOnline.Client.Tests.Tests;
+
+public class IterationHistoryTests : PlaywrightTestBase
 {
-    public class IterationHistoryTests : SeleniumTestBase
+    [Test]
+    public async Task IterationHistory_ShowsIterationAndStrides()
     {
-       [Test]
-        public void IterationHistory_ShowsIterationAndStrides()
-        {
-            EnsureLoggedIn();
+        await EnsureLoggedIn();
+        await NavigateSpaAsync("/pmo_test/seeded-project/iterations");
 
-            NavigateSpa("/projects/1/iterations");
+        var iterationRow = await WaitForSelectorAsync("#iterations-list tbody tr");
+        Assert.That(await iterationRow.TextContentAsync(), Does.Contain("Sprint 1"));
 
-            var iterationRow = WaitForElement(By.CssSelector("#iterations-list tbody tr"));
-            Assert.That(iterationRow.Text, Does.Contain("Sprint 1"));
+        var viewBtn = await WaitForSelectorAsync(".view-iteration-btn");
+        await viewBtn.ClickAsync();
 
-            var viewBtn = WaitForElement(By.CssSelector(".view-iteration-btn"));
-            viewBtn.Click();
-
-            var strideRow = WaitForElement(By.CssSelector("#stride-details tbody tr"));
-            Assert.That(strideRow.Text, Does.Contain("Stride One"));
-        }
+        var strideRow = await WaitForSelectorAsync("#stride-details tbody tr");
+        Assert.That(await strideRow.TextContentAsync(), Does.Contain("Stride One"));
     }
 }

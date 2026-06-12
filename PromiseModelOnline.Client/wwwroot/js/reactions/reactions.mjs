@@ -1,24 +1,24 @@
-import { getReactions, createReaction, updateReaction, deleteReaction } from './api.mjs';
-import { getNameFromToken } from '../parser.mjs';
-import { getAccessToken } from '../auth-state.mjs';
+import { getReactions, addReaction, updateReaction, deleteReaction } from './api.mjs';
+import { getCurrentUserName } from '../parser.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 
-export function loadReactions(container, parentType, parentId) {
+export function loadReactions(container, parentType, parentId, owner, project, permission) {
+    const canReact = permission?.permission === 'Comment' || permission?.permission === 'Edit';
+
     container.innerHTML = `
         <div class="reactions-bar">
             <span class="reactions-summary" id="reactions-summary"></span>
-            <span class="reactions-picker">
-                ${EMOTE_SET.map(e => `<button class="emote-btn" data-emote="${e}" title="${e}">${e}</button>`).join('')}
-            </span>
+            ${canReact ? `<span class="reactions-picker">
+                ${EMOTE_SET.map(e => `<button class="btn btn-outline-secondary btn-sm emote-btn" data-emote="${e}" title="${e}" aria-label="React with ${e}">${e}</button>`).join('')}
+            </span>` : ''}
         </div>
     `;
 
     const summaryEl = container.querySelector('#reactions-summary');
     const buttons = container.querySelectorAll('.emote-btn');
 
-    const token = getAccessToken();
-    const myUserName = getNameFromToken(token);
+    const myUserName = getCurrentUserName();
 
     const state = {
         counts: {},
@@ -35,7 +35,7 @@ export function loadReactions(container, parentType, parentId) {
 
     async function refresh() {
         try {
-            const reactions = await getReactions(parentType, parentId);
+            const reactions = await getReactions(owner, project, parentType, parentId);
             state.counts = {};
             (reactions || []).forEach(r => {
                 state.counts[r.emote] = (state.counts[r.emote] || 0) + 1;
@@ -61,8 +61,8 @@ export function loadReactions(container, parentType, parentId) {
             try {
                 const y = window.scrollY;
                 const updated = state.myReactionId
-                    ? await updateReaction(state.myReactionId, emote)
-                    : await createReaction(parentType, parentId, emote);
+                    ? await updateReaction(owner, project, state.myReactionId, emote)
+                    : await addReaction(owner, project, { parentType, parentId, emote });
 
                 const previous = state.myEmote;
                 const next = updated?.emote ?? emote;

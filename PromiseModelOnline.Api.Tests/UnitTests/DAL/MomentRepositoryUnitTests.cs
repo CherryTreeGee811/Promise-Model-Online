@@ -7,29 +7,19 @@ using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class MomentRepositoryUnitTests
+    public class MomentRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private MomentRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new MomentRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new MomentRepository(Context);
         }
 
         private async Task SeedAsync()
@@ -44,13 +34,13 @@ namespace PromiseModelOnline.Api.Tests
             var stride1 = new Stride { Id = 10, IterationId = 100, Iteration = iteration };
             var stride2 = new Stride { Id = 20, IterationId = 100, Iteration = iteration };
 
-            _context.Projects.Add(project);
-            _context.Promises.Add(promise);
-            _context.Epics.Add(epic);
-            _context.Journeys.Add(journey);
-            _context.Flows.AddRange(flow1, flow2);
-            _context.Iterations.Add(iteration);
-            _context.Strides.AddRange(stride1, stride2);
+            Context.Projects.Add(project);
+            Context.Promises.Add(promise);
+            Context.Epics.Add(epic);
+            Context.Journeys.Add(journey);
+            Context.Flows.AddRange(flow1, flow2);
+            Context.Iterations.Add(iteration);
+            Context.Strides.AddRange(stride1, stride2);
 
             var moment1 = new Moment { Id = 1, Statement = "M1", FlowId = 1, Flow = flow1, AssignedStrideId = 10, Status = MomentStatus.Todo };
             var moment2 = new Moment { Id = 2, Statement = "M2", FlowId = 1, Flow = flow1, AssignedStrideId = 10, Status = MomentStatus.Done, CompletedAt = DateTime.UtcNow };
@@ -58,8 +48,8 @@ namespace PromiseModelOnline.Api.Tests
             var moment4 = new Moment { Id = 4, Statement = "M4", FlowId = 1, Flow = flow1, AssignedStrideId = null, Status = MomentStatus.Todo };
             var moment5 = new Moment { Id = 5, Statement = "M5", FlowId = 2, Flow = flow2, AssignedStrideId = 10, OwnerId = 50, Status = MomentStatus.Todo };
 
-            _context.Moments.AddRange(moment1, moment2, moment3, moment4, moment5);
-            await _context.SaveChangesAsync();
+            Context.Moments.AddRange(moment1, moment2, moment3, moment4, moment5);
+            await Context.SaveChangesAsync();
         }
 
         [Test]

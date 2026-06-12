@@ -24,12 +24,17 @@ RUN dotnet publish "./PromiseModelOnline.Auth.csproj" -c $BUILD_CONFIGURATION -o
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+USER app
 COPY --from=publish /app/publish .
 # Copy SSL certificate and key into the image
 COPY PromiseModelOnline.Auth/cert.pem /app/cert.pem
 COPY PromiseModelOnline.Auth/key.pem /app/key.pem
+# Copy static files (CSS, JS, images)
+COPY PromiseModelOnline.Auth/wwwroot /app/wwwroot
 USER root
-RUN chown app:app /app/cert.pem /app/key.pem
-RUN chmod 600 /app/cert.pem /app/key.pem
+RUN chown app:app /app/cert.pem /app/key.pem && chmod 600 /app/cert.pem /app/key.pem
+RUN mkdir -p /app/dp-keys && chown app:app /app/dp-keys
 USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Auth.dll"]

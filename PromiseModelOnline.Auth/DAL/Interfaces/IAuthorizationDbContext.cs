@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using OpenIddict.EntityFrameworkCore.Models;
 using System.Threading;
 using System.Threading.Tasks;
-using PromiseModelOnline.Auth.Models;
 
 namespace PromiseModelOnline.Auth.DAL.Interfaces
 {
@@ -13,7 +13,11 @@ namespace PromiseModelOnline.Auth.DAL.Interfaces
     {
         DbSet<IdentityUser> Users { get; set; }
 
-        DbSet<RefreshToken> RefreshTokens { get; set; }
+        // OpenIddict entities
+        DbSet<OpenIddictEntityFrameworkCoreApplication> OpenIddictApplications { get; set; }
+        DbSet<OpenIddictEntityFrameworkCoreAuthorization> OpenIddictAuthorizations { get; set; }
+        DbSet<OpenIddictEntityFrameworkCoreScope> OpenIddictScopes { get; set; }
+        DbSet<OpenIddictEntityFrameworkCoreToken> OpenIddictTokens { get; set; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

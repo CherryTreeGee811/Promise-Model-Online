@@ -1,5 +1,5 @@
 import { fetchUnreadNotifications } from './api.mjs';
-import { startNotificationPolling as startUnreadPolling } from './poller.mjs';
+import { startSignalR, stopSignalR } from './signalr.mjs';
 
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
 let started = false;
@@ -11,41 +11,43 @@ function setBadgeCount(count) {
     const safeCount = Number.isFinite(count) ? count : 0;
     if (safeCount > 0) {
         badge.textContent = String(safeCount);
-        badge.style.display = 'inline';
+        badge.classList.remove('d-none');
     } else {
-        badge.style.display = 'none';
+        badge.classList.add('d-none');
     }
 }
 
-/**
- * Fetches unread notifications and updates the badge (notification endpoints only).
- */
-export async function updateNotificationBadge() {
+async function handleNotificationUpdate() {
     try {
         const notifications = await fetchUnreadNotifications();
-        setBadgeCount(Array.isArray(notifications) ? notifications.length : 0);
+        const count = Array.isArray(notifications) ? notifications.length : 0;
+        setBadgeCount(count);
+
+        window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
+            detail: { notifications: Array.isArray(notifications) ? notifications : [] }
+        }));
     } catch {
         setBadgeCount(0);
     }
 }
 
-/**
- * Starts background polling for unread notifications.
- * Updates only the badge and (if present) the notifications list.
- */
+export async function updateNotificationBadge() {
+    await handleNotificationUpdate();
+}
+
+export function stopNotificationPolling() {
+    started = false;
+    stopSignalR();
+}
+
 export function startNotificationPolling() {
+    handleNotificationUpdate();
+
     if (started) return;
     started = true;
 
-    // Immediate badge update; then background polling.
-    updateNotificationBadge();
-    startUnreadPolling((notifications) => {
-        setBadgeCount(Array.isArray(notifications) ? notifications.length : 0);
-
-        // Let the notifications page update itself without navigation/reload.
-        window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
-            detail: { notifications: Array.isArray(notifications) ? notifications : [] }
-        }));
+    startSignalR(() => {
+        handleNotificationUpdate();
     });
 }
 

@@ -12,8 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("api/notifications")]
     public class NotificationsController : ControllerBase
     {
         private readonly INotificationService _notificationService;
@@ -29,6 +28,7 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetNotifications()
         {
@@ -42,6 +42,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Partially updates a notification (currently supports setting read state).
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateNotification(int id, [FromBody] UpdateNotificationRequestDTO request)
         {
@@ -76,6 +77,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Partially updates the current user's notifications (currently supports setting all to read).
         /// </summary>
+        [Authorize(Policy = "projects.write")]
         [HttpPatch]
         public async Task<IActionResult> UpdateNotifications([FromBody] UpdateNotificationsRequestDTO request)
         {

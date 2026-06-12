@@ -17,7 +17,7 @@ namespace PromiseModelOnline.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -62,6 +62,59 @@ namespace PromiseModelOnline.Api.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("MomentTask");
+                });
+
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.AuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("ActorEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ActorSubject")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ActorUserId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ChangesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditEvents");
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.BugReworkTask", b =>
@@ -192,6 +245,25 @@ namespace PromiseModelOnline.Api.Migrations
                     b.ToTable("CommentMention");
                 });
 
+            modelBuilder.Entity("PromiseModelOnline.Api.Models.EntitySequence", b =>
+                {
+                    b.Property<int>("ParentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Scope")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("NextSequenceNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.HasKey("ParentId", "Scope");
+
+                    b.ToTable("EntitySequences");
+                });
+
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Epic", b =>
                 {
                     b.Property<int>("Id")
@@ -214,6 +286,9 @@ namespace PromiseModelOnline.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ProductPromiseId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
                     b.Property<string>("Statement")
@@ -260,6 +335,9 @@ namespace PromiseModelOnline.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int?>("OwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
                     b.Property<string>("Statement")
@@ -334,6 +412,9 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Property<int?>("OwnerId")
                         .HasColumnType("int");
 
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("int");
+
                     b.Property<string>("Statement")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -393,6 +474,9 @@ namespace PromiseModelOnline.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int?>("OwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
                     b.Property<string>("Statement")
@@ -547,9 +631,15 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Property<int>("OwnerId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("OwnerId", "Slug")
+                        .IsUnique();
 
                     b.ToTable("Projects");
                 });
@@ -576,6 +666,9 @@ namespace PromiseModelOnline.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
                     b.Property<string>("Statement")
@@ -704,7 +797,15 @@ namespace PromiseModelOnline.Api.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

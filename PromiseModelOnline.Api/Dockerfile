@@ -24,18 +24,15 @@ RUN dotnet publish "./PromiseModelOnline.Api.csproj" -c $BUILD_CONFIGURATION -o 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
+USER root
+RUN apt-get update && apt-get install -y curl \
+    && rm -rf /var/lib/apt/lists/*
+USER app
 COPY --from=publish /app/publish .
 # Copy CSV seed data into the runtime image so the seeder can find `pmo_pm`
 COPY --from=build /src/pmo_pm /app/pmo_pm
 # Ensure files are readable by the app user
 USER root
 RUN chown -R app:app /app/pmo_pm || true
-USER app
-# Copy SSL certificate and key into the image
-COPY PromiseModelOnline.Api/cert.pem /app/cert.pem
-COPY PromiseModelOnline.Api/key.pem /app/key.pem
-USER root
-RUN chown app:app /app/cert.pem /app/key.pem
-RUN chmod 600 /app/cert.pem /app/key.pem
 USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Api.dll"]

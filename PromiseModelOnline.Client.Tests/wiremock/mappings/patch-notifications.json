@@ -1,9 +1,0 @@
-{
-  "request": {
-    "method": "PATCH",
-    "urlPathPattern": "/api/notifications(/.*)?"
-  },
-  "response": {
-    "status": 200
-  }
-}

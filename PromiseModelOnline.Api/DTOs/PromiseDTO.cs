@@ -6,6 +6,8 @@ public class PromiseDTO
     public string Type { get; set; } = string.Empty;
     public string Statement { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public int ProjectId { get; set; }
+    public int SequenceNumber { get; set; }
     public int DisplayOrder { get; set; }
     public string StatusColor { get; set; } = "red";
     public DateTime CreatedAt { get; set; }

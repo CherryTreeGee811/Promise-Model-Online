@@ -12,8 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class PermissionsController : ControllerBase
     {
         private readonly IPermissionService _permissionService;
@@ -29,6 +28,7 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PermissionDTO>>> GetPermissions(
             [FromQuery] int projectId)
@@ -37,6 +37,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(permissions);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<PermissionDTO>> InviteUser(
             [FromBody] CreatePermissionRequestDTO request)
@@ -53,7 +54,7 @@ namespace PromiseModelOnline.Api.Controllers
                     userId.Value,
                     result.Id,
                     DateTime.UtcNow,
-                    new { request.ProjectId, request.UserEmail, request.Level });
+                    new { request.ProjectId, request.Email, request.Level });
 
                 return CreatedAtAction(nameof(GetPermissions), new { projectId = request.ProjectId }, result);
             }
@@ -63,6 +64,7 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> RevokePermission(int id)
         {
@@ -80,6 +82,7 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        [Authorize(Policy = "projects.read")]
         [HttpGet("pending")]
         public async Task<ActionResult<IEnumerable<PendingInvitationDTO>>> GetPendingInvitations()
         {
@@ -93,6 +96,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Returns the current user's permission level for the given project, or 204 if none.
         /// </summary>
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/my-permission")]
         public async Task<ActionResult<string>> GetMyPermission(int id)
         {
@@ -134,6 +138,7 @@ namespace PromiseModelOnline.Api.Controllers
             return user.Id;
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
         public async Task<ActionResult<PermissionDTO>> UpdatePermissionStatus(
             int id,

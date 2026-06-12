@@ -10,23 +10,15 @@ public static class PromiseHierarchySeeder
 {
     private const string TestUserEmail = "pmo@gmail.com";
     private const string TestUserName = "pmo_test";
+    private const string TestUserEmail2 = "pmo2@gmail.com";
+    private const string TestUserName2 = "pmo_test2";
 
     public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath,
-        ILogger logger, PromiseModelOnline.Api.DAL.Interfaces.IAuthClient authClient)
+        ILogger logger)
     {
-        // --- 0. Ensure test user exists in Auth service (optional) ---
-        try
-        {
-            await authClient.EnsureSeedUserAsync(TestUserName, TestUserEmail,
-                Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!aA1");
-        }
-        catch (Exception ex)
-        {
-            logger?.LogWarning(ex, "Could not ensure test user in Auth service – continuing anyway.");
-        }
-
-        // --- 1. Ensure test user exists in API database ---
-        var owner = await EnsureTestUserAsync(db);
+        // --- 1. Ensure test users exist in API database ---
+        var owner = await EnsureTestUserAsync(db, TestUserEmail, TestUserName);
+        await EnsureTestUserAsync(db, TestUserEmail2, TestUserName2);
         var pmoPmDir = ResolvePmoPmDirectory(contentRootPath);
 
         // --- 2. Projects ---
@@ -51,11 +43,37 @@ public static class PromiseHierarchySeeder
         if (!projectIdBySourceId.ContainsKey("PRJ-001"))
             projectIdBySourceId["PRJ-001"] = project.Id;
 
+        // --- 2b. Grant edit access to second test user on all seeded projects ---
+        var testUser2 = await db.Users.FirstOrDefaultAsync(u => u.Email == TestUserEmail2);
+        if (testUser2 != null)
+        {
+            var permissions = db.Set<Permission>();
+            var existingPerms = await permissions
+                .Where(p => p.UserId == testUser2.Id)
+                .Select(p => p.ProjectId)
+                .ToListAsync();
+            foreach (var kvp in projectIdBySourceId)
+            {
+                // Skip PRJ-001 (Promise Model Online) so pmo_test2 cannot access it.
+                // This enables cross-tenant authorization testing.
+                if (kvp.Key == "PRJ-001") continue;
+                if (existingPerms.Contains(kvp.Value)) continue;
+                permissions.Add(new Permission
+                {
+                    UserId = testUser2.Id,
+                    ProjectId = kvp.Value,
+                    Level = PermissionLevel.Edit,
+                    Status = PermissionStatus.Active
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
         // --- 3. Iterations (predefined IDs) ---
         await SeedIterationsAsync(db, pmoPmDir, projectIdBySourceId);
 
         // --- 4. Strides (predefined IDs, referencing iterations) ---
-        await SeedStridesAsync(db, pmoPmDir);
+        var currentStrideId = await SeedStridesAsync(db, pmoPmDir);
 
         // --- 5. Promise hierarchy (Products, Epics, Journeys, Flows) ---
         var productRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Products.csv"));
@@ -64,11 +82,26 @@ public static class PromiseHierarchySeeder
         var flowRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Flows.csv"));
         var momentRows  = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Moments.csv"));
 
-        var productLookup  = await SeedProductsAsync(db, project.Id, productRows);
-        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup);
-        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup);
-        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup);
-        var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup);
+        var productSeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Promises.Where(p => p.ProjectId == project.Id).Select(p => (int?)p.SequenceNumber)) + 1 };
+        var epicSeq    = new SeqCounter { Value = await GetMaxSequenceAsync(db.Epics.Where(e => e.ProductPromise.ProjectId == project.Id).Select(e => (int?)e.SequenceNumber)) + 1 };
+        var journeySeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Journeys.Where(j => j.Epic.ProductPromise.ProjectId == project.Id).Select(j => (int?)j.SequenceNumber)) + 1 };
+        var flowSeq    = new SeqCounter { Value = await GetMaxSequenceAsync(db.Flows.Where(f => f.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(f => (int?)f.SequenceNumber)) + 1 };
+        var momentSeq  = new SeqCounter { Value = await GetMaxSequenceAsync(db.Moments.Where(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(m => (int?)m.SequenceNumber)) + 1 };
+
+        var productLookup  = await SeedProductsAsync(db, project.Id, productRows, productSeq);
+        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup, epicSeq);
+        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup, journeySeq);
+        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup, flowSeq);
+        var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup, momentSeq);
+
+        // --- 6. Redistribute moments evenly and mark prior strides complete ---
+        var strideIds = await db.Strides.OrderBy(s => s.Id).Select(s => s.Id).ToListAsync();
+        if (strideIds.Count > 0)
+        {
+            var owner2 = await db.Users.FirstOrDefaultAsync(u => u.Email == TestUserEmail2);
+            var ownerIds = new[] { owner.Id, owner2?.Id ?? owner.Id };
+            await ReassignMomentsAndCompleteAsync(db, ownerIds, strideIds, currentStrideId);
+        }
 
         logger?.LogInformation(
             "Promise hierarchy seed complete. ProjectId: {ProjectId}, Products: {ProductsInserted}/{ProductsTotal}, Epics: {EpicsInserted}/{EpicsTotal}, Journeys: {JourneysInserted}/{JourneysTotal}, Flows: {FlowsInserted}/{FlowsTotal}, Moments: {MomentsInserted}/{MomentsTotal}",
@@ -116,28 +149,63 @@ public static class PromiseHierarchySeeder
 
     // -----------------------------------------------
     //  Seed strides with predefined IDs
+    //  The current iteration is the second-to-last one.
+    //  Its last stride ends 14 days from today.
+    //  Prior strides are back-dated; future strides
+    //  (subsequent iterations) are forward-dated.
     // -----------------------------------------------
-    private static async Task SeedStridesAsync(PromiseModelOnlineContext db, string pmoPmDir)
+    private static async Task<int> SeedStridesAsync(PromiseModelOnlineContext db, string pmoPmDir)
     {
         var path = Path.Combine(pmoPmDir, "Strides.csv");
-        if (!File.Exists(path)) return;
+        if (!File.Exists(path)) return 0;
 
         var rows = ReadCsvRows(path);
-        foreach (var row in rows)
+        var configs = rows
+            .Select(row => new
+            {
+                Id = int.Parse(GetValue(row, "Stride ID")),
+                Name = GetValue(row, "Stride Name"),
+                IterationId = int.Parse(GetValue(row, "Iteration ID")),
+                DurationDays = int.TryParse(GetValue(row, "Duration Days"), out var d) ? d : 14
+            })
+            .OrderBy(s => s.Id)
+            .ToList();
+
+        if (configs.Count == 0) return 0;
+
+        var iterations = configs.Select(s => s.IterationId).Distinct().OrderBy(x => x).ToList();
+        var currentIteration = iterations[^1];
+        var currentStrideId = configs
+            .Where(s => s.IterationId == currentIteration)
+            .OrderBy(s => s.Id)
+            .Skip(1)
+            .First()
+            .Id;
+
+        var today = DateTime.UtcNow.Date;
+        var currentStrideEnd = today.AddDays(14);
+
+        var pending = configs
+            .Where(s => !db.Strides.Any(x => x.Id == s.Id))
+            .ToList();
+
+        foreach (var cfg in pending)
         {
-            var strideId = int.Parse(GetValue(row, "Stride ID"));
-            var name = GetValue(row, "Stride Name");
-            var iterationId = int.Parse(GetValue(row, "Iteration ID"));
-            var offsetStr = GetValue(row, "Start Date Offset");
-            var durationStr = GetValue(row, "Duration Days");
+            var offset = cfg.Id - currentStrideId;
+            DateTime startDate, endDate;
 
-            if (await db.Strides.AnyAsync(s => s.Id == strideId)) continue;
+            if (offset == 0)
+            {
+                startDate = currentStrideEnd.AddDays(-cfg.DurationDays);
+                endDate = currentStrideEnd;
+            }
+            else
+            {
+                endDate = currentStrideEnd.AddDays(offset * cfg.DurationDays);
+                startDate = endDate.AddDays(-cfg.DurationDays);
+            }
 
-            var offset = int.TryParse(offsetStr, out var o) ? o : 0;
-            var duration = int.TryParse(durationStr, out var d) ? d : 14;
-            var startDate = DateTime.UtcNow.AddDays(offset);
-            var endDate = startDate.AddDays(duration);
-            var isActive = offset == 0;
+            var isActive = cfg.Id == currentStrideId;
 
             var sql = @"
                 SET IDENTITY_INSERT Strides ON;
@@ -145,16 +213,18 @@ public static class PromiseHierarchySeeder
                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});
                 SET IDENTITY_INSERT Strides OFF;";
 
-            await db.Database.ExecuteSqlRawAsync(sql,
-                strideId,
-                name,
-                iterationId,
+                await db.Database.ExecuteSqlRawAsync(sql,
+                cfg.Id,
+                cfg.Name,
+                cfg.IterationId,
                 startDate,
                 endDate,
-                duration,
+                cfg.DurationDays,
                 isActive,
                 DateTime.UtcNow);
         }
+
+        return currentStrideId;
     }
 
     // -----------------------------------------------
@@ -163,7 +233,8 @@ public static class PromiseHierarchySeeder
     private static async Task<(int Inserted, int Total)> SeedMomentsWithIdsAsync(
         PromiseModelOnlineContext db,
         IReadOnlyList<Dictionary<string, string>> rows,
-        SeedLookup flows)
+        SeedLookup flows,
+        SeqCounter seq)
     {
         var validRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Moment Promise ID"))
@@ -190,10 +261,13 @@ public static class PromiseHierarchySeeder
                 strideId = parsedStrideId;
             }
 
+            var momentSeq = seq.Value++;
+            var estimate = GetEstimateForMoment(momentId);
+
             var sql = @"
                 SET IDENTITY_INSERT Moments ON;
-                INSERT INTO Moments (Id, FlowId, Statement, Type, Status, DisplayOrder, CreatedAt, AssignedStrideId, StatusColor, IsZombie)
-                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, 0);
+                INSERT INTO Moments (Id, FlowId, SequenceNumber, Statement, Type, Status, DisplayOrder, CreatedAt, AssignedStrideId, StatusColor, IsZombie, EffortEstimate)
+                VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, 0, {10});
                 SET IDENTITY_INSERT Moments OFF;";
 
             object? strideParam = strideId.HasValue ? strideId.Value : null;
@@ -202,13 +276,15 @@ public static class PromiseHierarchySeeder
             {
                 momentId,
                 flowId,
+                momentSeq,
                 statement,
                 (int)MomentType.Story,
                 (int)MomentStatus.Todo,
                 momentId,
                 DateTime.UtcNow,
                 strideParam!,
-                "red"
+                "red",
+                estimate
             };
             await db.Database.ExecuteSqlRawAsync(sql, parameters);
 
@@ -219,7 +295,7 @@ public static class PromiseHierarchySeeder
 
     // ======================== Existing Promise Hierarchy Seeders =========================
 
-    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows)
+    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise ID")) && !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise Statement")))
@@ -251,6 +327,7 @@ public static class PromiseHierarchySeeder
                     Statement = statement,
                     ProjectId = projectId,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -266,7 +343,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, seededRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products)
+    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Epic Promise ID"))
@@ -309,6 +386,7 @@ public static class PromiseHierarchySeeder
                     ProductPromiseId = productId,
                     Statement = statement,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -324,7 +402,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics)
+    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Journey Promise ID"))
@@ -367,6 +445,7 @@ public static class PromiseHierarchySeeder
                     EpicId = epicId,
                     Statement = statement,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -382,7 +461,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys)
+    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Flow Promise ID"))
@@ -425,6 +504,7 @@ public static class PromiseHierarchySeeder
                     JourneyId = journeyId,
                     Statement = statement,
                     DisplayOrder = i + 1,
+                    SequenceNumber = seq.Value++,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -440,17 +520,79 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
+    // -----------------------------------------------
+    //  Redistribute all moments evenly across strides
+    //  and mark moments in completed strides as Done.
+    // -----------------------------------------------
+    private static async Task ReassignMomentsAndCompleteAsync(
+        PromiseModelOnlineContext db, int[] ownerIds, List<int> strideIds, int currentStrideId)
+    {
+        var moments = await db.Moments.OrderBy(m => m.Id).ToListAsync();
+        if (moments.Count == 0) return;
+
+        var strideCount = strideIds.Count;
+        var baseCount = moments.Count / strideCount;
+        var remainder = moments.Count % strideCount;
+
+        var idx = 0;
+        for (var s = 0; s < strideCount; s++)
+        {
+            var strideId = strideIds[s];
+            var stride = await db.Strides.FindAsync(strideId);
+            if (stride == null) continue;
+
+            var count = baseCount + (s < remainder ? 1 : 0);
+            var batch = moments.Skip(idx).Take(count).ToList();
+            idx += count;
+
+            var isCompleted = strideId < currentStrideId;
+
+            if (isCompleted)
+            {
+                var half = (count + 1) / 2;
+                for (var i = 0; i < batch.Count; i++)
+                {
+                    var moment = batch[i];
+                    moment.AssignedStrideId = strideId;
+                    moment.Status = MomentStatus.Done;
+                    moment.OwnerId = i < half ? ownerIds[0] : ownerIds[1];
+                    moment.CompletedAt = stride.EndDate;
+                    moment.UpdatedAt = stride.EndDate;
+                    moment.StatusColor = "green";
+                }
+            }
+            else
+            {
+                foreach (var moment in batch)
+                    moment.AssignedStrideId = strideId;
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     // ======================== Helpers =============================
 
-    private static async Task<User> EnsureTestUserAsync(PromiseModelOnlineContext db)
+    private static async Task<User> EnsureTestUserAsync(PromiseModelOnlineContext db, string? email = null, string? name = null)
     {
-        var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == TestUserEmail);
-        if (existing != null) return existing;
+        email ??= TestUserEmail;
+        name ??= TestUserName;
+        var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (existing != null)
+        {
+            if (string.IsNullOrEmpty(existing.Slug))
+            {
+                existing.Slug = name;
+                await db.SaveChangesAsync();
+            }
+            return existing;
+        }
 
         var user = new User
         {
-            Email = TestUserEmail,
-            Name = TestUserName,
+            Email = email,
+            Name = name,
+            Slug = name,
             Role = UserRole.Professional,
             CreatedAt = DateTime.UtcNow
         };
@@ -469,12 +611,18 @@ public static class PromiseHierarchySeeder
                 existing.OwnerId = ownerId;
                 await db.SaveChangesAsync();
             }
+            if (string.IsNullOrEmpty(existing.Slug))
+            {
+                existing.Slug = Slugify("Promise Model Online");
+                await db.SaveChangesAsync();
+            }
             return existing;
         }
 
         var project = new Project
         {
             Name = "Promise Model Online",
+            Slug = Slugify("Promise Model Online"),
             Description = "Seeded from Promise Model tracker CSV sheets.",
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow
@@ -495,12 +643,18 @@ public static class PromiseHierarchySeeder
                 existing.Description = description ?? existing.Description;
                 await db.SaveChangesAsync();
             }
+            if (string.IsNullOrEmpty(existing.Slug))
+            {
+                existing.Slug = Slugify(name);
+                await db.SaveChangesAsync();
+            }
             return existing;
         }
 
         var project = new Project
         {
             Name = name,
+            Slug = Slugify(name),
             Description = description ?? string.Empty,
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow
@@ -509,6 +663,21 @@ public static class PromiseHierarchySeeder
         await db.SaveChangesAsync();
         return project;
     }
+
+    private static string Slugify(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "project";
+
+        var slug = System.Text.RegularExpressions.Regex.Replace(text.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
+            .Replace(" ", "-")
+            .Replace("--", "-")
+            .Trim('-');
+
+        return string.IsNullOrEmpty(slug) ? "project" : slug;
+    }
+
+    private static async Task<int> GetMaxSequenceAsync(IQueryable<int?> query)
+        => await query.MaxAsync() ?? 0;
 
     private static string ResolvePmoPmDirectory(string contentRootPath)
     {
@@ -584,7 +753,22 @@ public static class PromiseHierarchySeeder
     private static string GetValue(IReadOnlyDictionary<string, string> row, string key)
         => row.TryGetValue(key, out var value) ? value : string.Empty;
 
+    private static int GetEstimateForMoment(int momentId)
+    {
+        return (momentId % 17) switch
+        {
+            0 or 1 or 2 => (int)Estimate.XS,
+            3 or 4 or 5 => (int)Estimate.S,
+            6 or 7 or 8 or 9 => (int)Estimate.M,
+            10 or 11 or 12 => (int)Estimate.L,
+            13 or 14 => (int)Estimate.XL,
+            15 => (int)Estimate.XXL,
+            _ => (int)Estimate.XXXL
+        };
+    }
+
     private readonly record struct StatementOrder(string Statement, int DisplayOrder);
     private readonly record struct ParentStatement(int ParentId, string Statement, int DisplayOrder);
     private readonly record struct SeedLookup(Dictionary<string, int> IdBySourceId, int Inserted, int Total);
+    private sealed class SeqCounter { public int Value; }
 }

@@ -7,29 +7,19 @@ using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class PermissionRepositoryUnitTests
+    public class PermissionRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private PermissionRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new PermissionRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new PermissionRepository(Context);
         }
 
         private async Task SeedAsync()
@@ -39,8 +29,8 @@ namespace PromiseModelOnline.Api.Tests
             var project1 = new Project { Id = 10, Name = "Project X", OwnerId = 1 };
             var project2 = new Project { Id = 20, Name = "Project Y", OwnerId = 1 };
 
-            _context.Users.AddRange(user1, user2);
-            _context.Projects.AddRange(project1, project2);
+            Context.Users.AddRange(user1, user2);
+            Context.Projects.AddRange(project1, project2);
 
             var permissions = new List<Permission>
             {
@@ -49,8 +39,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Permission { Id = 3, UserId = 2, ProjectId = 20, Level = PermissionLevel.Comment, Status = PermissionStatus.Pending },
                 new Permission { Id = 4, UserId = 1, ProjectId = 20, Level = PermissionLevel.View, Status = PermissionStatus.Active }
             };
-            _context.Set<Permission>().AddRange(permissions);
-            await _context.SaveChangesAsync();
+            Context.Set<Permission>().AddRange(permissions);
+            await Context.SaveChangesAsync();
         }
 
         [Test]
@@ -95,13 +85,23 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectIdsForUserAsync_ReturnsDistinctProjectIds()
+        public async Task GetProjectIdsForUserAsync_ReturnsDistinctActiveProjectIds()
         {
             await SeedAsync();
             var ids = await _repo.GetProjectIdsForUserAsync(1);
             var list = ids.ToList();
             Assert.That(list.Count, Is.EqualTo(2));
             Assert.That(list, Is.EquivalentTo(new[] { 10, 20 }));
+        }
+
+        [Test]
+        public async Task GetProjectIdsForUserAsync_ExcludesPendingPermissions()
+        {
+            await SeedAsync();
+            var ids = await _repo.GetProjectIdsForUserAsync(2);
+            var list = ids.ToList();
+            Assert.That(list.Count, Is.EqualTo(1));
+            Assert.That(list, Is.EquivalentTo(new[] { 10 }));
         }
 
         [Test]

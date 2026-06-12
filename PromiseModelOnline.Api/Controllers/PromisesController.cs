@@ -1,33 +1,39 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("__disabled__/{controller}")]
     public class PromisesController : GenericController<Promise, PromiseDTO>
     {
         private readonly IMomentService _momentService;
         private readonly IGenericService<Promise> _promiseService;
         private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
+        private readonly IPromiseModelOnlineContext _context;
 
         public PromisesController(
             IGenericService<Promise> service,
             IGenericMapper<Promise, PromiseDTO> mapper,
-            IMomentService momentService)
+            IMomentService momentService,
+            IPromiseModelOnlineContext context)
             : base(service, mapper)
         {
             _momentService = momentService;
             _promiseService = service;
             _promiseMapper = mapper;
+            _context = context;
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<PromiseDTO>> CreateFromDto([FromBody] CreatePromiseRequestDTO request)
         {
@@ -37,11 +43,14 @@ namespace PromiseModelOnline.Api.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
+            var nextSeq = await _context.GetNextPromiseSequenceAsync(request.ProjectId);
+
             var promise = new Promise
             {
                 Statement = request.Statement,
                 Description = request.Description,
                 ProjectId = request.ProjectId,
+                SequenceNumber = nextSeq,
                 DisplayOrder = request.DisplayOrder,
                 StatusColor = "red",
             };
@@ -53,6 +62,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>
         /// Returns the total numeric effort for all moments under a given promise.
         /// </summary>
+        [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/total-effort")]
         public async Task<ActionResult<int>> GetTotalEffort(int id)
         {
@@ -60,6 +70,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(effort);
         }
 
+        [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<PromiseDTO>> UpdateDescription(
             int id,

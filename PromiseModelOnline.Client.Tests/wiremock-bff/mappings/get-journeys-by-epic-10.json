@@ -1,0 +1,17 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/projects/pmo_test/seeded-project/journeys",
+    "queryParameters": {
+      "epicSeq": { "equalTo": "10" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": [],
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

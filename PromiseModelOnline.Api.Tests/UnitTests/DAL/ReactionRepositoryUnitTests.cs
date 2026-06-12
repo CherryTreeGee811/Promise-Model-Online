@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class ReactionRepositoryUnitTests
+    public class ReactionRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private ReactionRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new ReactionRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new ReactionRepository(Context);
         }
 
         private async Task SeedAsync()
@@ -36,7 +26,7 @@ namespace PromiseModelOnline.Api.Tests
             var user1 = new User { Id = 1, Name = "Alice", Email = "alice@example.com" };
             var user2 = new User { Id = 2, Name = "Bob", Email = "bob@example.com" };
 
-            _context.Users.AddRange(user1, user2);
+            Context.Users.AddRange(user1, user2);
 
             var reactions = new List<Reaction>
             {
@@ -45,8 +35,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Reaction { Id = 3, UserId = 1, Emote = "🚀", StackItemType = "Moment", StackItemId = 5, User = user1 },
                 new Reaction { Id = 4, UserId = 2, Emote = "👀", StackItemType = "Epic", StackItemId = 20, User = user2 }
             };
-            _context.Reactions.AddRange(reactions);
-            await _context.SaveChangesAsync();
+            Context.Reactions.AddRange(reactions);
+            await Context.SaveChangesAsync();
         }
 
         [Test]
@@ -132,9 +122,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var reaction = new Reaction { UserId = 5, Emote = "🎉", StackItemType = "Flow", StackItemId = 15 };
             await _repo.AddAsync(reaction);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
             
-            var saved = _context.Reactions.FirstOrDefault(r => r.Emote == "🎉");
+            var saved = Context.Reactions.FirstOrDefault(r => r.Emote == "🎉");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.UserId, Is.EqualTo(5));
             Assert.That(saved.StackItemType, Is.EqualTo("Flow"));

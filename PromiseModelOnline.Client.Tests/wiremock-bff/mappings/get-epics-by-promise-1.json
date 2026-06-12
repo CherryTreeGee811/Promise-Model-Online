@@ -1,0 +1,26 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/projects/pmo_test/seeded-project/epics",
+    "queryParameters": {
+      "promiseSeq": { "equalTo": "1" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": [
+      {
+        "id": 10,
+        "statement": "Test Epic",
+        "statusColor": "green",
+        "displayOrder": 1,
+        "productPromiseId": 1,
+        "sequenceNumber": 10
+      }
+    ],
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

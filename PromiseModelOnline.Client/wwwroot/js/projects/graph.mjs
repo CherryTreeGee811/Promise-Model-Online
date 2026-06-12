@@ -1,11 +1,9 @@
-import { getProjectById, getProjectPromises } from './api.mjs';
-import { getIterationsByProject } from '../iterations/api.mjs';
-import { getEpicsByPromise } from '../promises/api.mjs';
-import { getJourneysByEpic } from '../epics/api.mjs';
-import { getFlowsByJourney } from '../journeys/api.mjs';
-import { getStridesByIteration } from '../strides/api.mjs';
-import { getMomentsByFlow } from '../flows/api.mjs';
+import { getGraphData } from './api.mjs';
+import { getStrides } from '../strides/api.mjs';
+import { escapeHtml } from '../utils/html.mjs';
+import { getUserId } from '../auth-state.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
+import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 import {
     NODE_TYPES,
     NODE_TYPE_INDEX,
@@ -14,7 +12,6 @@ import {
     getNodeSearchText,
     getMomentEffortBucket,
     getMomentStrideBucket,
-    sortByDisplayOrder,
     createNode,
     findNodeById,
     countRenderableNodes,
@@ -24,7 +21,8 @@ import {
 } from './stack-graph-core.mjs';
 
 const graphState = {
-    projectId: null,
+    owner: null,
+    project: null,
     d3: null,
     rawTree: null,
     filteredTree: null,
@@ -35,11 +33,14 @@ const graphState = {
     userZoomTransform: null,
     focusNodeId: null,
     suppressZoomStateUpdate: false,
+    zoomBehavior: null,
     filterDebounceId: null,
     applyTimer: null,
     contextMenu: null,
     pageShowRefreshHandler: null,
     collapsedNodeIds: new Set(),
+    hasRendered: false,
+    animationSpeed: 0.25,
 };
 
 function hasNodeChildren(node) {
@@ -94,6 +95,21 @@ function collapseAllBelowPromises() {
     }
 
     graphState.collapsedNodeIds = nextCollapsed;
+}
+
+function revealNextLevel(nodeData) {
+    if (!graphState.rawTree || !nodeData?.id) return;
+
+    const node = findNodeById(graphState.rawTree, nodeData.id);
+    if (!node) return;
+
+    setNodeCollapsed(node.id, false);
+
+    for (const child of node.children ?? []) {
+        if (hasNodeChildren(child)) {
+            setNodeCollapsed(child.id, true);
+        }
+    }
 }
 
 function expandAllNodes() {
@@ -169,7 +185,7 @@ function getStatusFilterValue(value) {
 
 function getAssignmentFilterValue(value) {
     const normalized = normalizeText(value);
-    if (normalized === 'assigned' || normalized === 'unassigned') return normalized;
+    if (normalized === 'assigned-to-me') return 'assigned-to-me';
     return 'all';
 }
 
@@ -209,32 +225,28 @@ function getTypeShortLabel(nodeType) {
     }
 }
 
-async function buildMomentNode(moment) {
+function buildMomentNode(moment) {
     return createNode('moment', moment, []);
 }
 
-async function buildFlowNode(flow) {
-    const moments = sortByDisplayOrder(await getMomentsByFlow(flow.id));
-    const children = await Promise.all(moments.map(buildMomentNode));
-    return createNode('flow', flow, children);
+function buildFlowNode(flow) {
+    const moments = (flow.moments ?? []).map(buildMomentNode);
+    return createNode('flow', flow, moments);
 }
 
-async function buildJourneyNode(journey) {
-    const flows = sortByDisplayOrder(await getFlowsByJourney(journey.id));
-    const children = await Promise.all(flows.map(buildFlowNode));
-    return createNode('journey', journey, children);
+function buildJourneyNode(journey) {
+    const flows = (journey.flows ?? []).map(buildFlowNode);
+    return createNode('journey', journey, flows);
 }
 
-async function buildEpicNode(epic) {
-    const journeys = sortByDisplayOrder(await getJourneysByEpic(epic.id));
-    const children = await Promise.all(journeys.map(buildJourneyNode));
-    return createNode('epic', epic, children);
+function buildEpicNode(epic) {
+    const journeys = (epic.journeys ?? []).map(buildJourneyNode);
+    return createNode('epic', epic, journeys);
 }
 
-async function buildPromiseNode(promise) {
-    const epics = sortByDisplayOrder(await getEpicsByPromise(promise.id));
-    const children = await Promise.all(epics.map(buildEpicNode));
-    return createNode('promise', promise, children);
+function buildPromiseNode(promise) {
+    const epics = (promise.epics ?? []).map(buildEpicNode);
+    return createNode('promise', promise, epics);
 }
 
 function matchesNode(node, filters) {
@@ -252,12 +264,12 @@ function matchesNode(node, filters) {
         if (statusBucket !== filters.status) return false;
     }
 
-    if (filters.assignment !== 'all') {
+    if (filters.assignment === 'assigned-to-me') {
         if (node.nodeType !== 'moment') return false;
 
-        const hasStride = node.payload?.assignedStrideId != null;
-        if (filters.assignment === 'assigned' && !hasStride) return false;
-        if (filters.assignment === 'unassigned' && hasStride) return false;
+        const currentUserId = getUserId();
+        if (currentUserId == null) return false;
+        if (node.payload?.ownerId !== currentUserId) return false;
     }
 
     if (filters.effort !== 'all') {
@@ -414,7 +426,7 @@ function syncFiltersToUrl(filters) {
     }
 
     const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash || ''}`;
-    window.history.replaceState({ projectId: graphState.projectId }, '', nextUrl);
+    window.history.replaceState({ owner: graphState.owner, project: graphState.project }, '', nextUrl);
 }
 
 function renderFilterBar() {
@@ -425,7 +437,7 @@ function renderFilterBar() {
         `<option value="all" ${graphState.filters.stride === 'all' ? 'selected' : ''}>All strides</option>`,
         `<option value="backlog" ${graphState.filters.stride === 'backlog' ? 'selected' : ''}>Backlog</option>`,
         ...graphState.availableStrides.map(stride => {
-            const label = stride.name ? `Stride #${stride.id} - ${escapeAttribute(stride.name)}` : `Stride #${stride.id}`;
+            const label = stride.name ? `Stride #${stride.id} - ${escapeHtml(stride.name)}` : `Stride #${stride.id}`;
             return `<option value="${String(stride.id)}" ${String(graphState.filters.stride) === String(stride.id) ? 'selected' : ''}>${label}</option>`;
         }),
     ].join('');
@@ -442,18 +454,20 @@ function renderFilterBar() {
 
     filterBar.innerHTML = `
         <div class="graph-filter-row">
-            <label class="graph-filter-field">
-                <span>Search</span>
-                <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeAttribute(graphState.filters.search)}" />
-            </label>
+            <div class="graph-filter-search-group">
+                <label class="graph-filter-field">
+                    <span>Search</span>
+                    <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeHtml(graphState.filters.search)}" />
+                </label>
 
-            <label class="graph-filter-field graph-filter-checkbox-field">
-                <span>Search options</span>
-                <span class="graph-filter-checkbox">
-                    <input id="graph-filter-include-children" type="checkbox" ${graphState.filters.includeChildren ? 'checked' : ''} />
-                    <span>Include Children</span>
-                </span>
-            </label>
+                <div class="graph-filter-field graph-filter-checkbox-field">
+                    <span>Search options</span>
+                    <div class="form-check form-switch graph-filter-switch">
+                        <input id="graph-filter-include-children" class="form-check-input" type="checkbox" role="switch" ${graphState.filters.includeChildren ? 'checked' : ''} />
+                        <label class="form-check-label graph-filter-switch-label" for="graph-filter-include-children">Include Children</label>
+                    </div>
+                </div>
+            </div>
 
             <label class="graph-filter-field">
                 <span>Effort estimate</span>
@@ -481,105 +495,76 @@ function renderFilterBar() {
                 <span>Moment status</span>
                 <select id="graph-filter-status" class="graph-filter-select">
                     <option value="all" ${graphState.filters.status === 'all' ? 'selected' : ''}>All statuses</option>
-                    <option value="todo" ${graphState.filters.status === 'todo' ? 'selected' : ''}>Todo</option>
-                    <option value="inprogress" ${graphState.filters.status === 'inprogress' ? 'selected' : ''}>In Progress</option>
-                    <option value="blocked" ${graphState.filters.status === 'blocked' ? 'selected' : ''}>Blocked</option>
-                    <option value="done" ${graphState.filters.status === 'done' ? 'selected' : ''}>Done</option>
-                    <option value="other" ${graphState.filters.status === 'other' ? 'selected' : ''}>Other</option>
+                    ${STATUS_OPTIONS.map(opt => {
+                        const val = opt.value.toLowerCase();
+                        return `<option value="${val}" ${graphState.filters.status === val ? 'selected' : ''}>${opt.icon} ${opt.label}</option>`;
+                    }).join('')}
                 </select>
             </label>
 
             <label class="graph-filter-field">
-                <span>Moment assignment</span>
+                <span>Assigned to me</span>
                 <select id="graph-filter-assignment" class="graph-filter-select">
-                    <option value="all" ${graphState.filters.assignment === 'all' ? 'selected' : ''}>All moments</option>
-                    <option value="assigned" ${graphState.filters.assignment === 'assigned' ? 'selected' : ''}>Assigned only</option>
-                    <option value="unassigned" ${graphState.filters.assignment === 'unassigned' ? 'selected' : ''}>Unassigned only</option>
+                    <option value="all" ${graphState.filters.assignment === 'all' ? 'selected' : ''}>All</option>
+                    <option value="assigned-to-me" ${graphState.filters.assignment === 'assigned-to-me' ? 'selected' : ''}>Assigned to me</option>
                 </select>
             </label>
-
-            <div class="graph-filter-actions">
-                <button id="graph-filter-reset" type="button" class="graph-filter-button">Reset</button>
-                <button id="graph-filter-hide-all" type="button" class="graph-filter-button">Hide All</button>
-                <button id="graph-filter-expand-all" type="button" class="graph-filter-button">Expand All</button>
-                <button id="graph-filter-refresh" type="button" class="graph-filter-button">Refresh</button>
-            </div>
         </div>
 
-        <fieldset class="graph-filter-types">
-            <legend class="graph-filter-group-label">Card types</legend>
-            <div class="graph-filter-chip-list">
-                ${typeChips}
-            </div>
-        </fieldset>
+        <div class="graph-filter-bottom">
+            <fieldset class="graph-filter-types">
+                <legend class="graph-filter-group-label">Promise types</legend>
+                <div class="graph-filter-chip-list">
+                    ${typeChips}
+                </div>
+            </fieldset>
 
-        <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
+            <div class="graph-filter-bottom-row">
+                <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
+
+                <div class="graph-filter-actions">
+                    <button id="graph-filter-reset" type="button" class="btn btn-outline-danger btn-sm">Reset</button>
+                    <button id="graph-filter-hide-all" type="button" class="btn btn-outline-secondary btn-sm">Hide All</button>
+                    <button id="graph-filter-expand-all" type="button" class="btn btn-outline-secondary btn-sm">Expand All</button>
+                    <button id="graph-filter-refresh" type="button" class="btn btn-outline-primary btn-sm">Refresh</button>
+                </div>
+            </div>
+        </div>
     `;
 
     bindFilterControls();
 }
 
-function escapeAttribute(value) {
-    return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('"', '&quot;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;');
+function setGraphLoading(loading) {
+    const loadingState = document.getElementById('graph-loading-state');
+    if (loadingState) {
+        loadingState.hidden = !loading;
+        loadingState.classList.toggle('d-none', !loading);
+        loadingState.setAttribute('aria-hidden', loading ? 'false' : 'true');
+    }
+}
+
+function bindFilter(id, eventType, setter, immediate) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener(eventType, () => {
+        setter(el, graphState.filters);
+        (immediate ? requestApplyFilters : scheduleFilterApply)();
+    });
 }
 
 function bindFilterControls() {
-    const searchInput = document.getElementById('graph-filter-search');
-    const includeChildrenInput = document.getElementById('graph-filter-include-children');
-    const effortSelect = document.getElementById('graph-filter-effort');
-    const strideSelect = document.getElementById('graph-filter-stride');
-    const statusSelect = document.getElementById('graph-filter-status');
-    const assignmentSelect = document.getElementById('graph-filter-assignment');
+    bindFilter('graph-filter-search', 'input', (el, f) => { f.search = normalizeText(el.value); });
+    bindFilter('graph-filter-include-children', 'change', (el, f) => { f.includeChildren = el.checked; }, true);
+    bindFilter('graph-filter-effort', 'change', (el, f) => { f.effort = getEffortFilterValue(el.value); }, true);
+    bindFilter('graph-filter-stride', 'change', (el, f) => { f.stride = getStrideFilterValue(el.value); }, true);
+    bindFilter('graph-filter-status', 'change', (el, f) => { f.status = getStatusFilterValue(el.value); }, true);
+    bindFilter('graph-filter-assignment', 'change', (el, f) => { f.assignment = getAssignmentFilterValue(el.value); }, true);
+
     const resetButton = document.getElementById('graph-filter-reset');
     const hideAllButton = document.getElementById('graph-filter-hide-all');
     const expandAllButton = document.getElementById('graph-filter-expand-all');
     const refreshButton = document.getElementById('graph-filter-refresh');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            graphState.filters.search = normalizeText(searchInput.value);
-            scheduleFilterApply();
-        });
-    }
-
-    if (includeChildrenInput) {
-        includeChildrenInput.addEventListener('change', () => {
-            graphState.filters.includeChildren = includeChildrenInput.checked;
-            requestApplyFilters();
-        });
-    }
-
-    if (effortSelect) {
-        effortSelect.addEventListener('change', () => {
-            graphState.filters.effort = getEffortFilterValue(effortSelect.value);
-            requestApplyFilters();
-        });
-    }
-
-    if (strideSelect) {
-        strideSelect.addEventListener('change', () => {
-            graphState.filters.stride = getStrideFilterValue(strideSelect.value);
-            requestApplyFilters();
-        });
-    }
-
-    if (statusSelect) {
-        statusSelect.addEventListener('change', () => {
-            graphState.filters.status = getStatusFilterValue(statusSelect.value);
-            requestApplyFilters();
-        });
-    }
-
-    if (assignmentSelect) {
-        assignmentSelect.addEventListener('change', () => {
-            graphState.filters.assignment = getAssignmentFilterValue(assignmentSelect.value);
-            requestApplyFilters();
-        });
-    }
 
     document.querySelectorAll('[data-filter-type]').forEach(input => {
         input.addEventListener('change', (e) => {
@@ -644,38 +629,20 @@ function bindFilterControls() {
     }
 }
 
+const FILTER_FIELDS = [
+  ['graph-filter-search', 'value', 'search'],
+  ['graph-filter-include-children', 'checked', 'includeChildren'],
+  ['graph-filter-effort', 'value', 'effort'],
+  ['graph-filter-stride', 'value', 'stride'],
+  ['graph-filter-status', 'value', 'status'],
+  ['graph-filter-assignment', 'value', 'assignment'],
+];
+
 function syncControlsToFilters() {
-    const searchInput = document.getElementById('graph-filter-search');
-    const includeChildrenInput = document.getElementById('graph-filter-include-children');
-    const effortSelect = document.getElementById('graph-filter-effort');
-    const strideSelect = document.getElementById('graph-filter-stride');
-    const statusSelect = document.getElementById('graph-filter-status');
-    const assignmentSelect = document.getElementById('graph-filter-assignment');
-
-    if (searchInput) {
-        searchInput.value = graphState.filters.search;
-    }
-
-    if (includeChildrenInput) {
-        includeChildrenInput.checked = graphState.filters.includeChildren;
-    }
-
-    if (effortSelect) {
-        effortSelect.value = graphState.filters.effort;
-    }
-
-    if (strideSelect) {
-        strideSelect.value = graphState.filters.stride;
-    }
-
-    if (statusSelect) {
-        statusSelect.value = graphState.filters.status;
-    }
-
-    if (assignmentSelect) {
-        assignmentSelect.value = graphState.filters.assignment;
-    }
-
+    FILTER_FIELDS.forEach(([id, prop, key]) => {
+        const el = document.getElementById(id);
+        if (el) el[prop] = graphState.filters[key];
+    });
     document.querySelectorAll('[data-filter-type]').forEach(input => {
         input.checked = graphState.filters.types.has(input.value);
     });
@@ -708,7 +675,7 @@ function updateFilterSummary(metrics) {
     if (!summaryEl) return;
 
     if (!graphState.rawTree) {
-        summaryEl.textContent = 'Loading promises...';
+        summaryEl.textContent = 'Loading graph...';
         return;
     }
 
@@ -745,19 +712,54 @@ function findFirstSearchMatch(treeData) {
     return null;
 }
 
-function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null) {
+function initZoomControls(zoomBehavior, svgNode, d3Instance) {
+    if (!zoomBehavior || !svgNode || !d3Instance) return;
+
+    const selection = d3Instance.select(svgNode);
+
+    document.getElementById('graph-zoom-in')?.addEventListener('click', () => {
+        selection.transition().duration(200).call(zoomBehavior.scaleBy, 1.4);
+    });
+
+    document.getElementById('graph-zoom-out')?.addEventListener('click', () => {
+        selection.transition().duration(200).call(zoomBehavior.scaleBy, 0.7);
+    });
+
+    document.getElementById('graph-zoom-reset')?.addEventListener('click', () => {
+        selection.transition().duration(200).call(zoomBehavior.transform, d3Instance.zoomIdentity);
+    });
+
+    const fullscreenBtn = document.getElementById('graph-fullscreen-btn');
+    fullscreenBtn?.addEventListener('click', () => {
+        const viewport = document.getElementById('graph-viewport');
+        if (!document.fullscreenElement) {
+            viewport.requestFullscreen?.()?.catch(() => {});
+        } else {
+            document.exitFullscreen?.()?.catch(() => {});
+        }
+    });
+}
+
+function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null, animate = false) {
     const graphContent = document.getElementById('graph-content');
     const graphViewport = document.getElementById('graph-viewport');
     if (!graphContent) return;
 
     graphState.contextMenu?.hide();
 
-    renderStackGraph(graphContent, d3, treeData, {
-        projectId: graphState.projectId,
+    const speedEl = document.getElementById('graph-animation-speed');
+    graphState.animationSpeed = speedEl ? Number.parseFloat(speedEl.value) || 1 : 1;
+
+    const result = renderStackGraph(graphContent, d3, treeData, {
+        owner: graphState.owner,
+        project: graphState.project,
         focusNodeId: focusNodeData?.id ?? null,
         focusNodeData,
+        animate,
+        animationSpeed: graphState.animationSpeed,
         enableZoom: true,
         compact: false,
+        renderRootCard: true,
         restoreTransform,
         viewportElement: graphViewport,
         clipPathIdPrefix: 'graph-card-clip',
@@ -772,6 +774,11 @@ function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNod
             graphState.contextMenu?.open(event, nodeData);
         },
     });
+
+    if (result?.zoom) {
+        graphState.zoomBehavior = result.zoom;
+        initZoomControls(result.zoom, result.node, d3);
+    }
 }
 
 function applyFilters() {
@@ -781,6 +788,7 @@ function applyFilters() {
 
     const metrics = { visibleNodes: 0, directMatches: 0, hiddenNodes: 0 };
     graphState.filteredTree = filterTree(graphState.rawTree, graphState.filters, metrics, true);
+    const animate = graphState.hasRendered;
 
     syncFiltersToUrl(graphState.filters);
 
@@ -803,79 +811,61 @@ function applyFilters() {
         });
 
         const restoreTransform = focusNode ? null : (graphState.userZoomTransform ?? graphState.zoomTransform);
-        renderTree(graphContent, graphState.d3, graphState.filteredTree, restoreTransform, focusNode);
+        renderTree(graphContent, graphState.d3, graphState.filteredTree, restoreTransform, focusNode, animate);
     } else {
         renderEmptyState(graphContent, 'No cards match the current filters.');
     }
 
+    graphState.hasRendered = true;
     updateFilterSummary(metrics);
 }
 
 async function reloadGraphData() {
-    const loadingEl = document.getElementById('loading-text');
     const errorEl = document.getElementById('error-text');
     const successEl = document.getElementById('success-text');
 
-    if (loadingEl) loadingEl.textContent = 'Loading project graph...';
+    setGraphLoading(true);
     if (errorEl) errorEl.textContent = '';
     if (successEl) successEl.textContent = '';
 
     try {
-        const [projectResult, promisesResult] = await Promise.allSettled([
-            getProjectById(graphState.projectId),
-            getProjectPromises(graphState.projectId),
-        ]);
+        const graphData = await getGraphData(graphState.owner, graphState.project);
 
-        if (promisesResult.status !== 'fulfilled') {
-            throw promisesResult.reason;
-        }
+        const project = {
+            id: graphData.id ?? graphData.Id,
+            name: graphData.name ?? graphData.Name,
+            description: graphData.description ?? graphData.Description,
+        };
 
-        if (projectResult.status === 'rejected') {
-            console.warn('Unable to load project details for graph root card label:', projectResult.reason);
-        }
+        const rootPromises = (graphData.promises ?? graphData.Promises ?? []).map(buildPromiseNode);
 
-        const project = projectResult.status === 'fulfilled' ? projectResult.value : null;
-        const rootPromises = sortByDisplayOrder(promisesResult.value);
-        const children = await Promise.all(rootPromises.map(buildPromiseNode));
-
-        graphState.rawTree = parseGraphData(children, graphState.projectId, project);
+        graphState.rawTree = parseGraphData(rootPromises, graphState.owner, graphState.project, project);
         reconcileCollapsedNodes();
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
         applyFilters();
 
-        if (loadingEl) loadingEl.textContent = '';
-        if (successEl) successEl.textContent = `Loaded ${children.length} top-level promise${children.length === 1 ? '' : 's'}.`;
+        if (successEl) successEl.textContent = `Loaded ${rootPromises.length} top-level promise${rootPromises.length === 1 ? '' : 's'}.`;
     } catch (error) {
         console.error('Error loading project graph:', error);
-        if (loadingEl) loadingEl.textContent = '';
         if (errorEl) errorEl.textContent = 'Unable to load the project graph.';
+    } finally {
+        setGraphLoading(false);
     }
 }
 
-async function loadAvailableStrides(projectId) {
-    const iterations = await getIterationsByProject(projectId);
-    const strideGroups = await Promise.all(
-        (Array.isArray(iterations) ? iterations : []).map(async iteration => ({
-            iteration,
-            strides: await getStridesByIteration(iteration.id),
-        }))
-    );
-
-    const strides = strideGroups
-        .flatMap(group => (Array.isArray(group.strides) ? group.strides : []))
+async function loadAvailableStrides(owner, project) {
+    const strides = await getStrides(owner, project);
+    graphState.availableStrides = (Array.isArray(strides) ? strides : [])
         .sort((left, right) => {
             const leftStart = new Date(left.startDate ?? 0).getTime();
             const rightStart = new Date(right.startDate ?? 0).getTime();
             if (leftStart !== rightStart) return leftStart - rightStart;
             return Number(left.id) - Number(right.id);
         });
-
-    graphState.availableStrides = strides;
 }
 
-export async function loadGraphPage(projectId, contentDiv) {
+export async function loadGraphPage(owner, project, contentDiv, permission) {
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
     const successEl = document.getElementById('success-text');
 
     if (graphState.pageShowRefreshHandler) {
@@ -883,7 +873,8 @@ export async function loadGraphPage(projectId, contentDiv) {
         graphState.pageShowRefreshHandler = null;
     }
 
-    graphState.projectId = projectId;
+    graphState.owner = owner;
+    graphState.project = project;
     graphState.d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
     graphState.filters = readFiltersFromUrl();
     graphState.focusNodeId = readGraphFocusFromUrl();
@@ -895,10 +886,12 @@ export async function loadGraphPage(projectId, contentDiv) {
     graphState.totalRenderableNodes = 0;
     graphState.availableStrides = [];
     graphState.collapsedNodeIds = new Set();
+    graphState.hasRendered = false;
 
     graphState.contextMenu?.destroy();
     graphState.contextMenu = createGraphContextMenuController({
-        projectId,
+        owner,
+        project,
         getAvailableStrides: () => graphState.availableStrides,
         onGraphMutated: reloadGraphData,
         isNodeChildrenHidden: (nodeData) => isNodeCollapsed(nodeData?.id),
@@ -909,9 +902,14 @@ export async function loadGraphPage(projectId, contentDiv) {
             setNodeCollapsed(nodeId, hidden);
             requestApplyFilters(0);
         },
+        revealNextLevel: async (nodeData) => {
+            revealNextLevel(nodeData);
+            requestApplyFilters(0);
+        },
         onProjectDeleted: () => {
             window.location.assign('/projects');
         },
+        permission,
     });
 
     graphState.pageShowRefreshHandler = event => {
@@ -920,14 +918,30 @@ export async function loadGraphPage(projectId, contentDiv) {
     };
     window.addEventListener('pageshow', graphState.pageShowRefreshHandler);
 
-    await loadAvailableStrides(projectId);
+    document.removeEventListener('fullscreenchange', graphState._onFullscreenChange);
+    graphState._onFullscreenChange = () => {
+        const btn = document.getElementById('graph-fullscreen-btn');
+        if (!btn) return;
+        const icon = btn.querySelector('i');
+        if (document.fullscreenElement) {
+            icon?.classList.replace('bi-arrows-angle-expand', 'bi-arrows-angle-contract');
+            btn.setAttribute('aria-label', 'Exit fullscreen');
+        } else {
+            icon?.classList.replace('bi-arrows-angle-contract', 'bi-arrows-angle-expand');
+            btn.setAttribute('aria-label', 'Fullscreen');
+        }
+        applyFilters();
+    };
+    document.addEventListener('fullscreenchange', graphState._onFullscreenChange);
+
+    await loadAvailableStrides(owner, project);
 
     renderFilterBar();
     syncControlsToFilters();
 
-    if (loadingEl) loadingEl.textContent = 'Loading project graph...';
     if (errorEl) errorEl.textContent = '';
     if (successEl) successEl.textContent = '';
+    setGraphLoading(true);
 
     await reloadGraphData();
 }

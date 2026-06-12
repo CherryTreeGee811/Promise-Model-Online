@@ -1,20 +1,24 @@
-<li class="main-menu-item">
-    <a class="main-menu-link" id="projects-link" href="/projects">Projects</a>
+<li class="nav-item">
+    <a class="nav-link" id="projects-link" href="/projects" data-nav><i class="bi bi-folder me-1"></i>Projects</a>
 </li>
-<li class="main-menu-item">
-    <a class="main-menu-link" id="change-password-link" href="/change-password">Change Password</a>
+<li class="nav-item">
+    <a class="nav-link" id="my-tasks-link" href="/moments/my-tasks" data-nav><i class="bi bi-check2-square me-1"></i>My Tasks</a>
 </li>
-<li class="main-menu-item">
-    <a class="main-menu-link" id="notifications-link" href="/notifications">
-        Notifications <span id="notification-badge" class="badge">0</span>
+<li class="nav-item">
+    <a class="nav-link position-relative" id="notifications-link" href="/notifications" data-nav>
+        <i class="bi bi-bell me-1"></i>Notifications
+        <span id="notification-badge" class="badge bg-danger rounded-pill ms-1 d-none" aria-live="polite" aria-atomic="true">0</span>
     </a>
 </li>
-<li class="main-menu-item">
-    <a class="main-menu-link" id="logout-link" href="/logout">Logout</a>
-</li>
-<li class="main-menu-item">
-    <a class="main-menu-link" id="my-tasks-link" href="/moments/my-tasks">My Tasks</a>
-</li>
-<li class="main-menu-item">
-    <a class="main-menu-link" id="invitations-link" href="/invitations">Invitations</a>
+<li class="nav-item dropdown ms-md-2">
+    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="user-dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User menu">
+        <i class="bi bi-person-circle fs-5"></i>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="user-dropdown">
+        <li><a class="dropdown-item" id="knowledge-base-link" href="/knowledge-base" data-nav><i class="bi bi-book me-2"></i>Knowledge Base</a></li>
+        <li><a class="dropdown-item" id="invitations-link" href="/invitations" data-nav><i class="bi bi-envelope me-2"></i>Invitations</a></li>
+        <li><a class="dropdown-item" id="change-password-link" href="/account/change-password"><i class="bi bi-key me-2"></i>Change Password</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" id="logout-link" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+    </ul>
 </li>

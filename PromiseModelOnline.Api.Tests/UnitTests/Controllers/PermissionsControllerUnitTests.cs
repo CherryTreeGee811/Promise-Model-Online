@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -36,24 +37,6 @@ namespace PromiseModelOnline.Api.Tests
                 NullLogger<PermissionsController>.Instance);
         }
 
-        private void SetCurrentUser(string? email)
-        {
-            var claims = new List<Claim>();
-
-            if (email != null)
-                claims.Add(new Claim(ClaimTypes.Email, email));
-
-            var identity = new ClaimsIdentity(claims, "test");
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(identity)
-                }
-            };
-        }
-
         private User SetupCurrentUser(string email, int id)
         {
             var user = new User { Id = id, Email = email };
@@ -64,7 +47,7 @@ namespace PromiseModelOnline.Api.Tests
                     It.IsAny<string?>()))
                 .ReturnsAsync(user);
 
-            SetCurrentUser(email);
+            ControllerTestHelpers.SetControllerUser(_controller, email);
 
             return user;
         }
@@ -98,7 +81,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             var request = new CreatePermissionRequestDTO
             {
-                UserEmail = "invitee@example.com",
+                Email = "invitee@example.com",
                 ProjectId = 42,
                 Level = PermissionLevel.Edit
             };
@@ -121,7 +104,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task InviteUser_WhenNoEmail_ReturnsUnauthorized()
         {
-            SetCurrentUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.InviteUser(new CreatePermissionRequestDTO());
 
@@ -164,7 +147,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task UpdatePermission_WhenNoEmail_ReturnsUnauthorized()
         {
-            SetCurrentUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.UpdatePermissionStatus(55, new UpdatePermissionRequestDTO());
 
@@ -206,7 +189,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task RevokePermission_WhenNoEmail_ReturnsUnauthorized()
         {
-            SetCurrentUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.RevokePermission(77);
 
@@ -276,7 +259,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetMyPermission_WhenNoEmail_ReturnsUnauthorized()
         {
-            SetCurrentUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.GetMyPermission(123);
 

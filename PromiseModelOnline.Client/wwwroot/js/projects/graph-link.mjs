@@ -1,4 +1,4 @@
-import { getAllProjects, getProjectPromises } from './api.mjs';
+import { fetchProjects, getProjectPromises } from './api.mjs';
 
 const promiseProjectCache = new Map();
 
@@ -12,12 +12,21 @@ export function getGraphProjectIdHintFromUrl() {
     return toProjectId(params.get('graphProjectId'));
 }
 
-export function buildGraphViewHref(projectId, focusNodeId) {
-    const safeProjectId = toProjectId(projectId);
+export function getOwnerProjectFromPath() {
+    const match = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\//);
+    if (match) {
+        return { owner: match[1], project: match[2] };
+    }
+    return { owner: null, project: null };
+}
+
+export function buildGraphViewHref(owner, project, focusNodeId) {
+    const safeOwner = String(owner ?? '').trim();
+    const safeProject = String(project ?? '').trim();
     const safeFocus = String(focusNodeId ?? '').trim();
 
-    if (safeProjectId == null || !safeFocus) return null;
-    return `/projects/${safeProjectId}/graph?focus=${encodeURIComponent(safeFocus)}`;
+    if (!safeOwner || !safeProject || !safeFocus) return null;
+    return `/${safeOwner}/${safeProject}/graph?focus=${encodeURIComponent(safeFocus)}`;
 }
 
 export function upsertGraphViewButton(detailContainer, href) {
@@ -27,8 +36,8 @@ export function upsertGraphViewButton(detailContainer, href) {
     if (!button) {
         button = document.createElement('a');
         button.id = 'graph-view-link';
-        button.className = 'view-btn';
-        button.textContent = 'Graph View';
+        button.className = 'btn btn-outline-secondary btn-sm align-items-center gap-2';
+        button.innerHTML = '<i class="bi bi-diagram-3" aria-hidden="true"></i><span> Graph View</span>';
 
         const backButton = detailContainer.querySelector('#back-link');
         if (backButton?.parentElement) {
@@ -57,14 +66,14 @@ export async function resolveProjectIdForPromise(promiseId, preferredProjectId =
         return preferred;
     }
 
-    const projects = await getAllProjects();
+    const projects = await fetchProjects();
     const projectList = Array.isArray(projects) ? projects : [];
 
     for (const project of projectList) {
         const projectId = toProjectId(project?.id);
         if (projectId == null) continue;
 
-        const promises = await getProjectPromises(projectId);
+        const promises = await getProjectPromises(project.ownerSlug, project.slug);
         if ((Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId)) {
             promiseProjectCache.set(numericPromiseId, projectId);
             return projectId;

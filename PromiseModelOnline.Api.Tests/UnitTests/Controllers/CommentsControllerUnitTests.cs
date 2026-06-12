@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -17,6 +19,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<ICommentService> _mockCommentService = null!;
         private Mock<IUserRepository> _mockUserRepository = null!;
+        private Mock<ICommentRepository> _mockCommentRepository = null!;
         private CommentsController _controller = null!;
 
         [SetUp]
@@ -24,19 +27,11 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockCommentService = new Mock<ICommentService>();
             _mockUserRepository = new Mock<IUserRepository>();
-        }
-
-        private void InitControllerWithUser(string? email, string? nameid = null)
-        {
-            _controller = new CommentsController(_mockCommentService.Object, _mockUserRepository.Object);
-            var claims = new List<Claim>();
-            if (email is not null) claims.Add(new Claim(ClaimTypes.Email, email));
-            if (nameid is not null) claims.Add(new Claim("nameid", nameid));
-            var identity = new ClaimsIdentity(claims, "test");
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-            };
+            _mockCommentRepository = new Mock<ICommentRepository>();
+            _controller = new CommentsController(
+                _mockCommentService.Object,
+                _mockUserRepository.Object,
+                _mockCommentRepository.Object);
         }
 
         #region GetComments Tests - Happy Path
@@ -53,7 +48,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.GetCommentsAsync("Promise", 5))
                 .ReturnsAsync(comments);
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Promise", 5);
 
@@ -79,7 +74,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.GetCommentsAsync("Epic", 100))
                 .ReturnsAsync(comments);
 
-            InitControllerWithUser("test@test.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "test@test.com");
 
             var result = await _controller.GetComments("Epic", 100);
 
@@ -97,7 +92,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.GetCommentsAsync("Journey", 50))
                 .ReturnsAsync(comments);
 
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Journey", 50);
 
@@ -116,7 +111,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithNullType_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments(null!, 5);
 
@@ -130,7 +125,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithEmptyType_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments(string.Empty, 5);
 
@@ -144,7 +139,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithZeroParentId_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Promise", 0);
 
@@ -158,7 +153,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetComments_WithNegativeParentId_ReturnsBadRequest()
         {
-            InitControllerWithUser("user@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             var result = await _controller.GetComments("Epic", -10);
 
@@ -200,7 +195,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ReturnsAsync(createdComment);
 
-            InitControllerWithUser("user@example.com", "testuser");
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com", "testuser");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -240,7 +235,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ReturnsAsync(createdComment);
 
-            InitControllerWithUser("replier@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "replier@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -277,7 +272,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ReturnsAsync(createdComment);
 
-            InitControllerWithUser("epic@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "epic@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -300,7 +295,7 @@ namespace PromiseModelOnline.Api.Tests
                 ParentCommentId = null
             };
 
-            InitControllerWithUser(null);
+            ControllerTestHelpers.SetControllerUser(_controller, null);
 
             var result = await _controller.CreateComment(createDto);
 
@@ -331,7 +326,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ThrowsAsync(new System.Exception(exceptionMessage));
 
-            InitControllerWithUser("error@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "error@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -360,7 +355,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ThrowsAsync(new System.Exception("Promise with ID 999 not found"));
 
-            InitControllerWithUser("invalid@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "invalid@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -387,7 +382,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
                 .ThrowsAsync(new System.Exception("Comment text cannot be empty"));
 
-            InitControllerWithUser("empty@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "empty@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -410,7 +405,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("failing@example.com", It.IsAny<string?>()))
                 .ThrowsAsync(new System.Exception("Database connection failed"));
 
-            InitControllerWithUser("failing@example.com");
+            ControllerTestHelpers.SetControllerUser(_controller, "failing@example.com");
 
             var result = await _controller.CreateComment(createDto);
 
@@ -418,6 +413,251 @@ namespace PromiseModelOnline.Api.Tests
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest!.Value, Does.Contain("Database connection failed"));
             _mockCommentService.Verify(s => s.CreateCommentAsync(It.IsAny<CreateCommentDTO>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchUsers Tests - Happy Path
+
+        [Test]
+        public async Task SearchUsers_WithValidParams_ReturnsOkWithUsers()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5))
+                .ReturnsAsync(projectId);
+
+            var users = new List<User>
+            {
+                new User { Id = 1, Name = "Alice" },
+                new User { Id = 2, Name = "Alex" }
+            };
+            _mockUserRepository.Setup(r => r.SearchUsersByProjectAsync(projectId, "al", 5))
+                .ReturnsAsync(users);
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Promise", 5, "al");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!.Count(), Is.EqualTo(2));
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync("Promise", 5), Times.Once);
+            _mockUserRepository.Verify(r => r.SearchUsersByProjectAsync(projectId, "al", 5), Times.Once);
+        }
+
+        [Test]
+        public async Task SearchUsers_WithNoMatches_ReturnsOkWithEmptyList()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Epic", 10))
+                .ReturnsAsync(projectId);
+            _mockUserRepository.Setup(r => r.SearchUsersByProjectAsync(projectId, "zzz", 5))
+                .ReturnsAsync(Enumerable.Empty<User>());
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Epic", 10, "zzz");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchUsers_WithEmptySearch_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Promise", 5, "");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchUsers Tests - Sad Path
+
+        [Test]
+        public async Task SearchUsers_WithInvalidParentType_ReturnsBadRequest()
+        {
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
+                .ThrowsAsync(new System.ArgumentException("Invalid parent type: invalid"));
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("invalid", 1, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task SearchUsers_WithNullType_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers(null, 5, "alice");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        [Test]
+        public async Task SearchUsers_WithZeroParentId_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchUsers("Promise", 0, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchPromises Tests - Happy Path
+
+        [Test]
+        public async Task SearchPromises_WithValidParams_ReturnsOkWithResults()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5))
+                .ReturnsAsync(projectId);
+
+            var results = new List<StackSearchResult>
+            {
+                new StackSearchResult("promise", 10, 0, "Payment processing", "red"),
+                new StackSearchResult("flow", 20, 0, "Payment form", "orange")
+            };
+            _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "pay", 5))
+                .ReturnsAsync(results);
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Promise", 5, "pay");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            var data = ok!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Not.Null);
+            Assert.That(data!.Count(), Is.EqualTo(2));
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync("Promise", 5), Times.Once);
+            _mockCommentRepository.Verify(r => r.SearchStackByStatementAsync(projectId, "pay", 5), Times.Once);
+        }
+
+        [Test]
+        public async Task SearchPromises_IncludesEntityTypeInResult()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Moment", 5))
+                .ReturnsAsync(projectId);
+
+            var results = new List<StackSearchResult>
+            {
+                new StackSearchResult("moment", 30, 0, "Credit card entry", "red")
+            };
+            _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "card", 5))
+                .ReturnsAsync(results);
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Moment", 5, "card");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
+            // The endpoint returns anonymous objects; we verify the promise endpoint worked
+            _mockCommentRepository.Verify(r => r.SearchStackByStatementAsync(projectId, "card", 5), Times.Once);
+        }
+
+        [Test]
+        public async Task SearchPromises_WithNoMatches_ReturnsOkWithEmptyList()
+        {
+            var projectId = 1;
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Journey", 3))
+                .ReturnsAsync(projectId);
+            _mockCommentRepository.Setup(r => r.SearchStackByStatementAsync(projectId, "zzz", 5))
+                .ReturnsAsync(Enumerable.Empty<StackSearchResult>());
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Journey", 3, "zzz");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data!, Is.Empty);
+        }
+
+        [Test]
+        public async Task SearchPromises_WithEmptySearch_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Flow", 10, "");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data!, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SearchPromises Tests - Sad Path
+
+        [Test]
+        public async Task SearchPromises_WithInvalidParentType_ReturnsBadRequest()
+        {
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
+                .ThrowsAsync(new System.ArgumentException("Invalid parent type"));
+
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("invalid", 1, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task SearchPromises_WithNullParentType_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises(null, 5, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        }
+
+        [Test]
+        public async Task SearchPromises_WithZeroParentId_ReturnsOkWithEmptyList()
+        {
+            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+            var result = await _controller.SearchPromises("Promise", 0, "test");
+
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
+            Assert.That(data, Is.Empty);
+            _mockCommentRepository.Verify(r => r.ResolveProjectIdAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
         }
 
         #endregion

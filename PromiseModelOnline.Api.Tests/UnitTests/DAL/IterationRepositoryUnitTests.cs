@@ -6,29 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
-    public class IterationRepositoryUnitTests
+    public class IterationRepositoryUnitTests : RepositoryTestBase
     {
-        private PromiseModelOnlineContext _context = null!;
         private IterationRepository _repo = null!;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            _context = new PromiseModelOnlineContext(options);
-            _repo = new IterationRepository(_context);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _context.Dispose();
+            _repo = new IterationRepository(Context);
         }
 
         [Test]
@@ -40,8 +30,8 @@ namespace PromiseModelOnline.Api.Tests
                 new Iteration { Id = 2, Name = "Sprint 2", ProjectId = 20 },
                 new Iteration { Id = 3, Name = "Sprint 3", ProjectId = 10 }
             };
-            _context.Iterations.AddRange(iterations);
-            await _context.SaveChangesAsync();
+            Context.Iterations.AddRange(iterations);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetIterationsByProjectAsync(10);
             var list = result.ToList();
@@ -54,8 +44,8 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task GetIterationsByProjectAsync_NoMatch_ReturnsEmpty()
         {
-            _context.Iterations.Add(new Iteration { Id = 1, ProjectId = 99 });
-            await _context.SaveChangesAsync();
+            Context.Iterations.Add(new Iteration { Id = 1, ProjectId = 99 });
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetIterationsByProjectAsync(100);
             Assert.That(result, Is.Empty);
@@ -72,8 +62,8 @@ namespace PromiseModelOnline.Api.Tests
         public async Task GetByIdAsync_ReturnsEntity()
         {
             var iteration = new Iteration { Id = 5, Name = "Iter 5", ProjectId = 1 };
-            _context.Iterations.Add(iteration);
-            await _context.SaveChangesAsync();
+            Context.Iterations.Add(iteration);
+            await Context.SaveChangesAsync();
 
             var result = await _repo.GetByIdAsync(5);
             Assert.That(result, Is.Not.Null);
@@ -85,9 +75,9 @@ namespace PromiseModelOnline.Api.Tests
         {
             var iteration = new Iteration { Name = "New Iteration", ProjectId = 3 };
             await _repo.AddAsync(iteration);
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
             
-            var saved = _context.Iterations.FirstOrDefault(i => i.Name == "New Iteration");
+            var saved = Context.Iterations.FirstOrDefault(i => i.Name == "New Iteration");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.ProjectId, Is.EqualTo(3));
         }

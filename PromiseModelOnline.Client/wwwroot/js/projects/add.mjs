@@ -1,6 +1,6 @@
-import { addProject, importProject } from './api.mjs';
-import { addPromise } from '../promises/api.mjs';
-import { routeHandler } from '../router.mjs';
+import { createProject, importProject } from './api.mjs';
+import { createPromise } from '../promises/api.mjs';
+import { navigate } from '../router.mjs';
 import { renderSummaryTable } from './summary.mjs';
 
 export function loadAddProjectForm(navContentDiv, contentDiv) {
@@ -11,29 +11,66 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
     const firstPromisePanel = document.getElementById('first-promise-panel');
     const firstPromiseInput = document.getElementById('first-promise-input');
     const createButton = document.getElementById('create-project-btn');
+    const createButtonSpinner = document.getElementById('create-project-btn-spinner');
+    const createButtonLabel = document.getElementById('create-project-btn-label');
     const importButton = document.getElementById('import-project-btn');
+    const importButtonSpinner = document.getElementById('import-project-btn-spinner');
+    const importButtonIcon = document.getElementById('import-project-btn-icon');
+    const importButtonLabel = document.getElementById('import-project-btn-label');
     const clearImportButton = document.getElementById('clear-import-btn');
     const importInput = document.getElementById('import-project-input');
-    const importFileName = document.getElementById('import-file-name');
     const importSummaryPanel = document.getElementById('project-import-summary-panel');
     const errorTextElement = document.getElementById('error-text');
     const successTextElement = document.getElementById('success-text');
-    const loadingTextElement = document.getElementById('loading-text');
 
-    if (!form || !nameInput || !descriptionInput || !firstPromisePanel || !firstPromiseInput || !createButton || !importButton || !clearImportButton || !importInput || !importFileName || !importSummaryPanel || !errorTextElement || !successTextElement || !loadingTextElement) {
+    if (!form || !nameInput || !descriptionInput || !firstPromisePanel || !firstPromiseInput || !createButton || !createButtonSpinner || !createButtonLabel || !importButton || !importButtonSpinner || !importButtonIcon || !importButtonLabel || !clearImportButton || !importInput || !importSummaryPanel || !errorTextElement || !successTextElement) {
         return;
     }
 
     let currentMode = 'scratch';
+    let isBusy = false;
 
     function clearMessages() {
         errorTextElement.textContent = '';
+        errorTextElement.style.display = 'none';
         successTextElement.textContent = '';
-        loadingTextElement.textContent = '';
+        successTextElement.style.display = 'none';
     }
 
-    function setBusy(message) {
-        loadingTextElement.textContent = message;
+    function getSubmitButtonLabel() {
+        return currentMode === 'import' ? 'Import Project' : 'Create Project';
+    }
+
+    function getBusySubmitButtonLabel() {
+        return currentMode === 'import' ? 'Importing Project...' : 'Creating Project...';
+    }
+
+    function setSubmitButtonState(busy) {
+        createButton.disabled = busy;
+        createButtonSpinner.classList.toggle('d-none', !busy);
+        createButtonLabel.textContent = busy ? getBusySubmitButtonLabel() : getSubmitButtonLabel();
+    }
+
+    function setImportButtonState(busy, busyLabel = 'Reading Project...') {
+        importButton.disabled = busy;
+        importButtonSpinner.classList.toggle('d-none', !busy);
+        importButtonIcon.classList.toggle('d-none', busy);
+        importButtonLabel.textContent = busy ? busyLabel : 'Import Project...';
+    }
+
+    function setBusyState(busy, source = 'submit') {
+        isBusy = busy;
+        setSubmitButtonState(busy && source === 'submit');
+        setImportButtonState(busy && source === 'import', source === 'submit' ? 'Importing Project...' : 'Reading Project...');
+        createButton.disabled = busy;
+        clearImportButton.disabled = busy;
+        importButton.disabled = busy;
+        nameInput.disabled = busy;
+        descriptionInput.disabled = busy;
+        firstPromiseInput.disabled = busy;
+        if (!busy) {
+            setMode(currentMode);
+        }
     }
 
     function setMode(mode) {
@@ -44,15 +81,20 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         firstPromisePanel.hidden = isImportMode;
         nameInput.readOnly = isImportMode;
         descriptionInput.readOnly = isImportMode;
-        createButton.value = isImportMode ? 'Import Project' : 'Create Project';
+        createButtonLabel.textContent = isBusy ? getBusySubmitButtonLabel() : getSubmitButtonLabel();
         clearImportButton.hidden = !isImportMode || !hasImportFile;
         clearImportButton.style.display = clearImportButton.hidden ? 'none' : '';
     }
 
     function resetImportState() {
         importInput.value = '';
-        importFileName.textContent = '';
         importSummaryPanel.innerHTML = '';
+        nameInput.value = '';
+        descriptionInput.value = '';
+        importButtonLabel.textContent = 'Import Project...';
+        importButtonIcon.classList.remove('d-none');
+        importButtonSpinner.classList.add('d-none');
+        importButton.disabled = false;
         setMode('scratch');
         refreshHeading();
     }
@@ -95,7 +137,6 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         const project = document.project;
         const summary = summarizeProjectExport(document);
 
-        importFileName.textContent = `Selected file: ${file.name}`;
         renderSummaryTable(importSummaryPanel, [
             { label: 'Schema Version', value: document.schemaVersion ?? 'Unknown' },
             { label: 'Exported At', value: document.exportedAt ? new Date(document.exportedAt).toLocaleString() : 'Unknown' },
@@ -138,32 +179,32 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
 
         if (!name) {
             errorTextElement.textContent = 'Project name is required.';
+            errorTextElement.style.display = 'block';
             return;
         }
 
         if (!firstPromiseStatement) {
             errorTextElement.textContent = 'The first Product Promise is required when creating from scratch.';
+            errorTextElement.style.display = 'block';
             return;
         }
 
         try {
-            setBusy('Creating project...');
-            const createdProject = await addProject({ name, description: description || null });
+            setBusyState(true, 'submit');
+            const createdProject = await createProject({ name, description: description || null });
 
-            setBusy('Creating first promise...');
-            await addPromise({
+            await createPromise(createdProject.ownerSlug, createdProject.slug, {
                 statement: firstPromiseStatement,
                 description: null,
-                projectId: createdProject.id,
                 displayOrder: 0,
             });
 
-            window.history.pushState({}, '', `/projects/${createdProject.id}/graph`);
-            routeHandler(navContentDiv, contentDiv);
+            navigate(`/${createdProject.ownerSlug}/${createdProject.slug}/graph`, navContentDiv, contentDiv);
         } catch (error) {
             errorTextElement.textContent = error.message || 'Failed to create project.';
+            errorTextElement.style.display = 'block';
         } finally {
-            loadingTextElement.textContent = '';
+            setBusyState(false, 'submit');
         }
     }
 
@@ -173,30 +214,31 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         const file = importInput.files?.[0];
         if (!file) {
             errorTextElement.textContent = 'Choose a project export to import.';
+            errorTextElement.style.display = 'block';
             return;
         }
 
         try {
-            setBusy('Importing project...');
+            setBusyState(true, 'submit');
             const result = await importProject(file);
-            const projectId = result?.projectId ?? result?.ProjectId;
+            const { ownerSlug, slug } = result ?? {};
             const warnings = Array.isArray(result?.warnings) ? result.warnings : Array.isArray(result?.Warnings) ? result.Warnings : [];
 
             successTextElement.textContent = warnings.length > 0
                 ? `Project imported with ${warnings.length} warning(s).`
                 : 'Project imported successfully.';
+            successTextElement.style.display = 'block';
 
-            if (projectId) {
-                window.history.pushState({}, '', `/projects/${projectId}/graph`);
-                routeHandler(navContentDiv, contentDiv);
+            if (ownerSlug && slug) {
+                navigate(`/${ownerSlug}/${slug}/graph`, navContentDiv, contentDiv);
             } else {
-                window.history.pushState({}, '', '/projects');
-                routeHandler(navContentDiv, contentDiv);
+                navigate('/projects', navContentDiv, contentDiv);
             }
         } catch (error) {
             errorTextElement.textContent = error.message || 'Failed to import project.';
+            errorTextElement.style.display = 'block';
         } finally {
-            loadingTextElement.textContent = '';
+            setBusyState(false, 'submit');
         }
     }
 
@@ -225,7 +267,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         }
 
         try {
-            setBusy('Reading imported project...');
+            setBusyState(true, 'import');
             const document = await readImportedProjectFile(file);
             nameInput.value = document.project.name ?? '';
             descriptionInput.value = document.project.description ?? '';
@@ -235,8 +277,9 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         } catch (error) {
             resetImportState();
             errorTextElement.textContent = error.message || 'Failed to read imported project.';
+            errorTextElement.style.display = 'block';
         } finally {
-            loadingTextElement.textContent = '';
+            setBusyState(false, 'import');
         }
     });
 
@@ -249,8 +292,7 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
     if (cancelLink) {
         cancelLink.addEventListener('click', (event) => {
             event.preventDefault();
-            window.history.pushState({}, '', '/projects');
-            routeHandler(navContentDiv, contentDiv);
+            navigate('/projects', navContentDiv, contentDiv);
         });
     }
 

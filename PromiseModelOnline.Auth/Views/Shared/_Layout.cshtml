@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en-CA" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Jonathan Taylor, Isaiah Andrew, Salah Salame">
+    <meta name="description" content="Promise Model Online Client">
+    <meta name="keywords" content="Promise Model Online, PMO, CISPM">
+    <title>@ViewData["Title"] - Promise Model Online</title>
+    <link href="/css/auth.css" rel="stylesheet" type="text/css" />
+    <link href="/images/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+</head>
+<body>
+    <a href="#content" class="skip-link">Skip to main content</a>
+    <header class="header" role="banner">
+        <a id="home-link" href="/" aria-label="Promise Model Online Home"><img id="logo" src="/images/PromiseModelOnline_Logo_64x64.png" width="40" height="40" alt="Promise Model Online Logo" /></a>
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-expanded="false" aria-controls="main-nav" aria-label="Toggle navigation menu" type="button">
+            <span class="mobile-menu-icon-line"></span>
+            <span class="mobile-menu-icon-line"></span>
+            <span class="mobile-menu-icon-line"></span>
+        </button>
+        <nav id="main-nav" aria-label="Main navigation" role="navigation">
+            <ul id="main-menu">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <li class="main-menu-item">
+                        <a href="/" id="home-nav-link" class="main-menu-link">Home</a>
+                    </li>
+                    <li class="main-menu-item">
+                        <form method="post" action="/connect/logout" class="inline-form">
+                            <button type="submit" id="logout-link" class="main-menu-link nav-btn">Logout</button>
+                        </form>
+                    </li>
+                }
+                else
+                {
+                    <li class="main-menu-item">
+                        <a href="/account/login" id="login-link" class="main-menu-link">Login</a>
+                    </li>
+                    <li class="main-menu-item">
+                        <a href="/account/register" id="register-link" class="main-menu-link">Register</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    </header>
+    <div id="app-container">
+        <main id="content" role="main" tabindex="-1">
+            @RenderBody()
+        </main>
+    </div>
+    <footer class="footer" role="contentinfo">
+        &copy; 2026 - Promise Model Online
+    </footer>
+    <script src="/js/auth-page.js" type="module"></script>
+</body>
+</html>

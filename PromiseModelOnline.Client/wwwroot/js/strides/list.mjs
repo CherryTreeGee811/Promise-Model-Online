@@ -1,6 +1,13 @@
-import { routeHandler } from '../router.mjs';
-import { getIterationsByProject, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
-import { moveMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner } from '../moments/api.mjs';
+import { navigate } from '../router.mjs';
+import { getProject } from '../projects/api.mjs';
+import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
+import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner, updateMomentType } from '../moments/api.mjs';
+import { buildGraphViewHref } from '../projects/graph-link.mjs';
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
+import { renderEmptyStateSection } from '../utils/empty-table.mjs';
+import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
+import { openStrideCreateModal } from '../utils/stride-create-modal.mjs';
+import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues = {
@@ -9,11 +16,15 @@ const estimateValues = {
 
 let cachedMembers = [];
 let cachedAllStrides = [];
+let cachedIterations = [];
 let cachedCanEdit = false;
+let cachedOwner = null;
+let cachedProject = null;
+let strideStickySyncBound = false;
 
 function applyPermissionUI(canEdit) {
     const controls = document.querySelectorAll(
-        '.status-dropdown, .estimate-dropdown, .owner-dropdown, .move-to-backlog-btn, .move-to-stride-from-backlog-btn'
+        '.status-dropdown, .estimate-dropdown, .owner-dropdown, .moment-type-dropdown, .backlog-target-stride, .move-to-backlog-btn, .move-to-stride-from-backlog-btn'
     );
 
     controls.forEach(el => el.disabled = !canEdit);
@@ -70,7 +81,11 @@ function ensureNoItemsPlaceholder(card) {
     if (rowCount > 0) return;
 
     // If there is a table but no rows, show the empty state.
-    momentsContainer.innerHTML = '<p class="no-items">No moments assigned.</p>';
+    momentsContainer.innerHTML = renderEmptyStateSection({
+        icon: 'bi-clock',
+        title: 'No moments assigned.',
+        description: 'Move moments from the backlog into this stride.',
+    });
 }
 
 function updateStrideTotalEffortFromDom(card) {
@@ -128,17 +143,25 @@ function progressStrideDomUpdate(strideId) {
     return { moved: unfinishedRows.length, targetVisible: true };
 }
 
-function estimateDropdownHtml(momentId, currentEstimate) {
-    // Return an empty select placeholder; options will be created via DOM to preserve state.
-    return `<select class="estimate-dropdown" data-moment-id="${momentId}" data-current-estimate="${currentEstimate ?? ''}"></select>`;
+function estimateDropdownHtml(momentSeq, currentEstimate) {
+    return `<select class="estimate-dropdown" data-moment-id="${momentSeq}" data-current-estimate="${currentEstimate ?? ''}" aria-label="Effort estimate"></select>`;
 }
 
-function ownerDropdownHtml(momentId, ownerId) {
-    return `<select class="owner-dropdown" data-moment-id="${momentId}" data-owner-id="${ownerId ?? ''}"></select>`;
+function ownerDropdownHtml(momentSeq, ownerId) {
+    return `<select class="owner-dropdown" data-moment-id="${momentSeq}" data-owner-id="${ownerId ?? ''}" aria-label="Owner"></select>`;
 }
 
-function statusDropdownHtml(momentId, status) {
-    return `<select class="status-dropdown" data-moment-id="${momentId}" data-current-status="${status ?? ''}"></select>`;
+function momentTypeDropdownHtml(momentId, currentType) {
+    const storySel = currentType === 'Story' ? 'selected' : '';
+    const jobSel = currentType === 'Job' ? 'selected' : '';
+    return `<select class="moment-type-dropdown form-select form-select-sm" data-moment-id="${momentId}" data-current-type="${currentType}" aria-label="Moment type">
+        <option value="Story" ${storySel}>Story</option>
+        <option value="Job" ${jobSel}>Job</option>
+    </select>`;
+}
+
+function statusDropdownHtml(momentSeq, status) {
+    return `<select class="status-dropdown" data-moment-id="${momentSeq}" data-current-status="${status ?? ''}" aria-label="Status"></select>`;
 }
 
 function updateStatusBadge(row, newStatus) {
@@ -154,6 +177,300 @@ function updateStatusBadge(row, newStatus) {
     badge.classList.add(`status-${String(safeStatus).toLowerCase()}`);
 }
 
+function boardContentElement(board) {
+    return board?.querySelector('.stride-moments, .backlog-content') ?? null;
+}
+
+function boardToggleButtonHtml(collapsed) {
+    const iconClass = collapsed ? 'bi-chevron-down' : 'bi-chevron-up';
+    const label = collapsed ? 'Expand board' : 'Collapse board';
+
+    return `
+        <button class="stride-toggle-btn" type="button" aria-label="${label}" title="${label}" aria-pressed="${String(!collapsed)}">
+            <i class="bi ${iconClass}" aria-hidden="true"></i>
+        </button>
+    `;
+}
+
+function boardHeaderHtml(title, collapsed, extraActionsHtml = '') {
+    return `
+        <div class="stride-header">
+            <div class="stride-header-main">
+                ${boardToggleButtonHtml(collapsed)}
+                <h3>${escapeHtml(title)}</h3>
+            </div>
+            ${extraActionsHtml ? `<div class="stride-header-actions ms-auto">${extraActionsHtml}</div>` : ''}
+        </div>
+    `;
+}
+
+function setBoardCollapsed(board, collapsed) {
+    if (!board) return;
+
+    board.classList.toggle('is-collapsed', collapsed);
+
+    const content = boardContentElement(board);
+    if (content) {
+        content.classList.toggle('hidden', collapsed);
+    }
+
+    const toggleButton = board.querySelector('.stride-toggle-btn');
+    const icon = toggleButton?.querySelector('.bi');
+    if (toggleButton && icon) {
+        const iconClass = collapsed ? 'bi-chevron-down' : 'bi-chevron-up';
+        const label = collapsed ? 'Expand board' : 'Collapse board';
+        icon.className = `bi ${iconClass}`;
+        toggleButton.setAttribute('aria-label', label);
+        toggleButton.setAttribute('title', label);
+        toggleButton.setAttribute('aria-pressed', String(!collapsed));
+    }
+}
+
+function bindBoardCollapseToggles(root) {
+    if (!root || root.dataset.boundCollapseToggles === '1') return;
+
+    root.dataset.boundCollapseToggles = '1';
+    root.addEventListener('click', (event) => {
+        const toggleButton = event.target.closest('.stride-toggle-btn');
+        if (!toggleButton) return;
+
+        const board = toggleButton.closest('[data-collapsible-board]');
+        if (!board) return;
+
+        setBoardCollapsed(board, !board.classList.contains('is-collapsed'));
+    });
+}
+
+function syncStrideStickyOffsets() {
+    const appHeader = document.querySelector('.header');
+    const appHeaderHeight = appHeader?.offsetHeight ?? 0;
+
+    document.querySelectorAll('[data-collapsible-board]').forEach(board => {
+        board.style.setProperty('--stride-sticky-top', `${appHeaderHeight}px`);
+        const header = board.querySelector('.stride-header');
+        const headerHeight = header?.offsetHeight ?? 0;
+        board.style.setProperty('--stride-header-height', `${headerHeight}px`);
+    });
+}
+
+function bindStrideStickyOffsetSync() {
+    if (strideStickySyncBound) return;
+
+    strideStickySyncBound = true;
+    window.addEventListener('resize', syncStrideStickyOffsets);
+}
+
+function renderStrideScrollspy(strides) {
+    const nav = document.getElementById('stride-scrollspy-nav');
+    if (!nav) return;
+
+    if (!Array.isArray(strides) || strides.length <= 1) {
+        nav.innerHTML = '';
+        nav.classList.add('d-none');
+        return;
+    }
+
+    nav.classList.remove('d-none');
+    nav.innerHTML = `
+        <div class="position-sticky top-0 bg-body border rounded p-2 shadow-sm">
+            <div class="small text-uppercase text-secondary mb-2">Current Strides</div>
+            <nav id="stride-scrollspy-links" class="nav nav-pills flex-wrap gap-2"></nav>
+        </div>
+    `;
+
+    const links = nav.querySelector('#stride-scrollspy-links');
+    strides.forEach((stride, index) => {
+        const link = document.createElement('a');
+        link.className = 'nav-link py-1 px-2';
+        link.href = `#stride-card-${stride.id}`;
+        link.textContent = stride.name;
+        links.appendChild(link);
+    });
+
+    const backlogLink = document.createElement('a');
+    backlogLink.className = 'nav-link py-1 px-2';
+    backlogLink.href = '#backlog-section';
+    backlogLink.textContent = 'Backlog';
+    links.appendChild(backlogLink);
+
+    const spyApi = window.bootstrap?.ScrollSpy;
+    if (spyApi) {
+        const spy = spyApi.getOrCreateInstance(document.body, {
+            target: '#stride-scrollspy-links',
+            offset: 140,
+        });
+        spy?.refresh?.();
+    }
+
+    if (nav.dataset.boundScrollspyClick !== '1') {
+        nav.dataset.boundScrollspyClick = '1';
+        nav.addEventListener('click', (event) => {
+            const link = event.target.closest('a.nav-link');
+            if (!link) return;
+
+            const href = link.getAttribute('href') || '';
+            if (!href.startsWith('#')) return;
+
+            const target = document.querySelector(href);
+            if (!target) return;
+
+            event.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            window.history.replaceState({}, '', href);
+        });
+    }
+}
+
+function momentGraphLinkHtml(seqNum) {
+    const href = buildGraphViewHref(cachedOwner, cachedProject, `moment-${seqNum}`);
+    if (!href) return '';
+
+    return `
+        <a href="${href}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" aria-label="Open graph view focused on moment ${seqNum}">
+            <i class="bi bi-diagram-3" aria-hidden="true"></i>
+            <span>Graph View</span>
+        </a>
+    `;
+}
+
+function createConfirmModal(id, title, confirmText, confirmClass) {
+    let modalEl = document.getElementById(id);
+    if (modalEl) return modalEl;
+
+    modalEl = document.createElement('div');
+    modalEl.className = 'modal fade';
+    modalEl.id = id;
+    modalEl.tabIndex = -1;
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${title}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0" id="${id}-text"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn ${confirmClass}" id="${id}-confirm">${confirmText}</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modalEl);
+    return modalEl;
+}
+
+function ensureBacklogMoveModal() {
+    return createConfirmModal('move-to-backlog-modal', 'Move to Backlog?', 'Move to Backlog', 'btn-danger');
+}
+
+function promptMoveToBacklog(momentId, onConfirm) {
+    const modalEl = ensureBacklogMoveModal();
+    const modalText = modalEl.querySelector('#move-to-backlog-modal-text');
+    const confirmButton = modalEl.querySelector('#move-to-backlog-modal-confirm');
+    if (!modalText || !confirmButton) return;
+
+    modalText.textContent = `Move ${truncateMomentStatement(momentId)} to the Backlog?`;
+
+    const nextButton = confirmButton.cloneNode(true);
+    confirmButton.parentElement.replaceChild(nextButton, confirmButton);
+    nextButton.addEventListener('click', async () => {
+        nextButton.disabled = true;
+        try {
+            await onConfirm();
+            window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
+        } catch (error) {
+            console.error(error);
+            alert('Failed to move moment');
+        } finally {
+            nextButton.disabled = false;
+        }
+    }, { once: true });
+
+    window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
+}
+
+function ensureMoveToStrideModal() {
+    return createConfirmModal('move-to-stride-modal', 'Move to Stride?', 'Move', 'btn-primary');
+}
+
+function ensureProgressStrideModal() {
+    return createConfirmModal('progress-stride-modal', 'Progress Stride?', 'Progress', 'btn-success');
+}
+
+function promptProgressStride(strideId) {
+    const modalEl = ensureProgressStrideModal();
+    const modalText = modalEl.querySelector('#progress-stride-modal-text');
+    const confirmButton = modalEl.querySelector('#progress-stride-modal-confirm');
+    if (!modalText || !confirmButton) {
+        return Promise.resolve(window.confirm('Move all unfinished moments to the next stride?'));
+    }
+
+    const strideCard = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
+    const strideName = strideCard?.querySelector('.stride-header h3')?.textContent?.trim();
+    modalText.textContent = strideName
+        ? `Move all unfinished moments in ${strideName} to the next stride?`
+        : 'Move all unfinished moments to the next stride?';
+
+    return new Promise(resolve => {
+        let settled = false;
+
+        const settle = value => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+
+        const modalInstance = window.bootstrap?.Modal?.getOrCreateInstance(modalEl);
+
+        confirmButton.addEventListener('click', () => {
+            settle(true);
+            modalInstance?.hide();
+        }, { once: true });
+
+        modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
+        modalInstance?.show();
+    });
+}
+
+function promptMoveToStride(momentId, strideId, onConfirm) {
+    const modalEl = ensureMoveToStrideModal();
+    const modalText = modalEl.querySelector('#move-to-stride-modal-text');
+    const confirmButton = modalEl.querySelector('#move-to-stride-modal-confirm');
+    if (!modalText || !confirmButton) return;
+
+    modalText.textContent = `Move ${truncateMomentStatement(momentId)} to the selected stride?`;
+
+    const nextButton = confirmButton.cloneNode(true);
+    confirmButton.parentElement.replaceChild(nextButton, confirmButton);
+    nextButton.addEventListener('click', async () => {
+        nextButton.disabled = true;
+        try {
+            await onConfirm();
+            window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
+        } catch (error) {
+            console.error(error);
+            alert('Failed to move moment');
+        } finally {
+            nextButton.disabled = false;
+        }
+    }, { once: true });
+
+    window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
+}
+
+function truncateMomentStatement(momentId) {
+    const row = findMomentRow(momentId);
+    const statementCell = row?.querySelector('td');
+    const statement = String(statementCell?.textContent ?? '').trim();
+    if (!statement) return `moment ${momentId}`;
+    return statement.slice(0, 35);
+}
+
 function findMomentRow(momentId) {
     return document.querySelector(`tr[data-moment-id="${momentId}"]`);
 }
@@ -162,21 +479,23 @@ function ensureBacklogTbody() {
     const backlogSection = document.getElementById('backlog-section');
     if (!backlogSection) return null;
 
-    let tbody = backlogSection.querySelector('table.promisemodel-table tbody');
+    let tbody = backlogSection.querySelector('.backlog-content table.promisemodel-table tbody');
     if (tbody) return tbody;
 
     backlogSection.innerHTML = `
-        <h2>Backlog</h2>
-        <div class="backlog-card">
-            <table class="promisemodel-table">
-                <thead>
-                    <tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <div class="stride-card backlog-board is-collapsed" data-collapsible-board="1">
+            ${boardHeaderHtml('Backlog', true)}
+            <div class="stride-moments backlog-content hidden">
+                <table class="promisemodel-table">
+                    <thead>
+                        <tr><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     `;
-    return backlogSection.querySelector('table.promisemodel-table tbody');
+    return backlogSection.querySelector('.backlog-content table.promisemodel-table tbody');
 }
 
 function backlogStrideOptionsHtml() {
@@ -189,17 +508,19 @@ function backlogStrideOptionsHtml() {
 
 function createBacklogRow(moment) {
     const tr = document.createElement('tr');
-    tr.dataset.momentId = moment.id;
+    tr.dataset.momentId = moment.sequenceNumber;
     tr.innerHTML = `
-        <td>${moment.id}</td>
         <td>${escapeHtml(moment.statement)}</td>
-        <td>${moment.type}</td>
+        <td>${momentTypeDropdownHtml(moment.sequenceNumber, moment.type)}</td>
         <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
         <td>${moment.effortEstimate ?? '–'}</td>
         <td>
-            <select class="backlog-target-stride" data-moment-id="${moment.id}"></select>
-            <button class="move-to-stride-from-backlog-btn" data-moment-id="${moment.id}">Move</button>
-            <a href="/moments/${moment.id}" class="view-btn">View</a>
+            <div class="d-inline-flex flex-wrap gap-2 align-items-center">
+                <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${moment.sequenceNumber}"></select>
+                <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${moment.sequenceNumber}" type="button">Move</button>
+                ${momentGraphLinkHtml(moment.sequenceNumber)}
+                <a href="/${cachedOwner}/${cachedProject}/moments/${moment.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+            </div>
         </td>
     `;
 
@@ -222,7 +543,6 @@ function ensureStrideTbody(strideId) {
         <table class="promisemodel-table">
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Statement</th>
                     <th>Type</th>
                     <th>Status</th>
@@ -239,26 +559,31 @@ function ensureStrideTbody(strideId) {
 
 function createStrideRow(moment) {
     const tr = document.createElement('tr');
-    tr.dataset.momentId = moment.id;
+    tr.dataset.momentId = moment.sequenceNumber;
     tr.innerHTML = `
-        <td>${moment.id}</td>
         <td>${escapeHtml(moment.statement)}</td>
-        <td>${moment.type}</td>
+        <td>${momentTypeDropdownHtml(moment.sequenceNumber, moment.type)}</td>
         <td><span class="status-badge status-${(moment.status || '').toLowerCase()}">${moment.status}</span></td>
-        <td>${estimateDropdownHtml(moment.id, moment.effortEstimate)}</td>
-        <td>${ownerDropdownHtml(moment.id, moment.ownerId)}</td>
+        <td>${estimateDropdownHtml(moment.sequenceNumber, moment.effortEstimate)}</td>
+        <td>${ownerDropdownHtml(moment.sequenceNumber, moment.ownerId)}</td>
         <td>
-            ${statusDropdownHtml(moment.id, moment.status)}
-            <button class="move-to-backlog-btn" data-moment-id="${moment.id}">Backlog</button>
-            <a href="/moments/${moment.id}" class="view-btn">View</a>
+            <div class="d-inline-flex flex-wrap gap-2 align-items-center">
+                ${statusDropdownHtml(moment.sequenceNumber, moment.status)}
+                <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${moment.sequenceNumber}" data-current-estimate="${moment.effortEstimate ?? ''}"><option value="">–</option></select>
+                <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${moment.sequenceNumber}" type="button">Backlog</button>
+                ${momentGraphLinkHtml(moment.sequenceNumber)}
+                <a href="/${cachedOwner}/${cachedProject}/moments/${moment.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+            </div>
         </td>
     `;
     // Populate the selects using DOM methods to avoid innerHTML option rebuilding.
     const estimateSelect = tr.querySelector('.estimate-dropdown');
+    const estimateMobile = tr.querySelector('.estimate-dropdown-mobile');
     const ownerSelect = tr.querySelector('.owner-dropdown');
     const statusSelect = tr.querySelector('.status-dropdown');
 
     if (estimateSelect) populateEstimateSelect(estimateSelect);
+    if (estimateMobile) populateEstimateSelect(estimateMobile);
     if (statusSelect) populateStatusSelect(statusSelect);
     if (ownerSelect) {
         // data-owner-id already set in the placeholder markup; populate will pick it up.
@@ -267,7 +592,7 @@ function createStrideRow(moment) {
     return tr;
 }
 
-function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
+function bindInlineMomentControls(root, owner, project, navContentDiv, contentDiv) {
     if (!root) return;
 
     // Prevent double binding ON ROOT (not elements)
@@ -277,13 +602,13 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
     root.addEventListener('change', async (e) => {
         const target = e.target;
 
-        // ✅ STATUS
+        // STATUS
         if (target.matches('.status-dropdown')) {
             const momentId = parseInt(target.dataset.momentId, 10);
             const previous = target.value;
 
             try {
-                const updated = await updateMomentStatus(momentId, target.value);
+                const updated = await updateMomentStatus(owner, project, momentId, target.value);
                 const row = findMomentRow(momentId);
                 updateStatusBadge(row, updated.status);
             } catch (err) {
@@ -292,14 +617,14 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             }
         }
 
-        // ✅ ESTIMATE
-        if (target.matches('.estimate-dropdown')) {
+        // ESTIMATE
+        if (target.matches('.estimate-dropdown') || target.matches('.estimate-dropdown-mobile')) {
             const momentId = parseInt(target.dataset.momentId, 10);
             const previous = target.value;
 
             try {
                 const estimate = target.value === '' ? null : target.value;
-                await updateMomentEstimate(momentId, estimate);
+                await updateMomentEstimate(owner, project, momentId, estimate);
                 // Recalculate totals for the containing stride card immediately
                 const row = findMomentRow(momentId);
                 const card = row ? row.closest('.stride-card') : null;
@@ -310,31 +635,43 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             }
         }
 
-        // ✅ OWNER
+        // OWNER
         if (target.matches('.owner-dropdown')) {
             const momentId = parseInt(target.dataset.momentId, 10);
             const previous = target.value;
 
             try {
                 const newOwnerId = target.value ? parseInt(target.value, 10) : null;
-                const updated = await updateMomentOwner(momentId, newOwnerId);
+                const updated = await updateMomentOwner(owner, project, momentId, newOwnerId);
                 target.value = updated.ownerId ?? '';
             } catch (err) {
                 target.value = previous;
                 alert('Failed to update owner');
             }
         }
+
+        // TYPE
+        if (target.matches('.moment-type-dropdown')) {
+            const momentId = parseInt(target.dataset.momentId, 10);
+            const newType = target.value;
+            const previous = target.dataset.currentType || newType;
+            try {
+                await updateMomentType(owner, project, momentId, newType);
+                target.dataset.currentType = newType;
+            } catch (err) {
+                target.value = previous;
+                alert('Failed to update type');
+            }
+        }
     });
 
     root.addEventListener('click', async (e) => {
-        // ✅ Handle View navigation (NO REFRESH)
-        const viewLink = e.target.closest('a.view-btn');
+        // Handle View navigation (NO REFRESH)
+        const viewLink = e.target.closest('a[data-moment-view]');
         if (viewLink) {
             e.preventDefault();
 
-            const href = viewLink.getAttribute('href');
-            window.history.pushState({}, '', href);
-            routeHandler(navContentDiv, contentDiv);
+            navigate(viewLink.getAttribute('href'), navContentDiv, contentDiv);
 
             return;
         }
@@ -345,13 +682,11 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
 
         if (!btn) return;
 
-        // ✅ Move to Backlog
+        // Move to Backlog
         if (btn.classList.contains('move-to-backlog-btn')) {
             const momentId = parseInt(btn.dataset.momentId, 10);
-            if (!confirm('Move this moment to the backlog?')) return;
-
-            try {
-                const updated = await moveMomentToStride(momentId, null);
+            promptMoveToBacklog(momentId, async () => {
+                const updated = await assignMomentToStride(owner, project, momentId, null);
                 preserveScroll(() => {
                     const row = findMomentRow(momentId);
                     const origCard = row ? row.closest('.stride-card') : null;
@@ -360,7 +695,6 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
                     const tbody = ensureBacklogTbody();
                     if (tbody) {
                         tbody.appendChild(createBacklogRow(updated));
-                        applyPermissionUI(cachedCanEdit);
                     }
 
                     if (origCard) {
@@ -368,12 +702,10 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
                         ensureNoItemsPlaceholder(origCard);
                     }
                 });
-            } catch {
-                alert('Failed to move moment');
-            }
+            });
         }
 
-        // ✅ Move to Stride
+        // Move to Stride
         if (btn.classList.contains('move-to-stride-from-backlog-btn')) {
             const momentId = parseInt(btn.dataset.momentId, 10);
             const row = btn.closest('tr');
@@ -381,10 +713,8 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
             const strideId = select ? parseInt(select.value, 10) : null;
 
             if (!strideId) return;
-            if (!confirm('Move this moment to the selected stride?')) return;
-
-            try {
-                const updated = await moveMomentToStride(momentId, strideId);
+            promptMoveToStride(momentId, strideId, async () => {
+                const updated = await assignMomentToStride(owner, project, momentId, strideId);
                 preserveScroll(() => {
                     // Remove backlog row
                     findMomentRow(momentId)?.remove();
@@ -393,7 +723,6 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
                     const targetCard = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
                     if (tbody) {
                         tbody.appendChild(createStrideRow(updated));
-                        applyPermissionUI(cachedCanEdit);
                     }
 
                     if (targetCard) {
@@ -401,19 +730,17 @@ function bindInlineMomentControls(root, projectId, navContentDiv, contentDiv) {
                         removeNoItemsPlaceholder(targetCard);
                     }
                 });
-            } catch {
-                alert('Failed to move moment');
-            }
+            });
         }
 
-        // ✅ Progress Stride
+        // Progress Stride
         if (btn.classList.contains('progress-stride-btn')) {
             const strideId = parseInt(btn.dataset.strideId, 10);
 
-            if (!confirm('Move all unfinished moments to the next stride?')) return;
+            if (!(await promptProgressStride(strideId))) return;
 
             try {
-                await progressStride(strideId);
+                await progressStride(owner, project, strideId);
 
                 const successEl = document.getElementById('success-text');
                 if (successEl) successEl.textContent = '';
@@ -443,55 +770,107 @@ function totalEffort(moments) {
 }
 
 /* ---------- Main export ---------- */
-export function loadStridesList(projectId, navContentDiv, contentDiv) {
+export function loadStridesList(owner, project, navContentDiv, contentDiv, permission) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
     const errorEl = document.getElementById('error-text');
-    const loadingEl = document.getElementById('loading-text');
     const projectTitle = document.getElementById('project-title');
+    const createStrideBtn = document.getElementById('create-stride-btn');
+    const createStrideBtnLabel = document.getElementById('create-stride-btn-label');
 
-    loadingEl.textContent = 'Loading iterations and strides...';
+    cachedOwner = owner;
+    cachedProject = project;
+    strideBoard.innerHTML = renderLoadingSpinner('Loading strides');
     errorEl.textContent = '';
-    strideBoard.innerHTML = '';
     if (backlogSection) backlogSection.innerHTML = '';
 
-    getIterationsByProject(projectId)
-        .then(iterations => {
-            if (!iterations || iterations.length === 0) {
-                loadingEl.textContent = '';
-                errorEl.textContent = 'No iterations found for this project.';
+    bindBoardCollapseToggles(strideBoard);
+    bindBoardCollapseToggles(backlogSection);
+    bindStrideStickyOffsetSync();
+
+    const canEdit = permission?.permission === 'Edit';
+
+    if (createStrideBtn) {
+        if (!canEdit) {
+            createStrideBtn.classList.add('d-none');
+        } else if (createStrideBtn.dataset.bound !== '1') {
+            createStrideBtn.dataset.bound = '1';
+            createStrideBtn.addEventListener('click', () => {
+            if (!cachedIterations.length) {
+                openIterationCreateModal(owner, project, () => loadStridesList(owner, project, navContentDiv, contentDiv));
                 return;
             }
-            iterations.sort((a, b) => b.id - a.id);
-            const latestIteration = iterations[0];
-            projectTitle.innerHTML = `<h2>Project ID: ${projectId} – ${escapeHtml(latestIteration.name)}</h2>`;
+
+            const latestIteration = cachedIterations[0];
+            openStrideCreateModal({
+                owner,
+                project,
+                iterationId: latestIteration.id,
+                iterations: cachedIterations,
+                existingStrides: cachedAllStrides,
+                onCreated: () => loadStridesList(owner, project, navContentDiv, contentDiv),
+            });
+        });
+    }
+    }
+
+    Promise.all([
+        getProject(owner, project).catch(() => null),
+        getIterations(owner, project)
+    ])
+        .then(([projectData, iterations]) => {
+            cachedIterations = Array.isArray(iterations) ? [...iterations].sort((a, b) => b.id - a.id) : [];
+
+            if (!cachedIterations.length) {
+                strideBoard.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-repeat',
+                    title: 'No iterations found for this project.',
+                    description: 'Create the first iteration to start planning your work.',
+                });
+                if (projectTitle) {
+                    projectTitle.innerHTML = `<h2>${escapeHtml(projectData?.name ?? `Project ${owner}/${project}`)}</h2>`;
+                }
+                if (createStrideBtnLabel) {
+                    createStrideBtnLabel.textContent = 'Create First Iteration';
+                }
+                return;
+            }
+            const latestIteration = cachedIterations[0];
+            const projectName = projectData?.name ?? `Project ${owner}/${project}`;
+            projectTitle.innerHTML = `<h2>${escapeHtml(projectName)} – ${escapeHtml(latestIteration.name)}</h2>`;
+            if (createStrideBtnLabel) {
+                createStrideBtnLabel.textContent = 'New Stride';
+            }
 
             const historyLink = document.getElementById('iteration-history-link');
             if (historyLink) {
-                historyLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.history.pushState({}, '', `/projects/${projectId}/iterations`);
-                    routeHandler(navContentDiv, contentDiv);
+                historyLink.addEventListener('click', () => {
+                    navigate(`/${owner}/${project}/iterations`, navContentDiv, contentDiv);
                 });
             }
             
             return Promise.all([
-                getStridesByIteration(latestIteration.id),
-                getMomentsByIteration(latestIteration.id, true)
+                getStridesByIteration(owner, project, latestIteration.id),
+                getMomentsByIteration(owner, project, latestIteration.id, true)
             ]).then(([strides, backlogMoments]) => ({ strides, backlogMoments }));
         })
         .then(data => {
             if (!data) return;
             const { strides, backlogMoments } = data;
-            loadingEl.textContent = '';
+            strideBoard.innerHTML = '';
 
             if (!strides || strides.length === 0) {
-                strideBoard.innerHTML = '<p>No strides found for this iteration.</p>';
+                strideBoard.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-kanban',
+                    title: 'No strides found for this iteration.',
+                    description: 'Create a stride to organize your moments into sprints.',
+                });
             } else {
+                renderStrideScrollspy(strides);
                 const stridePromises = strides.map(stride =>
-                    getMomentsByStride(stride.id)
+                    getMomentsByStride(owner, project, stride.id)
                         .then(moments => ({ stride, moments }))
-                        .catch(() => ({ stride, moments: [] }))
+                        .catch(err => { console.error('Failed to load moments for stride', stride.id, err); return { stride, moments: [] }; })
                 );
                 return Promise.all(stridePromises).then(results => ({ results, backlogMoments, strides }));
             }
@@ -502,27 +881,38 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
             const { results, backlogMoments, strides: allStrides } = data;
 
             // Render stride cards
-            results.forEach(({ stride, moments }) => {
+            results.forEach(({ stride, moments }, index) => {
+                const collapsed = index !== 0;
                 const card = document.createElement('div');
-                card.className = 'stride-card';
+                card.className = `stride-card${collapsed ? ' is-collapsed' : ''}`;
                 card.dataset.strideId = stride.id;
+                card.id = `stride-card-${stride.id}`;
+                card.dataset.collapsibleBoard = '1';
                 const effTotal = totalEffort(moments);
                 card.innerHTML = `
                     <div class="stride-header">
-                        <h3>${escapeHtml(stride.name)}</h3>
-                        <span class="stride-dates">${formatDate(stride.startDate)} – ${formatDate(stride.endDate)}</span>
-                        <span class="stride-duration">(${stride.durationDays} days)</span>
-                        <span class="stride-countdown" data-end-date="${stride.endDate}"></span>
-                        <span class="stride-total-effort">Total Effort: ${effTotal}</span>
-                        <button class="progress-stride-btn hidden" data-stride-id="${stride.id}">Progress</button>
+                        <div class="stride-header-main">
+                            ${boardToggleButtonHtml(collapsed)}
+                            <h3>${escapeHtml(stride.name)}</h3>
+                            <span class="stride-dates">${formatDate(stride.startDate)} – ${formatDate(stride.endDate)}</span>
+                            <span class="stride-duration">(${stride.durationDays} days)</span>
+                            <span class="stride-countdown" data-end-date="${stride.endDate}"></span>
+                            <span class="stride-total-effort">Total Effort: ${effTotal}</span>
+                        </div>
+                        <div class="stride-header-actions ms-auto">
+                            <button class="progress-stride-btn btn btn-outline-success btn-sm hidden" data-stride-id="${stride.id}" type="button"><span aria-hidden="true">🧟</span> Progress</button>
+                        </div>
                     </div>
-                    <div class="stride-moments">
+                    <div class="stride-moments${collapsed ? ' hidden' : ''}">
                         ${moments.length === 0
-                            ? '<p class="no-items">No moments assigned.</p>'
+                            ? renderEmptyStateSection({
+                                icon: 'bi-clock',
+                                title: 'No moments assigned.',
+                                description: 'Move moments from the backlog into this stride.',
+                            })
                             : `<table class="promisemodel-table">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
                                         <th>Statement</th>
                                         <th>Type</th>
                                         <th>Status</th>
@@ -532,23 +922,26 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${moments.map(m => `
-                                        <tr data-moment-id="${m.id}">
-                                            <td>${m.id}</td>
+                                     ${moments.map(m => `
+                                        <tr data-moment-id="${m.sequenceNumber}">
                                             <td>${escapeHtml(m.statement)}</td>
-                                            <td>${m.type}</td>
+                                            <td>${momentTypeDropdownHtml(m.sequenceNumber, m.type)}</td>
                                             <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                                             <td>
-                                                <select class="estimate-dropdown" data-moment-id="${m.id}" data-current-estimate="${m.effortEstimate ?? ''}"></select>
+                                                <select class="estimate-dropdown" data-moment-id="${m.sequenceNumber}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"></select>
                                             </td>
                                             <td>
-                                                <select class="owner-dropdown" data-moment-id="${m.id}" data-owner-id="${m.ownerId ?? ''}"></select>
+                                                <select class="owner-dropdown" data-moment-id="${m.sequenceNumber}" data-owner-id="${m.ownerId ?? ''}" aria-label="Owner"></select>
                                             </td>
-                                            <td>
-                                                <select class="status-dropdown" data-moment-id="${m.id}" data-current-status="${m.status ?? ''}"></select>
-                                                <button class="move-to-backlog-btn" data-moment-id="${m.id}">Backlog</button>
-                                                <a href="/moments/${m.id}" class="view-btn">View</a>
-                                            </td>
+            <td>
+                <div class="d-inline-flex flex-wrap gap-2 align-items-center">
+                    <select class="status-dropdown form-select form-select-sm" data-moment-id="${m.sequenceNumber}" data-current-status="${m.status ?? ''}" aria-label="Status"></select>
+                    <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${m.sequenceNumber}" data-current-estimate="${m.effortEstimate ?? ''}" aria-label="Effort estimate"><option value="">–</option></select>
+                    <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${m.sequenceNumber}" type="button">Backlog</button>
+                    ${momentGraphLinkHtml(m.sequenceNumber)}
+                    <a href="/${owner}/${project}/moments/${m.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+                </div>
+            </td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -564,32 +957,57 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
             // Render Backlog
             if (backlogSection) {
+                const backlogCollapsed = allStrides && allStrides.length > 0;
                 if (!backlogMoments || backlogMoments.length === 0) {
-                    backlogSection.innerHTML = '<h2>Backlog</h2><p class="no-items">No unassigned moments.</p>';
+                    backlogSection.innerHTML = `
+                        <div class="stride-card backlog-board${backlogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
+                            ${boardHeaderHtml('Backlog', backlogCollapsed)}
+                            <div class="stride-moments backlog-content${backlogCollapsed ? ' hidden' : ''}">
+                                ${renderEmptyStateSection({
+                                    icon: 'bi-inbox',
+                                    title: 'No unassigned moments.',
+                                    description: 'Create new moments or assign existing ones to this project.',
+                                })}
+                            </div>
+                        </div>
+                    `;
                 } else {
-                    backlogSection.innerHTML = `<h2>Backlog</h2><div class="backlog-card"><table class="promisemodel-table"><thead><tr><th>ID</th><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead><tbody>
-                        ${backlogMoments.map(m => `
-                            <tr data-moment-id="${m.id}">
-                                <td>${m.id}</td>
-                                <td>${escapeHtml(m.statement)}</td>
-                                <td>${m.type}</td>
-                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                <td>${m.effortEstimate ?? '–'}</td>
-                                <td>
-                                    <select class="backlog-target-stride" data-moment-id="${m.id}"></select>
-                                    <button class="move-to-stride-from-backlog-btn" data-moment-id="${m.id}">Move</button>
-                                    <a href="/moments/${m.id}" moment-id="${m.id}" class="view-btn">View</a>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody></table></div>`;
+                    backlogSection.innerHTML = `
+                        <div class="stride-card backlog-board${backlogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
+                            ${boardHeaderHtml('Backlog', backlogCollapsed)}
+                            <div class="stride-moments backlog-content${backlogCollapsed ? ' hidden' : ''}">
+                                <table class="promisemodel-table">
+                                    <thead><tr><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead>
+                                    <tbody>
+                                        ${backlogMoments.map(m => `
+                                            <tr data-moment-id="${m.sequenceNumber}">
+                                                <td>${escapeHtml(m.statement)}</td>
+                                                <td>${momentTypeDropdownHtml(m.sequenceNumber, m.type)}</td>
+                                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
+                                                <td>${m.effortEstimate ?? '–'}</td>
+                                                <td>
+                                                    <div class="d-inline-flex flex-wrap gap-2 align-items-center">
+                                                        <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${m.sequenceNumber}"></select>
+                                                        <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${m.sequenceNumber}" type="button">Move</button>
+                                                        ${momentGraphLinkHtml(m.sequenceNumber)}
+                                                        <a href="/${owner}/${project}/moments/${m.sequenceNumber}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>`;
                     // Populate backlog stride selects
                     populateSelectsWithin(backlogSection);
                 }
             }
 
+            requestAnimationFrame(syncStrideStickyOffsets);
+
             // Load project members and populate owner dropdowns
-            getProjectMembers(projectId)
+            getProjectMembers(owner, project)
                 .then(members => {
                     cachedMembers = Array.isArray(members) ? members : [];
                     // Populate all owner dropdowns now that we have members
@@ -598,9 +1016,9 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
                 .catch(err => console.error('Failed to load project members', err));
                 
             // Fetch permission and update UI
-            getMyPermission(projectId)
+            getMyPermission(owner, project)
                 .then(level => {
-                    cachedCanEdit = (level && level.toLowerCase() === 'edit');
+                    cachedCanEdit = (level && (level.toLowerCase() === 'edit' || level.toLowerCase() === 'owner'));
 
                     applyPermissionUI(cachedCanEdit); // ✅ SINGLE source of truth
                 })
@@ -612,26 +1030,27 @@ export function loadStridesList(projectId, navContentDiv, contentDiv) {
 
             // Cache stride list for backlog move dropdowns (no refetch needed for later DOM inserts)
             cachedAllStrides = Array.isArray(allStrides) ? allStrides : [];
+            renderStrideScrollspy(cachedAllStrides);
             // Ensure any backlog selects reflect the cached strides
             document.querySelectorAll('.backlog-target-stride').forEach(s => populateBacklogStrideSelect(s));
 
             // Attach planning event listeners (inline updates only; no full reload)
-            attachPlanningListeners(projectId, navContentDiv, contentDiv);
+            attachPlanningListeners(owner, project, navContentDiv, contentDiv);
         })
         .catch(err => {
-            loadingEl.textContent = '';
+            strideBoard.innerHTML = '';
             errorEl.textContent = 'Failed to load data.';
             console.error(err);
         });
 }
 
 /* ---------- Event listeners ---------- */
-function attachPlanningListeners(projectId, navContentDiv, contentDiv) {
+function attachPlanningListeners(owner, project, navContentDiv, contentDiv) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
 
-    bindInlineMomentControls(strideBoard, projectId, navContentDiv, contentDiv);
-    bindInlineMomentControls(backlogSection, projectId, navContentDiv, contentDiv);
+    bindInlineMomentControls(strideBoard, owner, project, navContentDiv, contentDiv);
+    bindInlineMomentControls(backlogSection, owner, project, navContentDiv, contentDiv);
 }
 
 /* ---------- Burndown drawing ---------- */
@@ -694,16 +1113,6 @@ function drawBurndownChart(canvas, points) {
 }
 
 /* ---------- Helpers ---------- */
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[m]));
-}
-
 // Create DOM option element
 function createOption(value, text, selected) {
     const opt = document.createElement('option');
@@ -727,10 +1136,9 @@ function populateStatusSelect(select) {
     if (!select) return;
     const current = select.getAttribute('data-current-status') || select.value || '';
     select.innerHTML = '';
-    select.appendChild(createOption('Todo', 'Todo', current === 'Todo'));
-    select.appendChild(createOption('InProgress', 'InProgress', current === 'InProgress'));
-    select.appendChild(createOption('Blocked', 'Blocked', current === 'Blocked'));
-    select.appendChild(createOption('Done', 'Done', current === 'Done'));
+    for (const opt of STATUS_OPTIONS) {
+        select.appendChild(createOption(opt.value, `${opt.icon} ${opt.label}`, current === opt.value));
+    }
 }
 
 function populateOwnerSelect(select) {
@@ -756,9 +1164,15 @@ function populateBacklogStrideSelect(select) {
 function populateSelectsWithin(root) {
     if (!root) return;
     root.querySelectorAll('.estimate-dropdown').forEach(populateEstimateSelect);
+    root.querySelectorAll('.estimate-dropdown-mobile').forEach(populateEstimateSelect);
     root.querySelectorAll('.status-dropdown').forEach(populateStatusSelect);
     root.querySelectorAll('.owner-dropdown').forEach(populateOwnerSelect);
     root.querySelectorAll('.backlog-target-stride').forEach(populateBacklogStrideSelect);
+}
+
+function getMomentStatementById(momentId) {
+    const row = findMomentRow(momentId);
+    return String(row?.querySelector('td')?.textContent ?? '').trim();
 }
 
 function formatDate(dateStr) {
@@ -772,18 +1186,19 @@ function updateCountdowns() {
         const endDate = new Date(el.dataset.endDate);
         const now = new Date();
         const diffDays = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+        el.classList.remove('stride-countdown--ended', 'stride-countdown--ending', 'stride-countdown--healthy');
         if (diffDays < 0) {
             el.textContent = 'Ended';
-            el.style.color = '#e74c3c';
+            el.classList.add('stride-countdown--ended');
         } else if (diffDays === 0) {
             el.textContent = 'Ends today';
-            el.style.color = '#e67e22';
+            el.classList.add('stride-countdown--ending');
         } else if (diffDays <= 3) {
             el.textContent = `${diffDays} day${diffDays > 1 ? 's' : ''} left`;
-            el.style.color = '#e67e22';
+            el.classList.add('stride-countdown--ending');
         } else {
             el.textContent = `${diffDays} days left`;
-            el.style.color = '#2ecc71';
+            el.classList.add('stride-countdown--healthy');
         }
     });
 }

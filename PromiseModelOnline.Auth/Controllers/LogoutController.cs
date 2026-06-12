@@ -1,60 +1,22 @@
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using PromiseModelOnline.Auth.DAL;
-using PromiseModelOnline.Auth.Models;
-using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
+using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
 [ApiController]
-[Route("api/sessions/current")]
+[Route("connect/logout")]
 public class LogoutController : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    
-    private readonly AuthorizationDbContext _dbContext;
-
-    public LogoutController(UserManager<IdentityUser> userManager, AuthorizationDbContext dbContext)
+    [HttpGet, HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> Logout()
     {
-        _userManager = userManager;
-        _dbContext = dbContext;
-    }
+        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
 
-    [HttpDelete]
-    [Authorize]   // Requires a valid access token in the Authorization header
-    public async Task<IActionResult> Logout([FromBody] LogoutRequest? request)
-    {
-        // Extract the user's name from the JWT
-        var userName = User.FindFirst(JwtRegisteredClaimNames.NameId)?.Value;
-        if (string.IsNullOrEmpty(userName))
-            return Unauthorized();
-
-        var user = await _userManager.FindByNameAsync(userName);
-        if (user == null)
-            return Unauthorized();
-
-        // If a specific refresh token is provided, revoke only that one
-        if (request != null && !string.IsNullOrEmpty(request.RefreshToken))
-        {
-            var tokenEntity = await _dbContext.RefreshTokens
-                .FirstOrDefaultAsync(r => r.Token == request.RefreshToken && r.UserId == user.Id);
-            if (tokenEntity != null)
-                tokenEntity.IsRevoked = true;
-        }
-        else
-        {
-            // Revoke all active refresh tokens for this user
-            var activeTokens = await _dbContext.RefreshTokens
-                .Where(r => r.UserId == user.Id && !r.IsRevoked && r.Expires > DateTime.UtcNow)
-                .ToListAsync();
-            foreach (var token in activeTokens)
-                token.IsRevoked = true;
-        }
-
-        await _dbContext.SaveChangesAsync();
-        return NoContent();
+        // Let OpenIddict handle the end_session response, which validates
+        // post_logout_redirect_uri against registered URIs before redirecting.
+        return SignOut(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 }

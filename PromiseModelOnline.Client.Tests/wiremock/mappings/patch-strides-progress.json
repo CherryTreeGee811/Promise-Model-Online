@@ -1,4 +1,0 @@
-{
-  "request": { "method": "PATCH", "urlPathPattern": "/api/strides/\\d+" },
-  "response": { "status": 204 }
-}

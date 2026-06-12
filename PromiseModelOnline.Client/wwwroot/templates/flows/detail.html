@@ -1,6 +1,10 @@
 <h1>Flow Detail</h1>
 <div id="detail-stack-graph" class="detail-stack-graph" aria-label="Promise stack context"></div>
 <div id="flow-detail-content">
-    <p id="loading-text">Loading flow...</p>
+    <div id="flow-detail-loading" class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status" aria-live="polite" aria-label="Loading flow details">
+            <span class="visually-hidden">Loading flow details...</span>
+        </div>
+    </div>
 </div>
 <p id="error-text"></p>
