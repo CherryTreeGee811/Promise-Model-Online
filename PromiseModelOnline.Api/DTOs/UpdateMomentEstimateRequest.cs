@@ -4,8 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
+/// <summary>Request DTO for updating a moment's effort estimate.</summary>
 public class UpdateMomentEstimateRequest : IValidatableObject
 {
+    /// <summary>New effort estimate, or <c>null</c> to clear.</summary>
+    /// <param name="validationContext">The validation context.</param>
     public Estimate? Estimate { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

@@ -16,6 +16,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for the controller covering CRUD operations.</summary>
+    // Requirements: REQ_FUN_006
     public class JourneysControllerUnitTests
     {
         private Mock<IJourneyService> _mockJourneyService = null!;
@@ -46,7 +48,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetAll Tests
 
         [Test]
-        public async Task GetAll_WithoutEpicIdParameter_ReturnsAllJourneys()
+        public async Task REQ_FUN_006_GetAll_WithoutEpicIdParameter_ReturnsAllJourneys()
         {
             // Arrange
             var journeys = new List<Journey>
@@ -85,7 +87,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithValidEpicIdParameter_ReturnsJourneysFilteredByEpic()
+        public async Task REQ_FUN_006_GetAll_WithValidEpicIdParameter_ReturnsJourneysFilteredByEpic()
         {
             // Arrange
             int epicId = 10;
@@ -125,7 +127,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithInvalidEpicIdParameter_ReturnsAllJourneys()
+        public async Task REQ_FUN_006_GetAll_WithInvalidEpicIdParameter_ReturnsAllJourneys()
         {
             // Arrange
             var journeys = new List<Journey>
@@ -163,7 +165,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithEmptyEpicIdParameter_ReturnsAllJourneys()
+        public async Task REQ_FUN_006_GetAll_WithEmptyEpicIdParameter_ReturnsAllJourneys()
         {
             // Arrange
             var journeys = new List<Journey>
@@ -199,7 +201,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithValidEpicIdParameter_ReturnsEmptyListWhenNoJourneysFound()
+        public async Task REQ_FUN_006_GetAll_WithValidEpicIdParameter_ReturnsEmptyListWhenNoJourneysFound()
         {
             // Arrange
             int epicId = 999;
@@ -237,7 +239,7 @@ namespace PromiseModelOnline.Api.Tests
         #region CreateFromDto Tests
 
         [Test]
-        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_006_CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
             _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
             _testContext.Promises.Add(new Promise { Id = 10, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
@@ -262,7 +264,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        public async Task REQ_FUN_006_CreateFromDto_WithNullRequest_ReturnsBadRequest()
         {
             var result = await _controller.CreateFromDto(null!);
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
@@ -273,7 +275,7 @@ namespace PromiseModelOnline.Api.Tests
         #region Inherited Methods Tests
 
         [Test]
-        public async Task GetById_WithValidId_ReturnsOkWithJourneyDTO()
+        public async Task REQ_FUN_006_GetById_WithValidId_ReturnsOkWithJourneyDTO()
         {
             // Arrange
             int journeyId = 1;
@@ -300,7 +302,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetById_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_006_GetById_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int journeyId = 999;
@@ -315,7 +317,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Create_WithValidJourney_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_006_Create_WithValidJourney_ReturnsCreatedAtAction()
         {
             // Arrange
             var journey = new Journey { Id = 1, Statement = "New Journey", EpicId = 10 };
@@ -346,7 +348,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Update_WithValidIdAndJourney_ReturnsNoContent()
+        public async Task REQ_FUN_006_Update_WithValidIdAndJourney_ReturnsNoContent()
         {
             // Arrange
             int journeyId = 1;
@@ -363,7 +365,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Update_WithMismatchedId_ReturnsBadRequest()
+        public async Task REQ_FUN_006_Update_WithMismatchedId_ReturnsBadRequest()
         {
             // Arrange
             int journeyId = 1;
@@ -378,7 +380,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithValidId_ReturnsNoContent()
+        public async Task REQ_FUN_006_Delete_WithValidId_ReturnsNoContent()
         {
             // Arrange
             int journeyId = 1;
@@ -393,7 +395,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_006_Delete_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int journeyId = 999;

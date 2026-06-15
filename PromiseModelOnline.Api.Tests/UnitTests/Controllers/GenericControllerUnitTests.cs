@@ -9,6 +9,8 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 
 namespace PromiseModelOnline.Api.Tests
 {
+	/// <summary>Unit tests for <see cref="GenericController{TEntity, TDto}"/> covering CRUD operations.</summary>
+// Requirements: REQ_SYS_003
 	public class GenericControllerUnitTests
 	{
 		private Mock<IGenericService<TestEntity>> _mockService = null!;
@@ -23,127 +25,151 @@ namespace PromiseModelOnline.Api.Tests
 			_controller = new TestGenericController(_mockService.Object, _mockMapper.Object);
 		}
 
-		[Test]
-		public async Task GetAll_ReturnsOkWithMappedDtos()
-		{
-			var entities = new List<TestEntity>
-			{
-				new TestEntity { Id = 1, Name = "First" },
-				new TestEntity { Id = 2, Name = "Second" }
-			};
+        [Test]
+        public async Task REQ_SYS_003_GetAll_ReturnsOkWithMappedDtos()
+        {
+            // Arrange
+            var entities = new List<TestEntity>
+            {
+                new TestEntity { Id = 1, Name = "First" },
+                new TestEntity { Id = 2, Name = "Second" }
+            };
 
-			_mockService.Setup(s => s.GetAllAsync()).ReturnsAsync(entities);
-			_mockMapper.Setup(m => m.Map(It.IsAny<TestEntity>(), It.IsAny<IGenericService<TestEntity>>()))
-					   .Returns<TestEntity, IGenericService<TestEntity>>((entity, service) => new TestDto
-					   {
-						   Id = entity.Id,
-						   Name = entity.Name
-					   });
+            _mockService.Setup(s => s.GetAllAsync()).ReturnsAsync(entities);
+            _mockMapper.Setup(m => m.Map(It.IsAny<TestEntity>(), It.IsAny<IGenericService<TestEntity>>()))
+                       .Returns<TestEntity, IGenericService<TestEntity>>((entity, service) => new TestDto
+                       {
+                           Id = entity.Id,
+                           Name = entity.Name
+                       });
 
-			var result = await _controller.GetAll();
+            // Act
+            var result = await _controller.GetAll();
 
-			Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-			var ok = result.Result as OkObjectResult;
-			Assert.That(ok, Is.Not.Null);
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            Assert.That(ok, Is.Not.Null);
 
-			var dtos = ok!.Value as List<TestDto>;
-			Assert.That(dtos, Is.Not.Null);
-			Assert.That(dtos!.Count, Is.EqualTo(2));
-			Assert.That(dtos[0].Id, Is.EqualTo(1));
-			Assert.That(dtos[1].Name, Is.EqualTo("Second"));
-		}
+            var dtos = ok!.Value as List<TestDto>;
+            Assert.That(dtos, Is.Not.Null);
+            Assert.That(dtos!.Count, Is.EqualTo(2));
+            Assert.That(dtos[0].Id, Is.EqualTo(1));
+            Assert.That(dtos[1].Name, Is.EqualTo("Second"));
+        }
 
-		[Test]
-		public async Task GetById_WhenEntityExists_ReturnsOkWithMappedDto()
-		{
-			var entity = new TestEntity { Id = 7, Name = "Seven" };
-			_mockService.Setup(s => s.GetByIdAsync(7)).ReturnsAsync(entity);
-			_mockMapper.Setup(m => m.Map(entity, It.IsAny<IGenericService<TestEntity>>()))
-					   .Returns(new TestDto { Id = 7, Name = "Seven" });
+        [Test]
+        public async Task REQ_SYS_003_GetById_WhenEntityExists_ReturnsOkWithMappedDto()
+        {
+            // Arrange
+            var entity = new TestEntity { Id = 7, Name = "Seven" };
+            _mockService.Setup(s => s.GetByIdAsync(7)).ReturnsAsync(entity);
+            _mockMapper.Setup(m => m.Map(entity, It.IsAny<IGenericService<TestEntity>>()))
+                       .Returns(new TestDto { Id = 7, Name = "Seven" });
 
-			var result = await _controller.GetById(7);
+            // Act
+            var result = await _controller.GetById(7);
 
-			Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-			var ok = result.Result as OkObjectResult;
-			var dto = ok!.Value as TestDto;
-			Assert.That(dto, Is.Not.Null);
-			Assert.That(dto!.Id, Is.EqualTo(7));
-		}
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var ok = result.Result as OkObjectResult;
+            var dto = ok!.Value as TestDto;
+            Assert.That(dto, Is.Not.Null);
+            Assert.That(dto!.Id, Is.EqualTo(7));
+        }
 
-		[Test]
-		public async Task GetById_WhenEntityMissing_ReturnsNotFound()
-		{
-			_mockService.Setup(s => s.GetByIdAsync(99)).ReturnsAsync((TestEntity?)null);
+        [Test]
+        public async Task REQ_SYS_003_GetById_WhenEntityMissing_ReturnsNotFound()
+        {
+            // Arrange
+            _mockService.Setup(s => s.GetByIdAsync(99)).ReturnsAsync((TestEntity?)null);
 
-			var result = await _controller.GetById(99);
+            // Act
+            var result = await _controller.GetById(99);
 
-			Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
-		}
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+        }
 
-		[Test]
-		public async Task Create_ReturnsCreatedAtActionWithMappedDtoAndRouteId()
-		{
-			var entity = new TestEntity { Id = 21, Name = "Created" };
-			_mockMapper.Setup(m => m.Map(entity, It.IsAny<IGenericService<TestEntity>>()))
-					   .Returns(new TestDto { Id = 21, Name = "Created" });
+        [Test]
+        public async Task REQ_SYS_003_Create_ReturnsCreatedAtActionWithMappedDtoAndRouteId()
+        {
+            // Arrange
+            var entity = new TestEntity { Id = 21, Name = "Created" };
+            _mockMapper.Setup(m => m.Map(entity, It.IsAny<IGenericService<TestEntity>>()))
+                       .Returns(new TestDto { Id = 21, Name = "Created" });
 
-			var result = await _controller.Create(entity);
+            // Act
+            var result = await _controller.Create(entity);
 
-			Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
-			var created = result.Result as CreatedAtActionResult;
-			Assert.That(created, Is.Not.Null);
-			Assert.That(created!.ActionName, Is.EqualTo(nameof(TestGenericController.GetById)));
-			Assert.That(created.RouteValues, Is.Not.Null);
-			Assert.That(created.RouteValues!["id"], Is.EqualTo(21));
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+            var created = result.Result as CreatedAtActionResult;
+            Assert.That(created, Is.Not.Null);
+            Assert.That(created!.ActionName, Is.EqualTo(nameof(TestGenericController.GetById)));
+            Assert.That(created.RouteValues, Is.Not.Null);
+            Assert.That(created.RouteValues!["id"], Is.EqualTo(21));
 
-			var dto = created.Value as TestDto;
-			Assert.That(dto, Is.Not.Null);
-			Assert.That(dto!.Name, Is.EqualTo("Created"));
-			_mockService.Verify(s => s.AddAsync(entity), Times.Once);
-		}
+            var dto = created.Value as TestDto;
+            Assert.That(dto, Is.Not.Null);
+            Assert.That(dto!.Name, Is.EqualTo("Created"));
+            _mockService.Verify(s => s.AddAsync(entity), Times.Once);
+        }
 
-		[Test]
-		public async Task Update_WithMatchingId_ReturnsNoContentAndUpdatesEntity()
-		{
-			var entity = new TestEntity { Id = 31, Name = "Updated" };
+        [Test]
+        public async Task REQ_SYS_003_Update_WithMatchingId_ReturnsNoContentAndUpdatesEntity()
+        {
+            // Arrange
+            var entity = new TestEntity { Id = 31, Name = "Updated" };
 
-			var result = await _controller.Update(31, entity);
+            // Act
+            var result = await _controller.Update(31, entity);
 
-			Assert.That(result, Is.InstanceOf<NoContentResult>());
-			_mockService.Verify(s => s.UpdateAsync(entity), Times.Once);
-		}
+            // Assert
+            Assert.That(result, Is.InstanceOf<NoContentResult>());
+            _mockService.Verify(s => s.UpdateAsync(entity), Times.Once);
+        }
 
-		[Test]
-		public async Task Update_WithMismatchedId_ReturnsBadRequestWithoutUpdating()
-		{
-			var entity = new TestEntity { Id = 40, Name = "Mismatch" };
+        [Test]
+        public async Task REQ_SYS_003_Update_WithMismatchedId_ReturnsBadRequestWithoutUpdating()
+        {
+            // Arrange
+            var entity = new TestEntity { Id = 40, Name = "Mismatch" };
 
-			var result = await _controller.Update(41, entity);
+            // Act
+            var result = await _controller.Update(41, entity);
 
-			Assert.That(result, Is.InstanceOf<BadRequestResult>());
-			_mockService.Verify(s => s.UpdateAsync(It.IsAny<TestEntity>()), Times.Never);
-		}
+            // Assert
+            Assert.That(result, Is.InstanceOf<BadRequestResult>());
+            _mockService.Verify(s => s.UpdateAsync(It.IsAny<TestEntity>()), Times.Never);
+        }
 
-		[Test]
-		public async Task Delete_WhenServiceDeletes_ReturnsNoContent()
-		{
-			_mockService.Setup(s => s.DeleteByIdAsync(55)).ReturnsAsync(true);
+        [Test]
+        public async Task REQ_SYS_003_Delete_WhenServiceDeletes_ReturnsNoContent()
+        {
+            // Arrange
+            _mockService.Setup(s => s.DeleteByIdAsync(55)).ReturnsAsync(true);
 
-			var result = await _controller.Delete(55);
+            // Act
+            var result = await _controller.Delete(55);
 
-			Assert.That(result, Is.InstanceOf<NoContentResult>());
-			_mockService.Verify(s => s.DeleteByIdAsync(55), Times.Once);
-		}
+            // Assert
+            Assert.That(result, Is.InstanceOf<NoContentResult>());
+            _mockService.Verify(s => s.DeleteByIdAsync(55), Times.Once);
+        }
 
-		[Test]
-		public async Task Delete_WhenEntityMissing_ReturnsNotFound()
-		{
-			_mockService.Setup(s => s.DeleteByIdAsync(66)).ReturnsAsync(false);
+        [Test]
+        public async Task REQ_SYS_003_Delete_WhenEntityMissing_ReturnsNotFound()
+        {
+            // Arrange
+            _mockService.Setup(s => s.DeleteByIdAsync(66)).ReturnsAsync(false);
 
-			var result = await _controller.Delete(66);
+            // Act
+            var result = await _controller.Delete(66);
 
-			Assert.That(result, Is.InstanceOf<NotFoundResult>());
-		}
+            // Assert
+            Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        }
 
 		private sealed class TestGenericController : GenericController<TestEntity, TestDto>
 		{

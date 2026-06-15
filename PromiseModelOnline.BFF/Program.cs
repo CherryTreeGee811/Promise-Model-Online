@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.DataProtection;
 using PromiseModelOnline.BFF;
 using Yarp.ReverseProxy.Transforms;
 
-var builder = WebApplication.CreateBuilder(args);
+// BFF (Backend for Frontend) entry point.
+// Serves as a reverse proxy between the SPA and the API, handling OIDC
+// authentication, session management, and token forwarding via YARP.
 
-// ============================
-// Configuration
-// ============================
+var builder = WebApplication.CreateBuilder(args);
 
 var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
     ?? throw new InvalidOperationException("AUTH_PUBLIC_ISSUER is required.");
@@ -25,10 +25,7 @@ var appBaseUrl = builder.Configuration["APP_BASE_URL"]
 publicIssuer = publicIssuer.TrimEnd('/');
 appBaseUrl = appBaseUrl.TrimEnd('/');
 
-// ============================
-// HTTPS / Kestrel
-// ============================
-
+// Kestrel HTTPS configuration with optional certificate file.
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
 var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
 
@@ -50,10 +47,7 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddHttpContextAccessor();
 
-// ============================
-// Data Protection (shared key ring for horizontal scaling)
-// ============================
-
+// Data protection key ring for horizontal scaling.
 var dpKeysPath = builder.Configuration["DATA_PROTECTION_KEYS_PATH"]
     ?? Path.Combine(Directory.GetCurrentDirectory(), "dp-keys");
 
@@ -61,10 +55,7 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
     .SetApplicationName("PromiseModelOnline.BFF");
 
-// ============================
-// Reverse proxy setup
-// ============================
-
+// YARP reverse proxy with access token injection and cookie stripping.
 var proxyBuilder = builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
@@ -84,10 +75,7 @@ var proxyBuilder = builder.Services
         });
     });
 
-// ============================
-// Authentication: BFF cookie + OIDC
-// ============================
-
+// Authentication: BFF session cookie + OIDC code flow with PKCE.
 builder.Services
     .AddAuthentication(options =>
     {
@@ -208,10 +196,7 @@ builder.Services
         }
     });
 
-// ============================
-// Development TLS override for YARP
-// ============================
-
+// Development mode: allow self-signed certificates for reverse proxy targets.
 if (builder.Environment.IsDevelopment())
 {
     Console.WriteLine("Dev mode: enabling insecure HTTPS handlers for local Docker testing.");
@@ -230,14 +215,14 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// BFF-specific endpoints: health, login, logout.
 app.MapBffEndpoints();
 
 app.UseWebSockets();
 
-// ============================
-// Authenticated BFF reverse proxy
-// ============================
-
+// Reverse proxy with authentication enforcement.
+// Authenticated requests are proxied to the API; unauthenticated AJAX requests
+// receive 401; unauthenticated page requests trigger an OIDC challenge.
 app.MapReverseProxy(proxyPipeline =>
 {
     proxyPipeline.Use(async (context, next) =>

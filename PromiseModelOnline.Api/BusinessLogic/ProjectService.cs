@@ -11,6 +11,12 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic
 {
+    /// <summary>Business logic for <see cref="Project"/> entities with access control and slug generation.</summary>
+    /// <remarks>
+    ///   Composes <see cref="IProjectRepository"/>, <see cref="IPermissionRepository"/>, and
+    ///   <see cref="IUserRepository"/> to implement project access discovery, member enumeration,
+    ///   promise tree traversal, and unique slug generation. Scoped lifetime.
+    /// </remarks>
     public class ProjectService : GenericService<Project>, IProjectService
     {
         private readonly IProjectRepository _projectRepo;
@@ -28,6 +34,13 @@ namespace PromiseModelOnline.Api.BusinessLogic
             _userRepo = userRepo;
         }
 
+        /// <summary>Return projects accessible to a user (owned or shared).</summary>
+        /// <remarks>
+        ///   Unions owned projects with projects where the user has any permission record.
+        ///   Eagerly loads the project owner's user data for each result.
+        /// </remarks>
+        /// <param name="userId">The user ID. Must be greater than zero.</param>
+        /// <returns>All projects the user can access, deduplicated.</returns>
         public async Task<IEnumerable<Project>> GetAccessibleProjectsAsync(int userId)
         {
             var ownedProjects = await _projectRepo.GetProjectsOwnedByUserAsync(userId);
@@ -56,6 +69,10 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return allProjects;
         }
 
+        /// <summary>Return the member list for a project (owner + active permission users).</summary>
+        /// <param name="projectId">The project ID.</param>
+        /// <returns>Project member DTOs with user name and email.</returns>
+        /// <exception cref="InvalidOperationException">Project not found.</exception>
         public async Task<IEnumerable<ProjectMemberDTO>> GetProjectMembersAsync(int projectId)
         {
             var project = await _projectRepo.GetByIdAsync(projectId);
@@ -64,7 +81,6 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
             var members = new List<ProjectMemberDTO>();
 
-            // Owner
             var owner = await _userRepo.GetByIdAsync(project.OwnerId);
             if (owner is not null)
                 members.Add(new ProjectMemberDTO
@@ -74,7 +90,6 @@ namespace PromiseModelOnline.Api.BusinessLogic
                     Email = owner.Email
                 });
 
-            // Only active permissions (invitation accepted)
             var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId);
             foreach (var perm in permissions.Where(p => p.Status == PermissionStatus.Active))
             {
@@ -94,12 +109,27 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return members;
         }
 
+        /// <summary>Return the top-level product promises for a project.</summary>
+        /// <param name="projectId">The project ID.</param>
+        /// <returns>All top-level promises, ordered by display order.</returns>
         public async Task<IEnumerable<Promise>> GetProductPromisesAsync(int projectId)
             => await _projectRepo.GetProductPromisesByProjectAsync(projectId);
 
+        /// <summary>Look up a project by owner slug and project slug.</summary>
+        /// <param name="ownerSlug">The owner's URL-safe slug.</param>
+        /// <param name="projectSlug">The project's URL-safe slug.</param>
+        /// <returns>The matching project, or <c>null</c>.</returns>
         public async Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug)
             => await _projectRepo.GetByOwnerAndSlugAsync(ownerSlug, projectSlug);
 
+        /// <summary>Generate a unique URL-safe slug for a project within the owner's namespace.</summary>
+        /// <remarks>
+        ///   Normalizes the name (lowercase, removes special chars, replaces spaces with hyphens)
+        ///   and appends a numeric suffix if the slug already exists for this owner.
+        /// </remarks>
+        /// <param name="name">The project name to base the slug on.</param>
+        /// <param name="ownerId">The owner's user ID.</param>
+        /// <returns>A unique slug string.</returns>
         public async Task<string> GenerateProjectSlugAsync(string name, int ownerId)
         {
             var baseSlug = Regex.Replace(name.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
@@ -124,9 +154,15 @@ namespace PromiseModelOnline.Api.BusinessLogic
             }
         }
 
+        /// <param name="x">The first project to compare.</param>
+        /// <param name="y">The second project to compare.</param>
+        /// <summary>Equality comparer for <see cref="Project"/> based on ID.</summary>
         private class ProjectComparer : IEqualityComparer<Project>
+        /// <param name="obj">The project to get the hash code for.</param>
         {
+            /// <summary>Compare two projects by ID.</summary>
             public bool Equals(Project? x, Project? y) => x?.Id == y?.Id;
+            /// <summary>Get hash code from project ID.</summary>
             public int GetHashCode(Project obj) => obj.Id.GetHashCode();
         }
     }

@@ -6,8 +6,15 @@ using PromiseModelOnline.Auth.Common;
 
 namespace PromiseModelOnline.Auth.Extensions
 {
+    /// <summary>Seeds the OpenIddict application registration (pmo-spa) into the database.</summary>
+    /// <remarks>
+    ///   Creates or updates the SPA client with authorization code grant, PKCE, and custom scopes
+    ///   (<c>projects.read</c>, <c>projects.write</c>). Called at application startup.
+    /// </remarks>
     public static class OpenIddictSeeder
     {
+        /// <summary>Create or update the <c>pmo-spa</c> OpenIddict client application.</summary>
+        /// <param name="services">The service provider to resolve the application manager.</param>
         public static async Task SeedAsync(IServiceProvider services)
         {
             var manager = services.GetRequiredService<IOpenIddictApplicationManager>();
@@ -41,6 +48,8 @@ namespace PromiseModelOnline.Auth.Extensions
             }
         }
 
+        /// <summary>Add required endpoints, grant types, scopes, and PKCE requirement to the client descriptor.</summary>
+        /// <param name="descriptor">The application descriptor to add permissions to.</param>
         private static void AddPermissions(OpenIddictApplicationDescriptor descriptor)
         {
             descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);

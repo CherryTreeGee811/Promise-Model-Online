@@ -1,127 +1,226 @@
 using Microsoft.AspNetCore.Authorization;
+
 using Microsoft.AspNetCore.Mvc;
+
 using Microsoft.Extensions.Logging;
+
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+
 using PromiseModelOnline.Api.DAL.Interfaces;
+
 using PromiseModelOnline.Api.DTOs;
+
 using System;
+
 using System.Collections.Generic;
+
 using System.Security.Claims;
+
 using System.Threading.Tasks;
 
+/// <summary>REST controller for permission management within a project scope.</summary>
+
 namespace PromiseModelOnline.Api.Controllers
+
 {
+
     [Route("api/projects/{owner}/{project}/permissions")]
+
+    /// Project Permissions Controller.
+
+    /// </summary>
+
     public class ProjectPermissionsController : ProjectScopedControllerBase
+
     {
+
         private readonly IPermissionService _permissionService;
+
         private readonly IPermissionRepository _permissionRepository;
+
         private readonly IUserRepository _userRepository;
+
         private readonly ILogger<ProjectPermissionsController> _logger;
 
         public ProjectPermissionsController(
+
             IPermissionService permissionService,
+
             IPermissionRepository permissionRepository,
+
             IUserRepository userRepository,
+
             ILogger<ProjectPermissionsController> logger,
+
             IProjectService projectService)
+
             : base(projectService)
+
         {
+
             _permissionService = permissionService;
+
             _permissionRepository = permissionRepository;
+
             _userRepository = userRepository;
+
             _logger = logger;
+
         }
 
+        /// <summary>Return all permission records for a project.</summary>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>A list of permission DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PermissionDTO>>> GetPermissions(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
+
             if (projectEntity is null)
+
                 return NotFound();
 
             var permissions = await _permissionService.GetPermissionsByProjectAsync(projectEntity.Id);
+
             return Ok(permissions);
+
         }
 
+        /// <summary>Invite a user to a project.</summary>
+        /// <param name="request">The invitation request data.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The created permission DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<PermissionDTO>> InviteUser([FromBody] CreatePermissionRequestDTO request, string owner, string project)
+
         {
+
             var projectEntity = await ResolveProjectAsync(owner, project);
+
             if (projectEntity is null)
+
                 return NotFound();
 
             var userId = await GetCurrentUserIdByEmailAsync();
+
             if (userId == null) return Unauthorized();
 
             request.ProjectId = projectEntity.Id;
 
             try
+
             {
+
                 var result = await _permissionService.InviteUserAsync(request, userId.Value);
 
                 _logger.LogInformation(
+
                     "User {UserId} created Permission invitation {PermissionId} at {UtcTimestamp}: {Details}",
+
                     userId.Value,
+
                     result.Id,
+
                     DateTime.UtcNow,
+
                     new { request.ProjectId, request.Email, request.Level });
 
                 return CreatedAtAction(nameof(GetPermissions), new { owner, project }, result);
+
             }
+
             catch (System.Exception ex)
+
             {
+
                 return BadRequest(ex.Message);
+
             }
+
         }
 
+        /// <summary>Remove a user's permission from a project.</summary>
+        /// <param name="id">The permission ID to remove.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> RevokePermission(int id, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
+
             if (projectEntity is null)
+
                 return NotFound();
 
             var userId = await GetCurrentUserIdByEmailAsync();
+
             if (userId == null) return Unauthorized();
 
             try
+
             {
+
                 await _permissionService.RemovePermissionAsync(id, userId.Value);
+
                 return NoContent();
+
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
             }
+
             catch (Exception ex)
+
             {
+
                 return BadRequest(ex.Message);
+
             }
+
         }
 
+        /// <summary>Return the current user's permission level for a project.</summary>
+        /// <param name="id">The permission ID.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The permission level string.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/my-permission")]
         public async Task<ActionResult<string>> GetMyPermission(int id, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
+
             if (projectEntity is null)
+
                 return NotFound();
 
-            // The {id} parameter is actually the projectId in the original route
-            // but in this project-scoped version we use the resolved project
             var email = User.FindFirstValue(ClaimTypes.Email);
+
             if (string.IsNullOrEmpty(email))
+
                 return Unauthorized();
 
             var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
+
             var permissionLevel = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id);
 
             if (permissionLevel == null)
+
                 return NoContent();
 
             return Ok(permissionLevel.ToString());
+
         }
 
+        /// <summary>Resolve the current user ID from JWT email claim.</summary>
+
+        /// <summary>Resolve the current user ID from JWT email claim.</summary>
+        /// <returns>The user ID, or <c>null</c> if the email claim is missing.</returns>
         private async Task<int?> GetCurrentUserIdByEmailAsync()
         {
             var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
@@ -129,11 +228,17 @@ namespace PromiseModelOnline.Api.Controllers
                      ?? User.FindFirst("emails")?.Value;
 
             if (string.IsNullOrEmpty(email))
+
                 return null;
 
             var username = User.FindFirst("nameid")?.Value;
+
             var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+
             return user.Id;
+
         }
+
     }
+
 }

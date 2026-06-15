@@ -3,8 +3,16 @@ using System.Web;
 
 namespace PromiseModelOnline.Client.Tests.Helpers;
 
+/// <summary>Mock API handler for Playwright-based client tests.</summary>
+/// <remarks>
+///   Intercepts HTTP requests during Playwright tests and returns pre-configured JSON
+///   responses to simulate the backend API, Auth server, and OIDC provider without
+///   requiring a running server. Supports owner/non-owner sessions via cookie values.
+/// </remarks>
 public static partial class MockApiHandler
 {
+    /// <summary>Handle a Playwright route by returning a mock response or continuing to the server.</summary>
+    /// <param name="route">The Playwright route to fulfill or continue.</param>
     public static async Task HandleRouteAsync(IRoute route)
     {
         var request = route.Request;
@@ -65,6 +73,21 @@ public static partial class MockApiHandler
     private static MockResponse Html(int status, string body) => new(status, "text/html", body, []);
     private static MockResponse Redirect(string location) => new(302, "text/plain", "", new() { ["Location"] = location });
 
+    private static bool HasGrantType(IRequest request, string grantType) =>
+        request.PostData?.Contains($"grant_type={grantType}", StringComparison.Ordinal) == true;
+
+    private static bool HasCodeVerifier(IRequest request) =>
+        request.PostData?.Contains("code_verifier=", StringComparison.Ordinal) == true;
+
+    /// <summary>Match a request against known static routes and return the appropriate mock response.</summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="path">Request path.</param>
+    /// <param name="query">Parsed query parameters.</param>
+    /// <param name="isOwner">Whether the session cookie identifies a project owner.</param>
+    /// <param name="isNonOwner">Whether the session cookie identifies a non-owner.</param>
+    /// <param name="ownerSession">Whether any authenticated session exists.</param>
+    /// <param name="request">The original Playwright request for body inspection.</param>
+    /// <returns>A mock response, or <c>null</c> to continue to regex matching.</returns>
     private static MockResponse? GetMockResponse(
         string method, string path,
         System.Collections.Specialized.NameValueCollection query,
@@ -149,6 +172,13 @@ public static partial class MockApiHandler
             ("GET", "/api/project-members") => Json(200, """[{"userId":1,"email":"owner@example.com","name":"Test Owner"}]"""),
             ("GET", "/api/reactions") => Json(200, "[]"),
             ("GET", "/api/comments/entity-map") => Json(200, "[]"),
+
+            // OAuth 2.1 Token endpoint — reject deprecated grant types
+            ("POST", "/connect/token") when HasGrantType(request, "password") => Json(400, """{"error":"unsupported_grant_type","error_description":"OAuth 2.1 does not allow the password grant"}"""),
+            ("POST", "/connect/token") when HasGrantType(request, "implicit") => Json(400, """{"error":"unsupported_grant_type","error_description":"OAuth 2.1 does not allow the implicit grant"}"""),
+            ("POST", "/connect/token") when HasGrantType(request, "client_credentials") => Json(400, """{"error":"unsupported_grant_type","error_description":"OAuth 2.1 requires PKCE for public clients"}"""),
+            ("POST", "/connect/token") when !HasCodeVerifier(request) => Json(400, """{"error":"invalid_request","error_description":"PKCE code_verifier is required"}"""),
+            ("POST", "/connect/token") => Json(400, """{"error":"unsupported_grant_type"}"""),
 
             // POST mutations
             ("POST", "/api/projects/create") when isOwner => Json(200, """{"id":2,"name":"My New Project","slug":"my-new-project","ownerSlug":"pmo_test","description":null,"ownerId":1,"createdAt":"2026-06-03T00:00:00Z"}"""),

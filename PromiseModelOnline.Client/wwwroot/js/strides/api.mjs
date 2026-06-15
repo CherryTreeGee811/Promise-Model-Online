@@ -9,11 +9,21 @@ export const getIterations = (owner, project) => apiGetList(`/api/projects/${enc
 
 export const createStride = (owner, project, data) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides`, data);
 
+/**
+ * Fetch the member list for a project.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ */
 export async function getProjectMembers(owner, project) {
     const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
     return res ?? [];
 }
 
+/**
+ * Fetch the current user's permission level for a project.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ */
 export async function getMyPermission(owner, project) {
     const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
     if (!res) return null;

@@ -2,6 +2,11 @@ import { navigate } from "../router.mjs";
 import { fetchProjects } from "./api.mjs";
 import { renderEmptyTableRow } from "../utils/empty-table.mjs";
 
+/**
+ * Load the project listing page.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function loadProjectList(navContentDiv, contentDiv) {
     const tableBody = document.getElementById('project-list-table-body');
     const errorTextElement = document.getElementById("error-text");

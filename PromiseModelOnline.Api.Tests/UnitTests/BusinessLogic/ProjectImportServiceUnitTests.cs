@@ -13,6 +13,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests;
 
+// Requirements: REQ_FUN_039
+/// <summary>Unit tests for <see cref="ProjectImportService"/> covering project hierarchy import.</summary>
 public class ProjectImportServiceUnitTests
 {
     private Mock<IPromiseModelOnlineContext> _contextMock = null!;
@@ -151,8 +153,9 @@ public class ProjectImportServiceUnitTests
     }
 
     [Test]
-    public async Task ImportAsync_RebuildsHierarchyAndRemapsReferences()
+    public async Task REQ_FUN_039_ImportAsync_RebuildsHierarchyAndRemapsReferences()
     {
+        // Arrange
         var document = new ProjectExportDocument
         {
             SchemaVersion = "1.0",
@@ -262,8 +265,10 @@ public class ProjectImportServiceUnitTests
             }
         };
 
+        // Act
         var result = await _service.ImportAsync(document, 42);
 
+        // Assert
         Assert.That(result.ProjectId, Is.EqualTo(100));
         Assert.That(result.Warnings, Has.Exactly(1).Items);
         Assert.That(result.Warnings, Has.Some.Contains("task 60 owner 999"));

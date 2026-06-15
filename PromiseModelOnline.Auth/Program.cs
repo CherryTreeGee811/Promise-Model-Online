@@ -10,9 +10,13 @@ using PromiseModelOnline.Auth.Extensions;
 using PromiseModelOnline.Auth.Middleware;
 using PromiseModelOnline.Auth.Services;
 
+// Application entry point for the OpenID Connect Auth server.
+// Configures EF Core (SQL Server), ASP.NET Identity, OpenIddict (authorization code + PKCE),
+// Google OAuth, CORS, Kestrel HTTPS, data protection, and middleware pipeline.
+// Seeds OpenIddict applications and development users on startup in development mode.
+
 var builder = WebApplication.CreateBuilder(args);
 
-// ---------- Auth/public URL config -------------------------------------
 var appBaseUrl = builder.Configuration["APP_BASE_URL"]
     ?? throw new InvalidOperationException("APP_BASE_URL is required.");
 
@@ -23,8 +27,7 @@ var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
 AppUrls.BaseUrl = appBaseUrl.TrimEnd('/');
 AppUrls.PublicIssuer = publicIssuer.TrimEnd('/');
 
-
-// ---------- CORS -------------------------------------------------------
+// CORS policy allowing the SPA origin and the BFF origin with credentials.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("SPA", policy =>
@@ -38,20 +41,18 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ---------- Database ---------------------------------------------------
+// EF Core with SQL Server connection string (supports Docker secret resolution).
 var connectionString = builder.Configuration
     .GetConnectionString("MSSQL")?
     .ResolveSecrets();
 
 if (string.IsNullOrWhiteSpace(connectionString))
-{
     throw new InvalidOperationException("ConnectionStrings:MSSQL is required.");
-}
 
 builder.Services.AddDbContext<AuthorizationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// ---------- Identity ---------------------------------------------------
+// ASP.NET Identity with EF Core stores, default token providers, and application cookie configuration.
 builder.Services
     .AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthorizationDbContext>()
@@ -71,13 +72,12 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/account/access-denied";
 });
 
-// ---------- OpenIddict -------------------------------------------------
+// OpenIddict server with authorization code flow, PKCE, certificate configuration, and custom scopes.
 builder.Services.AddOpenIddictServerConfig(
     builder.Configuration,
     builder.Environment);
 
-// Identity already configures the application cookie scheme.
-// This explicit config is acceptable, but not strictly required.
+// Google OAuth 2.0 authentication with PKCE, configured from environment or Docker secrets.
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 if (!string.IsNullOrWhiteSpace(googleClientId))
 {
@@ -97,9 +97,7 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
         {
             googleOptions.ClientId = googleClientId;
             googleOptions.ClientSecret = googleClientSecret;
-
             googleOptions.CallbackPath = "/signin-google";
-
             googleOptions.SaveTokens = false;
             googleOptions.UsePkce = true;
 
@@ -116,7 +114,7 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
 
 builder.Services.AddAuthorization();
 
-// ---------- Data Protection (shared key ring for horizontal scaling) ---
+// Data protection key persistence for horizontal scaling across multiple instances.
 var dpKeysPath = builder.Configuration["DATA_PROTECTION_KEYS_PATH"]
     ?? Path.Combine(Directory.GetCurrentDirectory(), "dp-keys");
 
@@ -124,29 +122,22 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
     .SetApplicationName("PromiseModelOnline.Auth");
 
-// ---------- Caching --------------------------------------------------
+// In-memory cache for verification codes and rate limiting counters.
 builder.Services.AddMemoryCache();
 
-// ---------- Email ----------------------------------------------------
+// SendGrid email service for transactional emails (verification codes).
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
-// ---------- Rate limiting ----------------------------------------------
-// Custom middleware instead of AddRateLimiter/UseRateLimiter because
-// OpenIddict's internal token endpoint handler processes requests before
-// the built-in rate limiter middleware can intercept them. The custom
-// middleware runs at the top of the pipeline and uses FixedWindowRateLimiter
-// instances directly.
-// (No services registration needed; the middleware creates limiter instances
-//  at construction time.)
-
-// ---------- HTTPS / MVC ------------------------------------------------
+// Kestrel HTTPS with certificate file support; MVC controllers and views.
 builder.ConfigureHttps();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
+// Apply pending EF Core migrations at startup.
 app.ApplyMigrations();
 
+// Seed OpenIddict applications and development users in development mode only.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -155,7 +146,7 @@ if (app.Environment.IsDevelopment())
     await AuthorizationSeeder.SeedAsync(scope.ServiceProvider);
 }
 
-// ---------- Forwarded headers ------------------------------------------
+// Forwarded headers for reverse proxy scenarios (X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host).
 var forwardedOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders =
@@ -164,21 +155,16 @@ var forwardedOptions = new ForwardedHeadersOptions
         ForwardedHeaders.XForwardedHost
 };
 
-// Safe only while Auth is not directly exposed publicly.
 forwardedOptions.KnownIPNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 
 app.UseForwardedHeaders(forwardedOptions);
 
-// This middleware is probably redundant if UseForwardedHeaders is correctly configured,
-// but keeping it is okay during local debugging.
 app.UseMiddleware<ForwardedHeadersFixMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
 app.UseStaticFiles();
-
 app.UseCors("SPA");
-
 app.UseAuthentication();
 app.UseAuthorization();
 

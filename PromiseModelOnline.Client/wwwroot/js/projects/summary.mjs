@@ -1,5 +1,10 @@
 import { escapeHtml } from '../utils/html.mjs';
 
+/**
+ * Render a summary table with the given rows.
+ * @param {*} container - TODO
+ * @param {*} rows - TODO
+ */
 export function renderSummaryTable(container, rows) {
     if (!container) {
         return;

@@ -1,4 +1,3 @@
-
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -8,26 +7,27 @@ using System.Linq;
 
 namespace PromiseModelOnline.Api.Mappers
 {
-    /// <summary>
-    /// Generic mapper implementation for mapping between types.
-    /// </summary>
-    /// <typeparam name="TSource">The source type.</typeparam>
-    /// <typeparam name="TDestination">The destination type.</typeparam>
+    /// <summary>Convention-based mapper that copies matching properties by name and type, with special-case overrides for complex types.</summary>
+    /// <remarks>
+    ///   Uses reflection to copy properties from <typeparamref name="TSource"/> to
+    ///   <typeparamref name="TDestination"/> when both name and type match.
+    ///   Special handling exists for <see cref="Moment"/> to <see cref="MomentDTO"/> (populates sub-tasks),
+    ///   <see cref="Project"/> to <see cref="ProjectDTO"/> (populates owner slug), and
+    ///   <see cref="Notification"/> to <see cref="NotificationDTO"/> (converts enum to string).
+    /// </remarks>
+    /// <typeparam name="TSource">The source entity type.</typeparam>
+    /// <typeparam name="TDestination">The destination DTO type.</typeparam>
     public class GenericMapper<TSource, TDestination> : IGenericMapper<TSource, TDestination>
         where TSource : class
         where TDestination : class, new()
     {
-        /// <summary>
-        /// Maps an object of type <typeparamref name="TSource"/> to <typeparamref name="TDestination"/>, using the provided service.
-        /// </summary>
-        /// <param name="source">The source object.</param>
-        /// <param name="service">The generic service for business/data access logic.</param>
-        /// <returns>The mapped destination object.</returns>
+        /// <summary>Map a source entity to a destination DTO by convention with special-case overrides.</summary>
+        /// <param name="source">The source entity. Not null.</param>
+        /// <param name="service">The generic service for resolving related data.</param>
+        /// <returns>The mapped destination DTO.</returns>
         public TDestination Map(TSource source, IGenericService<TSource> service)
         {
             var destination = new TDestination();
-            // Example: Use the service for enrichment, validation, or lookups as needed
-            // (This is a placeholder; customize as needed for your domain)
             var sourceProps = typeof(TSource).GetProperties();
             var destProps = typeof(TDestination).GetProperties();
             foreach (var sProp in sourceProps)
@@ -65,8 +65,6 @@ namespace PromiseModelOnline.Api.Mappers
             {
                 notificationDto.Type = notification.Type.ToString();
             }
-            // Example: service can be used here for additional logic
-            // e.g., service.GetByIdAsync(...), service.FindAsync(...), etc.
             return destination;
         }
     }

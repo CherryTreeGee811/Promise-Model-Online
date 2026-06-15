@@ -7,11 +7,17 @@ function toProjectId(value) {
     return Number.isNaN(parsed) ? null : parsed;
 }
 
+/**
+ * Extract project ID hint from the current URL for graph linking.
+ */
 export function getGraphProjectIdHintFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return toProjectId(params.get('graphProjectId'));
 }
 
+/**
+ * Extract owner and project slugs from the current URL path.
+ */
 export function getOwnerProjectFromPath() {
     const match = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\//);
     if (match) {
@@ -20,6 +26,12 @@ export function getOwnerProjectFromPath() {
     return { owner: null, project: null };
 }
 
+/**
+ * Build a URL for viewing the project graph with a highlighted node.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} highlightNodeId - TODO
+ */
 export function buildGraphViewHref(owner, project, focusNodeId) {
     const safeOwner = String(owner ?? '').trim();
     const safeProject = String(project ?? '').trim();
@@ -29,6 +41,11 @@ export function buildGraphViewHref(owner, project, focusNodeId) {
     return `/${safeOwner}/${safeProject}/graph?focus=${encodeURIComponent(safeFocus)}`;
 }
 
+/**
+ * Add or update a graph view button in a detail page.
+ * @param {*} detailDiv - TODO
+ * @param {*} href - TODO
+ */
 export function upsertGraphViewButton(detailContainer, href) {
     if (!detailContainer || !href) return;
 
@@ -51,6 +68,10 @@ export function upsertGraphViewButton(detailContainer, href) {
     button.href = href;
 }
 
+/**
+ * Resolve a project ID for a given promise ID for graph linking.
+ * @param {*} promiseId - TODO
+ */
 export async function resolveProjectIdForPromise(promiseId, preferredProjectId = null) {
     const numericPromiseId = Number.parseInt(String(promiseId), 10);
     if (Number.isNaN(numericPromiseId)) return null;

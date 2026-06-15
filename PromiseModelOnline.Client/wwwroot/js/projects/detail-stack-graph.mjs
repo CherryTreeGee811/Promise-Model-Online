@@ -32,6 +32,9 @@ const detailStackState = {
     mountToken: 0,
 };
 
+/**
+ * Lazy-load the D3.js library.
+ */
 export function loadD3() {
     if (!d3Promise) {
         d3Promise = import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
@@ -221,6 +224,13 @@ function buildLinearTree(pathEntities, metrics, owner, project) {
     };
 }
 
+/**
+ * Build an ancestor path tree for the detail stack graph.
+ * @param {*} nodeType - TODO
+ * @param {*} nodeKey - TODO
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ */
 export async function buildAncestorPathTree(nodeType, nodeId, owner, project) {
     if (!STACK_NODE_TYPES.includes(nodeType)) {
         throw new Error(`Unsupported node type: ${nodeType}`);
@@ -238,6 +248,9 @@ export async function buildAncestorPathTree(nodeType, nodeId, owner, project) {
     };
 }
 
+/**
+ * Destroy the detail stack graph instance.
+ */
 export function destroyDetailStackGraph() {
     detailStackState.mountToken += 1;
     detailStackState.tree = null;
@@ -256,6 +269,13 @@ export function destroyDetailStackGraph() {
     }
 }
 
+/**
+ * Refresh child metrics for a node in the stack graph.
+ * @param {*} nodeType - TODO
+ * @param {*} nodeKey - TODO
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ */
 export function patchChildMetrics(nodeId, children) {
     const metrics = computeChildMetrics(children);
     patchDetailStackGraphNode(nodeId, {
@@ -264,6 +284,10 @@ export function patchChildMetrics(nodeId, children) {
     });
 }
 
+/**
+ * Map a moment status to a color for graph display.
+ * @param {*} status - TODO
+ */
 export function momentStatusToColor(status) {
     switch (String(status ?? '')) {
         case 'Done': return 'green';
@@ -274,6 +298,11 @@ export function momentStatusToColor(status) {
     }
 }
 
+/**
+ * Update a specific node in the detail stack graph.
+ * @param {*} nodeKey - TODO
+ * @param {*} data - TODO
+ */
 export function patchDetailStackGraphNode(nodeId, payloadPatch = {}) {
     if (!detailStackState.tree || !nodeId) return;
 
@@ -309,6 +338,10 @@ export async function refreshDetailStackGraph() {
     }
 }
 
+/**
+ * Mount the detail stack graph visualization.
+ * @param {*} config - TODO
+ */
 export async function mountDetailStackGraph({ nodeType, nodeId, owner, project }) {
     const container = getContainer();
     if (!container) return;

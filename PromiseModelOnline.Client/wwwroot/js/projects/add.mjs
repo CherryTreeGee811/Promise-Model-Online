@@ -3,6 +3,11 @@ import { createPromise } from '../promises/api.mjs';
 import { navigate } from '../router.mjs';
 import { renderSummaryTable } from './summary.mjs';
 
+/**
+ * Load the add-project form page.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function loadAddProjectForm(navContentDiv, contentDiv) {
     const form = document.getElementById('add-project-form');
     const cancelLink = document.getElementById('cancel-add-project-link');

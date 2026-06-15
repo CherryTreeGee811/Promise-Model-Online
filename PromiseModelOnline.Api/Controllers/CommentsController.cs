@@ -3,15 +3,19 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
-using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Security.Claims;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for comment CRUD, user search, and entity stack search.</summary>
+    /// <remarks>
+    ///   Requires <c>projects.read</c> for read operations and <c>projects.write</c> for creating
+    ///   comments. Supports comment creation with automatic user provisioning from JWT claims,
+    ///   project-scoped user search for @-mentions, and hierarchy entity search for linking.
+    /// </remarks>
     [Route("api/comments")]
     [ApiController]
     public class CommentsController : ControllerBase
@@ -20,6 +24,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IUserRepository _userRepository;
         private readonly ICommentRepository _commentRepository;
 
+        /// <summary>Initializes the controller with required services and repositories.</summary>
         public CommentsController(ICommentService commentService,
                                   IUserRepository userRepository,
                                   ICommentRepository commentRepository)
@@ -29,6 +34,11 @@ namespace PromiseModelOnline.Api.Controllers
             _commentRepository = commentRepository;
         }
 
+        /// <summary>Retrieve comments for a parent entity.</summary>
+        /// <param name="type">Parent entity type (<c>"promise"</c>, <c>"epic"</c>, <c>"journey"</c>, <c>"flow"</c>, <c>"moment"</c>).</param>
+        /// <param name="parentId">Parent entity ID.</param>
+        /// <response code="200">Returns the threaded comments as DTOs.</response>
+        /// <response code="400"><paramref name="type"/> is empty or <paramref name="parentId"/> is not positive.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CommentDTO>>> GetComments(
@@ -42,6 +52,11 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(comments);
         }
 
+        /// <summary>Create a new comment with auto-provisioning of the author.</summary>
+        /// <param name="dto">The comment creation data.</param>
+        /// <response code="201">Returns the created comment with a Location header.</response>
+        /// <response code="400">Comment text is empty or a business rule fails.</response>
+        /// <response code="401">Missing email claim in the JWT token.</response>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
@@ -71,6 +86,12 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        /// <summary>Search for users within a project (for @-mention auto-complete).</summary>
+        /// <param name="parentType">The parent entity type to resolve the project.</param>
+        /// <param name="parentId">The parent entity ID.</param>
+        /// <param name="search">The user name search term.</param>
+        /// <response code="200">Returns matching users with ID and name.</response>
+        /// <response code="400">Invalid parent type or entity not found.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet("search-users")]
         public async Task<ActionResult<IEnumerable<object>>> SearchUsers(
@@ -93,6 +114,12 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        /// <summary>Search the entity hierarchy for linking entities in comments.</summary>
+        /// <param name="parentType">The parent entity type to resolve the project.</param>
+        /// <param name="parentId">The parent entity ID.</param>
+        /// <param name="search">The entity statement search term.</param>
+        /// <response code="200">Returns matching stack items with type and sequence info.</response>
+        /// <response code="400">Invalid parent type or entity not found.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet("search-promises")]
         public async Task<ActionResult<IEnumerable<StackSearchResult>>> SearchPromises(

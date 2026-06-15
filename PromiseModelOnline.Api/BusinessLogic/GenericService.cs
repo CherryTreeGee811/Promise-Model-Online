@@ -6,17 +6,18 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic
 {
-    /// <summary>
-    /// Generic service implementation that delegates data access to a repository.
-    /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
+    /// <summary>Generic service implementation that delegates CRUD operations to a repository.</summary>
+    /// <remarks>
+    ///   Write operations (<see cref="AddAsync"/>, <see cref="UpdateAsync"/>, <see cref="DeleteByIdAsync"/>)
+    ///   persist changes immediately via <see cref="IGenericRepository{T}.SaveChangesAsync"/>.
+    ///   Scoped lifetime. Derived services override virtual methods to inject business rules.
+    /// </remarks>
+    /// <typeparam name="T">The entity type, constrained to <c>class</c>.</typeparam>
     public class GenericService<T> : IGenericService<T> where T : class
     {
         private readonly IGenericRepository<T> _repository;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GenericService{T}"/> class.
-        /// </summary>
+        /// <summary>Initializes the service with a repository.</summary>
         /// <param name="repository">The generic repository instance.</param>
         public GenericService(IGenericRepository<T> repository)
         {

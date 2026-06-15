@@ -11,6 +11,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="PromisesController"/> covering promise CRUD.</summary>
+// Requirements: REQ_FUN_004
     public class PromisesControllerUnitTests
     {
         private Mock<IGenericService<Promise>> _mockService = null!;
@@ -30,12 +32,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetTotalEffort_ReturnsOkWithServiceResult()
+        public async Task REQ_FUN_004_GetTotalEffort_ReturnsOkWithServiceResult()
         {
+            // Arrange
             _mockMomentService.Setup(s => s.GetTotalEffortForPromiseAsync(42)).ReturnsAsync(128);
 
+            // Act
             var result = await _controller.GetTotalEffort(42);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);

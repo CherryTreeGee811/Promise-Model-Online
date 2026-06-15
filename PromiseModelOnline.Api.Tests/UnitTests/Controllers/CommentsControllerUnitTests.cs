@@ -15,6 +15,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="CommentsController"/> covering comment operations.</summary>
+// Requirements: REQ_FUN_017
     public class CommentsControllerUnitTests
     {
         private Mock<ICommentService> _mockCommentService = null!;
@@ -37,8 +39,9 @@ namespace PromiseModelOnline.Api.Tests
         #region GetComments Tests - Happy Path
 
         [Test]
-        public async Task GetComments_WithValidTypeAndParentId_ReturnsOkWithComments()
+        public async Task REQ_FUN_017_GetComments_WithValidTypeAndParentId_ReturnsOkWithComments()
         {
+            // Arrange
             var comments = new List<CommentDTO>
             {
                 new CommentDTO { Id = 1, Text = "Comment 1", UserName = "User1" },
@@ -50,8 +53,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.GetComments("Promise", 5);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -64,8 +69,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetComments_WithValidEpicType_ReturnsOkWithComments()
+        public async Task REQ_FUN_017_GetComments_WithValidEpicType_ReturnsOkWithComments()
         {
+            // Arrange
             var comments = new List<CommentDTO>
             {
                 new CommentDTO { Id = 10, Text = "Epic comment", UserName = "TestUser" }
@@ -76,8 +82,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "test@test.com");
 
+            // Act
             var result = await _controller.GetComments("Epic", 100);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok!.Value, Is.InstanceOf<List<CommentDTO>>());
@@ -85,8 +93,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetComments_WithNoComments_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_GetComments_WithNoComments_ReturnsOkWithEmptyList()
         {
+            // Arrange
             var comments = new List<CommentDTO>();
 
             _mockCommentService.Setup(s => s.GetCommentsAsync("Journey", 50))
@@ -94,8 +103,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.GetComments("Journey", 50);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -109,12 +120,15 @@ namespace PromiseModelOnline.Api.Tests
         #region GetComments Tests - Sad Path
 
         [Test]
-        public async Task GetComments_WithNullType_ReturnsBadRequest()
+        public async Task REQ_FUN_017_GetComments_WithNullType_ReturnsBadRequest()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.GetComments(null!, 5);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest, Is.Not.Null);
@@ -123,12 +137,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetComments_WithEmptyType_ReturnsBadRequest()
+        public async Task REQ_FUN_017_GetComments_WithEmptyType_ReturnsBadRequest()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.GetComments(string.Empty, 5);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest, Is.Not.Null);
@@ -137,12 +154,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetComments_WithZeroParentId_ReturnsBadRequest()
+        public async Task REQ_FUN_017_GetComments_WithZeroParentId_ReturnsBadRequest()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.GetComments("Promise", 0);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest, Is.Not.Null);
@@ -151,12 +171,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetComments_WithNegativeParentId_ReturnsBadRequest()
+        public async Task REQ_FUN_017_GetComments_WithNegativeParentId_ReturnsBadRequest()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.GetComments("Epic", -10);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest, Is.Not.Null);
@@ -169,8 +192,9 @@ namespace PromiseModelOnline.Api.Tests
         #region CreateComment Tests - Happy Path
 
         [Test]
-        public async Task CreateComment_WithValidDtoAndAuthenticatedUser_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_017_CreateComment_WithValidDtoAndAuthenticatedUser_ReturnsCreatedAtAction()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "This is a test comment",
@@ -197,8 +221,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com", "testuser");
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
             var createdAtAction = result.Result as CreatedAtActionResult;
             Assert.That(createdAtAction, Is.Not.Null);
@@ -209,8 +235,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateComment_WithReplyToComment_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_017_CreateComment_WithReplyToComment_ReturnsCreatedAtAction()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "This is a reply to a comment",
@@ -237,8 +264,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "replier@example.com");
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
             var createdAtAction = result.Result as CreatedAtActionResult;
             Assert.That(createdAtAction, Is.Not.Null);
@@ -247,8 +276,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateComment_WithDifferentParentTypes_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_017_CreateComment_WithDifferentParentTypes_ReturnsCreatedAtAction()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "Comment on Epic",
@@ -274,8 +304,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "epic@example.com");
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
             _mockCommentService.Verify(s => s.CreateCommentAsync(createDto, user.Id), Times.Once);
         }
@@ -285,8 +317,9 @@ namespace PromiseModelOnline.Api.Tests
         #region CreateComment Tests - Sad Path
 
         [Test]
-        public async Task CreateComment_WithoutEmailClaim_ReturnsUnauthorized()
+        public async Task REQ_FUN_017_CreateComment_WithoutEmailClaim_ReturnsUnauthorized()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "This should fail",
@@ -297,8 +330,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedObjectResult>());
             var unauthorized = result.Result as UnauthorizedObjectResult;
             Assert.That(unauthorized, Is.Not.Null);
@@ -308,8 +343,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateComment_WithServiceException_ReturnsBadRequest()
+        public async Task REQ_FUN_017_CreateComment_WithServiceException_ReturnsBadRequest()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "This comment will cause an error",
@@ -328,8 +364,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "error@example.com");
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest, Is.Not.Null);
@@ -338,8 +376,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateComment_WithInvalidParentId_ReturnsBadRequestFromService()
+        public async Task REQ_FUN_017_CreateComment_WithInvalidParentId_ReturnsBadRequestFromService()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "Invalid parent",
@@ -357,16 +396,19 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "invalid@example.com");
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest!.Value, Does.Contain("not found"));
         }
 
         [Test]
-        public async Task CreateComment_WithEmptyText_ReturnsBadRequestFromService()
+        public async Task REQ_FUN_017_CreateComment_WithEmptyText_ReturnsBadRequestFromService()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = string.Empty,
@@ -384,16 +426,19 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "empty@example.com");
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest!.Value, Does.Contain("empty"));
         }
 
         [Test]
-        public async Task CreateComment_WhenUserRepositoryThrowsException_ReturnsBadRequest()
+        public async Task REQ_FUN_017_CreateComment_WhenUserRepositoryThrowsException_ReturnsBadRequest()
         {
+            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "This will fail at user level",
@@ -407,8 +452,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "failing@example.com");
 
+            // Act
             var result = await _controller.CreateComment(createDto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest!.Value, Does.Contain("Database connection failed"));
@@ -420,8 +467,9 @@ namespace PromiseModelOnline.Api.Tests
         #region SearchUsers Tests - Happy Path
 
         [Test]
-        public async Task SearchUsers_WithValidParams_ReturnsOkWithUsers()
+        public async Task REQ_FUN_017_SearchUsers_WithValidParams_ReturnsOkWithUsers()
         {
+            // Arrange
             var projectId = 1;
             _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5))
                 .ReturnsAsync(projectId);
@@ -436,8 +484,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchUsers("Promise", 5, "al");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -449,8 +499,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task SearchUsers_WithNoMatches_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchUsers_WithNoMatches_ReturnsOkWithEmptyList()
         {
+            // Arrange
             var projectId = 1;
             _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Epic", 10))
                 .ReturnsAsync(projectId);
@@ -459,8 +510,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchUsers("Epic", 10, "zzz");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -470,12 +523,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task SearchUsers_WithEmptySearch_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchUsers_WithEmptySearch_ReturnsOkWithEmptyList()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchUsers("Promise", 5, "");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -490,25 +546,31 @@ namespace PromiseModelOnline.Api.Tests
         #region SearchUsers Tests - Sad Path
 
         [Test]
-        public async Task SearchUsers_WithInvalidParentType_ReturnsBadRequest()
+        public async Task REQ_FUN_017_SearchUsers_WithInvalidParentType_ReturnsBadRequest()
         {
+            // Arrange
             _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
                 .ThrowsAsync(new System.ArgumentException("Invalid parent type: invalid"));
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchUsers("invalid", 1, "test");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task SearchUsers_WithNullType_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchUsers_WithNullType_ReturnsOkWithEmptyList()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchUsers(null, 5, "alice");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
             Assert.That(data, Is.Empty);
@@ -516,12 +578,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task SearchUsers_WithZeroParentId_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchUsers_WithZeroParentId_ReturnsOkWithEmptyList()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchUsers("Promise", 0, "test");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
             Assert.That(data, Is.Empty);
@@ -533,8 +598,9 @@ namespace PromiseModelOnline.Api.Tests
         #region SearchPromises Tests - Happy Path
 
         [Test]
-        public async Task SearchPromises_WithValidParams_ReturnsOkWithResults()
+        public async Task REQ_FUN_017_SearchPromises_WithValidParams_ReturnsOkWithResults()
         {
+            // Arrange
             var projectId = 1;
             _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5))
                 .ReturnsAsync(projectId);
@@ -549,8 +615,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchPromises("Promise", 5, "pay");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -562,8 +630,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task SearchPromises_IncludesEntityTypeInResult()
+        public async Task REQ_FUN_017_SearchPromises_IncludesEntityTypeInResult()
         {
+            // Arrange
             var projectId = 1;
             _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Moment", 5))
                 .ReturnsAsync(projectId);
@@ -577,8 +646,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchPromises("Moment", 5, "card");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -587,8 +658,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task SearchPromises_WithNoMatches_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchPromises_WithNoMatches_ReturnsOkWithEmptyList()
         {
+            // Arrange
             var projectId = 1;
             _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Journey", 3))
                 .ReturnsAsync(projectId);
@@ -597,20 +669,25 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchPromises("Journey", 3, "zzz");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
             Assert.That(data!, Is.Empty);
         }
 
         [Test]
-        public async Task SearchPromises_WithEmptySearch_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchPromises_WithEmptySearch_ReturnsOkWithEmptyList()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchPromises("Flow", 10, "");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
             Assert.That(data!, Is.Empty);
@@ -622,25 +699,31 @@ namespace PromiseModelOnline.Api.Tests
         #region SearchPromises Tests - Sad Path
 
         [Test]
-        public async Task SearchPromises_WithInvalidParentType_ReturnsBadRequest()
+        public async Task REQ_FUN_017_SearchPromises_WithInvalidParentType_ReturnsBadRequest()
         {
+            // Arrange
             _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
                 .ThrowsAsync(new System.ArgumentException("Invalid parent type"));
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchPromises("invalid", 1, "test");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task SearchPromises_WithNullParentType_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchPromises_WithNullParentType_ReturnsOkWithEmptyList()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchPromises(null, 5, "test");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
             Assert.That(data, Is.Empty);
@@ -648,12 +731,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task SearchPromises_WithZeroParentId_ReturnsOkWithEmptyList()
+        public async Task REQ_FUN_017_SearchPromises_WithZeroParentId_ReturnsOkWithEmptyList()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.SearchPromises("Promise", 0, "test");
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var data = (result.Result as OkObjectResult)!.Value as IEnumerable<object>;
             Assert.That(data, Is.Empty);

@@ -21,6 +21,15 @@ import {
     refreshDetailStackGraph,
 } from '../projects/detail-stack-graph.mjs';
 
+/**
+ * Load and render the moment detail page with tasks, comments, and reactions.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} momentId - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} permission - TODO
+ */
 export function loadMomentDetail(owner, project, momentId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('moment-detail-content');
     const errorEl = document.getElementById('error-text');

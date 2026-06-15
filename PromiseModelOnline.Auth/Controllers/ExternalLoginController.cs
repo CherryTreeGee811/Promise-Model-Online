@@ -5,6 +5,7 @@ using System.Security.Claims;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
+/// <summary>Handles external (Google) login: challenge, callback, and account linking.</summary>
 [Route("account/external")]
 public class ExternalLoginController : Controller
 {
@@ -22,6 +23,10 @@ public class ExternalLoginController : Controller
         _logger = logger;
     }
 
+    /// <summary>Initiate an external authentication challenge (e.g., Google OAuth).</summary>
+    /// <param name="provider">The external authentication provider name (e.g., <c>"Google"</c>).</param>
+    /// <param name="returnUrl">The URL to return to after authentication.</param>
+    /// <response code="302">Redirects to the external provider's login page.</response>
     [AllowAnonymous]
     [HttpPost("challenge")]
     [ValidateAntiForgeryToken]
@@ -35,6 +40,11 @@ public class ExternalLoginController : Controller
         return Challenge(properties, provider);
     }
 
+    /// <summary>Process the external login callback: sign in existing users or create a new account.</summary>
+    /// <param name="returnUrl">The URL to return to after successful login.</param>
+    /// <param name="remoteError">Error returned by the external provider, if any.</param>
+    /// <response code="302">Redirects to the BFF login endpoint or shows an error page.</response>
+    /// <returns>A redirect to the BFF login endpoint or an error page.</returns>
     [AllowAnonymous]
     [HttpGet("callback")]
     public async Task<IActionResult> Callback(string? returnUrl = null, string? remoteError = null)
@@ -70,7 +80,7 @@ public class ExternalLoginController : Controller
         {
             _logger.LogWarning("External auth did not provide an email claim");
             return RedirectToAction("Index", "Login",
-                new { returnUrl, error = "We could not retrieve your email from the external provider. Please ensure your Google account has a verified email address." });
+                new { returnUrl, error = "We could not retrieve your email from the external provider." });
         }
 
         var user = await _userManager.FindByEmailAsync(email);
@@ -112,6 +122,9 @@ public class ExternalLoginController : Controller
         return RedirectToBff(returnUrl);
     }
 
+    /// <summary>Redirect to the BFF login endpoint with the original return URL.</summary>
+    /// <param name="returnUrl">The URL to redirect to after login.</param>
+    /// <returns>A redirect result to the BFF login endpoint.</returns>
     private RedirectResult RedirectToBff(string returnUrl)
     {
         var safeReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : "/";

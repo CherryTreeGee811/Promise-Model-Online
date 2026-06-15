@@ -13,6 +13,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_003 REQ_FUN_011 REQ_FUN_012
+    /// <summary>Unit tests for <see cref="ProjectService"/> covering project CRUD, access control, and slug generation.</summary>
     public class ProjectServiceUnitTests
     {
         private Mock<IProjectRepository> _projectRepoMock = null!;
@@ -35,7 +37,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetAccessibleProjectsAsync
 
         [Test]
-        public async Task GetAccessibleProjectsAsync_OnlyOwnedProjects_ReturnsThem()
+        public async Task REQ_FUN_003_GetAccessibleProjectsAsync_OnlyOwnedProjects_ReturnsThem()
         {
             // Arrange
             var owned = new List<Project>
@@ -55,7 +57,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAccessibleProjectsAsync_OnlySharedProjects_ReturnsThem()
+        public async Task REQ_FUN_003_GetAccessibleProjectsAsync_OnlySharedProjects_ReturnsThem()
         {
             // Arrange
             _projectRepoMock.Setup(r => r.GetProjectsOwnedByUserAsync(200)).ReturnsAsync(new List<Project>());
@@ -76,7 +78,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAccessibleProjectsAsync_SharedProjectNotFound_SkipsIt()
+        public async Task REQ_FUN_003_GetAccessibleProjectsAsync_SharedProjectNotFound_SkipsIt()
         {
             // Arrange
             _projectRepoMock.Setup(r => r.GetProjectsOwnedByUserAsync(300)).ReturnsAsync(new List<Project>());
@@ -94,7 +96,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAccessibleProjectsAsync_DuplicateOwnedAndShared_ReturnsSingleProject()
+        public async Task REQ_FUN_003_GetAccessibleProjectsAsync_DuplicateOwnedAndShared_ReturnsSingleProject()
         {
             // Arrange: project 1 is both owned and shared
             var owned = new List<Project> { new Project { Id = 1, Name = "P1", OwnerId = 400 } };
@@ -110,7 +112,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAccessibleProjectsAsync_NoAccessibleProjects_ReturnsEmpty()
+        public async Task REQ_FUN_003_GetAccessibleProjectsAsync_NoAccessibleProjects_ReturnsEmpty()
         {
             _projectRepoMock.Setup(r => r.GetProjectsOwnedByUserAsync(500)).ReturnsAsync(new List<Project>());
             _permissionRepoMock.Setup(r => r.GetProjectIdsForUserAsync(500)).ReturnsAsync(new List<int>());
@@ -125,7 +127,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetProjectMembersAsync
 
         [Test]
-        public void GetProjectMembersAsync_ProjectNotFound_Throws()
+        public void REQ_FUN_003_GetProjectMembersAsync_ProjectNotFound_Throws()
         {
             _projectRepoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Project?)null);
 
@@ -133,7 +135,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectMembersAsync_OnlyOwner_ReturnsOwnerMember()
+        public async Task REQ_FUN_003_GetProjectMembersAsync_OnlyOwner_ReturnsOwnerMember()
         {
             // Arrange
             var project = new Project { Id = 10, OwnerId = 1 };
@@ -154,7 +156,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectMembersAsync_OwnerUserNotFound_SkipsOwner()
+        public async Task REQ_FUN_003_GetProjectMembersAsync_OwnerUserNotFound_SkipsOwner()
         {
             // Arrange
             var project = new Project { Id = 10, OwnerId = 99 };
@@ -171,7 +173,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectMembersAsync_WithActivePermissions_ReturnsMembersExcludingOwnerDuplication()
+        public async Task REQ_FUN_003_GetProjectMembersAsync_WithActivePermissions_ReturnsMembersExcludingOwnerDuplication()
         {
             // Arrange
             var project = new Project { Id = 20, OwnerId = 5 };
@@ -200,7 +202,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectMembersAsync_PendingPermissions_NotIncluded()
+        public async Task REQ_FUN_003_GetProjectMembersAsync_PendingPermissions_NotIncluded()
         {
             var project = new Project { Id = 30, OwnerId = 10 };
             var owner = new User { Id = 10, Name = "Owner10" };
@@ -221,7 +223,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectMembersAsync_PermissionUserNotFound_SkipsThatPermission()
+        public async Task REQ_FUN_003_GetProjectMembersAsync_PermissionUserNotFound_SkipsThatPermission()
         {
             var project = new Project { Id = 40, OwnerId = 99 };
             var owner = new User { Id = 99, Name = "Owner99" };

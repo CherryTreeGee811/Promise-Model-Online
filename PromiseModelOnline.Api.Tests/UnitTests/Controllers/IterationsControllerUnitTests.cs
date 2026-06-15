@@ -13,6 +13,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="IterationsController"/> covering iteration CRUD and burndown.</summary>
+// Requirements: REQ_FUN_023
     public class IterationsControllerUnitTests
     {
         private Mock<IIterationService> _mockIterationService = null!;
@@ -36,8 +38,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithValidProjectId_ReturnsIterationsForProject()
+        public async Task REQ_FUN_023_GetAll_WithValidProjectId_ReturnsIterationsForProject()
         {
+            // Arrange
             var projectId = 42;
             var iterations = new List<Iteration>
             {
@@ -59,8 +62,10 @@ namespace PromiseModelOnline.Api.Tests
             httpContext.Request.QueryString = new QueryString($"?projectId={projectId}");
             _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
@@ -75,8 +80,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithInvalidProjectId_ReturnsAllIterations()
+        public async Task REQ_FUN_023_GetAll_WithInvalidProjectId_ReturnsAllIterations()
         {
+            // Arrange
             var iterations = new List<Iteration>
             {
                 new Iteration { Id = 10, Name = "Iteration A", ProjectId = 1, CreatedAt = DateTime.UtcNow.AddDays(-3) },
@@ -97,8 +103,10 @@ namespace PromiseModelOnline.Api.Tests
             httpContext.Request.QueryString = new QueryString("?projectId=not-a-number");
             _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
@@ -112,8 +120,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithoutProjectId_ReturnsAllIterations()
+        public async Task REQ_FUN_023_GetAll_WithoutProjectId_ReturnsAllIterations()
         {
+            // Arrange
             var iterations = new List<Iteration>
             {
                 new Iteration { Id = 20, Name = "Iteration X", ProjectId = 3, CreatedAt = DateTime.UtcNow.AddDays(-4) }
@@ -133,8 +142,10 @@ namespace PromiseModelOnline.Api.Tests
             httpContext.Request.QueryString = QueryString.Empty;
             _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);

@@ -11,6 +11,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_007 REQ_FUN_009 REQ_FUN_011 REQ_FUN_012
+    /// <summary>Unit tests for <see cref="FlowService"/> covering flow CRUD and hierarchy recalculation.</summary>
     public class FlowServiceUnitTests
     {
         private Mock<IFlowRepository> _flowRepoMock = null!;
@@ -28,7 +30,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetFlowsByJourneyAsync Tests
 
         [Test]
-        public async Task GetFlowsByJourneyAsync_ReturnsMatchingFlows()
+        public async Task REQ_FUN_007_GetFlowsByJourneyAsync_ReturnsMatchingFlows()
         {
             // Arrange
             var flows = new List<Flow>
@@ -50,7 +52,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetFlowsByJourneyAsync_NoFlows_ReturnsEmpty()
+        public async Task REQ_FUN_007_GetFlowsByJourneyAsync_NoFlows_ReturnsEmpty()
         {
             _flowRepoMock.Setup(r => r.GetFlowsByJourneyAsync(99)).ReturnsAsync(new List<Flow>());
 
@@ -64,7 +66,7 @@ namespace PromiseModelOnline.Api.Tests
         #region Inherited generic methods (optional confidence)
 
         [Test]
-        public async Task GetAllAsync_DelegatesToRepository()
+        public async Task REQ_FUN_007_GetAllAsync_DelegatesToRepository()
         {
             var flows = new List<Flow> { new Flow { Id = 1 } };
             _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetAllAsync()).ReturnsAsync(flows);
@@ -74,7 +76,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetByIdAsync_ReturnsFlow_WhenFound()
+        public async Task REQ_FUN_007_GetByIdAsync_ReturnsFlow_WhenFound()
         {
             var flow = new Flow { Id = 3, Statement = "Test" };
             _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetByIdAsync(3)).ReturnsAsync(flow);
@@ -85,7 +87,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetByIdAsync_ReturnsNull_WhenNotFound()
+        public async Task REQ_FUN_007_GetByIdAsync_ReturnsNull_WhenNotFound()
         {
             _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Flow?)null);
 
@@ -94,7 +96,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task AddAsync_RollsUpHierarchyFromJourney()
+        public async Task REQ_FUN_007_AddAsync_RollsUpHierarchyFromJourney()
         {
             var flow = new Flow { Id = 7, JourneyId = 21 };
 
@@ -104,7 +106,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task DeleteByIdAsync_RollsUpHierarchyFromJourney()
+        public async Task REQ_FUN_007_DeleteByIdAsync_RollsUpHierarchyFromJourney()
         {
             var flow = new Flow { Id = 7, JourneyId = 21 };
             _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetByIdAsync(7)).ReturnsAsync(flow);

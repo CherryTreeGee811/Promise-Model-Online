@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
 {
     [TestFixture]
+    /// <summary>Unit tests for <see cref="DeadlineNotificationRunsController"/> covering notification triggers.</summary>
+    // Requirements: REQ_FUN_038
     public class DeadlineNotificationRunsControllerUnitTests
     {
         private Mock<IStrideService> _strideServiceMock = null!;
@@ -28,14 +30,17 @@ namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
         }
 
         [Test]
-        public async Task Create_ReturnsNoContentAndCallsService()
+        public async Task REQ_FUN_038_Create_ReturnsNoContentAndCallsService()
         {
+            // Arrange
             _strideServiceMock
                 .Setup(s => s.SendDeadlineNotificationsAsync())
                 .Returns(Task.CompletedTask);
 
+            // Act
             var result = await _controller.Create();
 
+            // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _strideServiceMock.Verify(s => s.SendDeadlineNotificationsAsync(), Times.Once);
         }

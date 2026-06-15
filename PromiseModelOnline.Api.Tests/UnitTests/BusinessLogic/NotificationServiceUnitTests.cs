@@ -18,6 +18,8 @@ using Microsoft.AspNetCore.SignalR;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_035 REQ_FUN_036 REQ_FUN_038
+    /// <summary>Unit tests for <see cref="NotificationService"/> covering notification CRUD and SignalR dispatch.</summary>
     public class NotificationServiceUnitTests
     {
         private Mock<INotificationRepository> _notificationRepoMock = null!;
@@ -57,7 +59,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetUnreadNotificationsAsync
 
         [Test]
-        public async Task GetUnreadNotificationsAsync_ReturnsMappedDtos()
+        public async Task REQ_FUN_035_GetUnreadNotificationsAsync_ReturnsMappedDtos()
         {
             // Arrange
             var notifications = new List<Notification>
@@ -85,7 +87,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetUnreadNotificationsAsync_NoUnread_ReturnsEmpty()
+        public async Task REQ_FUN_035_GetUnreadNotificationsAsync_NoUnread_ReturnsEmpty()
         {
             _notificationRepoMock.Setup(r => r.GetUnreadByUserIdAsync(5)).ReturnsAsync(new List<Notification>());
 
@@ -99,7 +101,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetAllNotificationsAsync
 
         [Test]
-        public async Task GetAllNotificationsAsync_ReturnsMappedDtos()
+        public async Task REQ_FUN_035_GetAllNotificationsAsync_ReturnsMappedDtos()
         {
             var notifications = new List<Notification>
             {
@@ -120,7 +122,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAllNotificationsAsync_Empty_ReturnsEmpty()
+        public async Task REQ_FUN_035_GetAllNotificationsAsync_Empty_ReturnsEmpty()
         {
             _notificationRepoMock.Setup(r => r.GetAllByUserIdAsync(30)).ReturnsAsync(new List<Notification>());
 
@@ -134,7 +136,7 @@ namespace PromiseModelOnline.Api.Tests
         #region MarkAsReadAsync
 
         [Test]
-        public async Task MarkAsReadAsync_Valid_MarksAsRead()
+        public async Task REQ_FUN_035_MarkAsReadAsync_Valid_MarksAsRead()
         {
             var notification = new Notification { Id = 1, UserId = 100 };
             _notificationRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(notification);
@@ -146,7 +148,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void MarkAsReadAsync_NotificationNotFound_Throws()
+        public void REQ_FUN_035_MarkAsReadAsync_NotificationNotFound_Throws()
         {
             _notificationRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Notification?)null);
 
@@ -154,7 +156,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void MarkAsReadAsync_WrongUser_ThrowsAccessDenied()
+        public void REQ_FUN_035_MarkAsReadAsync_WrongUser_ThrowsAccessDenied()
         {
             var notification = new Notification { Id = 2, UserId = 200 };
             _notificationRepoMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(notification);
@@ -167,7 +169,7 @@ namespace PromiseModelOnline.Api.Tests
         #region MarkAllAsReadAsync
 
         [Test]
-        public async Task MarkAllAsReadAsync_DelegatesToRepository()
+        public async Task REQ_FUN_035_MarkAllAsReadAsync_DelegatesToRepository()
         {
             _notificationRepoMock.Setup(r => r.MarkAllAsReadAsync(50)).Returns(Task.CompletedTask);
 
@@ -181,7 +183,7 @@ namespace PromiseModelOnline.Api.Tests
         #region CreateNotificationAsync
 
         [Test]
-        public async Task CreateNotificationAsync_AddsAndSavesNotification()
+        public async Task REQ_FUN_035_CreateNotificationAsync_AddsAndSavesNotification()
         {
             // Arrange
             Notification? savedNotification = null;
@@ -215,7 +217,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateNotificationAsync_LinkIsNull_DoesNotSetLink()
+        public async Task REQ_FUN_035_CreateNotificationAsync_LinkIsNull_DoesNotSetLink()
         {
             Notification? savedNotification = null;
             _notificationRepoMock.Setup(r => r.AddAsync(It.IsAny<Notification>()))

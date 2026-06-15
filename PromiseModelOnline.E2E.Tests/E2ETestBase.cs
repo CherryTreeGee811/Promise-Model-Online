@@ -4,22 +4,43 @@ using Microsoft.Playwright.NUnit;
 
 namespace PromiseModelOnline.E2E.Tests;
 
+/// <summary>Base class for E2E tests with Playwright browser automation and authenticated HTTP helpers.</summary>
+/// <remarks>
+///   Provides a real browser session, login flow via the Auth server's login page,
+///   and authenticated HTTP clients that carry the browser's session cookie for
+///   direct API requests.
+/// </remarks>
 public abstract class E2ETestBase
 {
+    /// <summary>Base URL for the BFF application.</summary>
     protected const string BaseUrl = "https://localhost:9000";
+
+    /// <summary>Base URL for the application (same as <see cref="BaseUrl"/>).</summary>
     protected const string AppUrl = "https://localhost:9000";
+
+    /// <summary>Username for the primary test account.</summary>
     protected const string TestUsername = "pmo_test";
+
+    /// <summary>Password for the primary test account.</summary>
     protected const string TestPassword = "Hello123*";
+
+    /// <summary>Username for the secondary test account.</summary>
     protected const string SecondUsername = "pmo_test2";
+
+    /// <summary>Password for the secondary test account.</summary>
     protected const string SecondPassword = "Hello123*";
 
     private IPlaywright _playwright = null!;
     private IBrowser _browser = null!;
     private IBrowserContext _context = null!;
 
+    /// <summary>The active Playwright page for browser-based interactions.</summary>
     protected IPage Page { get; private set; } = null!;
+
+    /// <summary>HTTP client for direct API requests (no session cookie).</summary>
     protected HttpClient Client { get; private set; } = null!;
 
+    /// <summary>Set up the browser, page, and HTTP client before each test.</summary>
     [SetUp]
     public async Task BaseSetUp()
     {
@@ -47,6 +68,7 @@ public abstract class E2ETestBase
         Client.BaseAddress = new Uri(BaseUrl);
     }
 
+    /// <summary>Clean up browser, context, and HTTP client after each test.</summary>
     [TearDown]
     public async Task BaseTearDown()
     {
@@ -56,19 +78,21 @@ public abstract class E2ETestBase
         _playwright?.Dispose();
     }
 
+    /// <summary>Log in as the primary test user via the Auth server login page.</summary>
     protected async Task LoginAsync()
     {
         await LoginAsUser(TestUsername, TestPassword);
     }
 
+    /// <summary>Log in as the secondary test user via the Auth server login page.</summary>
     protected async Task LoginAsSecondUserAsync()
     {
         await LoginAsUser(SecondUsername, SecondPassword);
     }
 
+    /// <summary>Complete the login flow for a specific user through the browser.</summary>
     private async Task LoginAsUser(string username, string password)
     {
-        // Clear any existing session so the BFF challenges via OIDC
         await _context.ClearCookiesAsync();
 
         for (var attempt = 1; attempt <= 3; attempt++)
@@ -92,10 +116,8 @@ public abstract class E2ETestBase
         }
     }
 
-    /// <summary>
-    /// Returns an HttpClient that carries the browser's current session cookie.
-    /// Call after LoginAsync() to make authenticated API requests.
-    /// </summary>
+    /// <summary>Return an <see cref="HttpClient"/> that carries the browser's current session cookie.</summary>
+    /// <remarks>Call after <see cref="LoginAsync"/> to make authenticated API requests.</remarks>
     protected async Task<HttpClient> GetAuthClientAsync()
     {
         var cookies = await _context.CookiesAsync();
@@ -113,6 +135,7 @@ public abstract class E2ETestBase
         return client;
     }
 
+    /// <summary>Perform an authenticated GET request using the browser session cookie.</summary>
     protected async Task<HttpResponseMessage> AuthGetAsync(string path, bool ajax = false)
     {
         using var client = await GetAuthClientAsync();
@@ -121,6 +144,7 @@ public abstract class E2ETestBase
         return await client.SendAsync(request);
     }
 
+    /// <summary>Perform an authenticated POST request with JSON body.</summary>
     protected async Task<HttpResponseMessage> AuthPostJsonAsync(string path, string json, bool ajax = false)
     {
         using var client = await GetAuthClientAsync();
@@ -130,6 +154,7 @@ public abstract class E2ETestBase
         return await client.SendAsync(request);
     }
 
+    /// <summary>Perform an authenticated PATCH request with JSON body.</summary>
     protected async Task<HttpResponseMessage> AuthPatchJsonAsync(string path, string json)
     {
         using var client = await GetAuthClientAsync();
@@ -138,6 +163,7 @@ public abstract class E2ETestBase
         return await client.SendAsync(request);
     }
 
+    /// <summary>Perform an authenticated DELETE request.</summary>
     protected async Task<HttpResponseMessage> AuthDeleteAsync(string path, bool ajax = false)
     {
         using var client = await GetAuthClientAsync();
@@ -146,6 +172,7 @@ public abstract class E2ETestBase
         return await client.SendAsync(request);
     }
 
+    /// <summary>Perform an unauthenticated GET request.</summary>
     protected async Task<HttpResponseMessage> GetAsync(string path, bool ajax = false)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -153,11 +180,13 @@ public abstract class E2ETestBase
         return await Client.SendAsync(request);
     }
 
+    /// <summary>Perform an unauthenticated POST request with form data.</summary>
     protected async Task<HttpResponseMessage> PostFormAsync(string path, Dictionary<string, string> form)
     {
         return await Client.PostAsync(path, new FormUrlEncodedContent(form));
     }
 
+    /// <summary>Perform an unauthenticated POST request with JSON body.</summary>
     protected async Task<HttpResponseMessage> PostJsonAsync(string path, string json, bool ajax = false)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, path);
@@ -166,6 +195,7 @@ public abstract class E2ETestBase
         return await Client.SendAsync(request);
     }
 
+    /// <summary>Perform an unauthenticated PATCH request with JSON body.</summary>
     protected async Task<HttpResponseMessage> PatchJsonAsync(string path, string json, bool ajax = false)
     {
         using var request = new HttpRequestMessage(HttpMethod.Patch, path);
@@ -174,6 +204,7 @@ public abstract class E2ETestBase
         return await Client.SendAsync(request);
     }
 
+    /// <summary>Perform an unauthenticated DELETE request.</summary>
     protected async Task<HttpResponseMessage> DeleteAsync(string path, bool ajax = false)
     {
         using var request = new HttpRequestMessage(HttpMethod.Delete, path);
@@ -181,6 +212,7 @@ public abstract class E2ETestBase
         return await Client.SendAsync(request);
     }
 
+    /// <summary>Send multiple concurrent requests to an endpoint for rate-limit testing.</summary>
     protected async Task<List<HttpStatusCode>> HammerAsync(string path, int count, HttpMethod? method = null)
     {
         method ??= HttpMethod.Get;

@@ -3,6 +3,11 @@ using SendGrid.Helpers.Mail;
 
 namespace PromiseModelOnline.Auth.Services;
 
+/// <summary>Sends transactional emails via SendGrid.</summary>
+/// <remarks>
+///   Reads the SendGrid API key from configuration or a Docker secret file.
+///   Currently used for verification code emails with a styled HTML template.
+/// </remarks>
 public class EmailService : IEmailService
 {
     private readonly string _apiKey;
@@ -10,6 +15,10 @@ public class EmailService : IEmailService
     private const string FromEmail = "no-reply@promisemodel.online";
     private const string FromName = "Promise Model Online";
 
+    /// <summary>Initialize the service with the SendGrid API key from config or secret file.</summary>
+    /// <param name="configuration">The configuration for the SendGrid API key.</param>
+    /// <param name="logger">The logger for diagnostic messages.</param>
+    /// <exception cref="InvalidOperationException">SendGrid API key is not configured.</exception>
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
     {
         _logger = logger;
@@ -41,6 +50,10 @@ public class EmailService : IEmailService
         _apiKey = apiKey;
     }
 
+    /// <summary>Compose and send a verification code email with a styled HTML template.</summary>
+    /// <param name="email">The recipient's email address.</param>
+    /// <param name="username">The recipient's display name for personalization.</param>
+    /// <param name="verificationCode">The 6-digit verification code.</param>
     public async Task SendVerificationEmailAsync(string email, string username, string verificationCode)
     {
         var client = new SendGridClient(_apiKey);
@@ -79,8 +92,6 @@ public class EmailService : IEmailService
             <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;">
             <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.5;">If you did not create this account, you can safely ignore this email.</p>
             <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.5;">Promise Model Online &bull; Waterloo, Ontario, Canada</p>
-            </td></tr></table>
-            </td></tr></table>
             </body>
             </html>
             """;

@@ -3,6 +3,8 @@ using PromiseModelOnline.Client.Tests.Helpers;
 namespace PromiseModelOnline.Client.Tests.Tests;
 
 [TestFixture]
+/// <summary>Playwright tests for WCAG 2.1 AA accessibility compliance using axe-core scans and responsive viewports.</summary>
+// Requirements: REQ_USE_006 REQ_USE_009 REQ_USE_010 REQ_WCAG_001 REQ_WCAG_002 REQ_WCAG_003 REQ_WCAG_005 REQ_WCAG_007 REQ_WCAG_008
 public class AccessibilityTests : ResponsivePlaywrightTestBase
 {
     private const string AxeLocalPath = "/js/axe.min.js";
@@ -54,10 +56,13 @@ public class AccessibilityTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task HomePage_NoAccessibilityViolations(Viewport vp)
+    public async Task REQ_USE_006_HomePage_NoAccessibilityViolations(Viewport vp)
     {
+        // Arrange
         await EnsureLoggedInAsync(vp);
+        // Act
         var violations = await RunAxeScanAsync();
+        // Assert
         AssertViolationCount(violations, "Home page");
     }
 
@@ -65,10 +70,13 @@ public class AccessibilityTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task ProjectsList_NoAccessibilityViolations(Viewport vp)
+    public async Task REQ_USE_006_ProjectsList_NoAccessibilityViolations(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/projects");
+        // Act
         var violations = await RunAxeScanAsync();
+        // Assert
         AssertViolationCount(violations, "Projects list");
     }
 
@@ -76,10 +84,13 @@ public class AccessibilityTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task StrideBoard_NoAccessibilityViolations(Viewport vp)
+    public async Task REQ_USE_006_StrideBoard_NoAccessibilityViolations(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+        // Act
         var violations = await RunAxeScanAsync();
+        // Assert
         AssertViolationCount(violations, "Stride board");
     }
 
@@ -87,10 +98,13 @@ public class AccessibilityTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task ProjectGraph_NoAccessibilityViolations(Viewport vp)
+    public async Task REQ_USE_006_ProjectGraph_NoAccessibilityViolations(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/graph");
+        // Act
         var violations = await RunAxeScanAsync();
+        // Assert
         AssertViolationCount(violations, "Project graph");
     }
 
@@ -98,10 +112,13 @@ public class AccessibilityTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task PromiseDetail_NoAccessibilityViolations(Viewport vp)
+    public async Task REQ_USE_006_PromiseDetail_NoAccessibilityViolations(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/promises/1");
+        // Act
         var violations = await RunAxeScanAsync();
+        // Assert
         AssertViolationCount(violations, "Promise detail");
     }
 

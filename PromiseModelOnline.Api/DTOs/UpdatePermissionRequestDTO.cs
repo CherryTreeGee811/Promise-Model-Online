@@ -3,12 +3,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-/// <summary>
-/// Partial update payload for a permission invitation (e.g., accept an invite).
-/// </summary>
+/// <summary>Request DTO for accepting a project invitation by updating a permission's status.</summary>
 public class UpdatePermissionRequestDTO : IValidatableObject
 {
+    /// <summary>New status value (only <c>"Active"</c> is supported).</summary>
     public string? Status { get; set; }
+    
+    /// <summary>Access level (cannot be updated via this endpoint).</summary>
+    /// <param name="validationContext">The validation context.</param>
     public string? Level { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

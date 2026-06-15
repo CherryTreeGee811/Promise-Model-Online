@@ -14,6 +14,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="StridesController"/> covering stride CRUD.</summary>
+// Requirements: REQ_FUN_024 REQ_FUN_025
     public class StridesControllerUnitTests
     {
         private Mock<IStrideService> _mockStrideService = null!;
@@ -36,8 +38,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithoutQuery_ReturnsAllStrides()
+        public async Task REQ_FUN_024_GetAll_WithoutQuery_ReturnsAllStrides()
         {
+            // Arrange
             var strides = new List<Stride>
             {
                 new Stride { Id = 1, Name = "Stride 1", IterationId = 10 },
@@ -63,8 +66,10 @@ namespace PromiseModelOnline.Api.Tests
                 HttpContext = new DefaultHttpContext { Request = { QueryString = QueryString.Empty } }
             };
 
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             var dtos = ok!.Value as List<StrideDTO>;
@@ -75,8 +80,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithValidIterationId_ReturnsFilteredStrides()
+        public async Task REQ_FUN_024_GetAll_WithValidIterationId_ReturnsFilteredStrides()
         {
+            // Arrange
             const int iterationId = 8;
             var strides = new List<Stride>
             {
@@ -97,8 +103,10 @@ namespace PromiseModelOnline.Api.Tests
                 HttpContext = new DefaultHttpContext { Request = { QueryString = new QueryString($"?iterationId={iterationId}") } }
             };
 
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             var dtos = ok!.Value as List<StrideDTO>;
@@ -110,8 +118,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithInvalidIterationId_FallsBackToAllStrides()
+        public async Task REQ_FUN_024_GetAll_WithInvalidIterationId_FallsBackToAllStrides()
         {
+            // Arrange
             var strides = new List<Stride>
             {
                 new Stride { Id = 4, Name = "All strides" }
@@ -130,8 +139,10 @@ namespace PromiseModelOnline.Api.Tests
                 HttpContext = new DefaultHttpContext { Request = { QueryString = new QueryString("?iterationId=not-an-int") } }
             };
 
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             var dtos = ok!.Value as List<StrideDTO>;
@@ -143,16 +154,19 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateStride_ProgressUnfinishedMoments_ReturnsNoContentAndMovesMoments()
+        public async Task REQ_FUN_024_UpdateStride_ProgressUnfinishedMoments_ReturnsNoContentAndMovesMoments()
         {
+            // Arrange
             const int strideId = 12;
 
             _mockMomentService
                 .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
                 .Returns(Task.CompletedTask);
 
+            // Act
             var result = await _controller.UpdateStride(strideId, new UpdateStrideRequestDTO { ProgressUnfinishedMoments = true });
 
+            // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _mockMomentService.Verify(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId), Times.Once);
         }

@@ -770,6 +770,10 @@ function buildMenuElement(actions) {
     return menu;
 }
 
+/**
+ * Create a context menu controller for the graph visualization.
+ * @param {*} container - TODO
+ */
 export function createGraphContextMenuController({
     owner,
     project,

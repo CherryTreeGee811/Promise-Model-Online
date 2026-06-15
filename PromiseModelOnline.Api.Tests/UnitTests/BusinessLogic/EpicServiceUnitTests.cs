@@ -11,6 +11,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_005 REQ_FUN_009 REQ_FUN_011 REQ_FUN_012
+    /// <summary>Unit tests for <see cref="EpicService"/> covering epic CRUD and hierarchy recalculation.</summary>
     public class EpicServiceUnitTests
     {
         private Mock<IEpicRepository> _epicRepoMock = null!;
@@ -28,7 +30,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetEpicsByPromiseAsync Tests
 
         [Test]
-        public async Task GetEpicsByPromiseAsync_ReturnsMatchingEpics()
+        public async Task REQ_FUN_005_GetEpicsByPromiseAsync_ReturnsMatchingEpics()
         {
             // Arrange
             var epics = new List<Epic>
@@ -50,7 +52,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetEpicsByPromiseAsync_NoEpics_ReturnsEmpty()
+        public async Task REQ_FUN_005_GetEpicsByPromiseAsync_NoEpics_ReturnsEmpty()
         {
             // Arrange
             _epicRepoMock.Setup(r => r.GetEpicsByPromiseAsync(99)).ReturnsAsync(new List<Epic>());
@@ -67,7 +69,7 @@ namespace PromiseModelOnline.Api.Tests
         #region Inherited Methods (optional – shows base functionality works)
 
         [Test]
-        public async Task GetAllAsync_ReturnsAllEpics()
+        public async Task REQ_FUN_005_GetAllAsync_ReturnsAllEpics()
         {
             // Arrange
             var epics = new List<Epic>
@@ -85,7 +87,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetByIdAsync_ValidId_ReturnsEpic()
+        public async Task REQ_FUN_005_GetByIdAsync_ValidId_ReturnsEpic()
         {
             var epic = new Epic { Id = 5, Statement = "Test" };
             _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.GetByIdAsync(5)).ReturnsAsync(epic);
@@ -97,7 +99,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetByIdAsync_InvalidId_ReturnsNull()
+        public async Task REQ_FUN_005_GetByIdAsync_InvalidId_ReturnsNull()
         {
             _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Epic?)null);
 
@@ -107,7 +109,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task AddAsync_RollsUpHierarchyFromPromise()
+        public async Task REQ_FUN_005_AddAsync_RollsUpHierarchyFromPromise()
         {
             var epic = new Epic { Id = 9, ProductPromiseId = 23 };
 
@@ -117,7 +119,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task DeleteByIdAsync_RollsUpHierarchyFromPromise()
+        public async Task REQ_FUN_005_DeleteByIdAsync_RollsUpHierarchyFromPromise()
         {
             var epic = new Epic { Id = 9, ProductPromiseId = 23 };
             _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.GetByIdAsync(9)).ReturnsAsync(epic);

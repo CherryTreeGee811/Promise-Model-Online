@@ -11,6 +11,8 @@ using PMO.Core.Models;
 
 namespace PromiseModelOnline.Api.Tests;
 
+// Requirements: REQ_FUN_039 REQ_NF_008
+/// <summary>Unit tests for <see cref="ProjectImportValidationService"/> covering import validation.</summary>
 public class ProjectImportValidationServiceUnitTests
 {
     private ProjectImportValidationService _service = null!;
@@ -22,8 +24,9 @@ public class ProjectImportValidationServiceUnitTests
     }
 
     [Test]
-    public async Task ValidateAsync_WithValidDocument_ReturnsDocument()
+    public async Task REQ_FUN_039_ValidateAsync_WithValidDocument_ReturnsDocument()
     {
+        // Arrange
         var document = new ProjectExportDocument
         {
             SchemaVersion = "1.0",
@@ -123,8 +126,10 @@ public class ProjectImportValidationServiceUnitTests
 
         await using var stream = CreateStream(document);
 
+        // Act
         var result = await _service.ValidateAsync(stream);
 
+        // Assert
         Assert.That(result.IsValid, Is.True);
         Assert.That(result.Errors, Is.Empty);
         Assert.That(result.Warnings, Is.Empty);
@@ -133,19 +138,23 @@ public class ProjectImportValidationServiceUnitTests
     }
 
     [Test]
-    public async Task ValidateAsync_WithMalformedJson_ReturnsError()
+    public async Task REQ_FUN_039_ValidateAsync_WithMalformedJson_ReturnsError()
     {
+        // Arrange
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{ invalid json"));
 
+        // Act
         var result = await _service.ValidateAsync(stream);
 
+        // Assert
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Single(), Does.StartWith("Malformed JSON:"));
     }
 
     [Test]
-    public async Task ValidateAsync_WithUnsupportedSchemaVersion_ReturnsError()
+    public async Task REQ_FUN_039_ValidateAsync_WithUnsupportedSchemaVersion_ReturnsError()
     {
+        // Arrange
         var document = new ProjectExportDocument
         {
             SchemaVersion = "2.0",
@@ -158,15 +167,18 @@ public class ProjectImportValidationServiceUnitTests
 
         await using var stream = CreateStream(document);
 
+        // Act
         var result = await _service.ValidateAsync(stream);
 
+        // Assert
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Has.Some.Contains("Unsupported schema version"));
     }
 
     [Test]
-    public async Task ValidateAsync_WithBrokenHierarchy_ReturnsError()
+    public async Task REQ_FUN_039_ValidateAsync_WithBrokenHierarchy_ReturnsError()
     {
+        // Arrange
         var document = new ProjectExportDocument
         {
             SchemaVersion = "1.0",
@@ -189,8 +201,10 @@ public class ProjectImportValidationServiceUnitTests
 
         await using var stream = CreateStream(document);
 
+        // Act
         var result = await _service.ValidateAsync(stream);
 
+        // Assert
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Has.Some.Contains("references project 999"));
     }

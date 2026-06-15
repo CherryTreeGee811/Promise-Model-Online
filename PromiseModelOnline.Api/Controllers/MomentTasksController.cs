@@ -13,6 +13,12 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for moment sub-task CRUD within a parent moment.</summary>
+    /// <remarks>
+    ///   Requires <c>projects.write</c> policy. All operations verify the current user has
+    ///   <see cref="PermissionLevel.Edit"/> on the moment's project. Routes are scoped under
+    ///   <c>/api/moments/{momentId}/tasks</c>.
+    /// </remarks>
     [Route("api/moments/{momentId:int}/tasks")]
     public class MomentTasksController : ControllerBase
     {
@@ -36,6 +42,10 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
+        /// <summary>Create a sub-task for a moment.</summary>
+        /// <param name="momentId">The parent moment ID.</param>
+        /// <param name="request">The task creation data.</param>
+        /// <returns>The created task DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<MomentTaskDTO>> Create(int momentId, [FromBody] CreateMomentTaskRequestDTO request)
@@ -74,6 +84,11 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(Map(task));
         }
 
+        /// <summary>Toggle completion state of a moment sub-task.</summary>
+        /// <param name="momentId">The parent moment ID.</param>
+        /// <param name="taskId">The task ID to update.</param>
+        /// <param name="request">The completion update data.</param>
+        /// <returns>The updated task DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{taskId:int}/completion")]
         public async Task<ActionResult<MomentTaskDTO>> UpdateCompletion(int momentId, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDTO request)
@@ -105,6 +120,9 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(Map(task));
         }
 
+        /// <summary>Map a MomentTask entity to its DTO.</summary>
+        /// <param name="task">The task entity to map.</param>
+        /// <returns>The mapped DTO.</returns>
         private static MomentTaskDTO Map(MomentTask task)
         {
             return new MomentTaskDTO
@@ -120,6 +138,7 @@ namespace PromiseModelOnline.Api.Controllers
             };
         }
 
+        /// <summary>Resolve the current user from JWT claims.</summary>
         private async Task<User?> GetCurrentUserAsync()
         {
             var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
@@ -130,6 +149,8 @@ namespace PromiseModelOnline.Api.Controllers
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }
 
+        /// <summary>Check if the current user has Edit permission.</summary>
+        /// <param name="momentId">The moment ID.</param>
         private async Task<bool> UserCanEditMomentAsync(int momentId)
         {
             var user = await GetCurrentUserAsync();

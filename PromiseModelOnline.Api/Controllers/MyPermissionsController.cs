@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for managing the current user's project permissions and invitations.</summary>
+    /// <remarks>
+    ///   Provides endpoints for viewing pending invitations and accepting them.
+    ///   Requires <c>projects.read</c> for read operations and <c>projects.write</c> for accepting.
+    /// </remarks>
     [ApiController]
     [Route("api/permissions")]
     public class MyPermissionsController : ControllerBase
@@ -29,6 +34,7 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
+        /// <summary>Get all pending project invitations for the current user.</summary>
         [Authorize(Policy = "projects.read")]
         [HttpGet("pending")]
         public async Task<ActionResult<IEnumerable<PendingInvitationDTO>>> GetPendingInvitations()
@@ -40,6 +46,9 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(invitations);
         }
 
+        /// <summary>Accept a pending project invitation.</summary>
+        /// <param name="id">The permission/invitation ID.</param>
+        /// <param name="request">The update payload.</param>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
         public async Task<ActionResult<PermissionDTO>> UpdatePermissionStatus(
@@ -60,14 +69,14 @@ namespace PromiseModelOnline.Api.Controllers
             }
         }
 
+        /// <summary>Resolve the current user ID from JWT email claim.</summary>
         private async Task<int?> GetCurrentUserIdByEmailAsync()
         {
-            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
                      ?? User.FindFirst("email")?.Value
                      ?? User.FindFirst("emails")?.Value;
 
-            if (string.IsNullOrEmpty(email))
-                return null;
+            if (string.IsNullOrEmpty(email)) return null;
 
             var username = User.FindFirst("nameid")?.Value;
             var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);

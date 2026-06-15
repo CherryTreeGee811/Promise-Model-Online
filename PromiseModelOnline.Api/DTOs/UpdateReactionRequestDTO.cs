@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-/// <summary>
-/// Partial update payload for a reaction.
-/// </summary>
+/// <summary>Request DTO for updating a reaction's emote.</summary>
 public class UpdateReactionRequestDTO : IValidatableObject
 {
+    /// <summary>Emoji reaction string.</summary>
+    /// <param name="validationContext">The validation context.</param>
     public string? Emote { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

@@ -8,10 +8,13 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Threading.Tasks;
+/// <summary>REST controller for promise CRUD within a project scope, with sequence-based lookup and total effort calculation.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/promises")]
+    /// Project Promises Controller.
+    /// </summary>
     public class ProjectPromisesController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Promise> _service;
@@ -32,7 +35,12 @@ namespace PromiseModelOnline.Api.Controllers
             _momentService = momentService;
             _context = context;
         }
-
+        /// <param name="seq">The entity's sequence number within its parent scope.</param>
+        /// <summary>Return a promise by its sequence number within the project.</summary>
+        /// <param name="seq">The promise sequence number.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The matching promise as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}")]
         public async Task<ActionResult<PromiseDTO>> GetBySeq(int seq, string owner, string project)
@@ -49,7 +57,11 @@ namespace PromiseModelOnline.Api.Controllers
 
             return Ok(_mapper.Map(promise, _service));
         }
-
+        /// <summary>Return a promise by its ID within the project scope.</summary>
+        /// <param name="id">The promise's primary key.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The matching promise as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
         public async Task<ActionResult<PromiseDTO>> GetById(int id, string owner, string project)
@@ -66,7 +78,12 @@ namespace PromiseModelOnline.Api.Controllers
 
             return Ok(_mapper.Map(promise, _service));
         }
-
+        /// <summary>Update a promise within the project scope.</summary>
+        /// <param name="seq">The promise sequence number.</param>
+        /// <param name="entity">The updated promise entity.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPut("{seq}")]
         public async Task<IActionResult> Update(int seq, [FromBody] Promise entity, string owner, string project)
@@ -87,7 +104,11 @@ namespace PromiseModelOnline.Api.Controllers
             await _service.UpdateAsync(entity);
             return NoContent();
         }
-
+        /// <summary>Delete a promise by its sequence number.</summary>
+        /// <param name="seq">The promise sequence number.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
@@ -108,7 +129,11 @@ namespace PromiseModelOnline.Api.Controllers
 
             return NoContent();
         }
-
+        /// <summary>Create a promise from a DTO with auto-generated sequence number.</summary>
+        /// <param name="request">The promise creation data.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The created promise as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<PromiseDTO>> CreateFromDto([FromBody] CreatePromiseRequestDTO request, string owner, string project)
@@ -138,7 +163,12 @@ namespace PromiseModelOnline.Api.Controllers
             await _service.AddAsync(promise);
             return CreatedAtAction(nameof(GetBySeq), new { owner, project, seq = promise.SequenceNumber }, _mapper.Map(promise, _service));
         }
-
+        /// <summary>Update a promise's description.</summary>
+        /// <param name="seq">The promise sequence number.</param>
+        /// <param name="request">The description update request.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/description")]
         public async Task<ActionResult<PromiseDTO>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
@@ -167,7 +197,11 @@ namespace PromiseModelOnline.Api.Controllers
             await _service.UpdateAsync(promise);
             return Ok(_mapper.Map(promise, _service));
         }
-
+        /// <summary>Get the total effort estimate for all moments under a promise.</summary>
+        /// <param name="seq">The promise sequence number.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The total effort value.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}/total-effort")]
         public async Task<ActionResult<int>> GetTotalEffort(int seq, string owner, string project)

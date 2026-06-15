@@ -1,6 +1,12 @@
 import { createStride } from '../strides/api.mjs';
 import { escapeHtml } from './html.mjs';
 
+/**
+ * Ensure a modal element exists in the DOM, creating it if necessary.
+ * @param {string} modalId - The modal element ID.
+ * @param {string} modalMarkup - The HTML markup for the modal.
+ * @returns {HTMLElement|null} The modal element.
+ */
 function ensureModal(modalId, modalMarkup) {
     let modalEl = document.getElementById(modalId);
     if (modalEl) return modalEl;
@@ -16,16 +22,23 @@ function ensureModal(modalId, modalMarkup) {
     return modalEl;
 }
 
+/** Format a date as YYYY-MM-DD for input[type=date] values. */
 function formatDateInputValue(date) {
     return new Date(date).toISOString().slice(0, 10);
 }
 
+/** Add a number of days to a date. */
 function addDays(date, days) {
     const next = new Date(date);
     next.setDate(next.getDate() + days);
     return next;
 }
 
+/**
+ * Compute default start/end dates for a new stride based on existing strides.
+ * @param {Array} existingStrides - Existing stride objects with endDate.
+ * @returns {{startDate: string, endDate: string, durationDays: number}}
+ */
 function getNewStrideDefaults(existingStrides = []) {
     const now = new Date();
     const strideDurationDays = 14;
@@ -47,6 +60,16 @@ function getNewStrideDefaults(existingStrides = []) {
     };
 }
 
+/**
+ * Open a modal dialog for creating a new stride.
+ * @param {object} options
+ * @param {string} options.owner - The project owner's slug.
+ * @param {string} options.project - The project's slug.
+ * @param {number} options.iterationId - The currently selected iteration ID.
+ * @param {Array} [options.iterations] - Available iterations for the select dropdown.
+ * @param {Array} [options.existingStrides] - Existing strides for default date computation.
+ * @param {Function} options.onCreated - Callback invoked after successful creation.
+ */
 export function openStrideCreateModal({
     owner,
     project,

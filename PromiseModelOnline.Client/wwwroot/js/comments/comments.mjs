@@ -5,6 +5,15 @@ import { createCommentAutocomplete } from './autocomplete.mjs';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.mjs';
 import { isAtLeast } from '../utils/permissions.mjs';
 
+/**
+ * Load and render the comments section for an entity.
+ * @param {*} container - TODO
+ * @param {*} entityType - TODO
+ * @param {*} entityId - TODO
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} permission - TODO
+ */
 export function loadComments(container, parentType, parentId, owner, project, permission) {
     const canComment = isAtLeast(permission?.permission, 'Comment');
 

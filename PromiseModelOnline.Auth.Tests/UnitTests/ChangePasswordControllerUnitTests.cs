@@ -12,6 +12,8 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace PromiseModelOnline.Auth.Tests;
 
+/// <summary>Unit tests for <see cref="ChangePasswordController"/> covering password change with validation and token revocation.</summary>
+// Requirements: REQ_USE_012
 public class ChangePasswordControllerUnitTests
 {
     private Mock<UserManager<IdentityUser>> _userManagerMock = null!;
@@ -48,7 +50,7 @@ public class ChangePasswordControllerUnitTests
     }
 
     [Test]
-    public async Task ChangePassword_MissingSubjectClaim_ReturnsUnauthorized()
+    public async Task REQ_USE_012_ChangePassword_MissingSubjectClaim_ReturnsUnauthorized()
     {
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
@@ -59,53 +61,68 @@ public class ChangePasswordControllerUnitTests
     }
 
     [Test]
-    public async Task ChangePassword_NullRequest_ReturnsBadRequest()
+    public async Task REQ_USE_012_ChangePassword_NullRequest_ReturnsBadRequest()
     {
+        // Act
         var result = await _controller.ChangePassword(null);
+
+        // Assert
         Assert.That(result, Is.TypeOf<BadRequestObjectResult>());
     }
 
     [Test]
-    public async Task ChangePassword_PasswordMismatch_ReturnsBadRequest()
+    public async Task REQ_USE_012_ChangePassword_PasswordMismatch_ReturnsBadRequest()
     {
+        // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
             CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "different"
         });
+
+        // Assert
         Assert.That(result, Is.TypeOf<BadRequestObjectResult>());
     }
 
     [Test]
-    public async Task ChangePassword_UserNotFound_ReturnsUnauthorized()
+    public async Task REQ_USE_012_ChangePassword_UserNotFound_ReturnsUnauthorized()
     {
+        // Arrange
         SetSubjectUser("ghost");
         _userManagerMock.Setup(x => x.FindByIdAsync("ghost")).ReturnsAsync((IdentityUser?)null);
 
+        // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
             CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
         });
+
+        // Assert
         Assert.That(result, Is.TypeOf<UnauthorizedResult>());
     }
 
     [Test]
-    public async Task ChangePassword_InvalidCurrentPassword_ReturnsUnauthorizedObject()
+    public async Task REQ_USE_012_ChangePassword_InvalidCurrentPassword_ReturnsUnauthorizedObject()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", UserName = "test" };
         SetSubjectUser("1");
         _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "old")).ReturnsAsync(false);
 
+        // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
             CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
         });
+
+        // Assert
         Assert.That(result, Is.TypeOf<UnauthorizedObjectResult>());
     }
 
     [Test]
-    public async Task ChangePassword_ChangeFails_ReturnsBadRequestWithErrors()
+    public async Task REQ_USE_012_ChangePassword_ChangeFails_ReturnsBadRequestWithErrors()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", UserName = "test" };
         SetSubjectUser("1");
         _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
@@ -113,6 +130,7 @@ public class ChangePasswordControllerUnitTests
         _userManagerMock.Setup(x => x.ChangePasswordAsync(user, "old", "new"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "err1" }));
 
+        // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
             CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
@@ -124,16 +142,15 @@ public class ChangePasswordControllerUnitTests
     }
 
     [Test]
-    public async Task ChangePassword_Success_RevokesTokensAndReturnsNoContent()
+    public async Task REQ_USE_012_ChangePassword_Success_RevokesTokensAndReturnsNoContent()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", UserName = "test" };
         SetSubjectUser("1");
         _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "old")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.ChangePasswordAsync(user, "old", "new"))
             .ReturnsAsync(IdentityResult.Success);
-
-        // Override default to return two tokens
         _tokenManagerMock
             .Setup(x => x.FindAsync(
                 subject: "1",
@@ -143,6 +160,7 @@ public class ChangePasswordControllerUnitTests
                 cancellationToken: It.IsAny<CancellationToken>()))
             .Returns(AsyncEnumerableFrom(new object(), new object()));
 
+        // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
             CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"

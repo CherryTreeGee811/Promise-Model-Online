@@ -4,16 +4,24 @@ using Microsoft.Extensions.Options;
 
 namespace PromiseModelOnline.BFF.Tests;
 
+/// <summary>Custom <see cref="WebApplicationFactory{TEntryPoint}"/> for BFF integration tests.</summary>
+/// <remarks>
+///   Configures the test environment with mock authentication handlers
+///   (<see cref="TestAuthHandler"/>, <see cref="TestChallengeHandler"/>) and
+///   an in-memory reverse proxy destination for isolated testing.
+/// </remarks>
 public class BffWebApplicationFactory : WebApplicationFactory<Program>
 {
     private static readonly object _lock = new();
     private static bool _varsSet;
 
+    /// <summary>Initializes the factory and sets required environment variables.</summary>
     public BffWebApplicationFactory()
     {
         SetEnvVars();
     }
 
+    /// <summary>Set environment variables required by the BFF. Thread-safe, runs once.</summary>
     private static void SetEnvVars()
     {
         if (_varsSet) return;
@@ -27,6 +35,7 @@ public class BffWebApplicationFactory : WebApplicationFactory<Program>
         }
     }
 
+    /// <summary>Configure the web host with mock authentication and in-memory proxy config.</summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -58,6 +67,8 @@ public class BffWebApplicationFactory : WebApplicationFactory<Program>
         });
     }
 
+    /// <summary>Create an HTTP client with optional redirect following.</summary>
+    /// <param name="allowAutoRedirect">Whether to follow redirect responses.</param>
     public HttpClient CreateClient(bool allowAutoRedirect)
     {
         return CreateClient(new WebApplicationFactoryClientOptions

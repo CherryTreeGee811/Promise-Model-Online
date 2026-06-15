@@ -16,6 +16,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for the controller covering CRUD operations.</summary>
+    // Requirements: REQ_FUN_005
     public class EpicsControllerUnitTests
     {
         private Mock<IEpicService> _mockEpicService = null!;
@@ -46,7 +48,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetAll Tests
 
         [Test]
-        public async Task GetAll_WithoutPromiseIdParameter_ReturnsAllEpics()
+        public async Task REQ_FUN_005_GetAll_WithoutPromiseIdParameter_ReturnsAllEpics()
         {
             // Arrange
             var epics = new List<Epic>
@@ -85,7 +87,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithValidPromiseIdParameter_ReturnsEpicsFilteredByPromise()
+        public async Task REQ_FUN_005_GetAll_WithValidPromiseIdParameter_ReturnsEpicsFilteredByPromise()
         {
             // Arrange
             int promiseId = 10;
@@ -125,7 +127,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithInvalidPromiseIdParameter_ReturnsAllEpics()
+        public async Task REQ_FUN_005_GetAll_WithInvalidPromiseIdParameter_ReturnsAllEpics()
         {
             // Arrange
             var epics = new List<Epic>
@@ -163,7 +165,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithEmptyPromiseIdParameter_ReturnsAllEpics()
+        public async Task REQ_FUN_005_GetAll_WithEmptyPromiseIdParameter_ReturnsAllEpics()
         {
             // Arrange
             var epics = new List<Epic>
@@ -199,7 +201,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithPromiseIdParameter_ReturnsEmptyListWhenNoEpicsFound()
+        public async Task REQ_FUN_005_GetAll_WithPromiseIdParameter_ReturnsEmptyListWhenNoEpicsFound()
         {
             // Arrange
             int promiseId = 999;
@@ -237,7 +239,7 @@ namespace PromiseModelOnline.Api.Tests
         #region CreateFromDto Tests
 
         [Test]
-        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_005_CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
             // Arrange
             _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
@@ -267,7 +269,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        public async Task REQ_FUN_005_CreateFromDto_WithNullRequest_ReturnsBadRequest()
         {
             // Act
             var result = await _controller.CreateFromDto(null!);
@@ -281,7 +283,7 @@ namespace PromiseModelOnline.Api.Tests
         #region Inherited Methods Tests
 
         [Test]
-        public async Task GetById_WithValidId_ReturnsOkWithEpicDTO()
+        public async Task REQ_FUN_005_GetById_WithValidId_ReturnsOkWithEpicDTO()
         {
             // Arrange
             int epicId = 1;
@@ -308,7 +310,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetById_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_005_GetById_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int epicId = 999;
@@ -323,7 +325,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Create_WithValidEpic_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_005_Create_WithValidEpic_ReturnsCreatedAtAction()
         {
             // Arrange
             var epic = new Epic { Id = 1, Statement = "New Epic", ProductPromiseId = 10 };
@@ -348,7 +350,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Update_WithValidIdAndEpic_ReturnsNoContent()
+        public async Task REQ_FUN_005_Update_WithValidIdAndEpic_ReturnsNoContent()
         {
             // Arrange
             int epicId = 1;
@@ -365,7 +367,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Update_WithMismatchedId_ReturnsBadRequest()
+        public async Task REQ_FUN_005_Update_WithMismatchedId_ReturnsBadRequest()
         {
             // Arrange
             int epicId = 1;
@@ -380,7 +382,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithValidId_ReturnsNoContent()
+        public async Task REQ_FUN_005_Delete_WithValidId_ReturnsNoContent()
         {
             // Arrange
             int epicId = 1;
@@ -395,7 +397,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_005_Delete_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int epicId = 999;

@@ -1,5 +1,12 @@
 import { searchUsers, searchPromises } from './autocomplete.api.mjs';
 
+/**
+ * Create an autocomplete input for entity linking in comments.
+ * @param {*} entityType - TODO
+ * @param {*} entityId - TODO
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ */
 export function createCommentAutocomplete(textarea, parentType, parentId) {
   const dropdown = document.createElement('div');
   dropdown.className = 'comment-autocomplete';

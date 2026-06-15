@@ -15,6 +15,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="ReactionsController"/> covering reaction CRUD.</summary>
+// Requirements: REQ_SYS_004
     public class ReactionsControllerUnitTests
     {
         private Mock<IReactionService> _reactionServiceMock = null!;
@@ -33,8 +35,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetReactions_WithValidQuery_ReturnsOkWithReactions()
+        public async Task REQ_SYS_004_GetReactions_WithValidQuery_ReturnsOkWithReactions()
         {
+            // Arrange
             var reactions = new List<ReactionDTO>
             {
                 new ReactionDTO
@@ -64,8 +67,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.GetReactions("Promise", 42);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
@@ -74,8 +79,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateReaction_WithAuthenticatedUser_ReturnsCreatedWithReaction()
+        public async Task REQ_SYS_004_CreateReaction_WithAuthenticatedUser_ReturnsCreatedWithReaction()
         {
+            // Arrange
             var request = new CreateReactionRequest
             {
                 Emote = "thumbs-up",
@@ -104,8 +110,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.CreateReaction(request);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
             var created = result.Result as CreatedAtActionResult;
             Assert.That(created, Is.Not.Null);
@@ -115,8 +123,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateReaction_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task REQ_SYS_004_CreateReaction_WhenNoEmailClaim_ReturnsUnauthorized()
         {
+            // Arrange
             var request = new CreateReactionRequest
             {
                 Emote = "thumbs-up",
@@ -126,16 +135,19 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
+            // Act
             var result = await _controller.CreateReaction(request);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()), Times.Never);
             _reactionServiceMock.Verify(s => s.CreateReactionAsync(It.IsAny<CreateReactionRequest>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]
-        public async Task DeleteReaction_WithAuthenticatedUser_ReturnsNoContent()
+        public async Task REQ_SYS_004_DeleteReaction_WithAuthenticatedUser_ReturnsNoContent()
         {
+            // Arrange
             var currentUser = new User { Id = 5, Email = "user@example.com", Name = "User" };
 
             _userRepositoryMock
@@ -147,28 +159,34 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.DeleteReaction(15);
 
+            // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync("user@example.com", null), Times.Once);
             _reactionServiceMock.Verify(s => s.RemoveReactionAsync(15, currentUser.Id), Times.Once);
         }
 
         [Test]
-        public async Task DeleteReaction_WhenNoEmailClaim_ReturnsUnauthorized()
+        public async Task REQ_SYS_004_DeleteReaction_WhenNoEmailClaim_ReturnsUnauthorized()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
+            // Act
             var result = await _controller.DeleteReaction(15);
 
+            // Assert
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()), Times.Never);
             _reactionServiceMock.Verify(s => s.RemoveReactionAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]
-        public async Task DeleteReaction_WhenServiceThrows_ReturnsBadRequest()
+        public async Task REQ_SYS_004_DeleteReaction_WhenServiceThrows_ReturnsBadRequest()
         {
+            // Arrange
             var currentUser = new User { Id = 5, Email = "user@example.com", Name = "User" };
 
             _userRepositoryMock
@@ -180,8 +198,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+            // Act
             var result = await _controller.DeleteReaction(15);
 
+            // Assert
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result as BadRequestObjectResult;
             Assert.That(badRequest, Is.Not.Null);

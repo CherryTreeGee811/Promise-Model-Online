@@ -9,6 +9,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_009 REQ_SYS_004
+    /// <summary>Unit tests for <see cref="HierarchyStatusService"/> covering status recalculation up the hierarchy.</summary>
     public class HierarchyStatusServiceUnitTests
     {
         private PromiseModelOnlineContext _context = null!;
@@ -37,8 +39,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task RecalculateFromFlowAsync_RollsStatusesUpThroughHierarchy()
+        public async Task REQ_FUN_009_RecalculateFromFlowAsync_RollsStatusesUpThroughHierarchy()
         {
+            // Arrange
             var project = new Project { Id = 1, Name = "Project" };
             var promise = new Promise { Id = 1, Statement = "Promise", ProjectId = 1, Project = project, StatusColor = StatusColorRules.Todo };
             var epicOne = new Epic { Id = 10, Statement = "Epic 1", ProductPromiseId = 1, ProductPromise = promise, StatusColor = StatusColorRules.Todo };
@@ -64,8 +67,10 @@ namespace PromiseModelOnline.Api.Tests
             );
             await _context.SaveChangesAsync();
 
+            // Act
             await _service.RecalculateFromFlowAsync(30);
 
+            // Assert
             var updatedFlowOne = await _context.Flows.FindAsync(30);
             var updatedFlowTwo = await _context.Flows.FindAsync(31);
             var updatedFlowThree = await _context.Flows.FindAsync(32);
@@ -86,14 +91,16 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void RecalculateFromFlowAsync_InvalidFlowId_ThrowsKeyNotFound()
+        public void REQ_FUN_009_RecalculateFromFlowAsync_InvalidFlowId_ThrowsKeyNotFound()
         {
+            // Act & Assert
             Assert.ThrowsAsync<KeyNotFoundException>(() => _service.RecalculateFromFlowAsync(999));
         }
 
         [Test]
-        public async Task RecalculateFromFlowAsync_AllBlockedChildren_RollsUpBlocked()
+        public async Task REQ_FUN_009_RecalculateFromFlowAsync_AllBlockedChildren_RollsUpBlocked()
         {
+            // Arrange
             var project = new Project { Id = 2, Name = "Project 2" };
             var promise = new Promise { Id = 2, Statement = "Promise 2", ProjectId = 2, Project = project, StatusColor = StatusColorRules.Done };
             var epic = new Epic { Id = 20, Statement = "Epic", ProductPromiseId = 2, ProductPromise = promise, StatusColor = StatusColorRules.Done };
@@ -111,8 +118,10 @@ namespace PromiseModelOnline.Api.Tests
             );
             await _context.SaveChangesAsync();
 
+            // Act
             await _service.RecalculateFromFlowAsync(40);
 
+            // Assert
             var updatedFlow = await _context.Flows.FindAsync(40);
             Assert.That(updatedFlow!.StatusColor, Is.EqualTo(StatusColorRules.Blocked));
         }

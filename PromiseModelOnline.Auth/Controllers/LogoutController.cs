@@ -5,18 +5,21 @@ using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
+/// <summary>Handles OpenID Connect end-session (logout) requests.</summary>
+/// <remarks>
+///   Signs out the application cookie and delegates the end_session response to OpenIddict
+///   so the client receives proper post-logout redirect handling.
+/// </remarks>
 [ApiController]
 [Route("connect/logout")]
 public class LogoutController : ControllerBase
 {
+    /// <summary>Sign out the current user and process the end_session request.</summary>
     [HttpGet, HttpPost]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-
-        // Let OpenIddict handle the end_session response, which validates
-        // post_logout_redirect_uri against registered URIs before redirecting.
         return SignOut(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 }

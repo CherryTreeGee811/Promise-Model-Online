@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -14,6 +13,11 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for user project listing, creation, and import.</summary>
+    /// <remarks>
+    ///   Requires <c>projects.read</c> for listing and <c>projects.write</c> for creation/import.
+    ///   Lists projects accessible to the current user (owned or shared).
+    /// </remarks>
     [Route("api/projects")]
     public class UserProjectsController : ControllerBase
     {
@@ -40,82 +44,88 @@ namespace PromiseModelOnline.Api.Controllers
             _projectImportValidationService = projectImportValidationService;
         }
 
+        /// <summary>Return all projects accessible to the current user.</summary>
+        /// <returns>A list of project DTOs accessible to the user.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetAll()
         {
             var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
+            if (user is null) return Unauthorized();
 
             var projects = await _projectService.GetAccessibleProjectsAsync(user.Id);
+            return Ok(projects.Select(p => _mapper.Map(p, _service)));
+        }
+        /// <param name="request">The project creation data.</param>
 
-            var result = new List<ProjectDTO>();
-            foreach (var project in projects)
-                result.Add(_mapper.Map(project, _service));
+        /// <summary>Create a new project with auto-generated slug.</summary>
+        /// <param name="request">The project creation data.</param>
+        /// <returns>The created project DTO.</returns>
+        [Authorize(Policy = "projects.write")]
+        [HttpPost]
+        public async Task<ActionResult<ProjectDTO>> Create([FromBody] ProjectCreateDTO request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest("Project name is required.");
 
-            return Ok(result);
+            var user = await GetCurrentUserAsync();
+            if (user is null) return Unauthorized();
+
+            var slug = await _projectService.GenerateProjectSlugAsync(request.Name, user.Id);
+            var project = new Project
+            {
+                Name = request.Name.Trim(),
+                Slug = slug,
+                Description = request.Description?.Trim(),
+                OwnerId = user.Id,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _service.AddAsync(project);
+            return CreatedAtAction(nameof(GetAll), new { id = project.Id }, _mapper.Map(project, _service));
         }
 
+        /// <summary>Validate a project import JSON before committing.</summary>
+        /// <returns>The validation result.</returns>
         [Authorize(Policy = "projects.write")]
-        [HttpPost("create")]
-        public async Task<ActionResult<ProjectDTO>> CreateFromDto([FromBody] ProjectCreateDTO dto)
+        [HttpPost("import/validate")]
+        public async Task<ActionResult<ProjectImportValidationResult>> ValidateImport()
+        {
+            using var stream = new System.IO.MemoryStream();
+            await Request.Body.CopyToAsync(stream);
+            stream.Position = 0;
+
+            var result = await _projectImportValidationService.ValidateAsync(stream);
+            if (result.IsValid) return Ok(result);
+            return BadRequest(result);
+        }
+
+        /// <summary>Import a project from a validated export document.</summary>
+        /// <returns>The import result.</returns>
+        [Authorize(Policy = "projects.write")]
+        [HttpPost("import")]
+        public async Task<ActionResult<ProjectImportResult>> Import()
         {
             var user = await GetCurrentUserAsync();
             if (user is null) return Unauthorized();
 
-            if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Project name is missing");
+            using var stream = new System.IO.MemoryStream();
+            await Request.Body.CopyToAsync(stream);
+            stream.Position = 0;
 
-            var slug = await _projectService.GenerateProjectSlugAsync(dto.Name, user.Id);
+            var validationResult = await _projectImportValidationService.ValidateAsync(stream);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult);
 
-            var project = new Project
-            {
-                Name = dto.Name,
-                Slug = slug,
-                Description = dto.Description,
-                OwnerId = user.Id
-            };
-
-            await _service.AddAsync(project);
-            var loaded = await _projectService.GetByOwnerAndSlugAsync(user.Slug, slug);
-
-            var dtoResult = _mapper.Map(loaded ?? project, _service);
-            return CreatedAtAction(nameof(GetAll), null, dtoResult);
+            var importResult = await _projectImportService.ImportAsync(validationResult.Document!, user.Id);
+            return CreatedAtAction(nameof(GetAll), new { id = importResult.ProjectId }, importResult);
         }
 
-        [Authorize(Policy = "projects.write")]
-        [HttpPost("import")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Import([FromForm] IFormFile file)
-        {
-            var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
-
-            if (file is null || file.Length == 0)
-                return BadRequest("Import file is missing.");
-
-            await using var stream = file.OpenReadStream();
-            var validation = await _projectImportValidationService.ValidateAsync(stream);
-            if (!validation.IsValid)
-            {
-                return BadRequest(new
-                {
-                    errors = validation.Errors,
-                    warnings = validation.Warnings
-                });
-            }
-
-            var result = await _projectImportService.ImportAsync(validation.Document!, user.Id);
-            return CreatedAtAction(nameof(GetAll), result);
-        }
-
+        /// <summary>Resolve the current user from JWT claims.</summary>
         private async Task<User?> GetCurrentUserAsync()
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value
-                     ?? User.FindFirst("email")?.Value;
+            var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
             if (string.IsNullOrEmpty(email)) return null;
-
             var username = User.FindFirst("nameid")?.Value;
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }

@@ -12,6 +12,8 @@ using PromiseModelOnline.Api.Tests.Infrastructure;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    /// <summary>Unit tests for <see cref="MomentRepository"/> covering moment queries and filtering.</summary>
+    // Requirements: REQ_FUN_008
     public class MomentRepositoryUnitTests : RepositoryTestBase
     {
         private MomentRepository _repo = null!;
@@ -53,86 +55,112 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetMomentsByFlowAsync_ReturnsMatchingMoments()
+        public async Task REQ_FUN_008_GetMomentsByFlowAsync_ReturnsMatchingMoments()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var result = await _repo.GetMomentsByFlowAsync(1);
             var list = result.ToList();
+            // Assert
             Assert.That(list.Count, Is.EqualTo(4));
             Assert.That(list.All(m => m.FlowId == 1), Is.True);
         }
 
         [Test]
-        public async Task GetMomentsByStrideAsync_ReturnsMatchingMoments()
+        public async Task REQ_FUN_008_GetMomentsByStrideAsync_ReturnsMatchingMoments()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var result = await _repo.GetMomentsByStrideAsync(10);
             var list = result.ToList();
+            // Assert
             Assert.That(list.Count, Is.EqualTo(3));
             Assert.That(list.Select(m => m.Id), Is.EquivalentTo(new[] { 1, 2, 5 }));    
         }
 
         [Test]
-        public async Task GetMomentsByIterationAsync_AssignedOnly_ReturnsMomentsInStridesOfIteration()
+        public async Task REQ_FUN_008_GetMomentsByIterationAsync_AssignedOnly_ReturnsMomentsInStridesOfIteration()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var result = await _repo.GetMomentsByIterationAsync(100, unassignedOnly: false);
             var list = result.ToList();
+            // Assert
             // moments with AssignedStrideId 10 or 20: 1,2,3
             Assert.That(list.Count, Is.EqualTo(4));
             Assert.That(list.Select(m => m.Id), Is.EquivalentTo(new[] { 1, 2, 3, 5 }));
         }
 
         [Test]
-        public async Task GetMomentsByIterationAsync_UnassignedOnly_ReturnsUnassignedMoments()
+        public async Task REQ_FUN_008_GetMomentsByIterationAsync_UnassignedOnly_ReturnsUnassignedMoments()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var result = await _repo.GetMomentsByIterationAsync(100, unassignedOnly: true);
             var list = result.ToList();
+            // Assert
             Assert.That(list.Count, Is.GreaterThanOrEqualTo(1));
             Assert.That(list.All(m => m.AssignedStrideId == null), Is.True);
         }
 
         [Test]
-        public async Task GetMomentsByOwnerIdAsync_ReturnsMatchingMoments()
+        public async Task REQ_FUN_008_GetMomentsByOwnerIdAsync_ReturnsMatchingMoments()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var result = await _repo.GetMomentsByOwnerIdAsync(50);
             var list = result.ToList();
+            // Assert
             Assert.That(list.Count, Is.EqualTo(1));
             Assert.That(list[0].Id, Is.EqualTo(5));
         }
 
         [Test]
-        public async Task GetMomentsByPromiseIdAsync_ReturnsAllDescendantMoments()
+        public async Task REQ_FUN_008_GetMomentsByPromiseIdAsync_ReturnsAllDescendantMoments()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var result = await _repo.GetMomentsByPromiseIdAsync(1);
             var list = result.ToList();
+            // Assert
             Assert.That(list.Count, Is.EqualTo(5));
         }
 
         [Test]
-        public async Task GetProjectIdForMomentAsync_ReturnsProjectId()
+        public async Task REQ_FUN_008_GetProjectIdForMomentAsync_ReturnsProjectId()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var projectId = await _repo.GetProjectIdForMomentAsync(1);
+            // Assert
             Assert.That(projectId, Is.EqualTo(1));
         }
 
         [Test]
-        public async Task GetProjectIdForMomentAsync_NonexistentMoment_ReturnsZero()
+        public async Task REQ_FUN_008_GetProjectIdForMomentAsync_NonexistentMoment_ReturnsZero()
         {
+            // Act
             var result = await _repo.GetProjectIdForMomentAsync(999);
+            // Assert
             Assert.That(result, Is.EqualTo(0));
         }
 
         [Test]
-        public async Task GetUnfinishedMomentsByStrideAsync_ReturnsNonDoneMoments()
+        public async Task REQ_FUN_008_GetUnfinishedMomentsByStrideAsync_ReturnsNonDoneMoments()
         {
+            // Arrange
             await SeedAsync();
+            // Act
             var result = await _repo.GetUnfinishedMomentsByStrideAsync(10);
             var list = result.ToList();
+            // Assert
             Assert.That(list.Count, Is.EqualTo(2));
             Assert.That(list.Select(m => m.Id), Is.EquivalentTo(new[] { 1, 5 }));
         }

@@ -15,6 +15,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="NotificationsController"/> covering notification read state.</summary>
+// Requirements: REQ_FUN_035
     public class NotificationControllerUnitTests
     {
         private Mock<INotificationService> _notificationServiceMock = null!;
@@ -33,8 +35,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetNotifications_WithAuthenticatedUser_ReturnsOkWithNotifications()
+        public async Task REQ_FUN_035_GetNotifications_WithAuthenticatedUser_ReturnsOkWithNotifications()
         {
+            // Arrange
             var notifications = new List<NotificationDTO>
             {
                 new NotificationDTO { Id = 1, Message = "Welcome", Type = "Info", IsRead = false },
@@ -51,8 +54,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com", "user-name");
 
+            // Act
             var result = await _controller.GetNotifications();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = result.Result as OkObjectResult;
             Assert.That(okResult, Is.Not.Null);
@@ -62,20 +67,24 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetNotifications_MissingEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_035_GetNotifications_MissingEmail_ReturnsUnauthorized()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
+            // Act
             var result = await _controller.GetNotifications();
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
             _notificationServiceMock.Verify(s => s.GetUnreadNotificationsAsync(It.IsAny<int>()), Times.Never);
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()), Times.Never);
         }
 
         [Test]
-        public async Task UpdateNotification_SetRead_WithAuthenticatedUser_ReturnsNoContent()
+        public async Task REQ_FUN_035_UpdateNotification_SetRead_WithAuthenticatedUser_ReturnsNoContent()
         {
+            // Arrange
             var currentUser = new User { Id = 21, Email = "reader@example.com", Name = "Reader" };
 
             _userRepositoryMock
@@ -87,26 +96,32 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com");
 
+            // Act
             var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
 
+            // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _notificationServiceMock.Verify(s => s.MarkAsReadAsync(9, currentUser.Id), Times.Once);
         }
 
         [Test]
-        public async Task UpdateNotification_MissingEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_035_UpdateNotification_MissingEmail_ReturnsUnauthorized()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
+            // Act
             var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
 
+            // Assert
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
             _notificationServiceMock.Verify(s => s.MarkAsReadAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]
-        public async Task UpdateNotifications_SetAllRead_WithAuthenticatedUser_ReturnsNoContent()
+        public async Task REQ_FUN_035_UpdateNotifications_SetAllRead_WithAuthenticatedUser_ReturnsNoContent()
         {
+            // Arrange
             var currentUser = new User { Id = 33, Email = "reader@example.com", Name = "Reader" };
 
             _userRepositoryMock
@@ -118,16 +133,19 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com", "reader-name");
 
+            // Act
             var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
 
+            // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _notificationServiceMock.Verify(s => s.MarkAllAsReadAsync(currentUser.Id), Times.Once);
             _userRepositoryMock.Verify(r => r.GetOrCreateUserByEmailAsync("reader@example.com", "reader-name"), Times.Once);
         }
 
         [Test]
-        public async Task UpdateNotifications_ByIds_WithAuthenticatedUser_ReturnsNoContent()
+        public async Task REQ_FUN_035_UpdateNotifications_ByIds_WithAuthenticatedUser_ReturnsNoContent()
         {
+            // Arrange
             var currentUser = new User { Id = 33, Email = "reader@example.com", Name = "Reader" };
 
             _userRepositoryMock
@@ -140,12 +158,14 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com", "reader-name");
 
+            // Act
             var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO
             {
                 IsRead = true,
                 NotificationIds = new[] { 1, 2, 2 }
             });
 
+            // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
             _notificationServiceMock.Verify(s => s.MarkAsReadAsync(1, currentUser.Id), Times.Once);
             _notificationServiceMock.Verify(s => s.MarkAsReadAsync(2, currentUser.Id), Times.Once);
@@ -153,12 +173,15 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateNotifications_MissingEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_035_UpdateNotifications_MissingEmail_ReturnsUnauthorized()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
+            // Act
             var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
 
+            // Assert
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
             _notificationServiceMock.Verify(s => s.MarkAllAsReadAsync(It.IsAny<int>()), Times.Never);
         }

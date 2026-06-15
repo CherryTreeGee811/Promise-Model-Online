@@ -1,15 +1,23 @@
 namespace PromiseModelOnline.BFF.Tests;
 
+/// <summary>Test server for BFF integration tests, providing an authenticated HTTP client.</summary>
+/// <remarks>
+///   Creates a <see cref="WebApplication"/> with a <c>TestServer</c> using mock authentication
+///   handlers (<see cref="TestAuthHandler"/> for cookie, <see cref="TestChallengeHandler"/> for
+///   OIDC). Sets required environment variables before building the app.
+/// </remarks>
 public class BffTestServer : IAsyncDisposable
 {
     private readonly WebApplication _app;
     private readonly TestServer _server;
 
+    /// <summary>HTTP client pre-configured with the test server's handler.</summary>
     public HttpClient Client { get; }
 
     private static readonly object _lock = new();
     private static bool _varsSet;
 
+    /// <summary>Set environment variables required by the BFF. Thread-safe, runs once.</summary>
     private static void SetEnvVars()
     {
         if (_varsSet) return;
@@ -23,6 +31,7 @@ public class BffTestServer : IAsyncDisposable
         }
     }
 
+    /// <summary>Build the test server with mock authentication and BFF endpoints.</summary>
     public BffTestServer()
     {
         SetEnvVars();
@@ -58,6 +67,7 @@ public class BffTestServer : IAsyncDisposable
         };
     }
 
+    /// <summary>Dispose the test server and suppress finalization.</summary>
     public async ValueTask DisposeAsync()
     {
         await _app.DisposeAsync();

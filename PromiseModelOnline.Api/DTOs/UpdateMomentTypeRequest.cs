@@ -4,11 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-/// <summary>
-/// Request body for changing a moment's type.
-/// </summary>
+/// <summary>Request DTO for updating a moment's type classification.</summary>
 public class UpdateMomentTypeRequest : IValidatableObject
 {
+    /// <summary>The new type value to apply.</summary>
+    /// <param name="validationContext">The validation context.</param>
     public MomentType NewType { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

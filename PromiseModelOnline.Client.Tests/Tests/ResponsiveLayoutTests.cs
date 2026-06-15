@@ -3,16 +3,23 @@ using PromiseModelOnline.Client.Tests.Helpers;
 namespace PromiseModelOnline.Client.Tests.Tests;
 
 [TestFixture]
+/// <summary>Playwright tests for responsive design across viewports.</summary>
+// Requirements: REQ_USE_011
 public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
 {
     [Test]
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task HomePage_NoHorizontalScroll_AtAnyViewport(Viewport vp)
+    public async Task REQ_USE_011_HomePage_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
+        // Arrange
         await EnsureLoggedInAsync(vp);
+
+        // Act
         await WaitForSelectorAsync("#home-cta-area", 10);
+
+        // Act & Assert
         await AssertNoHorizontalScrollAsync();
         await AssertElementVisibleAsync("#home-cta-area");
     }
@@ -21,11 +28,16 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task ProjectsList_NoHorizontalScroll_AtAnyViewport(Viewport vp)
+    public async Task REQ_USE_011_ProjectsList_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
+        // Arrange
         await EnsureLoggedInAsync(vp, "/projects");
         await NavigateSpaAsync("/projects");
+
+        // Act
         await WaitForSelectorAsync("#project-list-table", 10);
+
+        // Act & Assert
         await AssertNoHorizontalScrollAsync();
         await AssertElementVisibleAsync("#project-list-table");
     }
@@ -34,10 +46,15 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task StrideBoard_NoHorizontalScroll_AtAnyViewport(Viewport vp)
+    public async Task REQ_USE_011_StrideBoard_NoHorizontalScroll_AtAnyViewport(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+
+        // Act
         await WaitForSelectorAsync(".stride-card", 10);
+
+        // Act & Assert
         await AssertNoHorizontalScrollAsync();
     }
 
@@ -45,10 +62,15 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task StrideBoard_EffortDropdown_VisibleOnMobile_HiddenOnDesktop(Viewport vp)
+    public async Task REQ_USE_011_StrideBoard_EffortDropdown_VisibleOnMobile_HiddenOnDesktop(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+
+        // Act
         await WaitForSelectorAsync(".stride-header", 10);
+
+        // Act & Assert
         await AssertResponsiveElementAsync(".estimate-dropdown", ".estimate-dropdown-mobile", vp);
     }
 
@@ -56,10 +78,12 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task Navigation_NavbarCollapse_BehavesCorrectly(Viewport vp)
+    public async Task REQ_USE_011_Navigation_NavbarCollapse_BehavesCorrectly(Viewport vp)
     {
+        // Arrange
         await EnsureLoggedInAsync(vp);
 
+        // Act & Assert
         if (vp == Viewport.Mobile)
         {
             await AssertElementVisibleAsync(".navbar-toggler");
@@ -80,15 +104,18 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task HomePage_StatCards_StackOnMobile(Viewport vp)
+    public async Task REQ_USE_011_HomePage_StatCards_StackOnMobile(Viewport vp)
     {
+        // Arrange
         await EnsureLoggedInAsync(vp);
         var stats = Page.Locator(".home-stats");
         var container = Page.Locator("#main-container");
 
+        // Act
         var statsBox = await stats.BoundingBoxAsync();
         var containerBox = await container.BoundingBoxAsync();
 
+        // Assert
         if (vp == Viewport.Mobile)
         {
             Assert.That(statsBox!.Width, Is.GreaterThan(containerBox!.Width * 0.8),
@@ -106,12 +133,16 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task StrideHeader_StacksOnMobile(Viewport vp)
+    public async Task REQ_USE_011_StrideHeader_StacksOnMobile(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
+
+        // Act
         var header = Page.Locator(".stride-header").First;
         var flexDirection = await header.EvaluateAsync<string?>("el => window.getComputedStyle(el).flexDirection");
 
+        // Assert
         if (vp == Viewport.Mobile)
         {
             Assert.That(flexDirection, Is.EqualTo("column"),
@@ -123,10 +154,12 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
     [TestCase(Viewport.Desktop)]
     [TestCase(Viewport.Tablet)]
     [TestCase(Viewport.Mobile)]
-    public async Task TouchTargets_MinimumSize_OnMobile(Viewport vp)
+    public async Task REQ_USE_011_TouchTargets_MinimumSize_OnMobile(Viewport vp)
     {
+        // Arrange
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
 
+        // Act & Assert
         if (vp == Viewport.Mobile)
         {
             var buttons = await Page.Locator(".stride-card .btn, .stride-card select").AllAsync();

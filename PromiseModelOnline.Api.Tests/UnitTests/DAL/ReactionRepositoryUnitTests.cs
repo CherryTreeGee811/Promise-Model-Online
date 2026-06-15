@@ -11,6 +11,8 @@ using PromiseModelOnline.Api.Tests.Infrastructure;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    /// <summary>Unit tests for <see cref="ReactionRepository"/> covering reaction queries.</summary>
+    // Requirements: REQ_SYS_004
     public class ReactionRepositoryUnitTests : RepositoryTestBase
     {
         private ReactionRepository _repo = null!;
@@ -40,13 +42,16 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetReactionsForItemAsync_ReturnsMatchingReactionsWithUser()
+        public async Task REQ_SYS_004_GetReactionsForItemAsync_ReturnsMatchingReactionsWithUser()
         {
+            // Arrange
             await SeedAsync();
 
+            // Act
             var result = await _repo.GetReactionsForItemAsync("Promise", 10);
             var list = result.ToList();
 
+            // Assert
             Assert.That(list.Count, Is.EqualTo(2));
             Assert.That(list.All(r => r.StackItemType == "Promise" && r.StackItemId == 10), Is.True);
             Assert.That(list[0].User, Is.Not.Null);
@@ -54,76 +59,98 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetReactionsForItemAsync_NoMatch_ReturnsEmpty()
+        public async Task REQ_SYS_004_GetReactionsForItemAsync_NoMatch_ReturnsEmpty()
         {
+            // Arrange
             await SeedAsync();
 
+            // Act
             var result = await _repo.GetReactionsForItemAsync("Flow", 99);
+            // Assert
             Assert.That(result, Is.Empty);
         }
 
         [Test]
-        public async Task GetReactionsForItemAsync_EmptyDatabase_ReturnsEmpty()
+        public async Task REQ_SYS_004_GetReactionsForItemAsync_EmptyDatabase_ReturnsEmpty()
         {
+            // Act
             var result = await _repo.GetReactionsForItemAsync("Journey", 1);
+            // Assert
             Assert.That(result, Is.Empty);
         }
 
         [Test]
-        public async Task GetUserReactionAsync_ReturnsMatchingReaction()
+        public async Task REQ_SYS_004_GetUserReactionAsync_ReturnsMatchingReaction()
         {
+            // Arrange
             await SeedAsync();
 
+            // Act
             var reaction = await _repo.GetUserReactionAsync(1, "Promise", 10);
+            // Assert
             Assert.That(reaction, Is.Not.Null);
             Assert.That(reaction!.Id, Is.EqualTo(1));
             Assert.That(reaction.Emote, Is.EqualTo("👍"));
         }
 
         [Test]
-        public async Task GetUserReactionAsync_DifferentStackItem_ReturnsNull()
+        public async Task REQ_SYS_004_GetUserReactionAsync_DifferentStackItem_ReturnsNull()
         {
+            // Arrange
             await SeedAsync();
 
+            // Act
             var reaction = await _repo.GetUserReactionAsync(1, "Epic", 10);
+            // Assert
             Assert.That(reaction, Is.Null);
         }
 
         [Test]
-        public async Task GetUserReactionAsync_DifferentUser_ReturnsNull()
+        public async Task REQ_SYS_004_GetUserReactionAsync_DifferentUser_ReturnsNull()
         {
+            // Arrange
             await SeedAsync();
 
+            // Act
             var reaction = await _repo.GetUserReactionAsync(99, "Promise", 10);
+            // Assert
             Assert.That(reaction, Is.Null);
         }
 
         [Test]
-        public async Task GetUserReactionAsync_EmptyDatabase_ReturnsNull()
+        public async Task REQ_SYS_004_GetUserReactionAsync_EmptyDatabase_ReturnsNull()
         {
+            // Act
             var reaction = await _repo.GetUserReactionAsync(1, "Moment", 5);
+            // Assert
             Assert.That(reaction, Is.Null);
         }
 
         // Inherited generic methods
         [Test]
-        public async Task GetByIdAsync_ReturnsEntity()
+        public async Task REQ_SYS_004_GetByIdAsync_ReturnsEntity()
         {
+            // Arrange
             await SeedAsync();
 
+            // Act
             var result = await _repo.GetByIdAsync(3);
+            // Assert
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Id, Is.EqualTo(3));
             Assert.That(result.Emote, Is.EqualTo("🚀"));
         }
 
         [Test]
-        public async Task AddAsync_PersistsEntity()
+        public async Task REQ_SYS_004_AddAsync_PersistsEntity()
         {
+            // Arrange
             var reaction = new Reaction { UserId = 5, Emote = "🎉", StackItemType = "Flow", StackItemId = 15 };
+            // Act
             await _repo.AddAsync(reaction);
             await Context.SaveChangesAsync();
             
+            // Assert
             var saved = Context.Reactions.FirstOrDefault(r => r.Emote == "🎉");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.UserId, Is.EqualTo(5));

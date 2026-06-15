@@ -4,11 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-/// <summary>
-/// Request body for changing a moment's status.
-/// </summary>
+/// <summary>Request DTO for updating a moment's status.</summary>
 public class UpdateMomentStatusRequest : IValidatableObject
 {
+    /// <summary>The new status value to apply.</summary>
+    /// <param name="validationContext">The validation context.</param>
     public MomentStatus NewStatus { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

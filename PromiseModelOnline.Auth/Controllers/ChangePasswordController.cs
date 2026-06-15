@@ -6,6 +6,7 @@ using PromiseModelOnline.Auth.Models;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
+/// <summary>API endpoint for authenticated users to change their password and revoke refresh tokens.</summary>
 [ApiController]
 [Route("account/me/password")]
 public class ChangePasswordController : ControllerBase
@@ -20,6 +21,12 @@ public class ChangePasswordController : ControllerBase
         _tokenManager = tokenManager;
     }
 
+    /// <summary>Validate current password, update to new password, and revoke all refresh tokens.</summary>
+    /// <param name="request">The password change request containing current password, new password, and confirmation.</param>
+    /// <response code="200">Password changed successfully.</response>
+    /// <response code="400">Validation failed (missing fields, mismatch, incorrect current password).</response>
+    /// <response code="401">User is not authenticated or not found.</response>
+    /// <returns>An Ok result on success, or BadRequest/Unauthorized.</returns>
     [HttpPatch]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest? request)
@@ -40,41 +47,29 @@ public class ChangePasswordController : ControllerBase
         var userId = User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value
                      ?? _userManager.GetUserId(User);
         if (string.IsNullOrEmpty(userId))
-        {
             return Unauthorized();
-        }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-        {
             return Unauthorized();
-        }
 
         var isValid = await _userManager.CheckPasswordAsync(user, request.CurrentPassword);
         if (!isValid)
-        {
-            return Unauthorized("Invalid password");
-        }
+            return BadRequest("Current password is incorrect.");
 
         var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded)
-        {
-            var errors = string.Join(';', result.Errors.Select(e => e.Description));
-            return BadRequest(new { message = "Could not change password", errors });
-        }
+            return BadRequest(result.Errors.FirstOrDefault()?.Description ?? "Password change failed.");
 
-        // Revoke all existing refresh tokens for this user
-        const string RefreshTokenType = OpenIddictConstants.TokenTypeHints.RefreshToken;
-
-        await foreach (var token in _tokenManager.FindAsync(
+        var tokens = _tokenManager.FindAsync(
             subject: user.Id,
             client: null,
             status: null,
-            type: RefreshTokenType))
-        {
-            await _tokenManager.TryRevokeAsync(token);
-        }
+            type: OpenIddictConstants.TokenTypeHints.RefreshToken);
 
-        return NoContent();
+        await foreach (var token in tokens)
+            await _tokenManager.TryRevokeAsync(token);
+
+        return Ok(new { message = "Password changed successfully." });
     }
 }

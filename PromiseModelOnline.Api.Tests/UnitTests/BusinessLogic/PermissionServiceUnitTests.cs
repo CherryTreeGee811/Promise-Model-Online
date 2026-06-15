@@ -15,6 +15,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_013 REQ_FUN_014 REQ_FUN_015 REQ_FUN_016
+    /// <summary>Unit tests for <see cref="PermissionService"/> covering invitations, acceptance, and access control.</summary>
     public class PermissionServiceUnitTests
     {
         private Mock<IPermissionRepository> _permRepoMock = null!;
@@ -44,14 +46,14 @@ namespace PromiseModelOnline.Api.Tests
         #region GetPermissionsByProjectAsync
 
         [Test]
-        public async Task GetPermissionsByProjectAsync_ReturnsMappedDtos()
+        public async Task REQ_FUN_013_GetPermissionsByProjectAsync_ReturnsMappedDtos()
         {
+            // Arrange
             var permissions = new List<Permission>
             {
                 new Permission { Id = 1, ProjectId = 10, Level = PermissionLevel.View },
                 new Permission { Id = 2, ProjectId = 10, Level = PermissionLevel.Edit }
             };
-
             _permRepoMock.Setup(r => r.GetPermissionsByProjectAsync(10)).ReturnsAsync(permissions);
             _mapperMock.Setup(m => m.Map(It.IsAny<Permission>(), null!))
                        .Returns<Permission, IGenericService<Permission>>((p, _) => new PermissionDTO
@@ -60,17 +62,24 @@ namespace PromiseModelOnline.Api.Tests
                            Level = p.Level.ToString()
                        });
 
+            // Act
             var result = await _service.GetPermissionsByProjectAsync(10);
 
+            // Assert
             Assert.That(result.Count(), Is.EqualTo(2));
             Assert.That(result.First().Level, Is.EqualTo("View"));
         }
 
         [Test]
-        public async Task GetPermissionsByProjectAsync_NoPermissions_ReturnsEmpty()
+        public async Task REQ_FUN_013_GetPermissionsByProjectAsync_NoPermissions_ReturnsEmpty()
         {
+            // Arrange
             _permRepoMock.Setup(r => r.GetPermissionsByProjectAsync(5)).ReturnsAsync(new List<Permission>());
+
+            // Act
             var result = await _service.GetPermissionsByProjectAsync(5);
+
+            // Assert
             Assert.That(result, Is.Empty);
         }
 
@@ -79,27 +88,32 @@ namespace PromiseModelOnline.Api.Tests
         #region InviteUserAsync
 
         [Test]
-        public void InviteUserAsync_ProjectNotFound_Throws()
+        public void REQ_FUN_013_InviteUserAsync_ProjectNotFound_Throws()
         {
+            // Arrange
             _projectRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Project?)null);
             var request = new CreatePermissionRequestDTO { ProjectId = 99, Email = "test@test.com", Level = PermissionLevel.View };
 
+            // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, 1));
         }
 
         [Test]
-        public void InviteUserAsync_NotOwner_ThrowsUnauthorized()
+        public void REQ_FUN_013_InviteUserAsync_NotOwner_ThrowsUnauthorized()
         {
+            // Arrange
             var project = new Project { Id = 10, OwnerId = 55 };
             _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
             var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "test@test.com", Level = PermissionLevel.View };
 
+            // Act & Assert
             Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.InviteUserAsync(request, 1));
         }
 
         [Test]
-        public void InviteUserAsync_AlreadyHasPermission_Throws()
+        public void REQ_FUN_013_InviteUserAsync_AlreadyHasPermission_Throws()
         {
+            // Arrange
             var ownerId = 100;
             var project = new Project { Id = 10, OwnerId = ownerId };
             var invitedUser = new User { Id = 200, Email = "invited@test.com", Name = "Invited" };
@@ -114,7 +128,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task InviteUserAsync_Success_AddsPermissionAndSendsNotification()
+        public async Task REQ_FUN_013_InviteUserAsync_Success_AddsPermissionAndSendsNotification()
         {
             var ownerId = 100;
             var project = new Project { Id = 10, Name = "Demo", OwnerId = ownerId };
@@ -142,7 +156,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void InviteUserAsync_UserNotFoundByEmailOrName_Throws()
+        public void REQ_FUN_013_InviteUserAsync_UserNotFoundByEmailOrName_Throws()
         {
             var ownerId = 100;
             var project = new Project { Id = 10, OwnerId = ownerId };
@@ -158,7 +172,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task InviteUserAsync_Success_WhenFoundByName()
+        public async Task REQ_FUN_013_InviteUserAsync_Success_WhenFoundByName()
         {
             var ownerId = 100;
             var project = new Project { Id = 10, Name = "Demo", OwnerId = ownerId };
@@ -190,14 +204,14 @@ namespace PromiseModelOnline.Api.Tests
         #region AcceptInvitationAsync
 
         [Test]
-        public void AcceptInvitationAsync_NotFound_Throws()
+        public void REQ_FUN_013_AcceptInvitationAsync_NotFound_Throws()
         {
             _permRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((Permission?)null);
             Assert.ThrowsAsync<InvalidOperationException>(() => _service.AcceptInvitationAsync(1, 10));
         }
 
         [Test]
-        public void AcceptInvitationAsync_NotYourInvitation_Throws()
+        public void REQ_FUN_013_AcceptInvitationAsync_NotYourInvitation_Throws()
         {
             var perm = new Permission { Id = 2, UserId = 99 };
             _permRepoMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(perm);
@@ -205,7 +219,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void AcceptInvitationAsync_AlreadyActive_Throws()
+        public void REQ_FUN_013_AcceptInvitationAsync_AlreadyActive_Throws()
         {
             var perm = new Permission { Id = 3, UserId = 33, Status = PermissionStatus.Active };
             _permRepoMock.Setup(r => r.GetByIdAsync(3)).ReturnsAsync(perm);
@@ -213,7 +227,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task AcceptInvitationAsync_Success_SetsActiveAndReturnsDto()
+        public async Task REQ_FUN_013_AcceptInvitationAsync_Success_SetsActiveAndReturnsDto()
         {
             var perm = new Permission { Id = 4, UserId = 44, Status = PermissionStatus.Pending, Level = PermissionLevel.Edit };
             _permRepoMock.Setup(r => r.GetByIdAsync(4)).ReturnsAsync(perm);
@@ -232,7 +246,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetPendingInvitationsForUserAsync
 
         [Test]
-        public async Task GetPendingInvitations_ReturnsMappedList()
+        public async Task REQ_FUN_013_GetPendingInvitations_ReturnsMappedList()
         {
             var perms = new List<Permission>
             {
@@ -250,7 +264,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetPendingInvitations_Empty_ReturnsEmpty()
+        public async Task REQ_FUN_013_GetPendingInvitations_Empty_ReturnsEmpty()
         {
             _permRepoMock.Setup(r => r.GetPendingInvitationsForUserAsync(5)).ReturnsAsync(new List<Permission>());
             var result = await _service.GetPendingInvitationsForUserAsync(5);
@@ -262,14 +276,14 @@ namespace PromiseModelOnline.Api.Tests
         #region RemovePermissionAsync
 
         [Test]
-        public void RemovePermissionAsync_NotFound_Throws()
+        public void REQ_FUN_013_RemovePermissionAsync_NotFound_Throws()
         {
             _permRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((Permission?)null);
             Assert.ThrowsAsync<InvalidOperationException>(() => _service.RemovePermissionAsync(1, 1));
         }
 
         [Test]
-        public void RemovePermissionAsync_ProjectNotFound_Throws()
+        public void REQ_FUN_013_RemovePermissionAsync_ProjectNotFound_Throws()
         {
             var perm = new Permission { Id = 1, ProjectId = 999 };
             _permRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(perm);
@@ -279,7 +293,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void RemovePermissionAsync_NotOwner_Throws()
+        public void REQ_FUN_013_RemovePermissionAsync_NotOwner_Throws()
         {
             var perm = new Permission { Id = 2, ProjectId = 50 };
             var project = new Project { Id = 50, OwnerId = 77 };
@@ -290,7 +304,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task RemovePermissionAsync_Owner_DeletesPermission()
+        public async Task REQ_FUN_013_RemovePermissionAsync_Owner_DeletesPermission()
         {
             var perm = new Permission { Id = 3, ProjectId = 60 };
             var project = new Project { Id = 60, OwnerId = 88 };
@@ -308,7 +322,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetUserPermissionAsync
 
         [Test]
-        public async Task GetUserPermissionAsync_Owner_ReturnsEdit()
+        public async Task REQ_FUN_013_GetUserPermissionAsync_Owner_ReturnsEdit()
         {
             var project = new Project { Id = 10, OwnerId = 42 };
             _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
@@ -318,7 +332,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetUserPermissionAsync_ActivePermission_ReturnsLevel()
+        public async Task REQ_FUN_013_GetUserPermissionAsync_ActivePermission_ReturnsLevel()
         {
             var project = new Project { Id = 10, OwnerId = 1 };
             _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
@@ -330,7 +344,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetUserPermissionAsync_PendingPermission_ReturnsNull()
+        public async Task REQ_FUN_013_GetUserPermissionAsync_PendingPermission_ReturnsNull()
         {
             var project = new Project { Id = 10, OwnerId = 1 };
             _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
@@ -342,7 +356,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetUserPermissionAsync_NoPermissionAndNotOwner_ReturnsNull()
+        public async Task REQ_FUN_013_GetUserPermissionAsync_NoPermissionAndNotOwner_ReturnsNull()
         {
             var project = new Project { Id = 10, OwnerId = 1 };
             _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
@@ -353,7 +367,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetUserPermissionAsync_ProjectNotFound_ReturnsNull()
+        public async Task REQ_FUN_013_GetUserPermissionAsync_ProjectNotFound_ReturnsNull()
         {
             _projectRepoMock.Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Project?)null);
             var result = await _service.GetUserPermissionAsync(1, 404);

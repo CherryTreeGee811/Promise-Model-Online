@@ -10,7 +10,6 @@ namespace PromiseModelOnline.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Add Slug as nullable first (existing rows have no slug)
             migrationBuilder.AddColumn<string>(
                 name: "Slug",
                 table: "Users",
@@ -18,7 +17,6 @@ namespace PromiseModelOnline.Api.Migrations
                 maxLength: 100,
                 nullable: true);
 
-            // Add Slug column to Projects as nullable
             migrationBuilder.AddColumn<string>(
                 name: "Slug",
                 table: "Projects",
@@ -26,13 +24,10 @@ namespace PromiseModelOnline.Api.Migrations
                 maxLength: 200,
                 nullable: true);
 
-            // Backfill User slugs with unique values using the primary key
             migrationBuilder.Sql("UPDATE [Users] SET [Slug] = LOWER(CONCAT('user-', [Id])) WHERE [Slug] IS NULL");
 
-            // Backfill Project slugs with unique values using the primary key
             migrationBuilder.Sql("UPDATE [Projects] SET [Slug] = LOWER(CONCAT('project-', [Id])) WHERE [Slug] IS NULL");
 
-            // Make Slug non-nullable now that all rows have values
             migrationBuilder.AlterColumn<string>(
                 name: "Slug",
                 table: "Users",
@@ -49,12 +44,10 @@ namespace PromiseModelOnline.Api.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            // Drop old index on Projects.OwnerId (no longer needed with composite index)
             migrationBuilder.DropIndex(
                 name: "IX_Projects_OwnerId",
                 table: "Projects");
 
-            // Create new unique indexes
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Slug",
                 table: "Users",

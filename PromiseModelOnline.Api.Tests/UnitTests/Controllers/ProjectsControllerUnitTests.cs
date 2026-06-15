@@ -13,6 +13,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="UserProjectsController"/> covering project CRUD.</summary>
+// Requirements: REQ_FUN_003 REQ_FUN_039 REQ_FUN_040
     public class ProjectsControllerTests
     {
         private Mock<IProjectService> _mockProjectService = null!;
@@ -42,8 +44,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithAuthenticatedUser_ReturnsOkMappedDtos()
+        public async Task REQ_FUN_003_GetAll_WithAuthenticatedUser_ReturnsOkMappedDtos()
         {
+            // Arrange
             var user = new User { Id = 1, Email = "a@b.com", Slug = "test" };
             _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("a@b.com", It.IsAny<string?>())).ReturnsAsync(user);
 
@@ -58,8 +61,10 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, "a@b.com");
 
+            // Act
             var actionResult = await _controller.GetAll();
 
+            // Assert
             Assert.That(actionResult.Result, Is.InstanceOf<OkObjectResult>());
             var ok = actionResult.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
@@ -70,16 +75,20 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_MissingEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_003_GetAll_MissingEmail_ReturnsUnauthorized()
         {
+            // Arrange
             ControllerTestHelpers.SetControllerUser(_controller, null);
+            // Act
             var actionResult = await _controller.GetAll();
+            // Assert
             Assert.That(actionResult.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public async Task CreateFromDto_WithValidData_ReturnsCreated()
+        public async Task REQ_FUN_003_CreateFromDto_WithValidData_ReturnsCreated()
         {
+            // Arrange
             var user = new User { Id = 5, Email = "creator@x.com", Slug = "creator" };
             _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("creator@x.com", It.IsAny<string?>())).ReturnsAsync(user);
             _mockProjectService.Setup(s => s.GenerateProjectSlugAsync("New Project", 5)).ReturnsAsync("new-project");
@@ -91,21 +100,26 @@ namespace PromiseModelOnline.Api.Tests
             ControllerTestHelpers.SetControllerUser(_controller, "creator@x.com", "creator");
 
             var dto = new ProjectCreateDTO { Name = "New Project", Description = "Desc" };
+            // Act
             var result = await _controller.CreateFromDto(dto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
         }
 
         [Test]
-        public async Task CreateFromDto_MissingName_ReturnsBadRequest()
+        public async Task REQ_FUN_003_CreateFromDto_MissingName_ReturnsBadRequest()
         {
+            // Arrange
             var user = new User { Id = 5, Email = "creator@x.com", Slug = "creator" };
             _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("creator@x.com", It.IsAny<string?>())).ReturnsAsync(user);
 
             ControllerTestHelpers.SetControllerUser(_controller, "creator@x.com");
             var dto = new ProjectCreateDTO { Name = "", Description = "Desc" };
+            // Act
             var result = await _controller.CreateFromDto(dto);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
     }

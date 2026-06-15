@@ -163,6 +163,11 @@ async function refreshNotificationsPage() {
 }
 
 /* ---------- Page loader ---------- */
+/**
+ * Load the notifications listing page.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function loadNotificationsPage(contentDiv) {
     if (!liveListenerRegistered) {
         liveListenerRegistered = true;

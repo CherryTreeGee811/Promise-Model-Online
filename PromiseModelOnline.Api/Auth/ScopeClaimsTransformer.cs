@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace PromiseModelOnline.Api.Auth;
 
+/// <summary>
+        /// <param name="context">The claims transformation context.</param>
+/// Scope Claims Transformer.
+/// </summary>
 public class ScopeClaimsTransformer : IClaimsTransformation
 {
     public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)

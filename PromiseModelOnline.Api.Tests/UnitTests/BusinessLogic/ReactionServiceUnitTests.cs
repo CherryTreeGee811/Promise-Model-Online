@@ -14,6 +14,8 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    /// <summary>Unit tests for <see cref="ReactionService"/> CRUD operations.</summary>
+    // Requirements: REQ_SYS_004
     public class ReactionServiceUnitTests
     {
         private Mock<IReactionRepository> _reactionRepoMock = null!;
@@ -31,8 +33,9 @@ namespace PromiseModelOnline.Api.Tests
         #region GetReactionsAsync Tests
 
         [Test]
-        public async Task GetReactionsAsync_ReturnsMappedDtos()
+        public async Task REQ_SYS_004_GetReactionsAsync_ReturnsMappedDtos()
         {
+            // Arrange
             var reactions = new List<Reaction>
             {
                 new Reaction { Id = 1, Emote = "👍", StackItemType = "Promise", StackItemId = 10 },
@@ -49,15 +52,17 @@ namespace PromiseModelOnline.Api.Tests
                            StackItemId = r.StackItemId
                        });
 
+            // Act
             var result = await _service.GetReactionsAsync("Promise", 10);
 
+            // Assert
             Assert.That(result.Count(), Is.EqualTo(2));
             Assert.That(result.First().Emote, Is.EqualTo("👍"));
             _reactionRepoMock.Verify(r => r.GetReactionsForItemAsync("Promise", 10), Times.Once);
         }
 
         [Test]
-        public async Task GetReactionsAsync_NoReactions_ReturnsEmpty()
+        public async Task REQ_SYS_004_GetReactionsAsync_NoReactions_ReturnsEmpty()
         {
             _reactionRepoMock.Setup(r => r.GetReactionsForItemAsync("Moment", 5)).ReturnsAsync(new List<Reaction>());
 
@@ -71,7 +76,7 @@ namespace PromiseModelOnline.Api.Tests
         #region CreateReactionAsync / UpdateReactionAsync Tests
 
         [Test]
-        public async Task UpdateReactionAsync_ExistingReaction_UpdatesEmote()
+        public async Task REQ_SYS_004_UpdateReactionAsync_ExistingReaction_UpdatesEmote()
         {
             var existing = new Reaction { Id = 1, UserId = 10, Emote = "👍", StackItemType = "Moment", StackItemId = 5 };
             _reactionRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existing);
@@ -91,7 +96,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateReactionAsync_NoExistingReaction_CreatesNew()
+        public async Task REQ_SYS_004_CreateReactionAsync_NoExistingReaction_CreatesNew()
         {
             _reactionRepoMock.Setup(r => r.GetUserReactionAsync(20, "Epic", 3)).ReturnsAsync((Reaction?)null);
             _reactionRepoMock.Setup(r => r.AddAsync(It.IsAny<Reaction>())).Returns(Task.CompletedTask);
@@ -130,7 +135,7 @@ namespace PromiseModelOnline.Api.Tests
         #region RemoveReactionAsync Tests
 
         [Test]
-        public void RemoveReactionAsync_NotFound_ThrowsInvalidOperation()
+        public void REQ_SYS_004_RemoveReactionAsync_NotFound_ThrowsInvalidOperation()
         {
             _reactionRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Reaction?)null);
 
@@ -138,7 +143,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void RemoveReactionAsync_NotOwner_ThrowsInvalidOperation()
+        public void REQ_SYS_004_RemoveReactionAsync_NotOwner_ThrowsInvalidOperation()
         {
             var reaction = new Reaction { Id = 5, UserId = 100 };
             _reactionRepoMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(reaction);
@@ -147,7 +152,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task RemoveReactionAsync_Owner_DeletesReaction()
+        public async Task REQ_SYS_004_RemoveReactionAsync_Owner_DeletesReaction()
         {
             var reaction = new Reaction { Id = 7, UserId = 42 };
             _reactionRepoMock.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(reaction);

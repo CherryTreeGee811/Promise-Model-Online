@@ -16,6 +16,24 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
+/**
+ * Load and render the epic detail page, including its journeys, graph, comments, and reactions.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} epicId - The epic's sequence number.
+ * @param {HTMLElement} navContentDiv - Navigation container.
+ * @param {HTMLElement} contentDiv - Content container.
+ * @param {object|null} permission - The user's permission object.
+ */
+/**
+ * Load and render the epic detail page with journeys, graph, comments, and reactions.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} epicId - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} permission - TODO
+ */
 export function loadEpicDetail(owner, project, epicId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('epic-detail-content');
     const errorEl = document.getElementById('error-text');

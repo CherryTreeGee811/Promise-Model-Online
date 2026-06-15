@@ -31,6 +31,9 @@ async function handleNotificationUpdate() {
     }
 }
 
+/**
+ * Update the notification badge with the latest unread count.
+ */
 export async function updateNotificationBadge() {
     await handleNotificationUpdate();
 }
@@ -40,6 +43,9 @@ export function stopNotificationPolling() {
     stopSignalR();
 }
 
+/**
+ * Start polling for unread notification updates.
+ */
 export function startNotificationPolling() {
     handleNotificationUpdate();
 
@@ -51,6 +57,9 @@ export function startNotificationPolling() {
     });
 }
 
+/**
+ * Get the custom event name dispatched on unread count updates.
+ */
 export function getUnreadNotificationsEventName() {
     return NOTIFICATIONS_EVENT;
 }

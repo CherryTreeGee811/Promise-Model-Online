@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-/// <summary>
-/// Partial update payload for a single notification.
-/// </summary>
+/// <summary>Request DTO for marking a single notification as read.</summary>
 public class UpdateNotificationRequestDTO : IValidatableObject
 {
+    /// <summary>Whether the notification has been read by the user.</summary>
+    /// <param name="validationContext">The validation context.</param>
     public bool? IsRead { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

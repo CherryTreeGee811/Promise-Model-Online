@@ -3,14 +3,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-/// <summary>
-/// Partial update payload for a stride.
-/// </summary>
+/// <summary>Request DTO for completing a stride and progressing unfinished moments.</summary>
 public class UpdateStrideRequestDTO : IValidatableObject
 {
     /// <summary>
     /// When true, progresses the stride by moving unfinished moments to the next stride.
     /// </summary>
+    /// <param name="validationContext">The validation context.</param>
     public bool? ProgressUnfinishedMoments { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

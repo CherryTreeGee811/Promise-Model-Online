@@ -14,19 +14,26 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.DAL
 {
     /// <summary>
-    /// Represents the database context for the Scientific Operations Centre,
-    /// including the configuration of tables and initial records.
+    /// EF Core database context for the Promise Model Online domain. Manages
+    /// all entity DbSets, the entity-sequence allocator used for human-readable
+    /// numbering within each scope, and automatic audit-logging via a custom
+    /// <see cref="SaveChangesAsync"/> override that captures before/after
+    /// snapshots for every insert, update, and delete.
     /// </summary>
-    /// <param name="options">The options to be used by the DbContext.</param>
     public class PromiseModelOnlineContext : DbContext, IPromiseModelOnlineContext
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
 
+        /// <summary>Initializes the context with the given options, using a default <see cref="HttpContextAccessor"/> for actor identification.</summary>
+        /// <param name="options">The options to be used by the DbContext.</param>
         public PromiseModelOnlineContext(DbContextOptions<PromiseModelOnlineContext> options)
             : this(options, new HttpContextAccessor())
         {
         }
 
+        /// <summary>Initializes the context with explicit options and HTTP context accessor, used for testing or custom DI scenarios.</summary>
+        /// <param name="options">The options to be used by the DbContext.</param>
+        /// <param name="httpContextAccessor">The HTTP context accessor for actor identification.</param>
         public PromiseModelOnlineContext(
             DbContextOptions<PromiseModelOnlineContext> options,
             IHttpContextAccessor httpContextAccessor)
@@ -95,6 +102,15 @@ namespace PromiseModelOnline.Api.DAL
         /// </summary>
         public DbSet<EntitySequence> EntitySequences { get; set; } = null!;
 
+        /// <summary>
+        /// Atomically allocates the next sequence number for a given parent
+        /// scope. Uses a serializable transaction on relational databases to
+        /// prevent gaps or duplicates. For the in-memory provider, a simple
+        /// find-and-update is used instead (transactions are not supported).
+        /// </summary>
+        /// <param name="parentId">The parent entity's ID that scopes the sequence.</param>
+        /// <param name="scope">The entity type name acting as the sequence scope (e.g., "Promise", "Epic").</param>
+        /// <returns>The next available sequence number.</returns>
         private async Task<int> GetNextSequenceAsync(int parentId, string scope)
         {
             if (Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
@@ -143,30 +159,48 @@ namespace PromiseModelOnline.Api.DAL
             return nextValue;
         }
 
+        /// <summary>Atomically allocate the next display-order sequence number for a product promise within its project.</summary>
+        /// <param name="projectId">The parent project ID.</param>
+        /// <returns>The next available sequence number.</returns>
         public async Task<int> GetNextPromiseSequenceAsync(int projectId)
             => await GetNextSequenceAsync(projectId, "Promise");
 
+        /// <summary>Atomically allocate the next display-order sequence number for an epic within its parent promise.</summary>
+        /// <param name="promiseId">The parent promise ID.</param>
+        /// <returns>The next available sequence number.</returns>
         public async Task<int> GetNextEpicSequenceAsync(int promiseId)
             => await GetNextSequenceAsync(promiseId, "Epic");
 
+        /// <summary>Atomically allocate the next display-order sequence number for a journey within its parent epic.</summary>
+        /// <param name="epicId">The parent epic ID.</param>
+        /// <returns>The next available sequence number.</returns>
         public async Task<int> GetNextJourneySequenceAsync(int epicId)
             => await GetNextSequenceAsync(epicId, "Journey");
 
+        /// <summary>Atomically allocate the next display-order sequence number for a flow within its parent journey.</summary>
+        /// <param name="journeyId">The parent journey ID.</param>
+        /// <returns>The next available sequence number.</returns>
         public async Task<int> GetNextFlowSequenceAsync(int journeyId)
             => await GetNextSequenceAsync(journeyId, "Flow");
 
+        /// <summary>Atomically allocate the next display-order sequence number for a moment within its parent flow.</summary>
+        /// <param name="flowId">The parent flow ID.</param>
+        /// <returns>The next available sequence number.</returns>
         public async Task<int> GetNextMomentSequenceAsync(int flowId)
             => await GetNextSequenceAsync(flowId, "Moment");
 
-        /// <summary>
-        /// Configures the model and seeds initial data for the database.
-        /// </summary>
-        /// <param name="builder">The model builder used to configure the model.</param>
+        /// <summary>Configure entity relationships, indexes, and constraints.</summary>
+        /// <remarks>
+        ///   Disables cascade delete globally (<see cref="DeleteBehavior.NoAction"/>), sets up
+        ///   unique indexes on <see cref="User.Slug"/> and the composite
+        ///   (<see cref="Project.OwnerId"/>, <see cref="Project.Slug"/>), and configures the
+        ///   composite key on <see cref="EntitySequence"/>.
+        /// </remarks>
+        /// <param name="builder">The <see cref="ModelBuilder"/> used to configure the model.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // SQL Server disallows multiple cascade paths; keep all relationships as NO ACTION.
             foreach (var foreignKey in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
             {
                 foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
@@ -191,12 +225,28 @@ namespace PromiseModelOnline.Api.DAL
             });
         }
 
+        /// <summary>Save entity changes to the database with automatic audit logging.</summary>
+        /// <remarks>
+        ///   Overrides the default <see cref="DbContext.SaveChangesAsync(System.Threading.CancellationToken)"/>
+        ///   to capture before/after snapshots for every insert, update, and delete.
+        /// </remarks>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>The number of state entries written to the database.</returns>
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
             => SaveChangesWithAuditAsync(cancellationToken);
 
+        /// <summary>Save entity changes to the database with automatic audit logging (sync wrapper).</summary>
         public override int SaveChanges()
             => SaveChangesWithAuditAsync(CancellationToken.None).GetAwaiter().GetResult();
 
+        /// <summary>Save changes and automatically capture audit entries.</summary>
+        /// <remarks>
+        ///   When pending changes are detected, captures before/after snapshots, persists them as
+        ///   <see cref="AuditEvent"/> records, and wraps the entire save + audit write in a
+        ///   transaction when running against a relational database.
+        /// </remarks>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>The number of state entries written to the database.</returns>
         private async Task<int> SaveChangesWithAuditAsync(CancellationToken cancellationToken)
         {
             ChangeTracker.DetectChanges();
@@ -239,6 +289,13 @@ namespace PromiseModelOnline.Api.DAL
             }
         }
 
+        /// <summary>Inspect all tracked entities and build audit entry descriptors.</summary>
+        /// <remarks>
+        ///   Skips <see cref="AuditEvent"/> entities and tracks only Added, Modified, and Deleted
+        ///   entries. Extracts actor identity from the current HTTP context.
+        /// </remarks>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>A list of <see cref="AuditEntry"/> records capturing the change.</returns>
         private async Task<List<AuditEntry>> BuildAuditEntriesAsync(CancellationToken cancellationToken)
         {
             var user = _httpContextAccessor.HttpContext?.User;
@@ -279,6 +336,14 @@ namespace PromiseModelOnline.Api.DAL
             return entries;
         }
 
+        /// <summary>Resolve the root project ID for a tracked entity.</summary>
+        /// <remarks>
+        ///   For entities that store the project ID directly (Project, Promise, Iteration) it is
+        ///   read immediately. For others, the hierarchy is walked upward.
+        /// </remarks>
+        /// <param name="entry">The tracked entity entry.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>The root project ID, or <c>null</c> if it cannot be resolved.</returns>
         private async Task<int?> ResolveProjectIdAsync(EntityEntry entry, CancellationToken cancellationToken)
         {
             return entry.Entity switch
@@ -297,6 +362,10 @@ namespace PromiseModelOnline.Api.DAL
             };
         }
 
+        /// <summary>Resolve the project ID from a promise.</summary>
+        /// <param name="promiseId">The promise ID. Must be greater than zero.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>The project ID, or <c>null</c> if not found.</returns>
         private async Task<int?> ResolveProjectIdFromPromiseIdAsync(int promiseId, CancellationToken cancellationToken)
         {
             if (promiseId <= 0)
@@ -308,6 +377,10 @@ namespace PromiseModelOnline.Api.DAL
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <summary>Resolve the project ID from an epic by walking up to its parent promise.</summary>
+        /// <param name="epicId">The epic ID. Must be greater than zero.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>The project ID, or <c>null</c> if not found.</returns>
         private async Task<int?> ResolveProjectIdFromEpicIdAsync(int epicId, CancellationToken cancellationToken)
         {
             if (epicId <= 0)
@@ -321,6 +394,10 @@ namespace PromiseModelOnline.Api.DAL
             return await ResolveProjectIdFromPromiseIdAsync(promiseId, cancellationToken);
         }
 
+        /// <summary>Resolve the project ID from a journey by walking up to its parent epic.</summary>
+        /// <param name="journeyId">The journey ID. Must be greater than zero.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>The project ID, or <c>null</c> if not found.</returns>
         private async Task<int?> ResolveProjectIdFromJourneyIdAsync(int journeyId, CancellationToken cancellationToken)
         {
             if (journeyId <= 0)
@@ -334,6 +411,10 @@ namespace PromiseModelOnline.Api.DAL
             return await ResolveProjectIdFromEpicIdAsync(epicId, cancellationToken);
         }
 
+        /// <summary>Resolve the project ID from a flow by walking up to its parent journey.</summary>
+        /// <param name="flowId">The flow ID. Must be greater than zero.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>The project ID, or <c>null</c> if not found.</returns>
         private async Task<int?> ResolveProjectIdFromFlowIdAsync(int flowId, CancellationToken cancellationToken)
         {
             if (flowId <= 0)
@@ -347,6 +428,10 @@ namespace PromiseModelOnline.Api.DAL
             return await ResolveProjectIdFromJourneyIdAsync(journeyId, cancellationToken);
         }
 
+        /// <summary>Resolve the project ID from an iteration (stores project ID directly).</summary>
+        /// <param name="iterationId">The iteration ID. Must be greater than zero.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>The project ID, or <c>null</c> if not found.</returns>
         private async Task<int?> ResolveProjectIdFromIterationIdAsync(int iterationId, CancellationToken cancellationToken)
         {
             if (iterationId <= 0)
@@ -358,6 +443,14 @@ namespace PromiseModelOnline.Api.DAL
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <summary>Determine the audit action type from the entity state.</summary>
+        /// <remarks>
+        ///   For <see cref="Moment"/> entities, a modification to the <c>Status</c> property is
+        ///   classified as <see cref="AuditActionType.StatusChanged"/> rather than a generic
+        ///   <see cref="AuditActionType.Updated"/>.
+        /// </remarks>
+        /// <param name="entry">The tracked entity entry.</param>
+        /// <returns>The corresponding <see cref="AuditActionType"/>.</returns>
         private static AuditActionType ResolveActionType(EntityEntry entry)
         {
             if (entry.State == EntityState.Added)
@@ -375,9 +468,16 @@ namespace PromiseModelOnline.Api.DAL
             return AuditActionType.Updated;
         }
 
+        /// <summary>Take a dictionary snapshot of EF Core property values for audit serialization.</summary>
+        /// <param name="values">The <see cref="PropertyValues"/> from the change tracker.</param>
+        /// <returns>A dictionary of property name to value.</returns>
         private static Dictionary<string, object?> Snapshot(PropertyValues values)
             => values.Properties.ToDictionary(property => property.Name, property => values[property]);
 
+        /// <summary>Compare before/after snapshots and return only the changed properties.</summary>
+        /// <param name="beforeValues">Property snapshot before the change.</param>
+        /// <param name="afterValues">Property snapshot after the change.</param>
+        /// <returns>A dictionary of changed property names to their before/after values.</returns>
         private static Dictionary<string, AuditEntry.AuditChange> BuildChanges(
             Dictionary<string, object?> beforeValues,
             Dictionary<string, object?> afterValues)
@@ -398,6 +498,11 @@ namespace PromiseModelOnline.Api.DAL
             return changes;
         }
 
+        /// <summary>
+        /// Internal record that captures the before/after state of a single
+        /// tracked entity change, which is later materialized into a persisted
+        /// <see cref="AuditEvent"/>.
+        /// </summary>
         private sealed record AuditEntry(
             object Entity,
             AuditActionType ActionType,
@@ -410,6 +515,15 @@ namespace PromiseModelOnline.Api.DAL
             string? ActorSubject,
             int? ProjectId)
         {
+            /// <summary>Materialize this audit entry into a persistent <see cref="AuditEvent"/>.</summary>
+            /// <remarks>
+            ///   Serializes the before, after, and change dictionaries to JSON for storage.
+            ///   If the entity is a <see cref="Project"/> and no project ID was resolved earlier,
+            ///   it uses the project's own ID.
+            /// </remarks>
+            /// <param name="context">The database context for any additional lookups.</param>
+            /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+            /// <returns>A fully populated <see cref="AuditEvent"/> ready for persistence.</returns>
             public async Task<AuditEvent> ToAuditEventAsync(PromiseModelOnlineContext context, CancellationToken cancellationToken)
             {
                 var projectId = ProjectId;
@@ -435,8 +549,14 @@ namespace PromiseModelOnline.Api.DAL
                 };
             }
 
+            /// <summary>
+            /// Represents a single changed property with its before and after value.
+            /// </summary>
             public sealed record AuditChange(object? Before, object? After);
 
+            /// <summary>Extract the integer ID from any entity with an <c>Id</c> property.</summary>
+            /// <param name="entity">The entity to extract the ID from.</param>
+            /// <returns>The integer ID, or <c>0</c> if not found.</returns>
             private static int ResolveEntityId(object entity)
             {
                 var property = entity.GetType().GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);

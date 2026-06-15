@@ -32,6 +32,10 @@ export const NODE_ROUTE_SEGMENTS = {
 };
 export const NODE_TYPE_INDEX = new Map(NODE_TYPES.map((type, index) => [type, index]));
 
+/**
+ * Normalize text for display in graph nodes.
+ * @param {*} text - TODO
+ */
 export function normalizeText(value) {
     return String(value ?? '').trim().toLowerCase();
 }
@@ -55,6 +59,9 @@ function logGraphFocus(stage, details) {
     console.info('[graph-focus]', stage, details);
 }
 
+/**
+ * Get the inner viewport dimensions for graph rendering.
+ */
 export function getInnerViewportSize(element) {
     if (!element) return { width: 0, height: 0 };
 
@@ -70,6 +77,11 @@ export function getInnerViewportSize(element) {
     };
 }
 
+/**
+ * Truncate text to a maximum length with ellipsis.
+ * @param {*} text - TODO
+ * @param {*} maxLen - TODO
+ */
 export function truncateText(text, maxLength = 40) {
     const value = String(text ?? '').trim();
     if (value.length <= maxLength) return value;
@@ -77,6 +89,10 @@ export function truncateText(text, maxLength = 40) {
     return `${value.slice(0, maxLength - 3).trimEnd()}...`;
 }
 
+/**
+ * Format an effort estimate value for display.
+ * @param {*} estimate - TODO
+ */
 export function formatEstimate(value) {
     return value == null ? 'Unestimated' : String(value);
 }
@@ -91,6 +107,10 @@ export function getChildTypeLabel(nodeType) {
     }
 }
 
+/**
+ * Get a summary of completed vs total child nodes.
+ * @param {*} node - TODO
+ */
 export function getChildProgressSummary(nodeData) {
     const childLabel = getChildTypeLabel(nodeData.nodeType);
     const childCount = nodeData.childCount ?? 0;
@@ -101,6 +121,10 @@ export function getChildProgressSummary(nodeData) {
     return `${completedCount}/${childCount} ${childCount === 1 ? childLabel : `${childLabel}s`} completed`;
 }
 
+/**
+ * Get the human-readable label for a node type.
+ * @param {*} nodeType - TODO
+ */
 export function getNodeTypeLabel(payload) {
     const value = String(payload?.type ?? payload?.Type ?? '').trim();
     if (!value) return null;
@@ -112,6 +136,10 @@ export function getNodeTypeLabel(payload) {
     return value;
 }
 
+/**
+ * Get a summary of completed tasks within a moment node.
+ * @param {*} node - TODO
+ */
 export function getMomentTaskSummary(payload) {
     const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
     if (tasks.length === 0) return null;
@@ -120,6 +148,10 @@ export function getMomentTaskSummary(payload) {
     return `Tasks: ${completedCount}/${tasks.length} complete`;
 }
 
+/**
+ * Get the card description for a graph node.
+ * @param {*} node - TODO
+ */
 export function getCardDescription(payload, maxLength = 52) {
     const description = String(payload?.description ?? payload?.Description ?? '').trim();
     if (!description) return 'Description: None';
@@ -127,6 +159,10 @@ export function getCardDescription(payload, maxLength = 52) {
     return truncateText(description.replace(/\s+/g, ' '), maxLength);
 }
 
+/**
+ * Get the display label for a stride in the graph.
+ * @param {*} stride - TODO
+ */
 export function getStrideLabel(payload) {
     const id = payload?.assignedStrideId;
     if (id == null || id === 'unassigned' || id === '') return 'Stride: Backlog';
@@ -148,6 +184,10 @@ export function getNodeTitle(nodeData) {
     return lines.join('\n');
 }
 
+/**
+ * Sort items by their display order property.
+ * @param {*} items - TODO
+ */
 export function sortByDisplayOrder(items) {
     return [...items].sort((left, right) => {
         const orderDelta = (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
@@ -156,6 +196,10 @@ export function sortByDisplayOrder(items) {
     });
 }
 
+/**
+ * Categorize an effort estimate into a bucket for graph coloring.
+ * @param {*} effort - TODO
+ */
 export function getMomentEffortBucket(effortEstimate) {
     if (effortEstimate == null) return 'unestimated';
 
@@ -164,6 +208,10 @@ export function getMomentEffortBucket(effortEstimate) {
     return allowed.has(normalized) ? normalized.toUpperCase() : 'unestimated';
 }
 
+/**
+ * Categorize a moment by stride assignment status.
+ * @param {*} moment - TODO
+ */
 export function getMomentStrideBucket(payload) {
     const id = payload?.assignedStrideId;
     if (id == null || id === 'unassigned' || id === '') return 'backlog';
@@ -177,6 +225,12 @@ export function computeChildMetrics(children) {
     return { childCount, completedChildCount };
 }
 
+/**
+ * Create a new graph node with the given properties.
+ * @param {*} type - TODO
+ * @param {*} label - TODO
+ * @param {*} data - TODO
+ */
 export function createNode(nodeType, payload, children = []) {
     const childCount = children.length;
     const completedChildCount = children.filter(child => getStatusBucket(child.payload?.statusColor ?? child.statusColor) === 'done').length;
@@ -206,6 +260,11 @@ export function createNode(nodeType, payload, children = []) {
     };
 }
 
+/**
+ * Create a graph node pre-populated with metric calculations.
+ * @param {*} type - TODO
+ * @param {*} data - TODO
+ */
 export function createNodeWithMetrics(nodeType, payload, childMetrics = null) {
     const enrichedPayload = { ...payload };
     if (childMetrics) {
@@ -215,6 +274,10 @@ export function createNodeWithMetrics(nodeType, payload, childMetrics = null) {
     return createNode(nodeType, enrichedPayload, []);
 }
 
+/**
+ * Get the display color for a graph node based on status.
+ * @param {*} node - TODO
+ */
 export function getNodeColor(nodeType) {
     switch (nodeType) {
         case 'project': return '#1d3557';
@@ -227,6 +290,9 @@ export function getNodeColor(nodeType) {
     }
 }
 
+/**
+ * Get the application base URL path.
+ */
 export function getAppBasePath() {
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const routeRootIndex = pathSegments.findIndex(segment => Object.prototype.hasOwnProperty.call(NODE_ROUTE_SEGMENTS, segment));
@@ -243,6 +309,10 @@ export function getAppBasePath() {
     return '';
 }
 
+/**
+ * Get the navigation URL for a graph node.
+ * @param {*} node - TODO
+ */
 export function getNodeHref(node, owner, project) {
     const routeSegment = NODE_ROUTE_SEGMENTS[node.nodeType];
     if (!routeSegment) return null;
@@ -254,6 +324,10 @@ export function getNodeHref(node, owner, project) {
     return `${getAppBasePath()}/${routeSegment}/${seq}?${params.toString()}`;
 }
 
+/**
+ * Get the searchable text content for a graph node.
+ * @param {*} node - TODO
+ */
 export function getNodeSearchText(node) {
     return node._searchText ?? normalizeText([
         node.label,
@@ -278,6 +352,10 @@ export function findNodeById(treeData, nodeId) {
     return null;
 }
 
+/**
+ * Count the number of renderable nodes in the graph tree.
+ * @param {*} nodes - TODO
+ */
 export function countRenderableNodes(node) {
     if (!node) return 0;
 
@@ -285,6 +363,10 @@ export function countRenderableNodes(node) {
     return selfCount + (node.children ?? []).reduce((sum, child) => sum + countRenderableNodes(child), 0);
 }
 
+/**
+ * Parse raw graph data into a structured tree format.
+ * @param {*} data - TODO
+ */
 export function parseGraphData(rootPromises, owner, project, projectEntity = null) {
     const rawName = projectEntity?.name ?? projectEntity?.Name ?? '';
     const normalizedName = String(rawName).trim();
@@ -303,6 +385,10 @@ export function parseGraphData(rootPromises, owner, project, projectEntity = nul
     };
 }
 
+/**
+ * Render an empty state for a graph container.
+ * @param {*} container - TODO
+ */
 export function renderEmptyState(contentDiv, message) {
     if (!contentDiv) return;
     contentDiv.replaceChildren();

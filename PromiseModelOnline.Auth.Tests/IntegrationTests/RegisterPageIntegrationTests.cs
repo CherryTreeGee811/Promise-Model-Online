@@ -2,28 +2,36 @@ using System.Net;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;
 
+/// <summary>Integration tests for the registration page flow with email verification.</summary>
+// Requirements: REQ_FUN_001 REQ_FUN_047
 public class RegisterPageIntegrationTests : IntegrationTestBase
 {
     private const string TestPassword = "TestPass123!";
 
     [Test]
-    public async Task Get_RegisterPage_Returns200()
+    public async Task REQ_FUN_001_Get_RegisterPage_Returns200()
     {
+        // Act
         var response = await Client.GetAsync("/account/register");
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     [Test]
-    public async Task Get_RegisterPage_ContainsTitle()
+    public async Task REQ_FUN_001_Get_RegisterPage_ContainsTitle()
     {
+        // Act
         var html = await Client.GetStringAsync("/account/register");
+        // Assert
         Assert.That(html, Does.Contain("<h1 class=\"sr-only\">Create your Promise Model Online account</h1>"));
     }
 
     [Test]
-    public async Task Get_RegisterPage_HasAllFieldsAndAntiforgery()
+    public async Task REQ_FUN_001_Get_RegisterPage_HasAllFieldsAndAntiforgery()
     {
+        // Act
         var html = await Client.GetStringAsync("/account/register");
+        // Assert
         Assert.That(html, Does.Contain("name=\"Username\""));
         Assert.That(html, Does.Contain("name=\"Email\""));
         Assert.That(html, Does.Contain("name=\"Password\""));
@@ -32,15 +40,18 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Get_RegisterPage_HasLoginLink()
+    public async Task REQ_FUN_001_Get_RegisterPage_HasLoginLink()
     {
+        // Act
         var html = await Client.GetStringAsync("/account/register");
+        // Assert
         Assert.That(html, Does.Contain("Sign in here"));
     }
 
     [Test]
-    public async Task Post_Register_EmptyFields_ReturnsValidationError()
+    public async Task REQ_FUN_001_Post_Register_EmptyFields_ReturnsValidationError()
     {
+        // Arrange
         var antiforgery = await GetAntiforgeryData("/account/register");
 
         var formData = new Dictionary<string, string>
@@ -52,8 +63,9 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         };
 
         var request = CreatePostWithAntiforgery("/account/register", antiforgery, formData);
+        // Act
         var response = await Client.SendAsync(request);
-
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response.Content.ReadAsStringAsync();
@@ -61,8 +73,9 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_Register_PasswordMismatch_ReturnsError()
+    public async Task REQ_FUN_001_Post_Register_PasswordMismatch_ReturnsError()
     {
+        // Arrange
         var antiforgery = await GetAntiforgeryData("/account/register");
 
         var formData = new Dictionary<string, string>
@@ -74,8 +87,9 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         };
 
         var request = CreatePostWithAntiforgery("/account/register", antiforgery, formData);
+        // Act
         var response = await Client.SendAsync(request);
-
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response.Content.ReadAsStringAsync();
@@ -83,8 +97,9 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_Register_ValidUser_RedirectsToEmailVerification()
+    public async Task REQ_FUN_001_Post_Register_ValidUser_RedirectsToEmailVerification()
     {
+        // Arrange
         var uniqueUser = "inttest_" + Guid.NewGuid().ToString("N")[..8];
         var uniqueEmail = uniqueUser + "@test.com";
 
@@ -99,8 +114,9 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         };
 
         var request = CreatePostWithAntiforgery("/account/register", antiforgery, formData);
+        // Act
         var response = await Client.SendAsync(request);
-
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
         var location = await ExtractRedirectLocation(response);
@@ -109,8 +125,9 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_Register_DuplicateEmail_ReturnsError()
+    public async Task REQ_FUN_001_Post_Register_DuplicateEmail_ReturnsError()
     {
+        // Arrange
         var uniqueUser = "dup_email_" + Guid.NewGuid().ToString("N")[..8];
         var sharedEmail = "shared_" + Guid.NewGuid().ToString("N")[..8] + "@test.com";
 
@@ -127,7 +144,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         var response1 = await Client.SendAsync(request1);
         Assert.That(response1.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
-        // Second registration with same email
+        // Act - Second registration with same email
         var antiforgery2 = await GetAntiforgeryData("/account/register");
         var formData2 = new Dictionary<string, string>
         {
@@ -138,7 +155,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         };
         var request2 = CreatePostWithAntiforgery("/account/register", antiforgery2, formData2);
         var response2 = await Client.SendAsync(request2);
-
+        // Assert
         Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response2.Content.ReadAsStringAsync();
@@ -146,8 +163,9 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_Register_DuplicateUsername_ReturnsError()
+    public async Task REQ_FUN_001_Post_Register_DuplicateUsername_ReturnsError()
     {
+        // Arrange
         var sharedUser = "dup_user_" + Guid.NewGuid().ToString("N")[..8];
 
         // First registration
@@ -163,7 +181,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         var response1 = await Client.SendAsync(request1);
         Assert.That(response1.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
-        // Second registration with same username
+        // Act - Second registration with same username
         var antiforgery2 = await GetAntiforgeryData("/account/register");
         var formData2 = new Dictionary<string, string>
         {
@@ -174,7 +192,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         };
         var request2 = CreatePostWithAntiforgery("/account/register", antiforgery2, formData2);
         var response2 = await Client.SendAsync(request2);
-
+        // Assert
         Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response2.Content.ReadAsStringAsync();

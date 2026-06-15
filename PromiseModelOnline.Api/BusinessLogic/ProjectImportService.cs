@@ -12,6 +12,12 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
 
+/// <summary>Reconstructs a project from a portable export document.</summary>
+/// <remarks>
+///   Parses an <see cref="ProjectExportDocument"/> and recreates the full hierarchy (project,
+///   promises, epics, journeys, flows, moments, tasks, iterations, strides) in the database.
+///   Uses the context's atomic sequence allocator to assign sequence numbers. Scoped lifetime.
+/// </remarks>
 public sealed class ProjectImportService : IProjectImportService
 {
     private readonly IPromiseModelOnlineContext _context;
@@ -26,6 +32,7 @@ public sealed class ProjectImportService : IProjectImportService
     private readonly IStrideRepository _strideRepository;
     private readonly IUserRepository _userRepository;
 
+    /// <summary>Initializes the import service with all required repositories.</summary>
     public ProjectImportService(
         IPromiseModelOnlineContext context,
         IProjectRepository projectRepository,
@@ -52,6 +59,11 @@ public sealed class ProjectImportService : IProjectImportService
         _userRepository = userRepository;
     }
 
+    /// <summary>Import a project from an export document, recreating the full hierarchy in the database.</summary>
+    /// <param name="document">The export document containing the project data.</param>
+    /// <param name="requestedByUserId">The user ID requesting the import (becomes the project owner).</param>
+    /// <returns>An <see cref="ProjectImportResult"/> with the new project ID and any warnings.</returns>
+    /// <exception cref="InvalidDataException">Project section is missing from the document.</exception>
     public async Task<ProjectImportResult> ImportAsync(ProjectExportDocument document, int requestedByUserId)
     {
         if (document.Project is null)
@@ -124,6 +136,12 @@ public sealed class ProjectImportService : IProjectImportService
         });
     }
 
+    /// <summary>Import a single promise and recursively import its child epics.</summary>
+    /// <param name="projectId">The project ID to associate the promise with.</param>
+    /// <param name="promise">The exported promise data.</param>
+    /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportPromiseAsync(
         int projectId,
         ProjectExportPromise promise,
@@ -155,21 +173,31 @@ public sealed class ProjectImportService : IProjectImportService
         }
     }
 
+    /// <summary>Order export items by <c>DisplayOrder</c> then <c>Id</c> for consistent import order.</summary>
+    /// <param name="items">The items to order.</param>
+    /// <returns>The ordered items.</returns>
     private static IOrderedEnumerable<T> OrderByDisplayOrder<T>(IEnumerable<T> items) where T : class
     {
         return items.OrderBy(GetDisplayOrder).ThenBy(GetId);
     }
 
+    /// <summary>Order export iterations by ID then name.</summary>
+    /// <param name="items">The iterations to order.</param>
     private static IOrderedEnumerable<ProjectExportIteration> OrderByIteration(IEnumerable<ProjectExportIteration> items)
     {
         return items.OrderBy(item => item.Id).ThenBy(item => item.Name);
     }
 
+    /// <summary>Order export strides by start date then ID.</summary>
+    /// <param name="items">The strides to order.</param>
     private static IOrderedEnumerable<ProjectExportStride> OrderByStride(IEnumerable<ProjectExportStride> items)
     {
         return items.OrderBy(item => item.StartDate).ThenBy(item => item.Id);
     }
 
+    /// <summary>Get <c>DisplayOrder</c> property via reflection.</summary>
+    /// <param name="item">The item to inspect.</param>
+    /// <returns>The display order value, or 0.</returns>
     private static int GetDisplayOrder<T>(T item) where T : class
     {
         var prop = item.GetType().GetProperty("DisplayOrder");
@@ -179,6 +207,8 @@ public sealed class ProjectImportService : IProjectImportService
         return 0;
     }
 
+    /// <summary>Get <c>Id</c> property via reflection.</summary>
+    /// <param name="item">The item to inspect.</param>
     private static int GetId<T>(T item) where T : class
     {
         var prop = item.GetType().GetProperty("Id");
@@ -188,12 +218,23 @@ public sealed class ProjectImportService : IProjectImportService
         return 0;
     }
 
+    /// <summary>Resolve an owner ID with a fallback to the requesting user for required cases.</summary>
+    /// <param name="exportedOwnerId">The exported owner ID from the document.</param>
+    /// <param name="fallbackUserId">The fallback user ID if resolution fails.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
+    /// <returns>The resolved owner ID.</returns>
     private async Task<int> ResolveRequiredOwnerIdAsync(int? exportedOwnerId, int fallbackUserId, List<string> warnings, string entityLabel)
     {
         var resolvedOwnerId = await ResolveOptionalOwnerIdAsync(exportedOwnerId, fallbackUserId, warnings, entityLabel);
         return resolvedOwnerId ?? fallbackUserId;
     }
 
+    /// <summary>Resolve an exported owner ID to a valid user ID, with fallback and warning.</summary>
+    /// <param name="exportedOwnerId">The exported owner ID from the document.</param>
+    /// <param name="fallbackUserId">The fallback user ID if the exported owner is not found.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
     private async Task<int?> ResolveOptionalOwnerIdAsync(int? exportedOwnerId, int fallbackUserId, List<string> warnings, string entityLabel)
     {
         if (!exportedOwnerId.HasValue)
@@ -211,6 +252,19 @@ public sealed class ProjectImportService : IProjectImportService
         return fallbackUserId;
     }
 
+    /// <summary>Resolve an exported stride ID to the new stride ID via the mapping dictionary.</summary>
+    /// <param name="exportedStrideId">The exported stride ID from the document.</param>
+        /// <param name="projectId">The project ID for context.</param>
+        /// <param name="promiseId">The parent promise ID.</param>
+        /// <param name="epic">The exported epic data.</param>
+        /// <param name="requestedByUserId">The requesting user ID.</param>
+        /// <param name="warnings">Accumulated warnings.</param>
+        /// <param name="strideIdMap">Stride ID mapping.</param>
+    /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
+    /// <param name="referenceName">The type of reference (e.g., "assigned", "original") for warnings.</param>
+    /// <returns>The mapped stride ID, or null.</returns>
     private async Task<int?> ResolveStrideIdAsync(int? exportedStrideId, Dictionary<int, int> strideIdMap, List<string> warnings, string entityLabel, string referenceName)
     {
         if (!exportedStrideId.HasValue)
@@ -227,6 +281,13 @@ public sealed class ProjectImportService : IProjectImportService
         return null;
     }
 
+    /// <summary>Import a single epic and recursively import its child journeys.</summary>
+    /// <param name="projectId">The project ID for context.</param>
+    /// <param name="promiseId">The parent promise ID.</param>
+    /// <param name="epic">The exported epic data.</param>
+    /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportEpicAsync(
         int projectId,
         int promiseId,
@@ -259,6 +320,13 @@ public sealed class ProjectImportService : IProjectImportService
         }
     }
 
+    /// <summary>Import a single journey and recursively import its child flows.</summary>
+    /// <param name="projectId">The project ID for context.</param>
+    /// <param name="epicId">The parent epic ID.</param>
+    /// <param name="journey">The exported journey data.</param>
+    /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportJourneyAsync(
         int projectId,
         int epicId,
@@ -291,6 +359,13 @@ public sealed class ProjectImportService : IProjectImportService
         }
     }
 
+    /// <summary>Import a single flow and recursively import its child moments.</summary>
+    /// <param name="projectId">The project ID for context.</param>
+    /// <param name="journeyId">The parent journey ID.</param>
+    /// <param name="flow">The exported flow data.</param>
+    /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportFlowAsync(
         int projectId,
         int journeyId,
@@ -323,6 +398,13 @@ public sealed class ProjectImportService : IProjectImportService
         }
     }
 
+    /// <summary>Import a single moment with its stride assignments and sub-tasks.</summary>
+    /// <param name="projectId">The project ID for context.</param>
+    /// <param name="flowId">The parent flow ID.</param>
+    /// <param name="moment">The exported moment data.</param>
+    /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportMomentAsync(
         int projectId,
         int flowId,
@@ -362,6 +444,11 @@ public sealed class ProjectImportService : IProjectImportService
         }
     }
 
+    /// <summary>Import a single moment sub-task.</summary>
+    /// <param name="momentId">The parent moment ID.</param>
+    /// <param name="task">The exported task data.</param>
+    /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
+    /// <param name="warnings">Accumulated import warnings.</param>
     private async Task ImportTaskAsync(
         int momentId,
         ProjectExportMomentTask task,
@@ -383,6 +470,9 @@ public sealed class ProjectImportService : IProjectImportService
         await _momentTaskRepository.SaveChangesAsync();
     }
 
+    /// <summary>Generate a URL-safe slug from a text string.</summary>
+    /// <param name="text">The text to slugify.</param>
+    /// <returns>A URL-safe slug.</returns>
     private static string Slugify(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return "project";
@@ -393,6 +483,9 @@ public sealed class ProjectImportService : IProjectImportService
         return string.IsNullOrEmpty(slug) ? "project" : slug;
     }
 
+    /// <summary>Execute an import operation within a database transaction.</summary>
+    /// <param name="action">The import operation to execute.</param>
+    /// <returns>The result of the import operation.</returns>
     private async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> action)
     {
         if (_context is DbContext dbContext)

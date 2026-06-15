@@ -10,11 +10,20 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace PromiseModelOnline.Auth.Controllers
 {
+    /// <summary>Handles OpenID Connect authorization requests (<c>connect/authorize</c>).</summary>
+    /// <remarks>
+    ///   Processes authorization requests by authenticating the user, validating PKCE S256,
+    ///   assigning scopes and resources, and returning a SignIn result with OpenIddict identity claims.
+    ///   Unauthenticated users are redirected to the login page.
+    /// </remarks>
     [ApiController]
     [Route("connect/authorize")]
     public class AuthorizationController : ControllerBase
     {
-        
+        /// <summary>Process authorization requests: authenticate, validate PKCE, assign scopes, and sign in.</summary>
+        /// <returns>A SignIn result with OpenIddict identity claims, or a redirect to login for unauthenticated users.</returns>
+        /// <response code="302">Redirects unauthenticated users to the login page.</response>
+        /// <response code="400">The <c>openid</c> scope is missing or PKCE S256 is not used.</response>
         [HttpGet, HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Authorize()
@@ -33,16 +42,12 @@ namespace PromiseModelOnline.Auth.Controllers
                 return Redirect($"/account/login?returnUrl={returnUrl}");
             }
 
-            // ✅ 3. Resolve subject (user id)
             var subject = User.FindFirstValue(OpenIddictConstants.Claims.Subject)
                 ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(subject))
-            {
                 return Forbid();
-            }
 
-            // ✅ 4. Create identity for OpenIddict
             var identity = new ClaimsIdentity(
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                 OpenIddictConstants.Claims.Name,
@@ -51,7 +56,6 @@ namespace PromiseModelOnline.Auth.Controllers
 
             var principal = new ClaimsPrincipal(identity);
 
-            // ✅ 5. Get scopes from request
             var scopes = request.GetScopes();
 
             if (!scopes.Contains(OpenIddictConstants.Scopes.OpenId))
@@ -65,9 +69,6 @@ namespace PromiseModelOnline.Auth.Controllers
 
             principal.SetScopes(scopes.ToList());
 
-            // ✅ 6. Enforce S256 PKCE method (OAuth 2.1 best practice)
-            // Missing or non-S256 method is rejected — `plain` is deprecated
-            // and should not be accepted even by omission.
             var codeChallengeMethod = request.CodeChallengeMethod;
             if (!string.Equals(codeChallengeMethod, "S256", StringComparison.OrdinalIgnoreCase))
             {
@@ -78,15 +79,11 @@ namespace PromiseModelOnline.Auth.Controllers
                 });
             }
 
-            // ✅ 7. Assign API resource
             if (scopes.Contains("projects.read") || scopes.Contains("projects.write"))
             {
                 principal.SetResources("promisemodelonline.api");
             }
 
-            // ✅ 7. Add required claims
-
-            // sub
             var subClaim = new Claim(OpenIddictConstants.Claims.Subject, subject);
             subClaim.SetDestinations(
                 OpenIddictConstants.Destinations.AccessToken,
@@ -94,7 +91,6 @@ namespace PromiseModelOnline.Auth.Controllers
             );
             identity.AddClaim(subClaim);
 
-            // name
             if (User.Identity?.Name is { Length: > 0 } name)
             {
                 var nameClaim = new Claim(OpenIddictConstants.Claims.Name, name);
@@ -105,7 +101,6 @@ namespace PromiseModelOnline.Auth.Controllers
                 identity.AddClaim(nameClaim);
             }
 
-            // email
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             if (!string.IsNullOrEmpty(email))
             {
@@ -117,7 +112,6 @@ namespace PromiseModelOnline.Auth.Controllers
                 identity.AddClaim(emailClaim);
             }
 
-            // roles
             foreach (var role in User.FindAll(ClaimTypes.Role))
             {
                 var roleClaim = new Claim(OpenIddictConstants.Claims.Role, role.Value);
@@ -128,21 +122,20 @@ namespace PromiseModelOnline.Auth.Controllers
                 identity.AddClaim(roleClaim);
             }
 
-            // ✅ ✅ ✅ CRITICAL FIX: return with AuthenticationProperties
             return SignIn(
                 principal,
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme
+        /// <param name="scope">The scope name.</param>
+        /// <param name="principal">The claims principal.</param>
             );
         }
 
+        /// <summary>Return token destinations (access token and identity token if scope is present).</summary>
         private static IEnumerable<string> GetDestinations(string scope, ClaimsPrincipal principal)
         {
             yield return Destinations.AccessToken;
-
             if (principal.HasScope(scope))
-            {
                 yield return Destinations.IdentityToken;
-            }
         }
     }
 }

@@ -27,6 +27,11 @@ function handleNavClick(e, navContentDiv, contentDiv) {
     navigate(path, navContentDiv, contentDiv);
 }
 
+/**
+ * Load the navigation template into the nav container.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function loadNavTemplate(navContentDiv, contentDiv) {
     const templateName = isLoggedIn() ? 'authenticated.html' : 'anonymous.html';
 
@@ -46,6 +51,11 @@ export function loadNavTemplate(navContentDiv, contentDiv) {
         });
 }
 
+/**
+ * Initialize navigation event delegation for menu links.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function initNavEventDelegation(navContentDiv, contentDiv) {
     const menu = document.getElementById('main-menu');
     if (!menu || menu.dataset.navBound) return;

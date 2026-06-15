@@ -1,14 +1,24 @@
 namespace PromiseModelOnline.Auth.Middleware;
 
+/// <summary>Middleware that adds security-related HTTP response headers.</summary>
+/// <remarks>
+///   Adds <c>X-Content-Type-Options: nosniff</c>, <c>X-Frame-Options: DENY</c>,
+///   <c>Strict-Transport-Security</c> (for HTTPS requests), and <c>Referrer-Policy</c> headers
+///   to all responses.
+/// </remarks>
 public class SecurityHeadersMiddleware
 {
     private readonly RequestDelegate _next;
 
+    /// <summary>Initializes the middleware with the next delegate in the pipeline.</summary>
+    /// <param name="next">The next delegate in the request pipeline.</param>
     public SecurityHeadersMiddleware(RequestDelegate next)
     {
         _next = next;
     }
 
+    /// <summary>Apply security headers to the response and invoke the next middleware.</summary>
+    /// <param name="context">The HTTP context for the current request.</param>
     public async Task Invoke(HttpContext context)
     {
         var headers = context.Response.Headers;

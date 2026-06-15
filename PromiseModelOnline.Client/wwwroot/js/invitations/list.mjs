@@ -2,6 +2,10 @@ import { getPendingInvitations, acceptInvitation } from './api.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 
+/**
+ * Load the invitations listing page.
+ * @param {*} contentDiv - TODO
+ */
 export function loadInvitationsPage(contentDiv) {
     const listDiv = document.getElementById('invitations-list');
     const errorEl = document.getElementById('error-text');

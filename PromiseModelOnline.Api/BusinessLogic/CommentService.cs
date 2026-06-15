@@ -12,6 +12,12 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic
 {
+    /// <summary>Business logic for <see cref="Comment"/> entities with mention detection and notifications.</summary>
+    /// <remarks>
+    ///   Handles threaded comment retrieval with DTO mapping, comment creation with parent-type
+    ///   routing, @-mention detection via regex, and user notification dispatch for mentions.
+    ///   Scoped lifetime.
+    /// </remarks>
     public class CommentService : ICommentService
     {
         private readonly ICommentRepository _commentRepo;
@@ -19,6 +25,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly IGenericMapper<Comment, CommentDTO> _mapper;
         private readonly INotificationService _notificationService;
 
+        /// <summary>Initializes the service with required dependencies.</summary>
         public CommentService(
             ICommentRepository commentRepo,
             IUserRepository userRepo,
@@ -31,12 +38,24 @@ namespace PromiseModelOnline.Api.BusinessLogic
             _notificationService = notificationService;
         }
 
+        /// <summary>Return all comments for a parent entity as DTOs with threaded replies.</summary>
+        /// <param name="parentType">Entity type discriminator (<c>"promise"</c>, <c>"epic"</c>, <c>"journey"</c>, <c>"flow"</c>, <c>"moment"</c>).</param>
+        /// <param name="parentId">The parent entity's ID.</param>
+        /// <returns>Comment DTOs mapped from entities.</returns>
         public async Task<IEnumerable<CommentDTO>> GetCommentsAsync(string parentType, int parentId)
         {
             var comments = await _commentRepo.GetCommentsForEntityAsync(parentType, parentId);
             return comments.Select(c => _mapper.Map(c, null!)).ToList();
         }
 
+        /// <summary>Create a new comment with mention detection and notification dispatch.</summary>
+        /// <remarks>
+        ///   Routes the comment to the correct parent foreign key based on <paramref name="dto"/>.<c>ParentType</c>.
+        ///   Parses @-mentions from the comment text, records them, and sends mention notifications.
+        /// </remarks>
+        /// <param name="dto">The creation data. Not null.</param>
+        /// <param name="userId">The author's user ID.</param>
+        /// <returns>The created comment DTO.</returns>
         public async Task<CommentDTO> CreateCommentAsync(CreateCommentDTO dto, int userId)
         {
             var comment = new Comment

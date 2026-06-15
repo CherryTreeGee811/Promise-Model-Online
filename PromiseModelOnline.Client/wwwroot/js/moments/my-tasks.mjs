@@ -3,6 +3,11 @@ import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { navigate } from '../router.mjs';
 
+/**
+ * Load the my-tasks page showing moments assigned to the current user.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function loadMyTasksPage(navContentDiv, contentDiv) {
     const content = document.getElementById('my-tasks-content');
     const errorEl = document.getElementById('error-text');

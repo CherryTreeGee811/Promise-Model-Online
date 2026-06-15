@@ -9,10 +9,20 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
 
+/// <summary>Validates a project import document before committing the import.</summary>
+/// <remarks>
+///   Checks JSON structure, schema version, required fields (project name, statements, statuses),
+///   reference integrity (promises reference existing projects, epics reference promises, etc.),
+///   and data format correctness. Returns errors and warnings without modifying the database.
+///   Scoped lifetime.
+/// </remarks>
 public sealed class ProjectImportValidationService : IProjectImportValidationService
 {
     private const string ExpectedSchemaVersion = "1.0";
 
+    /// <summary>Validate a project import JSON stream, checking structure, schema version, references, and data integrity.</summary>
+    /// <param name="jsonStream">The JSON stream containing the export document.</param>
+    /// <returns>A <see cref="ProjectImportValidationResult"/> with errors and warnings.</returns>
     public async Task<ProjectImportValidationResult> ValidateAsync(Stream jsonStream)
     {
         var result = new ProjectImportValidationResult();
@@ -56,6 +66,9 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
         return result;
     }
 
+    /// <summary>Validate the full project hierarchy for reference integrity and duplicate IDs.</summary>
+    /// <param name="document">The export document to validate.</param>
+    /// <param name="result">The validation result to populate with errors and warnings.</param>
     private static void ValidateHierarchy(ProjectExportDocument document, ProjectImportValidationResult result)
     {
         var project = document.Project;
@@ -150,6 +163,11 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
         }
     }
 
+    /// <summary>Collect item IDs into a set, reporting duplicates as validation errors.</summary>
+    /// <param name="items">The items to collect IDs from.</param>
+    /// <param name="result">The validation result for reporting duplicates.</param>
+    /// <param name="label">A human-readable label for the item type in error messages.</param>
+    /// <returns>A set of collected IDs.</returns>
     private static HashSet<int> CollectIds<T>(IEnumerable<T> items, ProjectImportValidationResult result, string label) where T : class
     {
         var ids = new HashSet<int>();
@@ -165,11 +183,18 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
         return ids;
     }
 
+    /// <summary>Check if a stride with the given ID exists in the exported project.</summary>
+    /// <param name="project">The exported project data.</param>
+    /// <param name="strideId">The stride ID to check.</param>
+    /// <returns>True if the stride exists.</returns>
     private static bool StrideExists(ProjectExportProject project, int strideId)
     {
         return project.Iterations.Any(iteration => iteration.Strides.Any(stride => stride.Id == strideId));
     }
 
+    /// <summary>Check if a moment with the given ID exists in the exported project.</summary>
+    /// <param name="project">The exported project data.</param>
+    /// <param name="momentId">The moment ID to check.</param>
     private static bool MomentExists(ProjectExportProject project, int momentId)
     {
         return project.ProductPromises
@@ -180,6 +205,9 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
             .Any(moment => moment.Id == momentId);
     }
 
+    /// <summary>Get <c>Id</c> property via reflection.</summary>
+    /// <param name="item">The item to inspect.</param>
+    /// <returns>The ID value, or 0.</returns>
     private static int GetId<T>(T item) where T : class
     {
         var property = item.GetType().GetProperty("Id");

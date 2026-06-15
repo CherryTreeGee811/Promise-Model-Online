@@ -8,6 +8,11 @@ using System.Security.Claims;
 
 namespace PromiseModelOnline.Api.Controllers;
 
+/// <summary>REST controller for user profile, search, data export, and account deletion.</summary>
+/// <remarks>
+///   All endpoints require <c>projects.read</c> authorization. Provides the current user's
+///   profile info, global user search, personal data export, and account deletion.
+/// </remarks>
 [ApiController]
 [Route("api/users")]
 public class UsersController : ControllerBase
@@ -26,6 +31,7 @@ public class UsersController : ControllerBase
         _context = context;
     }
 
+    /// <summary>Return the current user's profile information.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpGet("me")]
     public async Task<IActionResult> Me()
@@ -39,47 +45,36 @@ public class UsersController : ControllerBase
         {
             var users = await _userRepository.FindByEmailAsync(email);
             var user = users.FirstOrDefault();
-            if (user is not null)
-                userId = user.Id;
+            if (user is not null) userId = user.Id;
         }
 
-        return Ok(new
-        {
-            id,
-            name,
-            email,
-            userId
-        });
+        return Ok(new { id, name, email, userId });
     }
 
+    /// <summary>Search for users globally by name or email.</summary>
+    /// <param name="q">The search term.</param>
+    /// <param name="max">Maximum results (default 10).</param>
+    /// <returns>An IActionResult containing the exported JSON data.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("search")]
     public async Task<ActionResult<IEnumerable<object>>> SearchUsers([FromQuery] string q, [FromQuery] int max = 10)
     {
-        if (string.IsNullOrWhiteSpace(q))
-            return Ok(Array.Empty<object>());
-
+        if (string.IsNullOrWhiteSpace(q)) return Ok(Array.Empty<object>());
         var users = await _userRepository.SearchUsersAsync(q, max);
-        return Ok(users.Select(u => new
-        {
-            u.Id,
-            u.Name,
-            u.Email
-        }));
+        return Ok(users.Select(u => new { u.Id, u.Name, u.Email }));
     }
 
+    /// <summary>Export all of the current user's personal data.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpGet("me/export")]
     public async Task<IActionResult> ExportMyData()
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
-        if (string.IsNullOrEmpty(email))
-            return Unauthorized();
+        if (string.IsNullOrEmpty(email)) return Unauthorized();
 
         var users = await _userRepository.FindByEmailAsync(email);
         var user = users.FirstOrDefault();
-        if (user is null)
-            return NotFound();
+        if (user is null) return NotFound();
 
         var userId = user.Id;
         var exportedAt = DateTime.UtcNow;
@@ -105,18 +100,17 @@ public class UsersController : ControllerBase
         });
     }
 
+    /// <summary>Delete the current user's account and associated data.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpDelete("me")]
     public async Task<IActionResult> DeleteMyData()
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
-        if (string.IsNullOrEmpty(email))
-            return Unauthorized();
+        if (string.IsNullOrEmpty(email)) return Unauthorized();
 
         var users = await _userRepository.FindByEmailAsync(email);
         var user = users.FirstOrDefault();
-        if (user is null)
-            return NotFound();
+        if (user is null) return NotFound();
 
         var userId = user.Id;
 

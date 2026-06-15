@@ -16,6 +16,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for the controller covering CRUD operations.</summary>
+    // Requirements: REQ_FUN_007
     public class FlowsControllerUnitTests
     {
         private Mock<IFlowService> _mockFlowService = null!;
@@ -46,7 +48,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetAll Tests
 
         [Test]
-        public async Task GetAll_WithoutJourneyIdParameter_ReturnsAllFlows()
+        public async Task REQ_FUN_007_GetAll_WithoutJourneyIdParameter_ReturnsAllFlows()
         {
             // Arrange
             var flows = new List<Flow>
@@ -91,7 +93,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithValidJourneyIdParameter_ReturnsFlowsFilteredByJourney()
+        public async Task REQ_FUN_007_GetAll_WithValidJourneyIdParameter_ReturnsFlowsFilteredByJourney()
         {
             // Arrange
             int journeyId = 10;
@@ -137,7 +139,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithInvalidJourneyIdParameter_ReturnsAllFlows()
+        public async Task REQ_FUN_007_GetAll_WithInvalidJourneyIdParameter_ReturnsAllFlows()
         {
             // Arrange
             var flows = new List<Flow>
@@ -181,7 +183,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithEmptyJourneyIdParameter_ReturnsAllFlows()
+        public async Task REQ_FUN_007_GetAll_WithEmptyJourneyIdParameter_ReturnsAllFlows()
         {
             // Arrange
             var flows = new List<Flow>
@@ -223,7 +225,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithValidJourneyIdParameter_ReturnsEmptyListWhenNoFlowsFound()
+        public async Task REQ_FUN_007_GetAll_WithValidJourneyIdParameter_ReturnsEmptyListWhenNoFlowsFound()
         {
             // Arrange
             int journeyId = 999;
@@ -267,7 +269,7 @@ namespace PromiseModelOnline.Api.Tests
         #region CreateFromDto Tests
 
         [Test]
-        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_007_CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
             _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
             _testContext.Promises.Add(new Promise { Id = 10, ProjectId = 1, Statement = "Root", SequenceNumber = 1, DisplayOrder = 1, CreatedAt = DateTime.UtcNow });
@@ -293,7 +295,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        public async Task REQ_FUN_007_CreateFromDto_WithNullRequest_ReturnsBadRequest()
         {
             var result = await _controller.CreateFromDto(null!);
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
@@ -304,7 +306,7 @@ namespace PromiseModelOnline.Api.Tests
         #region Inherited Methods Tests
 
         [Test]
-        public async Task GetById_WithValidId_ReturnsOkWithFlowDTO()
+        public async Task REQ_FUN_007_GetById_WithValidId_ReturnsOkWithFlowDTO()
         {
             // Arrange
             int flowId = 1;
@@ -331,7 +333,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetById_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_007_GetById_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int flowId = 999;
@@ -346,7 +348,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Create_WithValidFlow_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_007_Create_WithValidFlow_ReturnsCreatedAtAction()
         {
             // Arrange
             var flow = new Flow { Id = 1, Statement = "New Flow", JourneyId = 10 };
@@ -371,7 +373,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Update_WithValidIdAndFlow_ReturnsNoContent()
+        public async Task REQ_FUN_007_Update_WithValidIdAndFlow_ReturnsNoContent()
         {
             // Arrange
             int flowId = 1;
@@ -388,7 +390,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Update_WithMismatchedId_ReturnsBadRequest()
+        public async Task REQ_FUN_007_Update_WithMismatchedId_ReturnsBadRequest()
         {
             // Arrange
             int flowId = 1;
@@ -403,7 +405,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithValidId_ReturnsNoContent()
+        public async Task REQ_FUN_007_Delete_WithValidId_ReturnsNoContent()
         {
             // Arrange
             int flowId = 1;
@@ -418,7 +420,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_007_Delete_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int flowId = 999;

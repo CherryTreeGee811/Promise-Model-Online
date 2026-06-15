@@ -11,10 +11,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+/// <summary>REST controller for stride CRUD within a project scope.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/strides")]
+    /// Project Strides Controller.
+    /// </summary>
     public class ProjectStridesController : ProjectScopedControllerBase
     {
         private readonly IStrideService _strideService;
@@ -38,7 +41,10 @@ namespace PromiseModelOnline.Api.Controllers
             _context = context;
             _logger = logger;
         }
-
+        /// <summary>Return all strides for a project, optionally filtered by iteration.</summary>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>A list of stride DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<StrideDTO>>> GetAll(string owner, string project)
@@ -73,9 +79,13 @@ namespace PromiseModelOnline.Api.Controllers
 
             return Ok(result);
         }
-
+        /// <summary>Return a specific stride by ID within the project scope.</summary>
+        /// <param name="id">The stride's primary key.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The matching stride as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
-        [HttpGet("{id}")]
+        [HttpGet("by-id/{id}")]
         public async Task<ActionResult<StrideDTO>> GetById(int id, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -90,7 +100,11 @@ namespace PromiseModelOnline.Api.Controllers
 
             return Ok(_mapper.Map(stride, _strideService));
         }
-
+        /// <summary>Create a new stride within the project scope.</summary>
+        /// <param name="entity">The stride entity to create.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>The created stride as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
         public async Task<ActionResult<StrideDTO>> Create([FromBody] Stride entity, string owner, string project)
@@ -111,7 +125,17 @@ namespace PromiseModelOnline.Api.Controllers
             await _strideService.AddAsync(entity);
             return CreatedAtAction(nameof(GetById), new { owner, project, id = entity.Id }, _mapper.Map(entity, _strideService));
         }
+        /// <param name="id">The entity primary key.</param>
+        /// <param name="request">The request data.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
 
+        /// <summary>Complete a stride and progress unfinished moments.</summary>
+        /// <param name="id">The stride ID.</param>
+        /// <param name="request">The stride update request.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
         public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDTO request, string owner, string project)
@@ -142,7 +166,11 @@ namespace PromiseModelOnline.Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
+        /// <summary>Manually trigger progression of unfinished moments from a stride.</summary>
+        /// <param name="id">The stride ID.</param>
+        /// <param name="owner">The project owner's URL-safe slug.</param>
+        /// <param name="project">The project's URL-safe slug.</param>
+        /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost("{id}/progress")]
         public async Task<ActionResult> ProgressStride(int id, string owner, string project)

@@ -11,6 +11,7 @@ using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
+/// <summary>Handles local login (username/password) with lockout and email-verified enforcement.</summary>
 [Route("account/login")]
 public class LoginController : Controller
 {
@@ -28,14 +29,16 @@ public class LoginController : Controller
         _configuration = configuration;
     }
 
+    /// <summary>Display the login form with optional status messages.</summary>
+    /// <param name="returnUrl">Optional URL to redirect to after successful login.</param>
+    /// <param name="error">Optional error message to display.</param>
+    /// <returns>The login view.</returns>
     [AllowAnonymous]
     [HttpGet("")]
     public IActionResult Index(string? returnUrl, string? error = null)
     {
         if (string.IsNullOrEmpty(returnUrl))
-        {
             returnUrl = Request?.Query?["returnUrl"].ToString();
-        }
 
         ViewBag.Registered = (Request?.Query?["registered"].ToString() ?? "") == "true";
         ViewBag.Verified = (Request?.Query?["verified"].ToString() ?? "") == "true";
@@ -46,48 +49,60 @@ public class LoginController : Controller
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
+    /// <summary>Authenticate the user with email verification and lockout enforcement.</summary>
+    /// <param name="model">The login form data containing username and password.</param>
+    /// <returns>Redirects to the return URL on success, or returns the login view with errors.</returns>
     [HttpPost("")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Index(LoginViewModel model)
     {
         if (!ModelState.IsValid)
-            return View("Index", model);
+            return View(model);
 
-        // Uses PasswordSignInAsync with lockoutOnFailure: true so that
-        // Identity's lockout mechanism (5 failed attempts → 5 min lockout)
-        // is enforced. Returns LockedOut result when the account is locked.
-        var result = await _signInManager.PasswordSignInAsync(
-            model.Username, model.Password,
-            isPersistent: false, lockoutOnFailure: true);
-
-        if (result.IsLockedOut)
+        if (string.IsNullOrWhiteSpace(model.Username))
         {
-            ModelState.AddModelError("", "Account is locked. Try again later.");
-            return View("Index", model);
+            ModelState.AddModelError("", "Username is required.");
+            return View(model);
         }
 
-        if (!result.Succeeded)
+        var user = await _userManager.FindByNameAsync(model.Username)
+                   ?? await _userManager.FindByEmailAsync(model.Username);
+
+        if (user == null)
         {
-            ModelState.AddModelError("", "Invalid credentials");
-            return View("Index", model);
+            ModelState.AddModelError("", "Invalid username or password.");
+            return View(model);
         }
 
-        var user = await _userManager.FindByNameAsync(model.Username);
-
-        if (user != null && !await _userManager.IsEmailConfirmedAsync(user))
+        if (!await _userManager.IsEmailConfirmedAsync(user))
         {
-            await _signInManager.SignOutAsync();
-            ModelState.AddModelError("", "Please verify your email address before signing in.");
-            return View("Index", model);
+            return RedirectToAction("VerifyEmail", "Account",
+                new { email = user.Email, userId = user.Id });
         }
 
-        var returnUrl = model.ReturnUrl;
-
-        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (await _userManager.IsLockedOutAsync(user))
         {
-            return Redirect(returnUrl);
+            ModelState.AddModelError("", "Account locked. Try again later.");
+            return View(model);
         }
 
-        return Redirect("/login");
+        var signInResult = await _signInManager.PasswordSignInAsync(
+            user, model.Password, isPersistent: true, lockoutOnFailure: true);
+
+        if (signInResult.Succeeded)
+        {
+            if (!string.IsNullOrEmpty(model.ReturnUrl))
+                return Redirect(model.ReturnUrl);
+            return Redirect($"{AppUrls.BaseUrl}/projects");
+        }
+
+        if (signInResult.IsLockedOut)
+        {
+            ModelState.AddModelError("", "Account locked. Try again later.");
+            return View(model);
+        }
+
+        ModelState.AddModelError("", "Invalid username or password.");
+        return View(model);
     }
 }

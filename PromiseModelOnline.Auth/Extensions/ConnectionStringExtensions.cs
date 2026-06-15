@@ -1,5 +1,10 @@
+/// <summary>Extension methods for resolving Docker secrets embedded in connection strings.</summary>
 public static class ConnectionStringExtensions
 {
+    /// <summary>Replace <c>Password_FILE=</c> entries with the actual password read from the secret file.</summary>
+    /// <param name="connectionString">The raw connection string, possibly containing <c>Password_FILE=</c>.</param>
+    /// <returns>The resolved connection string with passwords inlined.</returns>
+    /// <exception cref="InvalidOperationException">Secret file not found or empty.</exception>
     public static string ResolveSecrets(this string connectionString)
     {
         if (!connectionString.Contains("Password_FILE="))

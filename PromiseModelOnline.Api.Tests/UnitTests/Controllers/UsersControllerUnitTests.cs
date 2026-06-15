@@ -16,6 +16,8 @@ using PromiseModelOnline.Api.Tests.Infrastructure;
 namespace PromiseModelOnline.Api.Tests;
 
 [TestFixture]
+    /// <summary>Unit tests for <see cref="UsersController"/> covering user profile and search.</summary>
+// Requirements: REQ_SYS_014
 public class UsersControllerUnitTests
 {
     private Mock<IUserRepository> _mockUserRepo = null!;
@@ -47,14 +49,17 @@ public class UsersControllerUnitTests
     }
 
     [Test]
-    public async Task Me_ReturnsUserInfo_WhenAuthenticated()
+    public async Task REQ_SYS_014_Me_ReturnsUserInfo_WhenAuthenticated()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "owner@example.com");
         _mockUserRepo.Setup(r => r.FindByEmailAsync("owner@example.com"))
             .ReturnsAsync(new List<User> { new() { Id = 1, Name = "Test Owner", Email = "owner@example.com" } });
 
+        // Act
         var result = await _controller.Me();
 
+        // Assert
         Assert.That(result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)result;
         var data = ok.Value!;
@@ -63,60 +68,75 @@ public class UsersControllerUnitTests
     }
 
     [Test]
-    public async Task SearchUsers_ReturnsEmpty_WhenQueryIsEmpty()
+    public async Task REQ_SYS_014_SearchUsers_ReturnsEmpty_WhenQueryIsEmpty()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "owner@example.com");
 
+        // Act
         var result = await _controller.SearchUsers("");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
-    public async Task SearchUsers_ReturnsUsers_WhenQueryIsValid()
+    public async Task REQ_SYS_014_SearchUsers_ReturnsUsers_WhenQueryIsValid()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "owner@example.com");
         _mockUserRepo.Setup(r => r.SearchUsersAsync("test", 10))
             .ReturnsAsync(new List<User> { new() { Id = 1, Name = "Test User", Email = "test@example.com" } });
 
+        // Act
         var result = await _controller.SearchUsers("test");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
-    public async Task ExportMyData_ReturnsUnauthorized_WhenNotAuthenticated()
+    public async Task REQ_SYS_014_ExportMyData_ReturnsUnauthorized_WhenNotAuthenticated()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
+        // Act
         var result = await _controller.ExportMyData();
 
+        // Assert
         Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
     }
 
     [Test]
-    public async Task ExportMyData_ReturnsNotFound_WhenUserNotInDb()
+    public async Task REQ_SYS_014_ExportMyData_ReturnsNotFound_WhenUserNotInDb()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "missing@example.com");
         _mockUserRepo.Setup(r => r.FindByEmailAsync("missing@example.com"))
             .ReturnsAsync(new List<User>());
 
+        // Act
         var result = await _controller.ExportMyData();
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
-    public async Task ExportMyData_ReturnsData_WhenAuthenticated()
+    public async Task REQ_SYS_014_ExportMyData_ReturnsData_WhenAuthenticated()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "owner@example.com");
         _mockUserRepo.Setup(r => r.FindByEmailAsync("owner@example.com"))
             .ReturnsAsync(new List<User> { new() { Id = 1, Name = "Test Owner", Email = "owner@example.com", Slug = "pmo_test", CreatedAt = DateTime.UtcNow } });
         _mockProjectRepo.Setup(r => r.GetProjectsOwnedByUserAsync(1))
             .ReturnsAsync(new List<Project>());
 
+        // Act
         var result = await _controller.ExportMyData();
 
+        // Assert
         Assert.That(result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)result;
         var data = ok.Value!;
@@ -125,30 +145,37 @@ public class UsersControllerUnitTests
     }
 
     [Test]
-    public async Task DeleteMyData_ReturnsUnauthorized_WhenNotAuthenticated()
+    public async Task REQ_SYS_014_DeleteMyData_ReturnsUnauthorized_WhenNotAuthenticated()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
+        // Act
         var result = await _controller.DeleteMyData();
 
+        // Assert
         Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
     }
 
     [Test]
-    public async Task DeleteMyData_ReturnsNotFound_WhenUserNotInDb()
+    public async Task REQ_SYS_014_DeleteMyData_ReturnsNotFound_WhenUserNotInDb()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "missing@example.com");
         _mockUserRepo.Setup(r => r.FindByEmailAsync("missing@example.com"))
             .ReturnsAsync(new List<User>());
 
+        // Act
         var result = await _controller.DeleteMyData();
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
-    public async Task DeleteMyData_PurgesAllUserData()
+    public async Task REQ_SYS_014_DeleteMyData_PurgesAllUserData()
     {
+        // Arrange
         var userId = 1;
         ControllerTestHelpers.SetControllerUser(_controller, "owner@example.com");
 
@@ -164,8 +191,10 @@ public class UsersControllerUnitTests
         _context.Set<MomentAssignment>().Add(new MomentAssignment { Id = 1, UserId = userId, MomentId = 1, Role = "Owner" });
         await _context.SaveChangesAsync();
 
+        // Act
         var result = await _controller.DeleteMyData();
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
         Assert.That(_context.Users.Any(u => u.Id == userId), Is.False);
         Assert.That(_context.Reactions.Any(r => r.UserId == userId), Is.False);

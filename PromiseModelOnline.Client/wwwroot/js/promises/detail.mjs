@@ -15,6 +15,15 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
+/**
+ * Load and render the promise detail page with epics, graph, comments, and reactions.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} promiseId - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} permission - TODO
+ */
 export function loadPromiseDetail(owner, project, promiseId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('promise-detail-content');
     const errorEl = document.getElementById('error-text');

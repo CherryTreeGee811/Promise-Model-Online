@@ -10,6 +10,13 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic
 {
+    /// <summary>Business logic for <see cref="Moment"/> entities with status, assignment, and burndown.</summary>
+    /// <remarks>
+    ///   Implements the richest set of business operations: flow/stride/iteration/owner scoping,
+    ///   stride assignment, status transitions, estimate updates, effort aggregation, unfinished
+    ///   moment migration between strides, and iteration burndown calculation. Triggers hierarchy
+    ///   status recalculation on add/delete. Scoped lifetime.
+    /// </remarks>
     public class MomentService : GenericService<Moment>, IMomentService
     {
         private readonly IMomentRepository _momentRepository;
@@ -19,6 +26,13 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly IStrideService _strideService;
         private readonly IHierarchyStatusService _hierarchyStatusService;
 
+        /// <summary>Initializes the service with required repositories and services.</summary>
+        /// <param name="momentRepository">Repository for moment data access.</param>
+        /// <param name="strideRepository">Repository for stride data access.</param>
+        /// <param name="iterationRepository">Repository for iteration data access.</param>
+        /// <param name="iterationService">Service for iteration operations.</param>
+        /// <param name="strideService">Service for stride operations.</param>
+        /// <param name="hierarchyStatusService">Service for hierarchy status recalculation.</param>
         public MomentService(
             IMomentRepository momentRepository,
             IGenericRepository<Stride> strideRepository,
@@ -36,27 +50,39 @@ namespace PromiseModelOnline.Api.BusinessLogic
             _hierarchyStatusService = hierarchyStatusService;
         }
 
-        // -------------------------------------------------------------------
-        //  Query methods
-        // -------------------------------------------------------------------
+        /// <summary>Return moments belonging to a flow.</summary>
+        /// <param name="flowId">The flow ID.</param>
+        /// <returns>Moments under the given flow.</returns>
         public async Task<IEnumerable<Moment>> GetMomentsByFlowAsync(int flowId)
             => await _momentRepository.GetMomentsByFlowAsync(flowId);
 
+        /// <summary>Return moments assigned to a stride (sprint).</summary>
+        /// <param name="strideId">The stride ID.</param>
+        /// <returns>Moments in the given stride.</returns>
         public async Task<IEnumerable<Moment>> GetMomentsByStrideAsync(int strideId)
             => await _momentRepository.GetMomentsByStrideAsync(strideId);
 
+        /// <summary>Return moments in an iteration, with optional unassigned-only filter.</summary>
+        /// <param name="iterationId">The iteration ID.</param>
+        /// <param name="unassignedOnly">If <c>true</c>, only moments without a stride assignment.</param>
+        /// <returns>Matching moments in the iteration's project.</returns>
         public async Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false)
             => await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly);
 
+        /// <summary>Return moments assigned to a user.</summary>
+        /// <param name="ownerId">The owner's user ID.</param>
+        /// <returns>Moments owned by the user.</returns>
         public async Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId)
             => await _momentRepository.GetMomentsByOwnerIdAsync(ownerId);
 
+        /// <summary>Add a moment and trigger hierarchy status recalculation.</summary>
         public override async Task AddAsync(Moment entity)
         {
             await base.AddAsync(entity);
             await _hierarchyStatusService.RecalculateFromFlowAsync(entity.FlowId);
         }
 
+        /// <summary>Delete a moment and trigger hierarchy status recalculation.</summary>
         public override async Task<bool> DeleteByIdAsync(object id)
         {
             var moment = await _momentRepository.GetByIdAsync(id);
@@ -74,9 +100,12 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return deleted;
         }
 
-        // -------------------------------------------------------------------
-        //  Planning operations
-        // -------------------------------------------------------------------
+        /// <summary>Assign or unassign a moment to a stride.</summary>
+        /// <param name="momentId">The moment ID.</param>
+        /// <param name="strideId">The stride ID, or <c>null</c> to unassign.</param>
+        /// <returns>The updated moment.</returns>
+        /// <exception cref="KeyNotFoundException">Moment or stride not found.</exception>
+        /// <exception cref="InvalidOperationException">Stride is not associated with an iteration.</exception>
         public async Task<Moment> AssignMomentToStrideAsync(int momentId, int? strideId)
         {
             var moment = await _momentRepository.GetByIdAsync(momentId)
@@ -104,6 +133,15 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return moment;
         }
 
+        /// <summary>Update a moment's status with business rules and hierarchy propagation.</summary>
+        /// <remarks>
+        ///   Sets <c>CompletedAt</c> when status is <see cref="MomentStatus.Done"/>, clears it otherwise.
+        ///   Derives the status color from the new status. Triggers hierarchy recalculation.
+        /// </remarks>
+        /// <param name="momentId">The moment ID.</param>
+        /// <param name="newStatus">The target status.</param>
+        /// <returns>The updated moment.</returns>
+        /// <exception cref="KeyNotFoundException">Moment not found.</exception>
         public async Task<Moment> UpdateMomentStatusAsync(int momentId, MomentStatus newStatus)
         {
             var moment = await _momentRepository.GetByIdAsync(momentId)
@@ -124,6 +162,11 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return moment;
         }
 
+        /// <summary>Update a moment's effort estimate.</summary>
+        /// <param name="momentId">The moment ID.</param>
+        /// <param name="estimate">The new estimate, or <c>null</c> to clear.</param>
+        /// <returns>The updated moment.</returns>
+        /// <exception cref="KeyNotFoundException">Moment not found.</exception>
         public async Task<Moment> UpdateMomentEstimateAsync(int momentId, Estimate? estimate)
         {
             var moment = await _momentRepository.GetByIdAsync(momentId)
@@ -135,12 +178,20 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return moment;
         }
 
+        /// <summary>Calculate the total numeric effort estimate for all moments under a product promise.</summary>
+        /// <param name="promiseId">The product promise ID.</param>
+        /// <returns>The sum of all effort estimates.</returns>
         public async Task<int> GetTotalEffortForPromiseAsync(int promiseId)
         {
             var moments = await _momentRepository.GetMomentsByPromiseIdAsync(promiseId);
             return moments.Sum(m => EstimateToNumeric(m.EffortEstimate));
         }
 
+        /// <summary>Assign or unassign an owner to a moment.</summary>
+        /// <param name="momentId">The moment ID.</param>
+        /// <param name="userId">The owner's user ID, or <c>null</c> to clear.</param>
+        /// <returns>The updated moment.</returns>
+        /// <exception cref="KeyNotFoundException">Moment not found.</exception>
         public async Task<Moment> AssignOwnerAsync(int momentId, int? userId)
         {
             var moment = await _momentRepository.GetByIdAsync(momentId)
@@ -152,9 +203,19 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return moment;
         }
 
+        /// <summary>Resolve the root project ID for a moment.</summary>
+        /// <param name="momentId">The moment ID.</param>
+        /// <returns>The project ID, or <c>null</c>.</returns>
         public async Task<int?> GetProjectIdForMomentAsync(int momentId)
             => await _momentRepository.GetProjectIdForMomentAsync(momentId);
 
+        /// <summary>Move unfinished moments from a completed stride to the next available stride.</summary>
+        /// <remarks>
+        ///   Tries the next stride in the same iteration first. If none, looks for the first stride
+        ///   of the next iteration. Moments are marked as <c>IsZombie</c> with the original stride
+        ///   recorded in <c>OriginalStrideId</c>.
+        /// </remarks>
+        /// <param name="strideId">The completed stride ID.</param>
         public async Task MoveUnfinishedMomentsToNextStrideAsync(int strideId)
         {
             var moments = await _momentRepository.GetUnfinishedMomentsByStrideAsync(strideId);
@@ -205,11 +266,10 @@ namespace PromiseModelOnline.Api.BusinessLogic
             await _momentRepository.SaveChangesAsync();
         }
 
-        // ---------------------------------------------------------------
-        //  Burndown (iteration only)
-        // ---------------------------------------------------------------
-
-        private static int EstimateToNumeric(Estimate? estimate)
+        /// <summary>Map an <see cref="Estimate"/> enum to its numeric Fibonacci value for burndown calculation.</summary>
+        /// <param name="estimate">The effort estimate value.</param>
+        /// <returns>The numeric effort value.</returns>
+    private static int EstimateToNumeric(Estimate? estimate)
         {
             return estimate switch
             {
@@ -224,13 +284,18 @@ namespace PromiseModelOnline.Api.BusinessLogic
             };
         }
 
-        private Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
+        /// <summary>Compute burndown chart data points with automatic date range from moment data.</summary>
+        /// <param name="moments">The list of moments to compute burndown for.</param>
+        /// <returns>A list of burndown data points.</returns>
+    private Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
             => ComputeBurndownAsync(moments, null, null);
 
-        private Task<List<BurndownPointDTO>> ComputeBurndownAsync(
-            List<Moment> moments,
-            DateTime? startDateOverride,
-            DateTime? endDateOverride)
+    /// <summary>Compute burndown chart data points with optional date range overrides.</summary>
+    /// <remarks>Calculates actual remaining effort per day and the ideal burndown line.</remarks>
+    private Task<List<BurndownPointDTO>> ComputeBurndownAsync(
+        List<Moment> moments,
+        DateTime? startDateOverride,
+        DateTime? endDateOverride)
         {
             var result = new List<BurndownPointDTO>();
             if (moments.Count == 0) return Task.FromResult(result);
@@ -271,6 +336,9 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return Task.FromResult(result);
         }
 
+        /// <summary>Calculate burndown chart data points for an iteration.</summary>
+        /// <param name="iterationId">The iteration ID.</param>
+        /// <returns>A list of burndown data points.</returns>
         public async Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId)
         {
             var iterationStrides = (await _strideService.GetStridesByIterationAsync(iterationId)).ToList();

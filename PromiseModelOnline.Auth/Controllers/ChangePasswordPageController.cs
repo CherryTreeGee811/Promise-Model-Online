@@ -5,6 +5,7 @@ using OpenIddict.Abstractions;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
+/// <summary>MVC controller for the change-password page (GET form, POST submission).</summary>
 [Route("account/change-password")]
 [Authorize]
 public class ChangePasswordPageController : Controller
@@ -12,6 +13,9 @@ public class ChangePasswordPageController : Controller
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IOpenIddictTokenManager _tokenManager;
 
+    /// <summary>Initializes the controller with user manager and token manager.</summary>
+    /// <param name="userManager">The Identity user manager.</param>
+    /// <param name="tokenManager">The OpenIddict token manager for revoking refresh tokens.</param>
     public ChangePasswordPageController(
         UserManager<IdentityUser> userManager,
         IOpenIddictTokenManager tokenManager)
@@ -20,12 +24,19 @@ public class ChangePasswordPageController : Controller
         _tokenManager = tokenManager;
     }
 
+    /// <summary>Display the change-password form.</summary>
+    /// <returns>The change-password view.</returns>
     [HttpGet("")]
     public IActionResult Index()
     {
         return View("~/Views/ChangePassword/Index.cshtml");
     }
 
+    /// <summary>Process password change form: validate, verify current password, update, revoke refresh tokens.</summary>
+    /// <param name="currentPassword">The user's current password for verification.</param>
+    /// <param name="newPassword">The desired new password.</param>
+    /// <param name="confirmPassword">Confirmation of the new password.</param>
+    /// <returns>The change-password view with success flag or validation errors.</returns>
     [HttpPost("")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangePassword(string? currentPassword, string? newPassword, string? confirmPassword)
@@ -48,15 +59,11 @@ public class ChangePasswordPageController : Controller
                      ?? _userManager.GetUserId(User);
 
         if (string.IsNullOrEmpty(userId))
-        {
             return Unauthorized();
-        }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-        {
             return Unauthorized();
-        }
 
         var isValid = await _userManager.CheckPasswordAsync(user, currentPassword);
         if (!isValid)
@@ -69,13 +76,10 @@ public class ChangePasswordPageController : Controller
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)
-            {
                 ModelState.AddModelError("", error.Description);
-            }
             return View("~/Views/ChangePassword/Index.cshtml");
         }
 
-        // Revoke all existing refresh tokens for this user
         var tokens = _tokenManager.FindAsync(
             subject: user.Id,
             client: null,
@@ -83,9 +87,7 @@ public class ChangePasswordPageController : Controller
             type: OpenIddictConstants.TokenTypeHints.RefreshToken);
 
         await foreach (var token in tokens)
-        {
             await _tokenManager.TryRevokeAsync(token);
-        }
 
         ViewBag.Success = true;
         return View("~/Views/ChangePassword/Index.cshtml");

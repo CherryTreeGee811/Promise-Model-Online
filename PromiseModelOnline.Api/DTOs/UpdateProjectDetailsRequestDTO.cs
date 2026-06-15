@@ -1,8 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PromiseModelOnline.Api.DTOs;
 
-public sealed class UpdateProjectDetailsRequestDTO
+/// <summary>Request DTO for updating project name and description.</summary>
+public class UpdateProjectDetailsRequestDTO
 {
+    /// <summary>New display name. Required.</summary>
+    [Required]
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>New description. Optional.</summary>
     public string? Description { get; set; }
 }

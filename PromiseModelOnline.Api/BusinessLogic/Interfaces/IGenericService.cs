@@ -4,40 +4,37 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
 {
-    /// <summary>
-    /// Generic service interface for business‑logic operations.
-    /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
+    /// <summary>Generic service interface for business-logic operations.</summary>
+    /// <remarks>
+    ///   Provides standard CRUD operations that delegate to the corresponding repository layer.
+    ///   Implementations may compose additional business rules, validation, and cross-cutting
+    ///   concerns (auditing, authorization, caching). Scoped lifetime.
+    /// </remarks>
+    /// <typeparam name="T">The entity type, constrained to <c>class</c>.</typeparam>
     public interface IGenericService<T> where T : class
     {
-        /// <summary>
-        /// Asynchronously retrieves all entities of type T.
-        /// </summary>
+        /// <summary>Retrieve every entity of type <typeparamref name="T"/>.</summary>
+        /// <returns>All entities. Empty if none exist.</returns>
         Task<IEnumerable<T>> GetAllAsync();
 
-        /// <summary>
-        /// Asynchronously retrieves an entity by its identifier.
-        /// </summary>
-        /// <param name="id">The identifier of the entity.</param>
+        /// <summary>Find an entity by its primary-key value.</summary>
+        /// <param name="id">The primary-key value. Supports <c>int</c>, <c>Guid</c>, <c>string</c>, or composite.</param>
+        /// <returns>The matching entity, or <c>null</c> if not found.</returns>
         Task<T?> GetByIdAsync(object id);
 
-        /// <summary>
-        /// Asynchronously adds a new entity.
-        /// </summary>
-        /// <param name="entity">The entity to add.</param>
+        /// <summary>Stage a new entity for creation.</summary>
+        /// <param name="entity">The entity to create. Not null.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="entity"/> is <c>null</c>.</exception>
         Task AddAsync(T entity);
 
-        /// <summary>
-        /// Asynchronously updates an existing entity.
-        /// </summary>
-        /// <param name="entity">The entity to update.</param>
+        /// <summary>Update an existing entity.</summary>
+        /// <param name="entity">The entity with updated property values. Not null.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="entity"/> is <c>null</c>.</exception>
         Task UpdateAsync(T entity);
 
-        /// <summary>
-        /// Asynchronously deletes an entity by its primary key.
-        /// Returns true if the entity was found and deleted, otherwise false.
-        /// </summary>
-        /// <param name="id">The primary key of the entity.</param>
+        /// <summary>Delete an entity by its primary-key value.</summary>
+        /// <param name="id">Primary-key value (<c>int</c>, <c>Guid</c>, <c>string</c>, or composite).</param>
+        /// <returns><c>true</c> if found and deleted; <c>false</c> otherwise.</returns>
         Task<bool> DeleteByIdAsync(object id);
     }
 }

@@ -14,6 +14,8 @@ using OpenIddict.Server.AspNetCore;
 
 namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 {
+    /// <summary>Unit tests for <see cref="AuthorizationController"/> covering OIDC authorize endpoint, scope validation, PKCE enforcement, and OAuth 2.1 compliance.</summary>
+    // Requirements: REQ_INT_002 REQ_INT_015 REQ_INT_016 REQ_OAUTH_001 REQ_OAUTH_002 REQ_OIDC_002 REQ_OIDC_006
     public class AuthorizationControllerUnitTests
     {
         private AuthorizationController _controller = null!;
@@ -100,12 +102,14 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
-        public async Task Authorize_WhenUserNotAuthenticated_ReturnsRedirect()
+        [Description("REQ_OIDC_002: Unauthenticated requests redirect to login")]
+        public async Task REQ_INT_002_Authorize_WhenUserNotAuthenticated_ReturnsRedirect()
         {
+            // Arrange
             SetupHttpContext(isAuthenticated: false, scope: "openid");
-
+            // Act
             var result = await _controller.Authorize();
-
+            // Assert
             Assert.That(result, Is.InstanceOf<RedirectResult>());
 
             var redirect = result as RedirectResult;
@@ -113,22 +117,24 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
-        public async Task Authorize_WhenAuthenticated_ReturnsSignIn()
+        public async Task REQ_INT_002_Authorize_WhenAuthenticated_ReturnsSignIn()
         {
+            // Arrange
             SetupHttpContext(scope: "openid");
-
+            // Act
             var result = await _controller.Authorize();
-
+            // Assert
             Assert.That(result, Is.InstanceOf<MvcSignInResult>());
         }
 
         [Test]
-        public async Task Authorize_WithEmail_AddsEmailClaim()
+        public async Task REQ_INT_002_Authorize_WithEmail_AddsEmailClaim()
         {
+            // Arrange
             SetupHttpContext(email: "user@test.com", scope: "openid email");
-
+            // Act
             var result = await _controller.Authorize() as MvcSignInResult;
-
+            // Assert
             Assert.That(result, Is.Not.Null);
 
             var principal = result!.Principal;
@@ -139,12 +145,13 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
-        public async Task Authorize_WithoutEmail_DoesNotAddEmailClaim()
+        public async Task REQ_INT_002_Authorize_WithoutEmail_DoesNotAddEmailClaim()
         {
+            // Arrange
             SetupHttpContext(email: null, scope: "openid");
-
+            // Act
             var result = await _controller.Authorize() as MvcSignInResult;
-
+            // Assert
             Assert.That(result, Is.Not.Null);
 
             var principal = result!.Principal;
@@ -157,12 +164,13 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
-        public async Task Authorize_WithScopes_SetsScopesOnPrincipal()
+        public async Task REQ_INT_002_Authorize_WithScopes_SetsScopesOnPrincipal()
         {
+            // Arrange
             SetupHttpContext(scope: "openid profile");
-
+            // Act
             var result = await _controller.Authorize() as MvcSignInResult;
-
+            // Assert
             Assert.That(result, Is.Not.Null);
 
             var principal = result!.Principal;
@@ -178,22 +186,24 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
-        public void Authorize_WhenFeatureMissing_ThrowsInvalidOperation()
+        public void REQ_INT_002_Authorize_WhenFeatureMissing_ThrowsInvalidOperation()
         {
+            // Arrange
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Path = "/connect/authorize";
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = httpContext
             };
-
+            // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _controller.Authorize());
             Assert.That(ex!.Message, Does.Contain("request cannot be retrieved"));
         }
 
         [Test]
-        public void Authorize_WhenTransactionRequestNull_ThrowsInvalidOperation()
+        public void REQ_INT_002_Authorize_WhenTransactionRequestNull_ThrowsInvalidOperation()
         {
+            // Arrange
             var httpContext = new DefaultHttpContext();
             httpContext.Features.Set(new OpenIddictServerAspNetCoreFeature
             {
@@ -204,30 +214,31 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             {
                 HttpContext = httpContext
             };
-
+            // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _controller.Authorize());
             Assert.That(ex!.Message, Does.Contain("request cannot be retrieved"));
         }
 
         [Test]
-        public async Task Authorize_WithoutSubject_ReturnsForbid()
+        public async Task REQ_INT_002_Authorize_WithoutSubject_ReturnsForbid()
         {
-            // Authenticated user but missing NameIdentifier claim
+            // Arrange - Authenticated user but missing NameIdentifier claim
             SetupHttpContext(scope: "openid", includeSubject: false);
-
+            // Act
             var result = await _controller.Authorize();
-
+            // Assert
             Assert.That(result, Is.InstanceOf<ForbidResult>());
         }
 
         [Test]
-        public async Task Authorize_WithoutOpenIdScope_ReturnsBadRequest()
+        [Description("REQ_OIDC_006: openid scope is required for authorization")]
+        public async Task REQ_INT_002_Authorize_WithoutOpenIdScope_ReturnsBadRequest()
         {
-            // scope = "profile" not "openid"
+            // Arrange - scope = "profile" not "openid"
             SetupHttpContext(scope: "profile");
-
+            // Act
             var result = await _controller.Authorize();
-
+            // Assert
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
 
             var badRequest = result as BadRequestObjectResult;
@@ -235,18 +246,21 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
-        public async Task Authorize_WithEmptyScope_ReturnsBadRequest()
+        public async Task REQ_INT_002_Authorize_WithEmptyScope_ReturnsBadRequest()
         {
+            // Arrange
             SetupHttpContext(scope: "");
-
+            // Act
             var result = await _controller.Authorize();
-
+            // Assert
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task Authorize_WithPlainPkceMethod_ReturnsBadRequest()
+        [Description("REQ_OAUTH_002: Only S256 PKCE is accepted (plain rejected)")]
+        public async Task REQ_INT_002_Authorize_WithPlainPkceMethod_ReturnsBadRequest()
         {
+            // Arrange
             var httpContext = new DefaultHttpContext();
 
             var transaction = new OpenIddictServerTransaction
@@ -288,15 +302,16 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             {
                 HttpContext = httpContext
             };
-
+            // Act
             var result = await _controller.Authorize();
-
+            // Assert
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task Authorize_WithRole_AddsRoleClaim()
+        public async Task REQ_INT_002_Authorize_WithRole_AddsRoleClaim()
         {
+            // Arrange
             var httpContext = new DefaultHttpContext();
 
             var transaction = new OpenIddictServerTransaction
@@ -342,8 +357,9 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             {
                 HttpContext = httpContext
             };
-
+            // Act
             var result = await _controller.Authorize() as MvcSignInResult;
+            // Assert
             Assert.That(result, Is.Not.Null);
 
             var principal = result!.Principal;

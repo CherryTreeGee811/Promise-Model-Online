@@ -2,6 +2,12 @@ import { loadTemplate, loadTemplateWithError, handleDetailRoute, showNotFound } 
 import { loadMomentDetail } from './detail.mjs';
 import { loadMyTasksPage } from './my-tasks.mjs';
 
+/**
+ * Handle moment-related routes.
+ * @param {*} path - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function handleMomentRoutes(path, navContentDiv, contentDiv) {
     if (path === '/moments/my-tasks') {
         loadTemplate('moments/my-tasks.html', contentDiv)

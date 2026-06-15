@@ -15,6 +15,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests;
 
+/// <summary>Unit tests for project import functionality via the controller.</summary>
+// Requirements: REQ_FUN_039
 public class ProjectsControllerImportUnitTests
 {
     private Mock<IProjectService> _mockProjectService = null!;
@@ -44,20 +46,24 @@ public class ProjectsControllerImportUnitTests
     }
 
     [Test]
-    public async Task Import_NotAuthenticated_ReturnsUnauthorized()
+    public async Task REQ_FUN_039_Import_NotAuthenticated_ReturnsUnauthorized()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
         var stream = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
         var file = new FormFile(stream, 0, stream.Length, "file", "test.json");
+        // Act
         var result = await _controller.Import(file);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
     }
 
     [Test]
-    public async Task Import_WithValidFile_ReturnsCreated()
+    public async Task REQ_FUN_039_Import_WithValidFile_ReturnsCreated()
     {
+        // Arrange
         var user = new User { Id = 1, Email = "importer@x.com", Slug = "importer" };
         _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("importer@x.com", It.IsAny<string?>())).ReturnsAsync(user);
 
@@ -78,8 +84,10 @@ public class ProjectsControllerImportUnitTests
         _mockProjectImportValidationService.Setup(s => s.ValidateAsync(It.IsAny<Stream>())).ReturnsAsync(validationResult);
         _mockProjectImportService.Setup(s => s.ImportAsync(It.IsAny<ProjectExportDocument>(), 1)).ReturnsAsync(new ProjectImportResult { ProjectId = 1 });
 
+        // Act
         var result = await _controller.Import(file);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<CreatedAtActionResult>());
     }
 }

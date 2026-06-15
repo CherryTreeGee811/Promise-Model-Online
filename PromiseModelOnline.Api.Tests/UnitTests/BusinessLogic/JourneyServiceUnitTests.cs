@@ -11,6 +11,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_006 REQ_FUN_009 REQ_FUN_011 REQ_FUN_012
+    /// <summary>Unit tests for <see cref="JourneyService"/> covering journey CRUD and hierarchy recalculation.</summary>
     public class JourneyServiceUnitTests
     {
         private Mock<IJourneyRepository> _journeyRepoMock = null!;
@@ -28,7 +30,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetJourneysByEpicAsync Tests
 
         [Test]
-        public async Task GetJourneysByEpicAsync_ReturnsMatchingJourneys()
+        public async Task REQ_FUN_006_GetJourneysByEpicAsync_ReturnsMatchingJourneys()
         {
             // Arrange
             var journeys = new List<Journey>
@@ -50,7 +52,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetJourneysByEpicAsync_NoJourneys_ReturnsEmpty()
+        public async Task REQ_FUN_006_GetJourneysByEpicAsync_NoJourneys_ReturnsEmpty()
         {
             _journeyRepoMock.Setup(r => r.GetJourneysByEpicAsync(99)).ReturnsAsync(new List<Journey>());
 
@@ -64,7 +66,7 @@ namespace PromiseModelOnline.Api.Tests
         #region Inherited generic methods
 
         [Test]
-        public async Task GetAllAsync_DelegatesToRepository()
+        public async Task REQ_FUN_006_GetAllAsync_DelegatesToRepository()
         {
             var journeys = new List<Journey>
             {
@@ -79,7 +81,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetByIdAsync_ReturnsJourney_WhenFound()
+        public async Task REQ_FUN_006_GetByIdAsync_ReturnsJourney_WhenFound()
         {
             var journey = new Journey { Id = 5, Statement = "Test Journey" };
             _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(5)).ReturnsAsync(journey);
@@ -91,7 +93,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetByIdAsync_ReturnsNull_WhenNotFound()
+        public async Task REQ_FUN_006_GetByIdAsync_ReturnsNull_WhenNotFound()
         {
             _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Journey?)null);
 
@@ -101,7 +103,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task AddAsync_RollsUpHierarchyFromEpic()
+        public async Task REQ_FUN_006_AddAsync_RollsUpHierarchyFromEpic()
         {
             var journey = new Journey { Id = 8, EpicId = 22 };
 
@@ -111,7 +113,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task DeleteByIdAsync_RollsUpHierarchyFromEpic()
+        public async Task REQ_FUN_006_DeleteByIdAsync_RollsUpHierarchyFromEpic()
         {
             var journey = new Journey { Id = 8, EpicId = 22 };
             _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(8)).ReturnsAsync(journey);

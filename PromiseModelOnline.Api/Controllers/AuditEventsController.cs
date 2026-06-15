@@ -10,6 +10,12 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers;
 
+/// <summary>REST controller for audit event queries.</summary>
+/// <remarks>
+///   Retrieves project-level and entity-level audit history with pagination, change summary
+///   generation, and <c>X-Total-Count</c> response headers for client-side pagination.
+///   Requires the <c>projects.read</c> authorization policy.
+/// </remarks>
 [Route("api/audit-events")]
 [Authorize(Policy = "projects.read")]
 public class AuditEventsController : ControllerBase
@@ -18,14 +24,22 @@ public class AuditEventsController : ControllerBase
     {
         PropertyNameCaseInsensitive = true
     };
+        /// <param name="context">The database context.</param>
 
     private readonly IPromiseModelOnlineContext _context;
 
+    /// <summary>Initializes the controller with the database context.</summary>
     public AuditEventsController(IPromiseModelOnlineContext context)
     {
         _context = context;
     }
 
+    /// <summary>Retrieve paginated audit history for a project.</summary>
+    /// <param name="projectId">The project ID to query.</param>
+    /// <param name="take">Maximum results to return (default 100, max 500).</param>
+    /// <param name="skip">Number of results to skip for pagination.</param>
+    /// <response code="200">Returns the paginated audit timeline items. <c>X-Total-Count</c> header contains the total.</response>
+    /// <returns>A paginated list of audit timeline DTOs.</returns>
     [HttpGet("projects/{projectId:int}")]
     public async Task<ActionResult<IEnumerable<AuditTimelineItemDTO>>> GetProjectHistory(
         int projectId,
@@ -49,6 +63,13 @@ public class AuditEventsController : ControllerBase
         return Ok(events.Select(MapToDto));
     }
 
+    /// <summary>Retrieve paginated audit history for a specific entity.</summary>
+    /// <param name="entityType">The entity type name (e.g., <c>"Moment"</c>, <c>"Project"</c>).</param>
+    /// <param name="entityId">The entity's primary key.</param>
+    /// <param name="take">Maximum results to return (default 100, max 500).</param>
+    /// <param name="skip">Number of results to skip for pagination.</param>
+    /// <response code="200">Returns the paginated audit timeline items for the entity.</response>
+    /// <returns>A paginated list of audit timeline DTOs.</returns>
     [HttpGet("entities/{entityType}/{entityId:int}")]
     public async Task<ActionResult<IEnumerable<AuditTimelineItemDTO>>> GetEntityHistory(
         string entityType,
@@ -70,11 +91,16 @@ public class AuditEventsController : ControllerBase
             .Take(normalizedTake)
             .ToList();
 
+        /// <param name="take">The value to normalize.</param>
         return Ok(events.Select(MapToDto));
     }
 
+    /// <summary>Clamp the <c>take</c> parameter to a valid range [1, 500].</summary>
+    /// <returns>The clamped take value.</returns>
     private static int NormalizeTake(int take) => take <= 0 ? 100 : take > 500 ? 500 : take;
+        /// <param name="auditEvent">The audit event.</param>
 
+    /// <summary>Map an <see cref="AuditEvent"/> entity to a <see cref="AuditTimelineItemDTO"/>.</summary>
     private static AuditTimelineItemDTO MapToDto(AuditEvent auditEvent)
     {
         var changes = DeserializeChanges(auditEvent.ChangesJson);
@@ -94,7 +120,10 @@ public class AuditEventsController : ControllerBase
             Changes = changes
         };
     }
+        /// <param name="changesJson">The JSON string containing the changes.</param>
 
+    /// <summary>Deserialize the JSON changes dictionary into a list of <see cref="AuditFieldChangeDTO"/>.</summary>
+    /// <returns>A list of field change DTOs.</returns>
     private static IReadOnlyList<AuditFieldChangeDTO> DeserializeChanges(string? changesJson)
     {
         if (string.IsNullOrWhiteSpace(changesJson))
@@ -113,7 +142,11 @@ public class AuditEventsController : ControllerBase
             })
             .ToList();
     }
+        /// <param name="auditEvent">The audit event.</param>
+        /// <param name="changes">The list of field changes.</param>
 
+    /// <summary>Build a human-readable summary string from an audit event and its changes.</summary>
+    /// <returns>A human-readable summary string.</returns>
     private static string BuildSummary(AuditEvent auditEvent, IReadOnlyList<AuditFieldChangeDTO> changes)
     {
         if (string.Equals(auditEvent.ActionType, nameof(PromiseModelOnline.Api.Enums.AuditActionType.Created), System.StringComparison.OrdinalIgnoreCase))
@@ -141,7 +174,9 @@ public class AuditEventsController : ControllerBase
         var fields = string.Join(", ", changes.Select(change => change.FieldName));
         return $"Updated {auditEvent.EntityType}: {fields}";
     }
+        /// <param name="value">The value to format.</param>
 
+    /// <summary>Format a value for display in the audit summary.</summary>
     private static string FormatValue(object? value)
     {
         return value switch
@@ -157,6 +192,7 @@ public class AuditEventsController : ControllerBase
         };
     }
 
+    /// <summary>Internal DTO for deserializing individual field changes from JSON.</summary>
     private sealed class AuditChangeDTO
     {
         public object? Before { get; set; }

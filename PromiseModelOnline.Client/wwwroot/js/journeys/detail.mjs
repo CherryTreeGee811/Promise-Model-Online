@@ -16,6 +16,15 @@ import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.mjs';
 import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
+/**
+ * Load and render the journey detail page with flows, graph, comments, and reactions.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} journeyId - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} permission - TODO
+ */
 export function loadJourneyDetail(owner, project, journeyId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('journey-detail-content');
     const errorEl = document.getElementById('error-text');

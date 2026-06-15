@@ -1,14 +1,26 @@
+using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL
 {
+    /// <summary>EF Core implementation of <see cref="IFlowRepository"/> providing journey-scoped flow lookups.</summary>
+    /// <remarks>
+    ///   Uses the base class <see cref="FindAsync"/> method with a lambda predicate.
+    ///   Scoped lifetime; one instance per request.
+    /// </remarks>
     public class FlowRepository : GenericRepository<Flow>, IFlowRepository
     {
+        /// <summary>Initializes the repository with the shared database context.</summary>
+        /// <param name="context">The EF Core database context.</param>
         public FlowRepository(PromiseModelOnlineContext context) : base(context) { }
 
+        /// <summary>Return all flows belonging to a journey.</summary>
+        /// <param name="journeyId">The parent journey ID. Must be greater than zero.</param>
+        /// <returns>All flows under the given journey. Empty if none exist.</returns>
         public async Task<IEnumerable<Flow>> GetFlowsByJourneyAsync(int journeyId)
         {
             return await FindAsync(f => f.JourneyId == journeyId);

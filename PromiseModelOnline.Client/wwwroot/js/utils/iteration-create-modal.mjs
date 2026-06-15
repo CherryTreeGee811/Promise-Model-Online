@@ -1,5 +1,11 @@
 import { createIteration } from '../iterations/api.mjs';
 
+/**
+ * Ensure a modal element exists in the DOM, creating it if necessary.
+ * @param {string} modalId - The modal element ID.
+ * @param {string} modalMarkup - The HTML markup for the modal.
+ * @returns {HTMLElement|null} The modal element.
+ */
 function ensureModal(modalId, modalMarkup) {
     let modalEl = document.getElementById(modalId);
     if (modalEl) return modalEl;
@@ -15,6 +21,12 @@ function ensureModal(modalId, modalMarkup) {
     return modalEl;
 }
 
+/**
+ * Open a modal dialog for creating a new iteration.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {Function} onCreated - Callback invoked after successful creation.
+ */
 export function openIterationCreateModal(owner, project, onCreated) {
     const modalEl = ensureModal('iteration-create-modal', `
         <div class="modal fade" id="iteration-create-modal" tabindex="-1" aria-hidden="true">

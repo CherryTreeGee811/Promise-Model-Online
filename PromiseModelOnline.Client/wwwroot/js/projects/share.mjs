@@ -34,6 +34,14 @@ function ensureRevokeModal() {
     `);
 }
 
+/**
+ * Load the project sharing and permissions page.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} permission - TODO
+ */
 export function loadSharePage(owner, project, contentDiv, permission) {
     const errorEl = document.getElementById('error-text');
     const loadingEl = document.getElementById('loading-text');

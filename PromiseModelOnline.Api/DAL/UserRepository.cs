@@ -9,23 +9,50 @@ using System.Linq;
 
 namespace PromiseModelOnline.Api.DAL
 {
+    /// <summary>EF Core implementation of <see cref="IUserRepository"/> supporting search and SSO auto-provisioning.</summary>
+    /// <remarks>
+    ///   Scoped lifetime. The <see cref="GetOrCreateUserByEmailAsync"/> method is the primary entry
+    ///   point for OAuth/SSO login flows, creating user records on first sign-in and updating
+    ///   display names on subsequent logins.
+    /// </remarks>
     public class UserRepository : GenericRepository<User>, IUserRepository
     {
+        /// <summary>Initializes the repository with the shared database context.</summary>
+        /// <param name="context">The EF Core database context.</param>
         public UserRepository(PromiseModelOnlineContext context) : base(context) { }
 
+        /// <summary>Find users by exact display name match.</summary>
+        /// <param name="name">The display name to match. Not null.</param>
+        /// <returns>Users whose name matches exactly.</returns>
         public async Task<IEnumerable<User>> GetUsersByNameAsync(string name)
         {
             return await FindAsync(u => u.Name == name);
         }
 
+        /// <summary>Find users by exact email address match.</summary>
+        /// <param name="email">The email address to look up. Not null.</param>
+        /// <returns>Users with the given email.</returns>
         public async Task<IEnumerable<User>> FindByEmailAsync(string email)
             => await FindAsync(u => u.Email == email);
 
+        /// <summary>Look up a user by their unique URL-safe slug.</summary>
+        /// <param name="slug">The user's slug. Not null or empty.</param>
+        /// <returns>The matching user, or <c>null</c> if not found.</returns>
         public async Task<User?> GetBySlugAsync(string slug)
         {
             return await _dbSet.FirstOrDefaultAsync(u => u.Slug == slug);
         }
 
+        /// <summary>Return a user by email or create a new account (SSO auto-provision).</summary>
+        /// <remarks>
+        ///   If the user already exists and a <paramref name="username"/> is supplied, the display
+        ///   name is updated if it still matches the email (indicating an auto-created account that
+        ///   has not been customized). A unique slug is generated from the username or email prefix,
+        ///   with a numeric suffix to avoid collisions.
+        /// </remarks>
+        /// <param name="email">The user's email address. Not null.</param>
+        /// <param name="username">Optional username for new accounts or to update the display name on existing ones.</param>
+        /// <returns>The existing or newly-created user.</returns>
         public async Task<User> GetOrCreateUserByEmailAsync(string email, string? username = null)
         {
             var users = await FindByEmailAsync(email);
@@ -83,6 +110,11 @@ namespace PromiseModelOnline.Api.DAL
             return user;
         }
 
+        /// <summary>Search users who are members of a specific project by partial name match.</summary>
+        /// <param name="projectId">The project ID to search within. Must be greater than zero.</param>
+        /// <param name="searchTerm">Partial display name to match (case-insensitive). Not null.</param>
+        /// <param name="maxResults">Maximum results to return, range [1, 50]. Default is 5.</param>
+        /// <returns>Matching project members.</returns>
         public async Task<IEnumerable<User>> SearchUsersByProjectAsync(int projectId, string searchTerm, int maxResults = 5)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
@@ -106,6 +138,10 @@ namespace PromiseModelOnline.Api.DAL
                 .ToListAsync();
         }
 
+        /// <summary>Global user search by name or email across all projects.</summary>
+        /// <param name="searchTerm">Partial name or email to match (case-insensitive). Not null.</param>
+        /// <param name="maxResults">Maximum results to return, range [1, 50]. Default is 10.</param>
+        /// <returns>Matching users.</returns>
         public async Task<IEnumerable<User>> SearchUsersAsync(string searchTerm, int maxResults = 10)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))

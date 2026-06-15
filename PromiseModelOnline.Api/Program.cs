@@ -20,6 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 var config = builder.Configuration;
 
+// CORS policy for the SPA client origin.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
@@ -36,7 +37,7 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Configure Kestrel to use SSL with PEM files when available; otherwise fall back to HTTP
+// Kestrel HTTPS with certificate file (cert.pem / key.pem) or fallback to HTTP.
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
 var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
 if (File.Exists(certPath) && File.Exists(keyPath))
@@ -57,6 +58,7 @@ else
     builder.WebHost.UseUrls(urls);
 }
 
+// JWT Bearer authentication with token validation and SignalR token support.
 var issuer = config["JwtSettings:Issuer"]!;
 var audience = config["JwtSettings:Audience"]!;
 
@@ -93,6 +95,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         }
     });
 
+// Scope claims transformer and authorization policies for projects.read / projects.write.
 builder.Services.AddTransient<IClaimsTransformation, ScopeClaimsTransformer>();
 builder.Services.AddAuthorization(options =>
 {
@@ -102,6 +105,7 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("scope", "projects.write"));
 });
 
+// SignalR, DI registration, MVC controllers, and Swagger.
 builder.Services.AddSignalR();
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers(options =>
@@ -124,7 +128,6 @@ builder.Services.AddSwaggerGen(c =>{
         BearerFormat = "JWT"
     });
 
-    // Use the new overload that takes a document parameter
     c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
         [new OpenApiSecuritySchemeReference("Bearer", document)] = []
@@ -133,6 +136,7 @@ builder.Services.AddSwaggerGen(c =>{
 
 var app = builder.Build();
 
+// Apply migrations and seed development data.
 if (!app.Environment.IsEnvironment("Testing"))
 {
     app.ApplyMigrations();
@@ -158,9 +162,9 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
+// CORS, Swagger UI, authentication, authorization, and endpoint mapping.
 app.UseCors(MyAllowSpecificOrigins);
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
      app.UseSwagger();
@@ -172,7 +176,6 @@ if (app.Environment.IsDevelopment())
 
         if (!string.IsNullOrEmpty(registrationKey))
         {
-            // Escape single quotes so the JavaScript string is valid
             var escapedKey = registrationKey.Replace("'", "\\'");
             c.UseRequestInterceptor($"(req) => {{ req.headers['X-Registration-Key'] = '{escapedKey}'; return req; }}");
         }

@@ -6,6 +6,12 @@ import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 
+/**
+ * Load the iteration history page with burndown charts.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} permission - TODO
+ */
 export function loadIterationHistory(owner, project, permission) {
     const viewDiv = document.getElementById('iterations-view');
     const listDiv = document.getElementById('iterations-list');

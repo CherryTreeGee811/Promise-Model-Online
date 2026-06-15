@@ -1,5 +1,8 @@
 import { isLoggedIn } from './auth-state.mjs';
 
+/**
+ * Load the home page content.
+ */
 export function loadHomePage() {
   const loggedIn = isLoggedIn();
 

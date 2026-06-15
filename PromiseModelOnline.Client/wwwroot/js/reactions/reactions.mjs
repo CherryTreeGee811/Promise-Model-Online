@@ -3,6 +3,15 @@ import { getCurrentUserName } from '../parser.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 
+/**
+ * Load and render the reactions section for an entity.
+ * @param {*} container - TODO
+ * @param {*} entityType - TODO
+ * @param {*} entityId - TODO
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} permission - TODO
+ */
 export function loadReactions(container, parentType, parentId, owner, project, permission) {
     const canReact = permission?.permission === 'Comment' || permission?.permission === 'Edit';
 

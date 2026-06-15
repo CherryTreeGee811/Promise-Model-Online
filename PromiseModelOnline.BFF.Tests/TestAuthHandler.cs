@@ -6,11 +6,22 @@ using Microsoft.Extensions.Options;
 
 namespace PromiseModelOnline.BFF.Tests;
 
+/// <summary>Mock authentication handler for BFF test infrastructure.</summary>
+/// <remarks>
+///   When the <c>X-Test-Authenticate</c> header is present on a request, this handler
+///   returns a successfully authenticated principal with test claims. Otherwise it
+///   returns <see cref="AuthenticateResult.NoResult"/> to simulate an unauthenticated
+///   request. Also supports sign-out by returning a 302 redirect.
+/// </remarks>
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>, IAuthenticationSignOutHandler
 {
+    /// <summary>The scheme name used by this handler (<c>"cookie"</c>).</summary>
     public const string SchemeName = "cookie";
+
+    /// <summary>Header that triggers authentication when present.</summary>
     public const string AuthenticateHeader = "X-Test-Authenticate";
 
+    /// <summary>Initializes the handler with standard authentication dependencies.</summary>
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
@@ -19,6 +30,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     {
     }
 
+    /// <summary>Authenticate the request if the test header is present.</summary>
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.ContainsKey(AuthenticateHeader))
@@ -40,6 +52,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 
+    /// <summary>Handle sign-out by redirecting to the configured redirect URI.</summary>
     public Task SignOutAsync(AuthenticationProperties? properties)
     {
         var redirectUri = properties?.RedirectUri ?? "/";

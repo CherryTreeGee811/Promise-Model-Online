@@ -45,7 +45,6 @@ namespace PromiseModelOnline.Api.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            // Backfill sequence numbers for existing data
             migrationBuilder.Sql(@"
                 WITH numbered AS (
                     SELECT Id, ProjectId,
@@ -97,7 +96,6 @@ namespace PromiseModelOnline.Api.Migrations
                 INNER JOIN numbered ON m.Id = numbered.Id
             ");
 
-            // Add unique constraints per parent scope
             migrationBuilder.CreateIndex(
                 name: "IX_Promises_ProjectId_SequenceNumber",
                 table: "Promises",

@@ -4,6 +4,13 @@ import { getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } fro
 
 const PAGE_SIZE = 25;
 
+/**
+ * Load the project audit history page.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ */
 export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, project) {
     const titleEl = document.getElementById('project-title');
     const errorEl = document.getElementById('error-text');

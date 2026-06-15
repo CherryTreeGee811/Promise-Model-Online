@@ -2,27 +2,34 @@ using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
 
+/// <summary>Playwright tests for the notifications list page.</summary>
+// Requirements: REQ_FUN_035
 public class NotificationsListTests : PlaywrightTestBase
 {
     [Test]
-    public async Task NotificationsPage_ShowsNotificationList()
+    public async Task REQ_FUN_035_NotificationsPage_ShowsNotificationList()
     {
+        // Arrange
         await NavigateAsUser("/notifications");
 
+        // Act
         var found = await WaitUntilAsync(async () =>
         {
             var count = await Page.Locator("#notifications-list table tbody tr").CountAsync();
             return count >= 1;
         }, 10);
 
+        // Assert
         Assert.That(found, Is.True);
     }
 
     [Test]
-    public async Task NotificationsPage_ShowsMarkAllReadButton()
+    public async Task REQ_FUN_035_NotificationsPage_ShowsMarkAllReadButton()
     {
+        // Arrange
         await NavigateAsUser("/notifications");
 
+        // Act
         var found = await WaitUntilAsync(async () =>
         {
             try
@@ -35,28 +42,34 @@ public class NotificationsListTests : PlaywrightTestBase
             catch { return false; }
         }, 10);
 
+        // Assert
         Assert.That(found, Is.True);
     }
 
     [Test]
-    public async Task NotificationsPage_UnreadRowHasUnreadClass()
+    public async Task REQ_FUN_035_NotificationsPage_UnreadRowHasUnreadClass()
     {
+        // Arrange
         await NavigateAsUser("/notifications");
 
+        // Act
         var found = await WaitUntilAsync(async () =>
         {
             var count = await Page.Locator("#notifications-list tbody tr.unread").CountAsync();
             return count == 2;
         }, 10);
 
+        // Assert
         Assert.That(found, Is.True);
     }
 
     [Test]
-    public async Task NotificationsPage_AllRowsAreUnread()
+    public async Task REQ_FUN_035_NotificationsPage_AllRowsAreUnread()
     {
+        // Arrange
         await NavigateAsUser("/notifications");
 
+        // Act
         var found = await WaitUntilAsync(async () =>
         {
             var rows = await Page.Locator("#notifications-list table tbody tr").CountAsync();
@@ -64,6 +77,7 @@ public class NotificationsListTests : PlaywrightTestBase
             return rows > 0 && rows == unreadRows;
         }, 10);
 
+        // Assert
         Assert.That(found, Is.True);
     }
 }

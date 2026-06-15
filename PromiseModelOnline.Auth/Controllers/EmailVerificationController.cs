@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
-using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
+/// <summary>Handles email verification flow: confirm code, resend code, verification page.</summary>
 [Route("account/verify-email")]
 public class EmailVerificationController : Controller
 {
@@ -32,6 +32,7 @@ public class EmailVerificationController : Controller
         _cache = cache;
     }
 
+    /// <summary>Generate a cryptographically random 6-digit verification code.</summary>
     private static string GenerateVerificationCode()
     {
         Span<byte> bytes = stackalloc byte[4];
@@ -40,6 +41,9 @@ public class EmailVerificationController : Controller
         return val.ToString("D6");
     }
 
+    /// <summary>Display the email verification page for a given user.</summary>
+    /// <param name="userId">The user ID to verify.</param>
+    /// <returns>The verification view, or a redirect to login if the user is not found or already verified.</returns>
     [AllowAnonymous]
     [HttpGet("")]
     public async Task<IActionResult> Index(string? userId)
@@ -62,6 +66,9 @@ public class EmailVerificationController : Controller
         });
     }
 
+    /// <summary>Validate the verification code from cache and confirm the user's email.</summary>
+    /// <param name="model">The verification form containing user ID and 6-digit code.</param>
+    /// <returns>A redirect to the login page on success, or the verification view with errors.</returns>
     [AllowAnonymous]
     [HttpPost("confirm")]
     [ValidateAntiForgeryToken]
@@ -71,15 +78,13 @@ public class EmailVerificationController : Controller
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.UserId))
         {
             var user = await _userManager.FindByIdAsync(model.UserId);
-            if (user == null)
-                return Redirect("/account/login");
+            if (user == null) return Redirect("/account/login");
             model.Email = user.Email ?? "";
             return View("Index", model);
         }
 
         var user2 = await _userManager.FindByIdAsync(model.UserId);
-        if (user2 == null)
-            return Redirect("/account/login");
+        if (user2 == null) return Redirect("/account/login");
 
         if (await _userManager.IsEmailConfirmedAsync(user2))
             return RedirectToAction("Index", "Login", new { verified = "true" });
@@ -112,6 +117,9 @@ public class EmailVerificationController : Controller
         });
     }
 
+    /// <summary>Generate and send a new verification code via email.</summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>A redirect to the verification page or login.</returns>
     [AllowAnonymous]
     [HttpPost("resend")]
     [ValidateAntiForgeryToken]

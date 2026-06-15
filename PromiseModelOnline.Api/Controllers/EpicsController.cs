@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
-using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
@@ -14,12 +12,18 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for epic CRUD with promise-scoped queries and description updates.</summary>
+    /// <remarks>
+    ///   Route is disabled via <c>__disabled__</c> prefix; use <c>ProjectEpicsController</c> instead.
+    ///   Provides an override for <c>GetAll</c> that supports filtering by <c>promiseId</c> query parameter.
+    /// </remarks>
     [Route("__disabled__/{controller}")]
     public class EpicsController : GenericController<Epic, EpicDTO>
     {
         private readonly IEpicService _epicService;
         private readonly IPromiseModelOnlineContext _context;
 
+        /// <summary>Initializes the controller with required services.</summary>
         public EpicsController(
             IEpicService service,
             IGenericMapper<Epic, EpicDTO> mapper,
@@ -30,6 +34,10 @@ namespace PromiseModelOnline.Api.Controllers
             _context = context;
         }
 
+        /// <summary>Create an epic from a DTO with auto-generated sequence number.</summary>
+        /// <param name="request">The epic creation data.</param>
+        /// <response code="201">Returns the created epic with a Location header.</response>
+        /// <response code="400">Invalid request data.</response>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<EpicDTO>> CreateFromDto([FromBody] CreateEpicRequestDTO request)
@@ -53,6 +61,8 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = epic.Id }, _mapper.Map(epic, _service));
         }
 
+        /// <summary>Retrieve all epics, optionally filtered by promise ID.</summary>
+        /// <param name="promiseId">Optional promise ID to filter by.</param>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<EpicDTO>>> GetAll()
@@ -72,6 +82,9 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>Update an epic's description.</summary>
+        /// <param name="id">The epic ID.</param>
+        /// <param name="request">The new description value.</param>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<EpicDTO>> UpdateDescription(

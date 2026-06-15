@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;
 
+// Requirements: REQ_FUN_001 REQ_USE_012
 public class AccountManagementIntegrationTests : IntegrationTestBase
 {
     private const string TestPassword = "Hello123*";
@@ -62,16 +63,20 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
     // ============================
 
     [Test]
-    public async Task Get_ChangePasswordPage_WithAuth_Returns200()
+    public async Task REQ_FUN_001_Get_ChangePasswordPage_WithAuth_Returns200()
     {
+        // Arrange
         var auth = await AuthCookieAsync();
+        // Act
         var response = await Client.SendAsync(CreateGet("/account/change-password", auth));
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     [Test]
-    public async Task Post_ChangePasswordPage_Valid_Succeeds()
+    public async Task REQ_FUN_001_Post_ChangePasswordPage_Valid_Succeeds()
     {
+        // Arrange
         var auth = await AuthCookieAsync();
 
         var getResponse = await Client.SendAsync(CreateGet("/account/change-password", auth));
@@ -80,7 +85,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
         var token = ExtractAntiforgeryToken(html);
         var antiforgery = ExtractSetCookieHeader(getResponse, ".AspNetCore.Antiforgery");
         Assert.That(antiforgery, Is.Not.Null);
-
+        // Act
         var response = await Client.SendAsync(CreatePost("/account/change-password", new Dictionary<string, string>
         {
             { "currentPassword", TestPassword },
@@ -89,6 +94,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
             { "__RequestVerificationToken", token }
         }, $"{auth}; {antiforgery}"));
 
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var body = await response.Content.ReadAsStringAsync();
         Assert.That(body, Does.Contain("Password changed successfully"));
@@ -110,8 +116,9 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Post_ChangePasswordPage_WrongCurrentPassword_ReturnsError()
+    public async Task REQ_FUN_001_Post_ChangePasswordPage_WrongCurrentPassword_ReturnsError()
     {
+        // Arrange
         var auth = await AuthCookieAsync();
 
         var getResponse = await Client.SendAsync(CreateGet("/account/change-password", auth));
@@ -120,7 +127,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
         var token = ExtractAntiforgeryToken(html);
         var antiforgery = ExtractSetCookieHeader(getResponse, ".AspNetCore.Antiforgery");
         Assert.That(antiforgery, Is.Not.Null);
-
+        // Act
         var response = await Client.SendAsync(CreatePost("/account/change-password", new Dictionary<string, string>
         {
             { "currentPassword", "WrongPassword1!" },
@@ -129,6 +136,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
             { "__RequestVerificationToken", token }
         }, $"{auth}; {antiforgery}"));
 
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var body = await response.Content.ReadAsStringAsync();
         Assert.That(body, Does.Contain("Current password is incorrect"));
@@ -139,8 +147,9 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
     // ============================
 
     [Test]
-    public async Task Patch_ChangePasswordApi_Unauthenticated_ReturnsUnauthorized()
+    public async Task REQ_FUN_001_Patch_ChangePasswordApi_Unauthenticated_ReturnsUnauthorized()
     {
+        // Arrange
         var request = new HttpRequestMessage(HttpMethod.Patch, "/account/me/password")
         {
             Content = JsonContent.Create(new
@@ -150,13 +159,16 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
                 confirmPassword = "NewPass456!"
             })
         };
+        // Act
         var response = await Client.SendAsync(request);
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task Patch_ChangePasswordApi_Valid_Succeeds()
+    public async Task REQ_FUN_001_Patch_ChangePasswordApi_Valid_Succeeds()
     {
+        // Arrange
         var auth = await AuthCookieAsync();
 
         var request = new HttpRequestMessage(HttpMethod.Patch, "/account/me/password")
@@ -169,7 +181,9 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
             })
         };
         request.Headers.Add("Cookie", auth);
+        // Act
         var response = await Client.SendAsync(request);
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
 
         // Change back
@@ -191,19 +205,23 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
     // ============================
 
     [Test]
-    public async Task Delete_Account_Unauthenticated_ReturnsUnauthorized()
+    public async Task REQ_FUN_001_Delete_Account_Unauthenticated_ReturnsUnauthorized()
     {
+        // Arrange
         var request = new HttpRequestMessage(HttpMethod.Delete, "/account/me")
         {
             Content = JsonContent.Create(new { password = TestPassword })
         };
+        // Act
         var response = await Client.SendAsync(request);
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task Delete_Account_WithoutPassword_ReturnsBadRequest()
+    public async Task REQ_FUN_001_Delete_Account_WithoutPassword_ReturnsBadRequest()
     {
+        // Arrange
         var auth = await AuthCookieAsync();
 
         var request = new HttpRequestMessage(HttpMethod.Delete, "/account/me")
@@ -211,13 +229,16 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
             Content = JsonContent.Create(new { })
         };
         request.Headers.Add("Cookie", auth);
+        // Act
         var response = await Client.SendAsync(request);
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
-    public async Task Delete_Account_WrongPassword_ReturnsUnauthorized()
+    public async Task REQ_FUN_001_Delete_Account_WrongPassword_ReturnsUnauthorized()
     {
+        // Arrange
         var auth = await AuthCookieAsync();
 
         var request = new HttpRequestMessage(HttpMethod.Delete, "/account/me")
@@ -225,7 +246,9 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
             Content = JsonContent.Create(new { password = "WrongPassword1!" })
         };
         request.Headers.Add("Cookie", auth);
+        // Act
         var response = await Client.SendAsync(request);
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
 
         var body = await response.Content.ReadAsStringAsync();
@@ -233,9 +256,9 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    public async Task Delete_Account_Valid_Succeeds()
+    public async Task REQ_FUN_001_Delete_Account_Valid_Succeeds()
     {
-        // Register a fresh user
+        // Arrange - Register a fresh user
         var antiforgery = await GetAntiforgeryData("/account/register");
         var uniqueUser = "deluser_" + Guid.NewGuid().ToString("N")[..8];
         var uniqueEmail = uniqueUser + "@test.com";
@@ -264,13 +287,14 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
         // Login as the new user
         var auth = await AuthCookieForAsync(uniqueUser, TestPassword);
 
-        // Delete account
+        // Act - Delete account
         var delRequest = new HttpRequestMessage(HttpMethod.Delete, "/account/me")
         {
             Content = JsonContent.Create(new { password = TestPassword })
         };
         delRequest.Headers.Add("Cookie", auth);
         var response = await Client.SendAsync(delRequest);
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
 
         // Verify user can no longer log in

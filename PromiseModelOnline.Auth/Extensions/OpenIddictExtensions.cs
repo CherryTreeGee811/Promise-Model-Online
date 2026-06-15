@@ -6,8 +6,14 @@ using PromiseModelOnline.Auth.Common;
 
 namespace PromiseModelOnline.Auth.Extensions
 {
+    /// <summary>Extension methods for configuring OpenIddict server and validation.</summary>
     public static class OpenIddictExtensions
     {
+        /// <summary>Register OpenIddict with EF Core storage, authorization code + refresh token flows, PKCE, and certificate configuration.</summary>
+        /// <param name="services">The service collection to register into.</param>
+        /// <param name="config">The application configuration for certificate loading.</param>
+        /// <param name="env">The web hosting environment for development-mode overrides.</param>
+        /// <returns>The same service collection for chaining.</returns>
         public static IServiceCollection AddOpenIddictServerConfig(
             this IServiceCollection services,
             IConfiguration config,
@@ -70,6 +76,9 @@ namespace PromiseModelOnline.Auth.Extensions
             return services;
         }
 
+        /// <summary>Load the signing/encryption certificate from <c>cert.pfx</c> or fall back to ephemeral keys for development.</summary>
+        /// <param name="options">The OpenIddict server builder to configure.</param>
+        /// <param name="config">The application configuration for the certificate password.</param>
         private static void ConfigureCertificates(OpenIddictServerBuilder options, IConfiguration config)
         {
             var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pfx");

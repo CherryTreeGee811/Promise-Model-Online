@@ -9,12 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Extensions;
+        /// <param name="services">The service collection.</param>
 
+/// <summary>Registers the background service that automates stride progression and deadline notifications.</summary>
 public static class StrideAutomationExtensions
 {
-    /// <summary>
-    /// Registers the hosted service that auto‑progresses strides and sends deadline notifications.
-    /// </summary>
+    /// <summary>Register the <see cref="StrideAutomationService"/> as a hosted service.</summary>
     public static IServiceCollection AddStrideAutomation(this IServiceCollection services)
     {
         services.AddHostedService<StrideAutomationService>();
@@ -22,18 +22,24 @@ public static class StrideAutomationExtensions
     }
 }
 
-/// <summary>
-/// Background service that runs every hour:
-/// - Moves unfinished moments out of ended strides.
-/// - Auto‑creates the next iteration when all strides of an iteration have ended.
-/// - Sends deadline notifications 3 days before a stride ends.
-/// </summary>
+/// <summary>Background service that runs hourly to progress strides, auto-create iterations, and send deadline notifications.</summary>
+/// <remarks>
+///   Every hour:
+///   <list type="bullet">
+///     <item>Moves unfinished moments from ended strides to the next available stride.</item>
+///     <item>Auto-creates the next iteration (with 4 strides) when all strides of an iteration have ended.</item>
+///     <item>Sends deadline notifications for strides ending in 3 days.</item>
+///   </list>
+/// </remarks>
 internal class StrideAutomationService : IHostedService, IDisposable
 {
     private Timer? _timer;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<StrideAutomationService> _logger;
 
+    /// <summary>Initializes the automation service with scope factory and logger.</summary>
+    /// <param name="scopeFactory">Factory for creating service scopes.</param>
+    /// <param name="logger">Logger for automation events.</param>
     public StrideAutomationService(IServiceScopeFactory scopeFactory,
                                    ILogger<StrideAutomationService> logger)
     {
@@ -41,6 +47,8 @@ internal class StrideAutomationService : IHostedService, IDisposable
         _logger = logger;
     }
 
+    /// <summary>Start the automation timer, firing immediately and then every hour.</summary>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Stride automation service started.");
@@ -49,6 +57,7 @@ internal class StrideAutomationService : IHostedService, IDisposable
         return Task.CompletedTask;
     }
 
+    /// <summary>Execute the automation: progress strides, auto-create iterations, and send deadline notifications.</summary>
     private async Task DoWorkAsync()
     {
         try
@@ -61,7 +70,6 @@ internal class StrideAutomationService : IHostedService, IDisposable
             var now = DateTime.UtcNow.Date;
             var allStrides = await strideService.GetAllAsync();
 
-            // --- Detect fully-completed iterations and auto-create the next one ---
             var endedStridesByIteration = allStrides
                 .Where(s => s.IterationId.HasValue && s.EndDate.Date < now)
                 .GroupBy(s => s.IterationId!.Value)
@@ -116,7 +124,6 @@ internal class StrideAutomationService : IHostedService, IDisposable
                     newIteration.Id, iteration.ProjectId);
             }
 
-            // --- Move unfinished moments from ended strides to the next ---
             foreach (var stride in allStrides)
             {
                 if (stride.EndDate.Date < now)
@@ -126,7 +133,6 @@ internal class StrideAutomationService : IHostedService, IDisposable
                 }
             }
 
-            // Send deadline notifications
             await strideService.SendDeadlineNotificationsAsync();
         }
         catch (Exception ex)
@@ -135,11 +141,14 @@ internal class StrideAutomationService : IHostedService, IDisposable
         }
     }
 
+    /// <summary>Stop the automation timer on service shutdown.</summary>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     public Task StopAsync(CancellationToken cancellationToken)
     {
         _timer?.Change(Timeout.Infinite, 0);
         return Task.CompletedTask;
     }
 
+    /// <summary>Dispose the automation timer.</summary>
     public void Dispose() => _timer?.Dispose();
 }

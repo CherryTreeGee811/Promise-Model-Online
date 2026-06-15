@@ -7,10 +7,13 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 using System.Linq;
 using System.Threading.Tasks;
+/// <summary>REST controller for retrieving the full project hierarchy as a graph structure.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/graph")]
+    /// Project Graph Controller.
+    /// </summary>
     public class ProjectGraphController : ProjectScopedControllerBase
     {
         private readonly IPromiseModelOnlineContext _context;

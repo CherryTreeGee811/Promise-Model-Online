@@ -5,10 +5,20 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL
 {
+    /// <summary>EF Core implementation of <see cref="IIterationRepository"/> providing project-scoped iteration lookups.</summary>
+    /// <remarks>
+    ///   Uses the base class <see cref="FindAsync"/> method with a lambda predicate.
+    ///   Scoped lifetime.
+    /// </remarks>
     public class IterationRepository : GenericRepository<Iteration>, IIterationRepository
     {
+        /// <summary>Initializes the repository with the shared database context.</summary>
+        /// <param name="context">The EF Core database context.</param>
         public IterationRepository(PromiseModelOnlineContext context) : base(context) { }
 
+        /// <summary>Return all iterations (time-boxed planning cycles) for a project.</summary>
+        /// <param name="projectId">The project ID. Must be greater than zero.</param>
+        /// <returns>All iterations belonging to the project.</returns>
         public async Task<IEnumerable<Iteration>> GetIterationsByProjectAsync(int projectId)
         {
             return await FindAsync(i => i.ProjectId == projectId);

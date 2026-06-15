@@ -4,23 +4,18 @@ using System.Linq;
 
 namespace PromiseModelOnline.Api.DTOs;
 
-/// <summary>
-/// Partial update payload for a user's notification collection.
-/// Currently supports setting all notifications to read.
-/// </summary>
+/// <summary>Request DTO for marking all notifications as read.</summary>
+/// <remarks>Supports bulk update via <c>ApplyToAll</c> or targeted update via <c>NotificationIds</c>.</remarks>
 public class UpdateNotificationsRequestDTO : IValidatableObject
 {
+    /// <summary>Whether the notification has been read by the user.</summary>
     public bool? IsRead { get; set; }
 
-    /// <summary>
-    /// When true, applies the change to all of the current user's notifications.
-    /// </summary>
+    /// <summary>When <c>true</c>, applies the change to all of the current user's notifications.</summary>
     public bool? ApplyToAll { get; set; }
 
-    /// <summary>
-    /// When provided, applies the change to the specified notification ids.
-    /// Use this instead of ApplyToAll for targeted bulk updates.
-    /// </summary>
+    /// <summary>When provided, applies the change to the specified notification IDs.</summary>
+    /// <param name="validationContext">The validation context.</param>
     public int[]? NotificationIds { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

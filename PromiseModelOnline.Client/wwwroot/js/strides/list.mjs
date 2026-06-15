@@ -770,6 +770,14 @@ function totalEffort(moments) {
 }
 
 /* ---------- Main export ---------- */
+/**
+ * Load the strides listing page for an iteration.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} permission - TODO
+ */
 export function loadStridesList(owner, project, navContentDiv, contentDiv, permission) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');

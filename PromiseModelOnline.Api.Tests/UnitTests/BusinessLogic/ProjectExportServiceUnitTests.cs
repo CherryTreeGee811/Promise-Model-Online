@@ -12,6 +12,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests;
 
+// Requirements: REQ_FUN_039 REQ_FUN_040
+/// <summary>Unit tests for <see cref="ProjectExportService"/> covering project hierarchy export.</summary>
 public class ProjectExportServiceUnitTests
 {
     private Mock<IProjectRepository> _projectRepoMock = null!;
@@ -48,8 +50,9 @@ public class ProjectExportServiceUnitTests
     }
 
     [Test]
-    public async Task BuildExportAsync_BuildsFullHierarchyAndStrideLinks()
+    public async Task REQ_FUN_039_BuildExportAsync_BuildsFullHierarchyAndStrideLinks()
     {
+        // Arrange
         var project = new Project { Id = 5, Name = "Project", OwnerId = 10 };
         _projectRepoMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(project);
 
@@ -84,8 +87,10 @@ public class ProjectExportServiceUnitTests
         _strideRepoMock.Setup(r => r.GetStridesByIterationAsync(61)).ReturnsAsync(new[] { stride });
         _momentRepoMock.Setup(r => r.GetMomentsByStrideAsync(71)).ReturnsAsync(new[] { moment });
 
+        // Act
         var export = await _service.BuildExportAsync(5);
 
+        // Assert
         Assert.That(export.SchemaVersion, Is.EqualTo("1.0"));
         Assert.That(export.Project.Id, Is.EqualTo(5));
         Assert.That(export.Project.ProductPromises.Single().Epics.Single().Journeys.Single().Flows.Single().Moments.Single().Tasks.Single().Id, Is.EqualTo(61));
@@ -95,10 +100,12 @@ public class ProjectExportServiceUnitTests
     }
 
     [Test]
-    public void BuildExportAsync_WhenProjectMissing_Throws()
+    public void REQ_FUN_039_BuildExportAsync_WhenProjectMissing_Throws()
     {
+        // Arrange
         _projectRepoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Project?)null);
 
+        // Act & Assert
         Assert.ThrowsAsync<KeyNotFoundException>(() => _service.BuildExportAsync(999));
     }
 }

@@ -1,3 +1,16 @@
+/**
+ * Set up an inline-edit toggle between a view element and an input element.
+ *
+ * Handles show/hide of view/edit states, cancellation, and a "Saved!" popover
+ * on the save button after successful updates.
+ *
+ * @param {HTMLElement} inputEl - The input field shown during edit mode.
+ * @param {HTMLElement} viewEl - The element shown during view mode.
+ * @param {HTMLElement} editBtn - The button that triggers edit mode.
+ * @param {HTMLElement|null} saveBtn - The button that triggers save.
+ * @param {HTMLElement|null} cancelBtn - The button that reverts to view mode.
+ * @returns {{showView: Function, showSavedPopover: Function}} Control methods.
+ */
 export function setupInlineEdit(inputEl, viewEl, editBtn, saveBtn, cancelBtn) {
   let cancelValue = '';
   let cancelViewHtml = '';

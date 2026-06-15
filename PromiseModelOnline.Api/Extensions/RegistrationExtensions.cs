@@ -13,8 +13,18 @@ using System;
 
 namespace PromiseModelOnline.Api.Extensions
 {
+    /// <summary>DI registration extension for Promise Model Online services.</summary>
+    /// <remarks>
+    ///   Registers all repository, service, and mapper types as scoped dependencies.
+    ///   Configures the EF Core <see cref="PromiseModelOnlineContext"/> with SQL Server
+    ///   using a connection string that supports Docker secret resolution.
+    ///   Call from <c>Program.cs</c>: <c>services.AddPromiseModelOnlineScopes(configuration)</c>.
+    /// </remarks>
     public static class RegistrationExtensions
     {
+        /// <summary>Register all Promise Model Online dependencies in the DI container.</summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to register into.</param>
+        /// <param name="configuration">The application configuration for connection strings.</param>
         public static void AddPromiseModelOnlineScopes(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddHttpContextAccessor();

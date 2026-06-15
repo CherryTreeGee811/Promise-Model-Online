@@ -7,6 +7,9 @@ function section(id, title, content) {
   `;
 }
 
+/**
+ * Load the knowledge base page content.
+ */
 export function loadKnowledgeBase() {
     const kbContent = document.getElementById('kb-content');
 

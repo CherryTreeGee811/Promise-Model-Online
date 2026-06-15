@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -17,6 +16,12 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for moment CRUD with stride assignment, status updates, and owner management.</summary>
+    /// <remarks>
+    ///   Route disabled — use project-scoped controllers instead. Provides filtered <c>GetAll</c> by
+    ///   <c>strideId</c>, <c>flowId</c>, or <c>iterationId</c> query parameters. All write operations
+    ///   verify <see cref="PermissionLevel.Edit"/> on the moment's project.
+    /// </remarks>
     [Route("__disabled__/{controller}")]
     public class MomentsController : GenericController<Moment, MomentDTO>
     {
@@ -41,20 +46,17 @@ namespace PromiseModelOnline.Api.Controllers
             _context = context;
             _logger = logger;
         }
+        /// <param name="request">The moment creation data.</param>
 
-        /// <summary>
-        /// Creates a new moment from a lightweight request DTO.
-        /// The client only supplies the parent FlowId; the entity navigation property stays server-owned.
-        /// </summary>
+        /// <summary>Create a moment from a DTO with auto-generated sequence number.</summary>
+        /// <param name="request">The moment creation data.</param>
+        /// <returns>The created moment as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<MomentDTO>> CreateFromDto([FromBody] CreateMomentRequestDTO request)
         {
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
             var nextSeq = await _context.GetNextMomentSequenceAsync(request.FlowId);
 
@@ -76,10 +78,8 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = moment.Id }, _mapper.Map(moment, _service));
         }
 
-        /// <summary>
-        /// Returns moments filtered by optional query parameters:
-        /// strideId, flowId, iterationId (with unassigned flag)
-        /// </summary>
+        /// <summary>Return moments with optional stride, flow, or iteration filters.</summary>
+        /// <returns>A list of moment DTOs with optional filters applied.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<MomentDTO>>> GetAll()
@@ -92,22 +92,16 @@ namespace PromiseModelOnline.Api.Controllers
             var unassignedStr = Request.Query["unassigned"];
 
             if (!string.IsNullOrEmpty(strideIdStr) && int.TryParse(strideIdStr, out int strideId))
-            {
                 moments = await _momentService.GetMomentsByStrideAsync(strideId);
-            }
             else if (!string.IsNullOrEmpty(flowIdStr) && int.TryParse(flowIdStr, out int flowId))
-            {
                 moments = await _momentService.GetMomentsByFlowAsync(flowId);
-            }
             else if (!string.IsNullOrEmpty(iterationIdStr) && int.TryParse(iterationIdStr, out int iterationId))
             {
                 bool unassignedOnly = unassignedStr == "true";
                 moments = await _momentService.GetMomentsByIterationAsync(iterationId, unassignedOnly);
             }
             else
-            {
                 moments = await _momentService.GetAllAsync();
-            }
 
             var result = new List<MomentDTO>();
             foreach (var m in moments)
@@ -116,312 +110,174 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Assign a moment to a stride or move it to the backlog (strideId = null).
-        /// Requires Edit permission on the project.
-        /// </summary>
+        /// <summary>Assign a moment to a stride or move it to the backlog.</summary>
+        /// <param name="id">The moment ID.</param>
+        /// <param name="request">The stride assignment request.</param>
+        /// <returns>The updated moment as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/stride-assignment")]
         public async Task<ActionResult<MomentDTO>> AssignMomentToStride(
             int id,
             [FromBody] UpdateMomentStrideAssignmentRequest request)
         {
-            if (!await UserCanEditMomentAsync(id))
-                return Forbid();
-
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
+            if (!await UserCanEditMomentAsync(id)) return Forbid();
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
             try
             {
                 var moment = await _momentService.AssignMomentToStrideAsync(id, request.StrideId);
-
-                var jwtSub = User.FindFirst("sub")?.Value
-                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                _logger.LogInformation(
-                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
-                    jwtSub,
-                    id,
-                    DateTime.UtcNow,
-                    new { StrideId = request.StrideId });
-
+                _logger.LogInformation("User assigned Moment {MomentId} to Stride {StrideId}", id, request.StrideId);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
         }
 
-        /// <summary>
-        /// Update the status of a moment.
-        /// Requires Edit permission on the project.
-        /// </summary>
+        /// <summary>Update a moment's status with business rule validation.</summary>
+        /// <param name="id">The moment ID.</param>
+        /// <param name="request">The status update request.</param>
+        /// <returns>The updated moment as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/status")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(
             int id,
             [FromBody] UpdateMomentStatusRequest request)
         {
-            if (!await UserCanEditMomentAsync(id))
-                return Forbid();
-
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
+            if (!await UserCanEditMomentAsync(id)) return Forbid();
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
             try
             {
                 var moment = await _momentService.UpdateMomentStatusAsync(id, request.NewStatus);
-
-                var jwtSub = User.FindFirst("sub")?.Value
-                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                _logger.LogInformation(
-                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
-                    jwtSub,
-                    id,
-                    DateTime.UtcNow,
-                    new { NewStatus = request.NewStatus.ToString() });
-
+                _logger.LogInformation("User updated Moment {MomentId} status to {NewStatus}", id, request.NewStatus);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
         }
 
-        /// <summary>
-        /// Updates only the description of a moment.
-        /// Requires Edit permission on the project.
-        /// </summary>
+        /// <summary>Update a moment's description.</summary>
+        /// <param name="id">The moment ID.</param>
+        /// <param name="request">The description update request.</param>
+        /// <returns>The updated moment as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentDescription(
             int id,
             [FromBody] UpdateDescriptionRequestDTO request)
         {
-            if (!await UserCanEditMomentAsync(id))
-                return Forbid();
-
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
+            if (!await UserCanEditMomentAsync(id)) return Forbid();
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
             try
             {
                 var moment = await _momentService.GetByIdAsync(id);
-                if (moment is null)
-                    return NotFound($"Moment with ID {id} not found.");
+                if (moment is null) return NotFound($"Moment with ID {id} not found.");
 
-                moment.Description = string.IsNullOrWhiteSpace(request.Description)
-                    ? null
-                    : request.Description.Trim();
+                moment.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
                 moment.UpdatedAt = DateTime.UtcNow;
-
                 await _momentService.UpdateAsync(moment);
 
-                var jwtSub = User.FindFirst("sub")?.Value
-                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                _logger.LogInformation(
-                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
-                    jwtSub,
-                    id,
-                    DateTime.UtcNow,
-                    new { Description = request.Description });
-
+                _logger.LogInformation("User updated Moment {MomentId} description", id);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
         }
 
-        /// <summary>
-        /// Updates the T‑shirt size estimate for a moment (partial update).
-        /// Requires Edit permission on the project.
-        /// </summary>
+        /// <summary>Update a moment's effort estimate.</summary>
+        /// <param name="id">The moment ID.</param>
+        /// <param name="request">The estimate update request.</param>
+        /// <returns>The updated moment as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/estimate")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(
             int id,
             [FromBody] UpdateMomentEstimateRequest request)
         {
-            if (!await UserCanEditMomentAsync(id))
-                return Forbid();
-
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
+            if (!await UserCanEditMomentAsync(id)) return Forbid();
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
             try
             {
                 var moment = await _momentService.UpdateMomentEstimateAsync(id, request.Estimate);
-
-                var jwtSub = User.FindFirst("sub")?.Value
-                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                _logger.LogInformation(
-                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
-                    jwtSub,
-                    id,
-                    DateTime.UtcNow,
-                    new { Estimate = request.Estimate?.ToString() });
-
+                _logger.LogInformation("User updated Moment {MomentId} estimate to {Estimate}", id, request.Estimate);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
         }
 
-        /// <summary>
-        /// Updates the type of a moment.
-        /// Requires Edit permission on the project.
-        /// </summary>
+        /// <summary>Update a moment's type classification.</summary>
+        /// <param name="id">The moment ID.</param>
+        /// <param name="request">The type update request.</param>
+        /// <returns>The updated moment as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/type")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentType(
             int id,
             [FromBody] UpdateMomentTypeRequest request)
         {
-            if (!await UserCanEditMomentAsync(id))
-                return Forbid();
-
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
+            if (!await UserCanEditMomentAsync(id)) return Forbid();
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
             try
             {
                 var moment = await _momentService.GetByIdAsync(id);
-                if (moment is null)
-                    return NotFound($"Moment with ID {id} not found.");
+                if (moment is null) return NotFound($"Moment with ID {id} not found.");
 
                 moment.Type = request.NewType;
                 moment.UpdatedAt = DateTime.UtcNow;
-
                 await _momentService.UpdateAsync(moment);
 
-                var jwtSub = User.FindFirst("sub")?.Value
-                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                _logger.LogInformation(
-                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
-                    jwtSub,
-                    id,
-                    DateTime.UtcNow,
-                    new { NewType = request.NewType.ToString() });
-
+                _logger.LogInformation("User updated Moment {MomentId} type to {NewType}", id, request.NewType);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
         }
 
-        /// <summary>
-        /// Assigns a specific user as the owner of the moment, or clears the owner when UserId is null.
-        /// Requires Edit permission on the project.
-        /// </summary>
+        /// <summary>Assign or unassign an owner to a moment.</summary>
+        /// <param name="id">The moment ID.</param>
+        /// <param name="request">The owner assignment request.</param>
+        /// <returns>The updated moment as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/owner")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(
             int id,
             [FromBody] UpdateMomentOwnerRequest request)
         {
-            if (!await UserCanEditMomentAsync(id))
-                return Forbid();
-
-            if (request is null)
-                return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
+            if (!await UserCanEditMomentAsync(id)) return Forbid();
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
             try
             {
                 var moment = await _momentService.AssignOwnerAsync(id, request.UserId);
-
-                var jwtSub = User.FindFirst("sub")?.Value
-                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                _logger.LogInformation(
-                    "User {JwtSub} updated Moment {MomentId} at {UtcTimestamp}: {Changes}",
-                    jwtSub,
-                    id,
-                    DateTime.UtcNow,
-                    new { OwnerUserId = request.UserId });
-
+                _logger.LogInformation("User assigned Moment {MomentId} to Owner {OwnerId}", id, request.UserId);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
         }
 
-        /// <summary>
-        /// Returns all moments assigned to the currently authenticated user.
-        /// </summary>
-        [Authorize(Policy = "projects.read")]
-        [HttpGet("assigned-to-me")]
-        public async Task<ActionResult<IEnumerable<MomentDTO>>> GetMyAssignedMoments()
-        {
-            var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
-
-            var moments = await _momentService.GetMomentsByOwnerIdAsync(user.Id);
-            var result = new List<MomentDTO>();
-            foreach (var m in moments)
-                result.Add(_mapper.Map(m, _service));
-
-            return Ok(result);
-        }
-
+        /// <summary>Resolve the current user from JWT claims.</summary>
         private async Task<User?> GetCurrentUserAsync()
         {
-            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
                      ?? User.FindFirst("email")?.Value;
             if (string.IsNullOrEmpty(email)) return null;
-
+        /// <param name="momentId">The moment ID to check.</param>
             var username = User.FindFirst("nameid")?.Value;
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }
 
-        /// <summary>
-        /// Returns true if the current user has Edit permission on the moment's project.
-        /// </summary>
         private async Task<bool> UserCanEditMomentAsync(int momentId)
         {
             var user = await GetCurrentUserAsync();
             if (user is null) return false;
-
             var projectId = await _momentService.GetProjectIdForMomentAsync(momentId);
             if (projectId is null) return false;
-
             var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value);
             return level == PermissionLevel.Edit;
         }

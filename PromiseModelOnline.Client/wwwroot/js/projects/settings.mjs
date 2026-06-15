@@ -8,6 +8,14 @@ import { setupInlineEdit } from '../utils/inline-edit.mjs';
 import { formatCommentText } from '../utils/entity-reference.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 
+/**
+ * Load the project settings page.
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} permission - TODO
+ */
 export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, permission) {
     const form = document.getElementById('project-settings-form');
     const titleInput = document.getElementById('project-title-input');

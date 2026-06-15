@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic
 {
+    /// <summary>Business logic for <see cref="Permission"/> entities with invitation and authorization flows.</summary>
+    /// <remarks>
+    ///   Handles project member invitations (with owner authorization), acceptance flows, permission
+    ///   removal, and access-level lookups. Sends invitation notifications. Scoped lifetime.
+    /// </remarks>
     public class PermissionService : IPermissionService
     {
         private readonly IPermissionRepository _permissionRepo;
@@ -19,6 +24,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly IGenericMapper<Permission, PermissionDTO> _mapper;
         private readonly INotificationService _notificationService;
 
+        /// <summary>Initializes the service with required dependencies.</summary>
         public PermissionService(
             IPermissionRepository permissionRepo,
             IUserRepository userRepo,
@@ -33,12 +39,21 @@ namespace PromiseModelOnline.Api.BusinessLogic
             _notificationService = notificationService;
         }
 
+        /// <summary>Return all permission records for a project as DTOs.</summary>
+        /// <param name="projectId">The project ID.</param>
+        /// <returns>Permission DTOs with user and role information.</returns>
         public async Task<IEnumerable<PermissionDTO>> GetPermissionsByProjectAsync(int projectId)
         {
             var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId);
             return permissions.Select(p => _mapper.Map(p, null!));
         }
 
+        /// <summary>Invite a user to a project with owner authorization.</summary>
+        /// <param name="request">The invitation details.</param>
+        /// <param name="ownerUserId">The requesting user ID for owner authorization.</param>
+        /// <returns>The created permission DTO.</returns>
+        /// <exception cref="InvalidOperationException">Project not found, user not found, or already has permission.</exception>
+        /// <exception cref="UnauthorizedAccessException">Requester is not the project owner.</exception>
         public async Task<PermissionDTO> InviteUserAsync(CreatePermissionRequestDTO request, int ownerUserId)
         {
             var project = await _projectRepo.GetByIdAsync(request.ProjectId)
@@ -65,7 +80,6 @@ namespace PromiseModelOnline.Api.BusinessLogic
             await _permissionRepo.AddAsync(permission);
             await _permissionRepo.SaveChangesAsync();
 
-            // Send notification to the invited user
             await _notificationService.CreateNotificationAsync(
                 invitedUser.Id,
                 NotificationType.Invitation,
@@ -84,6 +98,12 @@ namespace PromiseModelOnline.Api.BusinessLogic
             };
         }
 
+        /// <summary>Accept a pending invitation on behalf of the user.</summary>
+        /// <param name="permissionId">The permission/invitation ID.</param>
+        /// <param name="userId">The invited user's ID for authorization.</param>
+        /// <returns>The updated permission DTO.</returns>
+        /// <exception cref="InvalidOperationException">Permission not found or already accepted.</exception>
+        /// <exception cref="UnauthorizedAccessException">Not the user's invitation.</exception>
         public async Task<PermissionDTO> AcceptInvitationAsync(int permissionId, int userId)
         {
             var permission = await _permissionRepo.GetByIdAsync(permissionId)
@@ -102,6 +122,9 @@ namespace PromiseModelOnline.Api.BusinessLogic
             return _mapper.Map(permission, null!);
         }
 
+        /// <summary>Return all pending invitations for a user as DTOs.</summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>Pending invitation DTOs.</returns>
         public async Task<IEnumerable<PendingInvitationDTO>> GetPendingInvitationsForUserAsync(int userId)
         {
             var permissions = await _permissionRepo.GetPendingInvitationsForUserAsync(userId);
@@ -115,6 +138,11 @@ namespace PromiseModelOnline.Api.BusinessLogic
             });
         }
 
+        /// <summary>Remove a user's permission from a project (owner only).</summary>
+        /// <param name="permissionId">The permission ID to remove.</param>
+        /// <param name="requestingUserId">The requesting user ID for owner authorization.</param>
+        /// <exception cref="InvalidOperationException">Permission not found.</exception>
+        /// <exception cref="UnauthorizedAccessException">Requester is not the project owner.</exception>
         public async Task RemovePermissionAsync(int permissionId, int requestingUserId)
         {
             var permission = await _permissionRepo.GetByIdAsync(permissionId)
@@ -127,21 +155,26 @@ namespace PromiseModelOnline.Api.BusinessLogic
             await _permissionRepo.DeleteByIdAsync(permissionId);
         }
 
+        /// <summary>Get a user's effective permission level on a project.</summary>
+        /// <param name="userId">The user ID.</param>
+        /// <param name="projectId">The project ID.</param>
+        /// <returns>The permission level, or <c>null</c> if no access. Project owners always have <see cref="PermissionLevel.Edit"/>.</returns>
         public async Task<PermissionLevel?> GetUserPermissionAsync(int userId, int projectId)
         {
-            // Owners have full access
             var project = await _projectRepo.GetByIdAsync(projectId);
             if (project is not null && project.OwnerId == userId)
                 return PermissionLevel.Edit;
 
-            // Check active permission
             var perm = await _permissionRepo.GetByUserAndProjectAsync(userId, projectId);
             if (perm is not null && perm.Status == PermissionStatus.Active)
                 return perm.Level;
 
-            return null; // no access]
+            return null;
         }
 
+        /// <summary>Find a user by email first, then by name, for invitation resolution.</summary>
+        /// <param name="emailOrName">The email address or display name to search for.</param>
+        /// <returns>The matching user, or <c>null</c> if not found.</returns>
         private async Task<User?> FindInvitedUserAsync(string emailOrName)
         {
             var users = await _userRepo.FindByEmailAsync(emailOrName);

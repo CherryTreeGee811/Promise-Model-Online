@@ -1,5 +1,11 @@
 import { setAuthState, clearAuth } from './auth-state.mjs';
 
+/**
+ * Perform a GET request and parse JSON response.
+ * @param {string} url - The API endpoint URL.
+ * @returns {Promise<object|null>} The parsed JSON body, or null for 204 No Content.
+ * @throws {Error} If the HTTP response is not OK.
+ */
 export async function apiGet(url) {
   const res = await apiFetch(url);
   if (res.status === 204) return null;
@@ -7,11 +13,23 @@ export async function apiGet(url) {
   return res.json();
 }
 
+/**
+ * Perform a GET request and return an empty array on null.
+ * @param {string} url - The API endpoint URL.
+ * @returns {Promise<object[]>} The parsed JSON array, or empty array.
+ */
 export async function apiGetList(url) {
   const data = await apiGet(url);
   return data ?? [];
 }
 
+/**
+ * Perform a POST request with a JSON body.
+ * @param {string} url - The API endpoint URL.
+ * @param {object} body - The request payload.
+ * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
+ * @throws {Error} If the HTTP response is not OK.
+ */
 export async function apiPost(url, body) {
   const res = await apiFetch(url, {
     method: 'POST',
@@ -23,6 +41,13 @@ export async function apiPost(url, body) {
   return res.json();
 }
 
+/**
+ * Perform a PUT request with a JSON body.
+ * @param {string} url - The API endpoint URL.
+ * @param {object} body - The request payload.
+ * @returns {Promise<boolean>} True on success.
+ * @throws {Error} If the HTTP response is not OK.
+ */
 export async function apiPut(url, body) {
   const res = await apiFetch(url, {
     method: 'PUT',
@@ -33,6 +58,13 @@ export async function apiPut(url, body) {
   return true;
 }
 
+/**
+ * Perform a PATCH request with a JSON body.
+ * @param {string} url - The API endpoint URL.
+ * @param {object} body - The request payload.
+ * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
+ * @throws {Error} If the HTTP response is not OK.
+ */
 export async function apiPatch(url, body) {
   const res = await apiFetch(url, {
     method: 'PATCH',
@@ -44,21 +76,37 @@ export async function apiPatch(url, body) {
   return res.json();
 }
 
+/**
+ * Perform a DELETE request.
+ * @param {string} url - The API endpoint URL.
+ * @returns {Promise<boolean>} True on success.
+ * @throws {Error} If the HTTP response is not OK.
+ */
 export async function apiDelete(url) {
   const res = await apiFetch(url, { method: 'DELETE' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return true;
 }
 
+/**
+ * Build a project-scoped API URL from owner slug, project slug, and optional path.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} [path=''] - Optional additional path segment.
+ * @returns {string} The constructed URL.
+ */
 export function projectUrl(owner, project, path = '') {
   return `/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}${path}`;
 }
 
-/*
-====================================
-API FETCH (credentials-based, no tokens)
-====================================
-*/
+/**
+ * Core fetch wrapper that includes credentials, sets JSON accept headers,
+ * and redirects to /login on 401 responses.
+ * @param {string} url - The URL to fetch.
+ * @param {object} [options={}] - Additional fetch options.
+ * @returns {Promise<Response>} The fetch Response.
+ * @throws {Error} If the server returns 401 (redirects to login).
+ */
 export async function apiFetch(url, options = {}) {
     let response = await fetch(url, {
         ...options,
@@ -82,7 +130,11 @@ export async function apiFetch(url, options = {}) {
 
 export { apiFetch as authFetch };
 
-/* SESSION CHECK (restore auth on page load) */
+/**
+ * Check whether the user has an active session by calling /api/users/me.
+ * Restores authentication state on successful response.
+ * @returns {Promise<boolean>} True if the user has a valid session.
+ */
 export async function checkSession() {
     try {
         const response = await fetch('/api/users/me', {

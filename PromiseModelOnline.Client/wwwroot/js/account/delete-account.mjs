@@ -1,3 +1,6 @@
+/**
+ * Initialize the delete-account page with form handlers.
+ */
 export function initDeleteAccountPage() {
     const form = document.getElementById('delete-account-form');
     const btn = document.getElementById('delete-account-btn');

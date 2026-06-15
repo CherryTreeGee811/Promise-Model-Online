@@ -10,7 +10,6 @@ namespace PromiseModelOnline.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Drop per-parent unique indexes (sequence is now project-wide)
             migrationBuilder.DropIndex(
                 name: "IX_Moments_FlowId_SequenceNumber",
                 table: "Moments");
@@ -39,7 +38,6 @@ namespace PromiseModelOnline.Api.Migrations
                     table.PrimaryKey("PK_ProjectSequences", x => x.ProjectId);
                 });
 
-            // Backfill ProjectSequences with max sequence used across all entity types per project
             migrationBuilder.Sql(@"
                 INSERT INTO ProjectSequences (ProjectId, NextSequenceNumber)
                 SELECT ProjectId, MAX(m) + 1
@@ -79,7 +77,6 @@ namespace PromiseModelOnline.Api.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Restore per-parent unique indexes
             migrationBuilder.CreateIndex(
                 name: "IX_Epics_ProductPromiseId_SequenceNumber",
                 table: "Epics",

@@ -14,6 +14,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    // Requirements: REQ_FUN_008 REQ_FUN_027 REQ_FUN_028 REQ_FUN_029 REQ_FUN_030 REQ_FUN_031
+    /// <summary>Unit tests for <see cref="MomentService"/> covering moment CRUD, burndown, status, and assignments.</summary>
     public class MomentServiceUnitTests
     {
         private Mock<IMomentRepository> _momentRepoMock = null!;
@@ -46,7 +48,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetIterationBurndownAsync Tests
 
         [Test]
-        public async Task GetIterationBurndownAsync_NoMoments_ReturnsEmptyList()
+        public async Task REQ_FUN_008_GetIterationBurndownAsync_NoMoments_ReturnsEmptyList()
         {
             // Arrange
             _momentRepoMock.Setup(r => r.GetMomentsByIterationAsync(It.IsAny<int>(), false))
@@ -62,7 +64,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetIterationBurndownAsync_AllMomentsHaveNoEstimates_RemainingEffortZero()
+        public async Task REQ_FUN_008_GetIterationBurndownAsync_AllMomentsHaveNoEstimates_RemainingEffortZero()
         {
             // Arrange
             var moments = new List<Moment>
@@ -86,7 +88,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetIterationBurndownAsync_WithEstimatesAndNoCompletions_ConstantRemainingEffort()
+        public async Task REQ_FUN_008_GetIterationBurndownAsync_WithEstimatesAndNoCompletions_ConstantRemainingEffort()
         {
             // Arrange
             var moments = new List<Moment>
@@ -110,7 +112,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetIterationBurndownAsync_WithCompletedMoments_RemainingEffortDecreases()
+        public async Task REQ_FUN_008_GetIterationBurndownAsync_WithCompletedMoments_RemainingEffortDecreases()
         {
             // Arrange
             var moments = new List<Moment>
@@ -136,7 +138,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetIterationBurndownAsync_IdealLineStartsAtTotalEffortAndEndsAtZero()
+        public async Task REQ_FUN_008_GetIterationBurndownAsync_IdealLineStartsAtTotalEffortAndEndsAtZero()
         {
             var moment = new Moment { Id = 1, CreatedAt = DateTime.UtcNow.AddDays(-10), EffortEstimate = Estimate.XL };
             _momentRepoMock.Setup(r => r.GetMomentsByIterationAsync(1, false)).ReturnsAsync(new List<Moment> { moment });
@@ -152,7 +154,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetIterationBurndownAsync_DeduplicatesMomentsAcrossAssignedAndUnassigned()
+        public async Task REQ_FUN_008_GetIterationBurndownAsync_DeduplicatesMomentsAcrossAssignedAndUnassigned()
         {
             // Arrange: same moment appears in both assigned and unassigned (should not happen but defensive)
             var moment = new Moment { Id = 1, CreatedAt = DateTime.UtcNow, EffortEstimate = Estimate.M };
@@ -173,7 +175,7 @@ namespace PromiseModelOnline.Api.Tests
         #region AssignOwnerAsync Tests
 
         [Test]
-        public async Task AssignOwnerAsync_ValidIdAndUserId_UpdatesOwner()
+        public async Task REQ_FUN_008_AssignOwnerAsync_ValidIdAndUserId_UpdatesOwner()
         {
             // Arrange
             var moment = new Moment { Id = 1, OwnerId = null };
@@ -191,7 +193,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task AssignOwnerAsync_NullUserId_ClearsOwner()
+        public async Task REQ_FUN_008_AssignOwnerAsync_NullUserId_ClearsOwner()
         {
             // Arrange
             var moment = new Moment { Id = 2, OwnerId = 99 };
@@ -205,7 +207,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void AssignOwnerAsync_InvalidId_ThrowsKeyNotFound()
+        public void REQ_FUN_008_AssignOwnerAsync_InvalidId_ThrowsKeyNotFound()
         {
             // Arrange
             _momentRepoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Moment?)null);
@@ -219,7 +221,7 @@ namespace PromiseModelOnline.Api.Tests
         #region UpdateMomentEstimateAsync Tests
 
         [Test]
-        public async Task UpdateMomentEstimateAsync_UpdatesEstimateAndTimestamp()
+        public async Task REQ_FUN_008_UpdateMomentEstimateAsync_UpdatesEstimateAndTimestamp()
         {
             // Arrange
             var moment = new Moment { Id = 3, EffortEstimate = null, UpdatedAt = null };
@@ -234,7 +236,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentStatusAsync_UpdatesStatusColorAndRollsUpHierarchy()
+        public async Task REQ_FUN_008_UpdateMomentStatusAsync_UpdatesStatusColorAndRollsUpHierarchy()
         {
             var moment = new Moment { Id = 4, FlowId = 77, Status = MomentStatus.Todo, StatusColor = StatusColorRules.Todo };
             _momentRepoMock.Setup(r => r.GetByIdAsync(4)).ReturnsAsync(moment);
@@ -250,7 +252,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentStatusAsync_DoneSetsCompletionAndDoneColor()
+        public async Task REQ_FUN_008_UpdateMomentStatusAsync_DoneSetsCompletionAndDoneColor()
         {
             var moment = new Moment { Id = 5, FlowId = 78, Status = MomentStatus.Todo, StatusColor = StatusColorRules.Todo };
             _momentRepoMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(moment);
@@ -265,7 +267,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task AddAsync_RollsUpHierarchyFromFlow()
+        public async Task REQ_FUN_008_AddAsync_RollsUpHierarchyFromFlow()
         {
             var moment = new Moment { Id = 6, FlowId = 79 };
 
@@ -275,7 +277,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task DeleteByIdAsync_RollsUpHierarchyFromFlow()
+        public async Task REQ_FUN_008_DeleteByIdAsync_RollsUpHierarchyFromFlow()
         {
             var moment = new Moment { Id = 6, FlowId = 79 };
             _momentRepoMock.Setup(r => r.GetByIdAsync(6)).ReturnsAsync(moment);
@@ -288,7 +290,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void UpdateMomentStatusAsync_InvalidId_ThrowsKeyNotFound()
+        public void REQ_FUN_008_UpdateMomentStatusAsync_InvalidId_ThrowsKeyNotFound()
         {
             _momentRepoMock.Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Moment?)null);
 
@@ -296,7 +298,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public void UpdateMomentEstimateAsync_InvalidId_ThrowsKeyNotFound()
+        public void REQ_FUN_008_UpdateMomentEstimateAsync_InvalidId_ThrowsKeyNotFound()
         {
             _momentRepoMock.Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Moment?)null);
             Assert.ThrowsAsync<KeyNotFoundException>(() => _service.UpdateMomentEstimateAsync(404, Estimate.XS));
@@ -307,7 +309,7 @@ namespace PromiseModelOnline.Api.Tests
         #region MoveUnfinishedMomentsToNextStrideAsync Tests
 
         [Test]
-        public async Task MoveUnfinishedMoments_NoUnfinishedMoments_DoesNothing()
+        public async Task REQ_FUN_008_MoveUnfinishedMoments_NoUnfinishedMoments_DoesNothing()
         {
             // Arrange
             _momentRepoMock.Setup(r => r.GetUnfinishedMomentsByStrideAsync(1)).ReturnsAsync(new List<Moment>());
@@ -320,7 +322,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task MoveUnfinishedMoments_CurrentStrideNotFound_ReturnsEarly()
+        public async Task REQ_FUN_008_MoveUnfinishedMoments_CurrentStrideNotFound_ReturnsEarly()
         {
             // Arrange
             var moments = new List<Moment> { new Moment { Id = 1 } };
@@ -335,7 +337,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task MoveUnfinishedMoments_CurrentStrideHasNoIteration_ReturnsEarly()
+        public async Task REQ_FUN_008_MoveUnfinishedMoments_CurrentStrideHasNoIteration_ReturnsEarly()
         {
             // Arrange
             var moments = new List<Moment> { new Moment { Id = 1 } };
@@ -350,7 +352,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task MoveUnfinishedMoments_MovesToNextStrideInSameIteration()
+        public async Task REQ_FUN_008_MoveUnfinishedMoments_MovesToNextStrideInSameIteration()
         {
             // Arrange
             var moment = new Moment { Id = 10, AssignedStrideId = 1 };
@@ -375,7 +377,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task MoveUnfinishedMoments_NoNextStrideInIteration_MovesToFirstStrideOfNextIteration()
+        public async Task REQ_FUN_008_MoveUnfinishedMoments_NoNextStrideInIteration_MovesToFirstStrideOfNextIteration()
         {
             // Arrange
             var moment = new Moment { Id = 10, AssignedStrideId = 3 };

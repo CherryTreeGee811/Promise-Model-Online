@@ -18,6 +18,8 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="ProjectDetailController"/> covering project operations.</summary>
+// Requirements: REQ_FUN_003 REQ_FUN_011
     public class ProjectDetailControllerTests
     {
         private Mock<IProjectService> _mockProjectService = null!;
@@ -70,8 +72,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetBySlug_WhenExists_ReturnsOkDto()
+        public async Task REQ_FUN_003_GetBySlug_WhenExists_ReturnsOkDto()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 7, Name = "P7", Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -84,8 +87,10 @@ namespace PromiseModelOnline.Api.Tests
                        .Returns(new ProjectDTO { Id = 7, Name = "P7", Slug = ProjectSlug, OwnerSlug = OwnerSlug });
 
             SetControllerUser("u@u.com");
+            // Act
             var result = await _controller.GetBySlug(OwnerSlug, ProjectSlug);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             var dto = ok!.Value as ProjectDTO;
@@ -94,17 +99,21 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetBySlug_WhenProjectNotFound_ReturnsNotFound()
+        public async Task REQ_FUN_003_GetBySlug_WhenProjectNotFound_ReturnsNotFound()
         {
+            // Arrange
             SetUpProjectResolve(null);
             SetControllerUser("u@u.com");
+            // Act
             var result = await _controller.GetBySlug(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
         }
 
         [Test]
-        public async Task GetMembers_WithAuthenticatedUser_ReturnsOkMembers()
+        public async Task REQ_FUN_003_GetMembers_WithAuthenticatedUser_ReturnsOkMembers()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 99, Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -116,8 +125,10 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService.Setup(s => s.GetProjectMembersAsync(99)).ReturnsAsync(members);
 
             SetControllerUser("x@y.com");
+            // Act
             var actionResult = await _controller.GetMembers(OwnerSlug, ProjectSlug);
 
+            // Assert
             Assert.That(actionResult.Result, Is.InstanceOf<OkObjectResult>());
             var ok = actionResult.Result as OkObjectResult;
             var returned = ok!.Value as List<ProjectMemberDTO>;
@@ -127,54 +138,70 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetMembers_WhenProjectNotFound_ReturnsNotFound()
+        public async Task REQ_FUN_003_GetMembers_WhenProjectNotFound_ReturnsNotFound()
         {
+            // Arrange
             SetUpProjectResolve(null);
             SetControllerUser("x@y.com");
+            // Act
             var result = await _controller.GetMembers(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
         }
 
         [Test]
-        public async Task GetMembers_MissingEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_003_GetMembers_MissingEmail_ReturnsUnauthorized()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             SetUpProjectResolve(new Project { Id = 1, Slug = ProjectSlug, Owner = owner });
             SetControllerUser(null);
+            // Act
             var result = await _controller.GetMembers(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public async Task UpdateDetails_WithNullRequest_ReturnsBadRequest()
+        public async Task REQ_FUN_003_UpdateDetails_WithNullRequest_ReturnsBadRequest()
         {
+            // Arrange
             SetControllerUser("u@u.com");
+            // Act
             var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, null!);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task UpdateDetails_WithEmptyName_ReturnsBadRequest()
+        public async Task REQ_FUN_003_UpdateDetails_WithEmptyName_ReturnsBadRequest()
         {
+            // Arrange
             SetControllerUser("u@u.com");
             var request = new UpdateProjectDetailsRequestDTO { Name = "", Description = "" };
+            // Act
             var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task UpdateDetails_WhenProjectNotFound_ReturnsNotFound()
+        public async Task REQ_FUN_003_UpdateDetails_WhenProjectNotFound_ReturnsNotFound()
         {
+            // Arrange
             SetUpProjectResolve(null);
             SetControllerUser("u@u.com");
             var request = new UpdateProjectDetailsRequestDTO { Name = "Updated", Description = "" };
+            // Act
             var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
         }
 
         [Test]
-        public async Task UpdateDetails_WithValidData_ReturnsOk()
+        public async Task REQ_FUN_003_UpdateDetails_WithValidData_ReturnsOk()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 31, Name = "Old", Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -184,15 +211,18 @@ namespace PromiseModelOnline.Api.Tests
 
             SetControllerUser("u@u.com");
             var request = new UpdateProjectDetailsRequestDTO { Name = "Updated", Description = "New desc" };
+            // Act
             var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             Assert.That(project.Name, Is.EqualTo("Updated"));
         }
 
         [Test]
-        public async Task Export_WithAccessibleProject_ReturnsJsonFile()
+        public async Task REQ_FUN_003_Export_WithAccessibleProject_ReturnsJsonFile()
         {
+            // Arrange
             var owner = new User { Id = 77, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 55, Name = "Export me", Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -208,8 +238,10 @@ namespace PromiseModelOnline.Api.Tests
             });
 
             SetControllerUser("exporter@x.com");
+            // Act
             var result = await _controller.Export(OwnerSlug, ProjectSlug);
 
+            // Assert
             Assert.That(result, Is.InstanceOf<FileContentResult>());
             var file = result as FileContentResult;
             Assert.That(file, Is.Not.Null);
@@ -222,18 +254,22 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Export_MissingEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_003_Export_MissingEmail_ReturnsUnauthorized()
         {
+            // Arrange
             var owner = new User { Id = 77, Slug = OwnerSlug, Email = "o@x.com" };
             SetUpProjectResolve(new Project { Id = 55, Slug = ProjectSlug, Owner = owner });
             SetControllerUser(null);
+            // Act
             var result = await _controller.Export(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public async Task Export_WithoutAccess_ReturnsForbid()
+        public async Task REQ_FUN_003_Export_WithoutAccess_ReturnsForbid()
         {
+            // Arrange
             var owner = new User { Id = 88, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 99, Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -243,13 +279,16 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project>());
 
             SetControllerUser("noaccess@x.com");
+            // Act
             var result = await _controller.Export(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result, Is.InstanceOf<ForbidResult>());
         }
 
         [Test]
-        public async Task Export_MissingProject_ReturnsNotFound()
+        public async Task REQ_FUN_003_Export_MissingProject_ReturnsNotFound()
         {
+            // Arrange
             var owner = new User { Id = 99, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 100, Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -260,13 +299,16 @@ namespace PromiseModelOnline.Api.Tests
             _mockExportService.Setup(s => s.BuildExportAsync(100)).ThrowsAsync(new KeyNotFoundException());
 
             SetControllerUser("owner@x.com");
+            // Act
             var result = await _controller.Export(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result, Is.InstanceOf<NotFoundResult>());
         }
 
         [Test]
-        public async Task GetMyPermission_WithPermission_ReturnsOk()
+        public async Task REQ_FUN_003_GetMyPermission_WithPermission_ReturnsOk()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 5, Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -276,8 +318,10 @@ namespace PromiseModelOnline.Api.Tests
             _mockPermissionService.Setup(s => s.GetUserPermissionAsync(2, 5)).ReturnsAsync(PermissionLevel.Edit);
 
             SetControllerUser("user@x.com");
+            // Act
             var result = await _controller.GetMyPermission(OwnerSlug, ProjectSlug);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok!.Value, Has.Property("permission").EqualTo("Edit"));
@@ -285,18 +329,22 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetMyPermission_WhenNoEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_003_GetMyPermission_WhenNoEmail_ReturnsUnauthorized()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             SetUpProjectResolve(new Project { Id = 5, Slug = ProjectSlug, Owner = owner });
             SetControllerUser(null);
+            // Act
             var result = await _controller.GetMyPermission(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public async Task GetMyPermission_WhenNoPermission_ReturnsNoContent()
+        public async Task REQ_FUN_003_GetMyPermission_WhenNoPermission_ReturnsNoContent()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 5, Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -306,13 +354,16 @@ namespace PromiseModelOnline.Api.Tests
             _mockPermissionService.Setup(s => s.GetUserPermissionAsync(2, 5)).ReturnsAsync((PermissionLevel?)null);
 
             SetControllerUser("user@x.com");
+            // Act
             var result = await _controller.GetMyPermission(OwnerSlug, ProjectSlug);
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<NoContentResult>());
         }
 
         [Test]
-        public async Task GetProjectPromises_WithValidProject_ReturnsOk()
+        public async Task REQ_FUN_003_GetProjectPromises_WithValidProject_ReturnsOk()
         {
+            // Arrange
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             var project = new Project { Id = 10, Slug = ProjectSlug, Owner = owner };
             SetUpProjectResolve(project);
@@ -329,8 +380,10 @@ namespace PromiseModelOnline.Api.Tests
                 .Returns<Promise, IGenericService<Promise>>((p, svc) => new PromiseDTO { Id = p.Id, Statement = p.Statement });
 
             SetControllerUser("user@x.com");
+            // Act
             var result = await _controller.GetProjectPromises(OwnerSlug, ProjectSlug);
 
+            // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         }
     }

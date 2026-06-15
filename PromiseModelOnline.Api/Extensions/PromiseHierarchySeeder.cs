@@ -6,6 +6,13 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Extensions;
 
+/// <summary>Seeds development/test data from CSV files into the database.</summary>
+/// <remarks>
+///   Reads CSV files from the <c>pmo_pm</c> directory to create a complete promise hierarchy
+///   (projects, promises, epics, journeys, flows, moments) for development and testing.
+///   Creates test users, assigns permissions, and distributes moments across strides.
+///   Call from <c>Program.cs</c> during application startup in development mode.
+/// </remarks>
 public static class PromiseHierarchySeeder
 {
     private const string TestUserEmail = "pmo@gmail.com";
@@ -16,12 +23,10 @@ public static class PromiseHierarchySeeder
     public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath,
         ILogger logger)
     {
-        // --- 1. Ensure test users exist in API database ---
         var owner = await EnsureTestUserAsync(db, TestUserEmail, TestUserName);
         await EnsureTestUserAsync(db, TestUserEmail2, TestUserName2);
         var pmoPmDir = ResolvePmoPmDirectory(contentRootPath);
 
-        // --- 2. Projects ---
         var projectsCsvPath = Path.Combine(pmoPmDir, "Projects.csv");
         var projectRows = File.Exists(projectsCsvPath) ? ReadCsvRows(projectsCsvPath) : new();
         var projectIdBySourceId = new Dictionary<string, int>();
@@ -43,7 +48,6 @@ public static class PromiseHierarchySeeder
         if (!projectIdBySourceId.ContainsKey("PRJ-001"))
             projectIdBySourceId["PRJ-001"] = project.Id;
 
-        // --- 2b. Grant edit access to second test user on all seeded projects ---
         var testUser2 = await db.Users.FirstOrDefaultAsync(u => u.Email == TestUserEmail2);
         if (testUser2 != null)
         {
@@ -54,8 +58,6 @@ public static class PromiseHierarchySeeder
                 .ToListAsync();
             foreach (var kvp in projectIdBySourceId)
             {
-                // Skip PRJ-001 (Promise Model Online) so pmo_test2 cannot access it.
-                // This enables cross-tenant authorization testing.
                 if (kvp.Key == "PRJ-001") continue;
                 if (existingPerms.Contains(kvp.Value)) continue;
                 permissions.Add(new Permission
@@ -69,13 +71,10 @@ public static class PromiseHierarchySeeder
             await db.SaveChangesAsync();
         }
 
-        // --- 3. Iterations (predefined IDs) ---
         await SeedIterationsAsync(db, pmoPmDir, projectIdBySourceId);
 
-        // --- 4. Strides (predefined IDs, referencing iterations) ---
         var currentStrideId = await SeedStridesAsync(db, pmoPmDir);
 
-        // --- 5. Promise hierarchy (Products, Epics, Journeys, Flows) ---
         var productRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Products.csv"));
         var epicRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Epics.csv"));
         var journeyRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Journeys.csv"));
@@ -94,7 +93,6 @@ public static class PromiseHierarchySeeder
         var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup, flowSeq);
         var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup, momentSeq);
 
-        // --- 6. Redistribute moments evenly and mark prior strides complete ---
         var strideIds = await db.Strides.OrderBy(s => s.Id).Select(s => s.Id).ToListAsync();
         if (strideIds.Count > 0)
         {
@@ -114,10 +112,7 @@ public static class PromiseHierarchySeeder
         );
     }
 
-    // -----------------------------------------------
-    //  Seed iterations with predefined IDs
-    // -----------------------------------------------
-    private static async Task SeedIterationsAsync(PromiseModelOnlineContext db, string pmoPmDir,
+    /// <summary>Seed iterations from CSV into the database.</summary>    private static async Task SeedIterationsAsync(PromiseModelOnlineContext db, string pmoPmDir,
         Dictionary<string, int> projectIdBySourceId)
     {
         var path = Path.Combine(pmoPmDir, "Iterations.csv");
@@ -147,14 +142,7 @@ public static class PromiseHierarchySeeder
         }
     }
 
-    // -----------------------------------------------
-    //  Seed strides with predefined IDs
-    //  The current iteration is the second-to-last one.
-    //  Its last stride ends 14 days from today.
-    //  Prior strides are back-dated; future strides
-    //  (subsequent iterations) are forward-dated.
-    // -----------------------------------------------
-    private static async Task<int> SeedStridesAsync(PromiseModelOnlineContext db, string pmoPmDir)
+    /// <summary>Seed strides from CSV into the database, returning the current stride ID.</summary>    private static async Task<int> SeedStridesAsync(PromiseModelOnlineContext db, string pmoPmDir)
     {
         var path = Path.Combine(pmoPmDir, "Strides.csv");
         if (!File.Exists(path)) return 0;
@@ -223,13 +211,16 @@ public static class PromiseHierarchySeeder
                 isActive,
                 DateTime.UtcNow);
         }
+        /// <param name="db">The database context.</param>
 
         return currentStrideId;
     }
 
-    // -----------------------------------------------
-    //  Seed moments with predefined IDs + stride assignment
-    // -----------------------------------------------
+    /// <summary>Seed moments from CSV with specific IDs to match stride references.</summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="rows">The CSV rows containing moment data.</param>
+    /// <param name="flows">The lookup of imported flow IDs.</param>
+    /// <param name="seq">The sequence counter for moment numbering.</param>
     private static async Task<(int Inserted, int Total)> SeedMomentsWithIdsAsync(
         PromiseModelOnlineContext db,
         IReadOnlyList<Dictionary<string, string>> rows,
@@ -293,9 +284,7 @@ public static class PromiseHierarchySeeder
         return (inserted, validRows.Count);
     }
 
-    // ======================== Existing Promise Hierarchy Seeders =========================
-
-    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows, SeqCounter seq)
+    /// <summary>Seed product promises from CSV data.</summary>    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise ID")) && !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise Statement")))
@@ -343,7 +332,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, seededRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products, SeqCounter seq)
+    /// <summary>Seed epics from CSV data.</summary>    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Epic Promise ID"))
@@ -402,7 +391,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics, SeqCounter seq)
+    /// <summary>Seed journeys from CSV data.</summary>    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Journey Promise ID"))
@@ -461,7 +450,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys, SeqCounter seq)
+    /// <summary>Seed flows from CSV data.</summary>    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Flow Promise ID"))
@@ -520,11 +509,7 @@ public static class PromiseHierarchySeeder
         return new SeedLookup(idMap, inserted, validRows.Count);
     }
 
-    // -----------------------------------------------
-    //  Redistribute all moments evenly across strides
-    //  and mark moments in completed strides as Done.
-    // -----------------------------------------------
-    private static async Task ReassignMomentsAndCompleteAsync(
+    /// <summary>Distribute seeded moments across strides and mark older strides as completed.</summary>    private static async Task ReassignMomentsAndCompleteAsync(
         PromiseModelOnlineContext db, int[] ownerIds, List<int> strideIds, int currentStrideId)
     {
         var moments = await db.Moments.OrderBy(m => m.Id).ToListAsync();
@@ -571,9 +556,7 @@ public static class PromiseHierarchySeeder
         await db.SaveChangesAsync();
     }
 
-    // ======================== Helpers =============================
-
-    private static async Task<User> EnsureTestUserAsync(PromiseModelOnlineContext db, string? email = null, string? name = null)
+    /// <summary>Create a test user if one does not already exist.</summary>    private static async Task<User> EnsureTestUserAsync(PromiseModelOnlineContext db, string? email = null, string? name = null)
     {
         email ??= TestUserEmail;
         name ??= TestUserName;
@@ -601,7 +584,7 @@ public static class PromiseHierarchySeeder
         return user;
     }
 
-    private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
+    /// <summary>Create the default test project if it does not already exist.</summary>    private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
     {
         var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == "Promise Model Online");
         if (existing != null)
@@ -632,7 +615,7 @@ public static class PromiseHierarchySeeder
         return project;
     }
 
-    private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
+    /// <summary>Create a project by name if it does not already exist.</summary>    private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
     {
         var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == name);
         if (existing != null)
@@ -664,7 +647,7 @@ public static class PromiseHierarchySeeder
         return project;
     }
 
-    private static string Slugify(string text)
+    /// <summary>Generate a URL-safe slug from a text string.</summary>    private static string Slugify(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return "project";
 
@@ -676,10 +659,10 @@ public static class PromiseHierarchySeeder
         return string.IsNullOrEmpty(slug) ? "project" : slug;
     }
 
-    private static async Task<int> GetMaxSequenceAsync(IQueryable<int?> query)
+    /// <summary>Get the maximum sequence number from a queryable.</summary>    private static async Task<int> GetMaxSequenceAsync(IQueryable<int?> query)
         => await query.MaxAsync() ?? 0;
 
-    private static string ResolvePmoPmDirectory(string contentRootPath)
+    /// <summary>Locate the pmo_pm directory containing CSV files.</summary>    private static string ResolvePmoPmDirectory(string contentRootPath)
     {
         var direct = Path.Combine(contentRootPath, "pmo_pm");
         if (Directory.Exists(direct)) return direct;
@@ -698,7 +681,7 @@ public static class PromiseHierarchySeeder
         throw new DirectoryNotFoundException("Could not locate pmo_pm directory containing Promise CSV files.");
     }
 
-    private static List<Dictionary<string, string>> ReadCsvRows(string path)
+    /// <summary>Read a CSV file into a list of row dictionaries.</summary>    private static List<Dictionary<string, string>> ReadCsvRows(string path)
     {
         var lines = File.ReadAllLines(path);
         if (lines.Length == 0) return new();
@@ -718,7 +701,7 @@ public static class PromiseHierarchySeeder
         return rows;
     }
 
-    private static List<string> ParseCsvLine(string line)
+    /// <summary>Parse a single CSV line into fields, handling quoted values.</summary>    private static List<string> ParseCsvLine(string line)
     {
         var values = new List<string>();
         var sb = new StringBuilder();
@@ -750,10 +733,10 @@ public static class PromiseHierarchySeeder
         return values;
     }
 
-    private static string GetValue(IReadOnlyDictionary<string, string> row, string key)
+    /// <summary>Get a value from a CSV row dictionary by key.</summary>    private static string GetValue(IReadOnlyDictionary<string, string> row, string key)
         => row.TryGetValue(key, out var value) ? value : string.Empty;
 
-    private static int GetEstimateForMoment(int momentId)
+    /// <summary>Determine the effort estimate for a moment based on its ID modulo pattern.</summary>    private static int GetEstimateForMoment(int momentId)
     {
         return (momentId % 17) switch
         {

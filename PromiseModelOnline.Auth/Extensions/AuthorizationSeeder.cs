@@ -4,8 +4,16 @@ using OpenIddict.Abstractions;
 
 namespace PromiseModelOnline.Auth.Extensions
 {
+    /// <summary>Seeds development users and OpenIddict scopes into the database.</summary>
+    /// <remarks>
+    ///   Creates test users (<c>pmo_test</c>, <c>pmo_test2</c>) with password <c>Hello123*</c>
+    ///   and custom scopes (<c>projects.read</c>, <c>projects.write</c>).
+    ///   Only runs in development environments.
+    /// </remarks>
     public static class AuthorizationSeeder
     {
+        /// <summary>Seed test users and custom scopes.</summary>
+        /// <param name="services">The service provider to resolve managers.</param>
         public static async Task SeedAsync(IServiceProvider services)
         {
             using var scope = services.CreateScope();
@@ -17,6 +25,8 @@ namespace PromiseModelOnline.Auth.Extensions
             await SeedScopesAsync(scopeManager);
         }
 
+        /// <summary>Seed test users for development environments.</summary>
+        /// <param name="userManager">The Identity user manager.</param>
         private static async Task SeedUsersAsync(UserManager<IdentityUser> userManager)
         {
             var users = new[]
@@ -41,6 +51,8 @@ namespace PromiseModelOnline.Auth.Extensions
             }
         }
 
+        /// <summary>Seed custom scopes (projects.read, projects.write) for the API resource.</summary>
+        /// <param name="scopeManager">The OpenIddict scope manager.</param>
         private static async Task SeedScopesAsync(IOpenIddictScopeManager scopeManager)
         {
             if (await scopeManager.FindByNameAsync("projects.read") == null)

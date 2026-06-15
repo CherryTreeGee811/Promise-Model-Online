@@ -13,6 +13,12 @@ import { loadFlowDetail } from '../flows/detail.mjs';
 import { loadMomentDetail } from '../moments/detail.mjs';
 import { fetchMyPermission } from '../utils/permissions.mjs';
 
+/**
+ * Handle legacy project routes (non-slug-based).
+ * @param {*} path - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function handleLegacyProjectRoutes(path, navContentDiv, contentDiv) {
     switch (path) {
         case '/projects':
@@ -30,6 +36,14 @@ export function handleLegacyProjectRoutes(path, navContentDiv, contentDiv) {
     }
 }
 
+/**
+ * Handle project-scoped routes with owner and project slugs.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} subPath - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ */
 export function handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv) {
     const normalizedSub = subPath.replace(/^\/+/, '').replace(/\/+$/, '');
     const segments = normalizedSub ? normalizedSub.split('/') : [];

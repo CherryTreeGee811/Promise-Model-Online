@@ -10,6 +10,8 @@ using PromiseModelOnline.Api.Models;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    /// <summary>Unit tests for <see cref="IterationService"/> covering iteration queries and generic CRUD.</summary>
+    // Requirements: REQ_FUN_023
     public class IterationServiceUnitTests
     {
         private Mock<IIterationRepository> _iterationRepoMock = null!;
@@ -25,7 +27,7 @@ namespace PromiseModelOnline.Api.Tests
         #region GetIterationsByProjectAsync Tests
 
         [Test]
-        public async Task GetIterationsByProjectAsync_ReturnsMatchingIterations()
+        public async Task REQ_FUN_023_GetIterationsByProjectAsync_ReturnsMatchingIterations()
         {
             // Arrange
             var iterations = new List<Iteration>
@@ -47,13 +49,16 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetIterationsByProjectAsync_NoIterations_ReturnsEmpty()
+        public async Task REQ_FUN_023_GetIterationsByProjectAsync_NoIterations_ReturnsEmpty()
         {
+            // Arrange
             _iterationRepoMock.Setup(r => r.GetIterationsByProjectAsync(999))
                               .ReturnsAsync(new List<Iteration>());
 
+            // Act
             var result = await _service.GetIterationsByProjectAsync(999);
 
+            // Assert
             Assert.That(result, Is.Empty);
         }
 
@@ -62,8 +67,9 @@ namespace PromiseModelOnline.Api.Tests
         #region Inherited generic methods (optional but recommended)
 
         [Test]
-        public async Task GetAllAsync_DelegatesToRepository()
+        public async Task REQ_FUN_023_GetAllAsync_DelegatesToRepository()
         {
+            // Arrange
             var iterations = new List<Iteration>
             {
                 new Iteration { Id = 1 },
@@ -71,30 +77,38 @@ namespace PromiseModelOnline.Api.Tests
             };
             _iterationRepoMock.As<IGenericRepository<Iteration>>().Setup(r => r.GetAllAsync()).ReturnsAsync(iterations);
 
+            // Act
             var result = await _service.GetAllAsync();
 
+            // Assert
             Assert.That(result.Count(), Is.EqualTo(2));
         }
 
         [Test]
-        public async Task GetByIdAsync_ReturnsIteration_WhenFound()
+        public async Task REQ_FUN_023_GetByIdAsync_ReturnsIteration_WhenFound()
         {
+            // Arrange
             var iteration = new Iteration { Id = 3, Name = "Iteration 3" };
             _iterationRepoMock.As<IGenericRepository<Iteration>>().Setup(r => r.GetByIdAsync(3)).ReturnsAsync(iteration);
 
+            // Act
             var result = await _service.GetByIdAsync(3);
 
+            // Assert
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Id, Is.EqualTo(3));
         }
 
         [Test]
-        public async Task GetByIdAsync_ReturnsNull_WhenNotFound()
+        public async Task REQ_FUN_023_GetByIdAsync_ReturnsNull_WhenNotFound()
         {
+            // Arrange
             _iterationRepoMock.As<IGenericRepository<Iteration>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Iteration?)null);
 
+            // Act
             var result = await _service.GetByIdAsync(404);
 
+            // Assert
             Assert.That(result, Is.Null);
         }
 

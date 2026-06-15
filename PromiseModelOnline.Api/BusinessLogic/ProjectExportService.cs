@@ -10,6 +10,12 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
 
+/// <summary>Builds a portable export document from a project's full hierarchy.</summary>
+/// <remarks>
+///   Traverses the complete promise model tree (project -> promises -> epics -> journeys -> flows
+///   -> moments -> tasks, plus iterations and strides) and serializes it into a
+///   <see cref="ProjectExportDocument"/> for backup or transfer. Scoped lifetime.
+/// </remarks>
 public sealed class ProjectExportService : IProjectExportService
 {
     private const string ExportSchemaVersion = "1.0";
@@ -23,6 +29,15 @@ public sealed class ProjectExportService : IProjectExportService
     private readonly IIterationRepository _iterationRepository;
     private readonly IStrideRepository _strideRepository;
 
+    /// <summary>Initializes the export service with all hierarchy repositories.</summary>
+    /// <param name="projectRepository">Repository for project data access.</param>
+    /// <param name="epicRepository">Repository for epic data access.</param>
+    /// <param name="journeyRepository">Repository for journey data access.</param>
+    /// <param name="flowRepository">Repository for flow data access.</param>
+    /// <param name="momentRepository">Repository for moment data access.</param>
+    /// <param name="momentTaskRepository">Repository for moment sub-task data access.</param>
+    /// <param name="iterationRepository">Repository for iteration data access.</param>
+    /// <param name="strideRepository">Repository for stride data access.</param>
     public ProjectExportService(
         IProjectRepository projectRepository,
         IEpicRepository epicRepository,
@@ -43,6 +58,10 @@ public sealed class ProjectExportService : IProjectExportService
         _strideRepository = strideRepository;
     }
 
+    /// <summary>Build a complete export document for a project, including all hierarchy entities and metadata.</summary>
+    /// <param name="projectId">The project ID to export.</param>
+    /// <returns>A fully populated <see cref="ProjectExportDocument"/>.</returns>
+    /// <exception cref="KeyNotFoundException">Project not found.</exception>
     public async Task<ProjectExportDocument> BuildExportAsync(int projectId)
     {
         var project = await _projectRepository.GetByIdAsync(projectId)
@@ -79,6 +98,9 @@ public sealed class ProjectExportService : IProjectExportService
         return document;
     }
 
+    /// <summary>Build an export promise node including its child epics.</summary>
+    /// <param name="promise">The promise entity to export.</param>
+    /// <returns>An export promise DTO with nested epics.</returns>
     private async Task<ProjectExportPromise> BuildPromiseAsync(Promise promise)
     {
         var exportPromise = new ProjectExportPromise
@@ -104,6 +126,9 @@ public sealed class ProjectExportService : IProjectExportService
         return exportPromise;
     }
 
+    /// <summary>Build an export epic node including its child journeys.</summary>
+    /// <param name="epic">The epic entity to export.</param>
+    /// <returns>An export epic DTO with nested journeys.</returns>
     private async Task<ProjectExportEpic> BuildEpicAsync(Epic epic)
     {
         var exportEpic = new ProjectExportEpic
@@ -129,6 +154,9 @@ public sealed class ProjectExportService : IProjectExportService
         return exportEpic;
     }
 
+    /// <summary>Build an export journey node including its child flows.</summary>
+    /// <param name="journey">The journey entity to export.</param>
+    /// <returns>An export journey DTO with nested flows.</returns>
     private async Task<ProjectExportJourney> BuildJourneyAsync(Journey journey)
     {
         var exportJourney = new ProjectExportJourney
@@ -154,6 +182,9 @@ public sealed class ProjectExportService : IProjectExportService
         return exportJourney;
     }
 
+    /// <summary>Build an export flow node including its child moments.</summary>
+    /// <param name="flow">The flow entity to export.</param>
+    /// <returns>An export flow DTO with nested moments.</returns>
     private async Task<ProjectExportFlow> BuildFlowAsync(Flow flow)
     {
         var exportFlow = new ProjectExportFlow
@@ -179,6 +210,9 @@ public sealed class ProjectExportService : IProjectExportService
         return exportFlow;
     }
 
+    /// <summary>Build an export moment node including its sub-tasks.</summary>
+    /// <param name="moment">The moment entity to export.</param>
+    /// <returns>An export moment DTO with nested tasks.</returns>
     private async Task<ProjectExportMoment> BuildMomentAsync(Moment moment)
     {
         var tasks = await _momentTaskRepository.GetTasksByMomentAsync(moment.Id);
@@ -205,6 +239,9 @@ public sealed class ProjectExportService : IProjectExportService
         };
     }
 
+    /// <summary>Build an export iteration node including its child strides.</summary>
+    /// <param name="iteration">The iteration entity to export.</param>
+    /// <returns>An export iteration DTO with nested strides.</returns>
     private async Task<ProjectExportIteration> BuildIterationAsync(Iteration iteration)
     {
         var exportIteration = new ProjectExportIteration
@@ -225,6 +262,9 @@ public sealed class ProjectExportService : IProjectExportService
         return exportIteration;
     }
 
+    /// <summary>Build an export stride node including associated moment IDs.</summary>
+    /// <param name="stride">The stride entity to export.</param>
+    /// <returns>An export stride DTO with associated moment IDs.</returns>
     private async Task<ProjectExportStride> BuildStrideAsync(Stride stride)
     {
         var moments = await _momentRepository.GetMomentsByStrideAsync(stride.Id);
@@ -247,6 +287,9 @@ public sealed class ProjectExportService : IProjectExportService
         };
     }
 
+    /// <summary>Map a <see cref="MomentTask"/> to its export DTO.</summary>
+    /// <param name="task">The moment task to map.</param>
+    /// <returns>The mapped export moment task DTO.</returns>
     private static ProjectExportMomentTask MapTask(MomentTask task)
     {
         return new ProjectExportMomentTask
@@ -262,21 +305,28 @@ public sealed class ProjectExportService : IProjectExportService
         };
     }
 
+    /// <summary>Order items by <c>DisplayOrder</c> then <c>Id</c> for consistent export output.</summary>
+    /// <param name="items">The items to order.</param>
+    /// <returns>The ordered items.</returns>
     private static IOrderedEnumerable<T> OrderByDisplayOrder<T>(IEnumerable<T> items) where T : class
     {
         return items.OrderBy(GetDisplayOrder).ThenBy(GetId);
     }
 
+    /// <summary>Order iterations by ID then name.</summary>
     private static IOrderedEnumerable<Iteration> OrderByIteration(IEnumerable<Iteration> items)
     {
         return items.OrderBy(iteration => iteration.Id).ThenBy(iteration => iteration.Name);
     }
 
+    /// <summary>Order strides by start date then ID.</summary>
     private static IOrderedEnumerable<Stride> OrderByStride(IEnumerable<Stride> items)
     {
+        /// <param name="item">The item to inspect.</param>
         return items.OrderBy(stride => stride.StartDate).ThenBy(stride => stride.Id);
     }
 
+    /// <summary>Get the <c>DisplayOrder</c> property value from an item via reflection.</summary>
     private static int GetDisplayOrder<T>(T item) where T : class
     {
         var property = item.GetType().GetProperty("DisplayOrder");
@@ -285,9 +335,11 @@ public sealed class ProjectExportService : IProjectExportService
             return value;
         }
 
+        /// <param name="item">The item to inspect.</param>
         return 0;
     }
 
+    /// <summary>Get the <c>Id</c> property value from an item via reflection.</summary>
     private static int GetId<T>(T item) where T : class
     {
         var property = item.GetType().GetProperty("Id");

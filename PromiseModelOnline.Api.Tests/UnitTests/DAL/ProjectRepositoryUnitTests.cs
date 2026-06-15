@@ -11,6 +11,8 @@ using PromiseModelOnline.Api.Tests.Infrastructure;
 namespace PromiseModelOnline.Api.Tests
 {
     [TestFixture]
+    /// <summary>Unit tests for <see cref="ProjectRepository"/> covering project queries.</summary>
+    // Requirements: REQ_FUN_003
     public class ProjectRepositoryUnitTests : RepositoryTestBase
     {
         private ProjectRepository _repo = null!;
@@ -22,8 +24,9 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetProjectsOwnedByUserAsync_ReturnsMatchingProjects()
+        public async Task REQ_FUN_003_GetProjectsOwnedByUserAsync_ReturnsMatchingProjects()
         {
+            // Arrange
             var projects = new List<Project>
             {
                 new Project { Id = 1, Name = "Alpha", Slug = "alpha", OwnerId = 100 },
@@ -33,59 +36,73 @@ namespace PromiseModelOnline.Api.Tests
             Context.Projects.AddRange(projects);
             await Context.SaveChangesAsync();
 
+            // Act
             var result = await _repo.GetProjectsOwnedByUserAsync(100);
             var list = result.ToList();
 
+            // Assert
             Assert.That(list.Count, Is.EqualTo(2));
             Assert.That(list.All(p => p.OwnerId == 100), Is.True);
             Assert.That(list.Select(p => p.Id), Is.EquivalentTo(new[] { 1, 3 }));
         }
 
         [Test]
-        public async Task GetProjectsOwnedByUserAsync_NoMatch_ReturnsEmpty()
+        public async Task REQ_FUN_003_GetProjectsOwnedByUserAsync_NoMatch_ReturnsEmpty()
         {
+            // Arrange
             Context.Projects.Add(new Project { Id = 1, Slug = "test", OwnerId = 99 });
             await Context.SaveChangesAsync();
 
+            // Act
             var result = await _repo.GetProjectsOwnedByUserAsync(100);
+            // Assert
             Assert.That(result, Is.Empty);
         }
 
         [Test]
-        public async Task GetProjectsOwnedByUserAsync_EmptyDatabase_ReturnsEmpty()
+        public async Task REQ_FUN_003_GetProjectsOwnedByUserAsync_EmptyDatabase_ReturnsEmpty()
         {
+            // Act
             var result = await _repo.GetProjectsOwnedByUserAsync(1);
+            // Assert
             Assert.That(result, Is.Empty);
         }
 
         // Inherited methods (optional but good for confidence)
         [Test]
-        public async Task GetByIdAsync_ReturnsEntity()
+        public async Task REQ_FUN_003_GetByIdAsync_ReturnsEntity()
         {
+            // Arrange
             var project = new Project { Id = 5, Name = "Test Project", Slug = "test-project", OwnerId = 1 };
             Context.Projects.Add(project);
             await Context.SaveChangesAsync();
 
+            // Act
             var result = await _repo.GetByIdAsync(5);
+            // Assert
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Name, Is.EqualTo("Test Project"));
         }
 
         [Test]
-        public async Task AddAsync_PersistsEntity()
+        public async Task REQ_FUN_003_AddAsync_PersistsEntity()
         {
+            // Arrange
             var project = new Project { Name = "New Project", Slug = "new-project", OwnerId = 42 };
+            // Act
             await _repo.AddAsync(project);
             await Context.SaveChangesAsync();
             
+            // Assert
             var saved = Context.Projects.FirstOrDefault(p => p.Name == "New Project");
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.OwnerId, Is.EqualTo(42));
         }
 
         [Test]
-        public async Task DeleteByIdAsync_WithChildPromisesAndProjectChildren_DeletesProjectTree()
+        public async Task REQ_FUN_003_DeleteByIdAsync_WithChildPromisesAndProjectChildren_DeletesProjectTree()
         {
+            // Arrange
             var project = new Project { Id = 1, Name = "Project A", Slug = "project-a", OwnerId = 10 };
             var promise = new Promise { Id = 2, Statement = "Promise", ProjectId = 1, Project = project };
             var epic = new Epic { Id = 3, Statement = "Epic", ProductPromiseId = 2, ProductPromise = promise };
@@ -111,8 +128,10 @@ namespace PromiseModelOnline.Api.Tests
             Context.Set<CommentMention>().Add(mention);
             await Context.SaveChangesAsync();
 
+            // Act
             var deleted = await _repo.DeleteByIdAsync(1);
 
+            // Assert
             Assert.That(deleted, Is.True);
             Assert.That(Context.Projects.Any(), Is.False);
             Assert.That(Context.Promises.Any(), Is.False);

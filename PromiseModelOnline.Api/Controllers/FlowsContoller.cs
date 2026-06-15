@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
-using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
@@ -14,12 +12,18 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for flow CRUD with journey-scoped queries and description updates.</summary>
+    /// <remarks>
+    ///   Route is disabled via <c>__disabled__</c> prefix; use <c>ProjectFlowsController</c> instead.
+    ///   Provides an override for <c>GetAll</c> that supports filtering by <c>journeyId</c> query parameter.
+    /// </remarks>
     [Route("__disabled__/{controller}")]
     public class FlowsController : GenericController<Flow, FlowDTO>
     {
         private readonly IFlowService _flowService;
         private readonly IPromiseModelOnlineContext _context;
 
+        /// <summary>Initializes the controller with required services.</summary>
         public FlowsController(
             IFlowService service,
             IGenericMapper<Flow, FlowDTO> mapper,
@@ -30,6 +34,9 @@ namespace PromiseModelOnline.Api.Controllers
             _context = context;
         }
 
+        /// <summary>Create a flow from a DTO with auto-generated sequence number.</summary>
+        /// <param name="request">The flow creation data.</param>
+        /// <response code="201">Returns the created flow with a Location header.</response>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
         public async Task<ActionResult<FlowDTO>> CreateFromDto([FromBody] CreateFlowRequestDTO request)
@@ -53,6 +60,7 @@ namespace PromiseModelOnline.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = flow.Id }, _mapper.Map(flow, _service));
         }
 
+        /// <summary>Retrieve all flows, optionally filtered by journey ID.</summary>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<FlowDTO>>> GetAll()
@@ -72,6 +80,7 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>Update a flow's description.</summary>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}/description")]
         public async Task<ActionResult<FlowDTO>> UpdateDescription(

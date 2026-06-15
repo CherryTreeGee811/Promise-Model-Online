@@ -2,12 +2,23 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace PromiseModelOnline.BFF;
 
+/// <summary>Maps BFF-specific endpoints: health check, login, and logout.</summary>
+/// <remarks>
+///   The login endpoint initiates the OIDC challenge and handles auth server
+///   unavailability gracefully. The logout endpoint signs out both the cookie
+///   and the OIDC session.
+/// </remarks>
 public static class EndpointMapping
 {
+    /// <summary>Register the BFF endpoints on the application.</summary>
+    /// <param name="app">The web application to map endpoints onto.</param>
     public static void MapBffEndpoints(this WebApplication app)
     {
+        // Health check endpoint used by load balancers and orchestrators.
         app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
+        // Login endpoint: initiates OIDC challenge with return URL validation.
+        // Returns 503 if the auth server is unavailable.
         app.MapGet("/login", async (HttpContext ctx) =>
         {
             var returnUrl = ctx.Request.Query["returnUrl"].ToString();
@@ -38,6 +49,7 @@ public static class EndpointMapping
             }
         });
 
+        // Logout endpoint: signs out the BFF cookie and the OIDC session.
         app.MapGet("/logout", () =>
         {
             return Results.SignOut(

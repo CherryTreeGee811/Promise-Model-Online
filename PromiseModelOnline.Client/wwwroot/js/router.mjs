@@ -9,14 +9,18 @@ import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
 import { initDeleteAccountPage } from './account/delete-account.mjs';
 
 let _projectRoutes;
+
+/** Lazy-load the project routes module. */
 function loadProjectRoutes() {
   return _projectRoutes || (_projectRoutes = import('./projects/router.mjs'));
 }
 
+// Register the service worker for offline support.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(() => {});
 }
 
+/** Bootstrap the SPA on DOM content loaded. */
 document.addEventListener('DOMContentLoaded', async () => {
     const contentDiv = document.getElementById('content');
     const navContentDiv = document.getElementById('main-menu');
@@ -25,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initNavEventDelegation(navContentDiv, contentDiv);
 
+    // Listen for client-side navigation clicks and back button actions.
     document.addEventListener('click', e => {
       const navLink = e.target.closest('a[data-nav]');
       if (navLink) {
@@ -48,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         navigate('/', navContentDiv, contentDiv);
     });
 
+    // Handle browser back/forward navigation.
     window.addEventListener('popstate', () => {
         routeHandler(navContentDiv, contentDiv);
     });
@@ -55,6 +61,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     routeHandler(navContentDiv, contentDiv);
 });
 
+/**
+ * Navigate to a new path, updating the URL and rendering the page.
+ * @param {string} path - The target URL path.
+ * @param {HTMLElement} navContentDiv - The navigation container element.
+ * @param {HTMLElement} contentDiv - The main content container element.
+ */
 export function navigate(path, navContentDiv, contentDiv) {
     window.history.pushState({}, '', path);
     return routeHandler(navContentDiv, contentDiv);
@@ -69,11 +81,16 @@ const PAGE_TITLES = {
   '/moments/my-tasks': 'My Tasks',
 };
 
+/** Focus the main content area for accessibility announcements. */
 function announceAndFocus() {
   const mainEl = document.getElementById('main-content');
   if (mainEl) { requestAnimationFrame(() => mainEl.focus()); }
 }
 
+/**
+ * Set the browser page title based on the current route.
+ * @param {string} path - The current URL path.
+ */
 function setPageTitle(path) {
   const titleEl = document.getElementById('page-title');
   if (!titleEl) return;
@@ -86,6 +103,12 @@ function setPageTitle(path) {
   titleEl.textContent = `${title} - Promise Model Online`;
 }
 
+/**
+ * Fetch an HTML template and inject it into the content area.
+ * @param {string} templateName - The template path relative to /templates/.
+ * @param {HTMLElement} contentDiv - The container to render into.
+ * @returns {Promise<void>}
+ */
 export function loadTemplate(templateName, contentDiv) {
     return fetch(`/templates/${templateName}`)
         .then(response => {
@@ -99,6 +122,17 @@ export function loadTemplate(templateName, contentDiv) {
         });
 }
 
+/**
+ * Handle a detail route with owner/project path pattern.
+ * @param {string} path - The full URL path.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} routePrefix - The route prefix to match (e.g., "epics").
+ * @param {string} templateName - The template to load on match.
+ * @param {Function} loadFn - The module function to initialize the page.
+ * @param {HTMLElement} navContentDiv - The navigation container.
+ * @param {string} label - Human-readable label for error messages.
+ * @returns {boolean} True if the route was handled.
+ */
 export function handleDetailRoute(path, contentDiv, routePrefix, templateName, loadFn, navContentDiv, label) {
   const segments = path.split('/').filter(Boolean);
   if (segments.length === 2 && segments[0] === routePrefix) {
@@ -110,10 +144,20 @@ export function handleDetailRoute(path, contentDiv, routePrefix, templateName, l
   return false;
 }
 
+/**
+ * Show the 404 not-found page.
+ * @param {HTMLElement} contentDiv - The main content container.
+ */
 export function showNotFound(contentDiv) {
   loadTemplate('404.html', contentDiv);
 }
 
+/**
+ * Return an error handler function that shows a template error page.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} label - Human-readable label for error messages.
+ * @returns {Function} The error handler.
+ */
 export function loadTemplateWithError(contentDiv, label) {
   return () => {
     return fetch('/templates/error.html')
@@ -135,9 +179,15 @@ export function loadTemplateWithError(contentDiv, label) {
   };
 }
 
+/**
+ * Main route handler matching URL paths to pages.
+ * @param {HTMLElement} navContentDiv - The navigation container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ */
 export function routeHandler(navContentDiv, contentDiv) {
     let path = window.location.pathname;
 
+    // Legacy auth paths — let the server handle them.
     if (path === '/login' || path === '/logout' || path === '/register') {
         window.location.href = path;
         return;
@@ -188,6 +238,7 @@ export function routeHandler(navContentDiv, contentDiv) {
                 .then(() => initDeleteAccountPage());
             break;
         default: {
+            // Attempt to match owner/project slug patterns.
             const projectPattern = path.match(/^\/([^\/]+)\/([^\/]+)(\/.*)?$/);
             if (projectPattern) {
                 const owner = projectPattern[1];

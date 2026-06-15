@@ -20,6 +20,8 @@ using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.Tests
 {
+    /// <summary>Unit tests for <see cref="MomentsController"/> covering moment CRUD and operations.</summary>
+    // Requirements: REQ_FUN_008 REQ_FUN_027
     public class MomentsControllerUnitTests
     {
         private Mock<IMomentService> _mockMomentService = null!;
@@ -60,7 +62,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithoutQuery_ReturnsAllMoments()
+        public async Task REQ_FUN_008_GetAll_WithoutQuery_ReturnsAllMoments()
         {
             // Arrange
             var moments = new List<Moment>
@@ -107,7 +109,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetAll_WithStrideIdParameter_ReturnsFilteredByStride()
+        public async Task REQ_FUN_008_GetAll_WithStrideIdParameter_ReturnsFilteredByStride()
         {
             // Arrange
             int strideId = 5;
@@ -138,7 +140,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetById_WithValidId_ReturnsOkWithMomentDTO()
+        public async Task REQ_FUN_008_GetById_WithValidId_ReturnsOkWithMomentDTO()
         {
             // Arrange
             int momentId = 2;
@@ -161,7 +163,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task GetById_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_008_GetById_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int momentId = 999;
@@ -176,7 +178,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Create_WithValidMoment_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_008_Create_WithValidMoment_ReturnsCreatedAtAction()
         {
             // Arrange
             var moment = new Moment { Id = 33, Statement = "New" };
@@ -199,7 +201,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
+        public async Task REQ_FUN_008_CreateFromDto_WithValidRequest_ReturnsCreatedAtAction()
         {
             // Arrange
             _testContext.Projects.Add(new Project { Id = 1, Name = "Test", OwnerId = 1, CreatedAt = DateTime.UtcNow });
@@ -229,14 +231,14 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task CreateFromDto_WithNullRequest_ReturnsBadRequest()
+        public async Task REQ_FUN_008_CreateFromDto_WithNullRequest_ReturnsBadRequest()
         {
             var result = await _controller.CreateFromDto(null!);
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
         [Test]
-        public async Task Update_WithValidIdAndMoment_ReturnsNoContent()
+        public async Task REQ_FUN_008_Update_WithValidIdAndMoment_ReturnsNoContent()
         {
             // Arrange
             int momentId = 44;
@@ -253,7 +255,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Update_WithMismatchedId_ReturnsBadRequest()
+        public async Task REQ_FUN_008_Update_WithMismatchedId_ReturnsBadRequest()
         {
             // Arrange
             int momentId = 1;
@@ -268,7 +270,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentType_UserCanEdit_UpdatesTypeAndReturnsOk()
+        public async Task REQ_FUN_008_UpdateMomentType_UserCanEdit_UpdatesTypeAndReturnsOk()
         {
             // Arrange
             int momentId = 91;
@@ -298,7 +300,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentType_UserCannotEdit_ReturnsForbid()
+        public async Task REQ_FUN_008_UpdateMomentType_UserCannotEdit_ReturnsForbid()
         {
             // Arrange
             int momentId = 92;
@@ -320,7 +322,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentType_NullRequest_ReturnsBadRequest()
+        public async Task REQ_FUN_008_UpdateMomentType_NullRequest_ReturnsBadRequest()
         {
             int momentId = 93;
             var user = new User { Id = 23, Email = "nullreq@test.com", Name = "Null Req" };
@@ -336,7 +338,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithValidId_ReturnsNoContent()
+        public async Task REQ_FUN_008_Delete_WithValidId_ReturnsNoContent()
         {
             // Arrange
             int momentId = 77;
@@ -351,7 +353,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task Delete_WithNonexistentId_ReturnsNotFound()
+        public async Task REQ_FUN_008_Delete_WithNonexistentId_ReturnsNotFound()
         {
             // Arrange
             int momentId = 9999;
@@ -366,7 +368,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentOwner_UserCannotEdit_ReturnsForbid()
+        public async Task REQ_FUN_008_UpdateMomentOwner_UserCannotEdit_ReturnsForbid()
         {
             // Arrange
             int momentId = 7;
@@ -386,7 +388,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentOwner_Success_ReturnsOkWithDto()
+        public async Task REQ_FUN_008_UpdateMomentOwner_Success_ReturnsOkWithDto()
         {
             // Arrange
             int momentId = 3;
@@ -417,7 +419,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentOwner_WhenServiceThrowsKeyNotFound_ReturnsNotFound()
+        public async Task REQ_FUN_008_UpdateMomentOwner_WhenServiceThrowsKeyNotFound_ReturnsNotFound()
         {
             // Arrange
             int momentId = 55;
@@ -438,7 +440,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task UpdateMomentOwner_WithNullUserId_UnassignsExistingOwnerAndReturnsOk()
+        public async Task REQ_FUN_008_UpdateMomentOwner_WithNullUserId_UnassignsExistingOwnerAndReturnsOk()
         {
             // Arrange
             int momentId = 88;

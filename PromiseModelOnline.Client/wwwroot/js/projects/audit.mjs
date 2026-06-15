@@ -1,6 +1,11 @@
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 
+/**
+ * Render the audit events table with optional entity column.
+ * @param {*} items - TODO
+ * @param {*} showEntity - TODO
+ */
 export function renderAuditTable(items, { showEntity = false } = {}) {
     if (!items || items.length === 0) {
         return renderEmptyStateSection({
@@ -46,6 +51,10 @@ export function renderAuditTable(items, { showEntity = false } = {}) {
     `;
 }
 
+/**
+ * Render a loading state for the audit section.
+ * @param {*} message - TODO
+ */
 export function renderAuditLoading(message = 'Loading activity') {
     return renderLoadingSpinner(message);
 }
@@ -69,6 +78,10 @@ export function renderAuditDetailsModal() {
     `;
 }
 
+/**
+ * Format an ISO timestamp for display.
+ * @param {*} value - TODO
+ */
 export function formatTimestamp(value) {
     if (!value) return 'Unknown';
 
@@ -86,6 +99,10 @@ export function formatTimestamp(value) {
     });
 }
 
+/**
+ * Format a timestamp as a relative time string.
+ * @param {*} value - TODO
+ */
 export function formatRelativeTime(value) {
     if (!value) return 'Unknown';
 
@@ -120,10 +137,18 @@ export function formatRelativeTime(value) {
     return rtf.format(0, 'second');
 }
 
+/**
+ * Generate a title string for an audit event detail modal.
+ * @param {*} item - TODO
+ */
 export function formatAuditDetailsTitle(item) {
     return `${formatEventType(item)} ${formatEntity(item)}`;
 }
 
+/**
+ * Generate the HTML body for an audit event detail modal.
+ * @param {*} item - TODO
+ */
 export function formatAuditDetailsHtml(item) {
     return `
         <dl class="row mb-0">
@@ -143,6 +168,10 @@ export function formatAuditDetailsHtml(item) {
     `;
 }
 
+/**
+ * Extract the before/after payload object from an audit event.
+ * @param {*} item - TODO
+ */
 export function getAuditDetailsPayload(item) {
     return {
         title: formatAuditDetailsTitle(item),

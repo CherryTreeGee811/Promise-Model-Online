@@ -8,23 +8,31 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Filters;
 
+/// <summary>Action filter that logs audit information for mutating HTTP requests.</summary>
+/// <remarks>
+///   Logs controller, action, route values, actor identity (JWT sub, email), HTTP method, path,
+///   status code, and UTC timestamp for POST, PUT, PATCH, and DELETE requests that return
+///   successful (2xx) status codes. Non-mutating requests pass through without logging.
+/// </remarks>
 public sealed class AuditLoggingActionFilter : IAsyncActionFilter
 {
     private static readonly HashSet<string> MutatingMethods = new(StringComparer.OrdinalIgnoreCase)
     {
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE"
+        "POST", "PUT", "PATCH", "DELETE"
     };
 
     private readonly ILogger<AuditLoggingActionFilter> _logger;
 
+    /// <summary>Initializes the filter with a logger.</summary>
+    /// <param name="logger">The logger for audit events.</param>
     public AuditLoggingActionFilter(ILogger<AuditLoggingActionFilter> logger)
     {
+        /// <param name="context">The action executing context.</param>
+        /// <param name="next">The action execution delegate.</param>
         _logger = logger;
     }
 
+    /// <summary>Execute the filter, logging audit info for successful mutating requests.</summary>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var request = context.HttpContext.Request;
@@ -43,11 +51,9 @@ public sealed class AuditLoggingActionFilter : IAsyncActionFilter
               ?? user.FindFirst("email")?.Value;
 
         var controller = context.RouteData.Values.TryGetValue("controller", out var controllerObj)
-            ? controllerObj?.ToString()
-            : null;
+            ? controllerObj?.ToString() : null;
         var action = context.RouteData.Values.TryGetValue("action", out var actionObj)
-            ? actionObj?.ToString()
-            : null;
+            ? actionObj?.ToString() : null;
 
         var routeValues = context.RouteData.Values
             .Where(kvp => !string.Equals(kvp.Key, "controller", StringComparison.OrdinalIgnoreCase)
@@ -65,14 +71,8 @@ public sealed class AuditLoggingActionFilter : IAsyncActionFilter
 
         _logger.LogInformation(
             "Audit: {Method} {Path} {StatusCode} Controller={Controller} Action={Action} RouteValues={RouteValues} JwtSub={JwtSub} Email={Email} Utc={UtcTimestamp}",
-            request.Method,
-            request.Path.Value,
-            statusCode,
-            controller,
-            action,
-            routeValues,
-            jwtSub,
-            email,
-            utcTimestamp);
+            request.Method, request.Path.Value, statusCode,
+            controller, action, routeValues,
+            jwtSub, email, utcTimestamp);
     }
 }

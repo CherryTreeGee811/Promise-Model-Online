@@ -864,6 +864,15 @@ async function loadAvailableStrides(owner, project) {
         });
 }
 
+/**
+ * Load the project hierarchy graph visualization page.
+ * @param {*} owner - TODO
+ * @param {*} project - TODO
+ * @param {*} navContentDiv - TODO
+ * @param {*} contentDiv - TODO
+ * @param {*} permission - TODO
+ * @param {*} highlightNodeId - TODO
+ */
 export async function loadGraphPage(owner, project, contentDiv, permission) {
     const errorEl = document.getElementById('error-text');
     const successEl = document.getElementById('success-text');

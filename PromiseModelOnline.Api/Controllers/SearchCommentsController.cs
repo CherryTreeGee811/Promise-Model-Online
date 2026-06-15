@@ -8,6 +8,13 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+        /// <param name="commentRepository">The comment repository.</param>
+    /// <summary>REST controller for entity map search used in the comment linking UI.</summary>
+    /// <remarks>
+    ///   Provides a flattened entity hierarchy map (promises -> epics -> journeys -> flows -> moments)
+    ///   for a given parent entity, used for entity linking in comments.
+    ///   Requires <c>projects.read</c> policy.
+    /// </remarks>
     [ApiController]
     [Route("api/comments")]
     public class SearchCommentsController : ControllerBase
@@ -19,6 +26,9 @@ namespace PromiseModelOnline.Api.Controllers
             _commentRepository = commentRepository;
         }
 
+        /// <summary>Get the full entity map for a given parent entity.</summary>
+        /// <param name="parentType">Entity type (<c>"promise"</c>, <c>"epic"</c>, <c>"journey"</c>, <c>"flow"</c>, <c>"moment"</c>).</param>
+        /// <param name="parentId">The parent entity ID.</param>
         [Authorize(Policy = "projects.read")]
         [HttpGet("entity-map")]
         public async Task<ActionResult<IEnumerable<object>>> GetEntityMap(

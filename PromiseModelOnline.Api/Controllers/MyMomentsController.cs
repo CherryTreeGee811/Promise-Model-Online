@@ -13,6 +13,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>REST controller for retrieving moments assigned to the current user.</summary>
+    /// <remarks>
+    ///   Resolves the current user from JWT claims and returns their assigned moments with
+    ///   project context (owner slug and project slug) for URL construction.
+    ///   Requires <c>projects.read</c> policy.
+    /// </remarks>
     [ApiController]
     [Route("api/moments")]
     public class MyMomentsController : ControllerBase
@@ -34,13 +40,13 @@ namespace PromiseModelOnline.Api.Controllers
             _context = context;
         }
 
+        /// <summary>Return moments assigned to the current user, with project slug context.</summary>
         [Authorize(Policy = "projects.read")]
         [HttpGet("assigned-to-me")]
         public async Task<ActionResult<IEnumerable<MomentDTO>>> GetMyAssignedMoments()
         {
             var user = await GetCurrentUserAsync();
-            if (user is null)
-                return Unauthorized();
+            if (user is null) return Unauthorized();
 
             var moments = await _momentService.GetMomentsByOwnerIdAsync(user.Id);
             var result = new List<MomentDTO>();
@@ -55,10 +61,14 @@ namespace PromiseModelOnline.Api.Controllers
                 }
                 result.Add(dto);
             }
+        /// <param name="flowId">The flow ID to resolve.</param>
 
             return Ok(result);
         }
 
+        /// <summary>Resolve owner and project slugs from a flow ID for URL construction.</summary>
+        /// <param name="flowId">The flow ID to resolve.</param>
+        /// <returns>A tuple of owner slug and project slug, or <c>null</c> if not found.</returns>
         private async Task<(string OwnerSlug, string ProjectSlug)?> ResolveProjectContextAsync(int flowId)
         {
             var result = await _context.Flows
@@ -70,18 +80,16 @@ namespace PromiseModelOnline.Api.Controllers
                 })
                 .FirstOrDefaultAsync();
 
-            if (result is null)
-                return null;
-
+            if (result is null) return null;
             return (result.OwnerSlug, result.ProjectSlug);
         }
 
+        /// <summary>Resolve the current user from JWT claims.</summary>
         private async Task<User?> GetCurrentUserAsync()
         {
-            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
                      ?? User.FindFirst("email")?.Value;
             if (string.IsNullOrEmpty(email)) return null;
-
             var username = User.FindFirst("nameid")?.Value;
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }
