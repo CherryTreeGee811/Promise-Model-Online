@@ -33,8 +33,7 @@ public static partial class MockApiHandler
                 && !path.StartsWith("/login") && !path.StartsWith("/logout") && !path.StartsWith("/register")
                 && !path.StartsWith("/signin-oidc") && !path.StartsWith("/signout-callback-oidc")
                 && !path.StartsWith("/connect/") && !path.StartsWith("/.well-known/")
-                && !path.StartsWith("/account/register") && !path.StartsWith("/account/login")
-                && !path.StartsWith("/change-password"))
+                && !path.StartsWith("/account/") && !path.StartsWith("/change-password"))
             {
                 // SPA routes — return SPA shell so the client-side router handles them
                 response = Html(200, s_html);
@@ -42,12 +41,15 @@ public static partial class MockApiHandler
 
             if (response != null)
             {
-                await route.FulfillAsync(new RouteFulfillOptions
+                var opts = new RouteFulfillOptions
                 {
-                    Status = response.Value.Status,
-                    ContentType = response.Value.ContentType,
-                    Body = response.Value.Body
-                });
+                    Status = response.Status,
+                    ContentType = response.ContentType,
+                    Body = response.Body
+                };
+                if (response.Headers.Count > 0)
+                    opts.Headers = response.Headers;
+                await route.FulfillAsync(opts);
                 return;
             }
         }
@@ -56,7 +58,13 @@ public static partial class MockApiHandler
         await route.ContinueAsync();
     }
 
-    private static (int Status, string ContentType, string Body)? GetMockResponse(
+    private sealed record MockResponse(int Status, string ContentType, string Body, Dictionary<string, string> Headers);
+
+    private static MockResponse Json(int status, string body) => new(status, "application/json", body, []);
+    private static MockResponse Html(int status, string body) => new(status, "text/html", body, []);
+    private static MockResponse Redirect(string location) => new(302, "text/plain", "", new() { ["Location"] = location });
+
+    private static MockResponse? GetMockResponse(
         string method, string path,
         System.Collections.Specialized.NameValueCollection query,
         bool isOwner, bool isNonOwner, bool ownerSession,
@@ -66,9 +74,21 @@ public static partial class MockApiHandler
         {
             ("GET", "/health") => Json(200, """{"status":"healthy"}"""),
 
-            ("GET", "/login") or ("GET", "/register") or ("GET", "/account/register") => Html(200, s_html),
+            ("GET", "/login") or ("GET", "/register") => Html(200, s_html),
             ("GET", "/change-password") => Html(200, s_html),
             ("GET", "/signin-oidc") or ("GET", "/signout-callback-oidc") => Html(200, s_html),
+
+            // OIDC Discovery
+            ("GET", "/.well-known/openid-configuration") => Json(200, """{"issuer":"https://localhost:9000","authorization_endpoint":"https://localhost:9000/connect/authorize","token_endpoint":"https://localhost:9000/connect/token","end_session_endpoint":"https://localhost:9000/connect/logout","introspection_endpoint":"https://localhost:9000/connect/introspect","revocation_endpoint":"https://localhost:9000/connect/revoke","jwks_uri":"https://localhost:9000/.well-known/jwks","scopes_supported":["openid","profile","email","offline_access","projects.read","projects.write"],"response_types_supported":["code"],"response_modes_supported":["query","fragment","form_post"],"grant_types_supported":["authorization_code","refresh_token"],"subject_types_supported":["public"],"id_token_signing_alg_values_supported":["RS256"],"token_endpoint_auth_methods_supported":["none"],"claims_supported":["sub","name","email","email_verified"],"code_challenge_methods_supported":["S256"],"require_pkce":true}"""),
+
+            // OIDC Authorization endpoint — redirects to login page if unauthenticated
+            ("GET", "/connect/authorize") => Redirect("/account/login?returnUrl=%2F"),
+
+            // OIDC End Session endpoint
+            ("GET", "/connect/logout") => Redirect("/"),
+
+            // Auth server pages (served by the Auth service in production)
+            ("GET", "/account/login") or ("GET", "/account/register") => Html(200, s_html),
 
             ("GET", "/api/users/me") when isOwner => Json(200, """{"id":"owner-user-id","name":"Test Owner","email":"owner@example.com","userId":1}"""),
             ("GET", "/api/users/me") when isNonOwner => Json(200, """{"id":"nonowner-user-id","name":"Test NonOwner","email":"nonowner@example.com","userId":2}"""),
@@ -151,12 +171,12 @@ public static partial class MockApiHandler
         };
     }
 
-    private static (int Status, string ContentType, string Body) HandleChangePassword(IRequest request)
+    private static MockResponse HandleChangePassword(IRequest request)
     {
         var body = request.PostData ?? "";
         if (body.Contains("\"currentPassword\":\"wrong\""))
-            return (400, "application/json", """{"message":"Current password is incorrect."}""");
-        return (204, "application/json", "");
+            return Json(400, """{"message":"Current password is incorrect."}""");
+        return Json(204, "");
     }
 
     [GeneratedRegex(@"^/api/projects/pmo_test/seeded-project/moments/\d+/status$")]
@@ -183,7 +203,7 @@ public static partial class MockApiHandler
     [GeneratedRegex(@"^/api/projects/[^/]+/[^/]+/permissions/\d+$")]
     private static partial Regex ProjectPermissionRegex();
 
-    private static (int Status, string ContentType, string Body)? GetRegexMockResponse(string method, string path, bool isOwner)
+    private static MockResponse? GetRegexMockResponse(string method, string path, bool isOwner)
     {
         // Burndown endpoint: /api/projects/{owner}/{project}/iterations/{id}/burndown
         var burndownMatch = Regex.Match(path, @"^/api/projects/[^/]+/[^/]+/iterations/\d+/burndown$");
@@ -294,11 +314,7 @@ public static partial class MockApiHandler
         return null;
     }
 
-    private static (int Status, string ContentType, string Body) Json(int status, string body)
-        => (status, "application/json", body);
 
-    private static (int Status, string ContentType, string Body) Html(int status, string body)
-        => (status, "text/html", body);
 
     private static readonly string s_html = """
 <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/site.css"></head><body><div id="content"></div><div id="main-menu"></div><script src="/js/router.mjs" type="module"></script></body></html>
