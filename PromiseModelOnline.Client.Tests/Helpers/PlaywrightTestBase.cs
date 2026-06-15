@@ -54,7 +54,7 @@ public abstract class PlaywrightTestBase
                 TestContext.Progress.WriteLine($"[PAGE ERROR] {error}");
             };
 
-            await Page.RouteAsync("**/*", MockApiHandler.HandleRouteAsync);
+            await Page.RouteAsync(url => !url.StartsWith("https://cdn.jsdelivr.net"), MockApiHandler.HandleRouteAsync);
 
             await Page.GotoAsync(BaseUrl + "/");
             _initialized = true;
@@ -68,7 +68,19 @@ public abstract class PlaywrightTestBase
     [SetUp]
     public async Task Setup()
     {
-        await Page.GotoAsync(BaseUrl + "/");
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 15000 });
+                break;
+            }
+            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation"))
+            {
+                if (attempt == 2) throw;
+                await Task.Delay(1000);
+            }
+        }
         await Context.ClearCookiesAsync();
         await Page.SetViewportSizeAsync(1280, 720);
     }
@@ -97,13 +109,34 @@ public abstract class PlaywrightTestBase
 
     protected async Task SetSessionCookie(string sessionValue = "owner-session")
     {
-        await Page.EvaluateAsync($"document.cookie = '__Host-pmo.session={sessionValue}; path=/; secure'");
+        try
+        {
+            await Page.EvaluateAsync($"document.cookie = '__Host-pmo.session={sessionValue}; path=/; secure'");
+        }
+        catch
+        {
+            await Context.AddCookiesAsync([
+                new Cookie { Name = "__Host-pmo.session", Value = sessionValue, Url = "https://localhost:9000/", Secure = true }
+            ]);
+        }
     }
 
     protected async Task NavigateAsUser(string path, string sessionValue = "owner-session")
     {
         await SetSessionCookie(sessionValue);
-        await Page.GotoAsync(BaseUrl + path);
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                await Page.GotoAsync(BaseUrl + path, new PageGotoOptions { Timeout = 15000 });
+                return;
+            }
+            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation"))
+            {
+                if (attempt == 2) throw;
+                await Task.Delay(1000);
+            }
+        }
     }
 
     /*

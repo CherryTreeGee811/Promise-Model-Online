@@ -15,6 +15,7 @@ public static partial class MockApiHandler
         var isNonOwner = cookie.Contains("__Host-pmo.session=nonowner-session");
         var ownerSession = isOwner || isNonOwner || cookie.Contains("__Host-pmo.session=");
 
+
         var uri = new Uri(url);
         var path = uri.AbsolutePath;
         var query = HttpUtility.ParseQueryString(uri.Query);
@@ -24,6 +25,20 @@ public static partial class MockApiHandler
             var response = GetMockResponse(method, path, query, isOwner, isNonOwner, ownerSession, request);
             if (response == null)
                 response = GetRegexMockResponse(method, path, isOwner);
+
+            if (response == null && method == "GET" && uri.Host == "localhost"
+                && !path.StartsWith("/api/") && !path.StartsWith("/hubs/")
+                && !path.StartsWith("/templates/") && !path.StartsWith("/images/") && !path.StartsWith("/css/") && !path.StartsWith("/js/")
+                && !path.StartsWith("/umami/") && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml"
+                && !path.StartsWith("/login") && !path.StartsWith("/logout") && !path.StartsWith("/register")
+                && !path.StartsWith("/signin-oidc") && !path.StartsWith("/signout-callback-oidc")
+                && !path.StartsWith("/connect/") && !path.StartsWith("/.well-known/")
+                && !path.StartsWith("/account/register") && !path.StartsWith("/account/login")
+                && !path.StartsWith("/change-password"))
+            {
+                // SPA routes — return SPA shell so the client-side router handles them
+                response = Html(200, s_html);
+            }
 
             if (response != null)
             {
@@ -59,6 +74,12 @@ public static partial class MockApiHandler
             ("GET", "/api/users/me") when isNonOwner => Json(200, """{"id":"nonowner-user-id","name":"Test NonOwner","email":"nonowner@example.com","userId":2}"""),
             ("GET", "/api/users/me") when ownerSession => Json(200, """{"id":"unknown-user-id","name":"Test User","email":"user@example.com","userId":1}"""),
 
+            ("GET", "/api/users/me/export") when isOwner => Json(200, """{"exportedAt":"2026-06-09T00:00:00Z","schemaVersion":"1.0","account":{"id":1,"name":"Test Owner","email":"owner@example.com","slug":"pmo_test","createdAt":"2026-05-01T00:00:00Z"},"projects":[{"id":1,"name":"Test Project","slug":"seeded-project","description":"A seeded test project","createdAt":"2026-05-01T00:00:00Z"}],"comments":[],"reactions":[],"notifications":[],"permissions":[],"momentAssignments":[]}"""),
+            ("GET", "/api/users/me/export") when isNonOwner => Json(200, """{"exportedAt":"2026-06-09T00:00:00Z","schemaVersion":"1.0","account":{"id":2,"name":"Test NonOwner","email":"nonowner@example.com","slug":"other_user","createdAt":"2026-05-01T00:00:00Z"},"projects":[],"comments":[],"reactions":[],"notifications":[],"permissions":[],"momentAssignments":[]}"""),
+            ("GET", "/api/users/me/export") when ownerSession => Json(200, """{"exportedAt":"2026-06-09T00:00:00Z","schemaVersion":"1.0","account":{"id":1,"name":"Test User","email":"user@example.com","slug":"pmo_test","createdAt":"2026-05-01T00:00:00Z"},"projects":[],"comments":[],"reactions":[],"notifications":[],"permissions":[],"momentAssignments":[]}"""),
+
+            ("DELETE", "/api/users/me") when ownerSession => Json(204, ""),
+
             ("GET", "/api/projects") when isOwner => Json(200, """[{"id":1,"name":"Test Project","slug":"seeded-project","ownerSlug":"pmo_test","description":"A seeded test project","ownerId":1,"createdAt":"2026-05-01T00:00:00Z"}]"""),
             ("GET", "/api/projects") when isNonOwner => Json(200, """[{"id":1,"name":"Test Project","slug":"seeded-project","ownerSlug":"other_user","description":"A seeded test project","ownerId":2,"createdAt":"2026-05-01T00:00:00Z"}]"""),
 
@@ -82,6 +103,7 @@ public static partial class MockApiHandler
 
             ("GET", "/api/backlog-moments") => Json(200, "[]"),
 
+            ("GET", "/api/users/search") => Json(200, """[{"userId":1,"email":"owner@example.com","name":"Test Owner","userName":"pmo_test"}]"""),
             ("GET", "/api/moments/assigned-to-me") when isOwner => Json(200, """[{"id":100,"sequenceNumber":100,"statement":"My Task","type":"Story","status":"Todo","effortEstimate":"M","ownerId":1,"assignedStrideId":10,"displayOrder":1,"ownerSlug":"pmo_test","projectSlug":"seeded-project","createdAt":"2026-05-01T00:00:00Z"}]"""),
             ("GET", "/api/moments/assigned-to-me") when isNonOwner => Json(200, "[]"),
 
@@ -103,8 +125,6 @@ public static partial class MockApiHandler
             ("GET", "/api/audit-events") => Json(200, """[{"id":1,"action":"Project created","userId":1,"userName":"Test Owner","timestamp":"2026-05-01T00:00:00Z"}]"""),
             ("GET", "/api/project-export") => Json(200, """{"schemaVersion":"1.0","project":{"name":"Test Project"}}"""),
             ("GET", "/api/project-members") => Json(200, """[{"userId":1,"email":"owner@example.com","name":"Test Owner"}]"""),
-            ("GET", "/api/hubs/negotiate") => Json(200, """{"url":"","accessToken":"mock-token"}"""),
-            ("GET", "/hubs/notifications") => Json(200, "{}"),
             ("GET", "/api/reactions") => Json(200, "[]"),
             ("GET", "/api/comments/entity-map") => Json(200, "[]"),
 
@@ -114,8 +134,8 @@ public static partial class MockApiHandler
             ("POST", "/api/comments") => Json(200, """{"id":2,"text":"New comment","createdAt":"2026-05-20T00:00:00Z","userName":"Test Owner","mentionedUsers":[],"parentCommentId":null,"replies":[]}"""),
             ("POST", "/api/projects/pmo_test/seeded-project/permissions") when isOwner => Json(200, """{"id":5,"userName":"newuser@example.com","level":"Edit","status":"Pending"}"""),
             ("POST", "/api/projects/pmo_test/seeded-project/promises/create") when isOwner => Json(200, """{"id":10,"statement":"As a user, manage projects efficiently","description":null,"projectId":2,"displayOrder":0,"createdAt":"2026-06-03T00:00:00Z"}"""),
-            ("POST", "/hubs/notifications/negotiate") => Json(200, """{"connectionId":"test-connection-id","availableTransports":[{"transport":"LongPolling","transferFormats":["Text"]}]}"""),
-            ("POST", "/hubs/notifications") => Json(200, "{}"),
+            ("POST", "/hubs/notifications/negotiate") => Json(200, """{"negotiateVersion":1,"connectionId":"test","availableTransports":[]}"""),
+            ("POST", "/hubs/notifications") => Json(204, ""),
             ("POST", "/api/deadline-notification-runs") => Json(204, ""),
 
             // PATCH mutations
@@ -165,6 +185,11 @@ public static partial class MockApiHandler
 
     private static (int Status, string ContentType, string Body)? GetRegexMockResponse(string method, string path, bool isOwner)
     {
+        // Burndown endpoint: /api/projects/{owner}/{project}/iterations/{id}/burndown
+        var burndownMatch = Regex.Match(path, @"^/api/projects/[^/]+/[^/]+/iterations/\d+/burndown$");
+        if (burndownMatch.Success)
+            return Json(200, """[{"date":"2026-06-01","remainingEffort":12,"idealRemaining":12},{"date":"2026-06-02","remainingEffort":10,"idealRemaining":10},{"date":"2026-06-03","remainingEffort":8,"idealRemaining":8},{"date":"2026-06-04","remainingEffort":5,"idealRemaining":6},{"date":"2026-06-05","remainingEffort":3,"idealRemaining":4},{"date":"2026-06-06","remainingEffort":0,"idealRemaining":2}]""");
+
         if (path.StartsWith("/api/projects/"))
         {
             // Only long-form project-scoped paths reach here
@@ -276,7 +301,7 @@ public static partial class MockApiHandler
         => (status, "text/html", body);
 
     private static readonly string s_html = """
-<!DOCTYPE html><html><body><div id="root"></div><script src="/js/router.mjs" type="module"></script></body></html>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/site.css"></head><body><div id="content"></div><div id="main-menu"></div><script src="/js/router.mjs" type="module"></script></body></html>
 """;
 
     private const string s_momentsByStride10 =

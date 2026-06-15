@@ -106,49 +106,6 @@ sequenceDiagram
 
 ---
 
-## Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant User as Browser
-    participant BFF as BFF (YARP)
-    participant Auth as Auth Server
-    participant API as API Server
-    participant Google as Google (Optional)
-
-    Note over User,Google: Internal Login
-    User->>BFF: GET /login
-    BFF->>Auth: OIDC authorize (via nginx)
-    Auth->>User: Login form (username/password)
-    User->>Auth: POST credentials
-    Auth->>Auth: SignInManager validates
-    Auth->>Auth: Issues Identity cookie
-    Auth->>BFF: Authorization code
-    BFF->>Auth: Code + PKCE → tokens
-    BFF->>User: Sets session cookie
-    User->>BFF: API request (with cookie)
-    BFF->>API: Bearer token (from session)
-    API->>API: Validates JWT via OIDC metadata
-    API->>BFF: Response
-    BFF->>User: Response
-
-    Note over User,Google: External Login (Google)
-    User->>Auth: Click "Sign in with Google"
-    Auth->>Google: OAuth 2.1 challenge + PKCE
-    Google->>User: Google login page
-    User->>Google: Authenticate
-    Google->>NGINX: Redirect to /signin-google
-    NGINX->>Auth: Proxy to Auth server
-    Auth->>Google: Code + secret → tokens + userinfo
-    Auth->>Auth: Create/link IdentityUser
-    Auth->>Auth: Issues Identity cookie
-    Auth->>BFF: Authorization code
-    BFF->>Auth: Code + PKCE → tokens
-    BFF->>User: Sets session cookie
-```
-
----
-
 ## Services
 
 | Service | Container | Port | Framework | Purpose |
@@ -174,6 +131,27 @@ sequenceDiagram
 | Authorization code | 10 minutes |
 | Access token | 15 minutes |
 | Refresh token | 7 days |
+
+---
+
+## Features
+
+### PWA (Progressive Web App)
+Full offline-capable PWA with service worker, web manifest, installable on desktop and mobile. Static assets are cache-first, templates are network-first, and all BFF/auth paths are network-only (never cached).
+
+### Privacy & Compliance
+- **Privacy Policy** at `/privacy` — GDPR, PIPEDA, and CCPA/CPRA compliant
+- **Terms of Service** at `/tos`
+- **Data Export** — `GET /api/users/me/export` downloads all personal data (profile, projects, comments, reactions, notifications, permissions, moment assignments) as machine-readable JSON
+- **Account Deletion** — `DELETE /account/me` with password confirmation; SPA page at `/account/delete`
+- **Right to be forgotten** — hard-deletes the Identity user and revokes all OpenIddict tokens
+- Licensed under **GPL-3.0**
+
+### Analytics (Optional)
+Self-hosted **Umami** analytics (privacy-first: no cookies, no PII, no cross-site tracking). Dashboard accessible via SSH tunnel only (`ssh -L 3000:127.0.0.1:3000`). Tracking endpoints proxied through the main nginx at `/umami/script.js`. Pre-configured via automated init container with secret-managed credentials.
+
+### Security Headers
+CSP `default-src 'none'` with hash-based allowance, HSTS, `X-Frame-Options: DENY`, `Cross-Origin-Opener-Policy: same-origin`, `Permissions-Policy`, and `manifest-src 'self'`. A single session cookie (`__Host-pmo.session`) is HttpOnly, Secure, SameSite=Lax, carries no personal data, and expires after 8 hours of inactivity.
 
 ---
 

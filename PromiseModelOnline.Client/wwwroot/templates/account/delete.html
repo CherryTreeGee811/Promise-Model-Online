@@ -1,0 +1,39 @@
+<div class="privacy-page">
+
+<h1>My Data</h1>
+
+<h2>Export Your Data</h2>
+<p>Download all your personal data in a machine-readable JSON format. This includes your profile, projects you own, comments, reactions, notifications, permissions, and moment assignments.</p>
+
+<button id="export-data-btn" class="btn btn-primary mb-2">
+  <span id="export-btn-text"><i class="bi bi-download me-1"></i>Download My Data</span>
+  <span id="export-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+</button>
+<div id="export-error" class="alert alert-danger d-none" role="alert"></div>
+
+<hr class="my-4">
+
+<h2>Delete Account</h2>
+
+<div class="alert alert-danger" role="alert">
+  <strong>Warning:</strong> This action is permanent and irreversible. All your data — including projects, comments, reactions, and account information — will be permanently deleted. Consider <a href="#" id="export-link-top">exporting your data</a> first.
+</div>
+
+<p>To confirm deletion, enter your password below:</p>
+
+<form id="delete-account-form">
+  <div class="mb-3">
+    <label for="delete-password" class="form-label">Password</label>
+    <input type="password" id="delete-password" class="form-control" required autocomplete="current-password" aria-required="true" />
+  </div>
+
+  <div id="delete-error" class="alert alert-danger d-none" role="alert"></div>
+  <div id="delete-success" class="alert alert-success d-none" role="status"></div>
+
+  <button type="submit" id="delete-account-btn" class="btn btn-danger">
+    <span id="delete-btn-text">Permanently Delete My Account</span>
+    <span id="delete-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+  </button>
+</form>
+
+</div>

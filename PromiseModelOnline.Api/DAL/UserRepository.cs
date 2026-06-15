@@ -72,7 +72,7 @@ namespace PromiseModelOnline.Api.DAL
 
             var user = new User
             {
-                Email = email,
+                Email = email ?? string.Empty,
                 Name = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
                 Slug = slug,
                 Role = UserRole.Professional,

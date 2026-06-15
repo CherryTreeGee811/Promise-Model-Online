@@ -161,10 +161,7 @@ services:
     environment:
       DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-4EujhsyrIHdzhNsIoidZHtNM}@umami-db:5432/umami
       DATABASE_TYPE: postgresql
-      APP_SECRET_FILE: /run/secrets/umami_app_secret
       TRACKER_SCRIPT_NAME: script.js
-    secrets:
-      - umami_app_secret
     depends_on:
       umami-db:
         condition: service_healthy
@@ -247,7 +244,5 @@ secrets:
     file: ./secrets/sendgrid_api_key.txt
   umami_db_password:
     file: ./secrets/umami_db_password.txt
-  umami_app_secret:
-    file: ./secrets/umami_app_secret.txt
   umami_admin_password:
     file: ./secrets/umami_admin_password.txt

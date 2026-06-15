@@ -6,6 +6,7 @@ import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.mjs';
+import { initDeleteAccountPage } from './account/delete-account.mjs';
 
 let _projectRoutes;
 function loadProjectRoutes() {
@@ -178,6 +179,13 @@ export function routeHandler(navContentDiv, contentDiv) {
             break;
         case path == '/privacy':
             loadTemplate('privacy.html', contentDiv);
+            break;
+        case path == '/tos':
+            loadTemplate('tos.html', contentDiv);
+            break;
+        case path == '/account/delete':
+            loadTemplate('account/delete.html', contentDiv)
+                .then(() => initDeleteAccountPage());
             break;
         default: {
             const projectPattern = path.match(/^\/([^\/]+)\/([^\/]+)(\/.*)?$/);

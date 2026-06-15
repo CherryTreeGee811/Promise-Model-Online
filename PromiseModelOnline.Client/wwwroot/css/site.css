@@ -1890,6 +1890,11 @@ input, button, a, label, select, textarea {
   flex-shrink: 0;
 }
 
+.footer a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
 .burndown-card {
     background: var(--color-panel-bg);
     border-radius: var(--radius-card);
@@ -1915,6 +1920,19 @@ input, button, a, label, select, textarea {
 
 #iteration-burndown-canvas {
   margin-top: var(--spacing-sm);
+}
+
+.graph-speed-label {
+  font-size: 11px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.graph-speed-select {
+  width: auto;
+  min-width: 60px;
+  padding: 2px 6px;
+  font-size: 11px;
 }
 
 .privacy-page {
