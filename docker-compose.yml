@@ -153,6 +153,71 @@ services:
       - set -e; tr -d '\r' < /init/run-init.sh > /tmp/run-init.lf && /bin/sh /tmp/run-init.lf
     restart: "no"
 
+  umami:
+    image: docker.umami.is/umami-software/umami:postgresql-latest
+    container_name: umami
+    ports:
+      - "127.0.0.1:3000:3000/tcp"
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-4EujhsyrIHdzhNsIoidZHtNM}@umami-db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET_FILE: /run/secrets/umami_app_secret
+      TRACKER_SCRIPT_NAME: script.js
+    secrets:
+      - umami_app_secret
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    networks:
+      - promisemodelonline-net
+    restart: unless-stopped
+
+  umami-db:
+    image: postgres:16-alpine
+    container_name: umami-db
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
+    secrets:
+      - umami_db_password
+    volumes:
+      - umami-db:/var/lib/postgresql/data
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  umami-init:
+    image: postgres:16-alpine
+    container_name: umami-init
+    entrypoint: >
+      /bin/sh -c "
+      apk add --no-cache apache2-utils > /dev/null 2>&1 &&
+      /init/umami-init.sh
+      "
+    environment:
+      WEBSITE_ID: ${UMAMI_WEBSITE_ID:-813ea5c6-8576-44d0-b702-923f5ba331cd}
+      WEBSITE_NAME: ${UMAMI_WEBSITE_NAME:-Promise Model Online}
+      WEBSITE_DOMAIN: ${UMAMI_WEBSITE_DOMAIN:-localhost}
+      POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
+      UMAMI_ADMIN_USERNAME: ${UMAMI_ADMIN_USERNAME}
+    secrets:
+      - umami_db_password
+      - umami_admin_password
+    volumes:
+      - ./scripts/umami-init.sh:/init/umami-init.sh:ro
+    depends_on:
+      umami:
+        condition: service_started
+    networks:
+      - promisemodelonline-net
+    restart: "no"
+
 networks:
   promisemodelonline-net:
     driver: bridge
@@ -167,6 +232,9 @@ volumes:
   auth-dp-keys:
     name: authdpkeys
     driver: local
+  umami-db:
+    name: umamidata
+    driver: local
 
 secrets:
   auth_db_password:
@@ -177,3 +245,9 @@ secrets:
     file: ./secrets/google_client_secret.txt
   sendgrid_api_key:
     file: ./secrets/sendgrid_api_key.txt
+  umami_db_password:
+    file: ./secrets/umami_db_password.txt
+  umami_app_secret:
+    file: ./secrets/umami_app_secret.txt
+  umami_admin_password:
+    file: ./secrets/umami_admin_password.txt

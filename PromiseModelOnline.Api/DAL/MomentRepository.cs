@@ -99,8 +99,8 @@ namespace PromiseModelOnline.Api.DAL
 
         public async Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId)
         {
-            return await BuildMomentQuery()
-                .Where(moment => moment.AssignedStrideId == strideId && moment.Status != MomentStatus.Done)
+            return await _context.Set<Moment>()
+                .Where(m => m.AssignedStrideId == strideId && m.Status != MomentStatus.Done)
                 .ToListAsync();
         }
 

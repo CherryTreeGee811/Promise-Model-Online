@@ -176,6 +176,9 @@ export function routeHandler(navContentDiv, contentDiv) {
         case path == '/knowledge-base':
             handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv);
             break;
+        case path == '/privacy':
+            loadTemplate('privacy.html', contentDiv);
+            break;
         default: {
             const projectPattern = path.match(/^\/([^\/]+)\/([^\/]+)(\/.*)?$/);
             if (projectPattern) {
