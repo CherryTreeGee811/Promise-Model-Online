@@ -51,10 +51,10 @@ public class ProjectsControllerImportUnitTests
         // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
-        var file = new FormFile(stream, 0, stream.Length, "file", "test.json");
+        var jsonBytes = Encoding.UTF8.GetBytes("{}");
+        _controller.HttpContext.Request.Body = new MemoryStream(jsonBytes);
         // Act
-        var result = await _controller.Import(file);
+        var result = await _controller.Import();
 
         // Assert
         Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
@@ -70,8 +70,8 @@ public class ProjectsControllerImportUnitTests
         ControllerTestHelpers.SetControllerUser(_controller, "importer@x.com");
 
         var json = "{\"schemaVersion\":\"1.0\",\"project\":{\"id\":1,\"name\":\"Test\"}}";
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        var file = new FormFile(stream, 0, stream.Length, "file", "test.json");
+        var jsonBytes = Encoding.UTF8.GetBytes(json);
+        _controller.HttpContext.Request.Body = new MemoryStream(jsonBytes);
 
         var validationResult = new ProjectImportValidationResult
         {
@@ -85,7 +85,7 @@ public class ProjectsControllerImportUnitTests
         _mockProjectImportService.Setup(s => s.ImportAsync(It.IsAny<ProjectExportDocument>(), 1)).ReturnsAsync(new ProjectImportResult { ProjectId = 1 });
 
         // Act
-        var result = await _controller.Import(file);
+        var result = await _controller.Import();
 
         // Assert
         Assert.That(result, Is.InstanceOf<CreatedAtActionResult>());

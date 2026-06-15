@@ -86,13 +86,13 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task REQ_FUN_003_CreateFromDto_WithValidData_ReturnsCreated()
+        public async Task REQ_FUN_003_Create_WithValidData_ReturnsCreated()
         {
             // Arrange
             var user = new User { Id = 5, Email = "creator@x.com", Slug = "creator" };
             _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("creator@x.com", It.IsAny<string?>())).ReturnsAsync(user);
             _mockProjectService.Setup(s => s.GenerateProjectSlugAsync("New Project", 5)).ReturnsAsync("new-project");
-            _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync("creator", "new-project")).ReturnsAsync(new Project { Id = 1, Name = "New Project", Slug = "new-project", Owner = user });
+            _mockGenericService.Setup(s => s.AddAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
 
             _mockMapper.Setup(m => m.Map(It.IsAny<Project>(), It.IsAny<IGenericService<Project>>()))
                        .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDTO { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
@@ -101,14 +101,14 @@ namespace PromiseModelOnline.Api.Tests
 
             var dto = new ProjectCreateDTO { Name = "New Project", Description = "Desc" };
             // Act
-            var result = await _controller.CreateFromDto(dto);
+            var result = await _controller.Create(dto);
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
         }
 
         [Test]
-        public async Task REQ_FUN_003_CreateFromDto_MissingName_ReturnsBadRequest()
+        public async Task REQ_FUN_003_Create_MissingName_ReturnsBadRequest()
         {
             // Arrange
             var user = new User { Id = 5, Email = "creator@x.com", Slug = "creator" };
@@ -117,7 +117,7 @@ namespace PromiseModelOnline.Api.Tests
             ControllerTestHelpers.SetControllerUser(_controller, "creator@x.com");
             var dto = new ProjectCreateDTO { Name = "", Description = "Desc" };
             // Act
-            var result = await _controller.CreateFromDto(dto);
+            var result = await _controller.Create(dto);
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());

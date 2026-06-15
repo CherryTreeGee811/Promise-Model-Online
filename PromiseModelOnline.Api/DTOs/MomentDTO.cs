@@ -1,3 +1,5 @@
+using PromiseModelOnline.Api.Enums;
+
 namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>Data transfer object for <see cref="Models.Moment"/> responses with sub-tasks and lineage metadata.</summary>

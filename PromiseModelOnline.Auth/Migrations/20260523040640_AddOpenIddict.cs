@@ -348,4 +348,6 @@ namespace PromiseModelOnline.Auth.Migrations
 
             migrationBuilder.DropTable(
                 name: "OpenIddictApplications");
+        }
+    }
 }

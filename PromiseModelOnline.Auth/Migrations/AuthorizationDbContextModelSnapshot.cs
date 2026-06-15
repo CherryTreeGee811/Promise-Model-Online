@@ -482,4 +482,6 @@ namespace PromiseModelOnline.Auth.Migrations
                     b.Navigation("Tokens");
                 });
 #pragma warning restore 612, 618
+        }
+    }
 }

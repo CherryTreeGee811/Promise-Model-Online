@@ -72,6 +72,9 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <summary>Mark all of a user's unread notifications as read.</summary>
         /// <param name="userId">The recipient's user ID.</param>
         public async Task MarkAllAsReadAsync(int userId)
+        {
+            await _notificationRepo.MarkAllAsReadAsync(userId);
+        }
 
         /// <summary>Create a notification and deliver it in real-time via SignalR.</summary>
         /// <param name="userId">The recipient's user ID.</param>

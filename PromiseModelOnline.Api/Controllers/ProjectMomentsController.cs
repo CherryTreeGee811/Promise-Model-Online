@@ -54,7 +54,6 @@ namespace PromiseModelOnline.Api.Controllers
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}")]
         public async Task<ActionResult<MomentDTO>> GetBySeq(int seq, string owner, string project)
-        public async Task<ActionResult<MomentDTO>> GetBySeq(int seq, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -77,7 +76,6 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="404">No moment with the given ID exists in the project.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
-        public async Task<ActionResult<MomentDTO>> GetById(int id, string owner, string project)
         public async Task<ActionResult<MomentDTO>> GetById(int id, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -104,7 +102,6 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPut("{seq}")]
-        public async Task<IActionResult> Update(int seq, [FromBody] Moment entity, string owner, string project)
         public async Task<IActionResult> Update(int seq, [FromBody] Moment entity, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -134,7 +131,6 @@ namespace PromiseModelOnline.Api.Controllers
         [Authorize(Policy = "projects.write")]
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
-        public async Task<IActionResult> Delete(int seq, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -162,7 +158,6 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="404">Project or flow not found.</response>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
-        public async Task<ActionResult<MomentDTO>> CreateFromDto([FromBody] CreateMomentRequestDTO request, string owner, string project)
         public async Task<ActionResult<MomentDTO>> CreateFromDto([FromBody] CreateMomentRequestDTO request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -207,7 +202,6 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="200">Returns matching moments as DTOs.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MomentDTO>>> GetAll(string owner, string project)
         public async Task<ActionResult<IEnumerable<MomentDTO>>> GetAll(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -277,7 +271,6 @@ namespace PromiseModelOnline.Api.Controllers
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/stride-assignment")]
         public async Task<ActionResult<MomentDTO>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project)
-        public async Task<ActionResult<MomentDTO>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -336,7 +329,6 @@ namespace PromiseModelOnline.Api.Controllers
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/status")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project)
-        public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -390,7 +382,6 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/description")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
         public async Task<ActionResult<MomentDTO>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -451,7 +442,6 @@ namespace PromiseModelOnline.Api.Controllers
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/estimate")]
         public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project)
-        public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -505,7 +495,6 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/type")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project)
         public async Task<ActionResult<MomentDTO>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -563,7 +552,6 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/owner")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project)
         public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
