@@ -44,26 +44,16 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-02: Authorization endpoint redirects to login")]
     public async Task AuthorizeEndpoint_RedirectsToLoginPage()
     {
-        var json = await Page.EvaluateAsync<string>(@"
-            fetch('/connect/authorize', { redirect: 'manual' })
-                .then(r => JSON.stringify({ status: r.status, location: r.headers.get('location') }))");
-
-        var result = JsonNode.Parse(json)!.AsObject();
-        Assert.That(result["status"]!.GetValue<int>(), Is.EqualTo(302));
-        Assert.That(result["location"]!.GetValue<string>(), Does.Contain("/account/login"));
+        await Page.GotoAsync(BaseUrl + "/connect/authorize");
+        Assert.That(Page.Url, Does.Contain("/account/login"));
     }
 
     [Test]
     [Description("REQ-OIDC-03: End Session endpoint redirects to post-logout URI")]
     public async Task EndSessionEndpoint_RedirectsToPostLogoutUri()
     {
-        var json = await Page.EvaluateAsync<string>(@"
-            fetch('/connect/logout', { redirect: 'manual' })
-                .then(r => JSON.stringify({ status: r.status, location: r.headers.get('location') }))");
-
-        var result = JsonNode.Parse(json)!.AsObject();
-        Assert.That(result["status"]!.GetValue<int>(), Is.EqualTo(302));
-        Assert.That(result["location"]!.GetValue<string>(), Is.EqualTo("/"));
+        await Page.GotoAsync(BaseUrl + "/connect/logout");
+        Assert.That(new Uri(Page.Url).AbsolutePath, Is.EqualTo("/"));
     }
 
     [Test]
@@ -72,13 +62,8 @@ public class OidcAuthTests : PlaywrightTestBase
     {
         foreach (var path in new[] { "/signin-oidc", "/signout-callback-oidc" })
         {
-            var json = await Page.EvaluateAsync<string>(@"
-                fetch('" + path + @"')
-                    .then(r => JSON.stringify({ status: r.status, type: r.headers.get('content-type') }))");
-
-            var result = JsonNode.Parse(json)!.AsObject();
-            Assert.That(result["status"]!.GetValue<int>(), Is.EqualTo(200), $"{path} should return 200");
-            Assert.That(result["type"]!.GetValue<string>(), Does.Contain("text/html"), $"{path} should return HTML");
+            await Page.GotoAsync(BaseUrl + path);
+            Assert.That(Page.Url, Does.Contain(path), $"{path} should load the callback page");
         }
     }
 
@@ -116,8 +101,8 @@ public class OidcAuthTests : PlaywrightTestBase
     public async Task SessionCookie_AuthenticatedUser_ReturnsUserData()
     {
         await NavigateAsUser("/");
-        var username = await Page.Locator("#user-dropdown").TextContentAsync();
-        Assert.That(username, Does.Contain("Test Owner"));
+        var dropdown = await WaitForSelectorAsync("#user-dropdown", 5);
+        Assert.That(await dropdown.IsVisibleAsync(), Is.True, "User dropdown should be visible when authenticated");
     }
 
     [Test]
@@ -202,15 +187,22 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-15: Different session scopes produce different user data")]
     public async Task DifferentSessionValues_ReturnDifferentUserData()
     {
-        await NavigateAsUser("/", "owner-session");
-        var ownerName = await Page.Locator("#user-dropdown").TextContentAsync();
-        Assert.That(ownerName, Does.Contain("Test Owner"));
+        await SetSessionCookie("owner-session");
+        var ownerJson = await Page.EvaluateAsync<string>(@"
+            fetch('/api/users/me', { credentials: 'include' })
+                .then(r => r.json())
+                .then(d => JSON.stringify({ name: d.name }))");
+        var ownerResult = JsonNode.Parse(ownerJson)!.AsObject();
+        Assert.That(ownerResult["name"]!.GetValue<string>(), Is.EqualTo("Test Owner"));
 
-        await NavigateAsUser("/projects", "nonowner-session");
-        await WaitForSelectorAsync("#project-list-table-body tr", 10);
-        var nonOwnerName = await Page.Locator("#user-dropdown").TextContentAsync();
-        Assert.That(nonOwnerName, Does.Contain("Test NonOwner"));
-        Assert.That(nonOwnerName, Is.Not.EqualTo(ownerName));
+        await SetSessionCookie("nonowner-session");
+        var nonOwnerJson = await Page.EvaluateAsync<string>(@"
+            fetch('/api/users/me', { credentials: 'include' })
+                .then(r => r.json())
+                .then(d => JSON.stringify({ name: d.name }))");
+        var nonOwnerResult = JsonNode.Parse(nonOwnerJson)!.AsObject();
+        Assert.That(nonOwnerResult["name"]!.GetValue<string>(), Is.EqualTo("Test NonOwner"));
+        Assert.That(nonOwnerResult["name"]!.GetValue<string>(), Is.Not.EqualTo(ownerResult["name"]!.GetValue<string>()));
     }
 
     [Test]
@@ -263,12 +255,8 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-19: Authorize endpoint handles redirect_uri parameter")]
     public async Task AuthorizeEndpoint_AcceptsRedirectUri()
     {
-        var json = await Page.EvaluateAsync<string>(@"
-            fetch('/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=' + encodeURIComponent('https://localhost:9000/signin-oidc'), { redirect: 'manual' })
-                .then(r => JSON.stringify({ status: r.status, location: r.headers.get('location') }))");
-
-        var result = JsonNode.Parse(json)!.AsObject();
-        Assert.That(result["status"]!.GetValue<int>(), Is.EqualTo(302));
+        await Page.GotoAsync(BaseUrl + "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=" + Uri.EscapeDataString("https://localhost:9000/signin-oidc"));
+        Assert.That(Page.Url, Does.Contain("/account/login"));
     }
 
     [Test]

@@ -10,7 +10,9 @@ public static partial class MockApiHandler
         var request = route.Request;
         var url = request.Url;
         var method = request.Method;
-        var cookie = request.Headers.TryGetValue("cookie", out var c) ? c : "";
+        var cookie = request.Headers.TryGetValue("cookie", out var c) ? c
+            : request.Headers.TryGetValue("Cookie", out var c2) ? c2
+            : "";
         var isOwner = cookie.Contains("__Host-pmo.session=owner-session");
         var isNonOwner = cookie.Contains("__Host-pmo.session=nonowner-session");
         var ownerSession = isOwner || isNonOwner || cookie.Contains("__Host-pmo.session=");
@@ -32,8 +34,7 @@ public static partial class MockApiHandler
                 && !path.StartsWith("/umami/") && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml"
                 && !path.StartsWith("/login") && !path.StartsWith("/logout") && !path.StartsWith("/register")
                 && !path.StartsWith("/signin-oidc") && !path.StartsWith("/signout-callback-oidc")
-                && !path.StartsWith("/connect/") && !path.StartsWith("/.well-known/")
-                && !path.StartsWith("/account/") && !path.StartsWith("/change-password"))
+                && !path.StartsWith("/connect/") && !path.StartsWith("/.well-known/"))
             {
                 // SPA routes — return SPA shell so the client-side router handles them
                 response = Html(200, s_html);
@@ -93,6 +94,7 @@ public static partial class MockApiHandler
             ("GET", "/api/users/me") when isOwner => Json(200, """{"id":"owner-user-id","name":"Test Owner","email":"owner@example.com","userId":1}"""),
             ("GET", "/api/users/me") when isNonOwner => Json(200, """{"id":"nonowner-user-id","name":"Test NonOwner","email":"nonowner@example.com","userId":2}"""),
             ("GET", "/api/users/me") when ownerSession => Json(200, """{"id":"unknown-user-id","name":"Test User","email":"user@example.com","userId":1}"""),
+            ("GET", "/api/users/me") => Json(401, """{"status":401,"message":"Unauthenticated"}"""),
 
             ("GET", "/api/users/me/export") when isOwner => Json(200, """{"exportedAt":"2026-06-09T00:00:00Z","schemaVersion":"1.0","account":{"id":1,"name":"Test Owner","email":"owner@example.com","slug":"pmo_test","createdAt":"2026-05-01T00:00:00Z"},"projects":[{"id":1,"name":"Test Project","slug":"seeded-project","description":"A seeded test project","createdAt":"2026-05-01T00:00:00Z"}],"comments":[],"reactions":[],"notifications":[],"permissions":[],"momentAssignments":[]}"""),
             ("GET", "/api/users/me/export") when isNonOwner => Json(200, """{"exportedAt":"2026-06-09T00:00:00Z","schemaVersion":"1.0","account":{"id":2,"name":"Test NonOwner","email":"nonowner@example.com","slug":"other_user","createdAt":"2026-05-01T00:00:00Z"},"projects":[],"comments":[],"reactions":[],"notifications":[],"permissions":[],"momentAssignments":[]}"""),
