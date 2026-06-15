@@ -65,6 +65,8 @@ jobs:
             printf '%s' "${{ secrets.PMO_API_DB_PASSWORD }}" > secrets/api_db_password.txt
             printf '%s' "${{ secrets.GOOGLE_CLIENT_SECRET }}" > secrets/google_client_secret.txt
             printf '%s' "${{ secrets.SENDGRID_API_KEY }}" > secrets/sendgrid_api_key.txt
+            printf '%s' "${{ secrets.UMAMI_ADMIN_PASSWORD }}" > secrets/umami_admin_password.txt
+            printf '%s' "${{ secrets.UMAMI_DB_PASSWORD }}" > secrets/umami_db_password.txt
 
       # ─── 2. Unit tests (no infrastructure needed) ───
 
