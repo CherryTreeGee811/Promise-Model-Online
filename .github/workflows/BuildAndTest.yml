@@ -259,7 +259,15 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
 
-      - name: Push Docker Images to DockerHub
+      # ─── 7. Coverage — upload Codecov reports ───
+
+      - name: Upload coverage reports to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      # ─── 8. Push Docker Images to DockerHub ───
         if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash
         run: |
