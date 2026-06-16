@@ -438,11 +438,6 @@ jobs:
             sbom-client.cdx.json
             sbom-auth.cdx.json
             sbom-bff.cdx.json
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: "trivy-image-api.sarif"
-          category: "trivy-image"
 
       # ─── 9. Push Docker Images to DockerHub ───
 
