@@ -7,9 +7,11 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateNotificationRequestDTO : IValidatableObject
 {
     /// <summary>Whether the notification has been read by the user.</summary>
-    /// <param name="validationContext">The validation context.</param>
     public bool? IsRead { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (IsRead is null)

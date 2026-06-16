@@ -47,6 +47,9 @@ namespace PromiseModelOnline.Api.Controllers
 
         [Authorize(Policy = "projects.write")]
         [HttpPost]
+        /// <summary>Invites a user to a project by creating a permission record.</summary>
+        /// <param name="request">The invitation request containing email and project ID.</param>
+        /// <returns>The created permission DTO.</returns>
         public async Task<ActionResult<PermissionDTO>> InviteUser([FromBody] CreatePermissionRequestDTO request)
         {
             var userId = await GetCurrentUserIdByEmailAsync();

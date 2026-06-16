@@ -8,9 +8,11 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateMomentStrideAssignmentRequest : IValidatableObject
 {
     /// <summary>The stride ID to assign, or <c>null</c> to unassign.</summary>
-    /// <param name="validationContext">The validation context.</param>
     public int? StrideId { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (StrideId is not null && StrideId <= 0)

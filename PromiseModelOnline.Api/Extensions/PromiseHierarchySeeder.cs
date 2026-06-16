@@ -20,6 +20,10 @@ public static class PromiseHierarchySeeder
     private const string TestUserEmail2 = "pmo2@gmail.com";
     private const string TestUserName2 = "pmo_test2";
 
+    /// <summary>Seeds development/test data from CSV files into the database.</summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="contentRootPath">The content root path used to locate the CSV directory.</param>
+    /// <param name="logger">The logger for seed progress and errors.</param>
     public static async Task SeedAsync(PromiseModelOnlineContext db, string contentRootPath,
         ILogger logger)
     {

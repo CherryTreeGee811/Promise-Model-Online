@@ -51,11 +51,19 @@ export function initDeleteAccountPage() {
         }
     });
 
+    /**
+     * Display an export error message in the export error element.
+     * @param {string} msg - The error message to display.
+     */
     function showExportError(msg) {
         exportError.textContent = msg;
         exportError.classList.remove('d-none');
     }
 
+    /**
+     * Toggle the loading state of the export button.
+     * @param {boolean} loading - Whether the export operation is in progress.
+     */
     function setExportLoading(loading) {
         exportBtn.disabled = loading;
         exportText.classList.toggle('d-none', loading);
@@ -111,11 +119,19 @@ export function initDeleteAccountPage() {
         }
     });
 
+    /**
+     * Display a form error message in the delete-error element.
+     * @param {string} msg - The error message to display.
+     */
     function showError(msg) {
         errorEl.textContent = msg;
         errorEl.classList.remove('d-none');
     }
 
+    /**
+     * Toggle the loading state of the delete-account button.
+     * @param {boolean} loading - Whether the delete operation is in progress.
+     */
     function setLoading(loading) {
         btn.disabled = loading;
         text.classList.toggle('d-none', loading);

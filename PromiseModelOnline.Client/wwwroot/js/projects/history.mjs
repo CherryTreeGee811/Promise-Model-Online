@@ -5,11 +5,11 @@ import { getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } fro
 const PAGE_SIZE = 25;
 
 /**
- * Load the project audit history page.
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
- * @param {*} owner - TODO
- * @param {*} project - TODO
+ * Load the project audit history page with paginated audit event entries.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  */
 export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, project) {
     const titleEl = document.getElementById('project-title');
@@ -31,6 +31,9 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
 
     ensureModal();
 
+    /**
+     * Load the project name and update the page title.
+     */
     async function loadProjectName() {
         try {
             const projectData = await getProject(owner, project);
@@ -40,10 +43,17 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
         }
     }
 
+    /**
+     * Calculate the total number of pagination pages.
+     * @returns {number} The total page count.
+     */
     function getTotalPages() {
         return Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
     }
 
+    /**
+     * Render the pagination controls based on current page and total pages.
+     */
     function renderPagination() {
         const totalPages = getTotalPages();
         const previousDisabled = currentPage <= 1;
@@ -80,6 +90,9 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
         });
     }
 
+    /**
+     * Ensure the audit details modal element exists in the DOM.
+     */
     function ensureModal() {
         let container = document.getElementById(modalContainerId);
         if (!container) {
@@ -91,6 +104,10 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
         container.innerHTML = renderAuditDetailsModal();
     }
 
+    /**
+     * Open the audit details modal for a given audit event item.
+     * @param {object} item - The audit event data.
+     */
     function openAuditDetails(item) {
         const payload = getAuditDetailsPayload(item);
         const titleEl = document.getElementById('audit-details-modal-title');
@@ -107,6 +124,10 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
         }
     }
 
+    /**
+     * Load audit history entries for the current page.
+     * @param {boolean} [reset=false] - Whether to reset to page 1.
+     */
     async function loadEntries(reset = false) {
         if (loading) return;
 
@@ -143,6 +164,10 @@ export function loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, pr
         }
     }
 
+    /**
+     * Bind click handlers to audit detail links in the rendered table.
+     * @param {object[]} items - The audit event items corresponding to each row.
+     */
     function bindAuditDetailLinks(items) {
         const detailLinks = listEl.querySelectorAll('.audit-show-details-link');
         detailLinks.forEach((link, index) => {

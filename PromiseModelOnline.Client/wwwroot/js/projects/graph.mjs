@@ -43,14 +43,29 @@ const graphState = {
     animationSpeed: 0.25,
 };
 
+/**
+ * Check whether a graph node has child nodes.
+ * @param {object} node - The graph node to check.
+ * @returns {boolean} True if the node has children.
+ */
 function hasNodeChildren(node) {
     return Array.isArray(node?.children) && node.children.length > 0;
 }
 
+/**
+ * Check whether a node is currently collapsed in the graph.
+ * @param {string} nodeId - The node ID to check.
+ * @returns {boolean} True if the node is collapsed.
+ */
 function isNodeCollapsed(nodeId) {
     return Boolean(nodeId) && graphState.collapsedNodeIds.has(nodeId);
 }
 
+/**
+ * Set the collapsed state of a graph node.
+ * @param {string} nodeId - The node ID.
+ * @param {boolean} collapsed - Whether the node should be collapsed.
+ */
 function setNodeCollapsed(nodeId, collapsed) {
     if (!nodeId) return;
 
@@ -61,12 +76,21 @@ function setNodeCollapsed(nodeId, collapsed) {
     }
 }
 
+/**
+ * Count how many renderable descendants are hidden under a collapsed node.
+ * @param {object} node - The graph node.
+ * @returns {number} The number of hidden descendants.
+ */
 function getHiddenDescendantCount(node) {
     if (!hasNodeChildren(node)) return 0;
 
     return node.children.reduce((sum, child) => sum + countRenderableNodes(child), 0);
 }
 
+/**
+ * Reconcile the collapsed-node set against the current tree, removing IDs for nodes
+ * that no longer exist or have no children.
+ */
 function reconcileCollapsedNodes() {
     if (!graphState.rawTree) {
         graphState.collapsedNodeIds.clear();
@@ -84,6 +108,9 @@ function reconcileCollapsedNodes() {
     graphState.collapsedNodeIds = reconciled;
 }
 
+/**
+ * Collapse all top-level promise nodes so only their direct children are visible.
+ */
 function collapseAllBelowPromises() {
     if (!graphState.rawTree) return;
 
@@ -97,6 +124,10 @@ function collapseAllBelowPromises() {
     graphState.collapsedNodeIds = nextCollapsed;
 }
 
+/**
+ * Reveal the next level of children for a node, collapsing its grandchildren.
+ * @param {object} nodeData - The node data containing at least an id.
+ */
 function revealNextLevel(nodeData) {
     if (!graphState.rawTree || !nodeData?.id) return;
 
@@ -112,10 +143,17 @@ function revealNextLevel(nodeData) {
     }
 }
 
+/**
+ * Expand all collapsed nodes in the graph.
+ */
 function expandAllNodes() {
     graphState.collapsedNodeIds.clear();
 }
 
+/**
+ * Check whether graph focus debug logging is enabled via URL param or localStorage.
+ * @returns {boolean} True if debug logging is enabled.
+ */
 function isGraphFocusDebugEnabled() {
     try {
         const params = new URLSearchParams(window.location.search);
@@ -130,11 +168,20 @@ function isGraphFocusDebugEnabled() {
     }
 }
 
+/**
+ * Log graph focus debug information if debugging is enabled.
+ * @param {string} stage - The debug stage label.
+ * @param {object} details - The debug data to log.
+ */
 function logGraphFocus(stage, details) {
     if (!isGraphFocusDebugEnabled()) return;
     console.info('[graph-focus]', stage, details);
 }
 
+/**
+ * Create the default filter state for the graph.
+ * @returns {{search: string, includeChildren: boolean, types: Set<string>, effort: string, stride: string, status: string, assignment: string}} The default filters.
+ */
 function createDefaultFilters() {
     return {
         search: '',
@@ -147,6 +194,11 @@ function createDefaultFilters() {
     };
 }
 
+/**
+ * Parse a comma-separated type filter string into a set of node types.
+ * @param {string|null} value - The raw type filter value.
+ * @returns {Set<string>} The parsed set of node types.
+ */
 function parseTypeList(value) {
     if (value == null) return new Set(NODE_TYPES);
 
@@ -161,6 +213,12 @@ function parseTypeList(value) {
     return normalizeTypeSelection(types);
 }
 
+/**
+ * Normalize a type selection to a contiguous range of node types.
+ * Ensures that if a user selects a leaf type, all ancestor types are also included.
+ * @param {Set<string>} types - The raw set of selected types.
+ * @returns {Set<string>} The normalized contiguous set of types.
+ */
 function normalizeTypeSelection(types) {
     const selected = Array.from(types ?? []).filter(type => NODE_TYPE_INDEX.has(type));
     if (selected.length === 0) return new Set();
@@ -172,6 +230,11 @@ function normalizeTypeSelection(types) {
     return new Set(NODE_TYPES.slice(minIndex, maxIndex + 1));
 }
 
+/**
+ * Normalize a raw status filter value to a canonical bucket.
+ * @param {string} value - The raw status filter value.
+ * @returns {string} The normalized status bucket ('all', 'done', 'blocked', 'inprogress', 'todo', 'other').
+ */
 function getStatusFilterValue(value) {
     const normalized = normalizeText(value);
     if (!normalized || normalized === 'all') return 'all';
@@ -183,12 +246,22 @@ function getStatusFilterValue(value) {
     return 'other';
 }
 
+/**
+ * Normalize a raw assignment filter value.
+ * @param {string} value - The raw assignment filter value.
+ * @returns {string} The normalized value ('all' or 'assigned-to-me').
+ */
 function getAssignmentFilterValue(value) {
     const normalized = normalizeText(value);
     if (normalized === 'assigned-to-me') return 'assigned-to-me';
     return 'all';
 }
 
+/**
+ * Normalize a raw effort filter value.
+ * @param {string} value - The raw effort filter value.
+ * @returns {string} The normalized effort bucket ('all', 'unestimated', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL').
+ */
 function getEffortFilterValue(value) {
     const normalized = normalizeText(value);
     if (normalized === 'all' || normalized === 'unestimated') return normalized;
@@ -196,6 +269,11 @@ function getEffortFilterValue(value) {
     return 'all';
 }
 
+/**
+ * Normalize a raw stride filter value.
+ * @param {string} value - The raw stride filter value.
+ * @returns {string} The normalized stride bucket ('all', 'backlog', or a stride ID string).
+ */
 function getStrideFilterValue(value) {
     const normalized = normalizeText(value);
     if (normalized === 'all' || normalized === 'backlog') return normalized;
@@ -203,6 +281,11 @@ function getStrideFilterValue(value) {
     return 'all';
 }
 
+/**
+ * Get the human-readable display label for a node type.
+ * @param {string} nodeType - The node type key.
+ * @returns {string} The display label.
+ */
 function getTypeLabel(nodeType) {
     switch (nodeType) {
         case 'promise': return 'Product Promise';
@@ -214,6 +297,11 @@ function getTypeLabel(nodeType) {
     }
 }
 
+/**
+ * Get the short display label for a node type (used in filter chips).
+ * @param {string} nodeType - The node type key.
+ * @returns {string} The short label.
+ */
 function getTypeShortLabel(nodeType) {
     switch (nodeType) {
         case 'promise': return 'Promise';
@@ -225,30 +313,61 @@ function getTypeShortLabel(nodeType) {
     }
 }
 
+/**
+ * Build a graph node for a moment entity.
+ * @param {object} moment - The moment data.
+ * @returns {object} The graph node.
+ */
 function buildMomentNode(moment) {
     return createNode('moment', moment, []);
 }
 
+/**
+ * Build a graph node for a flow entity, including its moment children.
+ * @param {object} flow - The flow data.
+ * @returns {object} The graph node with children.
+ */
 function buildFlowNode(flow) {
     const moments = (flow.moments ?? []).map(buildMomentNode);
     return createNode('flow', flow, moments);
 }
 
+/**
+ * Build a graph node for a journey entity, including its flow children.
+ * @param {object} journey - The journey data.
+ * @returns {object} The graph node with children.
+ */
 function buildJourneyNode(journey) {
     const flows = (journey.flows ?? []).map(buildFlowNode);
     return createNode('journey', journey, flows);
 }
 
+/**
+ * Build a graph node for an epic entity, including its journey children.
+ * @param {object} epic - The epic data.
+ * @returns {object} The graph node with children.
+ */
 function buildEpicNode(epic) {
     const journeys = (epic.journeys ?? []).map(buildJourneyNode);
     return createNode('epic', epic, journeys);
 }
 
+/**
+ * Build a graph node for a promise entity, including its epic children.
+ * @param {object} promise - The promise data.
+ * @returns {object} The graph node with children.
+ */
 function buildPromiseNode(promise) {
     const epics = (promise.epics ?? []).map(buildEpicNode);
     return createNode('promise', promise, epics);
 }
 
+/**
+ * Check whether a node matches the current set of active filters.
+ * @param {object} node - The graph node to test.
+ * @param {object} filters - The active filter criteria.
+ * @returns {boolean} True if the node passes all active filters.
+ */
 function matchesNode(node, filters) {
     if (node.nodeType === 'root') return false;
 
@@ -287,6 +406,12 @@ function matchesNode(node, filters) {
     return true;
 }
 
+/**
+ * Clone a subtree for rendering, applying collapse state and counting visible/hidden nodes.
+ * @param {object} node - The root of the subtree to clone.
+ * @param {{visibleNodes: number, hiddenNodes: number}} metrics - Accumulator for node counts.
+ * @returns {object} The cloned subtree with collapse metadata.
+ */
 function cloneSubtree(node, metrics) {
     if (node.nodeType !== 'root') {
         metrics.visibleNodes += 1;
@@ -308,6 +433,15 @@ function cloneSubtree(node, metrics) {
     };
 }
 
+/**
+ * Recursively filter a graph tree according to the active filters.
+ * Nodes that don't match are pruned; collapsed subtrees are summarized as a single node.
+ * @param {object} node - The current tree node.
+ * @param {object} filters - The active filter criteria.
+ * @param {{visibleNodes: number, directMatches: number, hiddenNodes: number}} metrics - Accumulator for filter result metrics.
+ * @param {boolean} [isRoot=false] - Whether this is the root node.
+ * @returns {object|null} The filtered subtree, or null if nothing matches.
+ */
 function filterTree(node, filters, metrics, isRoot = false) {
     const isCollapsed = isNodeCollapsed(node.id);
     const hiddenDescendantCount = isCollapsed ? getHiddenDescendantCount(node) : 0;
@@ -360,6 +494,10 @@ function filterTree(node, filters, metrics, isRoot = false) {
     return null;
 }
 
+/**
+ * Read filter state from the current URL search parameters.
+ * @returns {{search: string, includeChildren: boolean, types: Set<string>, effort: string, stride: string, status: string, assignment: string}} The parsed filter state.
+ */
 function readFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const search = normalizeText(params.get('q'));
@@ -382,11 +520,19 @@ function readFiltersFromUrl() {
     };
 }
 
+/**
+ * Read the graph focus node ID from the current URL search parameters.
+ * @returns {string|null} The focus node ID, or null.
+ */
 function readGraphFocusFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return String(params.get('focus') ?? '').trim() || null;
 }
 
+/**
+ * Synchronize the current filter state to the browser's URL search parameters.
+ * @param {object} filters - The filter state to persist.
+ */
 function syncFiltersToUrl(filters) {
     const params = new URLSearchParams();
 
@@ -429,6 +575,9 @@ function syncFiltersToUrl(filters) {
     window.history.replaceState({ owner: graphState.owner, project: graphState.project }, '', nextUrl);
 }
 
+/**
+ * Render the graph filter bar UI with all filter controls.
+ */
 function renderFilterBar() {
     const filterBar = document.getElementById('graph-filter-bar');
     if (!filterBar) return;
@@ -535,6 +684,10 @@ function renderFilterBar() {
     bindFilterControls();
 }
 
+/**
+ * Toggle the graph loading spinner visibility.
+ * @param {boolean} loading - Whether the graph is in a loading state.
+ */
 function setGraphLoading(loading) {
     const loadingState = document.getElementById('graph-loading-state');
     if (loadingState) {
@@ -544,6 +697,13 @@ function setGraphLoading(loading) {
     }
 }
 
+/**
+ * Bind a single filter control to its change handler and filter apply trigger.
+ * @param {string} id - The element ID.
+ * @param {string} eventType - The DOM event type to listen for.
+ * @param {function} setter - The function to update filter state from the element.
+ * @param {boolean} immediate - Whether to apply filters immediately (true) or debounced (false).
+ */
 function bindFilter(id, eventType, setter, immediate) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -553,6 +713,9 @@ function bindFilter(id, eventType, setter, immediate) {
     });
 }
 
+/**
+ * Bind event handlers to all filter controls in the filter bar.
+ */
 function bindFilterControls() {
     bindFilter('graph-filter-search', 'input', (el, f) => { f.search = normalizeText(el.value); });
     bindFilter('graph-filter-include-children', 'change', (el, f) => { f.includeChildren = el.checked; }, true);
@@ -638,6 +801,9 @@ const FILTER_FIELDS = [
   ['graph-filter-assignment', 'value', 'assignment'],
 ];
 
+/**
+ * Synchronize the filter control DOM elements to reflect the current filter state.
+ */
 function syncControlsToFilters() {
     FILTER_FIELDS.forEach(([id, prop, key]) => {
         const el = document.getElementById(id);
@@ -648,6 +814,10 @@ function syncControlsToFilters() {
     });
 }
 
+/**
+ * Schedule a debounced filter application for input-based filters.
+ * Uses a longer debounce to avoid excessive re-renders during typing.
+ */
 function scheduleFilterApply() {
     if (graphState.filterDebounceId) {
         window.clearTimeout(graphState.filterDebounceId);
@@ -658,7 +828,10 @@ function scheduleFilterApply() {
     }, 150);
 }
 
-// Small-batch debounce for rendering to avoid repeated heavy D3 renders
+/**
+ * Request a filter application, debounced to avoid repeated heavy D3 renders.
+ * @param {number} [delay=40] - The debounce delay in milliseconds.
+ */
 function requestApplyFilters(delay = 40) {
     if (graphState.applyTimer) {
         window.clearTimeout(graphState.applyTimer);
@@ -670,6 +843,10 @@ function requestApplyFilters(delay = 40) {
     }, delay);
 }
 
+/**
+ * Update the filter summary text that shows visible/total/hidden node counts.
+ * @param {{visibleNodes: number, directMatches: number, hiddenNodes: number}} metrics - The filter result metrics.
+ */
 function updateFilterSummary(metrics) {
     const summaryEl = document.getElementById('graph-filter-summary');
     if (!summaryEl) return;
@@ -695,6 +872,11 @@ function updateFilterSummary(metrics) {
     summaryEl.textContent = `Showing ${visibleLabel} of ${totalLabel} (${metrics.directMatches} direct match${metrics.directMatches === 1 ? '' : 'es'}${metrics.hiddenNodes > 0 ? `, ${metrics.hiddenNodes} hidden` : ''}).`;
 }
 
+/**
+ * Find the first node in the tree that matched the current search filter.
+ * @param {object} treeData - The tree root to search.
+ * @returns {object|null} The first matching node, or null.
+ */
 function findFirstSearchMatch(treeData) {
     if (!treeData) return null;
 
@@ -712,6 +894,12 @@ function findFirstSearchMatch(treeData) {
     return null;
 }
 
+/**
+ * Initialize zoom control buttons (zoom in, zoom out, reset, fullscreen).
+ * @param {object} zoomBehavior - The D3 zoom behavior instance.
+ * @param {SVGElement} svgNode - The SVG element to apply zoom transforms to.
+ * @param {object} d3Instance - The D3 module instance.
+ */
 function initZoomControls(zoomBehavior, svgNode, d3Instance) {
     if (!zoomBehavior || !svgNode || !d3Instance) return;
 
@@ -740,6 +928,15 @@ function initZoomControls(zoomBehavior, svgNode, d3Instance) {
     });
 }
 
+/**
+ * Render (or re-render) the graph tree into the graph content container.
+ * @param {HTMLElement} _contentDiv - The graph content div (unused, kept for signature).
+ * @param {object} d3 - The D3 module instance.
+ * @param {object} treeData - The tree data to render.
+ * @param {object} [restoreTransform=null] - A D3 zoom transform to restore.
+ * @param {object} [focusNodeData=null] - A specific node to focus on.
+ * @param {boolean} [animate=false] - Whether to animate the transition.
+ */
 function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNodeData = null, animate = false) {
     const graphContent = document.getElementById('graph-content');
     const graphViewport = document.getElementById('graph-viewport');
@@ -781,6 +978,9 @@ function renderTree(_contentDiv, d3, treeData, restoreTransform = null, focusNod
     }
 }
 
+/**
+ * Apply the current filters to the graph tree and re-render the visualization.
+ */
 function applyFilters() {
     if (!graphState.rawTree || !graphState.d3) {
         return;
@@ -820,6 +1020,9 @@ function applyFilters() {
     updateFilterSummary(metrics);
 }
 
+/**
+ * Reload the full graph data from the server and re-render.
+ */
 async function reloadGraphData() {
     const errorEl = document.getElementById('error-text');
     const successEl = document.getElementById('success-text');
@@ -853,6 +1056,11 @@ async function reloadGraphData() {
     }
 }
 
+/**
+ * Load the list of available strides for the stride filter.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ */
 async function loadAvailableStrides(owner, project) {
     const strides = await getStrides(owner, project);
     graphState.availableStrides = (Array.isArray(strides) ? strides : [])
@@ -865,13 +1073,11 @@ async function loadAvailableStrides(owner, project) {
 }
 
 /**
- * Load the project hierarchy graph visualization page.
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
- * @param {*} permission - TODO
- * @param {*} highlightNodeId - TODO
+ * Load the project hierarchy graph visualization page with filtering and context menus.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {object} permission - The current user's permission object for the project.
  */
 export async function loadGraphPage(owner, project, contentDiv, permission) {
     const errorEl = document.getElementById('error-text');

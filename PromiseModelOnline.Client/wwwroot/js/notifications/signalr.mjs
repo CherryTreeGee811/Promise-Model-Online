@@ -2,8 +2,12 @@ let connection = null;
 let onNotificationOrReconnect = null;
 
 /**
- * Start the SignalR connection with a callback for incoming notifications.
- * @param {*} onNotification - TODO
+ * Start the SignalR connection to the notifications hub.
+ * Registers a callback for incoming notifications and reconnection events.
+ * The connection uses automatic reconnect with incremental delays.
+ * @param {Function|null} onNotification - Callback invoked with notification data on new notifications,
+ *                                          or with null after a successful reconnect.
+ * @returns {Promise<void>} Resolves when the connection has started (or rejects silently on failure).
  */
 export async function startSignalR(onNotification) {
     if (connection) return;
@@ -52,6 +56,7 @@ export async function stopSignalR() {
 
 /**
  * Check if the SignalR connection is currently active.
+ * @returns {boolean} True if the SignalR connection state is Connected.
  */
 export function isSignalRConnected() {
     return connection && connection.state === signalR.HubConnectionState.Connected;

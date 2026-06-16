@@ -200,8 +200,10 @@ public class AuditEventsController : ControllerBase
     /// <summary>Internal DTO for deserializing individual field changes from JSON.</summary>
     private sealed class AuditChangeDTO
     {
+        /// <summary>The field value before the change.</summary>
         public object? Before { get; set; }
 
+        /// <summary>The field value after the change.</summary>
         public object? After { get; set; }
     }
 }

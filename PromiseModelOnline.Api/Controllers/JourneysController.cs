@@ -32,6 +32,9 @@ namespace PromiseModelOnline.Api.Controllers
 
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
+        /// <summary>Creates a new journey from a DTO with an auto-generated sequence number.</summary>
+        /// <param name="request">The journey creation data.</param>
+        /// <returns>The created journey DTO.</returns>
         public async Task<ActionResult<JourneyDTO>> CreateFromDto([FromBody] CreateJourneyRequestDTO request)
         {
             if (request is null) return BadRequest("Request is required.");

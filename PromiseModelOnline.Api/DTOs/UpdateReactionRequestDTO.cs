@@ -7,9 +7,11 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateReactionRequestDTO : IValidatableObject
 {
     /// <summary>Emoji reaction string.</summary>
-    /// <param name="validationContext">The validation context.</param>
     public string? Emote { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (string.IsNullOrWhiteSpace(Emote))

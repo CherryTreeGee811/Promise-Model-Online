@@ -5,8 +5,9 @@ import { navigate } from '../router.mjs';
 
 /**
  * Load the my-tasks page showing moments assigned to the current user.
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
+ * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
+ * @param {HTMLElement} contentDiv - Content container for client-side routing.
+ * @returns {void}
  */
 export function loadMyTasksPage(navContentDiv, contentDiv) {
     const content = document.getElementById('my-tasks-content');

@@ -10,14 +10,6 @@ import { escapeHtml } from './html.mjs';
  * @param {number} options.colspan - Table column span.
  * @returns {string} The table row HTML.
  */
-/**
- * Render an empty table row with icon, title, description, and optional button.
- * @param {*} colspan - TODO
- * @param {*} icon - TODO
- * @param {*} title - TODO
- * @param {*} description - TODO
- * @param {*} button - TODO
- */
 export function renderEmptyTableRow({ icon, title, description, button, colspan }) {
     const iconHtml = icon
         ? `<div class="empty-table-icon"><i class="bi ${escapeHtml(icon)}"></i></div>`
@@ -54,13 +46,6 @@ export function renderEmptyTableRow({ icon, title, description, button, colspan 
  * @param {string} [options.description] - Empty state description.
  * @param {object} [options.button] - Optional button config.
  * @returns {string} The section HTML.
- */
-/**
- * Render an empty state section with icon, title, description, and optional button.
- * @param {*} icon - TODO
- * @param {*} title - TODO
- * @param {*} description - TODO
- * @param {*} button - TODO
  */
 export function renderEmptyStateSection({ icon, title, description, button }) {
     const iconHtml = icon

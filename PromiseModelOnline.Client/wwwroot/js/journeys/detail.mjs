@@ -18,12 +18,13 @@ import { setupInlineEdit } from '../utils/inline-edit.mjs';
 
 /**
  * Load and render the journey detail page with flows, graph, comments, and reactions.
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} journeyId - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
- * @param {*} permission - TODO
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} journeyId - The journey's sequence number.
+ * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
+ * @param {HTMLElement} contentDiv - Content container for client-side routing.
+ * @param {object|null} permission - The user's permission object.
+ * @returns {void}
  */
 export function loadJourneyDetail(owner, project, journeyId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('journey-detail-content');

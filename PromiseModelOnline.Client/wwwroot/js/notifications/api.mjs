@@ -1,5 +1,9 @@
 import { apiGet, apiPatch } from '../api.mjs';
 
+/**
+ * Fetch all notifications from the API.
+ * @returns {Promise<Array>} Array of notification objects.
+ */
 async function fetchNotifications() {
   try {
     return await apiGet('/api/notifications') ?? [];
@@ -8,8 +12,19 @@ async function fetchNotifications() {
   }
 }
 
+/** Alias for fetchNotifications; retrieves unread notifications. @type {typeof fetchNotifications} */
 export const fetchUnreadNotifications = fetchNotifications;
+/** Alias for fetchNotifications; retrieves all notifications. @type {typeof fetchNotifications} */
 export const fetchAllNotifications = fetchNotifications;
 
+/**
+ * Mark a single notification as read.
+ * @param {number} id - The notification ID.
+ * @returns {Promise<Object>} The API response.
+ */
 export const markNotificationAsRead = id => apiPatch(`/api/notifications/${id}`, { isRead: true });
+/**
+ * Mark all notifications as read.
+ * @returns {Promise<Object>} The API response.
+ */
 export const markAllNotificationsAsRead = () => apiPatch('/api/notifications', { isRead: true, applyToAll: true });

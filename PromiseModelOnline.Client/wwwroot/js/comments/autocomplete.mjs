@@ -1,11 +1,11 @@
 import { searchUsers, searchPromises } from './autocomplete.api.mjs';
 
 /**
- * Create an autocomplete input for entity linking in comments.
- * @param {*} entityType - TODO
- * @param {*} entityId - TODO
- * @param {*} owner - TODO
- * @param {*} project - TODO
+ * Create an autocomplete dropdown for @-mention and #-reference in a comment textarea.
+ * @param {HTMLTextAreaElement} textarea - The textarea element to attach autocomplete to.
+ * @param {string} parentType - The parent entity type.
+ * @param {number|string} parentId - The parent entity ID.
+ * @returns {Object} An object with a destroy method to clean up event listeners.
  */
 export function createCommentAutocomplete(textarea, parentType, parentId) {
   const dropdown = document.createElement('div');
@@ -23,6 +23,10 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   };
   let debounceTimer = null;
 
+  /**
+   * Detect an @ or # trigger at the cursor position in the textarea.
+   * @returns {Object|null} An object with trigger, query, and start properties, or null.
+   */
   function getTriggerAtCursor() {
     const pos = textarea.selectionStart;
     const val = textarea.value;
@@ -48,6 +52,11 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     return null;
   }
 
+  /**
+   * Compute the bounding rectangle of the character at a given index in the textarea.
+   * @param {number} charIndex - The character index.
+   * @returns {DOMRect} The bounding rectangle of the character.
+   */
   function getCaretRect(charIndex) {
     const mirror = document.createElement('div');
     const computed = window.getComputedStyle(textarea);
@@ -87,6 +96,9 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     return rect;
   }
 
+  /**
+   * Position the autocomplete dropdown below the trigger character in the textarea.
+   */
   function positionDropdown() {
     const textareaRect = textarea.getBoundingClientRect();
     const computed = window.getComputedStyle(textarea);
@@ -104,6 +116,10 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     dropdown.style.top = (visibleTop + lineHeight) + 'px';
   }
 
+  /**
+   * Fetch autocomplete suggestions from the API based on the trigger info.
+   * @param {Object} triggerInfo - The trigger info from getTriggerAtCursor.
+   */
   async function fetchSuggestions(triggerInfo) {
     let results;
     try {
@@ -124,6 +140,11 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     }
   }
 
+  /**
+   * Show the autocomplete dropdown with the given items.
+   * @param {Array} items - The items to display in the dropdown.
+   * @param {Object} triggerInfo - The trigger info for positioning.
+   */
   function showDropdown(items, triggerInfo) {
     state.items = items;
     state.trigger = triggerInfo.trigger;
@@ -136,6 +157,9 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     dropdown.style.display = 'block';
   }
 
+  /**
+   * Render the dropdown list items and highlight the current selection.
+   */
   function renderDropdown() {
     dropdown.innerHTML = '';
 
@@ -168,18 +192,28 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     }
   }
 
+  /**
+   * Move the highlight to the next item in the dropdown.
+   */
   function highlightNext() {
     if (state.items.length === 0) return;
     state.highlightedIndex = (state.highlightedIndex + 1) % state.items.length;
     renderDropdown();
   }
 
+  /**
+   * Move the highlight to the previous item in the dropdown.
+   */
   function highlightPrev() {
     if (state.items.length === 0) return;
     state.highlightedIndex = (state.highlightedIndex - 1 + state.items.length) % state.items.length;
     renderDropdown();
   }
 
+  /**
+   * Select an item from the dropdown by index and insert it into the textarea.
+   * @param {number} index - The index of the item to select.
+   */
   function selectItem(index) {
     const item = state.items[index];
     if (!item) return;
@@ -209,10 +243,16 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     textarea.focus();
   }
 
+  /**
+   * Select the currently highlighted dropdown item.
+   */
   function selectHighlighted() {
     selectItem(state.highlightedIndex);
   }
 
+  /**
+   * Close the autocomplete dropdown and reset state.
+   */
   function close() {
     state.open = false;
     state.items = [];
@@ -222,6 +262,9 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     dropdown.style.display = 'none';
   }
 
+  /**
+   * Handle textarea input events: debounce and check for triggers.
+   */
   function onInput() {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function () {
@@ -234,6 +277,10 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     }, 200);
   }
 
+  /**
+   * Handle keyboard events for navigating and selecting from the dropdown.
+   * @param {KeyboardEvent} e - The keyboard event.
+   */
   function onKeydown(e) {
     if (!state.open) return;
 
@@ -268,6 +315,9 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     }
   }
 
+  /**
+   * Handle textarea blur: close the dropdown after a short delay.
+   */
   function onBlur() {
     setTimeout(function () {
       if (document.activeElement !== dropdown && !dropdown.contains(document.activeElement)) {
@@ -276,11 +326,18 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     }, 150);
   }
 
+  /**
+   * Handle clicks outside the textarea and dropdown to close the dropdown.
+   * @param {MouseEvent} e - The mouse event.
+   */
   function onClickOutside(e) {
     if (textarea.contains(e.target) || dropdown.contains(e.target)) return;
     close();
   }
 
+  /**
+   * Handle form submission to close the dropdown.
+   */
   function onFormSubmit() {
     close();
   }

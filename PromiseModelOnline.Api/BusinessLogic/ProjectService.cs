@@ -23,6 +23,10 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly IPermissionRepository _permissionRepo;
         private readonly IUserRepository _userRepo;
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectService"/> class.</summary>
+        /// <param name="projectRepo">The project repository.</param>
+        /// <param name="permissionRepo">The permission repository.</param>
+        /// <param name="userRepo">The user repository.</param>
         public ProjectService(
             IProjectRepository projectRepo,
             IPermissionRepository permissionRepo,

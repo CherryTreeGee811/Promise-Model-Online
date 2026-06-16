@@ -18,6 +18,7 @@ public sealed class ProjectExportDocument
     public DateTime ExportedAt { get; set; }
 
     [JsonPropertyName("project")]
+    /// <summary>The exported project data.</summary>
     public ProjectExportProject Project { get; set; } = new();
 }
 

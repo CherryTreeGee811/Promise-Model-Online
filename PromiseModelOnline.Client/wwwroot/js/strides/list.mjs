@@ -22,6 +22,10 @@ let cachedOwner = null;
 let cachedProject = null;
 let strideStickySyncBound = false;
 
+/**
+ * Enable or disable UI controls based on the user's edit permission.
+ * @param {boolean} canEdit - Whether the user has edit permission.
+ */
 function applyPermissionUI(canEdit) {
     const controls = document.querySelectorAll(
         '.status-dropdown, .estimate-dropdown, .owner-dropdown, .moment-type-dropdown, .backlog-target-stride, .move-to-backlog-btn, .move-to-stride-from-backlog-btn'
@@ -39,6 +43,11 @@ function applyPermissionUI(canEdit) {
     });
 }
 
+/**
+ * Execute an action while preserving the current scroll position.
+ * @param {Function} action - The action to execute.
+ * @returns {*} The return value of the action.
+ */
 function preserveScroll(action) {
     const y = window.scrollY;
     const result = action();
@@ -46,11 +55,21 @@ function preserveScroll(action) {
     return result;
 }
 
+/**
+ * Get the numeric timestamp of a stride's start date.
+ * @param {Object} stride - The stride object.
+ * @returns {number} The start date timestamp, or 0 if invalid.
+ */
 function getStrideStartDateValue(stride) {
     const d = new Date(stride?.startDate);
     return Number.isFinite(d?.getTime?.()) ? d.getTime() : 0;
 }
 
+/**
+ * Find the ID of the next stride after the given one, sorted by start date.
+ * @param {number|string} currentStrideId - The ID of the current stride.
+ * @returns {number|null} The next stride ID, or null if none found.
+ */
 function findNextStrideIdInIteration(currentStrideId) {
     const strides = Array.isArray(cachedAllStrides) ? [...cachedAllStrides] : [];
     strides.sort((a, b) => getStrideStartDateValue(a) - getStrideStartDateValue(b));
@@ -60,6 +79,11 @@ function findNextStrideIdInIteration(currentStrideId) {
     return next?.id ?? null;
 }
 
+/**
+ * Check if a moment row has a status of "Done".
+ * @param {HTMLElement} row - The table row element for a moment.
+ * @returns {boolean} Whether the status is "Done".
+ */
 function isRowDone(row) {
     const status = (row?.querySelector?.('.status-dropdown')?.value
         ?? row?.querySelector?.('.status-badge')?.textContent
@@ -67,11 +91,19 @@ function isRowDone(row) {
     return status === 'Done';
 }
 
+/**
+ * Remove the "no items" placeholder from a stride card, if present.
+ * @param {HTMLElement} card - The stride card element.
+ */
 function removeNoItemsPlaceholder(card) {
     const noItems = card?.querySelector?.('.stride-moments .no-items');
     if (noItems) noItems.remove();
 }
 
+/**
+ * Show the "no items" placeholder in a stride card if it has no moment rows.
+ * @param {HTMLElement} card - The stride card element.
+ */
 function ensureNoItemsPlaceholder(card) {
     if (!card) return;
     const momentsContainer = card.querySelector('.stride-moments');
@@ -88,6 +120,10 @@ function ensureNoItemsPlaceholder(card) {
     });
 }
 
+/**
+ * Calculate and update the total effort display for a stride card based on its DOM rows.
+ * @param {HTMLElement} card - The stride card element.
+ */
 function updateStrideTotalEffortFromDom(card) {
     const totalEl = card?.querySelector?.('.stride-total-effort');
     if (!totalEl) return;
@@ -101,6 +137,11 @@ function updateStrideTotalEffortFromDom(card) {
     totalEl.textContent = `Total Effort: ${total}`;
 }
 
+/**
+ * Move unfinished moment rows from the current stride card to the next stride card in the DOM.
+ * @param {number|string} strideId - The ID of the stride being progressed.
+ * @returns {{moved: number, targetVisible: boolean}} The number of rows moved and whether the target card was visible.
+ */
 function progressStrideDomUpdate(strideId) {
     const currentCard = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
     if (!currentCard) return { moved: 0, targetVisible: false };
@@ -143,14 +184,32 @@ function progressStrideDomUpdate(strideId) {
     return { moved: unfinishedRows.length, targetVisible: true };
 }
 
+/**
+ * Generate HTML for an estimate (effort) dropdown select element.
+ * @param {number|string} momentSeq - The moment sequence number.
+ * @param {string|null} currentEstimate - The current estimate value.
+ * @returns {string} The HTML string for the dropdown.
+ */
 function estimateDropdownHtml(momentSeq, currentEstimate) {
     return `<select class="estimate-dropdown" data-moment-id="${momentSeq}" data-current-estimate="${currentEstimate ?? ''}" aria-label="Effort estimate"></select>`;
 }
 
+/**
+ * Generate HTML for an owner dropdown select element.
+ * @param {number|string} momentSeq - The moment sequence number.
+ * @param {number|string|null} ownerId - The current owner's ID.
+ * @returns {string} The HTML string for the dropdown.
+ */
 function ownerDropdownHtml(momentSeq, ownerId) {
     return `<select class="owner-dropdown" data-moment-id="${momentSeq}" data-owner-id="${ownerId ?? ''}" aria-label="Owner"></select>`;
 }
 
+/**
+ * Generate HTML for a moment type (Story/Job) dropdown select element.
+ * @param {number|string} momentId - The moment ID.
+ * @param {string} currentType - The current type value.
+ * @returns {string} The HTML string for the dropdown.
+ */
 function momentTypeDropdownHtml(momentId, currentType) {
     const storySel = currentType === 'Story' ? 'selected' : '';
     const jobSel = currentType === 'Job' ? 'selected' : '';
@@ -160,10 +219,21 @@ function momentTypeDropdownHtml(momentId, currentType) {
     </select>`;
 }
 
+/**
+ * Generate HTML for a status dropdown select element.
+ * @param {number|string} momentSeq - The moment sequence number.
+ * @param {string|null} status - The current status value.
+ * @returns {string} The HTML string for the dropdown.
+ */
 function statusDropdownHtml(momentSeq, status) {
     return `<select class="status-dropdown" data-moment-id="${momentSeq}" data-current-status="${status ?? ''}" aria-label="Status"></select>`;
 }
 
+/**
+ * Update the status badge text and CSS class on a moment row.
+ * @param {HTMLElement} row - The table row element for the moment.
+ * @param {string} newStatus - The new status value.
+ */
 function updateStatusBadge(row, newStatus) {
     const badge = row?.querySelector('.status-badge');
     if (!badge) return;
@@ -177,10 +247,20 @@ function updateStatusBadge(row, newStatus) {
     badge.classList.add(`status-${String(safeStatus).toLowerCase()}`);
 }
 
+/**
+ * Get the content element (moments container or backlog content) within a board.
+ * @param {HTMLElement} board - The board element (stride card or backlog).
+ * @returns {HTMLElement|null} The content element, or null.
+ */
 function boardContentElement(board) {
     return board?.querySelector('.stride-moments, .backlog-content') ?? null;
 }
 
+/**
+ * Generate HTML for the collapse/expand toggle button of a board.
+ * @param {boolean} collapsed - Whether the board is currently collapsed.
+ * @returns {string} The HTML string for the toggle button.
+ */
 function boardToggleButtonHtml(collapsed) {
     const iconClass = collapsed ? 'bi-chevron-down' : 'bi-chevron-up';
     const label = collapsed ? 'Expand board' : 'Collapse board';
@@ -192,6 +272,13 @@ function boardToggleButtonHtml(collapsed) {
     `;
 }
 
+/**
+ * Generate HTML for a board header with toggle button, title, and optional actions.
+ * @param {string} title - The board title.
+ * @param {boolean} collapsed - Whether the board is collapsed.
+ * @param {string} [extraActionsHtml=''] - Optional extra action buttons HTML.
+ * @returns {string} The HTML string for the header.
+ */
 function boardHeaderHtml(title, collapsed, extraActionsHtml = '') {
     return `
         <div class="stride-header">
@@ -204,6 +291,11 @@ function boardHeaderHtml(title, collapsed, extraActionsHtml = '') {
     `;
 }
 
+/**
+ * Set the collapsed state of a board and update its toggle button appearance.
+ * @param {HTMLElement} board - The board element.
+ * @param {boolean} collapsed - Whether to collapse the board.
+ */
 function setBoardCollapsed(board, collapsed) {
     if (!board) return;
 
@@ -226,6 +318,10 @@ function setBoardCollapsed(board, collapsed) {
     }
 }
 
+/**
+ * Bind click event listeners to collapse/expand toggle buttons within a root element.
+ * @param {HTMLElement} root - The root element to bind toggles within.
+ */
 function bindBoardCollapseToggles(root) {
     if (!root || root.dataset.boundCollapseToggles === '1') return;
 
@@ -241,6 +337,9 @@ function bindBoardCollapseToggles(root) {
     });
 }
 
+/**
+ * Synchronize CSS custom properties for stride card sticky positioning based on header height.
+ */
 function syncStrideStickyOffsets() {
     const appHeader = document.querySelector('.header');
     const appHeaderHeight = appHeader?.offsetHeight ?? 0;
@@ -253,6 +352,9 @@ function syncStrideStickyOffsets() {
     });
 }
 
+/**
+ * Bind a resize event listener to sync stride sticky offsets (only once).
+ */
 function bindStrideStickyOffsetSync() {
     if (strideStickySyncBound) return;
 
@@ -260,6 +362,10 @@ function bindStrideStickyOffsetSync() {
     window.addEventListener('resize', syncStrideStickyOffsets);
 }
 
+/**
+ * Render a scrollspy navigation for stride cards and the backlog section.
+ * @param {Array} strides - The array of stride objects.
+ */
 function renderStrideScrollspy(strides) {
     const nav = document.getElementById('stride-scrollspy-nav');
     if (!nav) return;
@@ -321,6 +427,11 @@ function renderStrideScrollspy(strides) {
     }
 }
 
+/**
+ * Generate HTML for a "Graph View" link button for a moment.
+ * @param {number|string} seqNum - The moment sequence number.
+ * @returns {string} The HTML string for the link, or empty string if unavailable.
+ */
 function momentGraphLinkHtml(seqNum) {
     const href = buildGraphViewHref(cachedOwner, cachedProject, `moment-${seqNum}`);
     if (!href) return '';
@@ -333,6 +444,14 @@ function momentGraphLinkHtml(seqNum) {
     `;
 }
 
+/**
+ * Create a Bootstrap confirmation modal element and append it to the document body.
+ * @param {string} id - The modal element ID.
+ * @param {string} title - The modal title text.
+ * @param {string} confirmText - The text for the confirm button.
+ * @param {string} confirmClass - The CSS class for the confirm button (e.g. "btn-danger").
+ * @returns {HTMLElement} The modal DOM element.
+ */
 function createConfirmModal(id, title, confirmText, confirmClass) {
     let modalEl = document.getElementById(id);
     if (modalEl) return modalEl;
@@ -364,10 +483,19 @@ function createConfirmModal(id, title, confirmText, confirmClass) {
     return modalEl;
 }
 
+/**
+ * Ensure the "Move to Backlog" confirmation modal exists, creating it if needed.
+ * @returns {HTMLElement} The modal element.
+ */
 function ensureBacklogMoveModal() {
     return createConfirmModal('move-to-backlog-modal', 'Move to Backlog?', 'Move to Backlog', 'btn-danger');
 }
 
+/**
+ * Show a confirmation dialog and move a moment to the backlog on confirmation.
+ * @param {number|string} momentId - The moment ID to move.
+ * @param {Function} onConfirm - The async callback to execute on confirmation.
+ */
 function promptMoveToBacklog(momentId, onConfirm) {
     const modalEl = ensureBacklogMoveModal();
     const modalText = modalEl.querySelector('#move-to-backlog-modal-text');
@@ -394,14 +522,27 @@ function promptMoveToBacklog(momentId, onConfirm) {
     window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
 }
 
+/**
+ * Ensure the "Move to Stride" confirmation modal exists, creating it if needed.
+ * @returns {HTMLElement} The modal element.
+ */
 function ensureMoveToStrideModal() {
     return createConfirmModal('move-to-stride-modal', 'Move to Stride?', 'Move', 'btn-primary');
 }
 
+/**
+ * Ensure the "Progress Stride" confirmation modal exists, creating it if needed.
+ * @returns {HTMLElement} The modal element.
+ */
 function ensureProgressStrideModal() {
     return createConfirmModal('progress-stride-modal', 'Progress Stride?', 'Progress', 'btn-success');
 }
 
+/**
+ * Show a confirmation dialog for progressing a stride.
+ * @param {number|string} strideId - The ID of the stride to progress.
+ * @returns {Promise<boolean>} Whether the user confirmed the action.
+ */
 function promptProgressStride(strideId) {
     const modalEl = ensureProgressStrideModal();
     const modalText = modalEl.querySelector('#progress-stride-modal-text');
@@ -437,6 +578,12 @@ function promptProgressStride(strideId) {
     });
 }
 
+/**
+ * Show a confirmation dialog for moving a moment to a specific stride.
+ * @param {number|string} momentId - The moment ID to move.
+ * @param {number|string} strideId - The target stride ID.
+ * @param {Function} onConfirm - The async callback to execute on confirmation.
+ */
 function promptMoveToStride(momentId, strideId, onConfirm) {
     const modalEl = ensureMoveToStrideModal();
     const modalText = modalEl.querySelector('#move-to-stride-modal-text');
@@ -463,6 +610,11 @@ function promptMoveToStride(momentId, strideId, onConfirm) {
     window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
 }
 
+/**
+ * Get a truncated (35 chars) statement text for a moment by its ID.
+ * @param {number|string} momentId - The moment ID.
+ * @returns {string} The truncated statement, or a fallback string.
+ */
 function truncateMomentStatement(momentId) {
     const row = findMomentRow(momentId);
     const statementCell = row?.querySelector('td');
@@ -471,10 +623,19 @@ function truncateMomentStatement(momentId) {
     return statement.slice(0, 35);
 }
 
+/**
+ * Find a moment table row element by its data-moment-id attribute.
+ * @param {number|string} momentId - The moment ID.
+ * @returns {HTMLElement|null} The table row element, or null.
+ */
 function findMomentRow(momentId) {
     return document.querySelector(`tr[data-moment-id="${momentId}"]`);
 }
 
+/**
+ * Ensure the backlog section has a table tbody element, creating the board structure if needed.
+ * @returns {HTMLElement|null} The backlog tbody element, or null.
+ */
 function ensureBacklogTbody() {
     const backlogSection = document.getElementById('backlog-section');
     if (!backlogSection) return null;
@@ -498,6 +659,10 @@ function ensureBacklogTbody() {
     return backlogSection.querySelector('.backlog-content table.promisemodel-table tbody');
 }
 
+/**
+ * Get the inner HTML of an existing backlog target stride select element.
+ * @returns {string} The HTML string of options, or empty string.
+ */
 function backlogStrideOptionsHtml() {
     // Prefer cloning from existing backlog selects to avoid depending on cachedAllStrides.
     const existing = document.querySelector('.backlog-target-stride');
@@ -506,6 +671,11 @@ function backlogStrideOptionsHtml() {
     return '';
 }
 
+/**
+ * Create a table row element for a backlog moment.
+ * @param {Object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
+ * @returns {HTMLElement} The table row element.
+ */
 function createBacklogRow(moment) {
     const tr = document.createElement('tr');
     tr.dataset.momentId = moment.sequenceNumber;
@@ -529,6 +699,11 @@ function createBacklogRow(moment) {
     return tr;
 }
 
+/**
+ * Ensure a stride card has a table tbody element, creating the table structure if needed.
+ * @param {number|string} strideId - The stride ID.
+ * @returns {HTMLElement|null} The tbody element, or null.
+ */
 function ensureStrideTbody(strideId) {
     const card = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
     if (!card) return null;
@@ -557,6 +732,11 @@ function ensureStrideTbody(strideId) {
     return card.querySelector('table.promisemodel-table tbody');
 }
 
+/**
+ * Create a table row element for a moment within a stride.
+ * @param {Object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
+ * @returns {HTMLElement} The table row element.
+ */
 function createStrideRow(moment) {
     const tr = document.createElement('tr');
     tr.dataset.momentId = moment.sequenceNumber;
@@ -592,6 +772,14 @@ function createStrideRow(moment) {
     return tr;
 }
 
+/**
+ * Bind change and click event listeners for inline moment controls (status, estimate, owner, type, move, progress).
+ * @param {HTMLElement} root - The root element to bind events on.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ */
 function bindInlineMomentControls(root, owner, project, navContentDiv, contentDiv) {
     if (!root) return;
 
@@ -765,18 +953,23 @@ function bindInlineMomentControls(root, owner, project, navContentDiv, contentDi
     });
 }
 
+/**
+ * Calculate the total effort estimate for an array of moments.
+ * @param {Array} moments - The array of moment objects.
+ * @returns {number} The sum of effort estimate values.
+ */
 function totalEffort(moments) {
     return moments.reduce((sum, m) => sum + (estimateValues[m.effortEstimate] || 0), 0);
 }
 
 /* ---------- Main export ---------- */
 /**
- * Load the strides listing page for an iteration.
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
- * @param {*} permission - TODO
+ * Load and render the strides listing page for the latest iteration, including stride cards and backlog.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {Object} permission - The user's permission object.
  */
 export function loadStridesList(owner, project, navContentDiv, contentDiv, permission) {
     const strideBoard = document.getElementById('stride-board');
@@ -1053,6 +1246,13 @@ export function loadStridesList(owner, project, navContentDiv, contentDiv, permi
 }
 
 /* ---------- Event listeners ---------- */
+/**
+ * Attach inline moment control event listeners to the stride board and backlog section.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ */
 function attachPlanningListeners(owner, project, navContentDiv, contentDiv) {
     const strideBoard = document.getElementById('stride-board');
     const backlogSection = document.getElementById('backlog-section');
@@ -1062,6 +1262,11 @@ function attachPlanningListeners(owner, project, navContentDiv, contentDiv) {
 }
 
 /* ---------- Burndown drawing ---------- */
+/**
+ * Draw a burndown chart on a canvas element using the provided data points.
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on.
+ * @param {Array} points - Array of data points with date, remainingEffort, and idealRemaining.
+ */
 function drawBurndownChart(canvas, points) {
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
@@ -1121,7 +1326,13 @@ function drawBurndownChart(canvas, points) {
 }
 
 /* ---------- Helpers ---------- */
-// Create DOM option element
+/**
+ * Create a DOM option element.
+ * @param {string|null} value - The option value.
+ * @param {string|null} text - The option display text.
+ * @param {boolean} selected - Whether the option is selected.
+ * @returns {HTMLOptionElement} The option element.
+ */
 function createOption(value, text, selected) {
     const opt = document.createElement('option');
     opt.value = String(value ?? '');
@@ -1132,6 +1343,10 @@ function createOption(value, text, selected) {
 
 const estimateOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
+/**
+ * Populate an estimate dropdown with t-shirt size options based on the current value.
+ * @param {HTMLSelectElement} select - The select element to populate.
+ */
 function populateEstimateSelect(select) {
     if (!select) return;
     const current = select.getAttribute('data-current-estimate') || select.value || '';
@@ -1140,6 +1355,10 @@ function populateEstimateSelect(select) {
     estimateOrder.forEach(k => select.appendChild(createOption(k, k, String(current) === String(k))));
 }
 
+/**
+ * Populate a status dropdown with status options based on the current value.
+ * @param {HTMLSelectElement} select - The select element to populate.
+ */
 function populateStatusSelect(select) {
     if (!select) return;
     const current = select.getAttribute('data-current-status') || select.value || '';
@@ -1149,6 +1368,10 @@ function populateStatusSelect(select) {
     }
 }
 
+/**
+ * Populate an owner dropdown with project members based on the current value.
+ * @param {HTMLSelectElement} select - The select element to populate.
+ */
 function populateOwnerSelect(select) {
     if (!select) return;
     const prev = select.value || select.getAttribute('data-owner-id') || '';
@@ -1161,6 +1384,10 @@ function populateOwnerSelect(select) {
     }
 }
 
+/**
+ * Populate a backlog target stride dropdown with cached stride options.
+ * @param {HTMLSelectElement} select - The select element to populate.
+ */
 function populateBacklogStrideSelect(select) {
     if (!select) return;
     const prev = select.value || '';
@@ -1169,6 +1396,10 @@ function populateBacklogStrideSelect(select) {
     if (![...select.options].some(o => o.value === String(prev))) select.value = (select.options[0] && select.options[0].value) || '';
 }
 
+/**
+ * Populate all estimate, status, owner, and backlog stride selects within a root element.
+ * @param {HTMLElement} root - The root element containing the selects.
+ */
 function populateSelectsWithin(root) {
     if (!root) return;
     root.querySelectorAll('.estimate-dropdown').forEach(populateEstimateSelect);
@@ -1178,17 +1409,30 @@ function populateSelectsWithin(root) {
     root.querySelectorAll('.backlog-target-stride').forEach(populateBacklogStrideSelect);
 }
 
+/**
+ * Get the statement text of a moment by its ID from the DOM.
+ * @param {number|string} momentId - The moment ID.
+ * @returns {string} The statement text, trimmed.
+ */
 function getMomentStatementById(momentId) {
     const row = findMomentRow(momentId);
     return String(row?.querySelector('td')?.textContent ?? '').trim();
 }
 
+/**
+ * Format a date string as a human-readable short date (e.g. "Jan 1, 2023").
+ * @param {string} dateStr - The date string to format.
+ * @returns {string} The formatted date, or "N/A" if invalid.
+ */
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/**
+ * Update all stride countdown elements with the remaining days until the end date.
+ */
 function updateCountdowns() {
     document.querySelectorAll('.stride-countdown').forEach(el => {
         const endDate = new Date(el.dataset.endDate);

@@ -8,9 +8,11 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateMomentEstimateRequest : IValidatableObject
 {
     /// <summary>New effort estimate, or <c>null</c> to clear.</summary>
-    /// <param name="validationContext">The validation context.</param>
     public Estimate? Estimate { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Estimate.HasValue && !System.Enum.IsDefined(typeof(Estimate), Estimate.Value))

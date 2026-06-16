@@ -8,9 +8,11 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateMomentStatusRequest : IValidatableObject
 {
     /// <summary>The new status value to apply.</summary>
-    /// <param name="validationContext">The validation context.</param>
     public MomentStatus NewStatus { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (!System.Enum.IsDefined(typeof(MomentStatus), NewStatus))

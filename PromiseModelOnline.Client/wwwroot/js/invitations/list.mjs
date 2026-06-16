@@ -4,13 +4,18 @@ import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 
 /**
  * Load the invitations listing page.
- * @param {*} contentDiv - TODO
+ * @param {HTMLElement} contentDiv - The main content container element.
+ * @returns {void}
  */
 export function loadInvitationsPage(contentDiv) {
     const listDiv = document.getElementById('invitations-list');
     const errorEl = document.getElementById('error-text');
     
 
+    /**
+     * Fetch and render pending invitations.
+     * @returns {Promise<void>}
+     */
     async function refresh() {
         try {
             const invitations = await getPendingInvitations();

@@ -1,3 +1,10 @@
+/**
+ * Build an HTML string for a knowledge base section.
+ * @param {string} id - The section element ID.
+ * @param {string} title - The section heading text.
+ * @param {string} content - The inner HTML content for the section.
+ * @returns {string} The complete section HTML string.
+ */
 function section(id, title, content) {
   return `
     <section id="${id}" class="kb-section">
@@ -9,6 +16,7 @@ function section(id, title, content) {
 
 /**
  * Load the knowledge base page content.
+ * @returns {void}
  */
 export function loadKnowledgeBase() {
     const kbContent = document.getElementById('kb-content');
@@ -91,6 +99,10 @@ export function loadKnowledgeBase() {
     initScrollSpy();
 }
 
+/**
+ * Initialize smooth scrolling for knowledge base sidebar navigation links.
+ * @returns {void}
+ */
 function initSidebarScroll() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
     navLinks.forEach(link => {
@@ -109,6 +121,10 @@ function initSidebarScroll() {
     });
 }
 
+/**
+ * Initialize scroll spy to highlight the active knowledge base section in the sidebar.
+ * @returns {void}
+ */
 function initScrollSpy() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
     const sections = document.querySelectorAll('.kb-section[id]');

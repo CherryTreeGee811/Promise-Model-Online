@@ -4,7 +4,10 @@ let isAuthenticated = false;
 let username = null;
 let userId = null;
 
-/** Restore authentication state from session storage on module load. */
+/**
+ * Restore authentication state from session storage on module load.
+ * Called immediately at module init time to rehydrate auth state.
+ */
 function loadFromStorage() {
     try {
         const stored = sessionStorage.getItem(AUTH_STORAGE_KEY);
@@ -19,7 +22,10 @@ function loadFromStorage() {
     }
 }
 
-/** Persist the current authentication state to session storage. */
+/**
+ * Persist the current authentication state to session storage.
+ * Called automatically whenever auth state changes.
+ */
 function saveToStorage() {
     try {
         sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ isAuthenticated, username, userId }));
@@ -42,7 +48,10 @@ export function setAuthState({ isAuthenticated: auth, username: name, userId: id
     saveToStorage();
 }
 
-/** Clear all authentication state and remove from storage. */
+/**
+ * Clear all authentication state and remove from storage.
+ * Also removes the persisted entry from sessionStorage.
+ */
 export function clearAuth() {
     isAuthenticated = false;
     username = null;

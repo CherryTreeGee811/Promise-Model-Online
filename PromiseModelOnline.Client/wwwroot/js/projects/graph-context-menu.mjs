@@ -17,6 +17,12 @@ const NODE_CHILD_LABELS = {
     flow: 'Moment',
 };
 
+/**
+ * Get the API route for deleting a graph node by its type and ID.
+ * @param {string} nodeType - The node type.
+ * @param {string|number} nodeId - The node's ID.
+ * @returns {string|null} The delete API route, or null if invalid.
+ */
 function getDeleteRoute(nodeType, nodeId) {
     const normalizedType = normalizeNodeType(nodeType);
 
@@ -37,21 +43,41 @@ function getDeleteRoute(nodeType, nodeId) {
     }
 }
 
+/**
+ * Normalize a node type string to lowercase trimmed form.
+ * @param {string} nodeType - The raw node type.
+ * @returns {string} The normalized node type.
+ */
 function normalizeNodeType(nodeType) {
     return String(nodeType ?? '').trim().toLowerCase();
 }
 
+/**
+ * Get the display label for a graph node.
+ * @param {object} nodeData - The node data.
+ * @returns {string} The node's label text.
+ */
 function getNodeLabel(nodeData) {
     const payload = nodeData?.payload ?? {};
     return String(payload.statement ?? payload.name ?? `#${payload.id ?? ''}`).trim();
 }
 
+/**
+ * Get the label for the child type of a given node type.
+ * @param {string} nodeType - The parent node type.
+ * @returns {string|null} The child type label, or null if none.
+ */
 function getChildLabel(nodeType) {
     return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? null;
 }
 
 
 
+/**
+ * Get the API metadata for creating a child entity under a given node.
+ * @param {object} nodeData - The parent node data.
+ * @returns {{entityLabel: string, endpoint: string, parentField: string}|null} The create action metadata, or null.
+ */
 function getCreateActionMeta(nodeData) {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
 
@@ -72,6 +98,11 @@ function getCreateActionMeta(nodeData) {
     }
 }
 
+/**
+ * Get default values for the create form based on the parent node type.
+ * @param {object} nodeData - The parent node data.
+ * @returns {object|null} Default form values (statement, description, displayOrder), or null.
+ */
 function getCreateFormDefaults(nodeData) {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
     const childCount = Number.parseInt(nodeData.childCount ?? 0, 10) || 0;
@@ -113,6 +144,13 @@ function getCreateFormDefaults(nodeData) {
     }
 }
 
+/**
+ * Make an authenticated JSON API request.
+ * @param {string} url - The request URL.
+ * @param {object} [options={}] - Fetch options (headers, method, body, etc.).
+ * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
+ * @throws {Error} If the request fails or returns a non-OK status.
+ */
 async function requestJson(url, options) {
     const { headers: optionHeaders, ...fetchOptions } = options;
     const response = await apiFetch(url, {
@@ -147,6 +185,12 @@ async function requestJson(url, options) {
     throw new Error(message);
 }
 
+/**
+ * Ensure a Bootstrap modal element exists in the DOM, creating it if necessary.
+ * @param {string} modalId - The ID for the modal element.
+ * @param {string} modalMarkup - The HTML markup for the modal.
+ * @returns {HTMLElement|null} The modal element, or null if creation failed.
+ */
 function ensureModal(modalId, modalMarkup) {
     let modalEl = document.getElementById(modalId);
     if (modalEl) return modalEl;
@@ -162,6 +206,11 @@ function ensureModal(modalId, modalMarkup) {
     return modalEl;
 }
 
+/**
+ * Open a Bootstrap modal to confirm deletion of an item.
+ * @param {string} label - The label of the item to delete.
+ * @returns {Promise<boolean>} Resolves to true if confirmed, false otherwise.
+ */
 function openDeleteConfirmationModal(label) {
     const modalEl = ensureModal('graph-delete-confirmation-modal', `
         <div class="modal fade" id="graph-delete-confirmation-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -217,6 +266,11 @@ function openDeleteConfirmationModal(label) {
     });
 }
 
+/**
+ * Create a form input field element.
+ * @param {{name: string, label: string, type?: string, value?: string, placeholder?: string, rows?: number}} config - The field configuration.
+ * @returns {{field: HTMLLabelElement, input: HTMLInputElement|HTMLTextAreaElement}} The field and input elements.
+ */
 function createInputField({ name, label, type = 'text', value = '', placeholder = '', rows = 3 }) {
     const field = document.createElement('label');
     field.className = 'graph-context-menu-form__field';
@@ -243,6 +297,11 @@ function createInputField({ name, label, type = 'text', value = '', placeholder 
     return { field, input };
 }
 
+/**
+ * Create a form select field element.
+ * @param {{name: string, label: string, value?: string, options?: {value: string, label: string}[]}} config - The field configuration.
+ * @returns {{field: HTMLLabelElement, select: HTMLSelectElement}} The field and select elements.
+ */
 function createSelectField({ name, label, value = '', options = [] }) {
     const field = document.createElement('label');
     field.className = 'graph-context-menu-form__field';
@@ -267,6 +326,10 @@ function createSelectField({ name, label, value = '', options = [] }) {
     return { field, select };
 }
 
+/**
+ * Get the option list for moment types (Story, Job).
+ * @returns {{value: string, label: string}[]} The moment type options.
+ */
 function getMomentTypeOptions() {
     return [
         { value: 'Story', label: 'Story' },
@@ -274,6 +337,11 @@ function getMomentTypeOptions() {
     ];
 }
 
+/**
+ * Get the current status value of a moment node, mapping statusColor to a canonical status.
+ * @param {object} nodeData - The node data.
+ * @returns {string} The canonical status value (Done, Blocked, InProgress, Todo).
+ */
 function getMomentStatusValue(nodeData) {
     const payload = nodeData?.payload ?? {};
     const status = String(payload.status ?? payload.Status ?? '').trim();
@@ -293,6 +361,10 @@ function getMomentStatusValue(nodeData) {
     return 'Todo';
 }
 
+/**
+ * Get the option list for moment effort estimates.
+ * @returns {{value: string, label: string}[]} The estimate options.
+ */
 function getMomentEstimateOptions() {
     return [
         { value: '-', label: '-' },
@@ -306,6 +378,11 @@ function getMomentEstimateOptions() {
     ];
 }
 
+/**
+ * Get the option list for stride selection, including a Backlog option.
+ * @param {object[]} [strides=[]] - The available strides.
+ * @returns {{value: string, label: string}[]} The stride options.
+ */
 function getStrideOptions(strides = []) {
     return [
         { value: '', label: 'Backlog' },
@@ -316,6 +393,16 @@ function getStrideOptions(strides = []) {
     ];
 }
 
+/**
+ * Build the create-moment form element with all moment-specific fields.
+ * @param {object} nodeData - The parent (flow) node data.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {function} getAvailableStrides - Function returning the list of available strides.
+ * @param {function} onGraphMutated - Callback after successful creation.
+ * @param {function} closeMenus - Function to close all context menus.
+ * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
+ */
 function buildMomentFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus) {
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
@@ -459,6 +546,13 @@ function buildMomentFormElement(nodeData, owner, project, getAvailableStrides, o
     return form;
 }
 
+/**
+ * Build the change-moment-status form element.
+ * @param {object} nodeData - The moment node data.
+ * @param {function} onGraphMutated - Callback after successful status update.
+ * @param {function} closeMenus - Function to close all context menus.
+ * @returns {HTMLFormElement|null} The form element, or null if the moment sequence number is missing.
+ */
 function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
     const momentSeq = nodeData?.payload?.sequenceNumber;
     if (momentSeq == null) {
@@ -522,6 +616,17 @@ function buildMomentStatusFormElement(nodeData, onGraphMutated, closeMenus) {
     return form;
 }
 
+/**
+ * Build a create-form element for the given parent node.
+ * Dispatches to buildMomentFormElement for moment creation, otherwise builds a generic form.
+ * @param {object} nodeData - The parent node data.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {function} getAvailableStrides - Function returning available strides (for moments).
+ * @param {function} onGraphMutated - Callback after successful creation.
+ * @param {function} closeMenus - Function to close all context menus.
+ * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
+ */
 function buildCreateFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus) {
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
@@ -633,6 +738,22 @@ function buildCreateFormElement(nodeData, owner, project, getAvailableStrides, o
     return form;
 }
 
+/**
+ * Build the list of actions for the context menu based on node type and permissions.
+ * @param {object} nodeData - The node data for which to build actions.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {function} onGraphMutated - Callback after any mutation.
+ * @param {function} onProjectDeleted - Callback when the project is deleted.
+ * @param {function} closeMenus - Function to close all context menus.
+ * @param {function} openCreateForm - Function to open the create form.
+ * @param {function} openMomentStatusForm - Function to open the moment status form.
+ * @param {function} isNodeChildrenHidden - Function to check if a node's children are hidden.
+ * @param {function} setNodeChildrenHidden - Function to toggle children visibility.
+ * @param {function} revealNextLevel - Function to reveal the next level of children.
+ * @param {object} permission - The current user's permission object.
+ * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: function}[]} The action list.
+ */
 function buildMenuActions(
     nodeData,
     owner,
@@ -739,6 +860,11 @@ function buildMenuActions(
     return actions;
 }
 
+/**
+ * Build the DOM element for the context menu from a list of actions.
+ * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: function}[]} actions - The action definitions.
+ * @returns {HTMLDivElement} The menu element.
+ */
 function buildMenuElement(actions) {
     const menu = document.createElement('div');
     menu.className = 'graph-context-menu';
@@ -771,8 +897,9 @@ function buildMenuElement(actions) {
 }
 
 /**
- * Create a context menu controller for the graph visualization.
- * @param {*} container - TODO
+ * Create a context menu controller for the graph visualization using Tippy.js.
+ * @param {{owner: string, project: string, getAvailableStrides: function, onGraphMutated: function, onProjectDeleted: function, isNodeChildrenHidden: function, setNodeChildrenHidden: function, revealNextLevel: function, permission: object}} [options={}] - Configuration options.
+ * @returns {{hide: function, destroy: function, open: function}} The context menu controller.
  */
 export function createGraphContextMenuController({
     owner,
@@ -829,25 +956,44 @@ export function createGraphContextMenuController({
         },
     });
 
+    /**
+     * Hide the create form tippy popup.
+     */
     function hideCreateForm() {
         createFormTippy.hide();
     }
 
+    /**
+     * Close all context menu popups (create form and main menu).
+     */
     function closeMenus() {
         hideCreateForm();
         instance.hide();
     }
 
+    /**
+     * Hide the context menu (public API).
+     */
     function hide() {
         closeMenus();
     }
 
+    /**
+     * Destroy the context menu controller and clean up resources.
+     */
     function destroy() {
         createFormTippy.destroy();
         instance.destroy();
         menuContent.replaceChildren();
     }
 
+    /**
+     * Open the create-form tippy popup for a given node.
+     * @param {object} nodeData - The parent node data.
+     * @param {string} sourceOwner - The project owner's slug.
+     * @param {string} sourceProject - The project's slug.
+     * @param {function} refreshGraph - Callback to refresh the graph after creation.
+     */
     function openCreateForm(nodeData, sourceOwner, sourceProject, refreshGraph) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
         const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
@@ -864,6 +1010,11 @@ export function createGraphContextMenuController({
         createFormTippy.show();
     }
 
+    /**
+     * Open the change-moment-status form tippy popup.
+     * @param {object} nodeData - The moment node data.
+     * @param {function} refreshGraph - Callback to refresh the graph after status update.
+     */
     function openMomentStatusForm(nodeData, refreshGraph) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
         const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
@@ -880,6 +1031,11 @@ export function createGraphContextMenuController({
         createFormTippy.show();
     }
 
+    /**
+     * Open the context menu at the given mouse event position.
+     * @param {MouseEvent} event - The triggering mouse event.
+     * @param {object} nodeData - The node data for which to show the context menu.
+     */
     function open(event, nodeData) {
         const clientX = Number(event?.clientX ?? 0);
         const clientY = Number(event?.clientY ?? 0);

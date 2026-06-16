@@ -4,6 +4,11 @@ import { startSignalR, stopSignalR } from './signalr.mjs';
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
 let started = false;
 
+/**
+ * Update the notification badge DOM element with the given count.
+ * Shows the badge when count > 0, hides it otherwise.
+ * @param {number} count - The number of unread notifications.
+ */
 function setBadgeCount(count) {
     const badge = document.getElementById('notification-badge');
     if (!badge) return;
@@ -17,6 +22,12 @@ function setBadgeCount(count) {
     }
 }
 
+/**
+ * Fetch the latest unread notifications and update the badge count.
+ * Dispatches a custom DOM event with the notification data so other
+ * components can react to the update.
+ * @returns {Promise<void>}
+ */
 async function handleNotificationUpdate() {
     try {
         const notifications = await fetchUnreadNotifications();
@@ -38,6 +49,11 @@ export async function updateNotificationBadge() {
     await handleNotificationUpdate();
 }
 
+/**
+ * Stop the notification polling loop.
+ * Disconnects the SignalR hub and resets the started flag so that
+ * startNotificationPolling may be called again later.
+ */
 export function stopNotificationPolling() {
     started = false;
     stopSignalR();
@@ -59,6 +75,7 @@ export function startNotificationPolling() {
 
 /**
  * Get the custom event name dispatched on unread count updates.
+ * @returns {string} The event name string.
  */
 export function getUnreadNotificationsEventName() {
     return NOTIFICATIONS_EVENT;

@@ -9,12 +9,12 @@ import { formatCommentText } from '../utils/entity-reference.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 
 /**
- * Load the project settings page.
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} permission - TODO
+ * Load the project settings page with inline editing, summary, export, and delete controls.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {object} permission - The current user's permission object.
  */
 export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, permission) {
     const form = document.getElementById('project-settings-form');
@@ -47,6 +47,9 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         descEditor = setupInlineEdit(descriptionInput, descView, descEditBtn, saveBtn);
     }
 
+    /**
+     * Disable UI controls based on the user's permission level.
+     */
     function applyPermissionGating() {
         const canEdit = permission?.permission === 'Edit';
         const isOwner = permission?.isOwner === true;
@@ -96,16 +99,26 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         return;
     }
 
+    /**
+     * Clear error and success message elements.
+     */
     function clearMessages() {
         errorText.textContent = '';
         successText.textContent = '';
     }
 
+    /**
+     * Toggle the summary section loading state.
+     * @param {boolean} loading - Whether the summary is loading.
+     */
     function setSummaryLoading(loading) {
         summaryLoading.hidden = !loading;
         summaryPanel.hidden = loading;
     }
 
+    /**
+     * Show a success popover on the export button indicating the export is complete.
+     */
     function showExportPopover() {
         if (typeof bootstrap === 'undefined' || !bootstrap.Popover) {
             successText.textContent = 'Exported!';
@@ -136,10 +149,19 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         }, 2000);
     }
 
+    /**
+     * Get the confirmation phrase required to delete a project.
+     * @param {string} projectName - The project name.
+     * @returns {string} The deletion confirmation phrase.
+     */
     function getDeletePhrase(projectName) {
         return `delete ${projectName}`;
     }
 
+    /**
+     * Reset the delete confirmation gate UI for a given project name.
+     * @param {string} projectName - The project name to base the confirmation phrase on.
+     */
     function refreshDeleteGate(projectName) {
         const phrase = getDeletePhrase(projectName);
         deleteConfirmationText.textContent = phrase;
@@ -148,17 +170,30 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         deleteButton.dataset.confirmationPhrase = phrase;
     }
 
+    /**
+     * Set the delete button's busy/loading state.
+     * @param {boolean} busy - Whether the button should show a loading state.
+     */
     function setDeleteButtonState(busy) {
         deleteButton.disabled = busy;
         deleteButtonSpinner.classList.toggle('d-none', !busy);
         deleteButtonLabel.textContent = busy ? 'Deleting Project...' : 'Delete Project';
     }
 
+    /**
+     * Update the delete button enabled/disabled state based on the confirmation input.
+     */
     function updateDeleteButtonState() {
         const expected = deleteButton.dataset.confirmationPhrase || '';
         deleteButton.disabled = deleteConfirmationInput.value !== expected;
     }
 
+    /**
+     * Render the project summary table with entity counts and metadata.
+     * @param {object} project - The project object.
+     * @param {{promises: number, epics: number, journeys: number, flows: number, moments: number, totalPromises: number}} counts - The entity counts.
+     * @param {number} memberCount - The number of team members.
+     */
     function renderSummary(project, counts, memberCount) {
         renderSummaryTable(summaryPanel, [
             { label: 'Created', value: formatDate(project.createdAt) },
@@ -172,6 +207,10 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         ]);
     }
 
+    /**
+     * Load and render the project summary from graph data and member list.
+     * @param {object} projectObj - The project object.
+     */
     async function loadSummary(projectObj) {
         setSummaryLoading(true);
 
@@ -221,6 +260,9 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
         }
     }
 
+    /**
+     * Load the project details and populate the settings form.
+     */
     async function loadProject() {
         try {
             const projectData = await getProject(owner, project);
@@ -316,6 +358,11 @@ export function loadProjectSettingsPage(navContentDiv, contentDiv, owner, projec
     loadProject();
 }
 
+/**
+ * Download a blob object as a file in the browser.
+ * @param {Blob} blob - The blob to download.
+ * @param {string} filename - The desired filename.
+ */
 function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -327,6 +374,11 @@ function downloadBlob(blob, filename) {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * Format a date value for display in the settings summary.
+ * @param {string|Date} value - The date value to format.
+ * @returns {string} The formatted date string.
+ */
 function formatDate(value) {
     return formatTimestamp(value);
 }

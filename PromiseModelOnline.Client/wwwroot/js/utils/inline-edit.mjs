@@ -15,6 +15,11 @@ export function setupInlineEdit(inputEl, viewEl, editBtn, saveBtn, cancelBtn) {
   let cancelValue = '';
   let cancelViewHtml = '';
 
+  /**
+   * Switch to view mode, hiding the input and showing the view element.
+   * @param {string} value - The HTML content to display in the view element.
+   * @returns {void}
+   */
   function showView(value) {
     viewEl.innerHTML = value || '';
     viewEl.style.display = '';
@@ -24,6 +29,10 @@ export function setupInlineEdit(inputEl, viewEl, editBtn, saveBtn, cancelBtn) {
     if (cancelBtn) cancelBtn.style.display = 'none';
   }
 
+  /**
+   * Switch to edit mode, hiding the view element and showing the input.
+   * @returns {void}
+   */
   function showEdit() {
     cancelValue = inputEl.value;
     cancelViewHtml = viewEl.innerHTML;
@@ -53,6 +62,11 @@ export function setupInlineEdit(inputEl, viewEl, editBtn, saveBtn, cancelBtn) {
 
   return {
     showView,
+    /**
+     * Display a "Saved!" popover on the save button, then revert to view mode.
+     * @param {string} value - The HTML content to display after saving.
+     * @returns {void}
+     */
     showSavedPopover(value) {
       if (!saveBtn) {
         showView(value);

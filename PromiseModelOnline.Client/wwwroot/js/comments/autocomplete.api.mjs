@@ -2,9 +2,10 @@ import { apiGet } from '../api.mjs';
 
 /**
  * Search for users within a project for @-mention autocomplete.
- * @param {*} parentType - TODO
- * @param {*} parentId - TODO
- * @param {*} searchTerm - TODO
+ * @param {string} parentType - The parent entity type.
+ * @param {number|string} parentId - The parent entity ID.
+ * @param {string} search - The search term to filter users.
+ * @returns {Promise<Array>} A promise resolving to matching user objects.
  */
 export function searchUsers(parentType, parentId, search) {
   const params = new URLSearchParams({ parentType, parentId, search });
@@ -13,9 +14,10 @@ export function searchUsers(parentType, parentId, search) {
 
 /**
  * Search for entities in the hierarchy for comment linking.
- * @param {*} parentType - TODO
- * @param {*} parentId - TODO
- * @param {*} searchTerm - TODO
+ * @param {string} parentType - The parent entity type.
+ * @param {number|string} parentId - The parent entity ID.
+ * @param {string} search - The search term to filter entities.
+ * @returns {Promise<Array>} A promise resolving to matching entity objects.
  */
 export function searchPromises(parentType, parentId, search) {
   const params = new URLSearchParams({ parentType, parentId, search });

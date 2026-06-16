@@ -9,9 +9,11 @@ public class UpdateStrideRequestDTO : IValidatableObject
     /// <summary>
     /// When true, progresses the stride by moving unfinished moments to the next stride.
     /// </summary>
-    /// <param name="validationContext">The validation context.</param>
     public bool? ProgressUnfinishedMoments { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (ProgressUnfinishedMoments is null)

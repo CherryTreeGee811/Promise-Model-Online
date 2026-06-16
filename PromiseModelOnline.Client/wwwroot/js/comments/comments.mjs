@@ -7,12 +7,12 @@ import { isAtLeast } from '../utils/permissions.mjs';
 
 /**
  * Load and render the comments section for an entity.
- * @param {*} container - TODO
- * @param {*} entityType - TODO
- * @param {*} entityId - TODO
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} permission - TODO
+ * @param {HTMLElement} container - The DOM element to render comments into.
+ * @param {string} parentType - The parent entity type (e.g. "moment", "promise").
+ * @param {number|string} parentId - The parent entity ID.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {Object} permission - The user's permission object.
  */
 export function loadComments(container, parentType, parentId, owner, project, permission) {
     const canComment = isAtLeast(permission?.permission, 'Comment');
@@ -69,6 +69,12 @@ export function loadComments(container, parentType, parentId, owner, project, pe
     }
 }
 
+/**
+ * Render an array of comment objects into the container element.
+ * @param {HTMLElement} container - The DOM element to render comments into.
+ * @param {Array} comments - The array of comment objects.
+ * @param {boolean} canComment - Whether the user can post new comments.
+ */
 function renderComments(container, comments, canComment) {
     container.innerHTML = '';
     if (!comments || comments.length === 0) {
@@ -82,6 +88,11 @@ function renderComments(container, comments, canComment) {
     comments.forEach(comment => container.appendChild(createCommentElement(comment)));
 }
 
+/**
+ * Append a single comment element to the container (removes empty state if present).
+ * @param {HTMLElement} container - The comments list container.
+ * @param {Object} comment - The comment object to append.
+ */
 function appendComment(container, comment) {
     // Remove empty state without re-rendering the entire list.
     const empty = container.querySelector('.no-items');
@@ -89,6 +100,11 @@ function appendComment(container, comment) {
     container.appendChild(createCommentElement(comment));
 }
 
+/**
+ * Create a DOM element representing a single comment.
+ * @param {Object} comment - The comment object with fields like userName, createdAt, text, etc.
+ * @returns {HTMLElement} The comment DOM element.
+ */
 function createCommentElement(comment) {
     const div = document.createElement('div');
     div.className = 'comment-item';

@@ -5,12 +5,13 @@ const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 
 /**
  * Load and render the reactions section for an entity.
- * @param {*} container - TODO
- * @param {*} entityType - TODO
- * @param {*} entityId - TODO
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} permission - TODO
+ * @param {HTMLElement} container - The container element to render reactions into.
+ * @param {string} parentType - The parent entity type.
+ * @param {number} parentId - The parent entity ID.
+ * @param {string} owner - The owner slug.
+ * @param {string} project - The project slug.
+ * @param {Object} permission - The user's permission object.
+ * @returns {void}
  */
 export function loadReactions(container, parentType, parentId, owner, project, permission) {
     const canReact = permission?.permission === 'Comment' || permission?.permission === 'Edit';
@@ -35,6 +36,10 @@ export function loadReactions(container, parentType, parentId, owner, project, p
         myEmote: null,
     };
 
+    /**
+     * Render the reaction counts summary into the summary element.
+     * @returns {void}
+     */
     function renderSummary() {
         const items = EMOTE_SET
             .filter(e => state.counts[e])
@@ -42,6 +47,10 @@ export function loadReactions(container, parentType, parentId, owner, project, p
         summaryEl.textContent = items.join(' ') || 'No reactions yet.';
     }
 
+    /**
+     * Fetch the latest reactions from the API and update the summary.
+     * @returns {Promise<void>}
+     */
     async function refresh() {
         try {
             const reactions = await getReactions(owner, project, parentType, parentId);

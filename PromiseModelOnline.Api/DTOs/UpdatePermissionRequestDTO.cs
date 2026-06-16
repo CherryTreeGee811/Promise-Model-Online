@@ -10,9 +10,11 @@ public class UpdatePermissionRequestDTO : IValidatableObject
     public string? Status { get; set; }
     
     /// <summary>Access level (cannot be updated via this endpoint).</summary>
-    /// <param name="validationContext">The validation context.</param>
     public string? Level { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (string.IsNullOrWhiteSpace(Status))

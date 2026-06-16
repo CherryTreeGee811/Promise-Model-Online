@@ -2,6 +2,12 @@ import { getPermissions, inviteUser, removePermission, searchUsers } from './api
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyTableRow } from '../utils/empty-table.mjs';
 
+/**
+ * Ensure a Bootstrap modal element exists in the DOM, creating it if necessary.
+ * @param {string} modalId - The ID for the modal element.
+ * @param {string} modalMarkup - The HTML markup for the modal.
+ * @returns {HTMLElement|null} The modal element, or null if creation failed.
+ */
 function ensureModal(modalId, modalMarkup) {
     let modalEl = document.getElementById(modalId);
     if (modalEl) return modalEl;
@@ -12,6 +18,10 @@ function ensureModal(modalId, modalMarkup) {
     return modalEl;
 }
 
+/**
+ * Ensure the revoke-permission confirmation modal exists in the DOM.
+ * @returns {HTMLElement|null} The modal element.
+ */
 function ensureRevokeModal() {
     return ensureModal('revoke-modal', `
         <div class="modal fade" id="revoke-modal" tabindex="-1" aria-hidden="true">
@@ -35,12 +45,11 @@ function ensureRevokeModal() {
 }
 
 /**
- * Load the project sharing and permissions page.
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
- * @param {*} permission - TODO
+ * Load the project sharing and permissions page with invite/revoke controls.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {object} permission - The current user's permission object.
  */
 export function loadSharePage(owner, project, contentDiv, permission) {
     const errorEl = document.getElementById('error-text');
@@ -48,6 +57,10 @@ export function loadSharePage(owner, project, contentDiv, permission) {
     const successEl = document.getElementById('success-text');
     const section = document.getElementById('permissions-section');
 
+    /**
+     * Bind a click handler to a revoke button to open the confirmation modal.
+     * @param {HTMLElement} btn - The revoke button element.
+     */
     function bindRevokeButton(btn) {
         if (!btn || btn.dataset.bound === '1') return;
         btn.dataset.bound = '1';
@@ -86,6 +99,9 @@ export function loadSharePage(owner, project, contentDiv, permission) {
 
     let acState = { items: [], highlightedIndex: -1, open: false };
 
+    /**
+     * Close the invite user autocomplete dropdown.
+     */
     function closeAutocomplete() {
         const dropdown = document.getElementById('invite-autocomplete');
         if (dropdown) {
@@ -95,6 +111,9 @@ export function loadSharePage(owner, project, contentDiv, permission) {
         acState = { items: [], highlightedIndex: -1, open: false };
     }
 
+    /**
+     * Render the user search autocomplete dropdown items.
+     */
     function renderAutocomplete() {
         const dropdown = document.getElementById('invite-autocomplete');
         if (!dropdown) return;
@@ -119,6 +138,10 @@ export function loadSharePage(owner, project, contentDiv, permission) {
         }
     }
 
+    /**
+     * Select an item from the autocomplete dropdown and populate the email input.
+     * @param {number} index - The index of the selected item.
+     */
     function selectAutocompleteItem(index) {
         const item = acState.items[index];
         if (!item) return;
@@ -130,6 +153,10 @@ export function loadSharePage(owner, project, contentDiv, permission) {
         input?.focus();
     }
 
+    /**
+     * Fetch user search suggestions for autocomplete based on the query string.
+     * @param {string} query - The search query (minimum 1 character).
+     */
     async function fetchAutocompleteSuggestions(query) {
         if (query.length < 1) {
             closeAutocomplete();
@@ -156,6 +183,9 @@ export function loadSharePage(owner, project, contentDiv, permission) {
         }
     }
 
+    /**
+     * Set up the invite email input with keyboard-driven autocomplete behavior.
+     */
     function setupInviteAutocomplete() {
         const input = document.getElementById('invite-email');
         const dropdown = document.getElementById('invite-autocomplete');
@@ -217,6 +247,10 @@ export function loadSharePage(owner, project, contentDiv, permission) {
         });
     }
 
+    /**
+     * Open the invite-user modal with form, autocomplete, and submit handling.
+     * @param {{owner: string, project: string, onInvited: function}} config - Invite configuration.
+     */
     function openInviteModal({ owner, project, onInvited }) {
         const modalEl = ensureModal('invite-modal', `
             <div class="modal fade" id="invite-modal" tabindex="-1" aria-hidden="true">
@@ -306,6 +340,9 @@ export function loadSharePage(owner, project, contentDiv, permission) {
         window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
     }
 
+    /**
+     * Refresh the permissions list from the server and re-render the table.
+     */
     async function refreshPermissions() {
             try {
                 const isOwner = permission?.isOwner === true;

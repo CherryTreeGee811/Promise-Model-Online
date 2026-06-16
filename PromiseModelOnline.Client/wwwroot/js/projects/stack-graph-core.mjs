@@ -33,13 +33,18 @@ export const NODE_ROUTE_SEGMENTS = {
 export const NODE_TYPE_INDEX = new Map(NODE_TYPES.map((type, index) => [type, index]));
 
 /**
- * Normalize text for display in graph nodes.
- * @param {*} text - TODO
+ * Normalize text by trimming and lowercasing.
+ * @param {string} value - The text to normalize.
+ * @returns {string} The normalized text.
  */
 export function normalizeText(value) {
     return String(value ?? '').trim().toLowerCase();
 }
 
+/**
+ * Check whether graph focus debug logging is enabled.
+ * @returns {boolean} True if debug logging is enabled.
+ */
 function isGraphFocusDebugEnabled() {
     try {
         const params = new URLSearchParams(window.location.search);
@@ -54,13 +59,20 @@ function isGraphFocusDebugEnabled() {
     }
 }
 
+/**
+ * Log graph focus debug information if debugging is enabled.
+ * @param {string} stage - The debug stage label.
+ * @param {object} details - The debug data.
+ */
 function logGraphFocus(stage, details) {
     if (!isGraphFocusDebugEnabled()) return;
     console.info('[graph-focus]', stage, details);
 }
 
 /**
- * Get the inner viewport dimensions for graph rendering.
+ * Get the inner viewport dimensions of an element, excluding padding.
+ * @param {HTMLElement} element - The element to measure.
+ * @returns {{width: number, height: number}} The inner dimensions.
  */
 export function getInnerViewportSize(element) {
     if (!element) return { width: 0, height: 0 };
@@ -79,8 +91,9 @@ export function getInnerViewportSize(element) {
 
 /**
  * Truncate text to a maximum length with ellipsis.
- * @param {*} text - TODO
- * @param {*} maxLen - TODO
+ * @param {string} text - The text to truncate.
+ * @param {number} [maxLength=40] - The maximum length before truncation.
+ * @returns {string} The truncated text.
  */
 export function truncateText(text, maxLength = 40) {
     const value = String(text ?? '').trim();
@@ -91,12 +104,18 @@ export function truncateText(text, maxLength = 40) {
 
 /**
  * Format an effort estimate value for display.
- * @param {*} estimate - TODO
+ * @param {*} value - The effort estimate value.
+ * @returns {string} The formatted estimate string.
  */
 export function formatEstimate(value) {
     return value == null ? 'Unestimated' : String(value);
 }
 
+/**
+ * Get the display label for the child type of a given node type.
+ * @param {string} nodeType - The parent node type.
+ * @returns {string|null} The child type label, or null for unknown types.
+ */
 export function getChildTypeLabel(nodeType) {
     switch (nodeType) {
         case 'promise': return 'Epic';
@@ -108,8 +127,9 @@ export function getChildTypeLabel(nodeType) {
 }
 
 /**
- * Get a summary of completed vs total child nodes.
- * @param {*} node - TODO
+ * Get a summary string of completed vs total child nodes.
+ * @param {object} nodeData - The node data containing childCount and completedChildCount.
+ * @returns {string|null} The progress summary string, or null if no child type exists.
  */
 export function getChildProgressSummary(nodeData) {
     const childLabel = getChildTypeLabel(nodeData.nodeType);
@@ -122,8 +142,9 @@ export function getChildProgressSummary(nodeData) {
 }
 
 /**
- * Get the human-readable label for a node type.
- * @param {*} nodeType - TODO
+ * Get the human-readable label for a node's sub-type (e.g. Story, Job).
+ * @param {object} payload - The node payload containing a type field.
+ * @returns {string|null} The type label, or null if not set.
  */
 export function getNodeTypeLabel(payload) {
     const value = String(payload?.type ?? payload?.Type ?? '').trim();
@@ -138,7 +159,8 @@ export function getNodeTypeLabel(payload) {
 
 /**
  * Get a summary of completed tasks within a moment node.
- * @param {*} node - TODO
+ * @param {object} payload - The moment payload containing a tasks array.
+ * @returns {string|null} The task summary string, or null if no tasks exist.
  */
 export function getMomentTaskSummary(payload) {
     const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
@@ -149,8 +171,10 @@ export function getMomentTaskSummary(payload) {
 }
 
 /**
- * Get the card description for a graph node.
- * @param {*} node - TODO
+ * Get the truncated card description for a graph node.
+ * @param {object} payload - The node payload containing a description field.
+ * @param {number} [maxLength=52] - The maximum description length.
+ * @returns {string} The truncated description, or 'Description: None' if empty.
  */
 export function getCardDescription(payload, maxLength = 52) {
     const description = String(payload?.description ?? payload?.Description ?? '').trim();
@@ -160,8 +184,9 @@ export function getCardDescription(payload, maxLength = 52) {
 }
 
 /**
- * Get the display label for a stride in the graph.
- * @param {*} stride - TODO
+ * Get the display label for a stride assignment in the graph.
+ * @param {object} payload - The node payload containing an assignedStrideId.
+ * @returns {string} The stride label (e.g. 'Stride: Backlog' or 'Stride # N').
  */
 export function getStrideLabel(payload) {
     const id = payload?.assignedStrideId;
@@ -169,6 +194,11 @@ export function getStrideLabel(payload) {
     return `Stride # ${id}`;
 }
 
+/**
+ * Get the full title text for a graph node (used in tooltips).
+ * @param {object} nodeData - The node data.
+ * @returns {string} The multi-line title string.
+ */
 export function getNodeTitle(nodeData) {
     const payload = nodeData.payload ?? {};
     const lines = [payload.statement ?? payload.name ?? `#${payload.id}`];
@@ -185,8 +215,9 @@ export function getNodeTitle(nodeData) {
 }
 
 /**
- * Sort items by their display order property.
- * @param {*} items - TODO
+ * Sort items by their displayOrder property, with statement as secondary sort.
+ * @param {object[]} items - The items to sort.
+ * @returns {object[]} A new sorted array.
  */
 export function sortByDisplayOrder(items) {
     return [...items].sort((left, right) => {
@@ -197,8 +228,9 @@ export function sortByDisplayOrder(items) {
 }
 
 /**
- * Categorize an effort estimate into a bucket for graph coloring.
- * @param {*} effort - TODO
+ * Categorize an effort estimate into a bucket for graph filtering.
+ * @param {*} effortEstimate - The effort estimate value.
+ * @returns {string} The effort bucket ('unestimated', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL').
  */
 export function getMomentEffortBucket(effortEstimate) {
     if (effortEstimate == null) return 'unestimated';
@@ -209,8 +241,9 @@ export function getMomentEffortBucket(effortEstimate) {
 }
 
 /**
- * Categorize a moment by stride assignment status.
- * @param {*} moment - TODO
+ * Categorize a moment by its stride assignment status.
+ * @param {object} payload - The moment payload containing assignedStrideId.
+ * @returns {string} The stride bucket ('backlog' or the stride ID as string).
  */
 export function getMomentStrideBucket(payload) {
     const id = payload?.assignedStrideId;
@@ -218,6 +251,11 @@ export function getMomentStrideBucket(payload) {
     return String(id);
 }
 
+/**
+ * Compute child count and completed child count from a list of children.
+ * @param {object[]} children - The list of child entities.
+ * @returns {{childCount: number, completedChildCount: number}} The computed metrics.
+ */
 export function computeChildMetrics(children) {
     const list = Array.isArray(children) ? children : [];
     const childCount = list.length;
@@ -226,10 +264,11 @@ export function computeChildMetrics(children) {
 }
 
 /**
- * Create a new graph node with the given properties.
- * @param {*} type - TODO
- * @param {*} label - TODO
- * @param {*} data - TODO
+ * Create a new graph node with the given type, payload, and children.
+ * @param {string} nodeType - The node type (promise, epic, journey, flow, moment).
+ * @param {object} payload - The node's data payload.
+ * @param {object[]} [children=[]] - The node's child nodes.
+ * @returns {object} The created graph node with derived fields.
  */
 export function createNode(nodeType, payload, children = []) {
     const childCount = children.length;
@@ -261,9 +300,11 @@ export function createNode(nodeType, payload, children = []) {
 }
 
 /**
- * Create a graph node pre-populated with metric calculations.
- * @param {*} type - TODO
- * @param {*} data - TODO
+ * Create a graph node pre-populated with child metric calculations.
+ * @param {string} nodeType - The node type.
+ * @param {object} payload - The node's data payload.
+ * @param {object|null} [childMetrics=null] - Optional pre-computed child metrics.
+ * @returns {object} The created graph node.
  */
 export function createNodeWithMetrics(nodeType, payload, childMetrics = null) {
     const enrichedPayload = { ...payload };
@@ -275,8 +316,9 @@ export function createNodeWithMetrics(nodeType, payload, childMetrics = null) {
 }
 
 /**
- * Get the display color for a graph node based on status.
- * @param {*} node - TODO
+ * Get the display accent color for a graph node based on its type.
+ * @param {string} nodeType - The node type.
+ * @returns {string} The hex color string.
  */
 export function getNodeColor(nodeType) {
     switch (nodeType) {
@@ -291,7 +333,8 @@ export function getNodeColor(nodeType) {
 }
 
 /**
- * Get the application base URL path.
+ * Get the application base URL path by examining the current URL segments.
+ * @returns {string} The base path (empty string or /owner/project).
  */
 export function getAppBasePath() {
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -310,8 +353,11 @@ export function getAppBasePath() {
 }
 
 /**
- * Get the navigation URL for a graph node.
- * @param {*} node - TODO
+ * Get the navigation URL for a graph node (links to its detail page with graph focus).
+ * @param {object} node - The graph node.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @returns {string|null} The detail page URL, or null if node type has no route.
  */
 export function getNodeHref(node, owner, project) {
     const routeSegment = NODE_ROUTE_SEGMENTS[node.nodeType];
@@ -325,8 +371,9 @@ export function getNodeHref(node, owner, project) {
 }
 
 /**
- * Get the searchable text content for a graph node.
- * @param {*} node - TODO
+ * Get the searchable text content for a graph node (label + description).
+ * @param {object} node - The graph node.
+ * @returns {string} The normalized search text.
  */
 export function getNodeSearchText(node) {
     return node._searchText ?? normalizeText([
@@ -335,6 +382,12 @@ export function getNodeSearchText(node) {
     ].join(' '));
 }
 
+/**
+ * Recursively find a node in the graph tree by its ID.
+ * @param {object} treeData - The tree root to search.
+ * @param {string} nodeId - The node ID to find.
+ * @returns {object|null} The matching node, or null if not found.
+ */
 export function findNodeById(treeData, nodeId) {
     if (!treeData || !nodeId) return null;
 
@@ -353,8 +406,9 @@ export function findNodeById(treeData, nodeId) {
 }
 
 /**
- * Count the number of renderable nodes in the graph tree.
- * @param {*} nodes - TODO
+ * Count the number of renderable (non-root) nodes in the graph tree.
+ * @param {object} node - The tree root node.
+ * @returns {number} The count of renderable nodes.
  */
 export function countRenderableNodes(node) {
     if (!node) return 0;
@@ -364,8 +418,12 @@ export function countRenderableNodes(node) {
 }
 
 /**
- * Parse raw graph data into a structured tree format.
- * @param {*} data - TODO
+ * Parse raw promise data into a structured graph tree with a root node.
+ * @param {object[]} rootPromises - The top-level promise nodes.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {object|null} [projectEntity=null] - Optional project entity for the root label.
+ * @returns {object} The parsed tree with a root node.
  */
 export function parseGraphData(rootPromises, owner, project, projectEntity = null) {
     const rawName = projectEntity?.name ?? projectEntity?.Name ?? '';
@@ -386,8 +444,9 @@ export function parseGraphData(rootPromises, owner, project, projectEntity = nul
 }
 
 /**
- * Render an empty state for a graph container.
- * @param {*} container - TODO
+ * Render an empty state message inside a graph container.
+ * @param {HTMLElement} contentDiv - The container element.
+ * @param {string} message - The message to display.
  */
 export function renderEmptyState(contentDiv, message) {
     if (!contentDiv) return;
@@ -399,6 +458,13 @@ export function renderEmptyState(contentDiv, message) {
     contentDiv.appendChild(emptyState);
 }
 
+/**
+ * Calculate the rendered position of a node in the graph, accounting for content offsets.
+ * @param {object} node - The hierarchy node with x/y coordinates.
+ * @param {number} contentOffsetX - The X content offset.
+ * @param {number} contentOffsetY - The Y content offset.
+ * @returns {{x: number, y: number}} The rendered position.
+ */
 function getRenderedNodePosition(node, contentOffsetX, contentOffsetY) {
     return {
         x: node.y + contentOffsetX,
@@ -406,6 +472,17 @@ function getRenderedNodePosition(node, contentOffsetX, contentOffsetY) {
     };
 }
 
+/**
+ * Create a D3 zoom transform that centers the viewport on a given node.
+ * @param {object} d3 - The D3 module instance.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {object} node - The hierarchy node to focus on.
+ * @param {number} contentOffsetX - The X content offset.
+ * @param {number} contentOffsetY - The Y content offset.
+ * @param {number} [scale=1.5] - The zoom scale.
+ * @returns {object|null} The zoom transform, or null if no node provided.
+ */
 function createFocusTransform(d3, viewportWidth, viewportHeight, node, contentOffsetX, contentOffsetY, scale = 1.5) {
     if (!node) return null;
     const targetScale = Math.max(0.5, Math.min(2.5, scale));
@@ -417,6 +494,13 @@ function createFocusTransform(d3, viewportWidth, viewportHeight, node, contentOf
         .translate(-position.x, -position.y);
 }
 
+/**
+ * Get the layout profile for compact (detail-page) graph rendering based on visible node count.
+ * @param {number} visibleCount - The number of visible nodes.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @returns {{nodeScale: number, minGapX: number, minGapY: number, forehead: number, anchorOffsetX: number, anchorOffsetY: number}} The layout profile.
+ */
 function getCompactLayoutProfile(visibleCount, viewportWidth, viewportHeight) {
     // Explicit presets tuned for the detail pages (1..5 visible cards)
     // Provide nodeScale and suggested min gaps; fall back to defaults if out of range.
@@ -453,6 +537,14 @@ export function getDetailPageNodeScale(activeDetailNodeType) {
     return COMPACT_DETAIL_SCALE_MAX - t * (COMPACT_DETAIL_SCALE_MAX - COMPACT_DETAIL_SCALE_MIN);
 }
 
+/**
+ * Append (or update) SVG elements for graph nodes and links using D3 data join.
+ * @param {object} d3 - The D3 module instance.
+ * @param {object} layer - The D3 selection of the graph layer.
+ * @param {object[]} renderable - The list of hierarchy nodes to render.
+ * @param {object[]} links - The list of link objects between nodes.
+ * @param {{contentOffsetX: number, contentOffsetY: number, cardClipPathId: string, owner: string, project: string, focusNodeId: string|null, onContextMenu: function|null, enableZoom: boolean, enableLinks: boolean, uniformNodeScale: number|null, animate: boolean, animationSpeed: number}} options - Rendering options.
+ */
 function appendGraphNodes(d3, layer, renderable, links, options) {
     const {
         contentOffsetX,
@@ -474,10 +566,20 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
     const duration = Math.max(0, Math.round(200 / Math.max(0.1, animationSpeed)));
     const t = d3.transition().duration(duration);
 
+    /**
+     * Compute the final transform for a node in the animated transition.
+     * @param {object} d - The D3 node data.
+     * @returns {string} A CSS translate() string with the target position and scale.
+     */
     function getFinalTransform(d) {
         return `translate(${d.y + contentOffsetX}, ${d.x + contentOffsetY}) scale(${nodeScale})`;
     }
 
+    /**
+     * Compute the transform for a node at its parent position (used for exit animations).
+     * @param {object} d - The D3 node data.
+     * @returns {string} A CSS translate() string with the parent position and scale.
+     */
     function getParentTransform(d) {
         const parent = d.parent;
         const px = parent ? parent.y : 0;
@@ -485,6 +587,11 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
         return `translate(${px + contentOffsetX}, ${py + contentOffsetY}) scale(${nodeScale})`;
     }
 
+    /**
+     * Compute the SVG path for a link entering from the parent position.
+     * @param {object} d - The D3 link data with source and target nodes.
+     * @returns {string} An SVG path data string.
+     */
     function getFinalLinkPath(d) {
         return d3.linkHorizontal()
             .x(point => point.y)
@@ -789,8 +896,13 @@ function appendGraphNodes(d3, layer, renderable, links, options) {
 }
 
 /**
- * Renders a promise stack tree into contentDiv.
- * @returns {SVGElement|null} the root svg element
+ * Render a promise stack tree into the given content div using D3.
+ * Supports both full graph (zoomable) and compact detail-page modes.
+ * @param {HTMLElement} contentDiv - The container element to render into.
+ * @param {object} d3 - The D3 module instance.
+ * @param {object} treeData - The tree data to render.
+ * @param {{owner?: string, project?: string, focusNodeId?: string|null, focusNodeData?: object|null, enableZoom?: boolean, compact?: boolean, restoreTransform?: object|null, viewportElement?: HTMLElement|null, clipPathIdPrefix?: string, ariaLabel?: string, emptyMessage?: string, onZoom?: function|null, onContextMenu?: function|null, minGraphWidth?: number|null, minGraphHeight?: number|null, uniformNodeScale?: number|null, renderRootCard?: boolean, enableLinks?: boolean, animate?: boolean, animationSpeed?: number}} [options={}] - Rendering options.
+ * @returns {{node: SVGElement|null, zoom: object|null}} The SVG node and zoom behavior (if enabled).
  */
 export function renderStackGraph(contentDiv, d3, treeData, options = {}) {
     const {

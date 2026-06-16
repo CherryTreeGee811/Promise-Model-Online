@@ -3,9 +3,10 @@ import { fetchProjects } from "./api.mjs";
 import { renderEmptyTableRow } from "../utils/empty-table.mjs";
 
 /**
- * Load the project listing page.
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
+ * Load the project listing page, fetching all projects and rendering them in a table.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {void}
  */
 export function loadProjectList(navContentDiv, contentDiv) {
     const tableBody = document.getElementById('project-list-table-body');

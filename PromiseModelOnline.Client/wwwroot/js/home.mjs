@@ -1,7 +1,11 @@
 import { isLoggedIn } from './auth-state.mjs';
 
 /**
- * Load the home page content.
+ * Load the home page content by injecting call-to-action buttons
+ * into the designated CTA areas based on authentication state.
+ * Shows project/task links for logged-in users and login/register
+ * prompts for anonymous visitors.
+ * @returns {void}
  */
 export function loadHomePage() {
   const loggedIn = isLoggedIn();

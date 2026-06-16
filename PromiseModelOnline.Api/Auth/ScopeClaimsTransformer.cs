@@ -9,6 +9,9 @@ namespace PromiseModelOnline.Api.Auth;
 /// </summary>
 public class ScopeClaimsTransformer : IClaimsTransformation
 {
+    /// <summary>Transforms the claims principal by splitting multi-valued scope claims into individual claims.</summary>
+    /// <param name="principal">The claims principal to transform.</param>
+    /// <returns>The transformed claims principal with individual scope claims.</returns>
     public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         if (principal.HasClaim(c => c.Type == "scope" && c.Value.Contains(' ')))

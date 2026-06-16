@@ -1,6 +1,9 @@
 import { authFetch, apiGet } from '../api.mjs';
 
-/** Fetch all projects accessible to the current user. */
+/**
+ * Fetch all projects accessible to the current user.
+ * @returns {Promise<object[]|null>} The list of projects, or null if none.
+ */
 export function fetchProjects() {
     return authFetch(`/api/projects`)
         .then(handleJsonOrNull);
@@ -49,7 +52,12 @@ export async function updateProjectDetails(owner, project, data) {
     return res.json();
 }
 
-/** Delete a project by owner and project slug. */
+/**
+ * Delete a project by owner and project slug.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @returns {Promise<object|null>} The deletion result, or null.
+ */
 export function deleteProject(owner, project) {
     return authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`, {
         method: 'DELETE'
@@ -222,14 +230,22 @@ export async function getMyPermission(owner, project) {
     return res.json();
 }
 
-/** Handle a fetch response, returning parsed JSON or null for 204. */
+/**
+ * Handle a fetch response, returning parsed JSON or null for 204.
+ * @param {Response} response - The fetch response object.
+ * @returns {Promise<object|null>} Parsed JSON body, or null for 204 responses.
+ */
 function handleJsonOrNull(response) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     if (response.status === 204) return null;
     return response.json();
 }
 
-/** Safely parse a JSON response, returning null on failure. */
+/**
+ * Safely parse a JSON response, returning null on failure.
+ * @param {Response} res - The fetch response object.
+ * @returns {Promise<object|null>} The parsed JSON object, or null if parsing fails.
+ */
 async function safeParse(res) {
     try {
         return await res.json();

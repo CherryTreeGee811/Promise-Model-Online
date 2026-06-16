@@ -1,9 +1,10 @@
 import { escapeHtml } from '../utils/html.mjs';
 
 /**
- * Render a summary table with the given rows.
- * @param {*} container - TODO
- * @param {*} rows - TODO
+ * Render a summary table with the given rows into a container element.
+ * Each row can have a label/value pair or be a gap row (isGap: true).
+ * @param {HTMLElement} container - The container element to render into.
+ * @param {{label?: string, value?: string|number, isGap?: boolean}[]} rows - The summary rows to render.
  */
 export function renderSummaryTable(container, rows) {
     if (!container) {

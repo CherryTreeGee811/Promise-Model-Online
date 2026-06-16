@@ -6,6 +6,11 @@ import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 let liveListenerRegistered = false;
 
 /* ---------- Badge helpers ---------- */
+/**
+ * Update the notification badge count in the UI.
+ * @param {number} count - The new badge count.
+ * @returns {void}
+ */
 function setBadgeCount(count) {
     const badge = document.getElementById('notification-badge');
     if (!badge) return;
@@ -20,6 +25,10 @@ function setBadgeCount(count) {
     }
 }
 
+/**
+ * Decrement the badge count by one if the badge is visible.
+ * @returns {void}
+ */
 function decrementBadgeIfVisible() {
     const badge = document.getElementById('notification-badge');
     if (!badge || badge.style.display === 'none') return;
@@ -35,6 +44,11 @@ function decrementBadgeIfVisible() {
 }
 
 /* ---------- Row update helper ---------- */
+/**
+ * Mark a notification table row as read by removing the unread class and updating the actions cell.
+ * @param {HTMLElement} row - The table row element to mark as read.
+ * @returns {void}
+ */
 function markRowRead(row) {
     if (!row) return;
 
@@ -52,6 +66,12 @@ function markRowRead(row) {
 }
 
 /* ---------- Render ---------- */
+/**
+ * Render the list of notifications into the given container div.
+ * @param {HTMLElement} listDiv - The container element to render into.
+ * @param {Array} notifications - Array of notification objects.
+ * @returns {void}
+ */
 function renderNotificationsInto(listDiv, notifications) {
     if (!listDiv) return;
 
@@ -141,6 +161,10 @@ function renderNotificationsInto(listDiv, notifications) {
 }
 
 /* ---------- Refresh ---------- */
+/**
+ * Refresh the notifications page by fetching all notifications and re-rendering.
+ * @returns {Promise<void>}
+ */
 async function refreshNotificationsPage() {
     const listDiv = document.getElementById('notifications-list');
     const errorEl = document.getElementById('error-text');
@@ -165,8 +189,8 @@ async function refreshNotificationsPage() {
 /* ---------- Page loader ---------- */
 /**
  * Load the notifications listing page.
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
+ * @param {HTMLElement} contentDiv - The main content container element.
+ * @returns {void}
  */
 export function loadNotificationsPage(contentDiv) {
     if (!liveListenerRegistered) {

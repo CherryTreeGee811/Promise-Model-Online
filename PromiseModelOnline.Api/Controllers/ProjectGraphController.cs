@@ -34,6 +34,10 @@ namespace PromiseModelOnline.Api.Controllers
 
         [Authorize(Policy = "projects.read")]
         [HttpGet]
+        /// <summary>Retrieves the full project hierarchy as a graph structure.</summary>
+        /// <param name="owner">The owner slug.</param>
+        /// <param name="project">The project slug.</param>
+        /// <returns>The project graph DTO containing the full hierarchy.</returns>
         public async Task<ActionResult<ProjectGraphDTO>> GetGraph(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);

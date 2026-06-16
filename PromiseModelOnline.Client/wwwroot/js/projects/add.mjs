@@ -4,9 +4,9 @@ import { navigate } from '../router.mjs';
 import { renderSummaryTable } from './summary.mjs';
 
 /**
- * Load the add-project form page.
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
+ * Load the add-project form page with support for creating from scratch or importing.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function loadAddProjectForm(navContentDiv, contentDiv) {
     const form = document.getElementById('add-project-form');
@@ -35,6 +35,9 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
     let currentMode = 'scratch';
     let isBusy = false;
 
+    /**
+     * Clear all error and success message elements.
+     */
     function clearMessages() {
         errorTextElement.textContent = '';
         errorTextElement.style.display = 'none';
@@ -42,20 +45,37 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         successTextElement.style.display = 'none';
     }
 
+    /**
+     * Get the text label for the submit button based on the current mode.
+     * @returns {string} The submit button label.
+     */
     function getSubmitButtonLabel() {
         return currentMode === 'import' ? 'Import Project' : 'Create Project';
     }
 
+    /**
+     * Get the text label for the submit button when the operation is in progress.
+     * @returns {string} The busy submit button label.
+     */
     function getBusySubmitButtonLabel() {
         return currentMode === 'import' ? 'Importing Project...' : 'Creating Project...';
     }
 
+    /**
+     * Set the submit button's busy/loading state.
+     * @param {boolean} busy - Whether the button should show a loading state.
+     */
     function setSubmitButtonState(busy) {
         createButton.disabled = busy;
         createButtonSpinner.classList.toggle('d-none', !busy);
         createButtonLabel.textContent = busy ? getBusySubmitButtonLabel() : getSubmitButtonLabel();
     }
 
+    /**
+     * Set the import button's busy/loading state.
+     * @param {boolean} busy - Whether the button should show a loading state.
+     * @param {string} [busyLabel='Reading Project...'] - The label to show while busy.
+     */
     function setImportButtonState(busy, busyLabel = 'Reading Project...') {
         importButton.disabled = busy;
         importButtonSpinner.classList.toggle('d-none', !busy);
@@ -63,6 +83,11 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         importButtonLabel.textContent = busy ? busyLabel : 'Import Project...';
     }
 
+    /**
+     * Set the overall busy state for all form controls.
+     * @param {boolean} busy - Whether the form is in a busy/loading state.
+     * @param {string} [source='submit'] - The source of the busy state ('submit' or 'import').
+     */
     function setBusyState(busy, source = 'submit') {
         isBusy = busy;
         setSubmitButtonState(busy && source === 'submit');
@@ -78,6 +103,10 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         }
     }
 
+    /**
+     * Switch between scratch creation mode and import mode.
+     * @param {string} mode - The mode to switch to ('scratch' or 'import').
+     */
     function setMode(mode) {
         currentMode = mode;
         const isImportMode = mode === 'import';
@@ -91,6 +120,10 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         clearImportButton.style.display = clearImportButton.hidden ? 'none' : '';
     }
 
+    /**
+     * Reset the import-related form state back to scratch mode.
+     * Clears the file input, import summary, and project name/description fields.
+     */
     function resetImportState() {
         importInput.value = '';
         importSummaryPanel.innerHTML = '';
@@ -106,6 +139,9 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
 
     // Update H1 title as the user types the project name
     const titleHeading = document.querySelector('h1');
+    /**
+     * Update the H1 heading to reflect the current project name and mode.
+     */
     function refreshHeading() {
         const val = nameInput.value.trim();
         const action = currentMode === 'import' ? 'Import' : 'Create';
@@ -115,6 +151,11 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
     }
     nameInput.addEventListener('input', refreshHeading);
 
+    /**
+     * Summarize the counts of all entity types in a project export document.
+     * @param {object} document - The parsed project export JSON.
+     * @returns {{promises: number, epics: number, journeys: number, flows: number, moments: number, iterations: number, strides: number, promiseStackTotal: number}} The entity count summary.
+     */
     function summarizeProjectExport(document) {
         const project = document.project;
 
@@ -138,6 +179,11 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         };
     }
 
+    /**
+     * Render a preview summary table for an imported project file.
+     * @param {object} document - The parsed project export JSON.
+     * @param {File} file - The original import file.
+     */
     function renderImportedProjectPreview(document, file) {
         const project = document.project;
         const summary = summarizeProjectExport(document);
@@ -159,6 +205,12 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         ]);
     }
 
+    /**
+     * Read and parse a project export JSON file.
+     * @param {File} file - The file to read.
+     * @returns {Promise<object>} The parsed export document.
+     * @throws {Error} If the file is not valid JSON or is not a project export.
+     */
     async function readImportedProjectFile(file) {
         let parsed;
 
@@ -175,6 +227,10 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         return parsed;
     }
 
+    /**
+     * Handle form submission for creating a project from scratch.
+     * Validates inputs, creates the project, adds the first promise, then navigates to the graph.
+     */
     async function manageAddProjectSubmission() {
         clearMessages();
 
@@ -213,6 +269,10 @@ export function loadAddProjectForm(navContentDiv, contentDiv) {
         }
     }
 
+    /**
+     * Handle form submission for importing a project from a JSON file.
+     * Uploads the file and navigates to the imported project's graph on success.
+     */
     async function manageImportSubmission() {
         clearMessages();
 

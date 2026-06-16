@@ -22,12 +22,21 @@ function ensureModal(modalId, modalMarkup) {
     return modalEl;
 }
 
-/** Format a date as YYYY-MM-DD for input[type=date] values. */
+/**
+ * Format a date as YYYY-MM-DD for input[type=date] values.
+ * @param {Date|string} date - The date to format.
+ * @returns {string} The date formatted as YYYY-MM-DD.
+ */
 function formatDateInputValue(date) {
     return new Date(date).toISOString().slice(0, 10);
 }
 
-/** Add a number of days to a date. */
+/**
+ * Add a number of days to a date.
+ * @param {Date} date - The starting date.
+ * @param {number} days - The number of days to add.
+ * @returns {Date} The new date.
+ */
 function addDays(date, days) {
     const next = new Date(date);
     next.setDate(next.getDate() + days);

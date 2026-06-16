@@ -44,6 +44,11 @@ namespace PromiseModelOnline.Api.Controllers
 
 
 
+        /// <summary>Initializes a new instance of the <see cref="PromisesController"/> class.</summary>
+        /// <param name="service">The generic promise service.</param>
+        /// <param name="mapper">The promise mapper.</param>
+        /// <param name="momentService">The moment service for effort calculations.</param>
+        /// <param name="context">The database context.</param>
         public PromisesController(
 
             IGenericService<Promise> service,

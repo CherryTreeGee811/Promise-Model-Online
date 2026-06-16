@@ -14,10 +14,10 @@ import { loadMomentDetail } from '../moments/detail.mjs';
 import { fetchMyPermission } from '../utils/permissions.mjs';
 
 /**
- * Handle legacy project routes (non-slug-based).
- * @param {*} path - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
+ * Handle legacy project routes (non-slug-based) like /projects and /projects/add.
+ * @param {string} path - The URL path to match.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function handleLegacyProjectRoutes(path, navContentDiv, contentDiv) {
     switch (path) {
@@ -37,12 +37,13 @@ export function handleLegacyProjectRoutes(path, navContentDiv, contentDiv) {
 }
 
 /**
- * Handle project-scoped routes with owner and project slugs.
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} subPath - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
+ * Handle project-scoped routes with owner and project slugs (e.g. /{owner}/{project}/graph).
+ * Dispatches to the appropriate page loader based on the sub-path segment.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} subPath - The sub-path after owner/project.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv) {
     const normalizedSub = subPath.replace(/^\/+/, '').replace(/\/+$/, '');

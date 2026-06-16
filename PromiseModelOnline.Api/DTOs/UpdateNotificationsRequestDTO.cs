@@ -15,9 +15,11 @@ public class UpdateNotificationsRequestDTO : IValidatableObject
     public bool? ApplyToAll { get; set; }
 
     /// <summary>When provided, applies the change to the specified notification IDs.</summary>
-    /// <param name="validationContext">The validation context.</param>
     public int[]? NotificationIds { get; set; }
 
+    /// <summary>Validates the request data.</summary>
+    /// <param name="validationContext">The validation context.</param>
+    /// <returns>Validation errors, if any.</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (IsRead is null)

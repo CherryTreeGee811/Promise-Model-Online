@@ -23,12 +23,13 @@ import {
 
 /**
  * Load and render the moment detail page with tasks, comments, and reactions.
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} momentId - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
- * @param {*} permission - TODO
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} momentId - The moment's sequence number.
+ * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
+ * @param {HTMLElement} contentDiv - Content container for client-side routing.
+ * @param {object|null} permission - The user's permission object.
+ * @returns {void}
  */
 export function loadMomentDetail(owner, project, momentId, navContentDiv, contentDiv, permission) {
     const detailDiv = document.getElementById('moment-detail-content');
@@ -308,6 +309,15 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
         });
 }
 
+/**
+ * Render the tasks table for a moment, including inline add and permission gating.
+ * @param {HTMLElement} container - The DOM element to render into.
+ * @param {number} momentId - The moment's sequence number.
+ * @param {object[]} tasks - The list of existing tasks.
+ * @param {object} moment - The moment data object.
+ * @param {object|null} permission - The user's permission object.
+ * @returns {void}
+ */
 function renderMomentTasks(container, momentId, tasks, moment, permission) {
     if (!container) return;
 
@@ -423,12 +433,26 @@ function renderMomentTasks(container, momentId, tasks, moment, permission) {
     bindMomentTaskCompletionToggle(tbody, momentId, moment, permission);
 }
 
+/**
+ * Sync the current moment's task list into the detail-stack graph node.
+ * @param {number} momentId - The moment's sequence number.
+ * @param {object} moment - The moment data object.
+ * @returns {void}
+ */
 function syncMomentTasksToStackGraph(momentId, moment) {
     patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
         tasks: Array.isArray(moment?.tasks) ? [...moment.tasks] : [],
     });
 }
 
+/**
+ * Bind change event listeners to task completion checkboxes.
+ * @param {HTMLElement} tbody - The table body containing the checkboxes.
+ * @param {number} momentId - The moment's sequence number.
+ * @param {object} moment - The moment data object.
+ * @param {object|null} permission - The user's permission object.
+ * @returns {void}
+ */
 function bindMomentTaskCompletionToggle(tbody, momentId, moment, permission) {
     if (!tbody) return;
 

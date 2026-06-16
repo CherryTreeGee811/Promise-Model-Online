@@ -2,10 +2,11 @@ import { handleDetailRoute, showNotFound } from '../router.mjs';
 import { loadFlowDetail } from './detail.mjs';
 
 /**
- * Handle flow-related routes.
- * @param {*} path - TODO
- * @param {*} navContentDiv - TODO
- * @param {*} contentDiv - TODO
+ * Handle flow-related routes by delegating to the shared route handler.
+ * @param {string} path - The URL path to match.
+ * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
+ * @param {HTMLElement} contentDiv - Content container for client-side routing.
+ * @returns {void}
  */
 export function handleFlowRoutes(path, navContentDiv, contentDiv) {
   if (!handleDetailRoute(path, contentDiv, 'flows', 'flows/detail.html', loadFlowDetail, navContentDiv, 'flow')) {

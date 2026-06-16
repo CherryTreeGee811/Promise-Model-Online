@@ -3,8 +3,9 @@ import { loadInvitationsPage } from './list.mjs';
 
 /**
  * Handle invitation-related routes.
- * @param {*} path - TODO
- * @param {*} contentDiv - TODO
+ * @param {string} path - The URL path to match.
+ * @param {HTMLElement} contentDiv - The main content container element.
+ * @returns {void}
  */
 export function handleInvitationsRoute(path, contentDiv) {
     if (path === '/invitations') {

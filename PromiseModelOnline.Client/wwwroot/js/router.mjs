@@ -10,7 +10,11 @@ import { initDeleteAccountPage } from './account/delete-account.mjs';
 
 let _projectRoutes;
 
-/** Lazy-load the project routes module. */
+/**
+ * Lazy-load the project routes module.
+ * Uses a cached promise to avoid re-importing on subsequent calls.
+ * @returns {Promise<{handleLegacyProjectRoutes: Function, handleProjectScopedRoutes: Function}>} The project routes module.
+ */
 function loadProjectRoutes() {
   return _projectRoutes || (_projectRoutes = import('./projects/router.mjs'));
 }
@@ -81,7 +85,10 @@ const PAGE_TITLES = {
   '/moments/my-tasks': 'My Tasks',
 };
 
-/** Focus the main content area for accessibility announcements. */
+/**
+ * Focus the main content area element for accessibility announcements.
+ * Uses requestAnimationFrame to ensure the DOM is ready before focusing.
+ */
 function announceAndFocus() {
   const mainEl = document.getElementById('main-content');
   if (mainEl) { requestAnimationFrame(() => mainEl.focus()); }

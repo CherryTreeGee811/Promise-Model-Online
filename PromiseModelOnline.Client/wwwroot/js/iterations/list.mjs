@@ -8,9 +8,10 @@ import { openIterationCreateModal } from '../utils/iteration-create-modal.mjs';
 
 /**
  * Load the iteration history page with burndown charts.
- * @param {*} owner - TODO
- * @param {*} project - TODO
- * @param {*} permission - TODO
+ * @param {string} owner - The owner slug.
+ * @param {string} project - The project slug.
+ * @param {Object} permission - The user's permission object for this project.
+ * @returns {void}
  */
 export function loadIterationHistory(owner, project, permission) {
     const viewDiv = document.getElementById('iterations-view');
@@ -109,6 +110,13 @@ export function loadIterationHistory(owner, project, permission) {
             console.error(err);
         });
 
+    /**
+     * Display the detail view for a specific iteration, including burndown chart and strides.
+     * @param {Object} iteration - The iteration object.
+     * @param {number} iteration.id - The iteration ID.
+     * @param {string} iteration.name - The iteration name.
+     * @returns {void}
+     */
     function showIterationDetail(iteration) {
         const iterationId = iteration.id;
 
@@ -196,6 +204,11 @@ export function loadIterationHistory(owner, project, permission) {
     });
 }
 
+/**
+ * Format a date string into a locale date representation.
+ * @param {string} dateStr - The date string to format.
+ * @returns {string} The formatted date string, or 'N/A' if the input is falsy.
+ */
 function formatDate(dateStr) {
     return dateStr ? new Date(dateStr).toLocaleDateString('en-CA') : 'N/A';
 }
