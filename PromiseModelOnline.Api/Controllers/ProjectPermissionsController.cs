@@ -22,9 +22,9 @@ namespace PromiseModelOnline.Api.Controllers
 
 {
 
+    /// <summary>REST controller for permission management within a project scope.</summary>
     [Route("api/projects/{owner}/{project}/permissions")]
 
-    /// <summary>REST controller for permission management within a project scope.</summary>
     public class ProjectPermissionsController : ProjectScopedControllerBase
 
     {

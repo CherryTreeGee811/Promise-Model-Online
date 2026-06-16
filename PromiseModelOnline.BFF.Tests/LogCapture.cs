@@ -18,15 +18,17 @@ public class LogCapture : ILoggerProvider
 
     public void Dispose() { }
 
-    private class CaptureLogger(string _categoryName, List<(LogLevel, string)> logs, object lockObj) : ILogger
+    private class CaptureLogger(string categoryName, List<(LogLevel, string)> logs, object lockObj) : ILogger
     {
+        private readonly string _categoryName = categoryName;
+
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             lock (lockObj)
-                logs.Add((logLevel, formatter(state, exception)));
+                logs.Add((logLevel, $"[{_categoryName}] {formatter(state, exception)}"));
         }
     }
 }
