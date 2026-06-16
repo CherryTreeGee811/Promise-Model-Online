@@ -47,6 +47,9 @@ public class LoginController : Controller
     public IActionResult Index(string? returnUrl, string? error = null,
         [FromQuery] bool registered = false, [FromQuery] bool verified = false)
     {
+        if (!ModelState.IsValid)
+            return View(new LoginViewModel { ReturnUrl = returnUrl });
+
         ViewBag.Registered = registered;
         ViewBag.Verified = verified;
         ViewBag.Error = error;

@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -84,10 +85,10 @@ public class ChangePasswordPageController : Controller
         var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         if (!result.Succeeded)
         {
-            foreach (var error in result.Errors)
+            foreach (var error in result.Errors.Select(e => e.Description))
             {
-                _logger.LogWarning("ChangePasswordPage: failure for {UserId}: {Error}", userId, error.Description);
-                ModelState.AddModelError("", error.Description);
+                _logger.LogWarning("ChangePasswordPage: failure for {UserId}: {Error}", userId, error);
+                ModelState.AddModelError("", error);
             }
             return View("~/Views/ChangePassword/Index.cshtml");
         }

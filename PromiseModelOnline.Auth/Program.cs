@@ -89,7 +89,7 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
     {
         var secretFile = builder.Configuration["Authentication:Google:ClientSecret_FILE"];
         if (!string.IsNullOrWhiteSpace(secretFile) && File.Exists(secretFile))
-            googleClientSecret = File.ReadAllText(secretFile).Trim();
+            googleClientSecret = (await File.ReadAllTextAsync(secretFile).ConfigureAwait(false)).Trim();
     }
 
     if (string.IsNullOrWhiteSpace(googleClientSecret))
@@ -173,4 +173,4 @@ app.UseAuthorization();
 
 app.MapDefaultControllerRoute();
 
-app.Run();
+await app.RunAsync();

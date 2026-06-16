@@ -297,7 +297,7 @@ namespace PromiseModelOnline.Api.Controllers
                 .OrderByDescending(entry => entry.OccurredAtUtc)
                 .ThenByDescending(entry => entry.Id);
 
-            Response.Headers["X-Total-Count"] = query.Count().ToString();
+            Response.Headers["X-Total-Count"] = (await query.CountAsync()).ToString();
 
             var events = await query.Skip(skip).Take(take).ToListAsync();
             return Ok(events.Select(MapToAuditDto));

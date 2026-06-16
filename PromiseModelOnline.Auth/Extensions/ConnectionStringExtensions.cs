@@ -1,3 +1,5 @@
+namespace PromiseModelOnline.Auth.Extensions;
+
 /// <summary>Extension methods for resolving Docker secrets embedded in connection strings.</summary>
 public static class ConnectionStringExtensions
 {

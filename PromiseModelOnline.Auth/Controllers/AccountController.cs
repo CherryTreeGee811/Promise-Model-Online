@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -95,10 +96,10 @@ public class AccountController : Controller
                 new { userId = user.Id });
         }
 
-        foreach (var error in result.Errors)
+        foreach (var error in result.Errors.Select(e => e.Description))
         {
-            _logger.LogWarning("Registration failed for {Email}: {Error}", model.Email, error.Description);
-            ModelState.AddModelError("", error.Description);
+            _logger.LogWarning("Registration failed for {Email}: {Error}", model.Email, error);
+            ModelState.AddModelError("", error);
         }
 
         return View(model);

@@ -25,7 +25,11 @@ namespace PromiseModelOnline.Auth.Extensions
             }
             else
             {
-                var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://+:8060";
+                var defaultUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
+                var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? defaultUrl;
+#pragma warning disable S1075 // Hardcoded URI default fallback
+                if (string.IsNullOrEmpty(urls)) urls = "http://+:8060";
+#pragma warning restore S1075
                 builder.WebHost.UseUrls(urls.Replace("https://", "http://"));
             }
         }

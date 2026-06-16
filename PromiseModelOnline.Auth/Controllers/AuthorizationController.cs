@@ -147,14 +147,5 @@ namespace PromiseModelOnline.Auth.Controllers
             );
         }
 
-        /// <summary>Return token destinations (access token and identity token if scope is present).</summary>
-        /// <param name="scope">The scope name.</param>
-        /// <param name="principal">The claims principal.</param>
-        private static IEnumerable<string> GetDestinations(string scope, ClaimsPrincipal principal)
-        {
-            yield return Destinations.AccessToken;
-            if (principal.HasScope(scope))
-                yield return Destinations.IdentityToken;
-        }
     }
 }
