@@ -96,7 +96,10 @@ public class AccountController : Controller
         }
 
         foreach (var error in result.Errors)
+        {
+            _logger.LogWarning("Registration failed for {Email}: {Error}", model.Email, error.Description);
             ModelState.AddModelError("", error.Description);
+        }
 
         return View(model);
     }

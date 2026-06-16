@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using OpenIddict.Abstractions;
@@ -12,12 +13,13 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace PromiseModelOnline.Auth.Tests;
 
-/// <summary>Unit tests for <see cref="ChangePasswordController"/> covering password change with validation and token revocation.</summary>
+/// <summary>Unit tests for <see cref="ChangePasswordController"/> covering password change with validation, logging, and token revocation.</summary>
 // Requirements: REQ_USE_012
 public class ChangePasswordControllerUnitTests
 {
     private Mock<UserManager<IdentityUser>> _userManagerMock = null!;
     private Mock<IOpenIddictTokenManager> _tokenManagerMock = null!;
+    private Mock<ILogger<ChangePasswordController>> _loggerMock = null!;
     private ChangePasswordController _controller = null!;
 
     [SetUp]
@@ -28,8 +30,10 @@ public class ChangePasswordControllerUnitTests
             store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
         _tokenManagerMock = new Mock<IOpenIddictTokenManager>();
+        _loggerMock = new Mock<ILogger<ChangePasswordController>>();
 
-        _controller = new ChangePasswordController(_userManagerMock.Object, _tokenManagerMock.Object);
+        _controller = new ChangePasswordController(
+            _userManagerMock.Object, _tokenManagerMock.Object, _loggerMock.Object);
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 
         // By default, return empty token list
@@ -101,7 +105,7 @@ public class ChangePasswordControllerUnitTests
     }
 
     [Test]
-    public async Task REQ_USE_012_ChangePassword_InvalidCurrentPassword_ReturnsUnauthorizedObject()
+    public async Task REQ_USE_012_ChangePassword_InvalidCurrentPassword_ReturnsBadRequestAndLogsWarning()
     {
         // Arrange
         var user = new IdentityUser { Id = "1", UserName = "test" };
@@ -116,11 +120,14 @@ public class ChangePasswordControllerUnitTests
         });
 
         // Assert
-        Assert.That(result, Is.TypeOf<UnauthorizedObjectResult>());
+        Assert.That(result, Is.TypeOf<BadRequestObjectResult>());
+        var bad = (BadRequestObjectResult)result;
+        Assert.That(bad.Value, Is.EqualTo("Current password is incorrect."));
+        _loggerMock.VerifyLog(LogLevel.Warning, "Invalid current password for user");
     }
 
     [Test]
-    public async Task REQ_USE_012_ChangePassword_ChangeFails_ReturnsBadRequestWithErrors()
+    public async Task REQ_USE_012_ChangePassword_ChangeFails_ReturnsBadRequestAndLogsWarning()
     {
         // Arrange
         var user = new IdentityUser { Id = "1", UserName = "test" };
@@ -138,11 +145,12 @@ public class ChangePasswordControllerUnitTests
 
         Assert.That(result, Is.TypeOf<BadRequestObjectResult>());
         var bad = (BadRequestObjectResult)result;
-        Assert.That(GetAnonymousProperty(bad.Value, "message"), Is.EqualTo("Could not change password"));
+        Assert.That(bad.Value, Is.EqualTo("err1"));
+        _loggerMock.VerifyLog(LogLevel.Warning, "ChangePassword failed for user");
     }
 
     [Test]
-    public async Task REQ_USE_012_ChangePassword_Success_RevokesTokensAndReturnsNoContent()
+    public async Task REQ_USE_012_ChangePassword_Success_RevokesTokensAndReturnsOk()
     {
         // Arrange
         var user = new IdentityUser { Id = "1", UserName = "test" };
@@ -166,20 +174,28 @@ public class ChangePasswordControllerUnitTests
             CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
         });
 
-        Assert.That(result, Is.TypeOf<NoContentResult>());
+        Assert.That(result, Is.TypeOf<OkObjectResult>());
         _tokenManagerMock.Verify(x => x.TryRevokeAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-    }
-
-    private static object? GetAnonymousProperty(object? obj, string propertyName)
-    {
-        if (obj == null) return null;
-        var prop = obj.GetType().GetProperty(propertyName);
-        return prop?.GetValue(obj);
     }
 
     private static async IAsyncEnumerable<T> AsyncEnumerableFrom<T>(params T[] items)
     {
         foreach (var item in items)
             yield return item;
+    }
+}
+
+internal static class LoggerMockExtensions
+{
+    public static void VerifyLog<T>(this Mock<ILogger<T>> mock, LogLevel level, string contains)
+    {
+        mock.Verify(
+            x => x.Log(
+                level,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(contains)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce());
     }
 }

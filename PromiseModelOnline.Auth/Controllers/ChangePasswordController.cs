@@ -13,12 +13,19 @@ public class ChangePasswordController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IOpenIddictTokenManager _tokenManager;
+    private readonly ILogger<ChangePasswordController> _logger;
 
+    /// <summary>Initializes the controller with required services for password management and token revocation.</summary>
+    /// <param name="userManager">Identity user manager for password verification and changes.</param>
+    /// <param name="tokenManager">OpenIddict token manager for refresh token revocation.</param>
+    /// <param name="logger">Logger for security-relevant error events.</param>
     public ChangePasswordController(UserManager<IdentityUser> userManager,
-                                    IOpenIddictTokenManager tokenManager)
+                                    IOpenIddictTokenManager tokenManager,
+                                    ILogger<ChangePasswordController> logger)
     {
         _userManager = userManager;
         _tokenManager = tokenManager;
+        _logger = logger;
     }
 
     /// <summary>Validate current password, update to new password, and revoke all refresh tokens.</summary>
@@ -55,11 +62,18 @@ public class ChangePasswordController : ControllerBase
 
         var isValid = await _userManager.CheckPasswordAsync(user, request.CurrentPassword);
         if (!isValid)
+        {
+            _logger.LogWarning("ChangePassword: Invalid current password for user {UserId}", userId);
             return BadRequest("Current password is incorrect.");
+        }
 
         var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded)
+        {
+            foreach (var e in result.Errors)
+                _logger.LogWarning("ChangePassword failed for user {UserId}: {Error}", userId, e.Description);
             return BadRequest(result.Errors.FirstOrDefault()?.Description ?? "Password change failed.");
+        }
 
         var tokens = _tokenManager.FindAsync(
             subject: user.Id,

@@ -76,14 +76,16 @@ public class AccountControllerUnitTests
     {
         // Arrange
         var model = new RegisterViewModel { Username = "existing", Email = "e@e.com", Password = "pw", ConfirmPassword = "pw" };
-        _userManagerMock.Setup(x => x.FindByNameAsync("existing"))
-            .ReturnsAsync(new IdentityUser { UserName = "existing" });
+        _userManagerMock
+            .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Username 'existing' is already taken." }));
         // Act
         var result = await _controller.Register(model);
         // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
-        Assert.That(_controller.ModelState[nameof(model.Username)]?.Errors[0].ErrorMessage,
-            Is.EqualTo("Username is already taken."));
+        Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
+            Is.EqualTo("Username 'existing' is already taken."));
+        _loggerMock.VerifyLog(LogLevel.Warning, "Registration failed for");
     }
 
     [Test]
@@ -91,15 +93,16 @@ public class AccountControllerUnitTests
     {
         // Arrange
         var model = new RegisterViewModel { Username = "new", Email = "taken@test.com", Password = "pw", ConfirmPassword = "pw" };
-        _userManagerMock.Setup(x => x.FindByNameAsync("new")).ReturnsAsync((IdentityUser?)null);
-        _userManagerMock.Setup(x => x.FindByEmailAsync("taken@test.com"))
-            .ReturnsAsync(new IdentityUser { Email = "taken@test.com" });
+        _userManagerMock
+            .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Email 'taken@test.com' is already taken." }));
         // Act
         var result = await _controller.Register(model);
         // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
-        Assert.That(_controller.ModelState[nameof(model.Email)]?.Errors[0].ErrorMessage,
-            Is.EqualTo("An account with this email already exists."));
+        Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
+            Is.EqualTo("Email 'taken@test.com' is already taken."));
+        _loggerMock.VerifyLog(LogLevel.Warning, "Registration failed for");
     }
 
     [Test]
@@ -107,8 +110,6 @@ public class AccountControllerUnitTests
     {
         // Arrange
         var model = new RegisterViewModel { Username = "new", Email = "new@test.com", Password = "pw", ConfirmPassword = "pw" };
-        _userManagerMock.Setup(x => x.FindByNameAsync("new")).ReturnsAsync((IdentityUser?)null);
-        _userManagerMock.Setup(x => x.FindByEmailAsync("new@test.com")).ReturnsAsync((IdentityUser?)null);
         _userManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Error occurred." }));
@@ -125,8 +126,6 @@ public class AccountControllerUnitTests
     {
         // Arrange
         var model = new RegisterViewModel { Username = "new", Email = "new@test.com", Password = "pw", ConfirmPassword = "pw" };
-        _userManagerMock.Setup(x => x.FindByNameAsync("new")).ReturnsAsync((IdentityUser?)null);
-        _userManagerMock.Setup(x => x.FindByEmailAsync("new@test.com")).ReturnsAsync((IdentityUser?)null);
         _userManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
             .ReturnsAsync(IdentityResult.Success);
@@ -137,8 +136,8 @@ public class AccountControllerUnitTests
 
         var redirect = result as RedirectToActionResult;
         Assert.That(redirect, Is.Not.Null);
-        Assert.That(redirect!.ActionName, Is.EqualTo("Index"));
-        Assert.That(redirect.ControllerName, Is.EqualTo("EmailVerification"));
+        Assert.That(redirect!.ActionName, Is.EqualTo("VerifyEmail"));
+        Assert.That(redirect.ControllerName, Is.EqualTo("Account"));
         Assert.That(redirect.RouteValues, Contains.Key("userId"));
     }
 }
