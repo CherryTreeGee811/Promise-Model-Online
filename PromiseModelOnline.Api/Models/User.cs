@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using PromiseModelOnline.Api.Enums;
 
@@ -57,3 +58,4 @@ public class User
     /// <summary>Moment assignments for this user.</summary>
     public ICollection<MomentAssignment> MomentAssignments { get; set; } = new List<MomentAssignment>();
 }
+#pragma warning restore S6964

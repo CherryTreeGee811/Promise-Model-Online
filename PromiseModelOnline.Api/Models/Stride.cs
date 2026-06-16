@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -48,3 +49,4 @@ public class Stride
     /// <summary>Moments assigned to this stride.</summary>
     public ICollection<Moment> Moments { get; set; } = new List<Moment>();
 }
+#pragma warning restore S6964

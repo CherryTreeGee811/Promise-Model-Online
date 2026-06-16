@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PromiseModelOnline.Api.DTOs;
 
@@ -12,7 +13,7 @@ public class CreateCommentDto
     public string ParentType { get; set; } = string.Empty;
     
     /// <summary>Parent entity ID.</summary>
-    [Required]
+    [JsonRequired]
     public int ParentId { get; set; }
     
     /// <summary>Parent comment ID for replies, or <c>null</c> for top-level comments.</summary>

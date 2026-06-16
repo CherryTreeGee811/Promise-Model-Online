@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -67,3 +68,4 @@ public class Flow
     /// <summary>Comments attached to this flow.</summary>
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }
+#pragma warning restore S6964

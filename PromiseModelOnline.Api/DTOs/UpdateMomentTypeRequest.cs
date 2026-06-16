@@ -1,4 +1,5 @@
 using PromiseModelOnline.Api.Enums;
+using System.Text.Json.Serialization;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -8,7 +9,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateMomentTypeRequest : IValidatableObject
 {
     /// <summary>The new type value to apply.</summary>
-    [Required]
+    [JsonRequired]
     public MomentType NewType { get; set; }
 
     /// <summary>Validates the request data.</summary>

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.DTOs;
@@ -9,9 +10,9 @@ public class CreatePermissionRequestDto
     /// <summary>Email address.</summary>
     public string Email { get; set; } = string.Empty;
     /// <summary>ID of the project.</summary>
-    [Required]
+    [JsonRequired]
     public int ProjectId { get; set; }
     /// <summary>Access level permission.</summary>
-    [Required]
+    [JsonRequired]
     public PermissionLevel Level { get; set; }
 }

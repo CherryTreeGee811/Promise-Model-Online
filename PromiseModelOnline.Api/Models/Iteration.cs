@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -37,3 +38,4 @@ public class Iteration
     /// <summary>Strides (sprints) within this iteration.</summary>
     public ICollection<Stride> Strides { get; set; } = new List<Stride>();
 }
+#pragma warning restore S6964

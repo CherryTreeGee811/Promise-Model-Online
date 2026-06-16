@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using PMO.Core.Models;
@@ -96,3 +97,4 @@ public class Moment
     /// <summary>Bug and rework items attached to this moment.</summary>
     public ICollection<BugReworkTask> BugReworkTasks { get; set; } = new List<BugReworkTask>();
 }
+#pragma warning restore S6964

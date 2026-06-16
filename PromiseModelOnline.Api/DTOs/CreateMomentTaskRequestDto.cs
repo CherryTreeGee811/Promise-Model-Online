@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PromiseModelOnline.Api.DTOs;
 
@@ -6,7 +7,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreateMomentTaskRequestDto
 {
     /// <summary>Task display name. Required, max 200 characters.</summary>
-    [Required]
+    [JsonRequired]
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
 
@@ -15,6 +16,6 @@ public class CreateMomentTaskRequestDto
     public string? Description { get; set; }
 
     /// <summary>Whether the task is initially marked complete.</summary>
-    [Required]
+    [JsonRequired]
     public bool IsCompleted { get; set; }
 }

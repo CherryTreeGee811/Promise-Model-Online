@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PromiseModelOnline.Api.DTOs;
 
@@ -10,6 +11,6 @@ public class CreateReactionRequest
     /// <summary>Type discriminator for the target entity.</summary>
     public string StackItemType { get; set; } = string.Empty;
     /// <summary>Foreign key to the target entity.</summary>
-    [Required]
+    [JsonRequired]
     public int StackItemId { get; set; }
 }

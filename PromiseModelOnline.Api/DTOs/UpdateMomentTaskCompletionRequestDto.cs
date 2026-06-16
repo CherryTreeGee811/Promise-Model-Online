@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PromiseModelOnline.Api.DTOs;
 
@@ -6,6 +7,6 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateMomentTaskCompletionRequestDto
 {
     /// <summary>Whether the task is marked complete.</summary>
-    [Required]
+    [JsonRequired]
     public bool IsCompleted { get; set; }
 }
