@@ -59,6 +59,17 @@ public abstract class PlaywrightTestBase
 
             Page.Console += (_, e) =>
             {
+                // Filter out expected SignalR noise (no SignalR hub in test environment)
+                if (e.Text.Contains("signalr", StringComparison.OrdinalIgnoreCase)
+                    || e.Text.Contains("Failed to start the connection", StringComparison.OrdinalIgnoreCase)
+                    || e.Text.Contains("None of the transports", StringComparison.OrdinalIgnoreCase)
+                    || e.Text.Contains("transports supported", StringComparison.OrdinalIgnoreCase)
+                    || e.Text.Contains("negotiation with the server", StringComparison.OrdinalIgnoreCase)
+                    || (e.Text.Contains("Failed to load resource", StringComparison.OrdinalIgnoreCase)
+                        && (e.Text.Contains("404", StringComparison.OrdinalIgnoreCase)
+                            || e.Text.Contains("401", StringComparison.OrdinalIgnoreCase))))
+                    return;
+
                 if (e.Type == "error" || e.Type == "warning")
                     TestContext.Progress.WriteLine($"[BROWSER {e.Type}] {e.Text}");
             };
