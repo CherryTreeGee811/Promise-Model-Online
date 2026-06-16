@@ -14,7 +14,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   dropdown.style.display = 'none';
   document.body.appendChild(dropdown);
 
-  let state = {
+  const state = {
     open: false,
     items: [],
     highlightedIndex: -1,

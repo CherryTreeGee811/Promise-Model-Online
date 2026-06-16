@@ -108,7 +108,7 @@ export function projectUrl(owner, project, path = '') {
  * @throws {Error} If the server returns 401 (redirects to login).
  */
 export async function apiFetch(url, options = {}) {
-    let response = await fetch(url, {
+    const response = await fetch(url, {
         ...options,
         credentials: 'include',
         headers: {

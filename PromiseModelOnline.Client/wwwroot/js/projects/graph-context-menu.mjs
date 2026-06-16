@@ -1,4 +1,4 @@
-import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
+import tippy from '/lib/js/tippy.esm.js';
 
 import { apiFetch } from '../api.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';

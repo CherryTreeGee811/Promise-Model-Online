@@ -1090,7 +1090,7 @@ export async function loadGraphPage(owner, project, contentDiv, permission) {
 
     graphState.owner = owner;
     graphState.project = project;
-    graphState.d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
+    graphState.d3 = window.d3;
     graphState.filters = readFiltersFromUrl();
     graphState.focusNodeId = readGraphFocusFromUrl();
     graphState.zoomTransform = null;

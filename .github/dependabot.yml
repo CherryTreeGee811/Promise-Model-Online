@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # NuGet (C#) — daily checks
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+
+  # npm (production dependencies only — dev deps are test/lint tooling)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "production"
+    labels:
+      - "dependencies"
+      - "npm"
+
+  # GitHub Actions — keep workflows up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    labels:
+      - "dependencies"
+      - "github-actions"

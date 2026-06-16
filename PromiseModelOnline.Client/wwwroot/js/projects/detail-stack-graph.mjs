@@ -38,7 +38,7 @@ const detailStackState = {
  */
 export function loadD3() {
     if (!d3Promise) {
-        d3Promise = import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
+        d3Promise = Promise.resolve(window.d3);
     }
     return d3Promise;
 }

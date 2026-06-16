@@ -24,6 +24,12 @@ jobs:
         shell: bash
         run: dotnet build Promise-Model-Online.sln
 
+      - name: ESLint (client JS)
+        shell: bash
+        run: |
+          npm ci
+          npm run lint
+
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
         run: |
@@ -267,7 +273,178 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      # ─── 8. Push Docker Images to DockerHub ───
+      # ─── 8. Container & dependency vulnerability scan ───
+
+      - name: Run Trivy (Dockerfiles + .csproj config)
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+          args: "--skip-dirs node_modules"
+
+      - name: Scan Docker images
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlineapi"
+          format: "sarif"
+          output: "trivy-image-api.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Scan Docker image (client)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlineclient"
+          format: "sarif"
+          output: "trivy-image-client.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Scan Docker image (auth)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlineauth"
+          format: "sarif"
+          output: "trivy-image-auth.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Scan Docker image (bff)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlinebff"
+          format: "sarif"
+          output: "trivy-image-bff.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Upload Trivy filesystem results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+          category: "trivy-fs"
+
+      - name: Upload Trivy image scan results (API)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-image-api.sarif"
+          category: "trivy-image-api"
+
+      - name: Upload Trivy image scan results (client)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-image-client.sarif"
+          category: "trivy-image-client"
+
+      - name: Upload Trivy image scan results (auth)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-image-auth.sarif"
+          category: "trivy-image-auth"
+
+      - name: Upload Trivy image scan results (bff)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-image-bff.sarif"
+          category: "trivy-image-bff"
+
+      # ─── Generate SBOMs (CycloneDX) ───
+
+      - name: Generate SBOM (source — .csproj + package.json)
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "cyclonedx"
+          output: "sbom-source.cdx.json"
+          exit-code: "0"
+          args: "--skip-dirs node_modules"
+
+      - name: Generate SBOM (API container — includes OS packages)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlineapi"
+          format: "cyclonedx"
+          output: "sbom-api.cdx.json"
+          exit-code: "0"
+
+      - name: Generate SBOM (Client container — includes OS packages)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlineclient"
+          format: "cyclonedx"
+          output: "sbom-client.cdx.json"
+          exit-code: "0"
+
+      - name: Generate SBOM (Auth container — includes OS packages)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlineauth"
+          format: "cyclonedx"
+          output: "sbom-auth.cdx.json"
+          exit-code: "0"
+
+      - name: Generate SBOM (BFF container — includes OS packages)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          scan-ref: "promisemodelonlinebff"
+          format: "cyclonedx"
+          output: "sbom-bff.cdx.json"
+          exit-code: "0"
+
+      - name: Upload SBOMs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: |
+            sbom-source.cdx.json
+            sbom-api.cdx.json
+            sbom-client.cdx.json
+            sbom-auth.cdx.json
+            sbom-bff.cdx.json
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-image-api.sarif"
+          category: "trivy-image"
+
+      # ─── 9. Push Docker Images to DockerHub ───
 
       - name: Push Docker Images to DockerHub
         if: ${{ github.ref == 'refs/heads/main' }}

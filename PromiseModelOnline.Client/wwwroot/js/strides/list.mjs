@@ -640,7 +640,7 @@ function ensureBacklogTbody() {
     const backlogSection = document.getElementById('backlog-section');
     if (!backlogSection) return null;
 
-    let tbody = backlogSection.querySelector('.backlog-content table.promisemodel-table tbody');
+    const tbody = backlogSection.querySelector('.backlog-content table.promisemodel-table tbody');
     if (tbody) return tbody;
 
     backlogSection.innerHTML = `
@@ -708,7 +708,7 @@ function ensureStrideTbody(strideId) {
     const card = document.querySelector(`.stride-card[data-stride-id="${strideId}"]`);
     if (!card) return null;
 
-    let tbody = card.querySelector('table.promisemodel-table tbody');
+    const tbody = card.querySelector('table.promisemodel-table tbody');
     if (tbody) return tbody;
 
     const container = card.querySelector('.stride-moments');
