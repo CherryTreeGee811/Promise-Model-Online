@@ -13,6 +13,7 @@ using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 /// <summary>REST controller for iteration CRUD within a project scope with burndown support.</summary>
 
@@ -33,8 +34,11 @@ namespace PromiseModelOnline.Api.Controllers
 
         private readonly IMomentService _momentService;
 
+        private readonly ILogger<ProjectIterationsController> _logger;
 
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectIterationsController"/> class.</summary>
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectIterationsController(
 
             IGenericService<Iteration> service,
@@ -44,6 +48,8 @@ namespace PromiseModelOnline.Api.Controllers
             IIterationService iterationService,
 
             IMomentService momentService,
+
+            ILogger<ProjectIterationsController> logger,
 
             IProjectService projectService)
 
@@ -58,6 +64,8 @@ namespace PromiseModelOnline.Api.Controllers
             _iterationService = iterationService;
 
             _momentService = momentService;
+
+            _logger = logger;
 
         }
 

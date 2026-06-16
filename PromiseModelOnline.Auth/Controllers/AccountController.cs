@@ -23,12 +23,12 @@ public class AccountController : Controller
 
     private const string VerificationCodePrefix = "verify_code:";
 
-        /// <param name="cache">The memory cache for verification codes.</param>
-        /// <param name="logger">The logger.</param>
-        /// <param name="configuration">The application configuration.</param>
+        /// <summary>Initializes the controller with Identity, email, configuration, logging, and caching dependencies.</summary>
+        /// <param name="userManager">The Identity user manager for account creation and lookups.</param>
         /// <param name="emailService">The email service for sending verification codes.</param>
-        /// <param name="userManager">The Identity user manager.</param>
-        /// <returns>A redirect or the registration view with errors.</returns>
+        /// <param name="configuration">The application configuration for external provider settings.</param>
+        /// <param name="logger">The logger for registration and verification events.</param>
+        /// <param name="cache">The memory cache for storing verification codes.</param>
     public AccountController(
         UserManager<IdentityUser> userManager,
         IEmailService emailService,

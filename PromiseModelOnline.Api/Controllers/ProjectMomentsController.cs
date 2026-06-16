@@ -27,6 +27,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<ProjectMomentsController> _logger;
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectMomentsController(
             IMomentService service,
             IGenericMapper<Moment, MomentDTO> mapper,

@@ -21,6 +21,7 @@ public class LoginEndpointTests
     }
 
     [Test]
+    [Description("REQ_OIDC_002 + REQ-SEC-LOG-001: BFF /login with safe return URL redirects to OIDC challenge")]
     public async Task REQ_FUN_002_Login_WithSafeReturnUrl_RedirectsToChallenge()
     {
         // Arrange
@@ -33,6 +34,7 @@ public class LoginEndpointTests
     }
 
     [Test]
+    [Description("REQ_NF_008: BFF /login with unsafe absolute URL defaults to root")]
     public async Task REQ_FUN_002_Login_WithUnsafeAbsoluteUrl_DefaultsToRoot()
     {
         // Arrange

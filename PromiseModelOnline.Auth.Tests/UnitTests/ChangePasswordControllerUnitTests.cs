@@ -47,6 +47,8 @@ public class ChangePasswordControllerUnitTests
             .Returns(AsyncEnumerableFrom<object>());
     }
 
+    /// <summary>Set the HttpContext user with a Subject claim for the given user ID.</summary>
+    /// <param name="userId">The user ID to set as the Subject claim.</param>
     private void SetSubjectUser(string userId)
     {
         var identity = new ClaimsIdentity(new[] { new Claim(Claims.Subject, userId) }, "TestAuth");
@@ -178,6 +180,9 @@ public class ChangePasswordControllerUnitTests
         _tokenManagerMock.Verify(x => x.TryRevokeAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
+    /// <summary>Create an async-enumerable sequence from a parameter array (for mocking IAsyncEnumerable{T} return values).</summary>
+    /// <param name="items">The items to yield.</param>
+    /// <typeparam name="T">The element type.</typeparam>
     private static async IAsyncEnumerable<T> AsyncEnumerableFrom<T>(params T[] items)
     {
         foreach (var item in items)

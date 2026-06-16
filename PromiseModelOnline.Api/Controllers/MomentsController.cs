@@ -31,6 +31,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<MomentsController> _logger;
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public MomentsController(
             IMomentService service,
             IGenericMapper<Moment, MomentDTO> mapper,
@@ -130,8 +131,16 @@ namespace PromiseModelOnline.Api.Controllers
                 _logger.LogInformation("User assigned Moment {MomentId} to Stride {StrideId}", id, request.StrideId);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
-            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Moment {MomentId} not found for stride assignment", id);
+                return NotFound("Moment not found.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Stride assignment failed for moment {MomentId}", id);
+                return BadRequest("The moment could not be assigned to the stride.");
+            }
         }
 
         /// <summary>Update a moment's status with business rule validation.</summary>
@@ -154,7 +163,11 @@ namespace PromiseModelOnline.Api.Controllers
                 _logger.LogInformation("User updated Moment {MomentId} status to {NewStatus}", id, request.NewStatus);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Moment not found in moments operation");
+                return NotFound("Moment not found.");
+            }
         }
 
         /// <summary>Update a moment's description.</summary>
@@ -183,7 +196,11 @@ namespace PromiseModelOnline.Api.Controllers
                 _logger.LogInformation("User updated Moment {MomentId} description", id);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Moment not found in moments operation");
+                return NotFound("Moment not found.");
+            }
         }
 
         /// <summary>Update a moment's effort estimate.</summary>
@@ -206,7 +223,11 @@ namespace PromiseModelOnline.Api.Controllers
                 _logger.LogInformation("User updated Moment {MomentId} estimate to {Estimate}", id, request.Estimate);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Moment not found in moments operation");
+                return NotFound("Moment not found.");
+            }
         }
 
         /// <summary>Update a moment's type classification.</summary>
@@ -235,7 +256,11 @@ namespace PromiseModelOnline.Api.Controllers
                 _logger.LogInformation("User updated Moment {MomentId} type to {NewType}", id, request.NewType);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Moment not found in moments operation");
+                return NotFound("Moment not found.");
+            }
         }
 
         /// <summary>Assign or unassign an owner to a moment.</summary>
@@ -258,7 +283,11 @@ namespace PromiseModelOnline.Api.Controllers
                 _logger.LogInformation("User assigned Moment {MomentId} to Owner {OwnerId}", id, request.UserId);
                 return Ok(_mapper.Map(moment, _service));
             }
-            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Moment not found in moments operation");
+                return NotFound("Moment not found.");
+            }
         }
 
         /// <summary>Resolve the current user from JWT claims.</summary>

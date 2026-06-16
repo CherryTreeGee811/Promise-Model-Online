@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace PromiseModelOnline.BFF.Tests;
@@ -14,6 +15,9 @@ public class BffWebApplicationFactory : WebApplicationFactory<Program>
 {
     private static readonly object _lock = new();
     private static bool _varsSet;
+
+    /// <summary>Captured log entries from the test server for assertions.</summary>
+    public LogCapture LogCapture { get; } = new();
 
     /// <summary>Initializes the factory and sets required environment variables.</summary>
     public BffWebApplicationFactory()
@@ -52,6 +56,7 @@ public class BffWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.AddTransient<TestAuthHandler>();
             services.AddTransient<TestChallengeHandler>();
+            services.AddSingleton<ILoggerProvider>(LogCapture);
 
             services.PostConfigure<AuthenticationOptions>(options =>
             {

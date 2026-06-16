@@ -169,6 +169,16 @@ builder.Services
                 return Task.CompletedTask;
             },
 
+            OnTokenResponseReceived = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("OpenIdConnect");
+                logger.LogInformation("OIDC token response received for client {ClientId}",
+                    context.ProtocolMessage?.ClientId ?? "unknown");
+                return Task.CompletedTask;
+            },
+
             OnAuthenticationFailed = context =>
             {
                 var logger = context.HttpContext.RequestServices
@@ -230,12 +240,16 @@ app.MapReverseProxy(proxyPipeline =>
         var authenticateResult = await context.AuthenticateAsync("cookie");
 
         if (!authenticateResult.Succeeded)
-        {
-            if (BffHelpers.IsAjax(context.Request))
             {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return;
-            }
+                if (BffHelpers.IsAjax(context.Request))
+                {
+                    var log = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("BFFProxy");
+                    log.LogWarning("Proxy: unauthenticated AJAX request to {Method} {Path} returned 401",
+                        context.Request.Method, context.Request.Path);
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return;
+                }
 
             var returnUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
 

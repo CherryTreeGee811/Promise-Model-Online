@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace PromiseModelOnline.BFF.Tests;
 
 /// <summary>Test server for BFF integration tests, providing an authenticated HTTP client.</summary>
@@ -13,6 +16,9 @@ public class BffTestServer : IAsyncDisposable
 
     /// <summary>HTTP client pre-configured with the test server's handler.</summary>
     public HttpClient Client { get; }
+
+    /// <summary>Captured log entries from the test server for assertions.</summary>
+    public LogCapture LogCapture { get; } = new();
 
     private static readonly object _lock = new();
     private static bool _varsSet;
@@ -48,6 +54,7 @@ public class BffTestServer : IAsyncDisposable
             .AddScheme<AuthenticationSchemeOptions, TestChallengeHandler>("oidc", null);
 
         builder.Services.AddAuthorization();
+        builder.Services.AddSingleton<ILoggerProvider>(LogCapture);
 
         _app = builder.Build();
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -18,11 +19,15 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="strideService">The stride service.</param>
     {
         private readonly IStrideService _strideService;
+        private readonly ILogger<DeadlineNotificationRunsController> _logger;
 
         /// <summary>Initializes the controller with the stride service.</summary>
-        public DeadlineNotificationRunsController(IStrideService strideService)
+        /// <param name="strideService">The stride service.</param>
+        /// <param name="logger">The logger for audit and error events.</param>
+        public DeadlineNotificationRunsController(IStrideService strideService, ILogger<DeadlineNotificationRunsController> logger)
         {
             _strideService = strideService;
+            _logger = logger;
         }
 
         /// <summary>Trigger deadline notification generation for strides ending in 3 days.</summary>

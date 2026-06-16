@@ -48,6 +48,7 @@ namespace PromiseModelOnline.Api.Controllers
 
 
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public ReactionsController(IReactionService reactionService,
 
                                    IUserRepository userRepository,
@@ -119,7 +120,11 @@ namespace PromiseModelOnline.Api.Controllers
 
             }
 
-            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "CreateReaction failed for user {UserId}", userId);
+                return BadRequest("The reaction could not be created.");
+            }
 
         }
 
@@ -163,15 +168,11 @@ namespace PromiseModelOnline.Api.Controllers
             }
 
             catch (InvalidOperationException ex)
-
             {
-
+                _logger.LogWarning(ex, "UpdateReaction {ReactionId} failed for user {UserId}", id, userId);
                 if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
-
-                    return NotFound(ex.Message);
-
-                return BadRequest(ex.Message);
-
+                    return NotFound("Reaction not found.");
+                return BadRequest("The reaction could not be updated.");
             }
 
         }

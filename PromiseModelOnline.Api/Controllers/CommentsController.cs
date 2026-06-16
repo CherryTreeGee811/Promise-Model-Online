@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -23,15 +24,22 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly ICommentService _commentService;
         private readonly IUserRepository _userRepository;
         private readonly ICommentRepository _commentRepository;
+        private readonly ILogger<CommentsController> _logger;
 
         /// <summary>Initializes the controller with required services and repositories.</summary>
+        /// <param name="commentService">The comment service.</param>
+        /// <param name="userRepository">The user repository.</param>
+        /// <param name="commentRepository">The comment repository.</param>
+        /// <param name="logger">The logger for audit and error events.</param>
         public CommentsController(ICommentService commentService,
                                   IUserRepository userRepository,
-                                  ICommentRepository commentRepository)
+                                  ICommentRepository commentRepository,
+                                  ILogger<CommentsController> logger)
         {
             _commentService = commentService;
             _userRepository = userRepository;
             _commentRepository = commentRepository;
+            _logger = logger;
         }
 
         /// <summary>Retrieve comments for a parent entity.</summary>
@@ -82,7 +90,8 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogWarning(ex, "Failed to create comment");
+                return BadRequest("The comment could not be created.");
             }
         }
 
@@ -110,7 +119,8 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogWarning(ex, "User search failed");
+                return BadRequest("Invalid parent type or entity not found.");
             }
         }
 
@@ -138,7 +148,8 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogWarning(ex, "Failed to search entity hierarchy");
+                return BadRequest("Invalid parent type or entity not found.");
             }
         }
     }

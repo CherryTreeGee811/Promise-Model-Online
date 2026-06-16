@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Tests.Infrastructure;
@@ -57,7 +58,8 @@ namespace PromiseModelOnline.Api.Tests
                 _mockPromiseMapper.Object,
                 _mockGenericService.Object,
                 _mockExportService.Object,
-                _mockContext.Object);
+                _mockContext.Object,
+                NullLogger<ProjectDetailController>.Instance);
         }
 
         private void SetUpProjectResolve(Project? project)
@@ -150,16 +152,16 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task REQ_FUN_003_GetMembers_MissingEmail_ReturnsUnauthorized()
+        public async Task REQ_FUN_003_GetMembers_MissingEmail_ReturnsOkResult()
         {
-            // Arrange
+            // Arrange - email is null but user is still authenticated with projects.read scope
             var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
             SetUpProjectResolve(new Project { Id = 1, Slug = ProjectSlug, Owner = owner });
             SetControllerUser(null);
             // Act
             var result = await _controller.GetMembers(OwnerSlug, ProjectSlug);
             // Assert
-            Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         }
 
         [Test]

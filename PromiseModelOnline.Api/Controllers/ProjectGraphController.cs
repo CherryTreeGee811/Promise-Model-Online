@@ -7,6 +7,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 /// <summary>REST controller for retrieving the full project hierarchy as a graph structure.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
@@ -17,13 +18,18 @@ namespace PromiseModelOnline.Api.Controllers
     public class ProjectGraphController : ProjectScopedControllerBase
     {
         private readonly IPromiseModelOnlineContext _context;
+        private readonly ILogger<ProjectGraphController> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectGraphController"/> class.</summary>
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectGraphController(
             IProjectService projectService,
-            IPromiseModelOnlineContext context)
+            IPromiseModelOnlineContext context,
+            ILogger<ProjectGraphController> logger)
             : base(projectService)
         {
             _context = context;
+            _logger = logger;
         }
 
         [Authorize(Policy = "projects.read")]

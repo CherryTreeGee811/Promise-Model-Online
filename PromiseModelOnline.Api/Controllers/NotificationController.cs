@@ -24,6 +24,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IUserRepository _userRepository;
         private readonly ILogger<NotificationsController> _logger;
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public NotificationsController(INotificationService notificationService,
                                        IUserRepository userRepository,
                                        ILogger<NotificationsController> logger)

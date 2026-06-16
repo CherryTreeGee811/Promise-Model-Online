@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Tests.Infrastructure;
@@ -21,6 +22,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IReactionService> _reactionServiceMock = null!;
         private Mock<IUserRepository> _userRepositoryMock = null!;
+        private Mock<ILogger<ReactionsController>> _loggerMock = null!;
         private ReactionsController _controller = null!;
 
         [SetUp]
@@ -28,10 +30,11 @@ namespace PromiseModelOnline.Api.Tests
         {
             _reactionServiceMock = new Mock<IReactionService>();
             _userRepositoryMock = new Mock<IUserRepository>();
+            _loggerMock = new Mock<ILogger<ReactionsController>>();
             _controller = new ReactionsController(
                 _reactionServiceMock.Object,
                 _userRepositoryMock.Object,
-                NullLogger<ReactionsController>.Instance);
+                _loggerMock.Object);
         }
 
         [Test]
@@ -184,6 +187,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
+        [Description("REQ-SEC-LOG-001")]
         public async Task REQ_SYS_004_DeleteReaction_WhenServiceThrows_ReturnsBadRequest()
         {
             // Arrange
@@ -207,6 +211,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(badRequest, Is.Not.Null);
             Assert.That(badRequest!.Value, Is.EqualTo("Cannot remove reaction."));
             _reactionServiceMock.Verify(s => s.RemoveReactionAsync(15, currentUser.Id), Times.Once);
+            _loggerMock.VerifyLog(LogLevel.Warning, "Failed to delete reaction");
         }
     }
 }

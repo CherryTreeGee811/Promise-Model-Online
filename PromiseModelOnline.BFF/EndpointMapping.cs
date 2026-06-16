@@ -50,8 +50,14 @@ public static class EndpointMapping
         });
 
         // Logout endpoint: signs out the BFF cookie and the OIDC session.
-        app.MapGet("/logout", () =>
+        app.MapGet("/logout", (HttpContext ctx) =>
         {
+            var userId = ctx.User?.FindFirst("sub")?.Value
+                         ?? ctx.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                         ?? "unknown";
+            var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Logout: user {UserId} signed out", userId);
+
             return Results.SignOut(
                 new AuthenticationProperties
                 {

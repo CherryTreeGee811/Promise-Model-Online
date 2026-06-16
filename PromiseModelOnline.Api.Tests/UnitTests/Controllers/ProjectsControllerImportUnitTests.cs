@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Tests.Infrastructure;
@@ -36,13 +37,14 @@ public class ProjectsControllerImportUnitTests
         _mockProjectImportService = new Mock<IProjectImportService>();
         _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
         _mockGenericService = new Mock<IGenericService<Project>>();
-        _controller = new UserProjectsController(
-            _mockProjectService.Object,
-            _mockUserRepo.Object,
-            _mockMapper.Object,
-            _mockGenericService.Object,
-            _mockProjectImportService.Object,
-            _mockProjectImportValidationService.Object);
+            _controller = new UserProjectsController(
+                _mockProjectService.Object,
+                _mockUserRepo.Object,
+                _mockMapper.Object,
+                _mockGenericService.Object,
+                _mockProjectImportService.Object,
+                _mockProjectImportValidationService.Object,
+                NullLogger<UserProjectsController>.Instance);
     }
 
     [Test]
@@ -57,7 +59,7 @@ public class ProjectsControllerImportUnitTests
         var result = await _controller.Import();
 
         // Assert
-        Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
+        Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
     }
 
     [Test]
@@ -88,6 +90,6 @@ public class ProjectsControllerImportUnitTests
         var result = await _controller.Import();
 
         // Assert
-        Assert.That(result, Is.InstanceOf<CreatedAtActionResult>());
+        Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
     }
 }

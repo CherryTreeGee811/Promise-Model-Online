@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 /// <summary>REST controller for flow CRUD within a project scope, with sequence-based lookup.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
@@ -22,17 +23,22 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericService<Flow> _service;
         private readonly IGenericMapper<Flow, FlowDTO> _mapper;
         private readonly IPromiseModelOnlineContext _context;
+        private readonly ILogger<ProjectFlowsController> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectFlowsController"/> class.</summary>
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectFlowsController(
             IGenericService<Flow> service,
             IGenericMapper<Flow, FlowDTO> mapper,
             IPromiseModelOnlineContext context,
+            ILogger<ProjectFlowsController> logger,
             IProjectService projectService)
             : base(projectService)
         {
             _service = service;
             _mapper = mapper;
             _context = context;
+            _logger = logger;
         }
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <summary>Return all flows for a project, optionally filtered by journey.</summary>

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 /// <summary>REST controller for epic CRUD within a project scope, with sequence-based lookup.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
@@ -22,17 +23,22 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericService<Epic> _service;
         private readonly IGenericMapper<Epic, EpicDTO> _mapper;
         private readonly IPromiseModelOnlineContext _context;
+        private readonly ILogger<ProjectEpicsController> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectEpicsController"/> class.</summary>
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectEpicsController(
             IGenericService<Epic> service,
             IGenericMapper<Epic, EpicDTO> mapper,
             IPromiseModelOnlineContext context,
+            ILogger<ProjectEpicsController> logger,
             IProjectService projectService)
             : base(projectService)
         {
             _service = service;
             _mapper = mapper;
             _context = context;
+            _logger = logger;
         }
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <summary>Return all epics for a project, optionally filtered by promise.</summary>

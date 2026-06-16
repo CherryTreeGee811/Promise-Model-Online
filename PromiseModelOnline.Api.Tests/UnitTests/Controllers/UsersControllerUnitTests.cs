@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Controllers;
@@ -39,7 +40,8 @@ public class UsersControllerUnitTests
         _controller = new UsersController(
             _mockUserRepo.Object,
             _mockProjectRepo.Object,
-            _context);
+            _context,
+            NullLogger<UsersController>.Instance);
     }
 
     [TearDown]

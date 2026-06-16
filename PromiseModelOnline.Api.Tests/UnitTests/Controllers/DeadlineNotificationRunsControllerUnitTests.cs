@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -20,7 +21,7 @@ namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
         public void SetUp()
         {
             _strideServiceMock = new Mock<IStrideService>();
-            _controller = new DeadlineNotificationRunsController(_strideServiceMock.Object)
+            _controller = new DeadlineNotificationRunsController(_strideServiceMock.Object, NullLogger<DeadlineNotificationRunsController>.Instance)
             {
                 ControllerContext = new ControllerContext
                 {

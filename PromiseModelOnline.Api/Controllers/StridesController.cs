@@ -21,6 +21,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IMomentService _momentService;
         private readonly ILogger<StridesController> _logger;
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public StridesController(
             IStrideService strideService,
             IGenericMapper<Stride, StrideDTO> mapper,

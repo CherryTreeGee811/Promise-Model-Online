@@ -42,6 +42,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         private readonly ILogger<ProjectPermissionsController> _logger;
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectPermissionsController(
 
             IPermissionService permissionService,
@@ -133,12 +134,10 @@ namespace PromiseModelOnline.Api.Controllers
 
             }
 
-            catch (System.Exception ex)
-
+            catch (Exception ex)
             {
-
-                return BadRequest(ex.Message);
-
+                _logger.LogError(ex, "InviteUser failed for project {Owner}/{Project}", owner, project);
+                return BadRequest("The invitation could not be sent.");
             }
 
         }
@@ -167,19 +166,12 @@ namespace PromiseModelOnline.Api.Controllers
             {
 
                 await _permissionService.RemovePermissionAsync(id, userId.Value);
-
                 return NoContent();
-
-        /// <param name="owner">The project owner's URL-safe slug.</param>
-        /// <param name="project">The project's URL-safe slug.</param>
             }
-
             catch (Exception ex)
-
             {
-
-                return BadRequest(ex.Message);
-
+                _logger.LogError(ex, "RevokePermission failed for permission {Id}", id);
+                return BadRequest("The permission could not be revoked.");
             }
 
         }

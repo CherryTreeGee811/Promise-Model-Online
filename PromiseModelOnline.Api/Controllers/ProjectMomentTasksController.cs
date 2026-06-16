@@ -48,6 +48,7 @@ namespace PromiseModelOnline.Api.Controllers
 
 
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectMomentTasksController(
 
             IMomentService momentService,

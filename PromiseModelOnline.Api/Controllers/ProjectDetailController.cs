@@ -13,6 +13,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -33,7 +34,10 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericService<Project> _service;
         private readonly IProjectExportService _projectExportService;
         private readonly IPromiseModelOnlineContext _context;
+        private readonly ILogger<ProjectDetailController> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectDetailController"/> class.</summary>
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectDetailController(
             IProjectService projectService,
             IUserRepository userRepository,
@@ -43,7 +47,8 @@ namespace PromiseModelOnline.Api.Controllers
             IGenericMapper<Promise, PromiseDTO> promiseMapper,
             IGenericService<Project> service,
             IProjectExportService projectExportService,
-            IPromiseModelOnlineContext context)
+            IPromiseModelOnlineContext context,
+            ILogger<ProjectDetailController> logger)
             : base(projectService)
         {
             _userRepository = userRepository;
@@ -54,6 +59,7 @@ namespace PromiseModelOnline.Api.Controllers
             _service = service;
             _projectExportService = projectExportService;
             _context = context;
+            _logger = logger;
         }
 
         /// <summary>Return project details by owner and project slug.</summary>
@@ -252,7 +258,7 @@ namespace PromiseModelOnline.Api.Controllers
                 var json = JsonSerializer.Serialize(exportDocument, new JsonSerializerOptions { WriteIndented = true });
                 return File(Encoding.UTF8.GetBytes(json), "application/json", $"{projectEntity.Slug}-export.json");
             }
-            catch (KeyNotFoundException) { return NotFound(); }
+            catch (KeyNotFoundException ex) { _logger.LogWarning(ex, "Export failed: project not found"); return NotFound(); }
         }
 
         /// <summary>Return paginated audit events for a project.</summary>

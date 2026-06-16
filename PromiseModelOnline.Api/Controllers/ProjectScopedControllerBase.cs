@@ -13,11 +13,11 @@ namespace PromiseModelOnline.Api.Controllers
     /// </remarks>
     public abstract class ProjectScopedControllerBase : ControllerBase
     {
-        /// <param name="projectService">The project service.</param>
         /// <summary>Service for project lookups by slug.</summary>
         protected readonly IProjectService _projectService;
 
         /// <summary>Initializes the controller with the project service.</summary>
+        /// <param name="projectService">The project service for slug-based lookups.</param>
         protected ProjectScopedControllerBase(IProjectService projectService)
         {
             _projectService = projectService;

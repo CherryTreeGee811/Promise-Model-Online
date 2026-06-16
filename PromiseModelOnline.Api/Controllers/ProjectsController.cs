@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -27,14 +28,24 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericService<Project> _service;
         private readonly IProjectImportService _projectImportService;
         private readonly IProjectImportValidationService _projectImportValidationService;
+        private readonly ILogger<UserProjectsController> _logger;
 
+        /// <summary>Initializes the controller with required services and repositories.</summary>
+        /// <param name="projectService">The project service.</param>
+        /// <param name="userRepository">The user repository.</param>
+        /// <param name="mapper">The mapper.</param>
+        /// <param name="service">The generic service.</param>
+        /// <param name="projectImportService">The project import service.</param>
+        /// <param name="projectImportValidationService">The project import validation service.</param>
+        /// <param name="logger">The logger for audit and error events.</param>
         public UserProjectsController(
             IProjectService projectService,
             IUserRepository userRepository,
             IGenericMapper<Project, ProjectDTO> mapper,
             IGenericService<Project> service,
             IProjectImportService projectImportService,
-            IProjectImportValidationService projectImportValidationService)
+            IProjectImportValidationService projectImportValidationService,
+            ILogger<UserProjectsController> logger)
         {
             _projectService = projectService;
             _userRepository = userRepository;
@@ -42,6 +53,7 @@ namespace PromiseModelOnline.Api.Controllers
             _service = service;
             _projectImportService = projectImportService;
             _projectImportValidationService = projectImportValidationService;
+            _logger = logger;
         }
 
         /// <summary>Return all projects accessible to the current user.</summary>
@@ -54,7 +66,7 @@ namespace PromiseModelOnline.Api.Controllers
             if (user is null) return Unauthorized();
 
             var projects = await _projectService.GetAccessibleProjectsAsync(user.Id);
-            return Ok(projects.Select(p => _mapper.Map(p, _service)));
+            return Ok(projects.Select(p => _mapper.Map(p, _service)).ToList());
         }
         /// <param name="request">The project creation data.</param>
 

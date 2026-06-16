@@ -15,6 +15,7 @@ public class ProxyAuthTests
     }
 
     [Test]
+    [Description("REQ_INT_002 + REQ-SEC-LOG-001: Unauthenticated AJAX request to API returns 401 and logs warning")]
     public async Task REQ_INT_002_ApiRequest_Unauthenticated_Ajax_Returns401()
     {
         // Arrange
@@ -28,6 +29,7 @@ public class ProxyAuthTests
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        factory.LogCapture.ShouldContainWarning("unauthenticated AJAX request");
     }
 
     [Test]

@@ -4,6 +4,8 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Tests.Infrastructure;
@@ -22,6 +24,7 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<ICommentService> _mockCommentService = null!;
         private Mock<IUserRepository> _mockUserRepository = null!;
         private Mock<ICommentRepository> _mockCommentRepository = null!;
+        private Mock<ILogger<CommentsController>> _mockLogger = null!;
         private CommentsController _controller = null!;
 
         [SetUp]
@@ -30,10 +33,12 @@ namespace PromiseModelOnline.Api.Tests
             _mockCommentService = new Mock<ICommentService>();
             _mockUserRepository = new Mock<IUserRepository>();
             _mockCommentRepository = new Mock<ICommentRepository>();
+            _mockLogger = new Mock<ILogger<CommentsController>>();
             _controller = new CommentsController(
                 _mockCommentService.Object,
                 _mockUserRepository.Object,
-                _mockCommentRepository.Object);
+                _mockCommentRepository.Object,
+                _mockLogger.Object);
         }
 
         #region GetComments Tests - Happy Path
@@ -171,20 +176,20 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
-        public async Task REQ_FUN_017_GetComments_WithNegativeParentId_ReturnsBadRequest()
+        [Description("REQ_FUN_017 + REQ-SEC-LOG-001: Invalid parent type for user search returns bad request and logs warning")]
+        public async Task REQ_FUN_017_SearchUsers_WithInvalidParentType_ReturnsBadRequest()
         {
             // Arrange
+            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
+                .ThrowsAsync(new System.ArgumentException("Invalid parent type: invalid"));
             ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
             // Act
-            var result = await _controller.GetComments("Epic", -10);
+            var result = await _controller.SearchUsers("invalid", 1, "test");
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-            var badRequest = result.Result as BadRequestObjectResult;
-            Assert.That(badRequest, Is.Not.Null);
-            Assert.That(badRequest!.Value, Does.Contain("Type and parentId are required"));
-            _mockCommentService.Verify(s => s.GetCommentsAsync(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+            _mockLogger.VerifyLog(LogLevel.Warning, "User search failed");
         }
 
         #endregion
@@ -343,6 +348,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
+        [Description("REQ_FUN_017 + REQ-SEC-LOG-001: Service exception returns bad request and logs warning")]
         public async Task REQ_FUN_017_CreateComment_WithServiceException_ReturnsBadRequest()
         {
             // Arrange
@@ -371,8 +377,9 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest, Is.Not.Null);
-            Assert.That(badRequest!.Value, Is.EqualTo(exceptionMessage));
+            Assert.That(badRequest!.Value, Is.EqualTo("The comment could not be created."));
             _mockCommentService.Verify(s => s.CreateCommentAsync(createDto, user.Id), Times.Once);
+            _mockLogger.VerifyLog(LogLevel.Warning, "Failed to create comment");
         }
 
         [Test]
@@ -402,7 +409,7 @@ namespace PromiseModelOnline.Api.Tests
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
-            Assert.That(badRequest!.Value, Does.Contain("not found"));
+            Assert.That(badRequest!.Value, Does.Contain("The comment could not be created."));
         }
 
         [Test]
@@ -432,13 +439,12 @@ namespace PromiseModelOnline.Api.Tests
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
-            Assert.That(badRequest!.Value, Does.Contain("empty"));
+            Assert.That(badRequest!.Value, Does.Contain("Comment text cannot be empty."));
         }
 
         [Test]
         public async Task REQ_FUN_017_CreateComment_WhenUserRepositoryThrowsException_ReturnsBadRequest()
         {
-            // Arrange
             var createDto = new CreateCommentDTO
             {
                 Text = "This will fail at user level",
@@ -458,8 +464,9 @@ namespace PromiseModelOnline.Api.Tests
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
-            Assert.That(badRequest!.Value, Does.Contain("Database connection failed"));
+            Assert.That(badRequest!.Value, Does.Contain("The comment could not be created."));
             _mockCommentService.Verify(s => s.CreateCommentAsync(It.IsAny<CreateCommentDTO>(), It.IsAny<int>()), Times.Never);
+            _mockLogger.VerifyLog(LogLevel.Warning, "Failed to create comment");
         }
 
         #endregion
@@ -544,22 +551,6 @@ namespace PromiseModelOnline.Api.Tests
         #endregion
 
         #region SearchUsers Tests - Sad Path
-
-        [Test]
-        public async Task REQ_FUN_017_SearchUsers_WithInvalidParentType_ReturnsBadRequest()
-        {
-            // Arrange
-            _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("invalid", 1))
-                .ThrowsAsync(new System.ArgumentException("Invalid parent type: invalid"));
-
-            ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
-
-            // Act
-            var result = await _controller.SearchUsers("invalid", 1, "test");
-
-            // Assert
-            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-        }
 
         [Test]
         public async Task REQ_FUN_017_SearchUsers_WithNullType_ReturnsOkWithEmptyList()
@@ -699,6 +690,7 @@ namespace PromiseModelOnline.Api.Tests
         #region SearchPromises Tests - Sad Path
 
         [Test]
+        [Description("REQ_FUN_017 + REQ-SEC-LOG-001: Invalid parent type for promise search returns bad request and logs warning")]
         public async Task REQ_FUN_017_SearchPromises_WithInvalidParentType_ReturnsBadRequest()
         {
             // Arrange

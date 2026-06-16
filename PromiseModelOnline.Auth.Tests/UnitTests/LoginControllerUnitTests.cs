@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Auth.Common;
@@ -20,6 +21,7 @@ public class LoginControllerUnitTests
 {
     private Mock<SignInManager<IdentityUser>> _signInManagerMock = null!;
     private Mock<UserManager<IdentityUser>> _userManagerMock = null!;
+    private Mock<ILogger<LoginController>> _loggerMock = null!;
     private LoginController _controller = null!;
 
     [SetUp]
@@ -35,14 +37,15 @@ public class LoginControllerUnitTests
             new Mock<IUserClaimsPrincipalFactory<IdentityUser>>().Object,
             null!, null!, null!, null!);
 
-        // ✅ FIX: create controller
         var configMock = new Mock<IConfiguration>();
         configMock.Setup(c => c["Authentication:Google:ClientId"]).Returns((string?)null);
+        _loggerMock = new Mock<ILogger<LoginController>>();
 
         _controller = new LoginController(
             _signInManagerMock.Object,
             _userManagerMock.Object,
-            configMock.Object
+            configMock.Object,
+            _loggerMock.Object
         );
 
         var httpContext = new DefaultHttpContext();
@@ -67,8 +70,9 @@ public class LoginControllerUnitTests
         _controller.Dispose();
     }
 
-        [Test]
-        public void REQ_FUN_002_Index_Get_ReturnsViewWithViewModel()
+    [Test]
+    [Description("REQ_FUN_002: Login form returns view with LoginViewModel")]
+    public void REQ_FUN_002_Index_Get_ReturnsViewWithViewModel()
         {
             // Act
             var result = _controller.Index(returnUrl: null);
@@ -80,6 +84,7 @@ public class LoginControllerUnitTests
     }
 
     [Test]
+    [Description("REQ_FUN_002: Invalid model state returns login view with errors")]
     public async Task REQ_FUN_002_Index_Post_InvalidModelState_ReturnsViewWithErrors()
     {
         // Arrange
@@ -95,6 +100,7 @@ public class LoginControllerUnitTests
     }
 
     [Test]
+    [Description("REQ_FUN_002 + REQ-SEC-LOG-001: Unknown user returns view with error and logs warning")]
     public async Task REQ_FUN_002_Index_Post_UserNotFound_ReturnsViewWithError()
     {
         // Arrange
@@ -110,9 +116,11 @@ public class LoginControllerUnitTests
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
             Is.EqualTo("Invalid username or password."));
+        _loggerMock.VerifyLog(LogLevel.Warning, "unknown user");
     }
 
     [Test]
+    [Description("REQ_FUN_002 + REQ-SEC-LOG-001: Locked out account returns view with error and logs warning")]
     public async Task REQ_FUN_002_Index_Post_LockedOut_ReturnsViewWithLockoutError()
     {
         // Arrange
@@ -129,9 +137,11 @@ public class LoginControllerUnitTests
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
             Does.Contain("locked").IgnoreCase);
+        _loggerMock.VerifyLog(LogLevel.Warning, "account locked");
     }
 
     [Test]
+    [Description("REQ_FUN_002 + REQ-SEC-LOG-001: Valid credentials with returnUrl logs success and redirects")]
     public async Task REQ_FUN_002_Index_Post_ValidCredentials_RedirectsToReturnUrl()
     {
         // Arrange
@@ -150,9 +160,11 @@ public class LoginControllerUnitTests
         // Assert
         Assert.That(result, Is.TypeOf<RedirectResult>());
         Assert.That(((RedirectResult)result).Url, Is.EqualTo("/home"));
+        _loggerMock.VerifyLog(LogLevel.Information, "authenticated successfully");
     }
 
     [Test]
+    [Description("REQ_FUN_002 + REQ-SEC-LOG-001: Valid credentials without returnUrl redirects to BFF and logs success")]
     public async Task REQ_FUN_002_Index_Post_ValidCredentials_NoReturnUrl_RedirectsToBffLogin()
     {
         // Arrange
@@ -171,9 +183,11 @@ public class LoginControllerUnitTests
         // Assert
         Assert.That(result, Is.TypeOf<RedirectResult>());
         Assert.That(((RedirectResult)result).Url, Is.EqualTo($"{AppUrls.BaseUrl}/projects"));
+        _loggerMock.VerifyLog(LogLevel.Information, "authenticated successfully");
     }
 
     [Test]
+    [Description("REQ_FUN_002 + REQ-SEC-LOG-001: Unconfirmed email redirects to verification and logs warning")]
     public async Task REQ_FUN_002_Index_Post_NotEmailConfirmed_ReturnsViewWithError()
     {
         // Arrange

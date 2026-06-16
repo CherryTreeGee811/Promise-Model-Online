@@ -28,6 +28,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPermissionService _permissionService;
         private readonly ILogger<MomentTasksController> _logger;
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public MomentTasksController(
             IMomentService momentService,
             IMomentTaskService momentTaskService,

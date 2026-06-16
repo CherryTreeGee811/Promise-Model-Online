@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Protocols;
 using PromiseModelOnline.Api.Auth;
 using PromiseModelOnline.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
@@ -162,6 +163,35 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
+// Forwarded headers (behind nginx reverse proxy) and global exception handler.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    });
+
+    app.UseExceptionHandler(exceptionHandlerApp =>
+    {
+        exceptionHandlerApp.Run(async context =>
+        {
+            var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+            if (exception != null)
+            {
+                var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("GlobalExceptionHandler");
+                logger.LogError(exception, "Unhandled exception processing {Method} {Path}",
+                    context.Request.Method, context.Request.Path);
+
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/problem+json";
+                await context.Response.WriteAsync(
+                    """{"type":"https://tools.ietf.org/html/rfc7231#section-6.6.1","title":"Internal Server Error","status":500}""");
+            }
+        });
+    });
+}
+
 // CORS, Swagger UI, authentication, authorization, and endpoint mapping.
 app.UseCors(MyAllowSpecificOrigins);
 
@@ -182,7 +212,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsEnvironment("Testing"))
+    app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

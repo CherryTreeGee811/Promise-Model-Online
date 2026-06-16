@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 /// <summary>REST controller for journey CRUD within a project scope, with sequence-based lookup.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
@@ -22,17 +23,22 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericService<Journey> _service;
         private readonly IGenericMapper<Journey, JourneyDTO> _mapper;
         private readonly IPromiseModelOnlineContext _context;
+        private readonly ILogger<ProjectJourneysController> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectJourneysController"/> class.</summary>
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectJourneysController(
             IGenericService<Journey> service,
             IGenericMapper<Journey, JourneyDTO> mapper,
             IPromiseModelOnlineContext context,
+            ILogger<ProjectJourneysController> logger,
             IProjectService projectService)
             : base(projectService)
         {
             _service = service;
             _mapper = mapper;
             _context = context;
+            _logger = logger;
         }
         /// <summary>Return all journeys for a project, optionally filtered by epic.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>

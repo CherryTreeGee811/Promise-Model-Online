@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using OpenIddict.Abstractions;
 
 namespace PromiseModelOnline.Auth.Controllers;
@@ -12,16 +13,20 @@ public class ChangePasswordPageController : Controller
 {
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IOpenIddictTokenManager _tokenManager;
+    private readonly ILogger<ChangePasswordPageController> _logger;
 
-    /// <summary>Initializes the controller with user manager and token manager.</summary>
-    /// <param name="userManager">The Identity user manager.</param>
-    /// <param name="tokenManager">The OpenIddict token manager for revoking refresh tokens.</param>
+    /// <summary>Initializes the controller with user manager, token manager, and logger.</summary>
+    /// <param name="userManager">The Identity user manager for password verification and changes.</param>
+    /// <param name="tokenManager">The OpenIddict token manager for revoking refresh tokens after password change.</param>
+    /// <param name="logger">The logger for password change audit events.</param>
     public ChangePasswordPageController(
         UserManager<IdentityUser> userManager,
-        IOpenIddictTokenManager tokenManager)
+        IOpenIddictTokenManager tokenManager,
+        ILogger<ChangePasswordPageController> logger)
     {
         _userManager = userManager;
         _tokenManager = tokenManager;
+        _logger = logger;
     }
 
     /// <summary>Display the change-password form.</summary>
@@ -63,11 +68,15 @@ public class ChangePasswordPageController : Controller
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
+        {
+            _logger.LogWarning("ChangePasswordPage: user not found for Subject {UserId}", userId);
             return Unauthorized();
+        }
 
         var isValid = await _userManager.CheckPasswordAsync(user, currentPassword);
         if (!isValid)
         {
+            _logger.LogWarning("ChangePasswordPage: invalid current password for {UserId}", userId);
             ModelState.AddModelError("", "Current password is incorrect.");
             return View("~/Views/ChangePassword/Index.cshtml");
         }
@@ -76,7 +85,10 @@ public class ChangePasswordPageController : Controller
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)
+            {
+                _logger.LogWarning("ChangePasswordPage: failure for {UserId}: {Error}", userId, error.Description);
                 ModelState.AddModelError("", error.Description);
+            }
             return View("~/Views/ChangePassword/Index.cshtml");
         }
 
@@ -89,6 +101,7 @@ public class ChangePasswordPageController : Controller
         await foreach (var token in tokens)
             await _tokenManager.TryRevokeAsync(token);
 
+        _logger.LogInformation("ChangePasswordPage: password changed for user {UserId}, tokens revoked", userId);
         ViewBag.Success = true;
         return View("~/Views/ChangePassword/Index.cshtml");
     }

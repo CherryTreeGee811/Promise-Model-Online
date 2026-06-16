@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers;
 
@@ -27,11 +28,15 @@ public class AuditEventsController : ControllerBase
         /// <param name="context">The database context.</param>
 
     private readonly IPromiseModelOnlineContext _context;
+    private readonly ILogger<AuditEventsController> _logger;
 
     /// <summary>Initializes the controller with the database context.</summary>
-    public AuditEventsController(IPromiseModelOnlineContext context)
+    /// <param name="context">The database context.</param>
+    /// <param name="logger">The logger for audit and error events.</param>
+    public AuditEventsController(IPromiseModelOnlineContext context, ILogger<AuditEventsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     /// <summary>Retrieve paginated audit history for a project.</summary>

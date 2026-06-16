@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MvcSignInResult = Microsoft.AspNetCore.Mvc.SignInResult;
@@ -19,13 +20,21 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
     public class AuthorizationControllerUnitTests
     {
         private AuthorizationController _controller = null!;
+        private Mock<ILogger<AuthorizationController>> _loggerMock = null!;
 
         [SetUp]
         public void SetUp()
         {
-            _controller = new AuthorizationController();
+            _loggerMock = new Mock<ILogger<AuthorizationController>>();
+            _controller = new AuthorizationController(_loggerMock.Object);
         }
 
+        /// <summary>Configure the HTTP context with authentication state, OpenIddict request, and user claims for the authorize endpoint.</summary>
+        /// <param name="isAuthenticated">Whether the user should be authenticated.</param>
+        /// <param name="email">The email claim value, or null to omit.</param>
+        /// <param name="scope">The OIDC scope string.</param>
+        /// <param name="includeSubject">Whether to include the NameIdentifier subject claim.</param>
+        /// <param name="codeChallengeMethod">The PKCE code challenge method.</param>
         private void SetupHttpContext(
             bool isAuthenticated = true,
             string? email = "user@test.com",
@@ -117,6 +126,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
+        [Description("REQ_INT_002: Authenticated user with valid request returns SignIn")]
         public async Task REQ_INT_002_Authorize_WhenAuthenticated_ReturnsSignIn()
         {
             // Arrange
@@ -125,9 +135,11 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             var result = await _controller.Authorize();
             // Assert
             Assert.That(result, Is.InstanceOf<MvcSignInResult>());
+            _loggerMock.VerifyLog(LogLevel.Information, "code issued");
         }
 
         [Test]
+        [Description("REQ_INT_002: Email claim is added to the principal when present")]
         public async Task REQ_INT_002_Authorize_WithEmail_AddsEmailClaim()
         {
             // Arrange
@@ -145,6 +157,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
+        [Description("REQ_INT_002: No email claim is added to the principal when user has no email")]
         public async Task REQ_INT_002_Authorize_WithoutEmail_DoesNotAddEmailClaim()
         {
             // Arrange
@@ -164,6 +177,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
+        [Description("REQ_INT_002: Requested scopes are set on the principal")]
         public async Task REQ_INT_002_Authorize_WithScopes_SetsScopesOnPrincipal()
         {
             // Arrange
@@ -186,6 +200,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         // =========================================
 
         [Test]
+        [Description("REQ_INT_002: Missing OpenIddict feature throws InvalidOperationException")]
         public void REQ_INT_002_Authorize_WhenFeatureMissing_ThrowsInvalidOperation()
         {
             // Arrange
@@ -201,6 +216,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
+        [Description("REQ_INT_002: Null request in transaction throws InvalidOperationException")]
         public void REQ_INT_002_Authorize_WhenTransactionRequestNull_ThrowsInvalidOperation()
         {
             // Arrange
@@ -220,6 +236,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
+        [Description("REQ_INT_002 + REQ-SEC-LOG-001: Missing subject claim returns Forbid and logs warning")]
         public async Task REQ_INT_002_Authorize_WithoutSubject_ReturnsForbid()
         {
             // Arrange - Authenticated user but missing NameIdentifier claim
@@ -228,6 +245,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             var result = await _controller.Authorize();
             // Assert
             Assert.That(result, Is.InstanceOf<ForbidResult>());
+            _loggerMock.VerifyLog(LogLevel.Warning, "subject claim missing");
         }
 
         [Test]
@@ -246,6 +264,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
+        [Description("REQ_OIDC_006 + REQ-SEC-LOG-001: Empty scope returns bad request and logs warning")]
         public async Task REQ_INT_002_Authorize_WithEmptyScope_ReturnsBadRequest()
         {
             // Arrange
@@ -254,6 +273,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
             var result = await _controller.Authorize();
             // Assert
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+            _loggerMock.VerifyLog(LogLevel.Warning, "missing openid scope");
         }
 
         [Test]
@@ -309,6 +329,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
         }
 
         [Test]
+        [Description("REQ_INT_002: Role claims from the Identity are added to the principal")]
         public async Task REQ_INT_002_Authorize_WithRole_AddsRoleClaim()
         {
             // Arrange

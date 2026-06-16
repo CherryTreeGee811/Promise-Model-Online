@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using OpenIddict.Server.AspNetCore;
 using OpenIddict.Abstractions;
 using Microsoft.AspNetCore.Http;
@@ -20,6 +21,15 @@ namespace PromiseModelOnline.Auth.Controllers
     [Route("connect/authorize")]
     public class AuthorizationController : ControllerBase
     {
+        private readonly ILogger<AuthorizationController> _logger;
+
+        /// <summary>Initializes the controller with logging for OIDC authorization audit events.</summary>
+        /// <param name="logger">The logger for authorization and PKCE validation events.</param>
+        public AuthorizationController(ILogger<AuthorizationController> logger)
+        {
+            _logger = logger;
+        }
+
         /// <summary>Process authorization requests: authenticate, validate PKCE, assign scopes, and sign in.</summary>
         /// <returns>A SignIn result with OpenIddict identity claims, or a redirect to login for unauthenticated users.</returns>
         /// <response code="302">Redirects unauthenticated users to the login page.</response>
@@ -39,6 +49,7 @@ namespace PromiseModelOnline.Auth.Controllers
             if (result == null || !result.Succeeded)
             {
                 var returnUrl = Uri.EscapeDataString(Request.Path + Request.QueryString);
+                _logger.LogInformation("Authorization: unauthenticated user redirected to login");
                 return Redirect($"/account/login?returnUrl={returnUrl}");
             }
 
@@ -46,7 +57,10 @@ namespace PromiseModelOnline.Auth.Controllers
                 ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(subject))
+            {
+                _logger.LogWarning("Authorization: subject claim missing for authenticated user");
                 return Forbid();
+            }
 
             var identity = new ClaimsIdentity(
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -60,6 +74,7 @@ namespace PromiseModelOnline.Auth.Controllers
 
             if (!scopes.Contains(OpenIddictConstants.Scopes.OpenId))
             {
+                _logger.LogWarning("Authorization: missing openid scope for subject {Subject}", subject);
                 return BadRequest(new
                 {
                     error = OpenIddictConstants.Errors.InvalidRequest,
@@ -72,6 +87,7 @@ namespace PromiseModelOnline.Auth.Controllers
             var codeChallengeMethod = request.CodeChallengeMethod;
             if (!string.Equals(codeChallengeMethod, "S256", StringComparison.OrdinalIgnoreCase))
             {
+                _logger.LogWarning("Authorization: non-S256 PKCE method for subject {Subject}", subject);
                 return BadRequest(new
                 {
                     error = OpenIddictConstants.Errors.InvalidRequest,
@@ -80,9 +96,7 @@ namespace PromiseModelOnline.Auth.Controllers
             }
 
             if (scopes.Contains("projects.read") || scopes.Contains("projects.write"))
-            {
                 principal.SetResources("promisemodelonline.api");
-            }
 
             var subClaim = new Claim(OpenIddictConstants.Claims.Subject, subject);
             subClaim.SetDestinations(
@@ -122,15 +136,18 @@ namespace PromiseModelOnline.Auth.Controllers
                 identity.AddClaim(roleClaim);
             }
 
+            _logger.LogInformation("Authorization: code issued for subject {Subject} with scopes {Scopes}",
+                subject, string.Join(",", scopes));
+
             return SignIn(
                 principal,
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme
-        /// <param name="scope">The scope name.</param>
-        /// <param name="principal">The claims principal.</param>
             );
         }
 
         /// <summary>Return token destinations (access token and identity token if scope is present).</summary>
+        /// <param name="scope">The scope name.</param>
+        /// <param name="principal">The claims principal.</param>
         private static IEnumerable<string> GetDestinations(string scope, ClaimsPrincipal principal)
         {
             yield return Destinations.AccessToken;

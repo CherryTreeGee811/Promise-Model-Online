@@ -13,6 +13,10 @@ public class ExternalLoginController : Controller
     private readonly UserManager<IdentityUser> _userManager;
     private readonly ILogger<ExternalLoginController> _logger;
 
+    /// <summary>Initializes the controller with sign-in, user management, and logging dependencies.</summary>
+    /// <param name="signInManager">The Identity sign-in manager for external authentication flows.</param>
+    /// <param name="userManager">The Identity user manager for user lookups and creation.</param>
+    /// <param name="logger">The logger for external authentication audit events.</param>
     public ExternalLoginController(
         SignInManager<IdentityUser> signInManager,
         UserManager<IdentityUser> userManager,

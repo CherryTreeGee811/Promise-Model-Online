@@ -7,6 +7,7 @@ namespace PromiseModelOnline.BFF.Tests.IntegrationTests;
 public class LogoutEndpointTests
 {
     [Test]
+    [Description("REQ_INT_015 + REQ-SEC-LOG-001: Logout returns sign-out redirect and logs the event")]
     public async Task REQ_INT_015_Logout_ReturnsSignOutRedirect()
     {
         // Arrange
@@ -16,9 +17,11 @@ public class LogoutEndpointTests
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        server.LogCapture.ShouldContainInformation("signed out");
     }
 
     [Test]
+    [Description("REQ_INT_015: Logout redirects to root")]
     public async Task REQ_INT_015_Logout_RedirectsToRoot()
     {
         // Arrange

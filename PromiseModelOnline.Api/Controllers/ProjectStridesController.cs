@@ -26,6 +26,7 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<ProjectStridesController> _logger;
 
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectStridesController(
             IStrideService strideService,
             IMomentService momentService,
@@ -163,7 +164,7 @@ namespace PromiseModelOnline.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to update stride {StrideId}", id);
-                return BadRequest(ex.Message);
+                return BadRequest("The stride could not be updated.");
             }
         }
         /// <summary>Manually trigger progression of unfinished moments from a stride.</summary>
@@ -192,7 +193,8 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogWarning(ex, "Failed to progress stride {StrideId}", id);
+                return BadRequest("The stride could not be progressed.");
             }
         }
     }

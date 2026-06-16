@@ -13,7 +13,7 @@ namespace PromiseModelOnline.Api.Tests.IntegrationTests;
         // Arrange
         SetAuthHeader(OwnerToken);
         // Act
-        var response = await PostAsync("/api/projects/create", new { name = "New Project", slug = "new-project" });
+        var response = await PostAsync("/api/projects", new { name = "New Project", slug = "new-project" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
         var project = await ReadJsonAsync<ProjectDTO>(response);
@@ -40,7 +40,7 @@ namespace PromiseModelOnline.Api.Tests.IntegrationTests;
     public async Task CreateProject_Unauthenticated_Returns401()
     {
         // Act
-        var response = await PostAsync("/api/projects/create", new { name = "Evil", slug = "evil" });
+        var response = await PostAsync("/api/projects", new { name = "Evil", slug = "evil" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
@@ -51,7 +51,7 @@ namespace PromiseModelOnline.Api.Tests.IntegrationTests;
         // Arrange
         SetAuthHeader(ReadOnlyToken);
         // Act
-        var response = await PostAsync("/api/projects/create", new { name = "NoWrite", slug = "no-write" });
+        var response = await PostAsync("/api/projects", new { name = "NoWrite", slug = "no-write" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
     }

@@ -8,6 +8,7 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 /// <summary>REST controller for promise CRUD within a project scope, with sequence-based lookup and total effort calculation.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
@@ -21,12 +22,16 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericMapper<Promise, PromiseDTO> _mapper;
         private readonly IMomentService _momentService;
         private readonly IPromiseModelOnlineContext _context;
+        private readonly ILogger<ProjectPromisesController> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="ProjectPromisesController"/> class.</summary>
+        /// <param name="logger">The logger for audit and error events.</param>
         public ProjectPromisesController(
             IGenericService<Promise> service,
             IGenericMapper<Promise, PromiseDTO> mapper,
             IMomentService momentService,
             IPromiseModelOnlineContext context,
+            ILogger<ProjectPromisesController> logger,
             IProjectService projectService)
             : base(projectService)
         {
@@ -34,6 +39,7 @@ namespace PromiseModelOnline.Api.Controllers
             _mapper = mapper;
             _momentService = momentService;
             _context = context;
+            _logger = logger;
         }
         /// <param name="seq">The entity's sequence number within its parent scope.</param>
         /// <summary>Return a promise by its sequence number within the project.</summary>

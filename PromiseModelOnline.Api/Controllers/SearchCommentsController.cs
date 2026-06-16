@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -20,10 +21,15 @@ namespace PromiseModelOnline.Api.Controllers
     public class SearchCommentsController : ControllerBase
     {
         private readonly ICommentRepository _commentRepository;
+        private readonly ILogger<SearchCommentsController> _logger;
 
-        public SearchCommentsController(ICommentRepository commentRepository)
+        /// <summary>Initializes the controller with required services and repositories.</summary>
+        /// <param name="commentRepository">The comment repository.</param>
+        /// <param name="logger">The logger for audit and error events.</param>
+        public SearchCommentsController(ICommentRepository commentRepository, ILogger<SearchCommentsController> logger)
         {
             _commentRepository = commentRepository;
+            _logger = logger;
         }
 
         /// <summary>Get the full entity map for a given parent entity.</summary>
@@ -67,7 +73,8 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogWarning(ex, "Failed to get entity map");
+                return BadRequest("The entity could not be found for the specified type and ID.");
             }
         }
     }

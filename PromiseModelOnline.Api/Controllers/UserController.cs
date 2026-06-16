@@ -5,6 +5,7 @@ using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers;
 
@@ -20,15 +21,23 @@ public class UsersController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly PromiseModelOnlineContext _context;
+    private readonly ILogger<UsersController> _logger;
 
+    /// <summary>Initializes the controller with required services and repositories.</summary>
+    /// <param name="userRepository">The user repository.</param>
+    /// <param name="projectRepository">The project repository.</param>
+    /// <param name="context">The database context.</param>
+    /// <param name="logger">The logger for audit and error events.</param>
     public UsersController(
         IUserRepository userRepository,
         IProjectRepository projectRepository,
-        PromiseModelOnlineContext context)
+        PromiseModelOnlineContext context,
+        ILogger<UsersController> logger)
     {
         _userRepository = userRepository;
         _projectRepository = projectRepository;
         _context = context;
+        _logger = logger;
     }
 
     /// <summary>Return the current user's profile information.</summary>

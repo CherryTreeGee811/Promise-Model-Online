@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Auth.Models;
 using PromiseModelOnline.Auth.ViewModels;
 using PromiseModelOnline.Auth.Common;
@@ -18,15 +19,23 @@ public class LoginController : Controller
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<LoginController> _logger;
 
+    /// <summary>Initializes the controller with sign-in, user, configuration, and logging dependencies.</summary>
+    /// <param name="signInManager">The Identity sign-in manager for password authentication.</param>
+    /// <param name="userManager">The Identity user manager for user lookups and lockout checks.</param>
+    /// <param name="configuration">The application configuration for external provider settings.</param>
+    /// <param name="logger">The logger for login audit events.</param>
     public LoginController(
         SignInManager<IdentityUser> signInManager,
         UserManager<IdentityUser> userManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<LoginController> logger)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _configuration = configuration;
+        _logger = logger;
     }
 
     /// <summary>Display the login form with optional status messages.</summary>
@@ -70,18 +79,21 @@ public class LoginController : Controller
 
         if (user == null)
         {
+            _logger.LogWarning("Login: unknown user {Username}", model.Username);
             ModelState.AddModelError("", "Invalid username or password.");
             return View(model);
         }
 
         if (!await _userManager.IsEmailConfirmedAsync(user))
         {
+            _logger.LogWarning("Login: email not confirmed for {Username}", model.Username);
             return RedirectToAction("VerifyEmail", "Account",
                 new { email = user.Email, userId = user.Id });
         }
 
         if (await _userManager.IsLockedOutAsync(user))
         {
+            _logger.LogWarning("Login: account locked for {Username}", model.Username);
             ModelState.AddModelError("", "Account locked. Try again later.");
             return View(model);
         }
@@ -91,6 +103,7 @@ public class LoginController : Controller
 
         if (signInResult.Succeeded)
         {
+            _logger.LogInformation("Login: user {Username} authenticated successfully", model.Username);
             if (!string.IsNullOrEmpty(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
             return Redirect($"{AppUrls.BaseUrl}/projects");
@@ -98,10 +111,12 @@ public class LoginController : Controller
 
         if (signInResult.IsLockedOut)
         {
+            _logger.LogWarning("Login: user {Username} locked out after failed attempt", model.Username);
             ModelState.AddModelError("", "Account locked. Try again later.");
             return View(model);
         }
 
+        _logger.LogWarning("Login: invalid password for {Username}", model.Username);
         ModelState.AddModelError("", "Invalid username or password.");
         return View(model);
     }

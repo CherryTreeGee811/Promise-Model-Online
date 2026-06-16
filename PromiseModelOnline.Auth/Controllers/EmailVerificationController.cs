@@ -20,6 +20,11 @@ public class EmailVerificationController : Controller
 
     private const string VerificationCodePrefix = "verify_code:";
 
+    /// <summary>Initializes the controller with user manager, email service, logger, and cache.</summary>
+    /// <param name="userManager">The Identity user manager for user lookups.</param>
+    /// <param name="emailService">The email service for sending verification codes.</param>
+    /// <param name="logger">The logger for verification audit events.</param>
+    /// <param name="cache">The memory cache for storing verification codes.</param>
     public EmailVerificationController(
         UserManager<IdentityUser> userManager,
         IEmailService emailService,
