@@ -136,8 +136,8 @@ public class AccountControllerUnitTests
 
         var redirect = result as RedirectToActionResult;
         Assert.That(redirect, Is.Not.Null);
-        Assert.That(redirect!.ActionName, Is.EqualTo("VerifyEmail"));
-        Assert.That(redirect.ControllerName, Is.EqualTo("Account"));
+        Assert.That(redirect!.ActionName, Is.EqualTo("Index"));
+        Assert.That(redirect.ControllerName, Is.EqualTo("EmailVerification"));
         Assert.That(redirect.RouteValues, Contains.Key("userId"));
     }
 }
