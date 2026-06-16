@@ -18,18 +18,13 @@ using System.Security.Claims;
 
 using System.Threading.Tasks;
 
-/// <summary>REST controller for permission management within a project scope.</summary>
-
 namespace PromiseModelOnline.Api.Controllers
 
 {
 
     [Route("api/projects/{owner}/{project}/permissions")]
 
-    /// Project Permissions Controller.
-
-    /// </summary>
-
+    /// <summary>REST controller for permission management within a project scope.</summary>
     public class ProjectPermissionsController : ProjectScopedControllerBase
 
     {

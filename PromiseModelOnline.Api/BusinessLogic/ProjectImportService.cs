@@ -254,6 +254,8 @@ public sealed class ProjectImportService : IProjectImportService
 
     /// <summary>Resolve an exported stride ID to the new stride ID via the mapping dictionary.</summary>
     /// <param name="exportedStrideId">The exported stride ID from the document.</param>
+    /// <param name="strideIdMap">Dictionary mapping exported stride IDs to new stride IDs.</param>
+    /// <param name="warnings">Running list of warnings to append to.</param>
     /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
     /// <param name="referenceName">The type of reference (e.g., "assigned", "original") for warnings.</param>
     /// <returns>The mapped stride ID, or null.</returns>

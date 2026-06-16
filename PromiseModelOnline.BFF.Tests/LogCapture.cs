@@ -18,7 +18,7 @@ public class LogCapture : ILoggerProvider
 
     public void Dispose() { }
 
-    private class CaptureLogger(string categoryName, List<(LogLevel, string)> logs, object lockObj) : ILogger
+    private class CaptureLogger(string _categoryName, List<(LogLevel, string)> logs, object lockObj) : ILogger
     {
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
         public bool IsEnabled(LogLevel logLevel) => true;
