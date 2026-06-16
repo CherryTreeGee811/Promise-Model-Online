@@ -95,6 +95,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             httpContext.RequestServices = new ServiceCollection()
                 .AddSingleton(authService.Object)
+                .AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory, Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory>()
                 .BuildServiceProvider();
 
             httpContext.Request.Path = "/connect/authorize";
@@ -102,7 +103,9 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             _controller.ControllerContext = new ControllerContext
             {
-                HttpContext = httpContext
+                HttpContext = httpContext,
+                RouteData = new Microsoft.AspNetCore.Routing.RouteData(),
+                ActionDescriptor = new Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor()
             };
         }
 
@@ -313,6 +316,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             httpContext.RequestServices = new ServiceCollection()
                 .AddSingleton(authService.Object)
+                .AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory, Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory>()
                 .BuildServiceProvider();
 
             httpContext.Request.Path = "/connect/authorize";
@@ -369,6 +373,7 @@ namespace PromiseModelOnline.Auth.Tests.UnitTests.Controllers
 
             httpContext.RequestServices = new ServiceCollection()
                 .AddSingleton(authService.Object)
+                .AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory, Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory>()
                 .BuildServiceProvider();
 
             httpContext.Request.Path = "/connect/authorize";
