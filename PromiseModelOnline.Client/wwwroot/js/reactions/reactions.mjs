@@ -1,4 +1,4 @@
-import { getReactions, addReaction, updateReaction, deleteReaction } from './api.mjs';
+import { getReactions, addReaction, updateReaction } from './api.mjs';
 import { getCurrentUserName } from '../parser.mjs';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];

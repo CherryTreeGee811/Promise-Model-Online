@@ -282,22 +282,6 @@ function getStrideFilterValue(value) {
 }
 
 /**
- * Get the human-readable display label for a node type.
- * @param {string} nodeType - The node type key.
- * @returns {string} The display label.
- */
-function getTypeLabel(nodeType) {
-    switch (nodeType) {
-        case 'promise': return 'Product Promise';
-        case 'epic': return 'Epic';
-        case 'journey': return 'Journey';
-        case 'flow': return 'Flow';
-        case 'moment': return 'Moment';
-        default: return nodeType;
-    }
-}
-
-/**
  * Get the short display label for a node type (used in filter chips).
  * @param {string} nodeType - The node type key.
  * @returns {string} The short label.

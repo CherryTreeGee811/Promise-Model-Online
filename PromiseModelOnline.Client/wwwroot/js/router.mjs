@@ -1,6 +1,6 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs';
-import { clearAuth, isLoggedIn } from './auth-state.mjs';
+import { isLoggedIn } from './auth-state.mjs';
 import { checkSession } from './api.mjs';
 import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
@@ -203,7 +203,7 @@ export function routeHandler(navContentDiv, contentDiv) {
     loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
-        case path == '/':
+        case path === '/':
             loadTemplate('home.html', contentDiv).then(() => {
                 return loadHomePage();
             });
@@ -224,23 +224,23 @@ export function routeHandler(navContentDiv, contentDiv) {
         case path.startsWith('/invitations'):
             handleInvitationsRoute(path, contentDiv);
             break;
-        case path == '/change-password':
+        case path === '/change-password':
             if (!isLoggedIn()) {
                 navigate('/login', navContentDiv, contentDiv);
                 break;
             }
             window.location.href = '/account/change-password';
             break;
-        case path == '/knowledge-base':
+        case path === '/knowledge-base':
             handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv);
             break;
-        case path == '/privacy':
+        case path === '/privacy':
             loadTemplate('privacy.html', contentDiv);
             break;
-        case path == '/tos':
+        case path === '/tos':
             loadTemplate('tos.html', contentDiv);
             break;
-        case path == '/account/delete':
+        case path === '/account/delete':
             loadTemplate('account/delete.html', contentDiv)
                 .then(() => initDeleteAccountPage());
             break;

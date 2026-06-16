@@ -80,6 +80,8 @@ public class EmailVerificationController : Controller
     [EnableRateLimiting("VerifyCodePolicy")]
     public async Task<IActionResult> Confirm(VerifyEmailViewModel model)
     {
+        ViewBag.Resent = false;
+
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.UserId))
         {
             var user = await _userManager.FindByIdAsync(model.UserId);

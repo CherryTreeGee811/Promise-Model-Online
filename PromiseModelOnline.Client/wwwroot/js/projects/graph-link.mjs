@@ -105,6 +105,7 @@ export async function resolveProjectIdForPromise(promiseId, preferredProjectId =
         const projectId = toProjectId(project?.id);
         if (projectId == null) continue;
 
+        // eslint-disable-next-line no-await-in-loop
         const promises = await getProjectPromises(project.ownerSlug, project.slug);
         if ((Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId)) {
             promiseProjectCache.set(numericPromiseId, projectId);

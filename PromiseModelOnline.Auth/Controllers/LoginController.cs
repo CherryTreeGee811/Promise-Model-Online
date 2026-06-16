@@ -66,6 +66,11 @@ public class LoginController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Index(LoginViewModel model)
     {
+        ViewBag.Registered = false;
+        ViewBag.Verified = false;
+        ViewBag.HasGoogle = !string.IsNullOrWhiteSpace(
+            _configuration["Authentication:Google:ClientId"]);
+
         if (!ModelState.IsValid)
             return View(model);
 

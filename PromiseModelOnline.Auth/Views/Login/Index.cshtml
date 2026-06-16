@@ -17,11 +17,11 @@
     <h2 class="auth-card-heading">Welcome back</h2>
     <p class="auth-card-subtitle">Sign in to your account</p>
 
-    @if (ViewBag.Registered == true)
+    @if (ViewBag.Registered)
     {
         <p class="auth-message auth-success" role="status">Account created successfully. Please sign in.</p>
     }
-    @if (ViewBag.Verified == true)
+    @if (ViewBag.Verified)
     {
         <p class="auth-message auth-success" role="status">Email verified successfully. You can now sign in.</p>
     }
@@ -60,7 +60,7 @@
         <button type="submit" class="submit-btn"><span class="btn-text">Sign in</span><span class="spinner" aria-hidden="true"></span></button>
     </form>
 
-    @if (ViewBag.HasGoogle == true)
+    @if (ViewBag.HasGoogle)
     {
     <div class="external-providers">
         <div class="divider" role="separator" aria-orientation="horizontal"><span class="divider-text">or continue with</span></div>

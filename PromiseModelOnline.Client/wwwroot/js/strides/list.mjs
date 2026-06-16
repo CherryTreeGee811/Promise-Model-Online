@@ -660,18 +660,6 @@ function ensureBacklogTbody() {
 }
 
 /**
- * Get the inner HTML of an existing backlog target stride select element.
- * @returns {string} The HTML string of options, or empty string.
- */
-function backlogStrideOptionsHtml() {
-    // Prefer cloning from existing backlog selects to avoid depending on cachedAllStrides.
-    const existing = document.querySelector('.backlog-target-stride');
-    if (existing) return existing.innerHTML;
-    // We'll populate backlog selects via DOM methods; return empty placeholder.
-    return '';
-}
-
-/**
  * Create a table row element for a backlog moment.
  * @param {Object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
  * @returns {HTMLElement} The table row element.
@@ -1261,71 +1249,6 @@ function attachPlanningListeners(owner, project, navContentDiv, contentDiv) {
     bindInlineMomentControls(backlogSection, owner, project, navContentDiv, contentDiv);
 }
 
-/* ---------- Burndown drawing ---------- */
-/**
- * Draw a burndown chart on a canvas element using the provided data points.
- * @param {HTMLCanvasElement} canvas - The canvas element to draw on.
- * @param {Array} points - Array of data points with date, remainingEffort, and idealRemaining.
- */
-function drawBurndownChart(canvas, points) {
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
-    const pad = 30;
-
-    ctx.clearRect(0, 0, w, h);
-
-    const maxEffort = Math.max(...points.map(p => Math.max(p.remainingEffort, p.idealRemaining)), 1);
-
-    // Axes
-    ctx.beginPath();
-    ctx.strokeStyle = '#ccc';
-    ctx.lineWidth = 1;
-    ctx.moveTo(pad, pad);
-    ctx.lineTo(pad, h - pad);
-    ctx.lineTo(w - pad, h - pad);
-    ctx.stroke();
-
-    // Ideal line (dashed)
-    ctx.beginPath();
-    ctx.strokeStyle = '#3498db';
-    ctx.setLineDash([5, 3]);
-    ctx.lineWidth = 2;
-    points.forEach((p, i) => {
-        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
-        const y = h - pad - (p.idealRemaining / maxEffort) * (h - pad * 2);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Actual line
-    ctx.beginPath();
-    ctx.strokeStyle = '#e74c3c';
-    ctx.lineWidth = 2;
-    points.forEach((p, i) => {
-        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
-        const y = h - pad - (p.remainingEffort / maxEffort) * (h - pad * 2);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    // Labels
-    ctx.fillStyle = '#333';
-    ctx.font = '10px Arial';
-    const firstDate = points[0]?.date ? new Date(points[0].date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : '';
-    const lastDate = points[points.length - 1]?.date ? new Date(points[points.length - 1].date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : '';
-    ctx.fillText(firstDate, pad, h - pad + 15);
-    ctx.fillText(lastDate, w - pad - 40, h - pad + 15);
-    ctx.save();
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Effort', -h / 2, 15);
-    ctx.restore();
-}
-
-/* ---------- Helpers ---------- */
 /**
  * Create a DOM option element.
  * @param {string|null} value - The option value.
@@ -1407,16 +1330,6 @@ function populateSelectsWithin(root) {
     root.querySelectorAll('.status-dropdown').forEach(populateStatusSelect);
     root.querySelectorAll('.owner-dropdown').forEach(populateOwnerSelect);
     root.querySelectorAll('.backlog-target-stride').forEach(populateBacklogStrideSelect);
-}
-
-/**
- * Get the statement text of a moment by its ID from the DOM.
- * @param {number|string} momentId - The moment ID.
- * @returns {string} The statement text, trimmed.
- */
-function getMomentStatementById(momentId) {
-    const row = findMomentRow(momentId);
-    return String(row?.querySelector('td')?.textContent ?? '').trim();
 }
 
 /**

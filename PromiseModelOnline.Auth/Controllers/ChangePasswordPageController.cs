@@ -35,6 +35,7 @@ public class ChangePasswordPageController : Controller
     [HttpGet("")]
     public IActionResult Index()
     {
+        ViewBag.Success = false;
         return View("~/Views/ChangePassword/Index.cshtml");
     }
 
@@ -47,6 +48,8 @@ public class ChangePasswordPageController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangePassword(string? currentPassword, string? newPassword, string? confirmPassword)
     {
+        ViewBag.Success = false;
+
         if (string.IsNullOrWhiteSpace(currentPassword) ||
             string.IsNullOrWhiteSpace(newPassword) ||
             string.IsNullOrWhiteSpace(confirmPassword))

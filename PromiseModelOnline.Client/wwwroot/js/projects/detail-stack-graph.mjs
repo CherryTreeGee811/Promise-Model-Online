@@ -3,7 +3,7 @@ import { getPromise, getEpicsByPromise, getPromiseById } from '../promises/api.m
 import { getEpic, getJourneys, getEpicById } from '../epics/api.mjs';
 import { getJourney, getFlows, getJourneyById } from '../journeys/api.mjs';
 import { getFlow, getMoments, getFlowById } from '../flows/api.mjs';
-import { getMoment, getMomentById } from '../moments/api.mjs';
+import { getMoment } from '../moments/api.mjs';
 import {
     computeChildMetrics,
     createNodeWithMetrics,

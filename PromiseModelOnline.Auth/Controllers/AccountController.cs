@@ -71,6 +71,9 @@ public class AccountController : Controller
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
     {
+        ViewBag.HasGoogle = !string.IsNullOrWhiteSpace(
+            _configuration["Authentication:Google:ClientId"]);
+
         if (!ModelState.IsValid)
             return View(model);
 
