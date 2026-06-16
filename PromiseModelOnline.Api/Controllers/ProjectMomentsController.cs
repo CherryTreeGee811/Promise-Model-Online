@@ -62,6 +62,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{seq}")]
         public async Task<ActionResult<MomentDTO>> GetBySeq(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -85,6 +86,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("by-id/{id}")]
         public async Task<ActionResult<MomentDTO>> GetById(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -111,6 +113,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPut("{seq}")]
         public async Task<IActionResult> Update(int seq, [FromBody] Moment entity, string owner, string project)
         {
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -139,6 +143,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -209,47 +214,45 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="200">Returns matching moments as DTOs.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MomentDTO>>> GetAll(string owner, string project)
+        public async Task<ActionResult<IEnumerable<MomentDTO>>> GetAll(string owner, string project,
+            [FromQuery] int? strideId = null, [FromQuery] int? flowSeq = null,
+            [FromQuery] int? iterationId = null, [FromQuery] bool? unassigned = null)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
 
             IEnumerable<Moment> moments;
 
-            var strideIdStr = Request.Query["strideId"];
-            var flowSeqStr = Request.Query["flowSeq"];
-            var iterationIdStr = Request.Query["iterationId"];
-            var unassignedStr = Request.Query["unassigned"];
-
-            if (!string.IsNullOrEmpty(strideIdStr) && int.TryParse(strideIdStr, out int strideId))
+            if (strideId.HasValue)
             {
                 var stride = await _context.Strides
-                    .FirstOrDefaultAsync(s => s.Id == strideId && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
+                    .FirstOrDefaultAsync(s => s.Id == strideId.Value && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
                 if (stride is null)
                     return NotFound("Stride not found.");
 
-                moments = await _momentService.GetMomentsByStrideAsync(strideId);
+                moments = await _momentService.GetMomentsByStrideAsync(strideId.Value);
             }
-            else if (!string.IsNullOrEmpty(flowSeqStr) && int.TryParse(flowSeqStr, out int flowSeq))
+            else if (flowSeq.HasValue)
             {
                 var flow = await _context.Flows
-                    .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == flowSeq);
+                    .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == flowSeq.Value);
 
                 if (flow is null)
                     return NotFound("Flow not found.");
 
                 moments = await _momentService.GetMomentsByFlowAsync(flow.Id);
             }
-            else if (!string.IsNullOrEmpty(iterationIdStr) && int.TryParse(iterationIdStr, out int iterationId))
+            else if (iterationId.HasValue)
             {
-                bool unassignedOnly = unassignedStr == "true";
+                bool unassignedOnly = unassigned == true;
                 var iteration = await _context.Iterations
-                    .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId);
+                    .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId.Value);
                 if (iteration is null)
                     return NotFound("Iteration not found.");
 
-                moments = await _momentService.GetMomentsByIterationAsync(iterationId, unassignedOnly);
+                moments = await _momentService.GetMomentsByIterationAsync(iterationId.Value, unassignedOnly);
             }
             else
             {

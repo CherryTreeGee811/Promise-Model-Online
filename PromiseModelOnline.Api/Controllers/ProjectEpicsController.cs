@@ -10,8 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/epics")]
@@ -20,11 +18,9 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericService<Epic> _service;
         private readonly IGenericMapper<Epic, EpicDTO> _mapper;
         private readonly IPromiseModelOnlineContext _context;
-        private readonly ILogger<ProjectEpicsController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectEpicsController"/> class.</summary>
         /// <param name="context">The database context for data access.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
         /// <param name="projectService">The service for project operations.</param>
         /// <param name="service">The service for business logic operations.</param>
@@ -32,14 +28,12 @@ namespace PromiseModelOnline.Api.Controllers
             IGenericService<Epic> service,
             IGenericMapper<Epic, EpicDTO> mapper,
             IPromiseModelOnlineContext context,
-            ILogger<ProjectEpicsController> logger,
             IProjectService projectService)
             : base(projectService)
         {
             _service = service;
             _mapper = mapper;
             _context = context;
-            _logger = logger;
         }
         /// <summary>Return all epics for a project, optionally filtered by promise.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
@@ -47,19 +41,19 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of epic DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<EpicDTO>>> GetAll(string owner, string project)
+        public async Task<ActionResult<IEnumerable<EpicDTO>>> GetAll(string owner, string project, [FromQuery] int? promiseSeq = null)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
 
             IEnumerable<Epic> epics;
 
-            var promiseSeqStr = Request.Query["promiseSeq"];
-            if (!string.IsNullOrEmpty(promiseSeqStr) && int.TryParse(promiseSeqStr, out int promiseSeq))
+            if (promiseSeq.HasValue)
             {
                 var promise = await _context.Promises
-                    .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == promiseSeq);
+                    .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == promiseSeq.Value);
 
                 if (promise is null)
                     return NotFound("Promise not found.");
@@ -90,6 +84,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{seq}")]
         public async Task<ActionResult<EpicDTO>> GetBySeq(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -111,6 +106,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("by-id/{id}")]
         public async Task<ActionResult<EpicDTO>> GetById(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -133,6 +129,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPut("{seq}")]
         public async Task<IActionResult> Update(int seq, [FromBody] Epic entity, string owner, string project)
         {
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -158,6 +156,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();

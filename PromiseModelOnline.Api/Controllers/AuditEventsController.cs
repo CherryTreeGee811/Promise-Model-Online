@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers;
 
@@ -26,15 +25,12 @@ public class AuditEventsController : ControllerBase
         PropertyNameCaseInsensitive = true
     };
     private readonly IPromiseModelOnlineContext _context;
-    private readonly ILogger<AuditEventsController> _logger;
 
     /// <summary>Initializes the controller with the database context.</summary>
     /// <param name="context">The database context.</param>
-    /// <param name="logger">The logger for audit and error events.</param>
-    public AuditEventsController(IPromiseModelOnlineContext context, ILogger<AuditEventsController> logger)
+    public AuditEventsController(IPromiseModelOnlineContext context)
     {
         _context = context;
-        _logger = logger;
     }
 
     /// <summary>Retrieve paginated audit history for a project.</summary>
@@ -49,6 +45,7 @@ public class AuditEventsController : ControllerBase
         [FromQuery] int take = 100,
         [FromQuery] int skip = 0)
     {
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var normalizedTake = NormalizeTake(take);
 
         var query = _context.AuditEvents
@@ -80,6 +77,7 @@ public class AuditEventsController : ControllerBase
         [FromQuery] int take = 100,
         [FromQuery] int skip = 0)
     {
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var normalizedTake = NormalizeTake(take);
 
         var query = _context.AuditEvents
@@ -187,6 +185,7 @@ public class AuditEventsController : ControllerBase
     }
 
     /// <summary>Internal DTO for deserializing individual field changes from JSON.</summary>
+#pragma warning disable S1144 // setters used by System.Text.Json deserialization
     private sealed class AuditChangeDTO
     {
         /// <summary>The field value before the change.</summary>
@@ -195,4 +194,5 @@ public class AuditEventsController : ControllerBase
         /// <summary>The field value after the change.</summary>
         public object? After { get; set; }
     }
+#pragma warning restore S1144
 }

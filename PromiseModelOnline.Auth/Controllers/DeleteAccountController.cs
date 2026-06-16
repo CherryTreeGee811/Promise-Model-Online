@@ -39,7 +39,9 @@ public class DeleteAccountController : ControllerBase
     [Authorize]
     public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest? request)
     {
-        if (request == null || string.IsNullOrWhiteSpace(request.Password))
+        if (request == null) return BadRequest("Request body is required.");
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        if (string.IsNullOrWhiteSpace(request.Password))
             return BadRequest("Password is required.");
 
         var userId = User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value

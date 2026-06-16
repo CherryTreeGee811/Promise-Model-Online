@@ -32,7 +32,7 @@ namespace PromiseModelOnline.Api.Controllers
     /// </remarks>
 
     [Route("api/reactions")]
-
+    [IgnoreAntiforgeryToken]
     public class ReactionsController : ControllerBase
 
     {
@@ -81,6 +81,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         {
 
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var reactions = await _reactionService.GetReactionsAsync(type, itemId);
 
             return Ok(reactions);
@@ -101,6 +102,8 @@ namespace PromiseModelOnline.Api.Controllers
 
         {
 
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var userId = await GetCurrentUserIdAsync();
 
             if (userId is null) return Unauthorized();
@@ -190,6 +193,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         {
 
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var userId = await GetCurrentUserIdAsync();
 
             if (userId == null) return Unauthorized();

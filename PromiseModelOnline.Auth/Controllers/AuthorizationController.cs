@@ -48,9 +48,11 @@ namespace PromiseModelOnline.Auth.Controllers
 
             if (result == null || !result.Succeeded)
             {
-                var returnUrl = Uri.EscapeDataString(Request.Path + Request.QueryString);
+                var returnUrl = Request.Path + Request.QueryString;
+                if (!Url.IsLocalUrl(returnUrl))
+                    returnUrl = "/";
                 _logger.LogInformation("Authorization: unauthenticated user redirected to login");
-                return Redirect($"/account/login?returnUrl={returnUrl}");
+                return Redirect($"/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
 
             var subject = User.FindFirstValue(OpenIddictConstants.Claims.Subject)

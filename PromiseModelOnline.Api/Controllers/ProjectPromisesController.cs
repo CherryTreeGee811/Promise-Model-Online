@@ -8,7 +8,6 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -19,11 +18,9 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericMapper<Promise, PromiseDTO> _mapper;
         private readonly IMomentService _momentService;
         private readonly IPromiseModelOnlineContext _context;
-        private readonly ILogger<ProjectPromisesController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectPromisesController"/> class.</summary>
         /// <param name="context">The database context for data access.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
         /// <param name="momentService">The service for moment operations.</param>
         /// <param name="projectService">The service for project operations.</param>
@@ -33,7 +30,6 @@ namespace PromiseModelOnline.Api.Controllers
             IGenericMapper<Promise, PromiseDTO> mapper,
             IMomentService momentService,
             IPromiseModelOnlineContext context,
-            ILogger<ProjectPromisesController> logger,
             IProjectService projectService)
             : base(projectService)
         {
@@ -41,7 +37,6 @@ namespace PromiseModelOnline.Api.Controllers
             _mapper = mapper;
             _momentService = momentService;
             _context = context;
-            _logger = logger;
         }
         /// <summary>Return a promise by its sequence number within the project.</summary>
         /// <param name="seq">The promise sequence number.</param>
@@ -52,6 +47,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{seq}")]
         public async Task<ActionResult<PromiseDTO>> GetBySeq(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -73,6 +69,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("by-id/{id}")]
         public async Task<ActionResult<PromiseDTO>> GetById(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -95,6 +92,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPut("{seq}")]
         public async Task<IActionResult> Update(int seq, [FromBody] Promise entity, string owner, string project)
         {
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -120,6 +119,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -213,6 +213,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{seq}/total-effort")]
         public async Task<ActionResult<int>> GetTotalEffort(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();

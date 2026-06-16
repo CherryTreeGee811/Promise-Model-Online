@@ -22,7 +22,6 @@ namespace PromiseModelOnline.Api.Tests
     public class ProjectPermissionsControllerUnitTests
     {
         private Mock<IPermissionService> _mockPermissionService = null!;
-        private Mock<IPermissionRepository> _mockPermissionRepository = null!;
         private Mock<IUserRepository> _mockUserRepository = null!;
         private Mock<ILogger<ProjectPermissionsController>> _mockLogger = null!;
         private Mock<IProjectService> _mockProjectService = null!;
@@ -32,13 +31,11 @@ namespace PromiseModelOnline.Api.Tests
         public void SetUp()
         {
             _mockPermissionService = new Mock<IPermissionService>();
-            _mockPermissionRepository = new Mock<IPermissionRepository>();
             _mockUserRepository = new Mock<IUserRepository>();
             _mockLogger = new Mock<ILogger<ProjectPermissionsController>>();
             _mockProjectService = new Mock<IProjectService>();
             _controller = new ProjectPermissionsController(
                 _mockPermissionService.Object,
-                _mockPermissionRepository.Object,
                 _mockUserRepository.Object,
                 _mockLogger.Object,
                 _mockProjectService.Object);

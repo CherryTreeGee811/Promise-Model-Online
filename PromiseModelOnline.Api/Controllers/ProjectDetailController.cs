@@ -211,6 +211,7 @@ namespace PromiseModelOnline.Api.Controllers
         public async Task<ActionResult<ProjectDTO>> UpdateDetails(string owner, string project, [FromBody] UpdateProjectDetailsRequestDTO request)
         {
             if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest("Project title is required.");
 
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -284,6 +285,7 @@ namespace PromiseModelOnline.Api.Controllers
             string owner, string project,
             [FromQuery] int take = 100, [FromQuery] int skip = 0)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null) return NotFound();
 
@@ -344,7 +346,9 @@ namespace PromiseModelOnline.Api.Controllers
             return $"Updated {auditEvent.EntityType}: {string.Join(", ", changes.Select(c => c.FieldName))}";
         }
 
+#pragma warning disable S1144 // setters used by System.Text.Json deserialization
         private sealed class AuditChangeDTO { public object? Before { get; set; } public object? After { get; set; } }
+#pragma warning restore S1144
 
         /// <summary>Resolve the current user from JWT claims, auto-provisioning if needed.</summary>
         /// <returns>The current user, or <c>null</c> if the email claim is missing.</returns>

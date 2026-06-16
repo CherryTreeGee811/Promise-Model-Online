@@ -87,11 +87,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         if (builder.Environment.IsDevelopment())
         {
+#pragma warning disable S4830 // Development-only self-signed cert
             o.BackchannelHttpHandler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             };
+#pragma warning restore S4830
             o.RequireHttpsMetadata = false;
         }
     });

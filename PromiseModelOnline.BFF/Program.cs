@@ -196,11 +196,13 @@ builder.Services
 
         if (builder.Environment.IsDevelopment())
         {
+#pragma warning disable S4830 // Development-only self-signed cert
             options.BackchannelHttpHandler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             };
+#pragma warning restore S4830
 
             options.RequireHttpsMetadata = false;
         }
@@ -211,11 +213,13 @@ if (builder.Environment.IsDevelopment())
 {
     Console.WriteLine("Dev mode: enabling insecure HTTPS handlers for local Docker testing.");
 
+#pragma warning disable S4830 // Development-only self-signed cert
     proxyBuilder.ConfigureHttpClient((context, handler) =>
     {
         handler.SslOptions.RemoteCertificateValidationCallback =
             (_, _, _, _) => true;
     });
+#pragma warning restore S4830
 }
 
 builder.Services.AddAuthorization();

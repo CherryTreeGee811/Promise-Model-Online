@@ -3,7 +3,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Api.Tests.Infrastructure;
@@ -43,8 +42,7 @@ public class ProjectsControllerImportUnitTests
                 _mockMapper.Object,
                 _mockGenericService.Object,
                 _mockProjectImportService.Object,
-                _mockProjectImportValidationService.Object,
-                NullLogger<UserProjectsController>.Instance);
+                _mockProjectImportValidationService.Object);
     }
 
     [Test]

@@ -38,8 +38,9 @@ public class ChangePasswordController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest? request)
     {
-        if (request == null
-            || string.IsNullOrWhiteSpace(request.CurrentPassword)
+        if (request == null) return BadRequest("Request body is required.");
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword)
             || string.IsNullOrWhiteSpace(request.NewPassword)
             || string.IsNullOrWhiteSpace(request.ConfirmPassword))
         {

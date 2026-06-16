@@ -69,6 +69,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
         {
+            if (dto is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             if (string.IsNullOrWhiteSpace(dto.Text))
                 return BadRequest("Comment text cannot be empty.");
 

@@ -13,8 +13,6 @@ using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 
 namespace PromiseModelOnline.Api.Controllers
 
@@ -31,12 +29,9 @@ namespace PromiseModelOnline.Api.Controllers
 
         private readonly IMomentService _momentService;
 
-        private readonly ILogger<ProjectIterationsController> _logger;
-
 
         /// <summary>Initializes a new instance of the <see cref="ProjectIterationsController"/> class.</summary>
         /// <param name="iterationService">The service for iteration-specific operations.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
         /// <param name="momentService">The service for moment operations.</param>
         /// <param name="projectService">The service for project operations.</param>
@@ -51,8 +46,6 @@ namespace PromiseModelOnline.Api.Controllers
 
             IMomentService momentService,
 
-            ILogger<ProjectIterationsController> logger,
-
             IProjectService projectService)
 
             : base(projectService)
@@ -66,8 +59,6 @@ namespace PromiseModelOnline.Api.Controllers
             _iterationService = iterationService;
 
             _momentService = momentService;
-
-            _logger = logger;
 
         }
 
@@ -120,6 +111,8 @@ namespace PromiseModelOnline.Api.Controllers
 
         {
 
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
 
             if (projectEntity is null)
@@ -150,6 +143,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{id}/burndown")]
         public async Task<ActionResult<List<BurndownPointDTO>>> GetIterationBurndown(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
 
             if (projectEntity is null)

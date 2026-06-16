@@ -31,8 +31,6 @@ namespace PromiseModelOnline.Api.Controllers
 
         private readonly IPermissionService _permissionService;
 
-        private readonly IPermissionRepository _permissionRepository;
-
         private readonly IUserRepository _userRepository;
 
         private readonly ILogger<ProjectPermissionsController> _logger;
@@ -46,8 +44,6 @@ namespace PromiseModelOnline.Api.Controllers
 
             IPermissionService permissionService,
 
-            IPermissionRepository permissionRepository,
-
             IUserRepository userRepository,
 
             ILogger<ProjectPermissionsController> logger,
@@ -59,8 +55,6 @@ namespace PromiseModelOnline.Api.Controllers
         {
 
             _permissionService = permissionService;
-
-            _permissionRepository = permissionRepository;
 
             _userRepository = userRepository;
 
@@ -76,6 +70,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PermissionDTO>>> GetPermissions(string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
 
             if (projectEntity is null)
@@ -99,6 +94,8 @@ namespace PromiseModelOnline.Api.Controllers
 
         {
 
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
 
             if (projectEntity is null)
@@ -150,6 +147,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> RevokePermission(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
 
             if (projectEntity is null)
@@ -184,6 +182,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{id}/my-permission")]
         public async Task<ActionResult<string>> GetMyPermission(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
 
             if (projectEntity is null)
@@ -207,8 +206,6 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(permissionLevel.ToString());
 
         }
-
-        /// <summary>Resolve the current user ID from JWT email claim.</summary>
 
         /// <summary>Resolve the current user ID from JWT email claim.</summary>
         /// <returns>The user ID, or <c>null</c> if the email claim is missing.</returns>

@@ -10,7 +10,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
@@ -28,26 +27,22 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericMapper<Moment, MomentDTO> _mapper;
         private readonly IUserRepository _userRepository;
         private readonly IPromiseModelOnlineContext _context;
-        private readonly ILogger<MyMomentsController> _logger;
 
         /// <summary>Initializes the controller with required services and repositories.</summary>
         /// <param name="momentService">The moment service.</param>
         /// <param name="mapper">The mapper.</param>
         /// <param name="userRepository">The user repository.</param>
         /// <param name="context">The database context.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         public MyMomentsController(
             IMomentService momentService,
             IGenericMapper<Moment, MomentDTO> mapper,
             IUserRepository userRepository,
-            IPromiseModelOnlineContext context,
-            ILogger<MyMomentsController> logger)
+            IPromiseModelOnlineContext context)
         {
             _momentService = momentService;
             _mapper = mapper;
             _userRepository = userRepository;
             _context = context;
-            _logger = logger;
         }
 
         /// <summary>Return moments assigned to the current user, with project slug context.</summary>

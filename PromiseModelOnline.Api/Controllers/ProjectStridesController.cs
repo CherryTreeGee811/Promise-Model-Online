@@ -50,24 +50,24 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of stride DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<StrideDTO>>> GetAll(string owner, string project)
+        public async Task<ActionResult<IEnumerable<StrideDTO>>> GetAll(string owner, string project, [FromQuery] int? iterationId = null)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
 
             IEnumerable<Stride> strides;
 
-            var iterationIdStr = Request.Query["iterationId"];
-            if (!string.IsNullOrEmpty(iterationIdStr) && int.TryParse(iterationIdStr, out int iterationId))
+            if (iterationId.HasValue)
             {
                 var iteration = await _context.Iterations
-                    .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId);
+                    .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId.Value);
 
                 if (iteration is null)
                     return NotFound("Iteration not found.");
 
-                strides = await _strideService.GetStridesByIterationAsync(iterationId);
+                strides = await _strideService.GetStridesByIterationAsync(iterationId.Value);
             }
             else
             {
@@ -91,6 +91,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("by-id/{id}")]
         public async Task<ActionResult<StrideDTO>> GetById(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -112,6 +113,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<StrideDTO>> Create([FromBody] Stride entity, string owner, string project)
         {
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -138,6 +141,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPatch("{id}")]
         public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDTO request, string owner, string project)
         {
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -173,6 +178,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPost("{id}/progress")]
         public async Task<ActionResult> ProgressStride(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();

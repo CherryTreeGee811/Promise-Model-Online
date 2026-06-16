@@ -10,8 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/journeys")]
@@ -20,11 +18,9 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IGenericService<Journey> _service;
         private readonly IGenericMapper<Journey, JourneyDTO> _mapper;
         private readonly IPromiseModelOnlineContext _context;
-        private readonly ILogger<ProjectJourneysController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectJourneysController"/> class.</summary>
         /// <param name="context">The database context for data access.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
         /// <param name="projectService">The service for project operations.</param>
         /// <param name="service">The service for business logic operations.</param>
@@ -32,14 +28,12 @@ namespace PromiseModelOnline.Api.Controllers
             IGenericService<Journey> service,
             IGenericMapper<Journey, JourneyDTO> mapper,
             IPromiseModelOnlineContext context,
-            ILogger<ProjectJourneysController> logger,
             IProjectService projectService)
             : base(projectService)
         {
             _service = service;
             _mapper = mapper;
             _context = context;
-            _logger = logger;
         }
         /// <summary>Return all journeys for a project, optionally filtered by epic.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
@@ -47,19 +41,19 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of journey DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<JourneyDTO>>> GetAll(string owner, string project)
+        public async Task<ActionResult<IEnumerable<JourneyDTO>>> GetAll(string owner, string project, [FromQuery] int? epicSeq = null)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
 
             IEnumerable<Journey> journeys;
 
-            var epicSeqStr = Request.Query["epicSeq"];
-            if (!string.IsNullOrEmpty(epicSeqStr) && int.TryParse(epicSeqStr, out int epicSeq))
+            if (epicSeq.HasValue)
             {
                 var epic = await _context.Epics
-                    .FirstOrDefaultAsync(e => e.ProductPromise.ProjectId == projectEntity.Id && e.SequenceNumber == epicSeq);
+                    .FirstOrDefaultAsync(e => e.ProductPromise.ProjectId == projectEntity.Id && e.SequenceNumber == epicSeq.Value);
 
                 if (epic is null)
                     return NotFound("Epic not found.");
@@ -90,6 +84,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("{seq}")]
         public async Task<ActionResult<JourneyDTO>> GetBySeq(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -111,6 +106,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpGet("by-id/{id}")]
         public async Task<ActionResult<JourneyDTO>> GetById(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -133,6 +129,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPut("{seq}")]
         public async Task<IActionResult> Update(int seq, [FromBody] Journey entity, string owner, string project)
         {
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -158,6 +156,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();

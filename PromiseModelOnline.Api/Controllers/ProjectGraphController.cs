@@ -7,28 +7,22 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/graph")]
     public class ProjectGraphController : ProjectScopedControllerBase
     {
         private readonly IPromiseModelOnlineContext _context;
-        private readonly ILogger<ProjectGraphController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectGraphController"/> class.</summary>
         /// <param name="context">The database context for data access.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         /// <param name="projectService">The service for project operations.</param>
         public ProjectGraphController(
             IProjectService projectService,
-            IPromiseModelOnlineContext context,
-            ILogger<ProjectGraphController> logger)
+            IPromiseModelOnlineContext context)
             : base(projectService)
         {
             _context = context;
-            _logger = logger;
         }
 
         /// <summary>Retrieves the full project hierarchy as a graph structure.</summary>
