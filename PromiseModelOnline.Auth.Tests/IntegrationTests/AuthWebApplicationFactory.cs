@@ -62,7 +62,10 @@ public class AuthWebApplicationFactory : IAsyncDisposable
 
         // Identity
         builder.Services
-            .AddIdentity<IdentityUser, IdentityRole>()
+            .AddIdentity<IdentityUser, IdentityRole>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+            })
             .AddEntityFrameworkStores<AuthorizationDbContext>()
             .AddDefaultTokenProviders()
             .AddSignInManager();

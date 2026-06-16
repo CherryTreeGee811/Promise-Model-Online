@@ -91,8 +91,8 @@ public class AccountController : Controller
             await _emailService.SendVerificationEmailAsync(model.Email, model.Username, code);
 
             _logger.LogInformation("User {Email} registered. Verification code cached.", model.Email);
-            return RedirectToAction("VerifyEmail", "Account",
-                new { email = model.Email, userId = user.Id });
+            return RedirectToAction("Index", "EmailVerification",
+                new { userId = user.Id });
         }
 
         foreach (var error in result.Errors)

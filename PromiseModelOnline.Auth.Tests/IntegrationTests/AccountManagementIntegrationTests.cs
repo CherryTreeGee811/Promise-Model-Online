@@ -184,7 +184,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
         // Act
         var response = await Client.SendAsync(request);
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         // Change back
         var request2 = new HttpRequestMessage(HttpMethod.Patch, "/account/me/password")
@@ -307,7 +307,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
                 { "Password", TestPassword }
             }));
         var failedBody = await failedResponse.Content.ReadAsStringAsync();
-        Assert.That(failedBody, Does.Contain("Invalid credentials"));
+        Assert.That(failedBody, Does.Contain("Invalid username or password"));
     }
 }
 

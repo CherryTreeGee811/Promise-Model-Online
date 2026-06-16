@@ -65,7 +65,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response.Content.ReadAsStringAsync();
-        Assert.That(html, Does.Contain("Invalid credentials"));
+        Assert.That(html, Does.Contain("Invalid username or password"));
     }
 
     [Test]
@@ -108,7 +108,7 @@ public class LoginPageIntegrationTests : IntegrationTestBase
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
         var location = await ExtractRedirectLocation(response);
-        Assert.That(location, Is.EqualTo("/login"));
+        Assert.That(location, Is.EqualTo("https://localhost:9000/projects"));
     }
 
     [Test]

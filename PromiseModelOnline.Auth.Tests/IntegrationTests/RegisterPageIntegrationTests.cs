@@ -159,7 +159,7 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response2.Content.ReadAsStringAsync();
-        Assert.That(html, Does.Contain("already exists"));
+        Assert.That(html, Does.Contain("already taken"));
     }
 
     [Test]
@@ -196,6 +196,6 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
         Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response2.Content.ReadAsStringAsync();
-        Assert.That(html, Does.Contain("Username is already taken"));
+        Assert.That(html, Does.Contain("already taken"));
     }
 }

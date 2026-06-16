@@ -54,7 +54,10 @@ builder.Services.AddDbContext<AuthorizationDbContext>(options =>
 
 // ASP.NET Identity with EF Core stores, default token providers, and application cookie configuration.
 builder.Services
-    .AddIdentity<IdentityUser, IdentityRole>()
+    .AddIdentity<IdentityUser, IdentityRole>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+    })
     .AddEntityFrameworkStores<AuthorizationDbContext>()
     .AddDefaultTokenProviders()
     .AddSignInManager();
