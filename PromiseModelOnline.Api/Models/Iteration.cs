@@ -14,6 +14,7 @@ public class Iteration
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
 
     /// <summary>Display name. Required, max 200 characters.</summary>
@@ -22,6 +23,7 @@ public class Iteration
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Foreign key to the parent <see cref="Models.Project"/>.</summary>
+    [Required]
     public int ProjectId { get; set; }
 
     /// <summary>UTC timestamp of creation.</summary>

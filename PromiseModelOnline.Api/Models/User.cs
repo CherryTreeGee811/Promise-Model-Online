@@ -13,6 +13,7 @@ public class User
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
     
     /// <summary>Email address. Required, validated format, max 256 characters.</summary>

@@ -13,6 +13,7 @@ public class Epic
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
 
     /// <summary>Entity type discriminator, always <c>"Epic"</c>. Not mapped.</summary>
@@ -29,12 +30,14 @@ public class Epic
     public string? Description { get; set; }
         
     /// <summary>Foreign key to the parent <see cref="Models.Promise"/>.</summary>
+    [Required]
     public int ProductPromiseId { get; set; }
         
     /// <summary>Foreign key to the responsible <see cref="User"/>.</summary>
     public int? OwnerId { get; set; }
         
     /// <summary>Human-readable sequence number, unique within the parent promise.</summary>
+    [Required]
     public int SequenceNumber { get; set; }
 
     /// <summary>Sort order within the parent promise.</summary>

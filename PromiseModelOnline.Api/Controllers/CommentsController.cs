@@ -49,7 +49,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="400"><paramref name="type"/> is empty or <paramref name="parentId"/> is not positive.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CommentDTO>>> GetComments(
+        public async Task<ActionResult<IEnumerable<CommentDto>>> GetComments(
             [FromQuery] string? type,
             [FromQuery] int parentId)
         {
@@ -67,7 +67,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="401">Missing email claim in the JWT token.</response>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
-        public async Task<ActionResult<CommentDTO>> CreateComment([FromBody] CreateCommentDTO dto)
+        public async Task<ActionResult<CommentDto>> CreateComment([FromBody] CreateCommentDto dto)
         {
             if (dto is null) return BadRequest("Request body is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);

@@ -75,7 +75,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpGet]
 
-        public async Task<ActionResult<IEnumerable<ReactionDTO>>> GetReactions(
+        public async Task<ActionResult<IEnumerable<ReactionDto>>> GetReactions(
 
             [FromQuery] string type, [FromQuery] int itemId)
 
@@ -98,7 +98,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpPost]
 
-        public async Task<ActionResult<ReactionDTO>> CreateReaction([FromBody] CreateReactionRequest request)
+        public async Task<ActionResult<ReactionDto>> CreateReaction([FromBody] CreateReactionRequest request)
 
         {
 
@@ -141,7 +141,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpPatch("{id}")]
 
-        public async Task<ActionResult<ReactionDTO>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDTO request)
+        public async Task<ActionResult<ReactionDto>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDto request)
 
         {
 

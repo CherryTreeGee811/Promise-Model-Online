@@ -16,7 +16,7 @@ namespace PromiseModelOnline.Api.Controllers
     public class ProjectJourneysController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Journey> _service;
-        private readonly IGenericMapper<Journey, JourneyDTO> _mapper;
+        private readonly IGenericMapper<Journey, JourneyDto> _mapper;
         private readonly IPromiseModelOnlineContext _context;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectJourneysController"/> class.</summary>
@@ -26,7 +26,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="service">The service for business logic operations.</param>
         public ProjectJourneysController(
             IGenericService<Journey> service,
-            IGenericMapper<Journey, JourneyDTO> mapper,
+            IGenericMapper<Journey, JourneyDto> mapper,
             IPromiseModelOnlineContext context,
             IProjectService projectService)
             : base(projectService)
@@ -38,10 +38,11 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Return all journeys for a project, optionally filtered by epic.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <param name="project">The project's URL-safe slug.</param>
+        /// <param name="epicSeq">Optional epic sequence number to filter by.</param>
         /// <returns>A list of journey DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<JourneyDTO>>> GetAll(string owner, string project, [FromQuery] int? epicSeq = null)
+        public async Task<ActionResult<IEnumerable<JourneyDto>>> GetAll(string owner, string project, [FromQuery] int? epicSeq = null)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -69,7 +70,7 @@ namespace PromiseModelOnline.Api.Controllers
                     .ToListAsync();
             }
 
-            var result = new List<JourneyDTO>();
+            var result = new List<JourneyDto>();
             foreach (var j in journeys)
                 result.Add(_mapper.Map(j, _service));
 
@@ -82,7 +83,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching journey as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}")]
-        public async Task<ActionResult<JourneyDTO>> GetBySeq(int seq, string owner, string project)
+        public async Task<ActionResult<JourneyDto>> GetBySeq(int seq, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -104,7 +105,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching journey as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
-        public async Task<ActionResult<JourneyDTO>> GetById(int id, string owner, string project)
+        public async Task<ActionResult<JourneyDto>> GetById(int id, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -180,7 +181,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created journey as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
-        public async Task<ActionResult<JourneyDTO>> CreateFromDto([FromBody] CreateJourneyRequestDTO request, string owner, string project)
+        public async Task<ActionResult<JourneyDto>> CreateFromDto([FromBody] CreateJourneyRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -221,7 +222,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/description")]
-        public async Task<ActionResult<JourneyDTO>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
+        public async Task<ActionResult<JourneyDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)

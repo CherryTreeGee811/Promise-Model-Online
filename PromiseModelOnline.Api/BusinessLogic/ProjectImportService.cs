@@ -247,7 +247,7 @@ public sealed class ProjectImportService : IProjectImportService
     /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
     /// <param name="referenceName">The type of reference (e.g., "assigned", "original") for warnings.</param>
     /// <returns>The mapped stride ID, or null.</returns>
-    private async Task<int?> ResolveStrideIdAsync(int? exportedStrideId, Dictionary<int, int> strideIdMap, List<string> warnings, string entityLabel, string referenceName)
+    private static async Task<int?> ResolveStrideIdAsync(int? exportedStrideId, Dictionary<int, int> strideIdMap, List<string> warnings, string entityLabel, string referenceName)
     {
         if (!exportedStrideId.HasValue)
         {
@@ -264,7 +264,6 @@ public sealed class ProjectImportService : IProjectImportService
     }
 
     /// <summary>Import a single epic and recursively import its child journeys.</summary>
-    /// <param name="projectId">The project ID for context.</param>
     /// <param name="promiseId">The parent promise ID.</param>
     /// <param name="epic">The exported epic data.</param>
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
@@ -376,7 +375,6 @@ public sealed class ProjectImportService : IProjectImportService
     }
 
     /// <summary>Import a single moment with its stride assignments and sub-tasks.</summary>
-    /// <param name="projectId">The project ID for context.</param>
     /// <param name="flowId">The parent flow ID.</param>
     /// <param name="moment">The exported moment data.</param>
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>

@@ -13,6 +13,7 @@ public class Stride
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
         
     /// <summary>Display name. Required, max 200 characters.</summary>
@@ -24,9 +25,11 @@ public class Stride
     public int? IterationId { get; set; }
 
     /// <summary>Start date of the sprint.</summary>
+    [Required]
     public DateTime StartDate { get; set; }
         
     /// <summary>End date of the sprint.</summary>
+    [Required]
     public DateTime EndDate { get; set; }
         
     /// <summary>Duration in days. Default 14 (two-week sprint).</summary>

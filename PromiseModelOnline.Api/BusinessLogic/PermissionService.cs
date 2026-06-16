@@ -21,7 +21,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         private readonly IPermissionRepository _permissionRepo;
         private readonly IUserRepository _userRepo;
         private readonly IGenericRepository<Project> _projectRepo;
-        private readonly IGenericMapper<Permission, PermissionDTO> _mapper;
+        private readonly IGenericMapper<Permission, PermissionDto> _mapper;
         private readonly INotificationService _notificationService;
 
         /// <summary>Initializes the service with required dependencies.</summary>
@@ -29,7 +29,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
             IPermissionRepository permissionRepo,
             IUserRepository userRepo,
             IGenericRepository<Project> projectRepo,
-            IGenericMapper<Permission, PermissionDTO> mapper,
+            IGenericMapper<Permission, PermissionDto> mapper,
             INotificationService notificationService)
         {
             _permissionRepo = permissionRepo;
@@ -42,7 +42,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <summary>Return all permission records for a project as DTOs.</summary>
         /// <param name="projectId">The project ID.</param>
         /// <returns>Permission DTOs with user and role information.</returns>
-        public async Task<IEnumerable<PermissionDTO>> GetPermissionsByProjectAsync(int projectId)
+        public async Task<IEnumerable<PermissionDto>> GetPermissionsByProjectAsync(int projectId)
         {
             var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId);
             return permissions.Select(p => _mapper.Map(p, null!));
@@ -54,7 +54,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <returns>The created permission DTO.</returns>
         /// <exception cref="InvalidOperationException">Project not found, user not found, or already has permission.</exception>
         /// <exception cref="UnauthorizedAccessException">Requester is not the project owner.</exception>
-        public async Task<PermissionDTO> InviteUserAsync(CreatePermissionRequestDTO request, int ownerUserId)
+        public async Task<PermissionDto> InviteUserAsync(CreatePermissionRequestDto request, int ownerUserId)
         {
             var project = await _projectRepo.GetByIdAsync(request.ProjectId)
                           ?? throw new InvalidOperationException("Project not found");
@@ -87,7 +87,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 "/invitations"
             );
 
-            return new PermissionDTO
+            return new PermissionDto
             {
                 Id = permission.Id,
                 UserId = invitedUser.Id,
@@ -104,7 +104,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <returns>The updated permission DTO.</returns>
         /// <exception cref="InvalidOperationException">Permission not found or already accepted.</exception>
         /// <exception cref="UnauthorizedAccessException">Not the user's invitation.</exception>
-        public async Task<PermissionDTO> AcceptInvitationAsync(int permissionId, int userId)
+        public async Task<PermissionDto> AcceptInvitationAsync(int permissionId, int userId)
         {
             var permission = await _permissionRepo.GetByIdAsync(permissionId)
                              ?? throw new InvalidOperationException("Permission not found");
@@ -125,10 +125,10 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <summary>Return all pending invitations for a user as DTOs.</summary>
         /// <param name="userId">The user ID.</param>
         /// <returns>Pending invitation DTOs.</returns>
-        public async Task<IEnumerable<PendingInvitationDTO>> GetPendingInvitationsForUserAsync(int userId)
+        public async Task<IEnumerable<PendingInvitationDto>> GetPendingInvitationsForUserAsync(int userId)
         {
             var permissions = await _permissionRepo.GetPendingInvitationsForUserAsync(userId);
-            return permissions.Select(p => new PendingInvitationDTO
+            return permissions.Select(p => new PendingInvitationDto
             {
                 PermissionId = p.Id,
                 ProjectId = p.ProjectId,

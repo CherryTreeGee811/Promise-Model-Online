@@ -96,7 +96,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created task DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
-        public async Task<ActionResult<MomentTaskDTO>> Create(int momentSeq, [FromBody] CreateMomentTaskRequestDTO request, string owner, string project)
+        public async Task<ActionResult<MomentTaskDto>> Create(int momentSeq, [FromBody] CreateMomentTaskRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -183,7 +183,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The updated task DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{taskId:int}/completion")]
-        public async Task<ActionResult<MomentTaskDTO>> UpdateCompletion(int momentSeq, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDTO request, string owner, string project)
+        public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentSeq, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -262,11 +262,11 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="task">The task entity.</param>
         /// <returns>The mapped task DTO.</returns>
 
-        private static MomentTaskDTO Map(MomentTask task)
+        private static MomentTaskDto Map(MomentTask task)
 
         {
 
-            return new MomentTaskDTO
+            return new MomentTaskDto
 
             {
 

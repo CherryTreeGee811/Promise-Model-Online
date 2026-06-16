@@ -53,9 +53,9 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(owner, project))
                 .ReturnsAsync(projectEntity);
 
-            var permissions = new List<PermissionDTO>
+            var permissions = new List<PermissionDto>
             {
-                new PermissionDTO { Id = 1, Level = "View" }
+                new PermissionDto { Id = 1, Level = "View" }
             };
             _mockPermissionService.Setup(s => s.GetPermissionsByProjectAsync(projectEntity.Id))
                 .ReturnsAsync(permissions);
@@ -65,7 +65,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
-            var data = ok!.Value as IEnumerable<PermissionDTO>;
+            var data = ok!.Value as IEnumerable<PermissionDto>;
             Assert.That(data, Is.Not.Null);
             Assert.That(data, Is.EquivalentTo(permissions));
         }
@@ -106,8 +106,8 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync(email, username))
                 .ReturnsAsync(user);
 
-            var request = new CreatePermissionRequestDTO { Email = "invited@example.com", Level = PermissionLevel.View };
-            var permissionDto = new PermissionDTO { Id = 5, Level = "View" };
+            var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
+            var permissionDto = new PermissionDto { Id = 5, Level = "View" };
             _mockPermissionService.Setup(s => s.InviteUserAsync(request, user.Id))
                 .ReturnsAsync(permissionDto);
 
@@ -138,7 +138,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync(email, username))
                 .ReturnsAsync(user);
 
-            var request = new CreatePermissionRequestDTO { Email = "invited@example.com", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
             _mockPermissionService.Setup(s => s.InviteUserAsync(request, user.Id))
                 .ThrowsAsync(new InvalidOperationException("Invitation failed"));
 
@@ -160,7 +160,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(owner, project))
                 .ReturnsAsync((Project?)null);
 
-            var request = new CreatePermissionRequestDTO { Email = "invited@example.com", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
 
             var result = await _controller.InviteUser(request, owner, project);
 
@@ -179,7 +179,7 @@ namespace PromiseModelOnline.Api.Tests
 
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
-            var request = new CreatePermissionRequestDTO { Email = "invited@example.com", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
 
             var result = await _controller.InviteUser(request, owner, project);
 

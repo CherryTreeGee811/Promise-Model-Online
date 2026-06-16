@@ -8,6 +8,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateMomentStatusRequest : IValidatableObject
 {
     /// <summary>The new status value to apply.</summary>
+    [Required]
     public MomentStatus NewStatus { get; set; }
 
     /// <summary>Validates the request data.</summary>

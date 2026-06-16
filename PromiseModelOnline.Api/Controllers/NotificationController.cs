@@ -40,7 +40,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of notification DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetNotifications()
+        public async Task<ActionResult<IEnumerable<NotificationDto>>> GetNotifications()
         {
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId is null) return Unauthorized();
@@ -55,7 +55,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdateNotification(int id, [FromBody] UpdateNotificationRequestDTO request)
+        public async Task<IActionResult> UpdateNotification(int id, [FromBody] UpdateNotificationRequestDto request)
         {
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId is null) return Unauthorized();
@@ -75,7 +75,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch]
-        public async Task<IActionResult> UpdateNotifications([FromBody] UpdateNotificationsRequestDTO request)
+        public async Task<IActionResult> UpdateNotifications([FromBody] UpdateNotificationsRequestDto request)
         {
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId is null) return Unauthorized();

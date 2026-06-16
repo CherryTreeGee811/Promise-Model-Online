@@ -60,14 +60,11 @@ namespace PromiseModelOnline.Api.BusinessLogic
 
             var allProjects = ownedProjects.Union(sharedProjects, new ProjectComparer()).ToList();
 
-            foreach (var project in allProjects)
+            foreach (var project in allProjects.Where(p => p.Owner is null))
             {
-                if (project.Owner is null)
-                {
-                    var owner = await _userRepo.GetByIdAsync(project.OwnerId);
-                    if (owner is not null)
-                        project.Owner = owner;
-                }
+                var owner = await _userRepo.GetByIdAsync(project.OwnerId);
+                if (owner is not null)
+                    project.Owner = owner;
             }
 
             return allProjects;
@@ -77,17 +74,17 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <param name="projectId">The project ID.</param>
         /// <returns>Project member DTOs with user name and email.</returns>
         /// <exception cref="InvalidOperationException">Project not found.</exception>
-        public async Task<IEnumerable<ProjectMemberDTO>> GetProjectMembersAsync(int projectId)
+        public async Task<IEnumerable<ProjectMemberDto>> GetProjectMembersAsync(int projectId)
         {
             var project = await _projectRepo.GetByIdAsync(projectId);
             if (project is null)
                 throw new InvalidOperationException("Project not found");
 
-            var members = new List<ProjectMemberDTO>();
+            var members = new List<ProjectMemberDto>();
 
             var owner = await _userRepo.GetByIdAsync(project.OwnerId);
             if (owner is not null)
-                members.Add(new ProjectMemberDTO
+                members.Add(new ProjectMemberDto
                 {
                     UserId = owner.Id,
                     UserName = owner.Name,
@@ -95,19 +92,16 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 });
 
             var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId);
-            foreach (var perm in permissions.Where(p => p.Status == PermissionStatus.Active))
+            foreach (var perm in permissions.Where(p => p.Status == PermissionStatus.Active && members.All(m => m.UserId != p.UserId)))
             {
-                if (members.All(m => m.UserId != perm.UserId))
-                {
-                    var user = await _userRepo.GetByIdAsync(perm.UserId);
-                    if (user is not null)
-                        members.Add(new ProjectMemberDTO
-                        {
-                            UserId = user.Id,
-                            UserName = user.Name,
-                            Email = user.Email
-                        });
-                }
+                var user = await _userRepo.GetByIdAsync(perm.UserId);
+                if (user is not null)
+                    members.Add(new ProjectMemberDto
+                    {
+                        UserId = user.Id,
+                        UserName = user.Name,
+                        Email = user.Email
+                    });
             }
 
             return members;
@@ -159,7 +153,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         }
 
         /// <summary>Equality comparer for <see cref="Project"/> based on ID.</summary>
-        private class ProjectComparer : IEqualityComparer<Project>
+        private sealed class ProjectComparer : IEqualityComparer<Project>
         {
             /// <summary>Compare two projects by ID.</summary>
             /// <param name="x">The first project to compare.</param>

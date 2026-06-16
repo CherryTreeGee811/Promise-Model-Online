@@ -21,7 +21,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<ICommentRepository> _commentRepoMock = null!;
         private Mock<IUserRepository> _userRepoMock = null!;
-        private Mock<IGenericMapper<Comment, CommentDTO>> _mapperMock = null!;
+        private Mock<IGenericMapper<Comment, CommentDto>> _mapperMock = null!;
         private Mock<INotificationService> _notificationServiceMock = null!;
         private CommentService _service = null!;
 
@@ -30,7 +30,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             _commentRepoMock = new Mock<ICommentRepository>();
             _userRepoMock = new Mock<IUserRepository>();
-            _mapperMock = new Mock<IGenericMapper<Comment, CommentDTO>>();
+            _mapperMock = new Mock<IGenericMapper<Comment, CommentDto>>();
             _notificationServiceMock = new Mock<INotificationService>();
 
             _service = new CommentService(
@@ -52,7 +52,7 @@ namespace PromiseModelOnline.Api.Tests
             _commentRepoMock.Setup(r => r.GetCommentsForEntityAsync("moment", 10))
                            .ReturnsAsync(comments);
             _mapperMock.Setup(m => m.Map(It.IsAny<Comment>(), null!))
-                       .Returns<Comment, IGenericService<Comment>>((c, _) => new CommentDTO { Id = c.Id, Text = c.Text });
+                       .Returns<Comment, IGenericService<Comment>>((c, _) => new CommentDto { Id = c.Id, Text = c.Text });
 
             // Act
             var result = await _service.GetCommentsAsync("moment", 10);
@@ -88,14 +88,14 @@ namespace PromiseModelOnline.Api.Tests
                                ? new List<Comment> { savedComment }
                                : new List<Comment>());
             _mapperMock.Setup(m => m.Map(It.IsAny<Comment>(), null!))
-                       .Returns(new CommentDTO());
+                       .Returns(new CommentDto());
         }
 
         [Test]
         public async Task REQ_FUN_017_CreateCommentAsync_ValidMomentParent_CreatesComment()
         {
             // Arrange
-            var dto = new CreateCommentDTO { Text = "Great work!", ParentType = "moment", ParentId = 42 };
+            var dto = new CreateCommentDto { Text = "Great work!", ParentType = "moment", ParentId = 42 };
             Comment? savedComment = null;
             _commentRepoMock.Setup(r => r.AddCommentAsync(It.IsAny<Comment>()))
                            .Callback<Comment>(c => savedComment = c)
@@ -103,7 +103,7 @@ namespace PromiseModelOnline.Api.Tests
             _commentRepoMock.Setup(r => r.GetCommentsForEntityAsync("moment", 42))
                            .ReturnsAsync(() => savedComment != null ? new List<Comment> { savedComment } : new List<Comment>());
             _mapperMock.Setup(m => m.Map(It.IsAny<Comment>(), null!))
-                       .Returns<Comment, IGenericService<Comment>>((c, _) => new CommentDTO { Id = c.Id, Text = c.Text });
+                       .Returns<Comment, IGenericService<Comment>>((c, _) => new CommentDto { Id = c.Id, Text = c.Text });
 
             // Act
             var result = await _service.CreateCommentAsync(dto, 1);
@@ -117,7 +117,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateCommentAsync_ValidPromiseParent_SetsProductPromiseId()
         {
             // Arrange
-            var dto = new CreateCommentDTO { Text = "Nice promise", ParentType = "promise", ParentId = 7 };
+            var dto = new CreateCommentDto { Text = "Nice promise", ParentType = "promise", ParentId = 7 };
             SetupCommentCreation("promise", 7);
 
             // Act
@@ -131,7 +131,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateCommentAsync_ValidEpicParent_SetsEpicId()
         {
             // Arrange
-            var dto = new CreateCommentDTO { Text = "Epic", ParentType = "epic", ParentId = 3 };
+            var dto = new CreateCommentDto { Text = "Epic", ParentType = "epic", ParentId = 3 };
             SetupCommentCreation("epic", 3);
 
             // Act
@@ -145,7 +145,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateCommentAsync_ValidJourneyParent_SetsJourneyId()
         {
             // Arrange
-            var dto = new CreateCommentDTO { Text = "Journey", ParentType = "journey", ParentId = 8 };
+            var dto = new CreateCommentDto { Text = "Journey", ParentType = "journey", ParentId = 8 };
             SetupCommentCreation("journey", 8);
 
             // Act
@@ -159,7 +159,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateCommentAsync_ValidFlowParent_SetsFlowId()
         {
             // Arrange
-            var dto = new CreateCommentDTO { Text = "Flow", ParentType = "flow", ParentId = 12 };
+            var dto = new CreateCommentDto { Text = "Flow", ParentType = "flow", ParentId = 12 };
             SetupCommentCreation("flow", 12);
 
             // Act
@@ -173,7 +173,7 @@ namespace PromiseModelOnline.Api.Tests
         public void REQ_FUN_017_CreateCommentAsync_InvalidParentType_ThrowsArgumentException()
         {
             // Arrange
-            var dto = new CreateCommentDTO { Text = "Bad", ParentType = "invalid", ParentId = 1 };
+            var dto = new CreateCommentDto { Text = "Bad", ParentType = "invalid", ParentId = 1 };
 
             // Act & Assert
             Assert.ThrowsAsync<ArgumentException>(() => _service.CreateCommentAsync(dto, 1));
@@ -182,7 +182,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task REQ_FUN_017_CreateCommentAsync_WithMentions_AddsMentionsAndNotifications()
         {
-            var dto = new CreateCommentDTO { Text = "Hey @alice and @bob!", ParentType = "moment", ParentId = 99 };
+            var dto = new CreateCommentDto { Text = "Hey @alice and @bob!", ParentType = "moment", ParentId = 99 };
             var alice = new User { Id = 10, Name = "alice" };
             var bob = new User { Id = 20, Name = "bob" };
             _userRepoMock.Setup(r => r.GetUsersByNameAsync("alice")).ReturnsAsync(new List<User> { alice });
@@ -196,7 +196,7 @@ namespace PromiseModelOnline.Api.Tests
             _commentRepoMock.Setup(r => r.GetCommentsForEntityAsync("moment", 99))
                            .ReturnsAsync(() => savedComment != null ? new List<Comment> { savedComment } : new List<Comment>());
             _mapperMock.Setup(m => m.Map(It.IsAny<Comment>(), null!))
-                       .Returns(new CommentDTO());
+                       .Returns(new CommentDto());
 
             await _service.CreateCommentAsync(dto, 1);
 
@@ -209,7 +209,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task REQ_FUN_017_CreateCommentAsync_WithDuplicateMentions_OnlyAddsOnce()
         {
-            var dto = new CreateCommentDTO { Text = "@alice @alice look!", ParentType = "moment", ParentId = 1 };
+            var dto = new CreateCommentDto { Text = "@alice @alice look!", ParentType = "moment", ParentId = 1 };
             var alice = new User { Id = 10, Name = "alice" };
             _userRepoMock.Setup(r => r.GetUsersByNameAsync("alice")).ReturnsAsync(new List<User> { alice });
 
@@ -225,7 +225,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task REQ_FUN_017_CreateCommentAsync_MentionedUserNotFound_SkipsMention()
         {
-            var dto = new CreateCommentDTO { Text = "Hey @ghost", ParentType = "moment", ParentId = 5 };
+            var dto = new CreateCommentDto { Text = "Hey @ghost", ParentType = "moment", ParentId = 5 };
             _userRepoMock.Setup(r => r.GetUsersByNameAsync("ghost")).ReturnsAsync(new List<User>());
 
             SetupCommentCreation("moment", 5);
@@ -238,7 +238,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task REQ_FUN_017_CreateCommentAsync_ParentCommentIdIsSet()
         {
-            var dto = new CreateCommentDTO { Text = "Reply", ParentType = "moment", ParentId = 10, ParentCommentId = 5 };
+            var dto = new CreateCommentDto { Text = "Reply", ParentType = "moment", ParentId = 10, ParentCommentId = 5 };
 
             SetupCommentCreation("moment", 10);
             await _service.CreateCommentAsync(dto, 3);

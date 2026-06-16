@@ -19,14 +19,14 @@ namespace PromiseModelOnline.Api.Tests
     public class ReactionServiceUnitTests
     {
         private Mock<IReactionRepository> _reactionRepoMock = null!;
-        private Mock<IGenericMapper<Reaction, ReactionDTO>> _mapperMock = null!;
+        private Mock<IGenericMapper<Reaction, ReactionDto>> _mapperMock = null!;
         private ReactionService _service = null!;
 
         [SetUp]
         public void SetUp()
         {
             _reactionRepoMock = new Mock<IReactionRepository>();
-            _mapperMock = new Mock<IGenericMapper<Reaction, ReactionDTO>>();
+            _mapperMock = new Mock<IGenericMapper<Reaction, ReactionDto>>();
             _service = new ReactionService(_reactionRepoMock.Object, _mapperMock.Object);
         }
 
@@ -44,7 +44,7 @@ namespace PromiseModelOnline.Api.Tests
 
             _reactionRepoMock.Setup(r => r.GetReactionsForItemAsync("Promise", 10)).ReturnsAsync(reactions);
             _mapperMock.Setup(m => m.Map(It.IsAny<Reaction>(), null!))
-                       .Returns<Reaction, IGenericService<Reaction>>((r, _) => new ReactionDTO
+                       .Returns<Reaction, IGenericService<Reaction>>((r, _) => new ReactionDto
                        {
                            Id = r.Id,
                            Emote = r.Emote,
@@ -83,9 +83,9 @@ namespace PromiseModelOnline.Api.Tests
             _reactionRepoMock.Setup(r => r.Update(It.IsAny<Reaction>()));
             _reactionRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-            _mapperMock.Setup(m => m.Map(existing, null!)).Returns(new ReactionDTO { Id = 1, Emote = "👎" });
+            _mapperMock.Setup(m => m.Map(existing, null!)).Returns(new ReactionDto { Id = 1, Emote = "👎" });
 
-            var request = new UpdateReactionRequestDTO { Emote = "👎" };
+            var request = new UpdateReactionRequestDto { Emote = "👎" };
             var result = await _service.UpdateReactionAsync(1, request, 10);
 
             Assert.That(result.Emote, Is.EqualTo("👎"));
@@ -108,7 +108,7 @@ namespace PromiseModelOnline.Api.Tests
                              .Returns(Task.CompletedTask);
 
             _mapperMock.Setup(m => m.Map(It.IsAny<Reaction>(), null!))
-                       .Returns<Reaction, IGenericService<Reaction>>((r, _) => new ReactionDTO
+                       .Returns<Reaction, IGenericService<Reaction>>((r, _) => new ReactionDto
                        {
                            Id = r.Id,
                            Emote = r.Emote,

@@ -23,7 +23,7 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IProjectService _projectService;
         private readonly IUserRepository _userRepository;
-        private readonly IGenericMapper<Project, ProjectDTO> _mapper;
+        private readonly IGenericMapper<Project, ProjectDto> _mapper;
         private readonly IGenericService<Project> _service;
         private readonly IProjectImportService _projectImportService;
         private readonly IProjectImportValidationService _projectImportValidationService;
@@ -38,7 +38,7 @@ namespace PromiseModelOnline.Api.Controllers
         public UserProjectsController(
             IProjectService projectService,
             IUserRepository userRepository,
-            IGenericMapper<Project, ProjectDTO> mapper,
+            IGenericMapper<Project, ProjectDto> mapper,
             IGenericService<Project> service,
             IProjectImportService projectImportService,
             IProjectImportValidationService projectImportValidationService)
@@ -55,7 +55,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of project DTOs accessible to the user.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetAll()
+        public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll()
         {
             var user = await GetCurrentUserAsync();
             if (user is null) return Unauthorized();
@@ -68,7 +68,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created project DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
-        public async Task<ActionResult<ProjectDTO>> Create([FromBody] ProjectCreateDTO request)
+        public async Task<ActionResult<ProjectDto>> Create([FromBody] ProjectCreateDto request)
         {
             if (request is null) return BadRequest("Request body is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);

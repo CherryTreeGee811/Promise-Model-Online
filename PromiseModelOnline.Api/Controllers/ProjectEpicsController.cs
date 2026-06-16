@@ -16,7 +16,7 @@ namespace PromiseModelOnline.Api.Controllers
     public class ProjectEpicsController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Epic> _service;
-        private readonly IGenericMapper<Epic, EpicDTO> _mapper;
+        private readonly IGenericMapper<Epic, EpicDto> _mapper;
         private readonly IPromiseModelOnlineContext _context;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectEpicsController"/> class.</summary>
@@ -26,7 +26,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="service">The service for business logic operations.</param>
         public ProjectEpicsController(
             IGenericService<Epic> service,
-            IGenericMapper<Epic, EpicDTO> mapper,
+            IGenericMapper<Epic, EpicDto> mapper,
             IPromiseModelOnlineContext context,
             IProjectService projectService)
             : base(projectService)
@@ -38,10 +38,11 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Return all epics for a project, optionally filtered by promise.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <param name="project">The project's URL-safe slug.</param>
+        /// <param name="promiseSeq">Optional promise sequence number to filter by.</param>
         /// <returns>A list of epic DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<EpicDTO>>> GetAll(string owner, string project, [FromQuery] int? promiseSeq = null)
+        public async Task<ActionResult<IEnumerable<EpicDto>>> GetAll(string owner, string project, [FromQuery] int? promiseSeq = null)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -69,7 +70,7 @@ namespace PromiseModelOnline.Api.Controllers
                     .ToListAsync();
             }
 
-            var result = new List<EpicDTO>();
+            var result = new List<EpicDto>();
             foreach (var epic in epics)
                 result.Add(_mapper.Map(epic, _service));
 
@@ -82,7 +83,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching epic as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}")]
-        public async Task<ActionResult<EpicDTO>> GetBySeq(int seq, string owner, string project)
+        public async Task<ActionResult<EpicDto>> GetBySeq(int seq, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -104,7 +105,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching epic as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
-        public async Task<ActionResult<EpicDTO>> GetById(int id, string owner, string project)
+        public async Task<ActionResult<EpicDto>> GetById(int id, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -180,7 +181,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created epic as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
-        public async Task<ActionResult<EpicDTO>> CreateFromDto([FromBody] CreateEpicRequestDTO request, string owner, string project)
+        public async Task<ActionResult<EpicDto>> CreateFromDto([FromBody] CreateEpicRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -221,7 +222,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/description")]
-        public async Task<ActionResult<EpicDTO>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
+        public async Task<ActionResult<EpicDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)

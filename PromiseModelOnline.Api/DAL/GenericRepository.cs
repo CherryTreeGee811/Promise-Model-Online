@@ -329,12 +329,11 @@ namespace PromiseModelOnline.Api.DAL
             var comments = await _context.Set<Comment>()
                 .Where(comment => comment.ParentCommentId == null)
                 .Where(comment =>
-                    parentType == "promise" ? comment.ProductPromiseId == parentId :
-                    parentType == "epic" ? comment.EpicId == parentId :
-                    parentType == "journey" ? comment.JourneyId == parentId :
-                    parentType == "flow" ? comment.FlowId == parentId :
-                    parentType == "moment" ? comment.MomentId == parentId :
-                    false)
+                    (parentType == "promise" && comment.ProductPromiseId == parentId) ||
+                    (parentType == "epic" && comment.EpicId == parentId) ||
+                    (parentType == "journey" && comment.JourneyId == parentId) ||
+                    (parentType == "flow" && comment.FlowId == parentId) ||
+                    (parentType == "moment" && comment.MomentId == parentId))
                 .ToListAsync();
 
             foreach (var comment in comments)

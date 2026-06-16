@@ -39,6 +39,7 @@ builder.Services.AddCors(options =>
 });
 
 // Kestrel HTTPS with certificate file (cert.pem / key.pem) or fallback to HTTP.
+const string DefaultHttpUrl = "http://+:8000";
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
 var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
 if (File.Exists(certPath) && File.Exists(keyPath))
@@ -54,7 +55,7 @@ if (File.Exists(certPath) && File.Exists(keyPath))
 }
 else
 {
-    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://+:8000";
+    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? DefaultHttpUrl;
     if (urls.Contains("https://")) urls = urls.Replace("https://", "http://");
     builder.WebHost.UseUrls(urls);
 }

@@ -20,8 +20,8 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
 
         /// <summary>Return the member list for a project with their roles.</summary>
         /// <param name="projectId">The project ID. Must be greater than zero.</param>
-        /// <returns>Project members as <see cref="ProjectMemberDTO"/> items.</returns>
-        Task<IEnumerable<ProjectMemberDTO>> GetProjectMembersAsync(int projectId);
+        /// <returns>Project members as <see cref="ProjectMemberDto"/> items.</returns>
+        Task<IEnumerable<ProjectMemberDto>> GetProjectMembersAsync(int projectId);
 
         /// <summary>Return the top-level product promises for a project.</summary>
         /// <param name="projectId">The project ID. Must be greater than zero.</param>

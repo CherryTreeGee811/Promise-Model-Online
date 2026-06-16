@@ -19,7 +19,7 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IStrideService _strideService;
         private readonly IMomentService _momentService;
-        private readonly IGenericMapper<Stride, StrideDTO> _mapper;
+        private readonly IGenericMapper<Stride, StrideDto> _mapper;
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<ProjectStridesController> _logger;
 
@@ -32,7 +32,7 @@ namespace PromiseModelOnline.Api.Controllers
         public ProjectStridesController(
             IStrideService strideService,
             IMomentService momentService,
-            IGenericMapper<Stride, StrideDTO> mapper,
+            IGenericMapper<Stride, StrideDto> mapper,
             IPromiseModelOnlineContext context,
             IProjectService projectService,
             ILogger<ProjectStridesController> logger)
@@ -47,10 +47,11 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Return all strides for a project, optionally filtered by iteration.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <param name="project">The project's URL-safe slug.</param>
+        /// <param name="iterationId">Optional iteration ID to filter by.</param>
         /// <returns>A list of stride DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<StrideDTO>>> GetAll(string owner, string project, [FromQuery] int? iterationId = null)
+        public async Task<ActionResult<IEnumerable<StrideDto>>> GetAll(string owner, string project, [FromQuery] int? iterationId = null)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -76,7 +77,7 @@ namespace PromiseModelOnline.Api.Controllers
                     .ToListAsync();
             }
 
-            var result = new List<StrideDTO>();
+            var result = new List<StrideDto>();
             foreach (var stride in strides)
                 result.Add(_mapper.Map(stride, _strideService));
 
@@ -89,7 +90,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching stride as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
-        public async Task<ActionResult<StrideDTO>> GetById(int id, string owner, string project)
+        public async Task<ActionResult<StrideDto>> GetById(int id, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -111,7 +112,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created stride as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
-        public async Task<ActionResult<StrideDTO>> Create([FromBody] Stride entity, string owner, string project)
+        public async Task<ActionResult<StrideDto>> Create([FromBody] Stride entity, string owner, string project)
         {
             if (entity is null) return BadRequest("Request body is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -139,7 +140,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
-        public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDTO request, string owner, string project)
+        public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDto request, string owner, string project)
         {
             if (request is null) return BadRequest("Request body is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);

@@ -31,7 +31,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The project graph DTO containing the full hierarchy.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<ProjectGraphDTO>> GetGraph(string owner, string project)
+        public async Task<ActionResult<ProjectGraphDto>> GetGraph(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -39,7 +39,7 @@ namespace PromiseModelOnline.Api.Controllers
 
             var graph = await _context.Projects
                 .Where(p => p.Id == projectEntity.Id)
-                .Select(p => new ProjectGraphDTO
+                .Select(p => new ProjectGraphDto
                 {
                     Id = p.Id,
                     Name = p.Name,
@@ -50,7 +50,7 @@ namespace PromiseModelOnline.Api.Controllers
                     CreatedAt = p.CreatedAt,
                     Promises = p.ProductPromises
                         .OrderBy(promise => promise.DisplayOrder)
-                        .Select(promise => new PromiseGraphDTO
+                        .Select(promise => new PromiseGraphDto
                         {
                             Id = promise.Id,
                             Type = "Promise",
@@ -65,7 +65,7 @@ namespace PromiseModelOnline.Api.Controllers
                             UpdatedAt = promise.UpdatedAt,
                             Epics = promise.Epics
                                 .OrderBy(epic => epic.DisplayOrder)
-                                .Select(epic => new EpicGraphDTO
+                                .Select(epic => new EpicGraphDto
                                 {
                                     Id = epic.Id,
                                     Type = "Epic",
@@ -80,7 +80,7 @@ namespace PromiseModelOnline.Api.Controllers
                                     UpdatedAt = epic.UpdatedAt,
                                     Journeys = epic.Journeys
                                         .OrderBy(journey => journey.DisplayOrder)
-                                        .Select(journey => new JourneyGraphDTO
+                                        .Select(journey => new JourneyGraphDto
                                         {
                                             Id = journey.Id,
                                             Type = "Journey",
@@ -95,7 +95,7 @@ namespace PromiseModelOnline.Api.Controllers
                                             UpdatedAt = journey.UpdatedAt,
                                             Flows = journey.Flows
                                                 .OrderBy(flow => flow.DisplayOrder)
-                                                .Select(flow => new FlowGraphDTO
+                                                .Select(flow => new FlowGraphDto
                                                 {
                                                     Id = flow.Id,
                                                     Type = "Flow",
@@ -110,7 +110,7 @@ namespace PromiseModelOnline.Api.Controllers
                                                     UpdatedAt = flow.UpdatedAt,
                                                     Moments = flow.Moments
                                                         .OrderBy(moment => moment.DisplayOrder)
-                                                        .Select(moment => new MomentDTO
+                                                        .Select(moment => new MomentDto
                                                         {
                                                             Id = moment.Id,
                                                             Statement = moment.Statement,

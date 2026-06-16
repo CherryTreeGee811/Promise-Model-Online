@@ -35,7 +35,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Get all pending project invitations for the current user.</summary>
         [Authorize(Policy = "projects.read")]
         [HttpGet("pending")]
-        public async Task<ActionResult<IEnumerable<PendingInvitationDTO>>> GetPendingInvitations()
+        public async Task<ActionResult<IEnumerable<PendingInvitationDto>>> GetPendingInvitations()
         {
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId is null) return Unauthorized();
@@ -49,9 +49,9 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="request">The update payload.</param>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
-        public async Task<ActionResult<PermissionDTO>> UpdatePermissionStatus(
+        public async Task<ActionResult<PermissionDto>> UpdatePermissionStatus(
             int id,
-            [FromBody] UpdatePermissionRequestDTO request)
+            [FromBody] UpdatePermissionRequestDto request)
         {
             if (request is null) return BadRequest("Request body is required.");
             if (!ModelState.IsValid) return ValidationProblem(ModelState);

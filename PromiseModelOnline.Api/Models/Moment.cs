@@ -16,6 +16,7 @@ public class Moment
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
     
     /// <summary>Short description of the work. Required, max 500 characters.</summary>
@@ -28,6 +29,7 @@ public class Moment
     public string? Description { get; set; }
     
     /// <summary>Foreign key to the parent <see cref="Models.Flow"/>.</summary>
+    [Required]
     public int FlowId { get; set; }
     
     /// <summary>Classification as a <see cref="MomentType.Story"/> or <see cref="MomentType.Job"/>.</summary>
@@ -48,6 +50,7 @@ public class Moment
     public int? AssignedStrideId { get; set; }
     
     /// <summary>Human-readable sequence number, unique within the parent flow.</summary>
+    [Required]
     public int SequenceNumber { get; set; }
 
     /// <summary>Sort order within the parent flow.</summary>

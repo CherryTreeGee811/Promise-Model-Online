@@ -23,7 +23,7 @@ namespace PromiseModelOnline.Api.Controllers
     public class ProjectIterationsController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Iteration> _service;
-        private readonly IGenericMapper<Iteration, IterationDTO> _mapper;
+        private readonly IGenericMapper<Iteration, IterationDto> _mapper;
 
         private readonly IIterationService _iterationService;
 
@@ -40,7 +40,7 @@ namespace PromiseModelOnline.Api.Controllers
 
             IGenericService<Iteration> service,
 
-            IGenericMapper<Iteration, IterationDTO> mapper,
+            IGenericMapper<Iteration, IterationDto> mapper,
 
             IIterationService iterationService,
 
@@ -70,7 +70,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of iteration DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<IterationDTO>>> GetAll(string owner, string project)
+        public async Task<ActionResult<IEnumerable<IterationDto>>> GetAll(string owner, string project)
 
         {
 
@@ -86,7 +86,7 @@ namespace PromiseModelOnline.Api.Controllers
 
 
 
-            var result = new List<IterationDTO>();
+            var result = new List<IterationDto>();
 
             foreach (var iter in iterations)
 
@@ -107,7 +107,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created iteration DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
-        public async Task<ActionResult<IterationDTO>> Create([FromBody] Iteration entity, string owner, string project)
+        public async Task<ActionResult<IterationDto>> Create([FromBody] Iteration entity, string owner, string project)
 
         {
 
@@ -141,7 +141,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of burndown data points.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{id}/burndown")]
-        public async Task<ActionResult<List<BurndownPointDTO>>> GetIterationBurndown(int id, string owner, string project)
+        public async Task<ActionResult<List<BurndownPointDto>>> GetIterationBurndown(int id, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);

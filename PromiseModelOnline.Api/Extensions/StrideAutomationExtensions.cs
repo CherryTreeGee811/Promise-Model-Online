@@ -29,6 +29,7 @@ public static class StrideAutomationExtensions
 ///     <item>Sends deadline notifications for strides ending in 3 days.</item>
 ///   </list>
 /// </remarks>
+#pragma warning disable S3881 // "Dispose" is correct for a simple timer cleanup; full pattern not needed.
 internal class StrideAutomationService : IHostedService, IDisposable
 {
     private Timer? _timer;
@@ -100,7 +101,7 @@ internal class StrideAutomationService : IHostedService, IDisposable
                 };
                 await iterationService.AddAsync(newIteration);
 
-                var lastStrideEnd = iterationStrides.Last().EndDate;
+                var lastStrideEnd = iterationStrides[^1].EndDate;
                 for (var i = 0; i < 4; i++)
                 {
                     var startDate = lastStrideEnd.AddDays(i * 14);

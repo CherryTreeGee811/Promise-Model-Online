@@ -40,7 +40,7 @@ public class AuditEventsController : ControllerBase
     /// <response code="200">Returns the paginated audit timeline items. <c>X-Total-Count</c> header contains the total.</response>
     /// <returns>A paginated list of audit timeline DTOs.</returns>
     [HttpGet("projects/{projectId:int}")]
-    public async Task<ActionResult<IEnumerable<AuditTimelineItemDTO>>> GetProjectHistory(
+    public async Task<ActionResult<IEnumerable<AuditTimelineItemDto>>> GetProjectHistory(
         int projectId,
         [FromQuery] int take = 100,
         [FromQuery] int skip = 0)
@@ -71,7 +71,7 @@ public class AuditEventsController : ControllerBase
     /// <response code="200">Returns the paginated audit timeline items for the entity.</response>
     /// <returns>A paginated list of audit timeline DTOs.</returns>
     [HttpGet("entities/{entityType}/{entityId:int}")]
-    public async Task<ActionResult<IEnumerable<AuditTimelineItemDTO>>> GetEntityHistory(
+    public async Task<ActionResult<IEnumerable<AuditTimelineItemDto>>> GetEntityHistory(
         string entityType,
         int entityId,
         [FromQuery] int take = 100,
@@ -97,14 +97,19 @@ public class AuditEventsController : ControllerBase
 
     /// <summary>Clamp the <c>take</c> parameter to a valid range [1, 500].</summary>
     /// <returns>The clamped take value.</returns>
-    private static int NormalizeTake(int take) => take <= 0 ? 100 : take > 500 ? 500 : take;
+    private static int NormalizeTake(int take)
+    {
+        if (take <= 0) return 100;
+        if (take > 500) return 500;
+        return take;
+    }
 
-    /// <summary>Map an <see cref="AuditEvent"/> entity to a <see cref="AuditTimelineItemDTO"/>.</summary>
-    private static AuditTimelineItemDTO MapToDto(AuditEvent auditEvent)
+    /// <summary>Map an <see cref="AuditEvent"/> entity to a <see cref="AuditTimelineItemDto"/>.</summary>
+    private static AuditTimelineItemDto MapToDto(AuditEvent auditEvent)
     {
         var changes = DeserializeChanges(auditEvent.ChangesJson);
 
-        return new AuditTimelineItemDTO
+        return new AuditTimelineItemDto
         {
             Id = auditEvent.Id,
             OccurredAtUtc = auditEvent.OccurredAtUtc,
@@ -119,19 +124,19 @@ public class AuditEventsController : ControllerBase
             Changes = changes
         };
     }
-    /// <summary>Deserialize the JSON changes dictionary into a list of <see cref="AuditFieldChangeDTO"/>.</summary>
+    /// <summary>Deserialize the JSON changes dictionary into a list of <see cref="AuditFieldChangeDto"/>.</summary>
     /// <returns>A list of field change DTOs.</returns>
-    private static IReadOnlyList<AuditFieldChangeDTO> DeserializeChanges(string? changesJson)
+    private static IReadOnlyList<AuditFieldChangeDto> DeserializeChanges(string? changesJson)
     {
         if (string.IsNullOrWhiteSpace(changesJson))
             return [];
 
-        var changes = JsonSerializer.Deserialize<Dictionary<string, AuditChangeDTO>>(changesJson, JsonOptions);
+        var changes = JsonSerializer.Deserialize<Dictionary<string, AuditChangeDto>>(changesJson, JsonOptions);
         if (changes is null || changes.Count == 0)
             return [];
 
         return changes
-            .Select(entry => new AuditFieldChangeDTO
+            .Select(entry => new AuditFieldChangeDto
             {
                 FieldName = entry.Key,
                 Before = entry.Value.Before,
@@ -141,7 +146,7 @@ public class AuditEventsController : ControllerBase
     }
     /// <summary>Build a human-readable summary string from an audit event and its changes.</summary>
     /// <returns>A human-readable summary string.</returns>
-    private static string BuildSummary(AuditEvent auditEvent, IReadOnlyList<AuditFieldChangeDTO> changes)
+    private static string BuildSummary(AuditEvent auditEvent, IReadOnlyList<AuditFieldChangeDto> changes)
     {
         if (string.Equals(auditEvent.ActionType, nameof(PromiseModelOnline.Api.Enums.AuditActionType.Created), System.StringComparison.OrdinalIgnoreCase))
         {
@@ -186,13 +191,13 @@ public class AuditEventsController : ControllerBase
 
     /// <summary>Internal DTO for deserializing individual field changes from JSON.</summary>
 #pragma warning disable S1144 // setters used by System.Text.Json deserialization
-    private sealed class AuditChangeDTO
+    private sealed class AuditChangeDto
     {
         /// <summary>The field value before the change.</summary>
-        public object? Before { get; set; }
+        public object? Before { get; set; } = default!;
 
         /// <summary>The field value after the change.</summary>
-        public object? After { get; set; }
+        public object? After { get; set; } = default!;
     }
 #pragma warning restore S1144
 }

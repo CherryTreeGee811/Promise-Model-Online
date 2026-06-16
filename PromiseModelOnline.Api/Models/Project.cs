@@ -14,6 +14,7 @@ public class Project
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
     
     /// <summary>Display name. Required, max 200 characters.</summary>
@@ -31,6 +32,7 @@ public class Project
     public string? Description { get; set; }
     
     /// <summary>Foreign key to the owning <see cref="User"/>.</summary>
+    [Required]
     public int OwnerId { get; set; }
     
     /// <summary>UTC timestamp of creation.</summary>

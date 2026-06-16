@@ -18,7 +18,7 @@ namespace PromiseModelOnline.Api.Tests
     public class ProjectsControllerTests
     {
         private Mock<IProjectService> _mockProjectService = null!;
-        private Mock<IGenericMapper<Project, ProjectDTO>> _mockMapper = null!;
+        private Mock<IGenericMapper<Project, ProjectDto>> _mockMapper = null!;
         private Mock<IUserRepository> _mockUserRepo = null!;
         private Mock<IProjectImportService> _mockProjectImportService = null!;
         private Mock<IProjectImportValidationService> _mockProjectImportValidationService = null!;
@@ -29,7 +29,7 @@ namespace PromiseModelOnline.Api.Tests
         public void SetUp()
         {
             _mockProjectService = new Mock<IProjectService>();
-            _mockMapper = new Mock<IGenericMapper<Project, ProjectDTO>>();
+            _mockMapper = new Mock<IGenericMapper<Project, ProjectDto>>();
             _mockUserRepo = new Mock<IUserRepository>();
             _mockProjectImportService = new Mock<IProjectImportService>();
             _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
@@ -57,7 +57,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(projects);
 
             _mockMapper.Setup(m => m.Map(It.IsAny<Project>(), It.IsAny<IGenericService<Project>>()))
-                       .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDTO { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
+                       .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDto { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
 
             ControllerTestHelpers.SetControllerUser(_controller, "a@b.com");
 
@@ -68,7 +68,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(actionResult.Result, Is.InstanceOf<OkObjectResult>());
             var ok = actionResult.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
-            var dtos = ok!.Value as List<ProjectDTO>;
+            var dtos = ok!.Value as List<ProjectDto>;
             Assert.That(dtos, Is.Not.Null);
             Assert.That(dtos!.Count, Is.EqualTo(2));
             Assert.That(dtos[0].Id, Is.EqualTo(11));
@@ -95,11 +95,11 @@ namespace PromiseModelOnline.Api.Tests
             _mockGenericService.Setup(s => s.AddAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
 
             _mockMapper.Setup(m => m.Map(It.IsAny<Project>(), It.IsAny<IGenericService<Project>>()))
-                       .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDTO { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
+                       .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDto { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
 
             ControllerTestHelpers.SetControllerUser(_controller, "creator@x.com", "creator");
 
-            var dto = new ProjectCreateDTO { Name = "New Project", Description = "Desc" };
+            var dto = new ProjectCreateDto { Name = "New Project", Description = "Desc" };
             // Act
             var result = await _controller.Create(dto);
 
@@ -115,7 +115,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("creator@x.com", It.IsAny<string?>())).ReturnsAsync(user);
 
             ControllerTestHelpers.SetControllerUser(_controller, "creator@x.com");
-            var dto = new ProjectCreateDTO { Name = "", Description = "Desc" };
+            var dto = new ProjectCreateDto { Name = "", Description = "Desc" };
             // Act
             var result = await _controller.Create(dto);
 

@@ -20,7 +20,7 @@ namespace PromiseModelOnline.Api.Tests;
 public class ProjectsControllerImportUnitTests
 {
     private Mock<IProjectService> _mockProjectService = null!;
-    private Mock<IGenericMapper<Project, ProjectDTO>> _mockMapper = null!;
+    private Mock<IGenericMapper<Project, ProjectDto>> _mockMapper = null!;
     private Mock<IUserRepository> _mockUserRepo = null!;
     private Mock<IProjectImportService> _mockProjectImportService = null!;
     private Mock<IProjectImportValidationService> _mockProjectImportValidationService = null!;
@@ -31,7 +31,7 @@ public class ProjectsControllerImportUnitTests
     public void SetUp()
     {
         _mockProjectService = new Mock<IProjectService>();
-        _mockMapper = new Mock<IGenericMapper<Project, ProjectDTO>>();
+        _mockMapper = new Mock<IGenericMapper<Project, ProjectDto>>();
         _mockUserRepo = new Mock<IUserRepository>();
         _mockProjectImportService = new Mock<IProjectImportService>();
         _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();

@@ -24,7 +24,7 @@ namespace PromiseModelOnline.Api.Controllers
     public class MyMomentsController : ControllerBase
     {
         private readonly IMomentService _momentService;
-        private readonly IGenericMapper<Moment, MomentDTO> _mapper;
+        private readonly IGenericMapper<Moment, MomentDto> _mapper;
         private readonly IUserRepository _userRepository;
         private readonly IPromiseModelOnlineContext _context;
 
@@ -35,7 +35,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="context">The database context.</param>
         public MyMomentsController(
             IMomentService momentService,
-            IGenericMapper<Moment, MomentDTO> mapper,
+            IGenericMapper<Moment, MomentDto> mapper,
             IUserRepository userRepository,
             IPromiseModelOnlineContext context)
         {
@@ -48,13 +48,13 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Return moments assigned to the current user, with project slug context.</summary>
         [Authorize(Policy = "projects.read")]
         [HttpGet("assigned-to-me")]
-        public async Task<ActionResult<IEnumerable<MomentDTO>>> GetMyAssignedMoments()
+        public async Task<ActionResult<IEnumerable<MomentDto>>> GetMyAssignedMoments()
         {
             var user = await GetCurrentUserAsync();
             if (user is null) return Unauthorized();
 
             var moments = await _momentService.GetMomentsByOwnerIdAsync(user.Id);
-            var result = new List<MomentDTO>();
+            var result = new List<MomentDto>();
             foreach (var m in moments)
             {
                 var dto = _mapper.Map(m, _momentService);

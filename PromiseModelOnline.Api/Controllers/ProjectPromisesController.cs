@@ -15,7 +15,7 @@ namespace PromiseModelOnline.Api.Controllers
     public class ProjectPromisesController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Promise> _service;
-        private readonly IGenericMapper<Promise, PromiseDTO> _mapper;
+        private readonly IGenericMapper<Promise, PromiseDto> _mapper;
         private readonly IMomentService _momentService;
         private readonly IPromiseModelOnlineContext _context;
 
@@ -27,7 +27,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="service">The service for business logic operations.</param>
         public ProjectPromisesController(
             IGenericService<Promise> service,
-            IGenericMapper<Promise, PromiseDTO> mapper,
+            IGenericMapper<Promise, PromiseDto> mapper,
             IMomentService momentService,
             IPromiseModelOnlineContext context,
             IProjectService projectService)
@@ -45,7 +45,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching promise as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}")]
-        public async Task<ActionResult<PromiseDTO>> GetBySeq(int seq, string owner, string project)
+        public async Task<ActionResult<PromiseDto>> GetBySeq(int seq, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -67,7 +67,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching promise as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
-        public async Task<ActionResult<PromiseDTO>> GetById(int id, string owner, string project)
+        public async Task<ActionResult<PromiseDto>> GetById(int id, string owner, string project)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -143,7 +143,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created promise as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
-        public async Task<ActionResult<PromiseDTO>> CreateFromDto([FromBody] CreatePromiseRequestDTO request, string owner, string project)
+        public async Task<ActionResult<PromiseDto>> CreateFromDto([FromBody] CreatePromiseRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -178,7 +178,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/description")]
-        public async Task<ActionResult<PromiseDTO>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
+        public async Task<ActionResult<PromiseDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
