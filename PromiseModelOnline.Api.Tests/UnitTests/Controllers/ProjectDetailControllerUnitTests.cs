@@ -5,9 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
+using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
@@ -32,6 +33,7 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IGenericService<Project>> _mockGenericService = null!;
         private Mock<IProjectExportService> _mockExportService = null!;
         private Mock<IPromiseModelOnlineContext> _mockContext = null!;
+        private Mock<ILogger<ProjectDetailController>> _mockLogger = null!;
         private ProjectDetailController _controller = null!;
         private const string OwnerSlug = "testowner";
         private const string ProjectSlug = "test-project";
@@ -48,7 +50,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockGenericService = new Mock<IGenericService<Project>>();
             _mockExportService = new Mock<IProjectExportService>();
             _mockContext = new Mock<IPromiseModelOnlineContext>();
-
+            _mockLogger = new Mock<ILogger<ProjectDetailController>>();
             _controller = new ProjectDetailController(
                 _mockProjectService.Object,
                 _mockUserRepo.Object,
@@ -59,7 +61,7 @@ namespace PromiseModelOnline.Api.Tests
                 _mockGenericService.Object,
                 _mockExportService.Object,
                 _mockContext.Object,
-                NullLogger<ProjectDetailController>.Instance);
+                _mockLogger.Object);
         }
 
         private void SetUpProjectResolve(Project? project)
@@ -288,6 +290,7 @@ namespace PromiseModelOnline.Api.Tests
         }
 
         [Test]
+        [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing project during export returns not found and logs warning")]
         public async Task REQ_FUN_003_Export_MissingProject_ReturnsNotFound()
         {
             // Arrange
@@ -305,6 +308,7 @@ namespace PromiseModelOnline.Api.Tests
             var result = await _controller.Export(OwnerSlug, ProjectSlug);
             // Assert
             Assert.That(result, Is.InstanceOf<NotFoundResult>());
+            _mockLogger.VerifyLog(LogLevel.Warning, "Export failed");
         }
 
         [Test]
