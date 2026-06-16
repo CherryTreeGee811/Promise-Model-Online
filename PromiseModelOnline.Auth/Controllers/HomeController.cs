@@ -5,12 +5,12 @@ namespace PromiseModelOnline.Auth.Controllers
 {
     /// <summary>Health-check endpoint used by load balancers and orchestrators.</summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("")]
     public class HomeController : ControllerBase
     {
         /// <summary>Verify that the application is running and can respond.</summary>
         /// <response code="200">Returns <c>{ "status": "healthy" }</c>.</response>
-        [HttpGet("health")]
+        [HttpGet("/health")]
         [ProducesResponseType<object>(StatusCodes.Status200OK)]
         public IActionResult HealthCheck()
         {

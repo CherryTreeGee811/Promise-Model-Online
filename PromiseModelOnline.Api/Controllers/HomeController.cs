@@ -6,7 +6,7 @@ namespace PromiseModelOnline.Api.Controllers;
 
 /// <summary>Health check endpoint for load balancer and container orchestration probes.</summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("")]
 public class HomeController : ControllerBase
 {
     private readonly ILogger<HomeController> _logger;
