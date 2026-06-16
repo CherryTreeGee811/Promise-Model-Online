@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
 {
-    /// <summary>Service for <see cref="Comment"/> business logic with DTO mapping and mention tracking.</summary>
+    /// <summary>Service for Comment business logic with DTO mapping and mention tracking.</summary>
     /// <remarks>
     ///   Handles comment retrieval with threaded replies, creation with mention parsing and user
     ///   notification dispatch. Scoped lifetime.

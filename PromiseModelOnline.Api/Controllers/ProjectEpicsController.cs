@@ -11,13 +11,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-/// <summary>REST controller for epic CRUD within a project scope, with sequence-based lookup.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/epics")]
-    /// Project Epics Controller.
-    /// </summary>
     public class ProjectEpicsController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Epic> _service;
@@ -26,7 +23,11 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly ILogger<ProjectEpicsController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectEpicsController"/> class.</summary>
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
+        /// <param name="projectService">The service for project operations.</param>
+        /// <param name="service">The service for business logic operations.</param>
         public ProjectEpicsController(
             IGenericService<Epic> service,
             IGenericMapper<Epic, EpicDTO> mapper,
@@ -40,7 +41,6 @@ namespace PromiseModelOnline.Api.Controllers
             _context = context;
             _logger = logger;
         }
-        /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <summary>Return all epics for a project, optionally filtered by promise.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <param name="project">The project's URL-safe slug.</param>
@@ -81,7 +81,6 @@ namespace PromiseModelOnline.Api.Controllers
 
             return Ok(result);
         }
-        /// <param name="seq">The entity's sequence number within its parent scope.</param>
         /// <summary>Return an epic by its sequence number within the project.</summary>
         /// <param name="seq">The epic sequence number.</param>
         /// <param name="owner">The project owner's URL-safe slug.</param>

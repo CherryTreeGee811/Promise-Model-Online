@@ -16,7 +16,6 @@ namespace PromiseModelOnline.Api.Controllers
     [Route("api/deadline-notification-runs")]
     [ApiController]
     public class DeadlineNotificationRunsController : ControllerBase
-        /// <param name="strideService">The stride service.</param>
     {
         private readonly IStrideService _strideService;
         private readonly ILogger<DeadlineNotificationRunsController> _logger;

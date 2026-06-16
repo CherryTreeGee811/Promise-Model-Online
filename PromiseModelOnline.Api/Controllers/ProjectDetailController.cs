@@ -37,7 +37,16 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly ILogger<ProjectDetailController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectDetailController"/> class.</summary>
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between Project entities and DTOs.</param>
+        /// <param name="permissionService">The service for permission validation.</param>
+        /// <param name="projectExportService">The service for project export operations.</param>
+        /// <param name="projectService">The service for project operations.</param>
+        /// <param name="promiseMapper">The mapper for converting between Promise entities and DTOs.</param>
+        /// <param name="promiseService">The service for promise business logic.</param>
+        /// <param name="service">The service for generic project operations.</param>
+        /// <param name="userRepository">The repository for user data access.</param>
         public ProjectDetailController(
             IProjectService projectService,
             IUserRepository userRepository,

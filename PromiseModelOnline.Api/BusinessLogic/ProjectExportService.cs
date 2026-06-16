@@ -322,7 +322,6 @@ public sealed class ProjectExportService : IProjectExportService
     /// <summary>Order strides by start date then ID.</summary>
     private static IOrderedEnumerable<Stride> OrderByStride(IEnumerable<Stride> items)
     {
-        /// <param name="item">The item to inspect.</param>
         return items.OrderBy(stride => stride.StartDate).ThenBy(stride => stride.Id);
     }
 
@@ -335,7 +334,6 @@ public sealed class ProjectExportService : IProjectExportService
             return value;
         }
 
-        /// <param name="item">The item to inspect.</param>
         return 0;
     }
 

@@ -139,12 +139,13 @@ namespace PromiseModelOnline.Api.Controllers
 
 
 
+        /// <summary>Update a promise's description.</summary>
+        /// <param name="id">The entity ID.</param>
+        /// <param name="request">The request data.</param>
         [Authorize(Policy = "projects.write")]
 
         [HttpPatch("{id}/description")]
 
-        /// <param name="request">The request data.</param>
-        /// <param name="id">The entity ID.</param>
         public async Task<ActionResult<PromiseDTO>> UpdateDescription(int id, [FromBody] UpdateDescriptionRequestDTO request)
 
         {

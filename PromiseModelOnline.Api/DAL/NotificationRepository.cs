@@ -8,8 +8,8 @@ namespace PromiseModelOnline.Api.DAL
 {
     /// <summary>EF Core implementation of <see cref="INotificationRepository"/> for notification read-state management.</summary>
     /// <remarks>
-    ///   Uses the base class <see cref="FindAsync"/> method for queries. All methods that modify
-    ///   read state call <see cref="SaveChangesAsync"/> immediately. Scoped lifetime.
+    ///   Uses the base class FindAsync method for queries. All methods that modify
+    ///   read state call SaveChangesAsync immediately. Scoped lifetime.
     /// </remarks>
     public class NotificationRepository : GenericRepository<Notification>, INotificationRepository
     {

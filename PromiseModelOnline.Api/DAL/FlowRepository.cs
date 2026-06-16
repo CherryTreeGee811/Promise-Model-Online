@@ -9,7 +9,7 @@ namespace PromiseModelOnline.Api.DAL
 {
     /// <summary>EF Core implementation of <see cref="IFlowRepository"/> providing journey-scoped flow lookups.</summary>
     /// <remarks>
-    ///   Uses the base class <see cref="FindAsync"/> method with a lambda predicate.
+    ///   Uses the base class FindAsync method with a lambda predicate.
     ///   Scoped lifetime; one instance per request.
     /// </remarks>
     public class FlowRepository : GenericRepository<Flow>, IFlowRepository

@@ -27,7 +27,13 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<ProjectMomentsController> _logger;
 
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
+        /// <param name="permissionService">The service for permission validation.</param>
+        /// <param name="projectService">The service for project operations.</param>
+        /// <param name="service">The service for moment business logic operations.</param>
+        /// <param name="userRepository">The repository for user data access.</param>
         public ProjectMomentsController(
             IMomentService service,
             IGenericMapper<Moment, MomentDTO> mapper,

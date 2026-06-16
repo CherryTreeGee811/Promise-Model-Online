@@ -9,8 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Extensions;
-        /// <param name="services">The service collection.</param>
-
 /// <summary>Registers the background service that automates stride progression and deadline notifications.</summary>
 public static class StrideAutomationExtensions
 {

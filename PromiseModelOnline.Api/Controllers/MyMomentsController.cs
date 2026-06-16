@@ -71,8 +71,6 @@ namespace PromiseModelOnline.Api.Controllers
                 }
                 result.Add(dto);
             }
-        /// <param name="flowId">The flow ID to resolve.</param>
-
             return Ok(result);
         }
 

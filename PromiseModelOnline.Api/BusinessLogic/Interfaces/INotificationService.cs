@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
 {
-    /// <summary>Service for <see cref="Notification"/> business logic with read-state management and creation.</summary>
+    /// <summary>Service for Notification business logic with read-state management and creation.</summary>
     /// <remarks>
     ///   Provides user-scoped notification queries, read/unread state management, and an internal
     ///   creation method used by other services to dispatch alerts. Scoped lifetime.

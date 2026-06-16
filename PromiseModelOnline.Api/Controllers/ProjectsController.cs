@@ -68,8 +68,6 @@ namespace PromiseModelOnline.Api.Controllers
             var projects = await _projectService.GetAccessibleProjectsAsync(user.Id);
             return Ok(projects.Select(p => _mapper.Map(p, _service)).ToList());
         }
-        /// <param name="request">The project creation data.</param>
-
         /// <summary>Create a new project with auto-generated slug.</summary>
         /// <param name="request">The project creation data.</param>
         /// <returns>The created project DTO.</returns>

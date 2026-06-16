@@ -196,7 +196,7 @@ namespace PromiseModelOnline.Api.DAL
         ///   (<see cref="Project.OwnerId"/>, <see cref="Project.Slug"/>), and configures the
         ///   composite key on <see cref="EntitySequence"/>.
         /// </remarks>
-        /// <param name="builder">The <see cref="ModelBuilder"/> used to configure the model.</param>
+        /// <param name="modelBuilder">The <see cref="ModelBuilder"/> used to configure the model.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

@@ -26,9 +26,6 @@ namespace PromiseModelOnline.Api.Controllers
 
         /// <summary>The generic mapper for mapping entities to DTOs.</summary>
         protected readonly IGenericMapper<TEntity, TDto> _mapper;
-        /// <param name="mapper">The generic mapper instance.</param>
-        /// <param name="service">The generic service instance.</param>
-
         /// <summary>Initializes the controller with service and mapper.</summary>
         /// <param name="service">The generic service instance.</param>
         /// <param name="mapper">The generic mapper instance.</param>

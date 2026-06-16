@@ -25,6 +25,8 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly ILogger<MyPermissionsController> _logger;
 
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="permissionService">The service for permission business logic.</param>
+        /// <param name="userRepository">The repository for user data access.</param>
         public MyPermissionsController(
             IPermissionService permissionService,
             IUserRepository userRepository,

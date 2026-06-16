@@ -22,9 +22,6 @@ using System;
 
 using System.Threading.Tasks;
 
-/// <summary>REST controller for moment sub-task CRUD within a project scope.</summary>
-
-
 
 namespace PromiseModelOnline.Api.Controllers
 
@@ -48,7 +45,13 @@ namespace PromiseModelOnline.Api.Controllers
 
 
 
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="momentService">The service for moment operations.</param>
+        /// <param name="momentTaskService">The service for moment task operations.</param>
+        /// <param name="permissionService">The service for permission validation.</param>
+        /// <param name="projectService">The service for project operations.</param>
+        /// <param name="userRepository">The repository for user data access.</param>
         public ProjectMomentTasksController(
 
             IMomentService momentService,

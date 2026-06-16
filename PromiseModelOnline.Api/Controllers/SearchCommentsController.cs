@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers
 {
-        /// <param name="commentRepository">The comment repository.</param>
     /// <summary>REST controller for entity map search used in the comment linking UI.</summary>
     /// <remarks>
     ///   Provides a flattened entity hierarchy map (promises -> epics -> journeys -> flows -> moments)

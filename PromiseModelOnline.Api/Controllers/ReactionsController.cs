@@ -27,11 +27,8 @@ namespace PromiseModelOnline.Api.Controllers
     /// <summary>REST controller for emoji-style reactions on stack items.</summary>
 
     /// <remarks>
-
     ///   Provides CRUD for reactions with user ownership validation.
-
     ///   Requires <c>projects.read</c> for reads and <c>projects.write</c> for mutations.
-
     /// </remarks>
 
     [Route("api/reactions")]
@@ -49,6 +46,8 @@ namespace PromiseModelOnline.Api.Controllers
 
 
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="reactionService">The service for reaction operations.</param>
+        /// <param name="userRepository">The repository for user data access.</param>
         public ReactionsController(IReactionService reactionService,
 
                                    IUserRepository userRepository,
@@ -68,14 +67,14 @@ namespace PromiseModelOnline.Api.Controllers
 
 
         /// <summary>Get all reactions for a stack item.</summary>
+        /// <param name="type">The entity type discriminator.</param>
+        /// <param name="itemId">The item ID.</param>
+        /// <returns>A list of reaction DTOs.</returns>
 
         [Authorize(Policy = "projects.read")]
 
         [HttpGet]
 
-        /// <param name="itemId">The item ID.</param>
-        /// <param name="type">The entity type discriminator.</param>
-        /// <returns>A list of reaction DTOs.</returns>
         public async Task<ActionResult<IEnumerable<ReactionDTO>>> GetReactions(
 
             [FromQuery] string type, [FromQuery] int itemId)
@@ -180,13 +179,13 @@ namespace PromiseModelOnline.Api.Controllers
 
 
         /// <summary>Remove a reaction.</summary>
+        /// <param name="id">The entity ID.</param>
+        /// <returns>NoContent on success.</returns>
 
         [Authorize(Policy = "projects.write")]
 
         [HttpDelete("{id}")]
 
-        /// <param name="id">The entity ID.</param>
-        /// <returns>NoContent on success.</returns>
         public async Task<ActionResult> DeleteReaction(int id)
 
         {

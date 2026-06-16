@@ -8,7 +8,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
     /// <remarks>
     ///   Color mapping: Done = green, InProgress = orange, Blocked = black, Todo = red.
     ///   The <see cref="RollUp"/> method aggregates child statuses: all Done = Done, all Blocked = Blocked,
-    ///   mixed = InProgress. Used by <see cref="IHierarchyStatusService"/>.
+    ///   mixed = InProgress. Used by IHierarchyStatusService.
     /// </remarks>
     public static class StatusColorRules
     {

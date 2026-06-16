@@ -5,7 +5,7 @@ using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
 {
-    /// <summary>Service for <see cref="Permission"/> business logic with invitation and access management.</summary>
+    /// <summary>Service for Permission business logic with invitation and access management.</summary>
     /// <remarks>
     ///   Handles project member invitations, accept/decline flows, permission removal, and
     ///   authorization lookups. Scoped lifetime.

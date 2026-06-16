@@ -11,13 +11,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-/// <summary>REST controller for stride CRUD within a project scope.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/strides")]
-    /// Project Strides Controller.
-    /// </summary>
     public class ProjectStridesController : ProjectScopedControllerBase
     {
         private readonly IStrideService _strideService;
@@ -26,7 +23,12 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<ProjectStridesController> _logger;
 
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
+        /// <param name="momentService">The service for moment operations.</param>
+        /// <param name="projectService">The service for project operations.</param>
+        /// <param name="strideService">The service for stride operations.</param>
         public ProjectStridesController(
             IStrideService strideService,
             IMomentService momentService,
@@ -126,11 +128,6 @@ namespace PromiseModelOnline.Api.Controllers
             await _strideService.AddAsync(entity);
             return CreatedAtAction(nameof(GetById), new { owner, project, id = entity.Id }, _mapper.Map(entity, _strideService));
         }
-        /// <param name="id">The entity primary key.</param>
-        /// <param name="request">The request data.</param>
-        /// <param name="owner">The project owner's URL-safe slug.</param>
-        /// <param name="project">The project's URL-safe slug.</param>
-
         /// <summary>Complete a stride and progress unfinished moments.</summary>
         /// <param name="id">The stride ID.</param>
         /// <param name="request">The stride update request.</param>

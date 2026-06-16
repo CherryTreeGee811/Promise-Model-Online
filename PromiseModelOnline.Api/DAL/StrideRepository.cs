@@ -7,7 +7,7 @@ namespace PromiseModelOnline.Api.DAL
 {
     /// <summary>EF Core implementation of <see cref="IStrideRepository"/> with iteration and date queries.</summary>
     /// <remarks>
-    ///   Uses the base class <see cref="FindAsync"/> method with lambda predicates.
+    ///   Uses the base class FindAsync method with lambda predicates.
     ///   Scoped lifetime.
     /// </remarks>
     public class StrideRepository : GenericRepository<Stride>, IStrideRepository

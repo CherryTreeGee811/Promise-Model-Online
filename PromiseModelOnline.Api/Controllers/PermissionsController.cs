@@ -24,6 +24,8 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly ILogger<PermissionsController> _logger;
 
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="permissionService">The service for permission business logic.</param>
+        /// <param name="userRepository">The repository for user data access.</param>
         public PermissionsController(IPermissionService permissionService,
                                      IUserRepository userRepository,
                                      ILogger<PermissionsController> logger)
@@ -32,8 +34,6 @@ namespace PromiseModelOnline.Api.Controllers
             _userRepository = userRepository;
             _logger = logger;
         }
-        /// <param name="projectId">The project ID.</param>
-
         /// <summary>Return all permission records for a project.</summary>
         /// <param name="projectId">The project ID.</param>
         /// <returns>A list of permission DTOs.</returns>
@@ -45,11 +45,11 @@ namespace PromiseModelOnline.Api.Controllers
             return Ok(permissions);
         }
 
-        [Authorize(Policy = "projects.write")]
-        [HttpPost]
         /// <summary>Invites a user to a project by creating a permission record.</summary>
         /// <param name="request">The invitation request containing email and project ID.</param>
         /// <returns>The created permission DTO.</returns>
+        [Authorize(Policy = "projects.write")]
+        [HttpPost]
         public async Task<ActionResult<PermissionDTO>> InviteUser([FromBody] CreatePermissionRequestDTO request)
         {
             var userId = await GetCurrentUserIdByEmailAsync();
@@ -64,8 +64,6 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (Exception ex) { return BadRequest(ex.Message); }
         }
-        /// <param name="id">The entity primary key.</param>
-
         /// <summary>Remove a user's permission from a project.</summary>
         /// <param name="id">The permission ID.</param>
         /// <returns>NoContent on success.</returns>
@@ -91,8 +89,6 @@ namespace PromiseModelOnline.Api.Controllers
             var invitations = await _permissionService.GetPendingInvitationsForUserAsync(userId.Value);
             return Ok(invitations);
         }
-        /// <param name="id">The entity primary key.</param>
-
         /// <summary>Return the current user's permission level for a project.</summary>
         /// <param name="id">The project ID.</param>
         /// <returns>The permission level string.</returns>
@@ -113,9 +109,6 @@ namespace PromiseModelOnline.Api.Controllers
             }
             catch (Exception ex) { return BadRequest(ex.Message); }
         }
-        /// <param name="id">The entity primary key.</param>
-        /// <param name="request">The request data.</param>
-
         /// <summary>Accept a pending invitation.</summary>
         /// <param name="id">The permission ID.</param>
         /// <param name="request">The update request.</param>

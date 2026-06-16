@@ -8,20 +8,19 @@ using PromiseModelOnline.Api.Models;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-/// <summary>REST controller for retrieving the full project hierarchy as a graph structure.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/graph")]
-    /// Project Graph Controller.
-    /// </summary>
     public class ProjectGraphController : ProjectScopedControllerBase
     {
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<ProjectGraphController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectGraphController"/> class.</summary>
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="projectService">The service for project operations.</param>
         public ProjectGraphController(
             IProjectService projectService,
             IPromiseModelOnlineContext context,
@@ -32,12 +31,12 @@ namespace PromiseModelOnline.Api.Controllers
             _logger = logger;
         }
 
-        [Authorize(Policy = "projects.read")]
-        [HttpGet]
         /// <summary>Retrieves the full project hierarchy as a graph structure.</summary>
         /// <param name="owner">The owner slug.</param>
         /// <param name="project">The project slug.</param>
         /// <returns>The project graph DTO containing the full hierarchy.</returns>
+        [Authorize(Policy = "projects.read")]
+        [HttpGet]
         public async Task<ActionResult<ProjectGraphDTO>> GetGraph(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);

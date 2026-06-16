@@ -11,13 +11,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-/// <summary>REST controller for journey CRUD within a project scope, with sequence-based lookup.</summary>
 
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/journeys")]
-    /// Project Journeys Controller.
-    /// </summary>
     public class ProjectJourneysController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Journey> _service;
@@ -26,7 +23,11 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly ILogger<ProjectJourneysController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectJourneysController"/> class.</summary>
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
+        /// <param name="projectService">The service for project operations.</param>
+        /// <param name="service">The service for business logic operations.</param>
         public ProjectJourneysController(
             IGenericService<Journey> service,
             IGenericMapper<Journey, JourneyDTO> mapper,
@@ -80,7 +81,6 @@ namespace PromiseModelOnline.Api.Controllers
 
             return Ok(result);
         }
-        /// <param name="seq">The entity's sequence number within its parent scope.</param>
         /// <summary>Return a journey by its sequence number within the project.</summary>
         /// <param name="seq">The journey sequence number.</param>
         /// <param name="owner">The project owner's URL-safe slug.</param>

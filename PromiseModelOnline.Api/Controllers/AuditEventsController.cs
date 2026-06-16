@@ -25,8 +25,6 @@ public class AuditEventsController : ControllerBase
     {
         PropertyNameCaseInsensitive = true
     };
-        /// <param name="context">The database context.</param>
-
     private readonly IPromiseModelOnlineContext _context;
     private readonly ILogger<AuditEventsController> _logger;
 
@@ -96,14 +94,12 @@ public class AuditEventsController : ControllerBase
             .Take(normalizedTake)
             .ToList();
 
-        /// <param name="take">The value to normalize.</param>
         return Ok(events.Select(MapToDto));
     }
 
     /// <summary>Clamp the <c>take</c> parameter to a valid range [1, 500].</summary>
     /// <returns>The clamped take value.</returns>
     private static int NormalizeTake(int take) => take <= 0 ? 100 : take > 500 ? 500 : take;
-        /// <param name="auditEvent">The audit event.</param>
 
     /// <summary>Map an <see cref="AuditEvent"/> entity to a <see cref="AuditTimelineItemDTO"/>.</summary>
     private static AuditTimelineItemDTO MapToDto(AuditEvent auditEvent)
@@ -125,8 +121,6 @@ public class AuditEventsController : ControllerBase
             Changes = changes
         };
     }
-        /// <param name="changesJson">The JSON string containing the changes.</param>
-
     /// <summary>Deserialize the JSON changes dictionary into a list of <see cref="AuditFieldChangeDTO"/>.</summary>
     /// <returns>A list of field change DTOs.</returns>
     private static IReadOnlyList<AuditFieldChangeDTO> DeserializeChanges(string? changesJson)
@@ -147,9 +141,6 @@ public class AuditEventsController : ControllerBase
             })
             .ToList();
     }
-        /// <param name="auditEvent">The audit event.</param>
-        /// <param name="changes">The list of field changes.</param>
-
     /// <summary>Build a human-readable summary string from an audit event and its changes.</summary>
     /// <returns>A human-readable summary string.</returns>
     private static string BuildSummary(AuditEvent auditEvent, IReadOnlyList<AuditFieldChangeDTO> changes)
@@ -179,8 +170,6 @@ public class AuditEventsController : ControllerBase
         var fields = string.Join(", ", changes.Select(change => change.FieldName));
         return $"Updated {auditEvent.EntityType}: {fields}";
     }
-        /// <param name="value">The value to format.</param>
-
     /// <summary>Format a value for display in the audit summary.</summary>
     private static string FormatValue(object? value)
     {

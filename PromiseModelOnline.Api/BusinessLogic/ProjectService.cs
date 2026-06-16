@@ -158,13 +158,12 @@ namespace PromiseModelOnline.Api.BusinessLogic
             }
         }
 
-        /// <param name="x">The first project to compare.</param>
-        /// <param name="y">The second project to compare.</param>
         /// <summary>Equality comparer for <see cref="Project"/> based on ID.</summary>
         private class ProjectComparer : IEqualityComparer<Project>
-        /// <param name="obj">The project to get the hash code for.</param>
         {
             /// <summary>Compare two projects by ID.</summary>
+            /// <param name="x">The first project to compare.</param>
+            /// <param name="y">The second project to compare.</param>
             public bool Equals(Project? x, Project? y) => x?.Id == y?.Id;
             /// <summary>Get hash code from project ID.</summary>
             public int GetHashCode(Project obj) => obj.Id.GetHashCode();

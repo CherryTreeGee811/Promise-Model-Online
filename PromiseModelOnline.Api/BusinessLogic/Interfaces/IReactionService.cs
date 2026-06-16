@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
 {
-    /// <summary>Service for <see cref="Reaction"/> business logic with toggle-style add/update/remove.</summary>
+    /// <summary>Service for Reaction business logic with toggle-style add/update/remove.</summary>
     /// <remarks>
     ///   Handles emoji-style reactions on stack items (moments, flows, comments, etc.).
     ///   Provides get, create, update, and remove operations with user ownership validation.

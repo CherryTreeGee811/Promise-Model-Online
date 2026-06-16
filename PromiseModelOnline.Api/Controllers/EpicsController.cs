@@ -62,7 +62,6 @@ namespace PromiseModelOnline.Api.Controllers
         }
 
         /// <summary>Retrieve all epics, optionally filtered by promise ID.</summary>
-        /// <param name="promiseId">Optional promise ID to filter by.</param>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
         public override async Task<ActionResult<IEnumerable<EpicDTO>>> GetAll()

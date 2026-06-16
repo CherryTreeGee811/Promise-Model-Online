@@ -7,9 +7,7 @@ using System.Linq;
 
 namespace PromiseModelOnline.Api.Mappers
 {
-        /// <param name="service">The service for resolving related data.</param>
     /// <summary>Maps <see cref="Comment"/> entities to <see cref="CommentDTO"/> with recursive reply mapping.</summary>
-        /// <param name="source">The source entity to map.</param>
     /// <remarks>
     ///   Resolves the user name from the navigation property, extracts mentioned user names,
     ///   and recursively maps child replies to maintain the threaded comment structure.

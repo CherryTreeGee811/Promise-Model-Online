@@ -7,7 +7,7 @@ namespace PromiseModelOnline.Api.DAL
 {
     /// <summary>EF Core implementation of <see cref="IJourneyRepository"/> providing epic-scoped journey lookups.</summary>
     /// <remarks>
-    ///   Uses the base class <see cref="FindAsync"/> method with a lambda predicate.
+    ///   Uses the base class FindAsync method with a lambda predicate.
     ///   Scoped lifetime.
     /// </remarks>
     public class JourneyRepository : GenericRepository<Journey>, IJourneyRepository

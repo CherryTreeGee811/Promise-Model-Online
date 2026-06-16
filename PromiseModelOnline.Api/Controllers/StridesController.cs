@@ -22,6 +22,9 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly ILogger<StridesController> _logger;
 
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
+        /// <param name="momentService">The service for moment operations.</param>
+        /// <param name="strideService">The service for stride operations.</param>
         public StridesController(
             IStrideService strideService,
             IGenericMapper<Stride, StrideDTO> mapper,
@@ -54,9 +57,6 @@ namespace PromiseModelOnline.Api.Controllers
 
             return Ok(result);
         }
-        /// <param name="id">The stride ID.</param>
-        /// <param name="request">The stride update request.</param>
-
         /// <summary>Complete a stride and progress unfinished moments.</summary>
         /// <param name="id">The stride ID.</param>
         /// <param name="request">The stride update request.</param>
@@ -77,8 +77,6 @@ namespace PromiseModelOnline.Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        /// <param name="id">The stride ID.</param>
-
         /// <summary>Manually trigger progression of unfinished moments from a stride.</summary>
         /// <param name="id">The stride ID.</param>
         /// <returns>NoContent on success.</returns>

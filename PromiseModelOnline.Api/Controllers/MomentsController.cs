@@ -31,7 +31,12 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IPromiseModelOnlineContext _context;
         private readonly ILogger<MomentsController> _logger;
 
+        /// <param name="context">The database context for data access.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
+        /// <param name="permissionService">The service for permission validation.</param>
+        /// <param name="service">The service for business logic operations.</param>
+        /// <param name="userRepository">The repository for user data access.</param>
         public MomentsController(
             IMomentService service,
             IGenericMapper<Moment, MomentDTO> mapper,
@@ -47,8 +52,6 @@ namespace PromiseModelOnline.Api.Controllers
             _context = context;
             _logger = logger;
         }
-        /// <param name="request">The moment creation data.</param>
-
         /// <summary>Create a moment from a DTO with auto-generated sequence number.</summary>
         /// <param name="request">The moment creation data.</param>
         /// <returns>The created moment as a DTO.</returns>
@@ -296,7 +299,6 @@ namespace PromiseModelOnline.Api.Controllers
             var email = User.FindFirst(ClaimTypes.Email)?.Value
                      ?? User.FindFirst("email")?.Value;
             if (string.IsNullOrEmpty(email)) return null;
-        /// <param name="momentId">The moment ID to check.</param>
             var username = User.FindFirst("nameid")?.Value;
             return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
         }

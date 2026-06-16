@@ -196,8 +196,6 @@ namespace PromiseModelOnline.Api.DAL
 
             return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
         }
-        /// <param name="parentType">The parent entity type.</param>
-
         /// <summary>Parse a search term as a type-prefixed entity reference or bare type name.</summary>
         /// <remarks>
         ///   Supports formats like <c>"epic-3"</c>, <c>"promise 42"</c> (type + sequence),

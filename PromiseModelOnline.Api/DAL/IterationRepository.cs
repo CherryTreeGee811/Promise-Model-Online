@@ -7,7 +7,7 @@ namespace PromiseModelOnline.Api.DAL
 {
     /// <summary>EF Core implementation of <see cref="IIterationRepository"/> providing project-scoped iteration lookups.</summary>
     /// <remarks>
-    ///   Uses the base class <see cref="FindAsync"/> method with a lambda predicate.
+    ///   Uses the base class FindAsync method with a lambda predicate.
     ///   Scoped lifetime.
     /// </remarks>
     public class IterationRepository : GenericRepository<Iteration>, IIterationRepository

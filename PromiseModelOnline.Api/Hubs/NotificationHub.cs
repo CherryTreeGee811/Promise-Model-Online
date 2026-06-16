@@ -25,8 +25,6 @@ namespace PromiseModelOnline.Api.Hubs
                     $"user-{userId}"
                 );
             }
-        /// <param name="exception">The exception, if any.</param>
-
             await base.OnConnectedAsync();
         }
 

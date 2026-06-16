@@ -27,8 +27,6 @@ public sealed class AuditLoggingActionFilter : IAsyncActionFilter
     /// <param name="logger">The logger for audit events.</param>
     public AuditLoggingActionFilter(ILogger<AuditLoggingActionFilter> logger)
     {
-        /// <param name="context">The action executing context.</param>
-        /// <param name="next">The action execution delegate.</param>
         _logger = logger;
     }
 

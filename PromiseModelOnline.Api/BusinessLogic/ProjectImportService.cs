@@ -254,14 +254,6 @@ public sealed class ProjectImportService : IProjectImportService
 
     /// <summary>Resolve an exported stride ID to the new stride ID via the mapping dictionary.</summary>
     /// <param name="exportedStrideId">The exported stride ID from the document.</param>
-        /// <param name="projectId">The project ID for context.</param>
-        /// <param name="promiseId">The parent promise ID.</param>
-        /// <param name="epic">The exported epic data.</param>
-        /// <param name="requestedByUserId">The requesting user ID.</param>
-        /// <param name="warnings">Accumulated warnings.</param>
-        /// <param name="strideIdMap">Stride ID mapping.</param>
-    /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
-    /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
     /// <param name="referenceName">The type of reference (e.g., "assigned", "original") for warnings.</param>
     /// <returns>The mapped stride ID, or null.</returns>

@@ -217,8 +217,6 @@ public static class PromiseHierarchySeeder
                 isActive,
                 DateTime.UtcNow);
         }
-        /// <param name="db">The database context.</param>
-
         return currentStrideId;
     }
 

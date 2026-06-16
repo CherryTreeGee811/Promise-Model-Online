@@ -15,9 +15,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-/// <summary>REST controller for iteration CRUD within a project scope with burndown support.</summary>
-
-
 
 namespace PromiseModelOnline.Api.Controllers
 
@@ -38,7 +35,12 @@ namespace PromiseModelOnline.Api.Controllers
 
 
         /// <summary>Initializes a new instance of the <see cref="ProjectIterationsController"/> class.</summary>
+        /// <param name="iterationService">The service for iteration-specific operations.</param>
         /// <param name="logger">The logger for audit and error events.</param>
+        /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
+        /// <param name="momentService">The service for moment operations.</param>
+        /// <param name="projectService">The service for project operations.</param>
+        /// <param name="service">The service for generic business logic operations.</param>
         public ProjectIterationsController(
 
             IGenericService<Iteration> service,
