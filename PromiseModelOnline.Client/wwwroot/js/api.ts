@@ -1,4 +1,4 @@
-import { setAuthState, clearAuth } from './auth-state.mjs';
+import { setAuthState, clearAuth } from './auth-state.ts';
 
 /**
  * Perform a GET request and parse JSON response.
