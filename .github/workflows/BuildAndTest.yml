@@ -29,6 +29,8 @@ jobs:
         run: |
           npm ci
           npm run lint
+          npm audit --audit-level=high
+          npm run build
 
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash

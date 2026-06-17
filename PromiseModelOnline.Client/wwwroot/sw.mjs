@@ -1,15 +1,9 @@
-const CACHE = 'pmo-v2';
+const CACHE = 'pmo-v3';
 
 const PRECACHE = [
   '/',
-  '/css/site.css',
-  '/lib/css/bootstrap.min.css',
-  '/lib/css/bootstrap-icons.min.css',
-  '/lib/js/bootstrap.bundle.min.js',
-  '/lib/js/signalr.min.js',
-  '/lib/js/d3.min.js',
-  '/lib/js/tippy.esm.js',
-  '/js/router.mjs',
+  '/dist/assets/style.css',
+  '/dist/js/main.js',
   '/js/api.mjs',
   '/js/auth-state.mjs',
   '/js/home.mjs',

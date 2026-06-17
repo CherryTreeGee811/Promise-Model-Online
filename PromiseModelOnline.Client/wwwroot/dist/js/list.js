@@ -1,0 +1,50 @@
+import{l as ot,o as it,g as rt,a as st,b as dt,c as lt}from"./router.js";import{h as C,g as R,e as K}from"./main.js";async function ct(i,m){const y=typeof i=="string"?document.getElementById(i):i;if(!y){console.error("Burndown container not found");return}if(y.innerHTML="",!m||m.length===0){y.innerHTML=C({icon:"bi-graph-down",title:"No burndown data available.",description:"Burndown data will appear once moments have status updates."});return}const r=await ot(),p=[...m].sort((t,a)=>new Date(t.date)-new Date(a.date)),w=new Date(p[0].date),B=new Date(p[p.length-1].date),c=p.map((t,a)=>a),h=p.map(t=>t.remainingEffort),T=p.map(t=>t.idealRemaining??0),v=h[0],x=c[c.length-1];let b=T;T.every(t=>t===0)&&v>0&&x>0&&(b=c.map(t=>Math.max(0,v-v/x*t)));const u=y.clientWidth||800,s=400,n={top:40,right:30,bottom:40,left:50},d=u-n.left-n.right,f=s-n.top-n.bottom,l=r.select(y).append("svg").attr("width",u).attr("height",s).attr("viewBox",`0 0 ${u} ${s}`).style("display","block").style("background","white").append("g").attr("transform",`translate(${n.left},${n.top})`);l.append("text").attr("x",0).attr("y",-12).attr("text-anchor","start").style("font-size","26px").style("font-weight","100").style("fill","#6c757d").style("letter-spacing","-0.2px").text("Burndown");const g=r.scaleLinear().domain([0,x]).range([0,d]).nice(),o=Math.max(...h,...b,1)*1.05,e=r.scaleLinear().domain([0,o]).range([f,0]).nice();l.append("line").attr("x1",0).attr("x2",0).attr("y1",0).attr("y2",f).attr("stroke","#cbd5e1").attr("stroke-width",1);const L=l.append("g").attr("class","x-axis").attr("transform",`translate(0, ${f})`),Q=[0,x],Z=[w.toLocaleDateString(void 0,{month:"short",day:"numeric",year:"numeric"}),B.toLocaleDateString(void 0,{month:"short",day:"numeric",year:"numeric"})],j=r.axisBottom(g).tickValues(Q).tickFormat((t,a)=>Z[a]);L.call(j).style("font-size","11px").style("font-weight","500"),L.selectAll(".tick line").attr("y2",6).attr("stroke","#cbd5e1"),L.select(".domain").attr("stroke","#cbd5e1"),l.append("text").attr("x",d/2).attr("y",f+35).attr("text-anchor","middle").style("fill","#6c757d").style("font-size","11px").text("Stride Day");const tt=e.ticks(6);l.selectAll(".grid-y").data(tt).enter().append("line").attr("x1",0).attr("x2",d).attr("y1",t=>e(t)).attr("y2",t=>e(t)).attr("stroke","#e9ecef").attr("stroke-dasharray","4 4");const D=[],k=[];for(let t=0;t<c.length-1;t++){const a=c[t],A=c[t+1],$=h[t],V=h[t+1],H=b[t],W=b[t+1],M=$-H,S=V-W,N={x:g(a),y0:e(H),y1:e($),behind:M>=0};if(N.behind?D.push(N):k.push(N),M*S<0){const z=Math.abs(M)/(Math.abs(M)+Math.abs(S)),et=a+z*(A-a),nt=H+z*(W-H),at=$+z*(V-$),X={x:g(et),y0:e(nt),y1:e(at),behind:S>=0},Y={...X,behind:!0},J={...X,behind:!1};M>=0?D.push(Y):k.push(J),S>=0?D.push(Y):k.push(J)}}const I=c.length-1,P={x:g(c[I]),y0:e(b[I]),y1:e(h[I]),behind:h[I]-b[I]>=0};P.behind?D.push(P):k.push(P);const O=D.map(t=>t),F=k.map(t=>t),q=r.area().x(t=>t.x).y0(t=>t.y0).y1(t=>t.y1).curve(r.curveLinear);O.length>=2&&l.append("path").datum(O).attr("class","area-behind").attr("d",q).attr("fill","#dc3545").attr("fill-opacity",.18).attr("stroke","none"),F.length>=2&&l.append("path").datum(F).attr("class","area-ahead").attr("d",q).attr("fill","#28a745").attr("fill-opacity",.2).attr("stroke","none");const G=r.line().x((t,a)=>g(c[a])).y(t=>e(t)).curve(r.curveLinear);l.append("path").datum(b).attr("class","ideal-line").attr("d",t=>G(t)).attr("fill","none").attr("stroke","#6c757d").attr("stroke-width",2).attr("stroke-dasharray","6 4").attr("opacity",.7),l.append("path").datum(h).attr("class","actual-line").attr("d",t=>G(t)).attr("fill","none").attr("stroke","#dc3545").attr("stroke-width",2.5).attr("stroke-linecap","round");const E=r.select("body").append("div").attr("class","burndown-tooltip").style("position","absolute").style("background","rgba(0,0,0,0.75)").style("color","#fff").style("padding","6px 12px").style("border-radius","20px").style("font-size","12px").style("pointer-events","none").style("opacity",0).style("transition","opacity 0.2s").style("z-index","1000").style("font-family","system-ui, -apple-system, sans-serif");l.selectAll(".actual-point").data(p).enter().append("circle").attr("cx",(t,a)=>g(c[a])).attr("cy",t=>e(t.remainingEffort)).attr("r",5).attr("fill","#dc3545").attr("stroke","white").attr("stroke-width",1.5).attr("cursor","pointer").on("mouseover",function(t,a){const A=new Date(a.date).toLocaleDateString();r.select(this).attr("r",8),E.transition().duration(150).style("opacity",.9),E.html(`<strong>${A}</strong><br/>Remaining: ${a.remainingEffort} pts`).style("left",t.pageX+12+"px").style("top",t.pageY-28+"px")}).on("mousemove",function(t){E.style("left",t.pageX+12+"px").style("top",t.pageY-28+"px")}).on("mouseout",function(){r.select(this).attr("r",5),E.transition().duration(200).style("opacity",0)});const U=new MutationObserver(()=>{document.body.contains(y)||(E.remove(),U.disconnect())});U.observe(document.body,{childList:!0,subtree:!0})}function ht(i,m,y){const r=document.getElementById("iterations-view"),p=document.getElementById("iterations-list"),w=document.getElementById("iteration-detail"),B=document.getElementById("error-text"),c=document.getElementById("project-title"),h=document.getElementById("create-iteration-btn"),T=(y==null?void 0:y.permission)==="Edit";w.classList.add("d-none"),B.textContent="",h&&(T?h.dataset.bound!=="1"&&(h.dataset.bound="1",h.addEventListener("click",async()=>{it(i,m,()=>ht(i,m,y))})):h.classList.add("d-none")),p.innerHTML=R("Loading iterations");const v=15e3,x=new Promise((u,s)=>{setTimeout(()=>s(new Error("Iteration list request timed out")),v)});Promise.race([Promise.all([rt(i,m).catch(()=>null),st(i,m)]),x]).then(([u,s])=>{if(c&&(c.textContent=(u==null?void 0:u.name)??`Project ${i}/${m}`),!s||s.length===0){p.innerHTML=C({icon:"bi-arrow-repeat",title:"No iterations found.",description:"Create an iteration to start organizing your strides."});return}s.sort((n,d)=>d.id-n.id),p.innerHTML=`
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Created</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${s.map(n=>`
+                                <tr>
+                                    <td>${K(n.name)}</td>
+                                    <td>${_(n.createdAt)}</td>
+                                    <td>
+                                        <button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${n.id}" type="button">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                </div>
+            `,document.querySelectorAll(".view-iteration-btn").forEach(n=>{n.addEventListener("click",()=>{const d=parseInt(n.dataset.iterationId,10),f=s.find(l=>l.id===d);b(f??{id:d,name:`Iteration #${d}`})})})}).catch(u=>{p.innerHTML="",B.textContent="Failed to load iterations.",console.error(u)});function b(u){const s=u.id;r.classList.add("d-none"),w.classList.remove("d-none");const n=document.getElementById("iteration-title"),d=document.getElementById("iteration-burndown-canvas"),f=document.getElementById("stride-details");n.textContent=u.name,d.innerHTML=R("Loading burndown chart"),f.innerHTML=R("Loading strides");const l=1e4,g=new Promise((o,e)=>{setTimeout(()=>e(new Error("Burndown request timed out")),l)});Promise.race([dt(i,m,s),g]).then(o=>{o&&o.length>0?ct(d,o):d.innerHTML=C({icon:"bi-graph-down",title:"No burndown data available for this iteration.",description:"Burndown data will appear once moments have status updates."})}).catch(o=>{console.error("Iteration burndown error",o),d.innerHTML='<p class="error">Failed to load iteration burndown.</p>'}),lt(i,m,s).then(o=>{if(!o||o.length===0){f.innerHTML=C({icon:"bi-kanban",title:"No strides in this iteration.",description:"Create strides to organize your work within this iteration."});return}o.sort((e,L)=>new Date(e.startDate)-new Date(L.startDate)),f.innerHTML=`
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Stride</th>
+                                    <th scope="col">Start Date</th>
+                                    <th scope="col">End Date</th>
+                                    <th scope="col">Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${o.map(e=>`
+                                    <tr>
+                                        <td>${K(e.name)}</td>
+                                        <td>${_(e.startDate)}</td>
+                                        <td>${_(e.endDate)}</td>
+                                        <td>${e.durationDays} days</td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                `}).catch(o=>{f.innerHTML='<p class="error">Failed to load strides.</p>',console.error(o)})}document.getElementById("back-to-iterations-btn").addEventListener("click",()=>{w.classList.add("d-none"),r.classList.remove("d-none")})}function _(i){return i?new Date(i).toLocaleDateString("en-CA"):"N/A"}export{ht as loadIterationHistory};

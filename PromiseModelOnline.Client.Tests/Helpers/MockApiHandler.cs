@@ -73,7 +73,7 @@ public static partial class MockApiHandler
             if (response == null && method == "GET" && uri.Host == "localhost"
                 && !path.StartsWith("/api/") && !path.StartsWith("/hubs/")
                 && !path.StartsWith("/templates/") && !path.StartsWith("/images/") && !path.StartsWith("/css/") && !path.StartsWith("/js/")
-                && !path.StartsWith("/lib/") && !path.StartsWith("/umami/")
+                && !path.StartsWith("/lib/") && !path.StartsWith("/dist/") && !path.StartsWith("/umami/")
                 && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml"
                 && !path.StartsWith("/login") && !path.StartsWith("/logout") && !path.StartsWith("/register")
                 && !path.StartsWith("/signin-oidc") && !path.StartsWith("/signout-callback-oidc")
@@ -398,7 +398,7 @@ public static partial class MockApiHandler
 
 
     private static readonly string s_html = """
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/lib/css/bootstrap.min.css"><link rel="stylesheet" href="/lib/css/bootstrap-icons.min.css"><link rel="stylesheet" href="/css/site.css"><script>window.process={env:{NODE_ENV:'production'}}</script><script type="importmap">{"imports":{"@popperjs/core":"/lib/js/@popperjs__core/popper.js"}}</script></head><body><div id="main-menu" class="navbar-nav ms-auto align-items-md-center"></div><div id="content"></div><script src="/lib/js/bootstrap.bundle.min.js" defer></script><script src="/lib/js/signalr.min.js" defer></script><script src="/js/router.mjs" type="module"></script></body></html>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/lib/css/bootstrap.min.css"><link rel="stylesheet" href="/lib/css/bootstrap-icons.min.css"><link rel="stylesheet" href="/css/site.css"></head><body><div id="main-menu" class="navbar-nav ms-auto align-items-md-center"></div><div id="content"></div><script src="/lib/js/bootstrap.bundle.min.js" defer></script><script src="/lib/js/signalr.min.js" defer></script><script src="/lib/js/popper.js" defer></script><script src="/lib/js/tippy.umd.min.js" defer></script><script src="/dist/js/main.js" type="module"></script></body></html>
 """;
 
     private const string s_momentsByStride10 =

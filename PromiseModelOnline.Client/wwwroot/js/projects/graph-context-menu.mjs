@@ -1,4 +1,4 @@
-import tippy from '/lib/js/tippy.esm.js';
+const tippy = window.tippy;
 
 import { apiFetch } from '../api.mjs';
 import { updateMomentStatus } from '../moments/api.mjs';
