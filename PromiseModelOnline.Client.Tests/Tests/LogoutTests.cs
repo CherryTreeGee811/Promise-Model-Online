@@ -15,7 +15,7 @@ public class LogoutTests : PlaywrightTestBase
         // Act
         await Page.Locator("#user-dropdown").ClickAsync();
 
-        var logoutLink = await WaitForSelectorAsync("#logout-link", 5);
+        var logoutLink = await WaitForSelectorAsync("#logout-link");
         var href = await logoutLink.GetAttributeAsync("href");
 
         // Assert

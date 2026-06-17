@@ -12,8 +12,8 @@ public class GraphZoomTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
         // Act
-        await WaitForSelectorAsync("#graph-content", 10);
-        var svg = await WaitForSelectorAsync("#graph-content svg", 30);
+        await WaitForSelectorAsync("#graph-content", 2);
+        var svg = await WaitForSelectorAsync("#graph-content svg", 2);
         // Assert
         Assert.That(await svg.IsVisibleAsync(), Is.True);
     }
@@ -24,8 +24,8 @@ public class GraphZoomTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
         // Act
-        await WaitForSelectorAsync("#graph-content", 10);
-        var zoomToolbar = await WaitForSelectorAsync("#graph-zoom-controls", 10);
+        await WaitForSelectorAsync("#graph-content", 2);
+        var zoomToolbar = await WaitForSelectorAsync("#graph-zoom-controls", 2);
         // Assert
         Assert.That(await zoomToolbar.IsVisibleAsync(), Is.True);
         Assert.That(await zoomToolbar.GetAttributeAsync("role"), Is.EqualTo("toolbar"));
@@ -41,7 +41,7 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        await WaitForSelectorAsync("#graph-content", 10);
+        await WaitForSelectorAsync("#graph-content", 2);
         // Act & Assert
         foreach (var id in new[] { "graph-zoom-in", "graph-zoom-out", "graph-zoom-reset", "graph-fullscreen-btn" })
         {
@@ -58,7 +58,7 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        await WaitForSelectorAsync("#graph-content", 10);
+        await WaitForSelectorAsync("#graph-content", 2);
         // Assert
         Assert.That(await GetAttributeAsync("#graph-zoom-in", "aria-label"), Is.EqualTo("Zoom in"));
         Assert.That(await GetAttributeAsync("#graph-zoom-out", "aria-label"), Is.EqualTo("Zoom out"));
@@ -80,7 +80,7 @@ public class GraphZoomTests : PlaywrightTestBase
                 return ariaHidden == "true";
             }
             catch { return false; }
-        }, 10);
+        }, 2);
 
         Assert.That(hidden, Is.True);
     }
@@ -91,7 +91,7 @@ public class GraphZoomTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
         // Act
-        var filterBar = await WaitForSelectorAsync("#graph-filter-bar", 10);
+        var filterBar = await WaitForSelectorAsync("#graph-filter-bar", 2);
         // Assert
         Assert.That(await filterBar.IsVisibleAsync(), Is.True);
     }
@@ -112,7 +112,7 @@ public class GraphZoomTests : PlaywrightTestBase
                 return visible && !string.IsNullOrWhiteSpace(text);
             }
             catch { return false; }
-        }, 10);
+        }, 2);
 
         Assert.That(found, Is.True);
     }
@@ -122,10 +122,10 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        var svgGroup = await WaitForSelectorAsync("#graph-content svg > g", 10);
+        var svgGroup = await WaitForSelectorAsync("#graph-content svg > g", 2);
         var initialTransform = await svgGroup.GetAttributeAsync("transform");
         // Act
-        await ClickAsync("#graph-zoom-in", 10);
+        await ClickAsync("#graph-zoom-in", 2);
         await Task.Delay(400);
         // Assert
         var afterZoom = await svgGroup.GetAttributeAsync("transform");
@@ -138,17 +138,17 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        var svgGroup = await WaitForSelectorAsync("#graph-content svg > g", 10);
+        var svgGroup = await WaitForSelectorAsync("#graph-content svg > g", 2);
         var initialTransform = await svgGroup.GetAttributeAsync("transform");
         // Act
-        await ClickAsync("#graph-zoom-in", 10);
+        await ClickAsync("#graph-zoom-in", 2);
         await Task.Delay(400);
         // Assert
         var afterZoomIn = await svgGroup.GetAttributeAsync("transform");
         Assert.That(afterZoomIn, Is.Not.EqualTo(initialTransform),
             "Zoom in should change the graph transform");
         // Act
-        await ClickAsync("#graph-zoom-reset", 10);
+        await ClickAsync("#graph-zoom-reset", 2);
         await Task.Delay(400);
         // Assert
         var afterReset = await svgGroup.GetAttributeAsync("transform");
@@ -161,7 +161,7 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        await WaitForSelectorAsync("#graph-content", 10);
+        await WaitForSelectorAsync("#graph-content", 2);
         // Assert
         var btn = Page.Locator("#graph-fullscreen-btn");
         Assert.That(await btn.IsVisibleAsync(), Is.True);
@@ -176,7 +176,7 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        await WaitForSelectorAsync("#graph-content", 10);
+        await WaitForSelectorAsync("#graph-content", 2);
         // Assert
         var toolbar = Page.Locator("#graph-zoom-controls");
         var fullscreenBtn = toolbar.Locator("#graph-fullscreen-btn");
@@ -192,10 +192,10 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        var svgGroup = await WaitForSelectorAsync("#graph-content svg > g", 10);
+        var svgGroup = await WaitForSelectorAsync("#graph-content svg > g", 2);
         var initialTransform = await svgGroup.GetAttributeAsync("transform");
         // Act
-        await ClickAsync("#graph-zoom-out", 10);
+        await ClickAsync("#graph-zoom-out", 2);
         await Task.Delay(400);
         // Assert
         var afterZoom = await svgGroup.GetAttributeAsync("transform");
@@ -213,7 +213,7 @@ public class GraphZoomTests : PlaywrightTestBase
         {
             var count = await Page.Locator("#graph-content .graph-card").CountAsync();
             return count >= 1;
-        }, 10);
+        }, 2);
         Assert.That(found, Is.True);
     }
 
@@ -227,7 +227,7 @@ public class GraphZoomTests : PlaywrightTestBase
         {
             var count = await Page.Locator("#graph-content .graph-card-accent").CountAsync();
             return count >= 1;
-        }, 10);
+        }, 2);
         Assert.That(found, Is.True);
     }
 
@@ -236,8 +236,8 @@ public class GraphZoomTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        await WaitForSelectorAsync("#graph-content svg", 10);
-        await WaitForSelectorAsync("#graph-content .graph-node:not(.is-root)", 10);
+        await WaitForSelectorAsync("#graph-content svg", 2);
+        await WaitForSelectorAsync("#graph-content .graph-node:not(.is-root)", 2);
         // Act
         var href = await Page.EvaluateAsync<string>(
             "document.querySelector('#graph-content .graph-node:not(.is-root)').getAttribute('href') || ''");
@@ -258,7 +258,7 @@ public class GraphZoomTests : PlaywrightTestBase
         Page.Console += onConsole;
         // Act
         await NavigateAsUser("/pmo_test/seeded-project/graph");
-        await WaitForSelectorAsync("#graph-content", 10);
+        await WaitForSelectorAsync("#graph-content", 2);
         await Task.Delay(1000);
         // Assert
         Page.Console -= onConsole;

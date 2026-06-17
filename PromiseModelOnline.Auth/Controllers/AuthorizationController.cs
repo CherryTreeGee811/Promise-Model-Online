@@ -19,6 +19,7 @@ namespace PromiseModelOnline.Auth.Controllers
     /// </remarks>
     [ApiController]
     [Route("connect/authorize")]
+    [AllowAnonymous]
     public class AuthorizationController : ControllerBase
     {
         private readonly ILogger<AuthorizationController> _logger;

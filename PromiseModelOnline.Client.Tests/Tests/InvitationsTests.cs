@@ -23,7 +23,7 @@ public class InvitationsTests : PlaywrightTestBase
                 return count == 0;
             }
             catch { return false; }
-        }, 5);
+        });
         Assert.That(removed, Is.True, "Invitation row was not removed after accept");
     }
 }

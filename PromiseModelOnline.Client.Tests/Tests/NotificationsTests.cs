@@ -19,7 +19,7 @@ public class NotificationsTests : PlaywrightTestBase
             var visible = await badge.IsVisibleAsync();
             var text = await badge.TextContentAsync();
             return visible && text?.Trim() == "2";
-        }, 10);
+        }, 2);
 
         // Assert
         Assert.That(found, Is.True);
@@ -37,7 +37,7 @@ public class NotificationsTests : PlaywrightTestBase
             var badge = Page.Locator("#notification-badge");
             var visible = await badge.IsVisibleAsync();
             return !visible;
-        }, 10);
+        }, 2);
 
         // Assert
         Assert.That(found, Is.True);

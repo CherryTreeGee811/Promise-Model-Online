@@ -99,19 +99,19 @@ public abstract class E2ETestBase
         {
             try
             {
-                await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 15000 });
-                await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 15000 });
+                await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 1000 });
+                await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 1000 });
 
                 await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", username);
                 await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", password);
 
                 await Page.ClickAsync("button[type=\"submit\"]");
-                await Page.WaitForURLAsync("**/", new() { Timeout = 30000 });
+                await Page.WaitForURLAsync("**/", new() { Timeout = 1000 });
                 return;
             }
             catch (TimeoutException) when (attempt < 3)
             {
-                await Task.Delay(30000 * attempt);
+                await Task.Delay(1000 * attempt);
             }
         }
     }

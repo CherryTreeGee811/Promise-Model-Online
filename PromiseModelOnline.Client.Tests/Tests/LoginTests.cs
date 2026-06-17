@@ -1,3 +1,4 @@
+using Microsoft.Playwright;
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
@@ -10,10 +11,10 @@ public class LoginTests : PlaywrightTestBase
     public async Task REQ_FUN_002_LoginLink_NavigatesToGatewayLogin()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
 
         // Act
-        var loginLink = await WaitForSelectorAsync("#login-link", 5);
+        var loginLink = await WaitForSelectorAsync("#login-link");
         var href = await loginLink.GetAttributeAsync("href");
 
         // Assert
@@ -24,10 +25,10 @@ public class LoginTests : PlaywrightTestBase
     public async Task REQ_FUN_002_Login_HasNoFormInSpa()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/login");
+        await Page.GotoAsync(BaseUrl + "/login", new PageGotoOptions { Timeout = 2000 });
 
         // Act
-        var urlContains = await WaitForUrlContainsAsync("/login", 5);
+        var urlContains = await WaitForUrlContainsAsync("/login");
 
         // Assert
         Assert.That(urlContains, Is.True);

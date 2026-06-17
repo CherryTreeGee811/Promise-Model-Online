@@ -1,20 +1,22 @@
 // @ts-nocheck
 /** @typedef {import("@microsoft/signalr").HubConnection} HubConnection */
+import { showToast } from '../ui/toast.ts';
 
 /** @type {HubConnection|null} */
 let connection = null;
 /** @type {Function|null} */
 let onNotificationOrReconnect = null;
+let isStarted = false;
 
 /**
  * Start the SignalR connection to the notifications hub.
- * Registers a callback for incoming notifications and reconnection events.
+ * Registers a callback for incoming notifications, reconnection, and connection state toasts.
  * The connection uses automatic reconnect with incremental delays.
  * @param {Function|null} onNotification - Callback invoked with notification data on new notifications,
  *                                          or with null after a successful reconnect.
  */
 export async function startSignalR(onNotification) {
-    if (connection) return;
+    if (isStarted) return;
 
     onNotificationOrReconnect = typeof onNotification === 'function' ? onNotification : null;
 
@@ -30,16 +32,27 @@ export async function startSignalR(onNotification) {
         }
     });
 
+    connection.onreconnecting(async () => {
+        showToast('Reconnecting to server...', 'warning', 0);
+    });
+
     connection.onreconnected(async () => {
+        showToast('Reconnected.', 'success', 3000);
         if (onNotificationOrReconnect) {
             onNotificationOrReconnect(null);
         }
     });
 
+    connection.onclose(async () => {
+        showToast('Connection lost. Real-time updates paused.', 'error', 5000);
+    });
+
     try {
         await connection.start();
+        isStarted = true;
     } catch (err) {
         console.warn('SignalR connection failed, notifications will not be real-time:', err);
+        showToast('Unable to connect to notification service.', 'warning', 5000);
         connection = null;
     }
 }
@@ -52,8 +65,9 @@ export async function stopSignalR() {
         } catch {
         }
         connection = null;
-        onNotificationOrReconnect = null;
     }
+    isStarted = false;
+    onNotificationOrReconnect = null;
 }
 
 /**

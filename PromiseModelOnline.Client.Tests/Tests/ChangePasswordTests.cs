@@ -1,3 +1,4 @@
+using Microsoft.Playwright;
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
@@ -13,7 +14,7 @@ public class ChangePasswordTests : PlaywrightTestBase
         await NavigateAsUser("/");
         // Act
         await Page.Locator("#user-dropdown").ClickAsync();
-        var changePwLink = await WaitForSelectorAsync("#change-password-link", 5);
+        var changePwLink = await WaitForSelectorAsync("#change-password-link");
         var href = await changePwLink.GetAttributeAsync("href");
         // Assert
         Assert.That(href, Does.Contain("/account/change-password"));
@@ -25,9 +26,9 @@ public class ChangePasswordTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/");
         // Act
-        await Page.GotoAsync(BaseUrl + "/account/change-password");
+        await Page.GotoAsync(BaseUrl + "/account/change-password", new PageGotoOptions { Timeout = 2000 });
         // Assert
-        var contains = await WaitForUrlContainsAsync("/change-password", 5);
+        var contains = await WaitForUrlContainsAsync("/change-password");
         Assert.That(contains, Is.True);
     }
 }

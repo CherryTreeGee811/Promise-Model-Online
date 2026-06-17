@@ -31,7 +31,7 @@ public class ProjectsListTests : PlaywrightTestBase
         await WaitForSelectorAsync("#project-list-table-body tr");
         await ClickAsync(".audit-log-btn");
 
-        var ends = await WaitForUrlContainsAsync("/pmo_test/seeded-project/history", 15);
+        var ends = await WaitForUrlContainsAsync("/pmo_test/seeded-project/history", 2);
         var historyList = await WaitForSelectorAsync("#audit-history-list");
 
         // Assert

@@ -14,7 +14,7 @@ public class ProjectSettingsTests : PlaywrightTestBase
         await NavigateSpaAsync("/pmo_test/seeded-project/settings");
 
         // Act
-        var confirmationTextEl = await WaitForSelectorAsync("#project-delete-confirmation-text", 20);
+        var confirmationTextEl = await WaitForSelectorAsync("#project-delete-confirmation-text", 2);
         var confirmationPhrase = await confirmationTextEl.TextContentAsync() ?? string.Empty;
 
         var input = await WaitForSelectorAsync("#project-delete-confirmation-input");
@@ -22,7 +22,7 @@ public class ProjectSettingsTests : PlaywrightTestBase
 
         await ClickAsync("#delete-project-btn");
 
-        var ends = await WaitForUrlContainsAsync("/projects", 15);
+        var ends = await WaitForUrlContainsAsync("/projects", 2);
 
         // Assert
         Assert.That(ends, Is.True);

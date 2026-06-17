@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Serilog;
+using Microsoft.AspNetCore.Authorization;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
@@ -16,6 +18,14 @@ using PromiseModelOnline.Auth.Services;
 // Seeds OpenIddict applications and development users on startup in development mode.
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 var appBaseUrl = builder.Configuration["APP_BASE_URL"]
     ?? throw new InvalidOperationException("APP_BASE_URL is required.");
@@ -115,7 +125,12 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
         });
 }
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // Data protection key persistence for horizontal scaling across multiple instances.
 var dpKeysPath = builder.Configuration["DATA_PROTECTION_KEYS_PATH"]

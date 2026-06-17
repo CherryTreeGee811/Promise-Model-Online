@@ -17,7 +17,7 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
         await EnsureLoggedInAsync(vp);
 
         // Act
-        await WaitForSelectorAsync("#home-cta-area", 10);
+        await WaitForSelectorAsync("#home-cta-area", 2);
 
         // Act & Assert
         await AssertNoHorizontalScrollAsync();
@@ -35,7 +35,7 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
         await NavigateSpaAsync("/projects");
 
         // Act
-        await WaitForSelectorAsync("#project-list-table", 10);
+        await WaitForSelectorAsync("#project-list-table", 2);
 
         // Act & Assert
         await AssertNoHorizontalScrollAsync();
@@ -52,7 +52,7 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
 
         // Act
-        await WaitForSelectorAsync(".stride-card", 10);
+        await WaitForSelectorAsync(".stride-card", 2);
 
         // Act & Assert
         await AssertNoHorizontalScrollAsync();
@@ -68,7 +68,7 @@ public class ResponsiveLayoutTests : ResponsivePlaywrightTestBase
         await NavigateAsUserAsync(vp, "/pmo_test/seeded-project/strides");
 
         // Act
-        await WaitForSelectorAsync(".stride-header", 10);
+        await WaitForSelectorAsync(".stride-header", 2);
 
         // Act & Assert
         await AssertResponsiveElementAsync(".estimate-dropdown", ".estimate-dropdown-mobile", vp);

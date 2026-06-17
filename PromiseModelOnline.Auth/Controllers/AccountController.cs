@@ -66,6 +66,7 @@ public class AccountController : Controller
         /// <summary>Process registration: validate, create user, send verification email, redirect to verify page.</summary>
         /// <param name="model">The registration form data.</param>
         /// <returns>A redirect or the registration view with errors.</returns>
+        [AllowAnonymous]
         [HttpPost("")]
         [EnableRateLimiting("Email")]
         [ValidateAntiForgeryToken]
@@ -128,6 +129,7 @@ public class AccountController : Controller
         /// <summary>Process email verification: validate code against cached value and confirm the user.</summary>
         /// <param name="model">The verification form data.</param>
         /// <returns>A redirect to login or the verification view with errors.</returns>
+        [AllowAnonymous]
         [HttpPost("verify-email")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> VerifyEmail(VerifyEmailViewModel model)

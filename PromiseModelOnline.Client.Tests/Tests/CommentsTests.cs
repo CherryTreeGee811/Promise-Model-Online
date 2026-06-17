@@ -32,7 +32,7 @@ public class CommentsTests : PlaywrightTestBase
                 return false;
             }
             catch { return false; }
-        }, 10);
+        }, 2);
         Assert.That(found, Is.True, "New comment should appear in the list");
         var allCount = await Page.Locator(".comment-item .comment-text").CountAsync();
         Assert.That(allCount, Is.GreaterThanOrEqualTo(2));

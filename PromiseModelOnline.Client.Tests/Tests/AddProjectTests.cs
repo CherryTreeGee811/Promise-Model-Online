@@ -12,7 +12,7 @@ public class AddProjectTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/projects/add");
         // Act
-        await WaitForSelectorAsync("#add-project-form", 5);
+        await WaitForSelectorAsync("#add-project-form");
         // Assert
         Assert.That(await IsVisibleAsync("#project-name-input"), Is.True);
         Assert.That(await IsVisibleAsync("#project-description-input"), Is.True);
@@ -24,45 +24,25 @@ public class AddProjectTests : PlaywrightTestBase
     [Test]
     public async Task REQ_FUN_003_AddProject_EmptyName_ShowsValidationError()
     {
-        // Arrange
         await NavigateAsUser("/projects/add");
-        await WaitForSelectorAsync("#first-promise-input", 10);
-        // Act
+        await WaitForSelectorAsync("#first-promise-input");
         await Page.EvaluateAsync(
             "document.getElementById('add-project-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));");
-        // Assert
-        var found = await WaitUntilAsync(async () =>
-        {
-            try
-            {
-                var text = await Page.Locator("#error-text").TextContentAsync() ?? "";
-                return text.Contains("required") || text.Contains("name");
-            }
-            catch { return false; }
-        }, 5);
-        Assert.That(found, Is.True);
+        var feedback = await WaitForSelectorAsync("#error-text");
+        var text = await feedback.TextContentAsync() ?? "";
+        Assert.That(text, Does.Contain("required").And.Contain("name"));
     }
 
     [Test]
     public async Task REQ_FUN_003_AddProject_EmptyPromise_ShowsValidationError()
     {
-        // Arrange
         await NavigateAsUser("/projects/add");
-        await FillAsync("#project-name-input", "My Project", 10);
-        // Act
+        await FillAsync("#project-name-input", "My Project");
         await Page.EvaluateAsync(
             "document.getElementById('add-project-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));");
-        // Assert
-        var found = await WaitUntilAsync(async () =>
-        {
-            try
-            {
-                var text = await Page.Locator("#error-text").TextContentAsync() ?? "";
-                return text.Contains("Product Promise") || text.Contains("required");
-            }
-            catch { return false; }
-        }, 5);
-        Assert.That(found, Is.True);
+        var feedback = await WaitForSelectorAsync("#error-text");
+        var text = await feedback.TextContentAsync() ?? "";
+        Assert.That(text, Does.Contain("Product Promise").Or.Contain("required"));
     }
 
     [Test]
@@ -70,13 +50,13 @@ public class AddProjectTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/projects/add");
-        await FillAsync("#project-name-input", "My New Project", 5);
+        await FillAsync("#project-name-input", "My New Project");
         await FillAsync("#project-description-input", "A test project");
         await FillAsync("#first-promise-input", "As a user, manage projects efficiently");
         // Act
-        await ClickAsync("#create-project-btn", 5);
+        await ClickAsync("#create-project-btn");
         // Assert
-        var contains = await WaitForUrlContainsAsync("/projects/", 10);
+        var contains = await WaitForUrlContainsAsync("/projects/", 2);
         Assert.That(contains, Is.True);
         Assert.That(Page.Url, Does.Contain("/projects/"));
     }
@@ -86,11 +66,11 @@ public class AddProjectTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/projects/add");
-        await WaitForSelectorAsync("#cancel-add-project-link", 5);
+        await WaitForSelectorAsync("#cancel-add-project-link");
         // Act
-        await ClickAsync("#cancel-add-project-link", 5);
+        await ClickAsync("#cancel-add-project-link");
         // Assert
-        var contains = await WaitForUrlContainsAsync("/projects", 10);
+        var contains = await WaitForUrlContainsAsync("/projects", 2);
         Assert.That(contains, Is.True);
         Assert.That(Page.Url, Does.Not.Contain("/add"));
     }
@@ -101,7 +81,7 @@ public class AddProjectTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/projects/add");
         // Act
-        var importBtn = await WaitForSelectorAsync("#import-project-btn", 5);
+        var importBtn = await WaitForSelectorAsync("#import-project-btn");
         var text = await importBtn.TextContentAsync();
         // Assert
         Assert.That(text, Does.Contain("Import"));

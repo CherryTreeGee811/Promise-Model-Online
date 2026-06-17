@@ -99,13 +99,20 @@ public abstract class PlaywrightTestBase
         {
             try
             {
-                await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 15000 });
+                await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
                 break;
             }
-            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation"))
+            catch (TimeoutException)
             {
                 if (attempt == 2) throw;
-                await Task.Delay(1000);
+                await Task.Delay(100);
+            }
+            catch (PlaywrightException ex) when (
+                ex.Message.Contains("ERR_ABORTED") ||
+                ex.Message.Contains("interrupted by another navigation"))
+            {
+                if (attempt == 2) throw;
+                await Task.Delay(100);
             }
         }
         await Context.ClearCookiesAsync();
@@ -154,19 +161,24 @@ public abstract class PlaywrightTestBase
         {
             try
             {
-                await Page.GotoAsync(BaseUrl + path, new PageGotoOptions { Timeout = 15000 });
+                await Page.GotoAsync(BaseUrl + path, new PageGotoOptions { Timeout = 2000 });
                 return;
             }
             catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation"))
             {
                 if (attempt == 2) throw;
-                await Task.Delay(1000);
+                await Task.Delay(100);
+            }
+            catch (TimeoutException)
+            {
+                if (attempt == 2) throw;
+                await Task.Delay(100);
             }
         }
     }
 
     /// <summary>Wait for a DOM selector to appear and return its locator.</summary>
-    protected async Task<ILocator> WaitForSelectorAsync(string selector, int timeoutSeconds = 20)
+    protected async Task<ILocator> WaitForSelectorAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = Page.Locator(selector).First;
         await locator.WaitForAsync(new LocatorWaitForOptions { Timeout = timeoutSeconds * 1000 });
@@ -174,7 +186,7 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Click an element identified by CSS selector.</summary>
-    protected async Task ClickAsync(string selector, int timeoutSeconds = 10)
+    protected async Task ClickAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = Page.Locator(selector);
         await locator.ScrollIntoViewIfNeededAsync();
@@ -182,14 +194,14 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Get an attribute value from an element.</summary>
-    protected async Task<string> GetAttributeAsync(string selector, string attribute, int timeoutSeconds = 10)
+    protected async Task<string> GetAttributeAsync(string selector, string attribute, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         return await locator.GetAttributeAsync(attribute) ?? "";
     }
 
     /// <summary>Get the text content of an element.</summary>
-    protected async Task<string> GetTextContentAsync(string selector, int timeoutSeconds = 10)
+    protected async Task<string> GetTextContentAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         return await locator.TextContentAsync() ?? "";
@@ -208,28 +220,28 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Fill an input field with a value.</summary>
-    protected async Task FillAsync(string selector, string value, int timeoutSeconds = 10)
+    protected async Task FillAsync(string selector, string value, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         await locator.FillAsync(value);
     }
 
     /// <summary>Select an option from a select element by its value.</summary>
-    protected async Task SelectOptionByValueAsync(string selector, string value, int timeoutSeconds = 10)
+    protected async Task SelectOptionByValueAsync(string selector, string value, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         await locator.SelectOptionAsync(new SelectOptionValue { Value = value });
     }
 
     /// <summary>Get the currently selected value of a select element.</summary>
-    protected async Task<string> GetSelectedOptionValueAsync(string selector, int timeoutSeconds = 10)
+    protected async Task<string> GetSelectedOptionValueAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         return await locator.InputValueAsync();
     }
 
     /// <summary>Wait until a predicate returns true, with a timeout.</summary>
-    protected async Task<bool> WaitUntilAsync(Func<Task<bool>> predicate, int timeoutSeconds = 10)
+    protected async Task<bool> WaitUntilAsync(Func<Task<bool>> predicate, int timeoutSeconds = 2)
     {
         var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
         while (DateTime.UtcNow < deadline)
@@ -240,7 +252,7 @@ public abstract class PlaywrightTestBase
                     return true;
             }
             catch { }
-            await Task.Delay(200);
+            await Task.Delay(100);
         }
         return false;
     }
@@ -252,7 +264,7 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Wait for the page URL to contain a specific string.</summary>
-    protected async Task<bool> WaitForUrlContainsAsync(string expected, int timeoutSeconds = 10)
+    protected async Task<bool> WaitForUrlContainsAsync(string expected, int timeoutSeconds = 2)
     {
         return await WaitUntilAsync(() =>
             Task.FromResult(Page.Url.Contains(expected)), timeoutSeconds);
@@ -270,7 +282,7 @@ public abstract class PlaywrightTestBase
         try
         {
             var screenshotPath = Path.Combine(Path.GetTempPath(), $"playwright-failure-{Guid.NewGuid()}.png");
-            await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true });
+            await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true, Timeout = 2000 });
             TestContext.Progress.WriteLine($"Screenshot saved to: {screenshotPath}");
 
             var html = await Page.ContentAsync();

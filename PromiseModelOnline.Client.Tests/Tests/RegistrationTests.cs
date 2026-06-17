@@ -1,3 +1,4 @@
+using Microsoft.Playwright;
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
@@ -10,10 +11,10 @@ public class RegistrationTests : PlaywrightTestBase
     public async Task REQ_FUN_001_RegisterLink_NavigatesToAuthRegister()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
 
         // Act
-        var registerLink = await WaitForSelectorAsync("#register-link", 5);
+        var registerLink = await WaitForSelectorAsync("#register-link");
         var href = await registerLink.GetAttributeAsync("href");
 
         // Assert
@@ -24,10 +25,10 @@ public class RegistrationTests : PlaywrightTestBase
     public async Task REQ_FUN_001_Register_InSpa_RedirectsToAuth()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/register");
+        await Page.GotoAsync(BaseUrl + "/register", new PageGotoOptions { Timeout = 2000 });
 
         // Act
-        var contains = await WaitForUrlContainsAsync("/register", 5);
+        var contains = await WaitForUrlContainsAsync("/register");
 
         // Assert
         Assert.That(contains, Is.True);

@@ -17,7 +17,7 @@ public class NotificationsListTests : PlaywrightTestBase
         {
             var count = await Page.Locator("#notifications-list table tbody tr").CountAsync();
             return count >= 1;
-        }, 10);
+        }, 2);
 
         // Assert
         Assert.That(found, Is.True);
@@ -40,7 +40,7 @@ public class NotificationsListTests : PlaywrightTestBase
                 return visible && text?.Contains("Mark All as Read") == true;
             }
             catch { return false; }
-        }, 10);
+        }, 2);
 
         // Assert
         Assert.That(found, Is.True);
@@ -57,7 +57,7 @@ public class NotificationsListTests : PlaywrightTestBase
         {
             var count = await Page.Locator("#notifications-list tbody tr.unread").CountAsync();
             return count == 2;
-        }, 10);
+        }, 2);
 
         // Assert
         Assert.That(found, Is.True);
@@ -75,7 +75,7 @@ public class NotificationsListTests : PlaywrightTestBase
             var rows = await Page.Locator("#notifications-list table tbody tr").CountAsync();
             var unreadRows = await Page.Locator("#notifications-list tbody tr.unread").CountAsync();
             return rows > 0 && rows == unreadRows;
-        }, 10);
+        }, 2);
 
         // Assert
         Assert.That(found, Is.True);

@@ -1,3 +1,4 @@
+using Microsoft.Playwright;
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
@@ -10,11 +11,11 @@ public class NavigationMenuTests : PlaywrightTestBase
     public async Task REQ_INT_009_Anonymous_ShowsLoginAndRegisterLinks()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
 
         // Act
-        await WaitForSelectorAsync("#login-link", 5);
-        await WaitForSelectorAsync("#register-link", 5);
+        await WaitForSelectorAsync("#login-link");
+        await WaitForSelectorAsync("#register-link");
 
         // Assert
         Assert.That(await IsVisibleAsync("#login-link"), Is.True);
@@ -25,8 +26,8 @@ public class NavigationMenuTests : PlaywrightTestBase
     public async Task REQ_INT_009_Anonymous_DoesNotShowAuthenticatedLinks()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/");
-        await WaitForSelectorAsync("#login-link", 5);
+        await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
+        await WaitForSelectorAsync("#login-link");
 
         // Act & Assert
         Assert.That(await CountElementsAsync("#projects-link"), Is.EqualTo(0));
@@ -41,7 +42,7 @@ public class NavigationMenuTests : PlaywrightTestBase
         await NavigateAsUser("/");
 
         // Act
-        await WaitForSelectorAsync("#projects-link", 5);
+        await WaitForSelectorAsync("#projects-link");
 
         // Assert
         Assert.That(await IsVisibleAsync("#projects-link"), Is.True);
@@ -70,7 +71,7 @@ public class NavigationMenuTests : PlaywrightTestBase
         await NavigateAsUser("/");
 
         // Act
-        await WaitForSelectorAsync("#projects-link", 5);
+        await WaitForSelectorAsync("#projects-link");
 
         // Act & Assert
         Assert.That(await CountElementsAsync("#login-link"), Is.EqualTo(0));
@@ -83,7 +84,7 @@ public class NavigationMenuTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/");
 
-        var notificationsLink = await WaitForSelectorAsync("#notifications-link", 5);
+        var notificationsLink = await WaitForSelectorAsync("#notifications-link");
 
         // Act
         var badgeVisible = await WaitUntilAsync(async () =>
@@ -92,7 +93,7 @@ public class NavigationMenuTests : PlaywrightTestBase
             var visible = await badge.IsVisibleAsync();
             var text = await badge.TextContentAsync();
             return visible && text?.Trim() == "2";
-        }, 10);
+        }, 2);
 
         // Assert
         Assert.That(badgeVisible, Is.True);
@@ -105,9 +106,9 @@ public class NavigationMenuTests : PlaywrightTestBase
         await NavigateAsUser("/");
 
         // Act
-        await ClickAsync("#projects-link", 5);
+        await ClickAsync("#projects-link");
 
-        var contains = await WaitForUrlContainsAsync("/projects", 10);
+        var contains = await WaitForUrlContainsAsync("/projects", 2);
 
         // Assert
         Assert.That(contains, Is.True);

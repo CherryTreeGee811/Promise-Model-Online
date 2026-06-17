@@ -5,7 +5,9 @@
   "scripts": {
     "build": "vite build",
     "lint": "eslint 'PromiseModelOnline.Client/wwwroot/js/**/*.{mjs,ts}'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pwa:check": "hint https://localhost:9000",
+    "pwa:check:url": "hint"
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
@@ -16,12 +18,14 @@
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {
+    "@hint/configuration-progressive-web-apps": "^7.0.29",
     "@typescript-eslint/eslint-plugin": "^8.61.1",
     "@typescript-eslint/parser": "^8.61.1",
     "axe-core": "^4.12.1",
     "eslint": "^10.5.0",
     "eslint-plugin-security": "^4.0.1",
     "globals": "^17.6.0",
+    "hint": "^7.1.13",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
     "vite": "^8.0.16"

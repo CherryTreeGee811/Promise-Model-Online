@@ -27,7 +27,7 @@ public class MyTasksTests : PlaywrightTestBase
         await NavigateAsUser("/moments/my-tasks", "nonowner-session");
 
         // Act
-        var emptyMsg = await WaitForSelectorAsync(".no-items", 10);
+        var emptyMsg = await WaitForSelectorAsync(".no-items", 2);
         var text = await emptyMsg.TextContentAsync();
 
         // Assert

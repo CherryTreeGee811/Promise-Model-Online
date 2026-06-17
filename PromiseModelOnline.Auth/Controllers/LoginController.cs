@@ -62,6 +62,7 @@ public class LoginController : Controller
     /// <summary>Authenticate the user with email verification and lockout enforcement.</summary>
     /// <param name="model">The login form data containing username and password.</param>
     /// <returns>Redirects to the return URL on success, or returns the login view with errors.</returns>
+    [AllowAnonymous]
     [HttpPost("")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Index(LoginViewModel model)

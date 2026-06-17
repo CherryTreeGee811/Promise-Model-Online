@@ -28,6 +28,13 @@
   --radius-card:          12px;
   --radius-sm:            6px;
   --radius-xs:            4px;
+  --bs-primary-rgb:       9, 82, 189;
+  --bs-success-rgb:       18, 101, 63;
+  --bs-danger-rgb:        167, 40, 52;
+  --bs-secondary-color:   #535a60;
+  --bs-secondary-rgb:     83, 90, 96;
+  --bs-link-color-rgb:    9, 82, 189;
+  --bs-nav-link-color:    #0645ad;
 }
 
 /*********************************************
@@ -98,6 +105,10 @@ button {
 
 #stride-scrollspy-nav > .position-sticky {
   top: var(--stride-sticky-top) !important;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+  color: #adafb2;
 }
 
 .navbar .nav-link.active,
@@ -213,6 +224,10 @@ button {
   }
 }
 
+.bg-body .nav-link {
+  color: #0645ad;
+}
+
 /* When the navbar is collapsed (mobile), stride headers should scroll normally.
    The expanded nav changes the header height, but syncStrideStickyOffsets only
    recalculates on resize/scroll, not on nav toggle — causing the sticky header
@@ -312,10 +327,10 @@ button {
   color: #fff;
 }
 
-.status-todo          { background: #c0392b; }
-.status-inprogress    { background: #e67e22; }
-.status-blocked       { background: #7f8c8d; }
-.status-done          { background: #27ae60; }
+.status-todo          { background: #a12f24; }
+.status-inprogress    { background: #854913; }
+.status-blocked       { background: #51595a; }
+.status-done          { background: #176638; }
 
 /*********************************************
   11. Stride Cards, Backlog, Detail Cards
@@ -355,7 +370,7 @@ button {
 
 .stride-header {
   background: var(--color-accent);
-  color: #ecf0f1;
+  color: #ffffff;
   padding: var(--spacing-md) var(--spacing-lg);
   display: flex;
   align-items: center;
@@ -382,12 +397,12 @@ button {
   flex-shrink: 0;
 }
 .stride-dates { font-size: var(--font-size-sm); opacity: 0.9; }
-.stride-countdown--ended { color: #f1948a; font-weight: var(--font-weight-semibold); }
-.stride-countdown--ending { color: #e67e22; }
-.stride-countdown--healthy { color: #2ecc71; }
+.stride-countdown--ended { color: #ffcccc; font-weight: var(--font-weight-semibold); }
+.stride-countdown--ending { color: #ffd699; }
+.stride-countdown--healthy { color: #99edc4; }
 .stride-duration {
   font-size: var(--font-size-xs);
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
   padding: 2px 10px;
   border-radius: 20px;
 }
@@ -432,7 +447,7 @@ button {
   top: calc(var(--stride-sticky-top) + var(--stride-header-height));
   z-index: 1024;
   background: var(--color-accent);
-  color: #ecf0f1;
+  color: #ffffff;
 }
 
 .stride-header .btn-outline-success {
@@ -619,7 +634,7 @@ button {
 }
 .inline-edit-view:empty::before {
   content: '(no description)';
-  color: #6c757d;
+  color: #535a60;
   font-style: italic;
 }
 .inline-edit-view--input {
@@ -856,17 +871,77 @@ button {
   text-align: center;
 }
 
-.btn-outline-primary { color: #004db3; border-color: #004db3; }
+.btn-primary {
+  --bs-btn-bg: #0952bd;
+  --bs-btn-border-color: #0952bd;
+  --bs-btn-hover-bg: #07429a;
+  --bs-btn-hover-border-color: #063883;
+  --bs-btn-active-bg: #063272;
+  --bs-btn-active-border-color: #052b61;
+  --bs-btn-disabled-bg: #0952bd;
+  --bs-btn-disabled-border-color: #0952bd;
+}
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background-color: var(--bs-btn-hover-bg);
+  border-color: var(--bs-btn-hover-border-color);
+}
+.btn-primary:active {
+  background-color: var(--bs-btn-active-bg);
+  border-color: var(--bs-btn-active-border-color);
+}
+
+.btn-success {
+  --bs-btn-bg: #12653f;
+  --bs-btn-border-color: #12653f;
+  --bs-btn-hover-bg: #0e4f32;
+  --bs-btn-hover-border-color: #0c4329;
+  --bs-btn-active-bg: #0a3923;
+  --bs-btn-active-border-color: #092e1d;
+  --bs-btn-disabled-bg: #12653f;
+  --bs-btn-disabled-border-color: #12653f;
+}
+.btn-success:hover,
+.btn-success:focus-visible {
+  background-color: var(--bs-btn-hover-bg);
+  border-color: var(--bs-btn-hover-border-color);
+}
+.btn-success:active {
+  background-color: var(--bs-btn-active-bg);
+  border-color: var(--bs-btn-active-border-color);
+}
+
+.btn-danger {
+  --bs-btn-bg: #a72834;
+  --bs-btn-border-color: #a72834;
+  --bs-btn-hover-bg: #8a202b;
+  --bs-btn-hover-border-color: #771b24;
+  --bs-btn-active-bg: #691822;
+  --bs-btn-active-border-color: #5c141d;
+  --bs-btn-disabled-bg: #a72834;
+  --bs-btn-disabled-border-color: #a72834;
+}
+.btn-danger:hover,
+.btn-danger:focus-visible {
+  background-color: var(--bs-btn-hover-bg);
+  border-color: var(--bs-btn-hover-border-color);
+}
+.btn-danger:active {
+  background-color: var(--bs-btn-active-bg);
+  border-color: var(--bs-btn-active-border-color);
+}
+
+.btn-outline-primary { color: #003d94; border-color: #003d94; }
 .btn-outline-primary:hover,
-.btn-outline-primary:focus-visible { color: #fff; background: #004db3; border-color: #004db3; }
+.btn-outline-primary:focus-visible { color: #fff; background: #003d94; border-color: #003d94; }
 
 .btn-outline-secondary { color: #495057; border-color: #495057; }
 .btn-outline-secondary:hover,
 .btn-outline-secondary:focus-visible { color: #fff; background: #495057; border-color: #495057; }
 
-.btn-outline-danger { color: #b02a37; border-color: #b02a37; }
+.btn-outline-danger { color: #8a1f28; border-color: #8a1f28; }
 .btn-outline-danger:hover,
-.btn-outline-danger:focus-visible { color: #fff; background: #b02a37; border-color: #b02a37; }
+.btn-outline-danger:focus-visible { color: #fff; background: #8a1f28; border-color: #8a1f28; }
 
 .detail-stack-graph {
   width: 100%;
@@ -1754,7 +1829,7 @@ input, button, a, label, select, textarea {
 
 .home-stat-label {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: #535a60;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1794,7 +1869,7 @@ input, button, a, label, select, textarea {
 .home-stack-card p,
 .home-stat-desc {
   font-size: 0.9rem;
-  color: #6c757d;
+  color: #535a60;
   margin-bottom: 0;
   line-height: 1.5;
 }
@@ -1804,11 +1879,11 @@ input, button, a, label, select, textarea {
   font-size: 0.82rem;
 }
 
-.home-stack-card--promise  { --card-accent: #2563eb; }
-.home-stack-card--epic     { --card-accent: #7c3aed; }
-.home-stack-card--journey  { --card-accent: #0e7490; }
-.home-stack-card--flow     { --card-accent: #b45309; }
-.home-stack-card--moment   { --card-accent: #047857; }
+.home-stack-card--promise  { --card-accent: #1e51c0; }
+.home-stack-card--epic     { --card-accent: #6b32ce; }
+.home-stack-card--journey  { --card-accent: #0b6178; }
+.home-stack-card--flow     { --card-accent: #904207; }
+.home-stack-card--moment   { --card-accent: #036449; }
 
 /* Feature cards */
 .home-feature-card {
@@ -1848,7 +1923,7 @@ input, button, a, label, select, textarea {
 
 .home-feature-card p {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: #535a60;
   margin-bottom: 0;
   line-height: 1.5;
 }
@@ -1954,7 +2029,7 @@ input, button, a, label, select, textarea {
 }
 
 .privacy-date {
-  color: #6c757d;
+  color: #535a60;
   margin-bottom: 1.5rem;
 }
 
@@ -1978,7 +2053,7 @@ input, button, a, label, select, textarea {
 
 .privacy-jurisdiction {
   margin-top: 2rem;
-  color: #6c757d;
+  color: #535a60;
   font-size: var(--font-size-sm);
 }
 
@@ -2099,7 +2174,7 @@ input, button, a, label, select, textarea {
 
 .error-message {
   margin: 0;
-  color: #6c757d;
+  color: #535a60;
   font-size: var(--font-size-base);
   line-height: 1.6;
 }
@@ -2117,4 +2192,15 @@ button:disabled,
 .btn:disabled,
 .btn.disabled {
   opacity: 0.7;
+}
+
+.toast.bg-warning {
+  background-color: #e0a800 !important;
+  opacity: 1 !important;
+}
+.toast.bg-warning,
+.toast.bg-warning .toast-body,
+.toast.bg-warning .toast-body span,
+.toast.bg-warning .toast-body i {
+  color: #1a1a1a !important;
 }

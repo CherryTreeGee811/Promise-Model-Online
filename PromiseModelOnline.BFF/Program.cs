@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using PromiseModelOnline.BFF;
+using Serilog;
 using Yarp.ReverseProxy.Transforms;
 
 // BFF (Backend for Frontend) entry point.
@@ -12,6 +13,14 @@ using Yarp.ReverseProxy.Transforms;
 // authentication, session management, and token forwarding via YARP.
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
     ?? throw new InvalidOperationException("AUTH_PUBLIC_ISSUER is required.");
@@ -225,6 +234,15 @@ if (builder.Environment.IsDevelopment())
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+app.UseStatusCodePages(context =>
+{
+    var code = context.HttpContext.Response.StatusCode;
+    var log = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+    log.LogWarning("BFF returned status {StatusCode} for {Method} {Path}",
+        code, context.HttpContext.Request.Method, context.HttpContext.Request.Path);
+    return Task.CompletedTask;
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

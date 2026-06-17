@@ -1,3 +1,4 @@
+using Microsoft.Playwright;
 using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.Tests;
@@ -11,8 +12,8 @@ public class LegalPagesTests : PlaywrightTestBase
     public async Task REQ_NF_033_PrivacyPage_LoadsSuccessfully()
     {
         // Act
-        await Page.GotoAsync(BaseUrl + "/privacy");
-        var heading = await WaitForSelectorAsync(".privacy-page h1", 10);
+        await Page.GotoAsync(BaseUrl + "/privacy", new PageGotoOptions { Timeout = 2000 });
+        var heading = await WaitForSelectorAsync(".privacy-page h1", 2);
         var text = await heading.TextContentAsync();
         // Assert
         Assert.That(text, Does.Contain("Privacy Policy"));
@@ -21,8 +22,7 @@ public class LegalPagesTests : PlaywrightTestBase
     [Test]
     public async Task REQ_NF_033_PrivacyPage_HasFooterLink()
     {
-        // Act
-        await Page.GotoAsync(BaseUrl + "/");
+        // Act — page loaded by Setup() at /
         var link = Page.Locator("footer a[href='/privacy']");
         // Assert
         await Assertions.Expect(link).ToBeVisibleAsync();
@@ -32,8 +32,8 @@ public class LegalPagesTests : PlaywrightTestBase
     public async Task REQ_NF_033_TosPage_LoadsSuccessfully()
     {
         // Act
-        await Page.GotoAsync(BaseUrl + "/tos");
-        var heading = await WaitForSelectorAsync(".privacy-page h1", 10);
+        await Page.GotoAsync(BaseUrl + "/tos", new PageGotoOptions { Timeout = 2000 });
+        var heading = await WaitForSelectorAsync(".privacy-page h1", 2);
         var text = await heading.TextContentAsync();
         // Assert
         Assert.That(text, Does.Contain("Terms of Service"));
@@ -42,8 +42,7 @@ public class LegalPagesTests : PlaywrightTestBase
     [Test]
     public async Task REQ_NF_033_TosPage_HasFooterLink()
     {
-        // Act
-        await Page.GotoAsync(BaseUrl + "/");
+        // Act — page loaded by Setup() at /
         var link = Page.Locator("footer a[href='/tos']");
         // Assert
         await Assertions.Expect(link).ToBeVisibleAsync();
@@ -55,7 +54,7 @@ public class LegalPagesTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/account/delete");
         // Act
-        var heading = await WaitForSelectorAsync(".privacy-page h1", 10);
+        var heading = await WaitForSelectorAsync(".privacy-page h1", 2);
         var text = await heading.TextContentAsync();
         // Assert
         Assert.That(text, Does.Contain("My Data"));
@@ -67,7 +66,7 @@ public class LegalPagesTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/account/delete");
         // Act
-        var btn = await WaitForSelectorAsync("#export-data-btn", 10);
+        var btn = await WaitForSelectorAsync("#export-data-btn", 2);
         // Assert
         await Assertions.Expect(btn).ToBeVisibleAsync();
     }
@@ -78,7 +77,7 @@ public class LegalPagesTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/account/delete");
         // Act
-        var form = await WaitForSelectorAsync("#delete-account-form", 10);
+        var form = await WaitForSelectorAsync("#delete-account-form", 2);
         // Assert
         await Assertions.Expect(form).ToBeVisibleAsync();
     }

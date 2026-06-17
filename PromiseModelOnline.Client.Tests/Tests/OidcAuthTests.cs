@@ -1,3 +1,4 @@
+using Microsoft.Playwright;
 using System.Text.Json.Nodes;
 using PromiseModelOnline.Client.Tests.Helpers;
 
@@ -49,8 +50,8 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-02: Authorization endpoint redirects to login")]
     public async Task REQ_INT_015_AuthorizeEndpoint_RedirectsToLoginPage()
     {
-        await Page.GotoAsync(BaseUrl + "/connect/authorize");
-        Assert.That(await WaitUntilAsync(() => Task.FromResult(Page.Url.Contains("/account/login")), 10), Is.True,
+        await Page.GotoAsync(BaseUrl + "/connect/authorize", new PageGotoOptions { Timeout = 2000, WaitUntil = WaitUntilState.DOMContentLoaded });
+        Assert.That(await WaitUntilAsync(() => Task.FromResult(Page.Url.Contains("/account/login")), 2), Is.True,
             "Should redirect to login page");
     }
 
@@ -58,8 +59,8 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-03: End Session endpoint redirects to post-logout URI")]
     public async Task REQ_INT_015_EndSessionEndpoint_RedirectsToPostLogoutUri()
     {
-        await Page.GotoAsync(BaseUrl + "/connect/logout");
-        Assert.That(await WaitUntilAsync(() => Task.FromResult(new Uri(Page.Url).AbsolutePath == "/"), 10), Is.True,
+        await Page.GotoAsync(BaseUrl + "/connect/logout", new PageGotoOptions { Timeout = 2000, WaitUntil = WaitUntilState.DOMContentLoaded });
+        Assert.That(await WaitUntilAsync(() => Task.FromResult(new Uri(Page.Url).AbsolutePath == "/"), 2), Is.True,
             "Should redirect to root");
     }
 
@@ -70,8 +71,10 @@ public class OidcAuthTests : PlaywrightTestBase
         foreach (var path in new[] { "/signin-oidc", "/signout-callback-oidc" })
         {
             // Act & Assert
-            await Page.GotoAsync(BaseUrl + path);
+            await Page.GotoAsync(BaseUrl + path, new PageGotoOptions { Timeout = 2000, WaitUntil = WaitUntilState.DOMContentLoaded });
             Assert.That(Page.Url, Does.Contain(path), $"{path} should load the callback page");
+            // Reset to root between iterations to avoid SPA router conflicts
+            await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
         }
     }
 
@@ -80,7 +83,7 @@ public class OidcAuthTests : PlaywrightTestBase
     public async Task REQ_INT_015_LoginEndpoint_ReturnsSpaShell()
     {
         // Act & Assert
-        await Page.GotoAsync(BaseUrl + "/login");
+        await Page.GotoAsync(BaseUrl + "/login", new PageGotoOptions { Timeout = 2000 });
         Assert.That(Page.Url, Does.Contain("/login"));
     }
 
@@ -89,10 +92,10 @@ public class OidcAuthTests : PlaywrightTestBase
     public async Task REQ_INT_015_LoginLink_InAnonymousPage_PointsToBffLogin()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
 
         // Act
-        var link = await WaitForSelectorAsync("#login-link", 5);
+        var link = await WaitForSelectorAsync("#login-link");
         var href = await link.GetAttributeAsync("href");
 
         // Assert
@@ -108,7 +111,7 @@ public class OidcAuthTests : PlaywrightTestBase
 
         // Act
         await Page.Locator("#user-dropdown").ClickAsync();
-        var link = await WaitForSelectorAsync("#logout-link", 5);
+        var link = await WaitForSelectorAsync("#logout-link");
         var href = await link.GetAttributeAsync("href");
 
         // Assert
@@ -123,7 +126,7 @@ public class OidcAuthTests : PlaywrightTestBase
         await NavigateAsUser("/");
 
         // Act
-        var dropdown = await WaitForSelectorAsync("#user-dropdown", 5);
+        var dropdown = await WaitForSelectorAsync("#user-dropdown");
 
         // Assert
         Assert.That(await dropdown.IsVisibleAsync(), Is.True, "User dropdown should be visible when authenticated");
@@ -200,7 +203,7 @@ public class OidcAuthTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/projects");
-        await WaitForSelectorAsync("#project-list-table-body tr", 10);
+        await WaitForSelectorAsync("#project-list-table-body tr", 2);
 
         // Act
         await NavigateSpaAsync("/");
@@ -217,7 +220,7 @@ public class OidcAuthTests : PlaywrightTestBase
     public async Task REQ_INT_015_UnauthenticatedApiCall_Returns401()
     {
         // Arrange
-        await Page.GotoAsync(BaseUrl + "/");
+        await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
 
         // Act
         var json = await Page.EvaluateAsync<string>(@"
@@ -413,8 +416,8 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-16: Authorize endpoint handles redirect_uri parameter")]
     public async Task REQ_INT_015_AuthorizeEndpoint_AcceptsRedirectUri()
     {
-        await Page.GotoAsync(BaseUrl + "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=" + Uri.EscapeDataString("https://localhost:9000/signin-oidc"));
-        Assert.That(await WaitUntilAsync(() => Task.FromResult(Page.Url.Contains("/account/login")), 10), Is.True,
+        await Page.GotoAsync(BaseUrl + "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=" + Uri.EscapeDataString("https://localhost:9000/signin-oidc"), new PageGotoOptions { Timeout = 2000 });
+        Assert.That(await WaitUntilAsync(() => Task.FromResult(Page.Url.Contains("/account/login")), 2), Is.True,
             "Should redirect to login page");
     }
 

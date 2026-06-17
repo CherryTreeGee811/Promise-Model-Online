@@ -75,15 +75,17 @@ export async function resolveProjectIdForPromise(promiseId: string | number, pre
     const projects = await fetchProjects();
     const projectList = Array.isArray(projects) ? projects : [];
 
-    for (const project of projectList) {
+    const results = await Promise.all(projectList.map(async (project) => {
         const projectId = toProjectId(project?.id);
-        if (projectId == null) continue;
-
+        if (projectId == null) return null;
         const promises = await getProjectPromises(project.ownerSlug, project.slug);
-        if ((Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId)) {
-            promiseProjectCache.set(numericPromiseId, projectId);
-            return projectId;
-        }
+        const match = (Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId);
+        return match ? projectId : null;
+    }));
+    const found = results.find(id => id != null);
+    if (found != null) {
+        promiseProjectCache.set(numericPromiseId, found);
+        return found;
     }
 
     return null;

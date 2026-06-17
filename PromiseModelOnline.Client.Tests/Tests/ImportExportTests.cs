@@ -21,7 +21,7 @@ public class ImportExportTests : PlaywrightTestBase
     private async Task UploadImportFileAsync(string fileName)
     {
         var filePath = GetResourcePath(fileName);
-        var fileInput = await WaitForSelectorAsync("#import-project-input", 5);
+        var fileInput = await WaitForSelectorAsync("#import-project-input");
         await fileInput.SetInputFilesAsync(filePath);
     }
 
@@ -31,7 +31,7 @@ public class ImportExportTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/projects/add");
         // Act
-        var importBtn = await WaitForSelectorAsync("#import-project-btn", 5);
+        var importBtn = await WaitForSelectorAsync("#import-project-btn");
         // Assert
         Assert.That(await importBtn.IsVisibleAsync(), Is.True);
         Assert.That(await importBtn.TextContentAsync(), Does.Contain("Import"));
@@ -45,7 +45,7 @@ public class ImportExportTests : PlaywrightTestBase
         await NavigateAsUser("/projects/add");
         await UploadImportFileAsync("uber.json");
         // Act
-        var summaryPanel = await WaitForSelectorAsync("#project-import-summary-panel", 5);
+        var summaryPanel = await WaitForSelectorAsync("#project-import-summary-panel");
         var summaryText = await summaryPanel.TextContentAsync();
         // Assert
         Assert.That(summaryText, Does.Contain("Uber"));
@@ -67,7 +67,7 @@ public class ImportExportTests : PlaywrightTestBase
         await NavigateAsUser("/projects/add");
         await UploadImportFileAsync("netflix.json");
         // Act
-        var summaryPanel = await WaitForSelectorAsync("#project-import-summary-panel", 5);
+        var summaryPanel = await WaitForSelectorAsync("#project-import-summary-panel");
         var summaryText = await summaryPanel.TextContentAsync();
         // Assert
         Assert.That(summaryText, Does.Contain("Netflix"));
@@ -83,11 +83,11 @@ public class ImportExportTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/projects/add");
         await UploadImportFileAsync("uber.json");
-        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table");
         // Act
-        await ClickAsync("#create-project-btn", 5);
+        await ClickAsync("#create-project-btn");
         // Assert
-        var contains = await WaitForUrlContainsAsync("/graph", 10);
+        var contains = await WaitForUrlContainsAsync("/graph", 2);
         Assert.That(contains, Is.True);
         Assert.That(Page.Url, Does.Contain("/pmo_test/seeded-project/graph"));
     }
@@ -98,11 +98,11 @@ public class ImportExportTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/projects/add");
         await UploadImportFileAsync("netflix.json");
-        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table");
         // Act
-        await ClickAsync("#create-project-btn", 5);
+        await ClickAsync("#create-project-btn");
         // Assert
-        var contains = await WaitForUrlContainsAsync("/graph", 10);
+        var contains = await WaitForUrlContainsAsync("/graph", 2);
         Assert.That(contains, Is.True);
         Assert.That(Page.Url, Does.Contain("/pmo_test/seeded-project/graph"));
     }
@@ -113,11 +113,11 @@ public class ImportExportTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/projects/add");
         await UploadImportFileAsync("uber.json");
-        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
-        var clearBtn = await WaitForSelectorAsync("#clear-import-btn", 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table");
+        var clearBtn = await WaitForSelectorAsync("#clear-import-btn");
         Assert.That(await clearBtn.IsVisibleAsync(), Is.True);
         // Act
-        await ClickAsync("#clear-import-btn", 5);
+        await ClickAsync("#clear-import-btn");
         // Assert
         var summaryText = await Page.Locator("#project-import-summary-panel").TextContentAsync();
         Assert.That(summaryText, Is.Empty);
@@ -131,7 +131,7 @@ public class ImportExportTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/settings");
         // Act
-        var exportBtn = await WaitForSelectorAsync("#export-project-btn", 5);
+        var exportBtn = await WaitForSelectorAsync("#export-project-btn");
         // Assert
         Assert.That(await exportBtn.IsVisibleAsync(), Is.True);
         Assert.That(await exportBtn.TextContentAsync(), Does.Contain("Export"));
@@ -142,11 +142,11 @@ public class ImportExportTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/settings");
-        await WaitForSelectorAsync("#export-project-btn", 5);
+        await WaitForSelectorAsync("#export-project-btn");
         // Act
-        await ClickAsync("#export-project-btn", 5);
+        await ClickAsync("#export-project-btn");
         // Assert
-        var popover = await WaitForSelectorAsync(".popover, [data-bs-content]", 5);
+        var popover = await WaitForSelectorAsync(".popover, [data-bs-content]");
         Assert.That(popover, Is.Not.Null);
     }
 
@@ -169,7 +169,7 @@ public class ImportExportTests : PlaywrightTestBase
         await NavigateAsUser("/projects/add");
         await UploadImportFileAsync("uber.json");
         // Act
-        var nameInput = await WaitForSelectorAsync("#project-name-input", 5);
+        var nameInput = await WaitForSelectorAsync("#project-name-input");
         // Assert
         Assert.That(await nameInput.InputValueAsync(), Is.EqualTo("Uber"));
 
@@ -186,7 +186,7 @@ public class ImportExportTests : PlaywrightTestBase
         Assert.That(await label.TextContentAsync(), Is.EqualTo("Create Project"));
         // Act
         await UploadImportFileAsync("uber.json");
-        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table");
         // Assert
         Assert.That(await label.TextContentAsync(), Is.EqualTo("Import Project"));
     }
@@ -196,11 +196,11 @@ public class ImportExportTests : PlaywrightTestBase
     {
         // Arrange
         await NavigateAsUser("/projects/add");
-        await WaitForSelectorAsync("#first-promise-panel", 5);
+        await WaitForSelectorAsync("#first-promise-panel");
         Assert.That(await IsVisibleAsync("#first-promise-panel"), Is.True);
         // Act
         await UploadImportFileAsync("uber.json");
-        await WaitForSelectorAsync("#project-import-summary-panel table", 5);
+        await WaitForSelectorAsync("#project-import-summary-panel table");
         // Assert
         Assert.That(await IsVisibleAsync("#first-promise-panel"), Is.False);
     }

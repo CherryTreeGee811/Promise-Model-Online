@@ -121,7 +121,7 @@ const ROUTES = [
 ];
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(() => {});
+  navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(err => console.warn('SW registration failed:', err));
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

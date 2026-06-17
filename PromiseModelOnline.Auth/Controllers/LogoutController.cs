@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,7 @@ public class LogoutController : ControllerBase
     }
 
     /// <summary>Sign out the current user and process the end_session request.</summary>
+    [Authorize]
     [HttpGet, HttpPost]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Logout()

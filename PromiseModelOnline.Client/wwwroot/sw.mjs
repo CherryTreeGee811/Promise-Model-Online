@@ -1,5 +1,5 @@
 /** @type {string} */
-const CACHE = 'pmo-v3';
+const CACHE = 'pmo-v4';
 
 /** @type {string[]} */
 const PRECACHE = [
@@ -38,7 +38,9 @@ const BFF_PATHS = [
 ];
 
 self.addEventListener('install', /** @param {ExtendableEvent} event */ event => {
-  event.waitUntil(caches.open(CACHE));
+  event.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(PRECACHE))
+  );
   self.skipWaiting();
 });
 
@@ -94,6 +96,8 @@ async function networkFirst(request) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
+    const offline = await caches.match('/templates/error.html');
+    if (offline) return offline;
     throw new Error('Network unavailable');
   }
 }
@@ -114,7 +118,9 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
-    return;
+    const offline = await caches.match('/templates/error.html');
+    if (offline) return offline;
+    return new Response('Offline', { status: 503 });
   }
 }
 
@@ -133,7 +139,7 @@ self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
   }
 
   if (isStaticAsset(path)) {
-    event.waitUntil(cacheFirst(request));
+    event.respondWith(cacheFirst(request));
     return;
   }
 
@@ -149,7 +155,8 @@ self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      networkFirst(request).catch(() => fetch(request))
+      networkFirst(request).catch(() => caches.match('/templates/error.html')
+        .then(offline => offline || new Response('Offline', { status: 503 })))
     );
   }
 });

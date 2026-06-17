@@ -12,7 +12,7 @@ public class KnowledgeBaseTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/knowledge-base");
         // Act
-        var sidebar = await WaitForSelectorAsync("#navbar-kb", 10);
+        var sidebar = await WaitForSelectorAsync("#navbar-kb", 2);
         // Assert
         Assert.That(await sidebar.IsVisibleAsync(), Is.True);
         Assert.That(await sidebar.TextContentAsync(), Does.Contain("Promise Stack KB"));
@@ -26,7 +26,7 @@ public class KnowledgeBaseTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/knowledge-base");
         // Act
-        var kbContent = await WaitForSelectorAsync("#kb-content", 10);
+        var kbContent = await WaitForSelectorAsync("#kb-content", 2);
         // Assert
         Assert.That(await kbContent.IsVisibleAsync(), Is.True);
         Assert.That(await kbContent.TextContentAsync(), Does.Contain("Promise Stack Overview"));
@@ -38,10 +38,10 @@ public class KnowledgeBaseTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/knowledge-base");
         // Act
-        var sectionLink = await WaitForSelectorAsync("#navbar-kb a[href='#section6']", 10);
+        var sectionLink = await WaitForSelectorAsync("#navbar-kb a[href='#section6']", 2);
         await sectionLink.ClickAsync();
         // Assert
-        var section = await WaitForSelectorAsync("#section6", 10);
+        var section = await WaitForSelectorAsync("#section6", 2);
         Assert.That(await section.IsVisibleAsync(), Is.True);
         Assert.That(await section.TextContentAsync(), Does.Contain("Moments"));
     }

@@ -13,7 +13,7 @@ public class ProjectShareTests : PlaywrightTestBase
         await NavigateAsUser("/pmo_test/seeded-project/share");
 
         // Act
-        await Page.Locator("table.promisemodel-table tbody tr").First.WaitForAsync(new() { Timeout = 10000 });
+        await Page.Locator("table.promisemodel-table tbody tr").First.WaitForAsync(new() { Timeout = 1000 });
 
         var rows = await Page.Locator("table.promisemodel-table tbody tr").AllAsync();
 
@@ -29,10 +29,10 @@ public class ProjectShareTests : PlaywrightTestBase
         await NavigateAsUser("/pmo_test/seeded-project/share");
 
         // Act
-        await WaitForSelectorAsync("#invite-btn-top", 10);
+        await WaitForSelectorAsync("#invite-btn-top", 1);
         await Page.Locator("#invite-btn-top").ClickAsync();
 
-        await WaitForSelectorAsync("#invite-modal", 10);
+        await WaitForSelectorAsync("#invite-modal", 1);
 
         // Assert
         Assert.That(await IsVisibleAsync("#invite-email"), Is.True);
@@ -47,7 +47,7 @@ public class ProjectShareTests : PlaywrightTestBase
         await NavigateAsUser("/pmo_test/seeded-project/share");
 
         // Act
-        await Page.Locator("table.promisemodel-table tbody tr").First.WaitForAsync(new() { Timeout = 10000 });
+        await Page.Locator("table.promisemodel-table tbody tr").First.WaitForAsync(new() { Timeout = 1000 });
 
         var revokeCount = await Page.Locator(".revoke-btn").CountAsync();
 
@@ -63,12 +63,12 @@ public class ProjectShareTests : PlaywrightTestBase
 
         // Act
         await Page.Locator("#invite-btn-top").ClickAsync();
-        await WaitForSelectorAsync("#invite-modal", 10);
+        await WaitForSelectorAsync("#invite-modal", 1);
 
-        var emailInput = await WaitForSelectorAsync("#invite-email", 10);
+        var emailInput = await WaitForSelectorAsync("#invite-email", 1);
         await emailInput.FillAsync("newuser@example.com");
 
-        var levelSelect = await WaitForSelectorAsync("#invite-level", 10);
+        var levelSelect = await WaitForSelectorAsync("#invite-level", 1);
         await levelSelect.SelectOptionAsync(new SelectOptionValue { Value = "Edit" });
 
         await Page.Locator("#invite-modal-form button[type='submit']").ClickAsync();
@@ -77,7 +77,7 @@ public class ProjectShareTests : PlaywrightTestBase
         {
             var count = await Page.Locator("table.promisemodel-table tbody tr").CountAsync();
             return count >= 3;
-        }, 10);
+        }, 1);
 
         // Assert
         Assert.That(found, Is.True);

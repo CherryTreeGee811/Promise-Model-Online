@@ -58,8 +58,8 @@ export function stopNotificationPolling() {
 }
 
 /** Start polling for unread notification updates. */
-export function startNotificationPolling() {
-    handleNotificationUpdate();
+export async function startNotificationPolling() {
+    await handleNotificationUpdate();
 
     if (started) return;
     started = true;
