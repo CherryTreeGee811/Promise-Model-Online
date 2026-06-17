@@ -3,7 +3,7 @@ import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, u
 import { getStrides } from '../strides/api.mjs';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
 import { getStatusOptionHtml } from '../utils/status-utils.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';

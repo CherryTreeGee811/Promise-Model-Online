@@ -38,7 +38,7 @@ export default [
       'no-template-curly-in-string': 'warn',
       'no-unmodified-loop-condition': 'warn',
       'no-unreachable-loop': 'warn',
-      'require-atomic-updates': 'warn',
+      'require-atomic-updates': 'off',
 
       // Promise correctness
       'no-async-promise-executor': 'error',

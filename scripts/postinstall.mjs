@@ -24,6 +24,13 @@ const files = [
   ['axe-core/axe.min.js', js],
 ];
 
+// @popperjs/core ESM modules (needed by tippy.esm.js)
+const popperEsm = resolve('node_modules/@popperjs/core/dist/esm');
+if (existsSync(popperEsm)) {
+  const popperLib = resolve(js, '@popperjs__core');
+  cpSync(popperEsm, popperLib, { recursive: true, force: true });
+}
+
 let errors = 0;
 
 for (const [src, destDir] of files) {

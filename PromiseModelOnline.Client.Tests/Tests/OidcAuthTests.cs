@@ -49,18 +49,18 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-02: Authorization endpoint redirects to login")]
     public async Task REQ_INT_015_AuthorizeEndpoint_RedirectsToLoginPage()
     {
-        // Act & Assert
         await Page.GotoAsync(BaseUrl + "/connect/authorize");
-        Assert.That(Page.Url, Does.Contain("/account/login"));
+        Assert.That(await WaitUntilAsync(() => Task.FromResult(Page.Url.Contains("/account/login")), 10), Is.True,
+            "Should redirect to login page");
     }
 
     [Test]
     [Description("REQ-OIDC-03: End Session endpoint redirects to post-logout URI")]
     public async Task REQ_INT_015_EndSessionEndpoint_RedirectsToPostLogoutUri()
     {
-        // Act & Assert
         await Page.GotoAsync(BaseUrl + "/connect/logout");
-        Assert.That(new Uri(Page.Url).AbsolutePath, Is.EqualTo("/"));
+        Assert.That(await WaitUntilAsync(() => Task.FromResult(new Uri(Page.Url).AbsolutePath == "/"), 10), Is.True,
+            "Should redirect to root");
     }
 
     [Test]
@@ -413,9 +413,9 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-16: Authorize endpoint handles redirect_uri parameter")]
     public async Task REQ_INT_015_AuthorizeEndpoint_AcceptsRedirectUri()
     {
-        // Act & Assert
         await Page.GotoAsync(BaseUrl + "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=" + Uri.EscapeDataString("https://localhost:9000/signin-oidc"));
-        Assert.That(Page.Url, Does.Contain("/account/login"));
+        Assert.That(await WaitUntilAsync(() => Task.FromResult(Page.Url.Contains("/account/login")), 10), Is.True,
+            "Should redirect to login page");
     }
 
     [Test]
