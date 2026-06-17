@@ -21,6 +21,7 @@ const files = [
   ['@microsoft/signalr/dist/browser/signalr.min.js', js],
   ['d3/dist/d3.min.js', js],
   ['tippy.js/dist/tippy.umd.min.js', js],
+  ['@popperjs/core/dist/umd/popper.min.js', js],
   ['axe-core/axe.min.js', js],
 ];
 

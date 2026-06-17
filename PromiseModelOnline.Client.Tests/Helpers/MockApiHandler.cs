@@ -398,7 +398,7 @@ public static partial class MockApiHandler
 
 
     private static readonly string s_html = """
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/lib/css/bootstrap.min.css"><link rel="stylesheet" href="/lib/css/bootstrap-icons.min.css"><link rel="stylesheet" href="/css/site.css"></head><body><div id="main-menu" class="navbar-nav ms-auto align-items-md-center"></div><div id="content"></div><script src="/lib/js/bootstrap.bundle.min.js" defer></script><script src="/lib/js/signalr.min.js" defer></script><script src="/lib/js/tippy.umd.min.js" defer></script><script src="/dist/js/main.js" type="module"></script></body></html>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/lib/css/bootstrap.min.css"><link rel="stylesheet" href="/lib/css/bootstrap-icons.min.css"><link rel="stylesheet" href="/css/site.css"></head><body><div id="main-menu" class="navbar-nav ms-auto align-items-md-center"></div><div id="content"></div><script src="/lib/js/bootstrap.bundle.min.js" defer></script><script src="/lib/js/signalr.min.js" defer></script><script src="/lib/js/popper.min.js" defer></script><script src="/lib/js/tippy.umd.min.js" defer></script><script src="/dist/js/main.js" type="module"></script></body></html>
 """;
 
     private const string s_momentsByStride10 =
