@@ -38,11 +38,7 @@ const BFF_PATHS = [
 ];
 
 self.addEventListener('install', /** @param {ExtendableEvent} event */ event => {
-  event.waitUntil(
-    caches.open(CACHE).then(cache =>
-      cache.addAll(PRECACHE).catch(() => {})
-    )
-  );
+  event.waitUntil(caches.open(CACHE));
   self.skipWaiting();
 });
 
@@ -97,7 +93,7 @@ async function networkFirst(request) {
     return response;
   } catch {
     const cached = await caches.match(request);
-    return cached || new Response(null, { status: 503 });
+    return cached;
   }
 }
 
@@ -117,7 +113,7 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
-    return new Response(null, { status: 503 });
+    return;
   }
 }
 
@@ -135,27 +131,17 @@ self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
     return;
   }
 
-  if (path === '/manifest.json') {
-    event.respondWith(cacheFirst(request));
-    return;
-  }
-
-  if (isStaticAsset(path)) {
-    event.respondWith(cacheFirst(request));
-    return;
-  }
-
   if (isTemplate(path)) {
     event.respondWith(networkFirst(request));
     return;
   }
 
-  if (path === '/' || path === '/index.html') {
+  if (path === '/' || path === '/index.html' || path === '/manifest.json') {
     event.respondWith(networkFirst(request));
     return;
   }
 
-  if (request.mode === 'navigate') {
+  if (isStaticAsset(path) || request.mode === 'navigate') {
     event.respondWith(
       networkFirst(request).catch(() => caches.match('/'))
     );

@@ -30,8 +30,11 @@ public static partial class MockApiHandler
         var contentType = path.EndsWith(".css") ? "text/css"
             : path.EndsWith(".mjs") || path.EndsWith(".js") ? "text/javascript"
             : path.EndsWith(".html") ? "text/html"
+            : path.EndsWith(".json") ? "application/json"
             : path.EndsWith(".svg") ? "image/svg+xml"
             : path.EndsWith(".png") ? "image/png"
+            : path.EndsWith(".woff2") ? "font/woff2"
+            : path.EndsWith(".woff") ? "font/woff"
             : null;
 
         if (contentType == null) return null;
@@ -39,10 +42,19 @@ public static partial class MockApiHandler
         var filePath = WwwRoot + path;
         if (!File.Exists(filePath)) return null;
 
-        var body = File.ReadAllText(filePath);
-        var response = new MockResponse(200, contentType, body, []);
-        StaticFileCache[path] = response;
-        return response;
+        var isBinary = contentType.StartsWith("font/") || contentType.StartsWith("image/");
+        if (isBinary)
+        {
+            var bytes = File.ReadAllBytes(filePath);
+            var binResponse = new MockResponse(200, contentType, "", []) { BodyBytes = bytes };
+            StaticFileCache[path] = binResponse;
+            return binResponse;
+        }
+
+        var text = File.ReadAllText(filePath);
+        var result = new MockResponse(200, contentType, text, []);
+        StaticFileCache[path] = result;
+        return result;
     }
 
     /// <summary>Handle a Playwright route by returning a mock response or continuing to the server.</summary>
@@ -74,7 +86,7 @@ public static partial class MockApiHandler
                 && !path.StartsWith("/api/") && !path.StartsWith("/hubs/")
                 && !path.StartsWith("/templates/") && !path.StartsWith("/images/") && !path.StartsWith("/css/") && !path.StartsWith("/js/")
                 && !path.StartsWith("/lib/") && !path.StartsWith("/dist/") && !path.StartsWith("/umami/")
-                && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml" && path != "/sw.mjs"
+                && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml" && path != "/sw.mjs" && path != "/manifest.json" && path != "/favicon.ico"
                 && !path.StartsWith("/login") && !path.StartsWith("/logout") && !path.StartsWith("/register")
                 && !path.StartsWith("/signin-oidc") && !path.StartsWith("/signout-callback-oidc")
                 && !path.StartsWith("/connect/") && !path.StartsWith("/.well-known/"))
@@ -106,14 +118,18 @@ public static partial class MockApiHandler
         {
             Status = response.Status,
             ContentType = response.ContentType,
-            Body = response.Body
+            Body = response.Body,
+            BodyBytes = response.BodyBytes,
         };
         if (response.Headers.Count > 0)
             opts.Headers = response.Headers;
         await route.FulfillAsync(opts);
     }
 
-    private sealed record MockResponse(int Status, string ContentType, string Body, Dictionary<string, string> Headers);
+    private sealed record MockResponse(int Status, string ContentType, string Body, Dictionary<string, string> Headers)
+    {
+        public byte[]? BodyBytes { get; init; }
+    }
 
     private static MockResponse Json(int status, string body) => new(status, "application/json", body, []);
     private static MockResponse Html(int status, string body) => new(status, "text/html", body, []);
@@ -146,6 +162,7 @@ public static partial class MockApiHandler
         return (method, path) switch
         {
             ("GET", "/health") => Json(200, """{"status":"healthy"}"""),
+            ("GET", "/manifest.json") => GetStaticFileResponse(path) ?? Html(200, s_html),
 
             ("GET", "/login") or ("GET", "/register") => Html(200, s_html),
             ("GET", "/change-password") => Html(200, s_html),
@@ -398,7 +415,7 @@ public static partial class MockApiHandler
 
 
     private static readonly string s_html = """
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title id="page-title">Promise Model Online</title><link rel="stylesheet" href="/lib/css/bootstrap.min.css"><link rel="stylesheet" href="/lib/css/bootstrap-icons.min.css"><link rel="stylesheet" href="/css/site.css"></head><body><ul id="main-menu" class="navbar-nav ms-auto align-items-md-center"></ul><div id="content"></div><script src="/lib/js/bootstrap.bundle.min.js" defer></script><script src="/lib/js/signalr.min.js" defer></script><script src="/lib/js/popper.min.js" defer></script><script src="/lib/js/tippy-bundle.umd.min.js" defer></script><script src="/dist/js/main.js" type="module"></script></body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1a252f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><title id="page-title">Promise Model Online</title><link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/images/PromiseModelOnline_Logo_180x180.png"><link rel="icon" href="/images/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/lib/css/bootstrap.min.css"><link rel="stylesheet" href="/lib/css/bootstrap-icons.min.css"><link rel="stylesheet" href="/css/site.css"></head><body><ul id="main-menu" class="navbar-nav ms-auto align-items-md-center"></ul><div id="content"></div><script src="/lib/js/d3.min.js" defer></script><script src="/lib/js/bootstrap.bundle.min.js" defer></script><script src="/lib/js/signalr.min.js" defer></script><script src="/lib/js/popper.min.js" defer></script><script src="/lib/js/tippy-bundle.umd.min.js" defer></script><script src="/dist/js/main.js" type="module"></script><footer class="footer" role="contentinfo"><div>&copy; 2026 - Promise Model Online &nbsp;|&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp; <a href="/tos">Terms of Service</a></div></footer></body></html>
 """;
 
     private const string s_momentsByStride10 =

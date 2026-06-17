@@ -80,27 +80,23 @@ public class PwaTests : PlaywrightTestBase
         // Arrange
         await Page.GotoAsync(BaseUrl + "/");
 
-        // Act
+        // Act — SW activates without precaching; assets are cached lazily
+        // via cacheFirst during page load (intercepted by Context.RouteAsync)
         var activated = await Page.EvaluateAsync<bool>(@"
             navigator.serviceWorker.getRegistration().then(r =>
                 r && r.active && r.active.state === 'activated'
             )");
+        Assert.That(activated, Is.True, "Service worker should activate");
 
-        // Assert
-        Assert.That(activated, Is.True, "Service worker should activate and cache assets");
-
+        // Assert — assets cached by runtime cacheFirst during page load
         var cached = await Page.EvaluateAsync<bool[]>(@"
-            caches.keys().then(keys => {
-                var v3 = keys.find(k => k === 'pmo-v3');
-                if (!v3) return [false];
-                return caches.open(v3).then(cache =>
-                    Promise.all([
-                        cache.match('/dist/js/main.js').then(r => !!r),
-                        cache.match('/lib/css/bootstrap.min.css').then(r => !!r),
-                        cache.match('/lib/js/signalr.min.js').then(r => !!r)
-                    ])
-                );
-            })");
+            caches.open('pmo-v3').then(cache =>
+                Promise.all([
+                    cache.match('/dist/js/main.js').then(r => !!r),
+                    cache.match('/lib/css/bootstrap.min.css').then(r => !!r),
+                    cache.match('/lib/js/signalr.min.js').then(r => !!r)
+                ])
+            )");
         Assert.That(cached, Has.All.True, "Service worker cache should contain expected static assets");
     }
 
