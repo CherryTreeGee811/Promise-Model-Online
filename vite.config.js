@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: 'PromiseModelOnline.Client/wwwroot',
-  base: '/',
+  base: '/dist/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
