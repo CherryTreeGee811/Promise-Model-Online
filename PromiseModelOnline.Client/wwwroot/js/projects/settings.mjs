@@ -1,6 +1,6 @@
 import { navigate } from '../router.mjs';
-import { exportProject, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.mjs';
-import { getProjectMembers } from '../strides/api.mjs';
+import { exportProject, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.ts';
+import { getProjectMembers } from '../strides/api.ts';
 import { renderSummaryTable } from './summary.mjs';
 import { formatTimestamp } from './audit.mjs';
 import { escapeHtml } from '../utils/html.mjs';

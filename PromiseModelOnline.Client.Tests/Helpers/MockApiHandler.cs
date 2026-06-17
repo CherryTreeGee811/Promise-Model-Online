@@ -74,7 +74,7 @@ public static partial class MockApiHandler
                 && !path.StartsWith("/api/") && !path.StartsWith("/hubs/")
                 && !path.StartsWith("/templates/") && !path.StartsWith("/images/") && !path.StartsWith("/css/") && !path.StartsWith("/js/")
                 && !path.StartsWith("/lib/") && !path.StartsWith("/dist/") && !path.StartsWith("/umami/")
-                && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml"
+                && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml" && path != "/sw.mjs"
                 && !path.StartsWith("/login") && !path.StartsWith("/logout") && !path.StartsWith("/register")
                 && !path.StartsWith("/signin-oidc") && !path.StartsWith("/signout-callback-oidc")
                 && !path.StartsWith("/connect/") && !path.StartsWith("/.well-known/"))

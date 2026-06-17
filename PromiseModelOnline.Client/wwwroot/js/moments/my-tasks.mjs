@@ -1,4 +1,4 @@
-import { getMyAssignedMoments, updateMomentType } from './api.mjs';
+import { getMyAssignedMoments, updateMomentType } from './api.ts';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { navigate } from '../router.mjs';

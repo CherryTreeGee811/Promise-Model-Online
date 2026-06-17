@@ -1,12 +1,13 @@
 const CACHE = 'pmo-v3';
 
 const PRECACHE = [
-  '/',
-  '/dist/assets/style.css',
   '/dist/js/main.js',
-  '/js/api.mjs',
-  '/js/auth-state.mjs',
-  '/js/home.mjs',
+  '/lib/css/bootstrap.min.css',
+  '/lib/css/bootstrap-icons.min.css',
+  '/lib/js/bootstrap.bundle.min.js',
+  '/lib/js/signalr.min.js',
+  '/lib/js/d3.min.js',
+  '/lib/js/tippy.umd.min.js',
   '/images/icon.svg',
   '/images/PromiseModelOnline_Logo_192x192.png',
   '/images/PromiseModelOnline_Logo_512x512.png',

@@ -1,4 +1,4 @@
-import { fetchProjects, getProjectPromises } from './api.mjs';
+import { fetchProjects, getProjectPromises } from './api.ts';
 
 const promiseProjectCache = new Map();
 

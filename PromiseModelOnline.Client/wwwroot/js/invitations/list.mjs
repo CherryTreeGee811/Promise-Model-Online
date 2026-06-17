@@ -1,4 +1,4 @@
-import { getPendingInvitations, acceptInvitation } from './api.mjs';
+import { getPendingInvitations, acceptInvitation } from './api.ts';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 

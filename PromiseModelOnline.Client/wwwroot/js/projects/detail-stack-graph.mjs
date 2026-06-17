@@ -1,9 +1,9 @@
-import { getProject } from './api.mjs';
-import { getPromise, getEpicsByPromise, getPromiseById } from '../promises/api.mjs';
-import { getEpic, getJourneys, getEpicById } from '../epics/api.mjs';
-import { getJourney, getFlows, getJourneyById } from '../journeys/api.mjs';
-import { getFlow, getMoments, getFlowById } from '../flows/api.mjs';
-import { getMoment } from '../moments/api.mjs';
+import { getProject } from './api.ts';
+import { getPromise, getEpicsByPromise, getPromiseById } from '../promises/api.ts';
+import { getEpic, getJourneys, getEpicById } from '../epics/api.ts';
+import { getJourney, getFlows, getJourneyById } from '../journeys/api.ts';
+import { getFlow, getMoments, getFlowById } from '../flows/api.ts';
+import { getMoment } from '../moments/api.ts';
 import {
     computeChildMetrics,
     createNodeWithMetrics,

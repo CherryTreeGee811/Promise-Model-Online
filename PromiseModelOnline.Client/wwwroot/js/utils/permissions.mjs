@@ -1,4 +1,4 @@
-import { getMyPermission } from '../projects/api.mjs';
+import { getMyPermission } from '../projects/api.ts';
 
 const PERMISSION_HIERARCHY = { View: 0, Comment: 1, Edit: 2, Owner: 3 };
 

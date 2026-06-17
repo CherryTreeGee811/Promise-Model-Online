@@ -1,7 +1,7 @@
 import { navigate } from '../router.mjs';
-import { getProject } from '../projects/api.mjs';
-import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.mjs';
-import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner, updateMomentType } from '../moments/api.mjs';
+import { getProject } from '../projects/api.ts';
+import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.ts';
+import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner, updateMomentType } from '../moments/api.ts';
 import { buildGraphViewHref } from '../projects/graph-link.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';

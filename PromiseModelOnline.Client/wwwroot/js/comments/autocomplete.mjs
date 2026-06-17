@@ -1,4 +1,4 @@
-import { searchUsers, searchPromises } from './autocomplete.api.mjs';
+import { searchUsers, searchPromises } from './autocomplete.api.ts';
 
 /**
  * Create an autocomplete dropdown for @-mention and #-reference in a comment textarea.

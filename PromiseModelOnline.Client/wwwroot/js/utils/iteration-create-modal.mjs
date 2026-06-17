@@ -1,4 +1,4 @@
-import { createIteration } from '../iterations/api.mjs';
+import { createIteration } from '../iterations/api.ts';
 
 /**
  * Ensure a modal element exists in the DOM, creating it if necessary.

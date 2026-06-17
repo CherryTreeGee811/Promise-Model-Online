@@ -1,7 +1,7 @@
 const tippy = window.tippy;
 
 import { apiFetch } from '../api.ts';
-import { updateMomentStatus } from '../moments/api.mjs';
+import { updateMomentStatus } from '../moments/api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
 import { STATUS_OPTIONS } from '../utils/status-utils.mjs';
 

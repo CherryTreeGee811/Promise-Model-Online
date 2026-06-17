@@ -1,5 +1,5 @@
 import { navigate } from "../router.mjs";
-import { fetchProjects } from "./api.mjs";
+import { fetchProjects } from './api.ts';
 import { renderEmptyTableRow } from "../utils/empty-table.mjs";
 
 /**

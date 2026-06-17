@@ -80,6 +80,7 @@ public abstract class PlaywrightTestBase
             };
 
             await Page.RouteAsync("**/*", MockApiHandler.HandleRouteAsync);
+            await Context.RouteAsync("**/*", MockApiHandler.HandleRouteAsync);
 
             await Page.GotoAsync(BaseUrl + "/");
             _initialized = true;

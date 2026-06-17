@@ -1,6 +1,6 @@
-import { getProject } from '../projects/api.mjs';
-import { getIterations, getBurndown } from './api.mjs';
-import { getStridesByIteration } from '../strides/api.mjs';
+import { getProject } from '../projects/api.ts';
+import { getIterations, getBurndown } from './api.ts';
+import { getStridesByIteration } from '../strides/api.ts';
 import { drawBurndownChart } from '../utils/burndown.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';

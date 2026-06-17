@@ -1,6 +1,6 @@
 import { navigate } from '../router.mjs';
-import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.mjs';
-import { getStrides } from '../strides/api.mjs';
+import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
+import { getStrides } from '../strides/api.ts';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.mjs';

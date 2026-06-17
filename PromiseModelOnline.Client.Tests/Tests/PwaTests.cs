@@ -80,19 +80,28 @@ public class PwaTests : PlaywrightTestBase
         // Arrange
         await Page.GotoAsync(BaseUrl + "/");
 
-        // Act — wait for SW to activate and cache
-        await Task.Delay(2000);
-
-        // Assert — key assets are in the cache
-        var cached = await Page.EvaluateAsync<bool[]>(@"
-            caches.open('pmo-v2').then(cache =>
-                Promise.all([
-                    cache.match('/lib/css/bootstrap.min.css').then(r => !!r),
-                    cache.match('/lib/js/signalr.min.js').then(r => !!r),
-                    cache.match('/js/router.mjs').then(r => !!r)
-                ])
+        // Act
+        var activated = await Page.EvaluateAsync<bool>(@"
+            navigator.serviceWorker.getRegistration().then(r =>
+                r && r.active && r.active.state === 'activated'
             )");
-        Assert.That(cached, Is.All.True, "Service worker should cache CSS, vendor JS, and app JS");
+
+        // Assert
+        Assert.That(activated, Is.True, "Service worker should activate and cache assets");
+
+        var cached = await Page.EvaluateAsync<bool[]>(@"
+            caches.keys().then(keys => {
+                var v3 = keys.find(k => k === 'pmo-v3');
+                if (!v3) return [false];
+                return caches.open(v3).then(cache =>
+                    Promise.all([
+                        cache.match('/dist/js/main.js').then(r => !!r),
+                        cache.match('/lib/css/bootstrap.min.css').then(r => !!r),
+                        cache.match('/lib/js/signalr.min.js').then(r => !!r)
+                    ])
+                );
+            })");
+        Assert.That(cached, Has.All.True, "Service worker cache should contain expected static assets");
     }
 
     [Test]

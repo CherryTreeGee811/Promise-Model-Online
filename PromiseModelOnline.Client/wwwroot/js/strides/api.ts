@@ -76,7 +76,7 @@ export async function getProjectMembers(owner, project) {
 export async function getMyPermission(owner, project) {
     const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
     if (!res) return null;
-    return res.permission ?? null;
+    return (res as Record<string, unknown>).permission ?? null;
 }
 
 /**
@@ -95,7 +95,7 @@ export const updateStride = (owner, project, strideId, data) => apiPatch(`/api/p
  * @param {number|string} strideId - The stride ID.
  * @returns {Promise<Object>} The progressed stride.
  */
-export const progressStride = (owner, project, strideId) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}/progress`);
+export const progressStride = (owner, project, strideId) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}/progress`, {});
 /**
  * Trigger a batch run of deadline notifications.
  * @returns {Promise<Object>} The API response.

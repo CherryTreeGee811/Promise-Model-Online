@@ -1,5 +1,5 @@
-import { getGraphData } from './api.mjs';
-import { getStrides } from '../strides/api.mjs';
+import { getGraphData } from './api.ts';
+import { getStrides } from '../strides/api.ts';
 import { escapeHtml } from '../utils/html.mjs';
 import { getUserId } from '../auth-state.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
