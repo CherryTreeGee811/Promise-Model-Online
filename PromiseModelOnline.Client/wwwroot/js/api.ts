@@ -1,4 +1,4 @@
-import { setAuthState, clearAuth } from './auth-state.ts';
+import { authStore } from './stores/auth.ts';
 
 /**
  * Perform a GET request and parse JSON response.
@@ -6,7 +6,7 @@ import { setAuthState, clearAuth } from './auth-state.ts';
  * @returns The parsed JSON body, or null for 204 No Content.
  * @throws Error if the HTTP response is not OK.
  */
-export async function apiGet(url: string): Promise<unknown> {
+export async function apiGet<T = unknown>(url: string): Promise<T | null> {
   const res = await apiFetch(url);
   if (res.status === 204) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -18,9 +18,9 @@ export async function apiGet(url: string): Promise<unknown> {
  * @param url - The API endpoint URL.
  * @returns The parsed JSON array, or empty array.
  */
-export async function apiGetList(url: string): Promise<unknown[]> {
-  const data = await apiGet(url);
-  return (data as unknown[]) ?? [];
+export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
+  const data = await apiGet<T[]>(url);
+  return data ?? [];
 }
 
 /**
@@ -30,7 +30,7 @@ export async function apiGetList(url: string): Promise<unknown[]> {
  * @returns The parsed JSON response, or null for 204.
  * @throws Error if the HTTP response is not OK.
  */
-export async function apiPost(url: string, body: unknown): Promise<unknown> {
+export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | null> {
   const res = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -65,7 +65,7 @@ export async function apiPut(url: string, body: unknown): Promise<boolean> {
  * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
  * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiPatch(url: string, body: unknown): Promise<unknown> {
+export async function apiPatch<T = unknown>(url: string, body: unknown): Promise<T | null> {
   const res = await apiFetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -118,7 +118,7 @@ export async function apiFetch(url: string, options: Record<string, unknown> = {
     });
 
     if (response.status === 401) {
-        clearAuth();
+        authStore.set({ isAuthenticated: false, username: null, userId: null });
         if (!window.location.pathname.startsWith('/login')) {
             window.location.href = '/login';
         }
@@ -144,13 +144,13 @@ export async function checkSession() {
 
         if (response.ok) {
             const data = await response.json();
-            setAuthState({ isAuthenticated: true, username: data.name, userId: data.userId });
+            authStore.set({ isAuthenticated: true, username: data.name, userId: data.userId });
             return true;
         }
     } catch {
         // No session
     }
 
-    clearAuth();
+    authStore.set({ isAuthenticated: false, username: null, userId: null });
     return false;
 }

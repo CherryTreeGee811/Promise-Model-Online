@@ -12,6 +12,7 @@ import { loadJourneyDetail } from '../journeys/detail.ts';
 import { loadFlowDetail } from '../flows/detail.ts';
 import { loadMomentDetail } from '../moments/detail.ts';
 import { fetchMyPermission } from '../utils/permissions.ts';
+import { projectStore } from '../stores/project.ts';
 
 /**
  * Handle legacy project routes (non-slug-based) like /projects and /projects/add.
@@ -46,11 +47,14 @@ export function handleLegacyProjectRoutes(path: string, navContentDiv: HTMLEleme
  * @param contentDiv - The main content container.
  */
 export function handleProjectScopedRoutes(owner: string, project: string, subPath: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
+    projectStore.set({ owner, project, permission: undefined, isOwner: false });
+
     const normalizedSub = subPath.replace(/^\/+/, '').replace(/\/+$/, '');
     const segments = normalizedSub ? normalizedSub.split('/') : [];
 
     if (segments.length === 0) {
         fetchMyPermission(owner, project).then(perm => {
+            projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
             loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
         });
         return;
@@ -62,6 +66,7 @@ export function handleProjectScopedRoutes(owner: string, project: string, subPat
     switch (true) {
         case main === 'strides':
             fetchMyPermission(owner, project).then(perm => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
                 loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
             });
             break;
@@ -69,21 +74,30 @@ export function handleProjectScopedRoutes(owner: string, project: string, subPat
             Promise.all([
                 loadTemplate('projects/graph.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadGraphPage(owner, project, contentDiv, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadGraphPage(owner, project, contentDiv, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'graph page'));
             break;
         case main === 'settings':
             Promise.all([
                 loadTemplate('projects/settings.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'project settings'));
             break;
         case main === 'share':
             Promise.all([
                 loadTemplate('projects/share.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadSharePage(owner, project, contentDiv, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadSharePage(owner, project, contentDiv, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'share page'));
             break;
         case main === 'history':
@@ -96,6 +110,7 @@ export function handleProjectScopedRoutes(owner: string, project: string, subPat
                 loadTemplate('iterations/list.html', contentDiv),
                 fetchMyPermission(owner, project),
             ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
                 import('../iterations/list.ts').then(module => {
                     module.loadIterationHistory(owner, project, perm);
                 });
@@ -106,35 +121,50 @@ export function handleProjectScopedRoutes(owner: string, project: string, subPat
             Promise.all([
                 loadTemplate('promises/detail.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadPromiseDetail(owner, project, seq, navContentDiv, contentDiv, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadPromiseDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'promise'));
             break;
         case main === 'epics' && !!seq:
             Promise.all([
                 loadTemplate('epics/detail.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'epic'));
             break;
         case main === 'journeys' && !!seq:
             Promise.all([
                 loadTemplate('journeys/detail.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'journey'));
             break;
         case main === 'flows' && !!seq:
             Promise.all([
                 loadTemplate('flows/detail.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'flow'));
             break;
         case main === 'moments' && !!seq:
             Promise.all([
                 loadTemplate('moments/detail.html', contentDiv),
                 fetchMyPermission(owner, project),
-            ]).then(([, perm]) => loadMomentDetail(owner, project, seq, navContentDiv, contentDiv, perm))
+            ]).then(([, perm]) => {
+                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+                loadMomentDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+            })
             .catch(loadTemplateWithError(contentDiv, 'moment'));
             break;
         default:
