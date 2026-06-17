@@ -93,7 +93,8 @@ async function networkFirst(request) {
     return response;
   } catch {
     const cached = await caches.match(request);
-    return cached;
+    if (cached) return cached;
+    throw new Error('Network unavailable');
   }
 }
 
@@ -131,6 +132,11 @@ self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
     return;
   }
 
+  if (isStaticAsset(path)) {
+    event.waitUntil(cacheFirst(request));
+    return;
+  }
+
   if (isTemplate(path)) {
     event.respondWith(networkFirst(request));
     return;
@@ -141,9 +147,9 @@ self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
     return;
   }
 
-  if (isStaticAsset(path) || request.mode === 'navigate') {
+  if (request.mode === 'navigate') {
     event.respondWith(
-      networkFirst(request).catch(() => caches.match('/'))
+      networkFirst(request).catch(() => fetch(request))
     );
   }
 });
