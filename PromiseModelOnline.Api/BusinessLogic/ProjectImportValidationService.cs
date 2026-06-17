@@ -152,12 +152,9 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
                     result.Errors.Add($"Stride {stride.Id} references iteration {stride.IterationId.Value}, but it is nested under iteration {iteration.Id}.");
                 }
 
-                foreach (var momentId in stride.MomentIds)
+                foreach (var momentId in stride.MomentIds.Where(momentId => !MomentExists(project, momentId)))
                 {
-                    if (!MomentExists(project, momentId))
-                    {
-                        result.Warnings.Add($"Stride {stride.Id} references moment {momentId}, but that moment was not found in the import file.");
-                    }
+                    result.Warnings.Add($"Stride {stride.Id} references moment {momentId}, but that moment was not found in the import file.");
                 }
             }
         }
@@ -168,7 +165,7 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
     /// <param name="result">The validation result for reporting duplicates.</param>
     /// <param name="label">A human-readable label for the item type in error messages.</param>
     /// <returns>A set of collected IDs.</returns>
-    private static HashSet<int> CollectIds<T>(IEnumerable<T> items, ProjectImportValidationResult result, string label) where T : class
+    private static void CollectIds<T>(IEnumerable<T> items, ProjectImportValidationResult result, string label) where T : class
     {
         var ids = new HashSet<int>();
         foreach (var item in items)
@@ -179,8 +176,6 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
                 result.Errors.Add($"Duplicate {label} id '{id}' found in the import file.");
             }
         }
-
-        return ids;
     }
 
     /// <summary>Check if a stride with the given ID exists in the exported project.</summary>

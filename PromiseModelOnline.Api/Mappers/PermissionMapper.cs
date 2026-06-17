@@ -5,16 +5,16 @@ using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Mappers
 {
-    /// <summary>Maps <see cref="Permission"/> entities to <see cref="PermissionDTO"/> with explicit property mapping.</summary>
+    /// <summary>Maps <see cref="Permission"/> entities to <see cref="PermissionDto"/> with explicit property mapping.</summary>
     /// <remarks>
     ///   Resolves the user name from the navigation property and converts enum values to strings.
     /// </remarks>
-    public class PermissionMapper : IGenericMapper<Permission, PermissionDTO>
+    public class PermissionMapper : IGenericMapper<Permission, PermissionDto>
     {
         /// <summary>Map a permission entity to a permission DTO.</summary>
-        public PermissionDTO Map(Permission source, IGenericService<Permission>? service = null)
+        public PermissionDto Map(Permission source, IGenericService<Permission>? service)
         {
-            return new PermissionDTO
+            return new PermissionDto
             {
                 Id = source.Id,
                 UserId = source.UserId,

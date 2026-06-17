@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,6 +14,7 @@ public class Promise
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
 
     /// <summary>Entity type discriminator, always <c>"Promise"</c>. Not mapped to the database.</summary>
@@ -29,12 +31,14 @@ public class Promise
     public string? Description { get; set; }
         
     /// <summary>Foreign key to the parent <see cref="Models.Project"/>.</summary>
+    [Required]
     public int ProjectId { get; set; }
     
     /// <summary>Foreign key to the <see cref="User"/> responsible for this promise.</summary>
     public int? OwnerId { get; set; }
         
     /// <summary>Human-readable sequence number, unique within the project.</summary>
+    [Required]
     public int SequenceNumber { get; set; }
 
     /// <summary>Sort order within the parent project's promise list.</summary>
@@ -64,3 +68,4 @@ public class Promise
     /// <summary>Comments attached to this promise.</summary>
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }
+#pragma warning restore S6964

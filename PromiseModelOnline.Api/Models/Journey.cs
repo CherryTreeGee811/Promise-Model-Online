@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,6 +13,7 @@ public class Journey
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
 
     /// <summary>Entity type discriminator, always <c>"Journey"</c>. Not mapped.</summary>
@@ -28,12 +30,14 @@ public class Journey
     public string? Description { get; set; }
         
     /// <summary>Foreign key to the parent <see cref="Models.Epic"/>.</summary>
+    [Required]
     public int EpicId { get; set; }
         
     /// <summary>Foreign key to the responsible <see cref="User"/>.</summary>
     public int? OwnerId { get; set; }
         
     /// <summary>Human-readable sequence number, unique within the parent epic.</summary>
+    [Required]
     public int SequenceNumber { get; set; }
 
     /// <summary>Sort order within the parent epic.</summary>
@@ -63,3 +67,4 @@ public class Journey
     /// <summary>Comments attached to this journey.</summary>
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }
+#pragma warning restore S6964

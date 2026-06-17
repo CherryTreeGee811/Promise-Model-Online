@@ -41,9 +41,9 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_SYS_004_GetReactions_WithValidQuery_ReturnsOkWithReactions()
         {
             // Arrange
-            var reactions = new List<ReactionDTO>
+            var reactions = new List<ReactionDto>
             {
-                new ReactionDTO
+                new ReactionDto
                 {
                     Id = 1,
                     UserId = 10,
@@ -53,7 +53,7 @@ namespace PromiseModelOnline.Api.Tests
                     StackItemId = 42,
                     CreatedAt = System.DateTime.UtcNow
                 },
-                new ReactionDTO
+                new ReactionDto
                 {
                     Id = 2,
                     UserId = 11,
@@ -93,7 +93,7 @@ namespace PromiseModelOnline.Api.Tests
             };
 
             var currentUser = new User { Id = 5, Email = "user@example.com", Name = "User" };
-            var createdReaction = new ReactionDTO
+            var createdReaction = new ReactionDto
             {
                 Id = 100,
                 UserId = currentUser.Id,

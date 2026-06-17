@@ -11,6 +11,7 @@ namespace PromiseModelOnline.Api.Controllers
     ///   <c>ownerSlug</c> and <c>projectSlug</c> route parameters. Returns <c>404</c> if
     ///   the project is not found.
     /// </remarks>
+    [IgnoreAntiforgeryToken]
     public abstract class ProjectScopedControllerBase : ControllerBase
     {
         /// <summary>Service for project lookups by slug.</summary>

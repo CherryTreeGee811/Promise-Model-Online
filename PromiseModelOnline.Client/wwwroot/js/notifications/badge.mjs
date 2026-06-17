@@ -1,4 +1,4 @@
-import { fetchUnreadNotifications } from './api.mjs';
+import { fetchUnreadNotifications } from './api.ts';
 import { startSignalR, stopSignalR } from './signalr.mjs';
 
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';

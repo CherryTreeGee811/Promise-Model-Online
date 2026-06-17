@@ -1,5 +1,5 @@
-import { getGraphData } from './api.mjs';
-import { getStrides } from '../strides/api.mjs';
+import { getGraphData } from './api.ts';
+import { getStrides } from '../strides/api.ts';
 import { escapeHtml } from '../utils/html.mjs';
 import { getUserId } from '../auth-state.mjs';
 import { createGraphContextMenuController } from './graph-context-menu.mjs';
@@ -279,22 +279,6 @@ function getStrideFilterValue(value) {
     if (normalized === 'all' || normalized === 'backlog') return normalized;
     if (/^\d+$/.test(normalized)) return normalized;
     return 'all';
-}
-
-/**
- * Get the human-readable display label for a node type.
- * @param {string} nodeType - The node type key.
- * @returns {string} The display label.
- */
-function getTypeLabel(nodeType) {
-    switch (nodeType) {
-        case 'promise': return 'Product Promise';
-        case 'epic': return 'Epic';
-        case 'journey': return 'Journey';
-        case 'flow': return 'Flow';
-        case 'moment': return 'Moment';
-        default: return nodeType;
-    }
 }
 
 /**
@@ -1090,7 +1074,7 @@ export async function loadGraphPage(owner, project, contentDiv, permission) {
 
     graphState.owner = owner;
     graphState.project = project;
-    graphState.d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
+    graphState.d3 = window.d3;
     graphState.filters = readFiltersFromUrl();
     graphState.focusNodeId = readGraphFocusFromUrl();
     graphState.zoomTransform = null;

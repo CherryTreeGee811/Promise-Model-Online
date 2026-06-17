@@ -32,7 +32,7 @@ namespace PromiseModelOnline.Api.Controllers
     /// </remarks>
 
     [Route("api/reactions")]
-
+    [IgnoreAntiforgeryToken]
     public class ReactionsController : ControllerBase
 
     {
@@ -75,12 +75,13 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpGet]
 
-        public async Task<ActionResult<IEnumerable<ReactionDTO>>> GetReactions(
+        public async Task<ActionResult<IEnumerable<ReactionDto>>> GetReactions(
 
             [FromQuery] string type, [FromQuery] int itemId)
 
         {
 
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var reactions = await _reactionService.GetReactionsAsync(type, itemId);
 
             return Ok(reactions);
@@ -97,10 +98,12 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpPost]
 
-        public async Task<ActionResult<ReactionDTO>> CreateReaction([FromBody] CreateReactionRequest request)
+        public async Task<ActionResult<ReactionDto>> CreateReaction([FromBody] CreateReactionRequest request)
 
         {
 
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var userId = await GetCurrentUserIdAsync();
 
             if (userId is null) return Unauthorized();
@@ -138,7 +141,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         [HttpPatch("{id}")]
 
-        public async Task<ActionResult<ReactionDTO>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDTO request)
+        public async Task<ActionResult<ReactionDto>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDto request)
 
         {
 
@@ -190,6 +193,7 @@ namespace PromiseModelOnline.Api.Controllers
 
         {
 
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var userId = await GetCurrentUserIdAsync();
 
             if (userId == null) return Unauthorized();

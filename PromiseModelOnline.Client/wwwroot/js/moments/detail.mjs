@@ -1,13 +1,9 @@
 import { navigate } from '../router.mjs';
-import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.mjs';
-import { loadComments } from '../comments/comments.mjs';
-import { getStrides } from '../strides/api.mjs';
-import { getFlow } from '../flows/api.mjs';
-import { getJourney } from '../journeys/api.mjs';
-import { getEpic } from '../epics/api.mjs';
+import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
+import { getStrides } from '../strides/api.ts';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.mjs';
 import { getStatusOptionHtml } from '../utils/status-utils.mjs';
 import { createCommentAutocomplete } from '../comments/autocomplete.mjs';
@@ -152,7 +148,7 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
             })();
 
             const tasksContainer = document.getElementById('moment-tasks');
-            renderMomentTasks(tasksContainer, momentId, moment.tasks, moment, permission);
+            renderMomentTasks(tasksContainer, momentId, moment.tasks, moment, permission, owner, project);
 
             const descriptionInput = document.getElementById('moment-description-input');
             const descriptionMessage = document.getElementById('moment-description-msg');
@@ -315,10 +311,18 @@ export function loadMomentDetail(owner, project, momentId, navContentDiv, conten
  * @param {number} momentId - The moment's sequence number.
  * @param {object[]} tasks - The list of existing tasks.
  * @param {object} moment - The moment data object.
+/**
+ * Render the tasks section for a moment.
+ * @param {HTMLElement} container - The container element.
+ * @param {number} momentId - The moment ID.
+ * @param {Array} tasks - The list of tasks.
+ * @param {object} moment - The moment data object.
  * @param {object|null} permission - The user's permission object.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @returns {void}
  */
-function renderMomentTasks(container, momentId, tasks, moment, permission) {
+function renderMomentTasks(container, momentId, tasks, moment, permission, owner, project) {
     if (!container) return;
 
     const taskList = Array.isArray(tasks) ? tasks : [];
@@ -419,7 +423,7 @@ function renderMomentTasks(container, momentId, tasks, moment, permission) {
                     if (!Array.isArray(moment.tasks)) moment.tasks = [];
                     moment.tasks.push(created);
                     syncMomentTasksToStackGraph(momentId, moment);
-                    bindMomentTaskCompletionToggle(tbody, momentId, moment);
+                    bindMomentTaskCompletionToggle(tbody, momentId, moment, null, owner, project);
                 }
             } catch (err) {
                 addTaskMessage.textContent = 'Failed to add task.';
@@ -430,7 +434,7 @@ function renderMomentTasks(container, momentId, tasks, moment, permission) {
         });
     }
 
-    bindMomentTaskCompletionToggle(tbody, momentId, moment, permission);
+    bindMomentTaskCompletionToggle(tbody, momentId, moment, permission, owner, project);
 }
 
 /**
@@ -451,9 +455,11 @@ function syncMomentTasksToStackGraph(momentId, moment) {
  * @param {number} momentId - The moment's sequence number.
  * @param {object} moment - The moment data object.
  * @param {object|null} permission - The user's permission object.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @returns {void}
  */
-function bindMomentTaskCompletionToggle(tbody, momentId, moment, permission) {
+function bindMomentTaskCompletionToggle(tbody, momentId, moment, permission, owner, project) {
     if (!tbody) return;
 
     const canEdit = isAtLeast(permission?.permission, 'Edit');

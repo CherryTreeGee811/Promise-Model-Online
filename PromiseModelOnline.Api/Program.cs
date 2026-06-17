@@ -39,6 +39,10 @@ builder.Services.AddCors(options =>
 });
 
 // Kestrel HTTPS with certificate file (cert.pem / key.pem) or fallback to HTTP.
+var configuredUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
+#pragma warning disable S1075 // Hardcoded URI default fallback
+var defaultHttpUrl = configuredUrl ?? "http://+:8000";
+#pragma warning restore S1075
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
 var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
 if (File.Exists(certPath) && File.Exists(keyPath))
@@ -54,7 +58,7 @@ if (File.Exists(certPath) && File.Exists(keyPath))
 }
 else
 {
-    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://+:8000";
+    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? defaultHttpUrl;
     if (urls.Contains("https://")) urls = urls.Replace("https://", "http://");
     builder.WebHost.UseUrls(urls);
 }
@@ -87,11 +91,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         if (builder.Environment.IsDevelopment())
         {
+#pragma warning disable S4830 // Development-only self-signed cert
             o.BackchannelHttpHandler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             };
+#pragma warning restore S4830
             o.RequireHttpsMetadata = false;
         }
     });
@@ -212,13 +218,14 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-if (!app.Environment.IsEnvironment("Testing"))
-    app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 
-app.Run();
+await app.RunAsync();
 
-public partial class Program { }
+public partial class Program
+{
+    protected Program() { }
+}

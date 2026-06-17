@@ -22,7 +22,7 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IPermissionRepository> _permRepoMock = null!;
         private Mock<IUserRepository> _userRepoMock = null!;
         private Mock<IGenericRepository<Project>> _projectRepoMock = null!;
-        private Mock<IGenericMapper<Permission, PermissionDTO>> _mapperMock = null!;
+        private Mock<IGenericMapper<Permission, PermissionDto>> _mapperMock = null!;
         private Mock<INotificationService> _notifServiceMock = null!;
         private PermissionService _service = null!;
 
@@ -32,7 +32,7 @@ namespace PromiseModelOnline.Api.Tests
             _permRepoMock = new Mock<IPermissionRepository>();
             _userRepoMock = new Mock<IUserRepository>();
             _projectRepoMock = new Mock<IGenericRepository<Project>>();
-            _mapperMock = new Mock<IGenericMapper<Permission, PermissionDTO>>();
+            _mapperMock = new Mock<IGenericMapper<Permission, PermissionDto>>();
             _notifServiceMock = new Mock<INotificationService>();
 
             _service = new PermissionService(
@@ -56,7 +56,7 @@ namespace PromiseModelOnline.Api.Tests
             };
             _permRepoMock.Setup(r => r.GetPermissionsByProjectAsync(10)).ReturnsAsync(permissions);
             _mapperMock.Setup(m => m.Map(It.IsAny<Permission>(), null!))
-                       .Returns<Permission, IGenericService<Permission>>((p, _) => new PermissionDTO
+                       .Returns<Permission, IGenericService<Permission>>((p, _) => new PermissionDto
                        {
                            Id = p.Id,
                            Level = p.Level.ToString()
@@ -92,7 +92,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             // Arrange
             _projectRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Project?)null);
-            var request = new CreatePermissionRequestDTO { ProjectId = 99, Email = "test@test.com", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDto { ProjectId = 99, Email = "test@test.com", Level = PermissionLevel.View };
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, 1));
@@ -104,7 +104,7 @@ namespace PromiseModelOnline.Api.Tests
             // Arrange
             var project = new Project { Id = 10, OwnerId = 55 };
             _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "test@test.com", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "test@test.com", Level = PermissionLevel.View };
 
             // Act & Assert
             Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.InviteUserAsync(request, 1));
@@ -122,7 +122,7 @@ namespace PromiseModelOnline.Api.Tests
             _userRepoMock.Setup(r => r.FindByEmailAsync("invited@test.com")).ReturnsAsync(new[] { invitedUser });
             _permRepoMock.Setup(r => r.GetByUserAndProjectAsync(200, 10)).ReturnsAsync(new Permission { Id = 99 });
 
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
+            var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
 
             Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, ownerId));
         }
@@ -143,9 +143,9 @@ namespace PromiseModelOnline.Api.Tests
             var createdPermission = new Permission { Id = 0, UserId = 200, ProjectId = 10, Level = PermissionLevel.Comment, Status = PermissionStatus.Pending };
             _permRepoMock.Setup(r => r.GetByIdAsync(0)).ReturnsAsync(createdPermission);
 
-            _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDTO { Id = 0, Level = "Comment" });
+            _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDto { Id = 0, Level = "Comment" });
 
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
+            var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
 
             var result = await _service.InviteUserAsync(request, ownerId);
 
@@ -165,7 +165,7 @@ namespace PromiseModelOnline.Api.Tests
             _userRepoMock.Setup(r => r.FindByEmailAsync("nonexistent")).ReturnsAsync(Enumerable.Empty<User>());
             _userRepoMock.Setup(r => r.GetUsersByNameAsync("nonexistent")).ReturnsAsync(Enumerable.Empty<User>());
 
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "nonexistent", Level = PermissionLevel.View };
+            var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "nonexistent", Level = PermissionLevel.View };
 
             var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, ownerId));
             Assert.That(ex.Message, Does.Contain("not found"));
@@ -188,9 +188,9 @@ namespace PromiseModelOnline.Api.Tests
             var createdPermission = new Permission { Id = 0, UserId = 300, ProjectId = 10, Level = PermissionLevel.Edit, Status = PermissionStatus.Pending };
             _permRepoMock.Setup(r => r.GetByIdAsync(0)).ReturnsAsync(createdPermission);
 
-            _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDTO { Id = 0, Level = "Edit" });
+            _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDto { Id = 0, Level = "Edit" });
 
-            var request = new CreatePermissionRequestDTO { ProjectId = 10, Email = "someuser", Level = PermissionLevel.Edit };
+            var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "someuser", Level = PermissionLevel.Edit };
 
             var result = await _service.InviteUserAsync(request, ownerId);
 
@@ -231,7 +231,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             var perm = new Permission { Id = 4, UserId = 44, Status = PermissionStatus.Pending, Level = PermissionLevel.Edit };
             _permRepoMock.Setup(r => r.GetByIdAsync(4)).ReturnsAsync(perm);
-            _mapperMock.Setup(m => m.Map(perm, null!)).Returns(new PermissionDTO { Id = 4, Level = "Edit" });
+            _mapperMock.Setup(m => m.Map(perm, null!)).Returns(new PermissionDto { Id = 4, Level = "Edit" });
 
             var result = await _service.AcceptInvitationAsync(4, 44);
 

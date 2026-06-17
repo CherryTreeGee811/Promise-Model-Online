@@ -16,7 +16,7 @@ namespace PromiseModelOnline.Api.Tests.IntegrationTests;
         var response = await PostAsync("/api/projects", new { name = "New Project", slug = "new-project" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-        var project = await ReadJsonAsync<ProjectDTO>(response);
+        var project = await ReadJsonAsync<ProjectDto>(response);
         Assert.That(project, Is.Not.Null);
         Assert.That(project!.Name, Is.EqualTo("New Project"));
         Assert.That(project.OwnerSlug, Is.EqualTo("pmo_test"));
@@ -31,7 +31,7 @@ namespace PromiseModelOnline.Api.Tests.IntegrationTests;
         var response = await GetAsync("/api/projects");
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        var projects = await ReadJsonAsync<List<ProjectDTO>>(response);
+        var projects = await ReadJsonAsync<List<ProjectDto>>(response);
         Assert.That(projects, Is.Not.Null);
         Assert.That(projects!.Count, Is.GreaterThanOrEqualTo(1));
     }
@@ -76,7 +76,7 @@ namespace PromiseModelOnline.Api.Tests.IntegrationTests;
         var response = await PatchAsync("/api/projects/pmo_test/seeded-project/details", new { name = "Updated" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        var project = await ReadJsonAsync<ProjectDTO>(response);
+        var project = await ReadJsonAsync<ProjectDto>(response);
         Assert.That(project!.Name, Is.EqualTo("Updated"));
     }
 

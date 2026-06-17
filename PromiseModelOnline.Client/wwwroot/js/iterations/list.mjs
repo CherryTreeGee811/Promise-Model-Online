@@ -1,6 +1,6 @@
-import { getProject } from '../projects/api.mjs';
-import { getIterations, getBurndown } from './api.mjs';
-import { getStridesByIteration } from '../strides/api.mjs';
+import { getProject } from '../projects/api.ts';
+import { getIterations, getBurndown } from './api.ts';
+import { getStridesByIteration } from '../strides/api.ts';
 import { drawBurndownChart } from '../utils/burndown.mjs';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
@@ -41,9 +41,9 @@ export function loadIterationHistory(owner, project, permission) {
 
     const LOAD_TIMEOUT_MS = 15000;
 
-    const listTimeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS)
-    );
+    const listTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS);
+    });
 
     Promise.race([
         Promise.all([
@@ -133,9 +133,9 @@ export function loadIterationHistory(owner, project, permission) {
 
         const BURNDOWN_TIMEOUT_MS = 10000;
 
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS)
-        );
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS);
+        });
 
         Promise.race([getBurndown(owner, project, iterationId), timeoutPromise])
             .then(points => {

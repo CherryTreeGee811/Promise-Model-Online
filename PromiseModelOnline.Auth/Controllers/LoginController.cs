@@ -44,14 +44,15 @@ public class LoginController : Controller
     /// <returns>The login view.</returns>
     [AllowAnonymous]
     [HttpGet("")]
-    public IActionResult Index(string? returnUrl, string? error = null)
+    public IActionResult Index(string? returnUrl, string? error = null,
+        [FromQuery] bool registered = false, [FromQuery] bool verified = false)
     {
-        if (string.IsNullOrEmpty(returnUrl))
-            returnUrl = Request?.Query?["returnUrl"].ToString();
+        if (!ModelState.IsValid)
+            return View(new LoginViewModel { ReturnUrl = returnUrl });
 
-        ViewBag.Registered = (Request?.Query?["registered"].ToString() ?? "") == "true";
-        ViewBag.Verified = (Request?.Query?["verified"].ToString() ?? "") == "true";
-        ViewBag.Error = error ?? Request?.Query?["error"].ToString();
+        ViewBag.Registered = registered;
+        ViewBag.Verified = verified;
+        ViewBag.Error = error;
         ViewBag.ReturnUrl = returnUrl;
         ViewBag.HasGoogle = !string.IsNullOrWhiteSpace(
             _configuration["Authentication:Google:ClientId"]);
@@ -65,6 +66,11 @@ public class LoginController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Index(LoginViewModel model)
     {
+        ViewBag.Registered = false;
+        ViewBag.Verified = false;
+        ViewBag.HasGoogle = !string.IsNullOrWhiteSpace(
+            _configuration["Authentication:Google:ClientId"]);
+
         if (!ModelState.IsValid)
             return View(model);
 
@@ -101,13 +107,13 @@ public class LoginController : Controller
         var signInResult = await _signInManager.PasswordSignInAsync(
             user, model.Password, isPersistent: true, lockoutOnFailure: true);
 
-        if (signInResult.Succeeded)
-        {
-            _logger.LogInformation("Login: user {Username} authenticated successfully", model.Username);
-            if (!string.IsNullOrEmpty(model.ReturnUrl))
-                return Redirect(model.ReturnUrl);
-            return Redirect($"{AppUrls.BaseUrl}/projects");
-        }
+            if (signInResult.Succeeded)
+            {
+                _logger.LogInformation("Login: user {Username} authenticated successfully", model.Username);
+                if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                    return Redirect(model.ReturnUrl);
+                return Redirect($"{AppUrls.BaseUrl}/projects");
+            }
 
         if (signInResult.IsLockedOut)
         {

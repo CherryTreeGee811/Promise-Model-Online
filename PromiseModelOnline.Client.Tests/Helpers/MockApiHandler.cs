@@ -11,6 +11,52 @@ namespace PromiseModelOnline.Client.Tests.Helpers;
 /// </remarks>
 public static partial class MockApiHandler
 {
+    private static readonly string WwwRoot;
+
+    private static readonly Dictionary<string, MockResponse> StaticFileCache = [];
+
+    static MockApiHandler()
+    {
+        WwwRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..",
+            "PromiseModelOnline.Client", "wwwroot"));
+    }
+
+    private static MockResponse? GetStaticFileResponse(string path)
+    {
+        if (StaticFileCache.TryGetValue(path, out var cached))
+            return cached;
+
+        var contentType = path.EndsWith(".css") ? "text/css"
+            : path.EndsWith(".mjs") || path.EndsWith(".js") ? "text/javascript"
+            : path.EndsWith(".html") ? "text/html"
+            : path.EndsWith(".json") ? "application/json"
+            : path.EndsWith(".svg") ? "image/svg+xml"
+            : path.EndsWith(".png") ? "image/png"
+            : path.EndsWith(".woff2") ? "font/woff2"
+            : path.EndsWith(".woff") ? "font/woff"
+            : null;
+
+        if (contentType == null) return null;
+
+        var filePath = WwwRoot + path;
+        if (!File.Exists(filePath)) return null;
+
+        var isBinary = contentType.StartsWith("font/") || contentType.StartsWith("image/");
+        if (isBinary)
+        {
+            var bytes = File.ReadAllBytes(filePath);
+            var binResponse = new MockResponse(200, contentType, "", []) { BodyBytes = bytes };
+            StaticFileCache[path] = binResponse;
+            return binResponse;
+        }
+
+        var text = File.ReadAllText(filePath);
+        var result = new MockResponse(200, contentType, text, []);
+        StaticFileCache[path] = result;
+        return result;
+    }
+
     /// <summary>Handle a Playwright route by returning a mock response or continuing to the server.</summary>
     /// <param name="route">The Playwright route to fulfill or continue.</param>
     public static async Task HandleRouteAsync(IRoute route)
@@ -39,26 +85,25 @@ public static partial class MockApiHandler
             if (response == null && method == "GET" && uri.Host == "localhost"
                 && !path.StartsWith("/api/") && !path.StartsWith("/hubs/")
                 && !path.StartsWith("/templates/") && !path.StartsWith("/images/") && !path.StartsWith("/css/") && !path.StartsWith("/js/")
-                && !path.StartsWith("/umami/") && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml"
+                && !path.StartsWith("/lib/") && !path.StartsWith("/dist/") && !path.StartsWith("/umami/")
+                && path != "/health" && path != "/robots.txt" && path != "/sitemap.xml" && path != "/sw.mjs" && path != "/manifest.json" && path != "/favicon.ico"
                 && !path.StartsWith("/login") && !path.StartsWith("/logout") && !path.StartsWith("/register")
                 && !path.StartsWith("/signin-oidc") && !path.StartsWith("/signout-callback-oidc")
                 && !path.StartsWith("/connect/") && !path.StartsWith("/.well-known/"))
             {
-                // SPA routes — return SPA shell so the client-side router handles them
                 response = Html(200, s_html);
             }
 
             if (response != null)
             {
-                var opts = new RouteFulfillOptions
-                {
-                    Status = response.Status,
-                    ContentType = response.ContentType,
-                    Body = response.Body
-                };
-                if (response.Headers.Count > 0)
-                    opts.Headers = response.Headers;
-                await route.FulfillAsync(opts);
+                await FulfillAsync(route, response);
+                return;
+            }
+
+            response = GetStaticFileResponse(path);
+            if (response != null)
+            {
+                await FulfillAsync(route, response);
                 return;
             }
         }
@@ -67,10 +112,30 @@ public static partial class MockApiHandler
         await route.ContinueAsync();
     }
 
-    private sealed record MockResponse(int Status, string ContentType, string Body, Dictionary<string, string> Headers);
+    private static async Task FulfillAsync(IRoute route, MockResponse response)
+    {
+        var opts = new RouteFulfillOptions
+        {
+            Status = response.Status,
+            ContentType = response.ContentType,
+            Body = response.Body,
+            BodyBytes = response.BodyBytes,
+        };
+        if (response.Headers.Count > 0)
+            opts.Headers = response.Headers;
+        await route.FulfillAsync(opts);
+    }
+
+    private sealed record MockResponse(int Status, string ContentType, string Body, Dictionary<string, string> Headers)
+    {
+        public byte[]? BodyBytes { get; init; }
+    }
 
     private static MockResponse Json(int status, string body) => new(status, "application/json", body, []);
     private static MockResponse Html(int status, string body) => new(status, "text/html", body, []);
+
+    private static MockResponse MetaRefresh(string url) =>
+        Html(200, $"""<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url={url}"></head><body></body></html>""");
     private static MockResponse Redirect(string location) => new(302, "text/plain", "", new() { ["Location"] = location });
 
     private static bool HasGrantType(IRequest request, string grantType) =>
@@ -97,6 +162,7 @@ public static partial class MockApiHandler
         return (method, path) switch
         {
             ("GET", "/health") => Json(200, """{"status":"healthy"}"""),
+            ("GET", "/manifest.json") => GetStaticFileResponse(path) ?? Html(200, s_html),
 
             ("GET", "/login") or ("GET", "/register") => Html(200, s_html),
             ("GET", "/change-password") => Html(200, s_html),
@@ -106,10 +172,10 @@ public static partial class MockApiHandler
             ("GET", "/.well-known/openid-configuration") => Json(200, """{"issuer":"https://localhost:9000","authorization_endpoint":"https://localhost:9000/connect/authorize","token_endpoint":"https://localhost:9000/connect/token","end_session_endpoint":"https://localhost:9000/connect/logout","introspection_endpoint":"https://localhost:9000/connect/introspect","revocation_endpoint":"https://localhost:9000/connect/revoke","jwks_uri":"https://localhost:9000/.well-known/jwks","scopes_supported":["openid","profile","email","offline_access","projects.read","projects.write"],"response_types_supported":["code"],"response_modes_supported":["query","fragment","form_post"],"grant_types_supported":["authorization_code","refresh_token"],"subject_types_supported":["public"],"id_token_signing_alg_values_supported":["RS256"],"token_endpoint_auth_methods_supported":["none"],"claims_supported":["sub","name","email","email_verified"],"code_challenge_methods_supported":["S256"],"require_pkce":true}"""),
 
             // OIDC Authorization endpoint — redirects to login page if unauthenticated
-            ("GET", "/connect/authorize") => Redirect("/account/login?returnUrl=%2F"),
+            ("GET", "/connect/authorize") => MetaRefresh("/account/login?returnUrl=%2F"),
 
             // OIDC End Session endpoint
-            ("GET", "/connect/logout") => Redirect("/"),
+            ("GET", "/connect/logout") => MetaRefresh("/"),
 
             // Auth server pages (served by the Auth service in production)
             ("GET", "/account/login") or ("GET", "/account/register") => Html(200, s_html),
@@ -349,7 +415,7 @@ public static partial class MockApiHandler
 
 
     private static readonly string s_html = """
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/site.css"></head><body><div id="content"></div><div id="main-menu"></div><script src="/js/router.mjs" type="module"></script></body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1a252f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><title id="page-title">Promise Model Online</title><link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/images/PromiseModelOnline_Logo_180x180.png"><link rel="icon" href="/images/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/lib/css/bootstrap.min.css"><link rel="stylesheet" href="/lib/css/bootstrap-icons.min.css"><link rel="stylesheet" href="/css/site.css"></head><body><nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Main navigation"><div class="container px-2"><ul id="main-menu" class="navbar-nav ms-auto align-items-md-center"></ul><button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav" aria-controls="main-nav" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="main-nav"></div></div></nav><div class="container" id="main-container"><main role="main" id="main-content" tabindex="-1"><div id="content"></div></main></div><script src="/lib/js/d3.min.js" defer></script><script src="/lib/js/bootstrap.bundle.min.js" defer></script><script src="/lib/js/signalr.min.js" defer></script><script src="/lib/js/popper.min.js" defer></script><script src="/lib/js/tippy-bundle.umd.min.js" defer></script><script src="/dist/js/main.js" type="module"></script><footer class="footer" role="contentinfo"><div>&copy; 2026 - Promise Model Online &nbsp;|&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp; <a href="/tos">Terms of Service</a></div></footer></body></html>
 """;
 
     private const string s_momentsByStride10 =

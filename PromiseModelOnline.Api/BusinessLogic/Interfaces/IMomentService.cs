@@ -76,6 +76,6 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
         /// <summary>Calculate burndown chart data points for an iteration.</summary>
         /// <param name="iterationId">The iteration ID.</param>
         /// <returns>Burndown data points ordered by date.</returns>
-        Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId);
+        Task<List<BurndownPointDto>> GetIterationBurndownAsync(int iterationId);
     }
 }

@@ -1,5 +1,5 @@
-import { createProject, importProject } from './api.mjs';
-import { createPromise } from '../promises/api.mjs';
+import { createProject, importProject } from './api.ts';
+import { createPromise } from '../promises/api.ts';
 import { navigate } from '../router.mjs';
 import { renderSummaryTable } from './summary.mjs';
 

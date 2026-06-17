@@ -23,7 +23,7 @@ namespace PromiseModelOnline.Api.Tests
     public class NotificationServiceUnitTests
     {
         private Mock<INotificationRepository> _notificationRepoMock = null!;
-        private Mock<IGenericMapper<Notification, NotificationDTO>> _mapperMock = null!;
+        private Mock<IGenericMapper<Notification, NotificationDto>> _mapperMock = null!;
         private Mock<IHubContext<NotificationHub>> _hubContextMock = null!;
         private Mock<IHubClients> _hubClientsMock = null!;
         private Mock<IClientProxy> _clientProxyMock = null!;
@@ -33,7 +33,7 @@ namespace PromiseModelOnline.Api.Tests
         public void SetUp()
         {
             _notificationRepoMock = new Mock<INotificationRepository>();
-            _mapperMock = new Mock<IGenericMapper<Notification, NotificationDTO>>();
+            _mapperMock = new Mock<IGenericMapper<Notification, NotificationDto>>();
 
             _clientProxyMock = new Mock<IClientProxy>();
             _clientProxyMock
@@ -70,7 +70,7 @@ namespace PromiseModelOnline.Api.Tests
 
             _notificationRepoMock.Setup(r => r.GetUnreadByUserIdAsync(10)).ReturnsAsync(notifications);
             _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
-                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDTO
+                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDto
                        {
                            Id = n.Id,
                            Message = n.Message
@@ -109,7 +109,7 @@ namespace PromiseModelOnline.Api.Tests
             };
             _notificationRepoMock.Setup(r => r.GetAllByUserIdAsync(20)).ReturnsAsync(notifications);
             _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
-                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDTO
+                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDto
                        {
                            Id = n.Id,
                            Message = n.Message
@@ -192,7 +192,7 @@ namespace PromiseModelOnline.Api.Tests
                                  .Returns(Task.CompletedTask);
             _notificationRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
             _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
-                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDTO
+                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDto
                        {
                            Id = n.Id,
                            Message = n.Message
@@ -212,7 +212,7 @@ namespace PromiseModelOnline.Api.Tests
             _notificationRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
             _clientProxyMock.Verify(p => p.SendCoreAsync(
                 "ReceiveNotification",
-                It.Is<object?[]>(args => args.Length == 1 && args[0] != null && ((NotificationDTO)args[0]!).Message!.Contains("You were mentioned")),
+                It.Is<object?[]>(args => args.Length == 1 && args[0] != null && ((NotificationDto)args[0]!).Message!.Contains("You were mentioned")),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -225,7 +225,7 @@ namespace PromiseModelOnline.Api.Tests
                                  .Returns(Task.CompletedTask);
             _notificationRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
             _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
-                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDTO
+                       .Returns<Notification, IGenericService<Notification>>((n, _) => new NotificationDto
                        {
                            Id = n.Id,
                            Message = n.Message

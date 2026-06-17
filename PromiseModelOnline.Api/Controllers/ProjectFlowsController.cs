@@ -10,56 +10,51 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 namespace PromiseModelOnline.Api.Controllers
 {
     [Route("api/projects/{owner}/{project}/flows")]
     public class ProjectFlowsController : ProjectScopedControllerBase
     {
         private readonly IGenericService<Flow> _service;
-        private readonly IGenericMapper<Flow, FlowDTO> _mapper;
+        private readonly IGenericMapper<Flow, FlowDto> _mapper;
         private readonly IPromiseModelOnlineContext _context;
-        private readonly ILogger<ProjectFlowsController> _logger;
 
         /// <summary>Initializes a new instance of the <see cref="ProjectFlowsController"/> class.</summary>
         /// <param name="context">The database context for data access.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         /// <param name="mapper">The mapper for converting between entities and DTOs.</param>
         /// <param name="projectService">The service for project operations.</param>
         /// <param name="service">The service for business logic operations.</param>
         public ProjectFlowsController(
             IGenericService<Flow> service,
-            IGenericMapper<Flow, FlowDTO> mapper,
+            IGenericMapper<Flow, FlowDto> mapper,
             IPromiseModelOnlineContext context,
-            ILogger<ProjectFlowsController> logger,
             IProjectService projectService)
             : base(projectService)
         {
             _service = service;
             _mapper = mapper;
             _context = context;
-            _logger = logger;
         }
         /// <summary>Return all flows for a project, optionally filtered by journey.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <param name="project">The project's URL-safe slug.</param>
+        /// <param name="journeySeq">Optional journey sequence number to filter by.</param>
         /// <returns>A list of flow DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<FlowDTO>>> GetAll(string owner, string project)
+        public async Task<ActionResult<IEnumerable<FlowDto>>> GetAll(string owner, string project, [FromQuery] int? journeySeq = null)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
 
             IEnumerable<Flow> flows;
 
-            var journeySeqStr = Request.Query["journeySeq"];
-            if (!string.IsNullOrEmpty(journeySeqStr) && int.TryParse(journeySeqStr, out int journeySeq))
+            if (journeySeq.HasValue)
             {
                 var journey = await _context.Journeys
-                    .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == journeySeq);
+                    .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == journeySeq.Value);
 
                 if (journey is null)
                     return NotFound("Journey not found.");
@@ -75,7 +70,7 @@ namespace PromiseModelOnline.Api.Controllers
                     .ToListAsync();
             }
 
-            var result = new List<FlowDTO>();
+            var result = new List<FlowDto>();
             foreach (var flow in flows)
                 result.Add(_mapper.Map(flow, _service));
 
@@ -88,8 +83,9 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching flow as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}")]
-        public async Task<ActionResult<FlowDTO>> GetBySeq(int seq, string owner, string project)
+        public async Task<ActionResult<FlowDto>> GetBySeq(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -109,8 +105,9 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The matching flow as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
-        public async Task<ActionResult<FlowDTO>> GetById(int id, string owner, string project)
+        public async Task<ActionResult<FlowDto>> GetById(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -133,6 +130,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPut("{seq}")]
         public async Task<IActionResult> Update(int seq, [FromBody] Flow entity, string owner, string project)
         {
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -158,6 +157,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -181,7 +181,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created flow as a DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
-        public async Task<ActionResult<FlowDTO>> CreateFromDto([FromBody] CreateFlowRequestDTO request, string owner, string project)
+        public async Task<ActionResult<FlowDto>> CreateFromDto([FromBody] CreateFlowRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -222,7 +222,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/description")]
-        public async Task<ActionResult<FlowDTO>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
+        public async Task<ActionResult<FlowDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)

@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,6 +14,7 @@ public class Flow
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
 
     /// <summary>Entity type discriminator, always <c>"Flow"</c>. Not mapped.</summary>
@@ -29,12 +31,14 @@ public class Flow
     public string? Description { get; set; }
         
     /// <summary>Foreign key to the parent <see cref="Models.Journey"/>.</summary>
+    [Required]
     public int JourneyId { get; set; }
         
     /// <summary>Foreign key to the responsible <see cref="User"/>.</summary>
     public int? OwnerId { get; set; }
         
     /// <summary>Human-readable sequence number, unique within the parent journey.</summary>
+    [Required]
     public int SequenceNumber { get; set; }
 
     /// <summary>Sort order within the parent journey.</summary>
@@ -64,3 +68,4 @@ public class Flow
     /// <summary>Comments attached to this flow.</summary>
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }
+#pragma warning restore S6964

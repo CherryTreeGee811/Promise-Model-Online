@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -22,25 +21,21 @@ namespace PromiseModelOnline.Api.Controllers
     {
         private readonly IPermissionService _permissionService;
         private readonly IUserRepository _userRepository;
-        private readonly ILogger<MyPermissionsController> _logger;
 
-        /// <param name="logger">The logger for audit and error events.</param>
         /// <param name="permissionService">The service for permission business logic.</param>
         /// <param name="userRepository">The repository for user data access.</param>
         public MyPermissionsController(
             IPermissionService permissionService,
-            IUserRepository userRepository,
-            ILogger<MyPermissionsController> logger)
+            IUserRepository userRepository)
         {
             _permissionService = permissionService;
             _userRepository = userRepository;
-            _logger = logger;
         }
 
         /// <summary>Get all pending project invitations for the current user.</summary>
         [Authorize(Policy = "projects.read")]
         [HttpGet("pending")]
-        public async Task<ActionResult<IEnumerable<PendingInvitationDTO>>> GetPendingInvitations()
+        public async Task<ActionResult<IEnumerable<PendingInvitationDto>>> GetPendingInvitations()
         {
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId is null) return Unauthorized();
@@ -54,10 +49,12 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="request">The update payload.</param>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{id}")]
-        public async Task<ActionResult<PermissionDTO>> UpdatePermissionStatus(
+        public async Task<ActionResult<PermissionDto>> UpdatePermissionStatus(
             int id,
-            [FromBody] UpdatePermissionRequestDTO request)
+            [FromBody] UpdatePermissionRequestDto request)
         {
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var userId = await GetCurrentUserIdByEmailAsync();
             if (userId == null) return Unauthorized();
 

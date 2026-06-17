@@ -1,10 +1,10 @@
 import { navigate } from '../router.mjs';
-import { getFlow, getMoments, updateFlowDescription } from './api.mjs';
-import { createMoment, updateMomentType } from '../moments/api.mjs';
-import { getJourneyById } from '../journeys/api.mjs';
+import { getFlow, getMoments, updateFlowDescription } from './api.ts';
+import { createMoment, updateMomentType } from '../moments/api.ts';
+import { getJourneyById } from '../journeys/api.ts';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,

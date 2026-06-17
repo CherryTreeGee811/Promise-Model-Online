@@ -48,9 +48,11 @@ namespace PromiseModelOnline.Auth.Controllers
 
             if (result == null || !result.Succeeded)
             {
-                var returnUrl = Uri.EscapeDataString(Request.Path + Request.QueryString);
+                var returnUrl = Request.Path + Request.QueryString;
+                if (!Url.IsLocalUrl(returnUrl))
+                    returnUrl = "/";
                 _logger.LogInformation("Authorization: unauthenticated user redirected to login");
-                return Redirect($"/account/login?returnUrl={returnUrl}");
+                return Redirect($"/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
 
             var subject = User.FindFirstValue(OpenIddictConstants.Claims.Subject)
@@ -145,14 +147,5 @@ namespace PromiseModelOnline.Auth.Controllers
             );
         }
 
-        /// <summary>Return token destinations (access token and identity token if scope is present).</summary>
-        /// <param name="scope">The scope name.</param>
-        /// <param name="principal">The claims principal.</param>
-        private static IEnumerable<string> GetDestinations(string scope, ClaimsPrincipal principal)
-        {
-            yield return Destinations.AccessToken;
-            if (principal.HasScope(scope))
-                yield return Destinations.IdentityToken;
-        }
     }
 }

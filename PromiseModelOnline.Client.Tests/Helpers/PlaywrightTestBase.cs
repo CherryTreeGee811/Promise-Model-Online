@@ -79,7 +79,8 @@ public abstract class PlaywrightTestBase
                 TestContext.Progress.WriteLine($"[PAGE ERROR] {error}");
             };
 
-            await Page.RouteAsync(url => !url.StartsWith("https://cdn.jsdelivr.net"), MockApiHandler.HandleRouteAsync);
+            await Page.RouteAsync("**/*", MockApiHandler.HandleRouteAsync);
+            await Context.RouteAsync("**/*", MockApiHandler.HandleRouteAsync);
 
             await Page.GotoAsync(BaseUrl + "/");
             _initialized = true;

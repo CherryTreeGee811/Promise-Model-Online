@@ -29,7 +29,7 @@ namespace PromiseModelOnline.Api.Tests
     {
         private Mock<IStrideService> _mockStrideService = null!;
         private Mock<IMomentService> _mockMomentService = null!;
-        private Mock<IGenericMapper<Stride, StrideDTO>> _mockMapper = null!;
+        private Mock<IGenericMapper<Stride, StrideDto>> _mockMapper = null!;
         private Mock<IPromiseModelOnlineContext> _mockContext = null!;
         private Mock<IProjectService> _mockProjectService = null!;
         private Mock<ILogger<ProjectStridesController>> _mockLogger = null!;
@@ -43,7 +43,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             _mockStrideService = new Mock<IStrideService>();
             _mockMomentService = new Mock<IMomentService>();
-            _mockMapper = new Mock<IGenericMapper<Stride, StrideDTO>>();
+            _mockMapper = new Mock<IGenericMapper<Stride, StrideDto>>();
             _mockContext = new Mock<IPromiseModelOnlineContext>();
             _mockProjectService = new Mock<IProjectService>();
             _mockLogger = new Mock<ILogger<ProjectStridesController>>();
@@ -101,7 +101,7 @@ namespace PromiseModelOnline.Api.Tests
 
             _mockMapper.Setup(m => m.Map(It.IsAny<Stride>(), _mockStrideService.Object))
                 .Returns<Stride, IGenericService<Stride>>((s, svc) =>
-                    new StrideDTO { Id = s.Id, Name = s.Name });
+                    new StrideDto { Id = s.Id, Name = s.Name });
 
             // Act
             var result = await _controller.GetAll(OwnerSlug, ProjectSlug);
@@ -110,7 +110,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
-            var data = ok!.Value as List<StrideDTO>;
+            var data = ok!.Value as List<StrideDto>;
             Assert.That(data, Is.Not.Null);
             Assert.That(data!.Count, Is.EqualTo(2));
             Assert.That(data[0].Name, Is.EqualTo("S1"));
@@ -159,7 +159,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
                 .Returns(Task.CompletedTask);
 
-            var request = new UpdateStrideRequestDTO { ProgressUnfinishedMoments = true };
+            var request = new UpdateStrideRequestDto { ProgressUnfinishedMoments = true };
 
             // Act
             var result = await _controller.UpdateStride(strideId, request, OwnerSlug, ProjectSlug);
@@ -194,7 +194,7 @@ namespace PromiseModelOnline.Api.Tests
                 .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
                 .ThrowsAsync(ex);
 
-            var request = new UpdateStrideRequestDTO { ProgressUnfinishedMoments = true };
+            var request = new UpdateStrideRequestDto { ProgressUnfinishedMoments = true };
 
             // Act
             var result = await _controller.UpdateStride(strideId, request, OwnerSlug, ProjectSlug);
@@ -215,7 +215,7 @@ namespace PromiseModelOnline.Api.Tests
             SetUpProjectResolve(null);
 
             // Act
-            var result = await _controller.UpdateStride(10, new UpdateStrideRequestDTO(), OwnerSlug, ProjectSlug);
+            var result = await _controller.UpdateStride(10, new UpdateStrideRequestDto(), OwnerSlug, ProjectSlug);
 
             // Assert
             Assert.That(result, Is.InstanceOf<NotFoundResult>());

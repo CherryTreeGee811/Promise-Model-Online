@@ -1,4 +1,4 @@
-import { getPermissions, inviteUser, removePermission, searchUsers } from './api.mjs';
+import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyTableRow } from '../utils/empty-table.mjs';
 

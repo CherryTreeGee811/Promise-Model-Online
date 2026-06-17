@@ -11,9 +11,9 @@ namespace PromiseModelOnline.Api.Mappers
     /// <remarks>
     ///   Uses reflection to copy properties from <typeparamref name="TSource"/> to
     ///   <typeparamref name="TDestination"/> when both name and type match.
-    ///   Special handling exists for <see cref="Moment"/> to <see cref="MomentDTO"/> (populates sub-tasks),
-    ///   <see cref="Project"/> to <see cref="ProjectDTO"/> (populates owner slug), and
-    ///   <see cref="Notification"/> to <see cref="NotificationDTO"/> (converts enum to string).
+    ///   Special handling exists for <see cref="Moment"/> to <see cref="MomentDto"/> (populates sub-tasks),
+    ///   <see cref="Project"/> to <see cref="ProjectDto"/> (populates owner slug), and
+    ///   <see cref="Notification"/> to <see cref="NotificationDto"/> (converts enum to string).
     /// </remarks>
     /// <typeparam name="TSource">The source entity type.</typeparam>
     /// <typeparam name="TDestination">The destination DTO type.</typeparam>
@@ -39,10 +39,10 @@ namespace PromiseModelOnline.Api.Mappers
                 }
             }
 
-            if (source is Moment moment && destination is MomentDTO momentDto)
+            if (source is Moment moment && destination is MomentDto momentDto)
             {
                 momentDto.Tasks = (moment.Tasks ?? [])
-                    .Select(task => new MomentTaskDTO
+                    .Select(task => new MomentTaskDto
                     {
                         Id = task.Id,
                         Name = task.Name,
@@ -56,12 +56,12 @@ namespace PromiseModelOnline.Api.Mappers
                     .ToList();
             }
 
-            if (source is Project project && destination is ProjectDTO projectDto)
+            if (source is Project project && destination is ProjectDto projectDto)
             {
                 projectDto.OwnerSlug = project.Owner?.Slug ?? "";
             }
 
-            if (source is Notification notification && destination is NotificationDTO notificationDto)
+            if (source is Notification notification && destination is NotificationDto notificationDto)
             {
                 notificationDto.Type = notification.Type.ToString();
             }

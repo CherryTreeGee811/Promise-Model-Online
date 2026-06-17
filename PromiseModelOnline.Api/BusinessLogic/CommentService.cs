@@ -22,14 +22,14 @@ namespace PromiseModelOnline.Api.BusinessLogic
     {
         private readonly ICommentRepository _commentRepo;
         private readonly IUserRepository _userRepo;
-        private readonly IGenericMapper<Comment, CommentDTO> _mapper;
+        private readonly IGenericMapper<Comment, CommentDto> _mapper;
         private readonly INotificationService _notificationService;
 
         /// <summary>Initializes the service with required dependencies.</summary>
         public CommentService(
             ICommentRepository commentRepo,
             IUserRepository userRepo,
-            IGenericMapper<Comment, CommentDTO> mapper,
+            IGenericMapper<Comment, CommentDto> mapper,
             INotificationService notificationService)
         {
             _commentRepo = commentRepo;
@@ -42,7 +42,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <param name="parentType">Entity type discriminator (<c>"promise"</c>, <c>"epic"</c>, <c>"journey"</c>, <c>"flow"</c>, <c>"moment"</c>).</param>
         /// <param name="parentId">The parent entity's ID.</param>
         /// <returns>Comment DTOs mapped from entities.</returns>
-        public async Task<IEnumerable<CommentDTO>> GetCommentsAsync(string parentType, int parentId)
+        public async Task<IEnumerable<CommentDto>> GetCommentsAsync(string parentType, int parentId)
         {
             var comments = await _commentRepo.GetCommentsForEntityAsync(parentType, parentId);
             return comments.Select(c => _mapper.Map(c, null!)).ToList();
@@ -56,7 +56,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <param name="dto">The creation data. Not null.</param>
         /// <param name="userId">The author's user ID.</param>
         /// <returns>The created comment DTO.</returns>
-        public async Task<CommentDTO> CreateCommentAsync(CreateCommentDTO dto, int userId)
+        public async Task<CommentDto> CreateCommentAsync(CreateCommentDto dto, int userId)
         {
             var comment = new Comment
             {

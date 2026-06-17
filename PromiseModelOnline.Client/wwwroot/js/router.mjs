@@ -1,7 +1,7 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs';
-import { clearAuth, isLoggedIn } from './auth-state.mjs';
-import { checkSession } from './api.mjs';
+import { isLoggedIn } from './auth-state.mjs';
+import { checkSession } from './api.ts';
 import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';
@@ -192,7 +192,7 @@ export function loadTemplateWithError(contentDiv, label) {
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export function routeHandler(navContentDiv, contentDiv) {
-    let path = window.location.pathname;
+    const path = window.location.pathname;
 
     // Legacy auth paths — let the server handle them.
     if (path === '/login' || path === '/logout' || path === '/register') {
@@ -203,7 +203,7 @@ export function routeHandler(navContentDiv, contentDiv) {
     loadNavTemplate(navContentDiv, contentDiv);
 
     switch (true) {
-        case path == '/':
+        case path === '/':
             loadTemplate('home.html', contentDiv).then(() => {
                 return loadHomePage();
             });
@@ -224,33 +224,33 @@ export function routeHandler(navContentDiv, contentDiv) {
         case path.startsWith('/invitations'):
             handleInvitationsRoute(path, contentDiv);
             break;
-        case path == '/change-password':
+        case path === '/change-password':
             if (!isLoggedIn()) {
                 navigate('/login', navContentDiv, contentDiv);
                 break;
             }
             window.location.href = '/account/change-password';
             break;
-        case path == '/knowledge-base':
+        case path === '/knowledge-base':
             handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv);
             break;
-        case path == '/privacy':
+        case path === '/privacy':
             loadTemplate('privacy.html', contentDiv);
             break;
-        case path == '/tos':
+        case path === '/tos':
             loadTemplate('tos.html', contentDiv);
             break;
-        case path == '/account/delete':
+        case path === '/account/delete':
             loadTemplate('account/delete.html', contentDiv)
                 .then(() => initDeleteAccountPage());
             break;
         default: {
             // Attempt to match owner/project slug patterns.
-            const projectPattern = path.match(/^\/([^\/]+)\/([^\/]+)(\/.*)?$/);
-            if (projectPattern) {
-                const owner = projectPattern[1];
-                const project = projectPattern[2];
-                const subPath = projectPattern[3] || '';
+            const segments = path.split('/').filter(Boolean);
+            if (segments.length >= 2) {
+                const owner = segments[0];
+                const project = segments[1];
+                const subPath = '/' + segments.slice(2).join('/') + (path.includes('?') ? path.slice(path.indexOf('?')) : '');
 
                 if (owner === 'account' || owner === 'moments' || owner === 'knowledge-base') {
                     loadTemplate('404.html', contentDiv)

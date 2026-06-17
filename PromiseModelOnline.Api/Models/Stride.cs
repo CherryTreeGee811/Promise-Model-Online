@@ -1,3 +1,4 @@
+#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,6 +14,7 @@ public class Stride
 {
     /// <summary>Primary key.</summary>
     [Key]
+    [Required]
     public int Id { get; set; }
         
     /// <summary>Display name. Required, max 200 characters.</summary>
@@ -24,9 +26,11 @@ public class Stride
     public int? IterationId { get; set; }
 
     /// <summary>Start date of the sprint.</summary>
+    [Required]
     public DateTime StartDate { get; set; }
         
     /// <summary>End date of the sprint.</summary>
+    [Required]
     public DateTime EndDate { get; set; }
         
     /// <summary>Duration in days. Default 14 (two-week sprint).</summary>
@@ -45,3 +49,4 @@ public class Stride
     /// <summary>Moments assigned to this stride.</summary>
     public ICollection<Moment> Moments { get; set; } = new List<Moment>();
 }
+#pragma warning restore S6964

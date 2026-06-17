@@ -47,10 +47,10 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_GetComments_WithValidTypeAndParentId_ReturnsOkWithComments()
         {
             // Arrange
-            var comments = new List<CommentDTO>
+            var comments = new List<CommentDto>
             {
-                new CommentDTO { Id = 1, Text = "Comment 1", UserName = "User1" },
-                new CommentDTO { Id = 2, Text = "Comment 2", UserName = "User2" }
+                new CommentDto { Id = 1, Text = "Comment 1", UserName = "User1" },
+                new CommentDto { Id = 2, Text = "Comment 2", UserName = "User2" }
             };
 
             _mockCommentService.Setup(s => s.GetCommentsAsync("Promise", 5))
@@ -65,7 +65,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
-            var returnedComments = ok!.Value as List<CommentDTO>;
+            var returnedComments = ok!.Value as List<CommentDto>;
             Assert.That(returnedComments, Is.Not.Null);
             Assert.That(returnedComments!.Count, Is.EqualTo(2));
             Assert.That(returnedComments[0].Id, Is.EqualTo(1));
@@ -77,9 +77,9 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_GetComments_WithValidEpicType_ReturnsOkWithComments()
         {
             // Arrange
-            var comments = new List<CommentDTO>
+            var comments = new List<CommentDto>
             {
-                new CommentDTO { Id = 10, Text = "Epic comment", UserName = "TestUser" }
+                new CommentDto { Id = 10, Text = "Epic comment", UserName = "TestUser" }
             };
 
             _mockCommentService.Setup(s => s.GetCommentsAsync("Epic", 100))
@@ -93,7 +93,7 @@ namespace PromiseModelOnline.Api.Tests
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
-            Assert.That(ok!.Value, Is.InstanceOf<List<CommentDTO>>());
+            Assert.That(ok!.Value, Is.InstanceOf<List<CommentDto>>());
             _mockCommentService.Verify(s => s.GetCommentsAsync("Epic", 100), Times.Once);
         }
 
@@ -101,7 +101,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_GetComments_WithNoComments_ReturnsOkWithEmptyList()
         {
             // Arrange
-            var comments = new List<CommentDTO>();
+            var comments = new List<CommentDto>();
 
             _mockCommentService.Setup(s => s.GetCommentsAsync("Journey", 50))
                 .ReturnsAsync(comments);
@@ -115,7 +115,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
             Assert.That(ok, Is.Not.Null);
-            var returnedComments = ok!.Value as List<CommentDTO>;
+            var returnedComments = ok!.Value as List<CommentDto>;
             Assert.That(returnedComments, Is.Not.Null);
             Assert.That(returnedComments!.Count, Is.EqualTo(0));
         }
@@ -200,7 +200,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateComment_WithValidDtoAndAuthenticatedUser_ReturnsCreatedAtAction()
         {
             // Arrange
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = "This is a test comment",
                 ParentType = "Promise",
@@ -212,7 +212,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", It.IsAny<string?>()))
                 .ReturnsAsync(user);
 
-            var createdComment = new CommentDTO
+            var createdComment = new CommentDto
             {
                 Id = 10,
                 Text = createDto.Text,
@@ -243,7 +243,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateComment_WithReplyToComment_ReturnsCreatedAtAction()
         {
             // Arrange
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = "This is a reply to a comment",
                 ParentType = "Promise",
@@ -255,7 +255,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("replier@example.com", null))
                 .ReturnsAsync(user);
 
-            var createdComment = new CommentDTO
+            var createdComment = new CommentDto
             {
                 Id = 11,
                 Text = createDto.Text,
@@ -284,7 +284,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateComment_WithDifferentParentTypes_ReturnsCreatedAtAction()
         {
             // Arrange
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = "Comment on Epic",
                 ParentType = "Epic",
@@ -296,7 +296,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("epic@example.com", It.IsAny<string?>()))
                 .ReturnsAsync(user);
 
-            var createdComment = new CommentDTO
+            var createdComment = new CommentDto
             {
                 Id = 12,
                 Text = createDto.Text,
@@ -325,7 +325,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateComment_WithoutEmailClaim_ReturnsUnauthorized()
         {
             // Arrange
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = "This should fail",
                 ParentType = "Promise",
@@ -344,7 +344,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(unauthorized, Is.Not.Null);
             Assert.That(unauthorized!.Value, Does.Contain("Missing email claim"));
             _mockUserRepository.Verify(r => r.GetOrCreateUserByEmailAsync(It.IsAny<string>(), It.IsAny<string?>()), Times.Never);
-            _mockCommentService.Verify(s => s.CreateCommentAsync(It.IsAny<CreateCommentDTO>(), It.IsAny<int>()), Times.Never);
+            _mockCommentService.Verify(s => s.CreateCommentAsync(It.IsAny<CreateCommentDto>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test]
@@ -352,7 +352,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateComment_WithServiceException_ReturnsBadRequest()
         {
             // Arrange
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = "This comment will cause an error",
                 ParentType = "Promise",
@@ -386,7 +386,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateComment_WithInvalidParentId_ReturnsBadRequestFromService()
         {
             // Arrange
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = "Invalid parent",
                 ParentType = "Promise",
@@ -416,7 +416,7 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_017_CreateComment_WithEmptyText_ReturnsBadRequestFromService()
         {
             // Arrange
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = string.Empty,
                 ParentType = "Promise",
@@ -445,7 +445,7 @@ namespace PromiseModelOnline.Api.Tests
         [Test]
         public async Task REQ_FUN_017_CreateComment_WhenUserRepositoryThrowsException_ReturnsBadRequest()
         {
-            var createDto = new CreateCommentDTO
+            var createDto = new CreateCommentDto
             {
                 Text = "This will fail at user level",
                 ParentType = "Promise",
@@ -465,7 +465,7 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
             var badRequest = result.Result as BadRequestObjectResult;
             Assert.That(badRequest!.Value, Does.Contain("The comment could not be created."));
-            _mockCommentService.Verify(s => s.CreateCommentAsync(It.IsAny<CreateCommentDTO>(), It.IsAny<int>()), Times.Never);
+            _mockCommentService.Verify(s => s.CreateCommentAsync(It.IsAny<CreateCommentDto>(), It.IsAny<int>()), Times.Never);
             _mockLogger.VerifyLog(LogLevel.Warning, "Failed to create comment");
         }
 

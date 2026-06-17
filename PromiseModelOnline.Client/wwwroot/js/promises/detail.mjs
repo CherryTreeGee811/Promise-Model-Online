@@ -1,9 +1,9 @@
 import { navigate } from '../router.mjs';
-import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.mjs';
-import { createEpic } from '../epics/api.mjs';
+import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.ts';
+import { createEpic } from '../epics/api.ts';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,

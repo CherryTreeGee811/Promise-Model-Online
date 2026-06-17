@@ -21,7 +21,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
     public class NotificationService : INotificationService
     {
         private readonly INotificationRepository _notificationRepo;
-        private readonly IGenericMapper<Notification, NotificationDTO> _mapper;
+        private readonly IGenericMapper<Notification, NotificationDto> _mapper;
         private readonly IHubContext<NotificationHub> _hubContext;
 
         /// <summary>Initializes the service with required dependencies.</summary>
@@ -30,7 +30,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <param name="hubContext">SignalR hub context for real-time delivery.</param>
         public NotificationService(
             INotificationRepository notificationRepo,
-            IGenericMapper<Notification, NotificationDTO> mapper,
+            IGenericMapper<Notification, NotificationDto> mapper,
             IHubContext<NotificationHub> hubContext)
         {
             _notificationRepo = notificationRepo;
@@ -41,7 +41,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <summary>Return a user's unread notifications as DTOs.</summary>
         /// <param name="userId">The recipient's user ID.</param>
         /// <returns>Unread notification DTOs.</returns>
-        public async Task<IEnumerable<NotificationDTO>> GetUnreadNotificationsAsync(int userId)
+        public async Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int userId)
         {
             var notifications = await _notificationRepo.GetUnreadByUserIdAsync(userId);
             return notifications.Select(n => _mapper.Map(n, null!));
@@ -50,7 +50,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <summary>Return all notifications (read and unread) for a user as DTOs.</summary>
         /// <param name="userId">The recipient's user ID.</param>
         /// <returns>All notification DTOs for the user.</returns>
-        public async Task<IEnumerable<NotificationDTO>> GetAllNotificationsAsync(int userId)
+        public async Task<IEnumerable<NotificationDto>> GetAllNotificationsAsync(int userId)
         {
             var notifications = await _notificationRepo.GetAllByUserIdAsync(userId);
             return notifications.Select(n => _mapper.Map(n, null!));

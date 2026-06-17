@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace PromiseModelOnline.Api.Controllers;
 
 /// <summary>Health check endpoint for load balancer and container orchestration probes.</summary>
 [ApiController]
+[Route("")]
 public class HomeController : ControllerBase
 {
     private readonly ILogger<HomeController> _logger;
@@ -18,8 +20,9 @@ public class HomeController : ControllerBase
 
     /// <summary>Verify that the application is running and can respond.</summary>
     /// <response code="200">Returns <c>{ "status": "healthy" }</c>.</response>
-    [HttpGet("health")]
-    public IActionResult HealthCheck()
+        [HttpGet("health")]
+        [ProducesResponseType<object>(StatusCodes.Status200OK)]
+        public IActionResult HealthCheck()
     {
         _logger.LogDebug("Health check called");
         return Ok(new { status = "healthy" });

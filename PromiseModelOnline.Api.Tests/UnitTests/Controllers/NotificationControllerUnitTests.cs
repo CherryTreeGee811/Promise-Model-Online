@@ -38,10 +38,10 @@ namespace PromiseModelOnline.Api.Tests
         public async Task REQ_FUN_035_GetNotifications_WithAuthenticatedUser_ReturnsOkWithNotifications()
         {
             // Arrange
-            var notifications = new List<NotificationDTO>
+            var notifications = new List<NotificationDto>
             {
-                new NotificationDTO { Id = 1, Message = "Welcome", Type = "Info", IsRead = false },
-                new NotificationDTO { Id = 2, Message = "Project updated", Type = "Update", IsRead = false }
+                new NotificationDto { Id = 1, Message = "Welcome", Type = "Info", IsRead = false },
+                new NotificationDto { Id = 2, Message = "Project updated", Type = "Update", IsRead = false }
             };
             var currentUser = new User { Id = 17, Email = "user@example.com", Name = "User" };
 
@@ -97,7 +97,7 @@ namespace PromiseModelOnline.Api.Tests
             ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com");
 
             // Act
-            var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
+            var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDto { IsRead = true });
 
             // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
@@ -111,7 +111,7 @@ namespace PromiseModelOnline.Api.Tests
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
             // Act
-            var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDTO { IsRead = true });
+            var result = await _controller.UpdateNotification(9, new UpdateNotificationRequestDto { IsRead = true });
 
             // Assert
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
@@ -134,7 +134,7 @@ namespace PromiseModelOnline.Api.Tests
             ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com", "reader-name");
 
             // Act
-            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
+            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDto { IsRead = true, ApplyToAll = true });
 
             // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());
@@ -159,7 +159,7 @@ namespace PromiseModelOnline.Api.Tests
             ControllerTestHelpers.SetControllerUser(_controller, "reader@example.com", "reader-name");
 
             // Act
-            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO
+            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDto
             {
                 IsRead = true,
                 NotificationIds = new[] { 1, 2, 2 }
@@ -179,7 +179,7 @@ namespace PromiseModelOnline.Api.Tests
             ControllerTestHelpers.SetControllerUser(_controller, null);
 
             // Act
-            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDTO { IsRead = true, ApplyToAll = true });
+            var result = await _controller.UpdateNotifications(new UpdateNotificationsRequestDto { IsRead = true, ApplyToAll = true });
 
             // Assert
             Assert.That(result, Is.InstanceOf<UnauthorizedResult>());

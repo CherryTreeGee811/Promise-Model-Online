@@ -21,7 +21,7 @@ namespace PromiseModelOnline.Api.Controllers
     public class ProjectMomentsController : ProjectScopedControllerBase
     {
         private readonly IMomentService _momentService;
-        private readonly IGenericMapper<Moment, MomentDTO> _mapper;
+        private readonly IGenericMapper<Moment, MomentDto> _mapper;
         private readonly IUserRepository _userRepository;
         private readonly IPermissionService _permissionService;
         private readonly IPromiseModelOnlineContext _context;
@@ -36,7 +36,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="userRepository">The repository for user data access.</param>
         public ProjectMomentsController(
             IMomentService service,
-            IGenericMapper<Moment, MomentDTO> mapper,
+            IGenericMapper<Moment, MomentDto> mapper,
             IUserRepository userRepository,
             IPermissionService permissionService,
             IPromiseModelOnlineContext context,
@@ -60,8 +60,9 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="404">No moment with the given sequence number exists in the project.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet("{seq}")]
-        public async Task<ActionResult<MomentDTO>> GetBySeq(int seq, string owner, string project)
+        public async Task<ActionResult<MomentDto>> GetBySeq(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -83,8 +84,9 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="404">No moment with the given ID exists in the project.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet("by-id/{id}")]
-        public async Task<ActionResult<MomentDTO>> GetById(int id, string owner, string project)
+        public async Task<ActionResult<MomentDto>> GetById(int id, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -111,6 +113,8 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpPut("{seq}")]
         public async Task<IActionResult> Update(int seq, [FromBody] Moment entity, string owner, string project)
         {
+            if (entity is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -139,6 +143,7 @@ namespace PromiseModelOnline.Api.Controllers
         [HttpDelete("{seq}")]
         public async Task<IActionResult> Delete(int seq, string owner, string project)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
@@ -165,7 +170,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <response code="404">Project or flow not found.</response>
         [Authorize(Policy = "projects.write")]
         [HttpPost("create")]
-        public async Task<ActionResult<MomentDTO>> CreateFromDto([FromBody] CreateMomentRequestDTO request, string owner, string project)
+        public async Task<ActionResult<MomentDto>> CreateFromDto([FromBody] CreateMomentRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -206,50 +211,52 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Return moments for a project with optional stride, flow sequence, or iteration filters.</summary>
         /// <param name="owner">The project owner's URL-safe slug.</param>
         /// <param name="project">The project's URL-safe slug.</param>
+        /// <param name="strideId">Optional stride ID to filter by.</param>
+        /// <param name="flowSeq">Optional flow sequence number to filter by.</param>
+        /// <param name="iterationId">Optional iteration ID to filter by.</param>
+        /// <param name="unassigned">If true, return only unassigned moments.</param>
         /// <response code="200">Returns matching moments as DTOs.</response>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MomentDTO>>> GetAll(string owner, string project)
+        public async Task<ActionResult<IEnumerable<MomentDto>>> GetAll(string owner, string project,
+            [FromQuery] int? strideId = null, [FromQuery] int? flowSeq = null,
+            [FromQuery] int? iterationId = null, [FromQuery] bool? unassigned = null)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
                 return NotFound();
 
             IEnumerable<Moment> moments;
 
-            var strideIdStr = Request.Query["strideId"];
-            var flowSeqStr = Request.Query["flowSeq"];
-            var iterationIdStr = Request.Query["iterationId"];
-            var unassignedStr = Request.Query["unassigned"];
-
-            if (!string.IsNullOrEmpty(strideIdStr) && int.TryParse(strideIdStr, out int strideId))
+            if (strideId.HasValue)
             {
                 var stride = await _context.Strides
-                    .FirstOrDefaultAsync(s => s.Id == strideId && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
+                    .FirstOrDefaultAsync(s => s.Id == strideId.Value && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
                 if (stride is null)
                     return NotFound("Stride not found.");
 
-                moments = await _momentService.GetMomentsByStrideAsync(strideId);
+                moments = await _momentService.GetMomentsByStrideAsync(strideId.Value);
             }
-            else if (!string.IsNullOrEmpty(flowSeqStr) && int.TryParse(flowSeqStr, out int flowSeq))
+            else if (flowSeq.HasValue)
             {
                 var flow = await _context.Flows
-                    .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == flowSeq);
+                    .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == flowSeq.Value);
 
                 if (flow is null)
                     return NotFound("Flow not found.");
 
                 moments = await _momentService.GetMomentsByFlowAsync(flow.Id);
             }
-            else if (!string.IsNullOrEmpty(iterationIdStr) && int.TryParse(iterationIdStr, out int iterationId))
+            else if (iterationId.HasValue)
             {
-                bool unassignedOnly = unassignedStr == "true";
+                bool unassignedOnly = unassigned == true;
                 var iteration = await _context.Iterations
-                    .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId);
+                    .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId.Value);
                 if (iteration is null)
                     return NotFound("Iteration not found.");
 
-                moments = await _momentService.GetMomentsByIterationAsync(iterationId, unassignedOnly);
+                moments = await _momentService.GetMomentsByIterationAsync(iterationId.Value, unassignedOnly);
             }
             else
             {
@@ -258,7 +265,7 @@ namespace PromiseModelOnline.Api.Controllers
                     .ToListAsync();
             }
 
-            var result = new List<MomentDTO>();
+            var result = new List<MomentDto>();
             foreach (var m in moments)
                 result.Add(_mapper.Map(m, _momentService));
 
@@ -277,7 +284,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/stride-assignment")]
-        public async Task<ActionResult<MomentDTO>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project)
+        public async Task<ActionResult<MomentDto>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -335,7 +342,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/status")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project)
+        public async Task<ActionResult<MomentDto>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -389,7 +396,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/description")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDTO request, string owner, string project)
+        public async Task<ActionResult<MomentDto>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -448,7 +455,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/estimate")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project)
+        public async Task<ActionResult<MomentDto>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -502,7 +509,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/type")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project)
+        public async Task<ActionResult<MomentDto>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)
@@ -559,7 +566,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{seq}/owner")]
-        public async Task<ActionResult<MomentDTO>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project)
+        public async Task<ActionResult<MomentDto>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null)

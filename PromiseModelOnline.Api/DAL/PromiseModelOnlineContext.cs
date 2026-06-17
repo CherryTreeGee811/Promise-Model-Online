@@ -268,7 +268,7 @@ namespace PromiseModelOnline.Api.DAL
             {
                 var result = await base.SaveChangesAsync(cancellationToken);
 
-                AuditEvents.AddRange(await Task.WhenAll(auditEntries.Select(entry => entry.ToAuditEventAsync(this, cancellationToken))));
+                AuditEvents.AddRange(await Task.WhenAll(auditEntries.Select(entry => entry.ToAuditEventAsync())));
                 await base.SaveChangesAsync(cancellationToken);
 
                 if (startedTransaction)
@@ -516,15 +516,8 @@ namespace PromiseModelOnline.Api.DAL
             int? ProjectId)
         {
             /// <summary>Materialize this audit entry into a persistent <see cref="AuditEvent"/>.</summary>
-            /// <remarks>
-            ///   Serializes the before, after, and change dictionaries to JSON for storage.
-            ///   If the entity is a <see cref="Project"/> and no project ID was resolved earlier,
-            ///   it uses the project's own ID.
-            /// </remarks>
-            /// <param name="context">The database context for any additional lookups.</param>
-            /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
             /// <returns>A fully populated <see cref="AuditEvent"/> ready for persistence.</returns>
-            public async Task<AuditEvent> ToAuditEventAsync(PromiseModelOnlineContext context, CancellationToken cancellationToken)
+            public async Task<AuditEvent> ToAuditEventAsync()
             {
                 var projectId = ProjectId;
 

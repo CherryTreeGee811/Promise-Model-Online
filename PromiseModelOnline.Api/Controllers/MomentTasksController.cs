@@ -53,7 +53,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created task DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
-        public async Task<ActionResult<MomentTaskDTO>> Create(int momentId, [FromBody] CreateMomentTaskRequestDTO request)
+        public async Task<ActionResult<MomentTaskDto>> Create(int momentId, [FromBody] CreateMomentTaskRequestDto request)
         {
             if (!await UserCanEditMomentAsync(momentId))
                 return Forbid();
@@ -96,7 +96,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The updated task DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("{taskId:int}/completion")]
-        public async Task<ActionResult<MomentTaskDTO>> UpdateCompletion(int momentId, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDTO request)
+        public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentId, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request)
         {
             if (request is null)
                 return BadRequest("Request body is required.");
@@ -128,9 +128,9 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Map a MomentTask entity to its DTO.</summary>
         /// <param name="task">The task entity to map.</param>
         /// <returns>The mapped DTO.</returns>
-        private static MomentTaskDTO Map(MomentTask task)
+        private static MomentTaskDto Map(MomentTask task)
         {
-            return new MomentTaskDTO
+            return new MomentTaskDto
             {
                 Id = task.Id,
                 Name = task.Name,

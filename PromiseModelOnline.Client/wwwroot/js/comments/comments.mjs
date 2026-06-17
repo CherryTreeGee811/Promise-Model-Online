@@ -1,4 +1,4 @@
-import { getComments, addComment } from './api.mjs';
+import { getComments, addComment } from './api.ts';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';
 import { createCommentAutocomplete } from './autocomplete.mjs';

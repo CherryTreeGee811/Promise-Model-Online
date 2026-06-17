@@ -1,3 +1,5 @@
+namespace PromiseModelOnline.Api.Extensions;
+
 /// <summary>Resolves Docker secrets in connection strings by replacing <c>Password_FILE=</c> with the file contents.</summary>
 /// <remarks>
 ///   Looks for <c>Password_FILE=/run/secrets/...</c> in the connection string and replaces it with

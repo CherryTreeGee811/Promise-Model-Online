@@ -1,4 +1,4 @@
-import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.mjs';
+import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.ts';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.mjs';
 import { escapeHtml } from '../utils/html.mjs';
 import { renderEmptyStateSection } from '../utils/empty-table.mjs';

@@ -140,7 +140,7 @@ namespace PromiseModelOnline.Api.Tests
                            .ReturnsAsync(new List<Stride> { stride });
             _iterationRepoMock.Setup(r => r.GetByIdAsync(100)).ReturnsAsync(iteration);
             _projectServiceMock.Setup(p => p.GetProjectMembersAsync(200))
-                               .ReturnsAsync(new List<ProjectMemberDTO>());
+                               .ReturnsAsync(new List<ProjectMemberDto>());
 
             await _service.SendDeadlineNotificationsAsync();
 
@@ -154,10 +154,10 @@ namespace PromiseModelOnline.Api.Tests
         {
             var iteration = new Iteration { Id = 1, ProjectId = 5 };
             var stride = new Stride { Id = 10, Name = "Sprint 1", IterationId = 1 };
-            var members = new List<ProjectMemberDTO>
+            var members = new List<ProjectMemberDto>
             {
-                new ProjectMemberDTO { UserId = 100, UserName = "Alice" },
-                new ProjectMemberDTO { UserId = 200, UserName = "Bob" }
+                new ProjectMemberDto { UserId = 100, UserName = "Alice" },
+                new ProjectMemberDto { UserId = 200, UserName = "Bob" }
             };
 
             _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
@@ -189,8 +189,8 @@ namespace PromiseModelOnline.Api.Tests
             var iteration2 = new Iteration { Id = 2, ProjectId = 20 };
             var stride1 = new Stride { Id = 1, Name = "S1", IterationId = 1 };
             var stride2 = new Stride { Id = 2, Name = "S2", IterationId = 2 };
-            var members1 = new List<ProjectMemberDTO> { new ProjectMemberDTO { UserId = 1 } };
-            var members2 = new List<ProjectMemberDTO> { new ProjectMemberDTO { UserId = 2 } };
+            var members1 = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 1 } };
+            var members2 = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 2 } };
 
             _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
                            .ReturnsAsync(new List<Stride> { stride1, stride2 });

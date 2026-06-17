@@ -1,4 +1,4 @@
-import { createStride } from '../strides/api.mjs';
+import { createStride } from '../strides/api.ts';
 import { escapeHtml } from './html.mjs';
 
 /**

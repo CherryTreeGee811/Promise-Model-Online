@@ -10,8 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 namespace PromiseModelOnline.Api.Controllers
 {
     /// <summary>REST controller for user project listing, creation, and import.</summary>
@@ -20,15 +18,15 @@ namespace PromiseModelOnline.Api.Controllers
     ///   Lists projects accessible to the current user (owned or shared).
     /// </remarks>
     [Route("api/projects")]
+    [IgnoreAntiforgeryToken]
     public class UserProjectsController : ControllerBase
     {
         private readonly IProjectService _projectService;
         private readonly IUserRepository _userRepository;
-        private readonly IGenericMapper<Project, ProjectDTO> _mapper;
+        private readonly IGenericMapper<Project, ProjectDto> _mapper;
         private readonly IGenericService<Project> _service;
         private readonly IProjectImportService _projectImportService;
         private readonly IProjectImportValidationService _projectImportValidationService;
-        private readonly ILogger<UserProjectsController> _logger;
 
         /// <summary>Initializes the controller with required services and repositories.</summary>
         /// <param name="projectService">The project service.</param>
@@ -37,15 +35,13 @@ namespace PromiseModelOnline.Api.Controllers
         /// <param name="service">The generic service.</param>
         /// <param name="projectImportService">The project import service.</param>
         /// <param name="projectImportValidationService">The project import validation service.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
         public UserProjectsController(
             IProjectService projectService,
             IUserRepository userRepository,
-            IGenericMapper<Project, ProjectDTO> mapper,
+            IGenericMapper<Project, ProjectDto> mapper,
             IGenericService<Project> service,
             IProjectImportService projectImportService,
-            IProjectImportValidationService projectImportValidationService,
-            ILogger<UserProjectsController> logger)
+            IProjectImportValidationService projectImportValidationService)
         {
             _projectService = projectService;
             _userRepository = userRepository;
@@ -53,14 +49,13 @@ namespace PromiseModelOnline.Api.Controllers
             _service = service;
             _projectImportService = projectImportService;
             _projectImportValidationService = projectImportValidationService;
-            _logger = logger;
         }
 
         /// <summary>Return all projects accessible to the current user.</summary>
         /// <returns>A list of project DTOs accessible to the user.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetAll()
+        public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll()
         {
             var user = await GetCurrentUserAsync();
             if (user is null) return Unauthorized();
@@ -73,9 +68,11 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The created project DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPost]
-        public async Task<ActionResult<ProjectDTO>> Create([FromBody] ProjectCreateDTO request)
+        public async Task<ActionResult<ProjectDto>> Create([FromBody] ProjectCreateDto request)
         {
-            if (request is null || string.IsNullOrWhiteSpace(request.Name))
+            if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+            if (string.IsNullOrWhiteSpace(request.Name))
                 return BadRequest("Project name is required.");
 
             var user = await GetCurrentUserAsync();

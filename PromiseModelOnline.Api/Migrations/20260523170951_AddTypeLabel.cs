@@ -10,13 +10,13 @@ namespace PromiseModelOnline.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-
+            // No schema changes needed — this migration was created to seed initial data only.
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-
+            // No schema changes to revert — this migration was created to seed initial data only.
         }
     }
 }

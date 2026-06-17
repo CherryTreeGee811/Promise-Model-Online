@@ -169,7 +169,7 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var epic in OrderByDisplayOrder(promise.Epics))
         {
-            await ImportEpicAsync(projectId, newPromise.Id, epic, requestedByUserId, warnings, strideIdMap);
+            await ImportEpicAsync(newPromise.Id, epic, requestedByUserId, warnings, strideIdMap);
         }
     }
 
@@ -218,18 +218,6 @@ public sealed class ProjectImportService : IProjectImportService
         return 0;
     }
 
-    /// <summary>Resolve an owner ID with a fallback to the requesting user for required cases.</summary>
-    /// <param name="exportedOwnerId">The exported owner ID from the document.</param>
-    /// <param name="fallbackUserId">The fallback user ID if resolution fails.</param>
-    /// <param name="warnings">Accumulated import warnings.</param>
-    /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
-    /// <returns>The resolved owner ID.</returns>
-    private async Task<int> ResolveRequiredOwnerIdAsync(int? exportedOwnerId, int fallbackUserId, List<string> warnings, string entityLabel)
-    {
-        var resolvedOwnerId = await ResolveOptionalOwnerIdAsync(exportedOwnerId, fallbackUserId, warnings, entityLabel);
-        return resolvedOwnerId ?? fallbackUserId;
-    }
-
     /// <summary>Resolve an exported owner ID to a valid user ID, with fallback and warning.</summary>
     /// <param name="exportedOwnerId">The exported owner ID from the document.</param>
     /// <param name="fallbackUserId">The fallback user ID if the exported owner is not found.</param>
@@ -259,7 +247,7 @@ public sealed class ProjectImportService : IProjectImportService
     /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
     /// <param name="referenceName">The type of reference (e.g., "assigned", "original") for warnings.</param>
     /// <returns>The mapped stride ID, or null.</returns>
-    private async Task<int?> ResolveStrideIdAsync(int? exportedStrideId, Dictionary<int, int> strideIdMap, List<string> warnings, string entityLabel, string referenceName)
+    private static async Task<int?> ResolveStrideIdAsync(int? exportedStrideId, Dictionary<int, int> strideIdMap, List<string> warnings, string entityLabel, string referenceName)
     {
         if (!exportedStrideId.HasValue)
         {
@@ -276,14 +264,12 @@ public sealed class ProjectImportService : IProjectImportService
     }
 
     /// <summary>Import a single epic and recursively import its child journeys.</summary>
-    /// <param name="projectId">The project ID for context.</param>
     /// <param name="promiseId">The parent promise ID.</param>
     /// <param name="epic">The exported epic data.</param>
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportEpicAsync(
-        int projectId,
         int promiseId,
         ProjectExportEpic epic,
         int requestedByUserId,
@@ -310,19 +296,17 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var journey in OrderByDisplayOrder(epic.Journeys))
         {
-            await ImportJourneyAsync(projectId, newEpic.Id, journey, requestedByUserId, warnings, strideIdMap);
+            await ImportJourneyAsync(newEpic.Id, journey, requestedByUserId, warnings, strideIdMap);
         }
     }
 
     /// <summary>Import a single journey and recursively import its child flows.</summary>
-    /// <param name="projectId">The project ID for context.</param>
     /// <param name="epicId">The parent epic ID.</param>
     /// <param name="journey">The exported journey data.</param>
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportJourneyAsync(
-        int projectId,
         int epicId,
         ProjectExportJourney journey,
         int requestedByUserId,
@@ -349,19 +333,17 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var flow in OrderByDisplayOrder(journey.Flows))
         {
-            await ImportFlowAsync(projectId, newJourney.Id, flow, requestedByUserId, warnings, strideIdMap);
+            await ImportFlowAsync(newJourney.Id, flow, requestedByUserId, warnings, strideIdMap);
         }
     }
 
     /// <summary>Import a single flow and recursively import its child moments.</summary>
-    /// <param name="projectId">The project ID for context.</param>
     /// <param name="journeyId">The parent journey ID.</param>
     /// <param name="flow">The exported flow data.</param>
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportFlowAsync(
-        int projectId,
         int journeyId,
         ProjectExportFlow flow,
         int requestedByUserId,
@@ -388,19 +370,17 @@ public sealed class ProjectImportService : IProjectImportService
 
         foreach (var moment in OrderByDisplayOrder(flow.Moments))
         {
-            await ImportMomentAsync(projectId, newFlow.Id, moment, requestedByUserId, warnings, strideIdMap);
+            await ImportMomentAsync(newFlow.Id, moment, requestedByUserId, warnings, strideIdMap);
         }
     }
 
     /// <summary>Import a single moment with its stride assignments and sub-tasks.</summary>
-    /// <param name="projectId">The project ID for context.</param>
     /// <param name="flowId">The parent flow ID.</param>
     /// <param name="moment">The exported moment data.</param>
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
     private async Task ImportMomentAsync(
-        int projectId,
         int flowId,
         ProjectExportMoment moment,
         int requestedByUserId,

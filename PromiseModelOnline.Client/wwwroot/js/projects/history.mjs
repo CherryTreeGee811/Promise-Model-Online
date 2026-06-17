@@ -1,5 +1,5 @@
 import { navigate } from '../router.mjs';
-import { getAuditEvents, getProject } from './api.mjs';
+import { getAuditEvents, getProject } from './api.ts';
 import { getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.mjs';
 
 const PAGE_SIZE = 25;

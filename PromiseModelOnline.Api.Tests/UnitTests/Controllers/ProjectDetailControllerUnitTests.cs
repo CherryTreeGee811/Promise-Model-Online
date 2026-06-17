@@ -27,8 +27,8 @@ namespace PromiseModelOnline.Api.Tests
         private Mock<IUserRepository> _mockUserRepo = null!;
         private Mock<IPermissionService> _mockPermissionService = null!;
         private Mock<IGenericService<Promise>> _mockPromiseService = null!;
-        private Mock<IGenericMapper<Project, ProjectDTO>> _mockMapper = null!;
-        private Mock<IGenericMapper<Promise, PromiseDTO>> _mockPromiseMapper = null!;
+        private Mock<IGenericMapper<Project, ProjectDto>> _mockMapper = null!;
+        private Mock<IGenericMapper<Promise, PromiseDto>> _mockPromiseMapper = null!;
         private Mock<IGenericService<Project>> _mockGenericService = null!;
         private Mock<IProjectExportService> _mockExportService = null!;
         private Mock<IPromiseModelOnlineContext> _mockContext = null!;
@@ -44,8 +44,8 @@ namespace PromiseModelOnline.Api.Tests
             _mockUserRepo = new Mock<IUserRepository>();
             _mockPermissionService = new Mock<IPermissionService>();
             _mockPromiseService = new Mock<IGenericService<Promise>>();
-            _mockMapper = new Mock<IGenericMapper<Project, ProjectDTO>>();
-            _mockPromiseMapper = new Mock<IGenericMapper<Promise, PromiseDTO>>();
+            _mockMapper = new Mock<IGenericMapper<Project, ProjectDto>>();
+            _mockPromiseMapper = new Mock<IGenericMapper<Promise, PromiseDto>>();
             _mockGenericService = new Mock<IGenericService<Project>>();
             _mockExportService = new Mock<IProjectExportService>();
             _mockContext = new Mock<IPromiseModelOnlineContext>();
@@ -87,7 +87,7 @@ namespace PromiseModelOnline.Api.Tests
             _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project> { project });
 
             _mockMapper.Setup(m => m.Map(project, It.IsAny<IGenericService<Project>>()))
-                       .Returns(new ProjectDTO { Id = 7, Name = "P7", Slug = ProjectSlug, OwnerSlug = OwnerSlug });
+                       .Returns(new ProjectDto { Id = 7, Name = "P7", Slug = ProjectSlug, OwnerSlug = OwnerSlug });
 
             SetControllerUser("u@u.com");
             // Act
@@ -96,7 +96,7 @@ namespace PromiseModelOnline.Api.Tests
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var ok = result.Result as OkObjectResult;
-            var dto = ok!.Value as ProjectDTO;
+            var dto = ok!.Value as ProjectDto;
             Assert.That(dto, Is.Not.Null);
             Assert.That(dto!.Id, Is.EqualTo(7));
         }
@@ -124,7 +124,7 @@ namespace PromiseModelOnline.Api.Tests
             var user = new User { Id = 2, Email = "x@y.com" };
             _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("x@y.com", It.IsAny<string?>())).ReturnsAsync(user);
 
-            var members = new List<ProjectMemberDTO> { new ProjectMemberDTO { UserId = 5, Email = "m1@e" } };
+            var members = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 5, Email = "m1@e" } };
             _mockProjectService.Setup(s => s.GetProjectMembersAsync(99)).ReturnsAsync(members);
 
             SetControllerUser("x@y.com");
@@ -134,7 +134,7 @@ namespace PromiseModelOnline.Api.Tests
             // Assert
             Assert.That(actionResult.Result, Is.InstanceOf<OkObjectResult>());
             var ok = actionResult.Result as OkObjectResult;
-            var returned = ok!.Value as List<ProjectMemberDTO>;
+            var returned = ok!.Value as List<ProjectMemberDto>;
             Assert.That(returned, Is.Not.Null);
             Assert.That(returned!.Count, Is.EqualTo(1));
             Assert.That(returned[0].UserId, Is.EqualTo(5));
@@ -181,7 +181,7 @@ namespace PromiseModelOnline.Api.Tests
         {
             // Arrange
             SetControllerUser("u@u.com");
-            var request = new UpdateProjectDetailsRequestDTO { Name = "", Description = "" };
+            var request = new UpdateProjectDetailsRequestDto { Name = "", Description = "" };
             // Act
             var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
             // Assert
@@ -194,7 +194,7 @@ namespace PromiseModelOnline.Api.Tests
             // Arrange
             SetUpProjectResolve(null);
             SetControllerUser("u@u.com");
-            var request = new UpdateProjectDetailsRequestDTO { Name = "Updated", Description = "" };
+            var request = new UpdateProjectDetailsRequestDto { Name = "Updated", Description = "" };
             // Act
             var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
             // Assert
@@ -210,10 +210,10 @@ namespace PromiseModelOnline.Api.Tests
             SetUpProjectResolve(project);
 
             _mockMapper.Setup(m => m.Map(project, It.IsAny<IGenericService<Project>>()))
-                       .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDTO { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
+                       .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDto { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
 
             SetControllerUser("u@u.com");
-            var request = new UpdateProjectDetailsRequestDTO { Name = "Updated", Description = "New desc" };
+            var request = new UpdateProjectDetailsRequestDto { Name = "Updated", Description = "New desc" };
             // Act
             var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
 
@@ -382,7 +382,7 @@ namespace PromiseModelOnline.Api.Tests
             };
             _mockProjectService.Setup(s => s.GetProductPromisesAsync(10)).ReturnsAsync(promises);
             _mockPromiseMapper.Setup(m => m.Map(It.IsAny<Promise>(), It.IsAny<IGenericService<Promise>>()))
-                .Returns<Promise, IGenericService<Promise>>((p, svc) => new PromiseDTO { Id = p.Id, Statement = p.Statement });
+                .Returns<Promise, IGenericService<Promise>>((p, svc) => new PromiseDto { Id = p.Id, Statement = p.Statement });
 
             SetControllerUser("user@x.com");
             // Act

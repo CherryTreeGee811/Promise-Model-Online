@@ -19,12 +19,12 @@ namespace PromiseModelOnline.Api.BusinessLogic
     public class ReactionService : IReactionService
     {
         private readonly IReactionRepository _reactionRepo;
-        private readonly IGenericMapper<Reaction, ReactionDTO> _mapper;
+        private readonly IGenericMapper<Reaction, ReactionDto> _mapper;
 
         /// <param name="reactionRepo">Repository for reaction data access.</param>
         /// <param name="mapper">Mapper for reaction to DTO conversion.</param>
         public ReactionService(IReactionRepository reactionRepo,
-                               IGenericMapper<Reaction, ReactionDTO> mapper)
+                               IGenericMapper<Reaction, ReactionDto> mapper)
         {
             _reactionRepo = reactionRepo;
             _mapper = mapper;
@@ -34,7 +34,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <param name="stackItemType">The target entity type.</param>
         /// <param name="stackItemId">The target entity ID.</param>
         /// <returns>Reaction DTOs with user information.</returns>
-        public async Task<IEnumerable<ReactionDTO>> GetReactionsAsync(string stackItemType, int stackItemId)
+        public async Task<IEnumerable<ReactionDto>> GetReactionsAsync(string stackItemType, int stackItemId)
         {
             var reactions = await _reactionRepo.GetReactionsForItemAsync(stackItemType, stackItemId);
             return reactions.Select(r => _mapper.Map(r, null!));
@@ -45,7 +45,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <param name="userId">The user ID.</param>
         /// <returns>The created reaction DTO.</returns>
         /// <exception cref="InvalidOperationException">Reaction already exists for this user and item.</exception>
-        public async Task<ReactionDTO> CreateReactionAsync(CreateReactionRequest request, int userId)
+        public async Task<ReactionDto> CreateReactionAsync(CreateReactionRequest request, int userId)
         {
             var existing = await _reactionRepo.GetUserReactionAsync(userId, request.StackItemType, request.StackItemId);
             if (existing is not null)
@@ -70,7 +70,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <param name="userId">The requesting user ID for ownership validation.</param>
         /// <returns>The updated reaction DTO.</returns>
         /// <exception cref="InvalidOperationException">Reaction not found, not owned by user, or emote is empty.</exception>
-        public async Task<ReactionDTO> UpdateReactionAsync(int reactionId, UpdateReactionRequestDTO request, int userId)
+        public async Task<ReactionDto> UpdateReactionAsync(int reactionId, UpdateReactionRequestDto request, int userId)
         {
             var existing = await _reactionRepo.GetByIdAsync(reactionId);
             if (existing is null || existing.UserId != userId)

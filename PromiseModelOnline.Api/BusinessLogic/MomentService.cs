@@ -248,7 +248,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
                                         .ToList();
                     if (nextIterations.Any())
                     {
-                        var firstStrideOfNextIteration = (await _strideService.GetStridesByIterationAsync(nextIterations.First().Id))
+                        var firstStrideOfNextIteration = (await _strideService.GetStridesByIterationAsync(nextIterations[0].Id))
                                                         .OrderBy(s => s.StartDate).FirstOrDefault();
                         nextStride = firstStrideOfNextIteration;
                     }
@@ -287,17 +287,17 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <summary>Compute burndown chart data points with automatic date range from moment data.</summary>
         /// <param name="moments">The list of moments to compute burndown for.</param>
         /// <returns>A list of burndown data points.</returns>
-    private Task<List<BurndownPointDTO>> ComputeBurndownAsync(List<Moment> moments)
+    private Task<List<BurndownPointDto>> ComputeBurndownAsync(List<Moment> moments)
             => ComputeBurndownAsync(moments, null, null);
 
     /// <summary>Compute burndown chart data points with optional date range overrides.</summary>
     /// <remarks>Calculates actual remaining effort per day and the ideal burndown line.</remarks>
-    private Task<List<BurndownPointDTO>> ComputeBurndownAsync(
+    private Task<List<BurndownPointDto>> ComputeBurndownAsync(
         List<Moment> moments,
         DateTime? startDateOverride,
         DateTime? endDateOverride)
         {
-            var result = new List<BurndownPointDTO>();
+            var result = new List<BurndownPointDto>();
             if (moments.Count == 0) return Task.FromResult(result);
 
             var startDate = (startDateOverride ?? moments.Min(m => m.CreatedAt)).Date;
@@ -325,7 +325,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
                 var idealRemaining = initialEffort - (initialEffort * dayNumber / totalDays);
                 if (idealRemaining < 0) idealRemaining = 0;
 
-                result.Add(new BurndownPointDTO
+                result.Add(new BurndownPointDto
                 {
                     Date = date,
                     RemainingEffort = remaining,
@@ -339,7 +339,7 @@ namespace PromiseModelOnline.Api.BusinessLogic
         /// <summary>Calculate burndown chart data points for an iteration.</summary>
         /// <param name="iterationId">The iteration ID.</param>
         /// <returns>A list of burndown data points.</returns>
-        public async Task<List<BurndownPointDTO>> GetIterationBurndownAsync(int iterationId)
+        public async Task<List<BurndownPointDto>> GetIterationBurndownAsync(int iterationId)
         {
             var iterationStrides = (await _strideService.GetStridesByIterationAsync(iterationId)).ToList();
             var assigned = await _momentRepository.GetMomentsByIterationAsync(iterationId, unassignedOnly: false);

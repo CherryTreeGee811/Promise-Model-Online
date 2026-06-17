@@ -29,8 +29,8 @@ namespace PromiseModelOnline.Api.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IPermissionService _permissionService;
         private readonly IGenericService<Promise> _promiseService;
-        private readonly IGenericMapper<Project, ProjectDTO> _mapper;
-        private readonly IGenericMapper<Promise, PromiseDTO> _promiseMapper;
+        private readonly IGenericMapper<Project, ProjectDto> _mapper;
+        private readonly IGenericMapper<Promise, PromiseDto> _promiseMapper;
         private readonly IGenericService<Project> _service;
         private readonly IProjectExportService _projectExportService;
         private readonly IPromiseModelOnlineContext _context;
@@ -52,8 +52,8 @@ namespace PromiseModelOnline.Api.Controllers
             IUserRepository userRepository,
             IPermissionService permissionService,
             IGenericService<Promise> promiseService,
-            IGenericMapper<Project, ProjectDTO> mapper,
-            IGenericMapper<Promise, PromiseDTO> promiseMapper,
+            IGenericMapper<Project, ProjectDto> mapper,
+            IGenericMapper<Promise, PromiseDto> promiseMapper,
             IGenericService<Project> service,
             IProjectExportService projectExportService,
             IPromiseModelOnlineContext context,
@@ -81,7 +81,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The project as a DTO.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet]
-        public async Task<ActionResult<ProjectDTO>> GetBySlug(string owner, string project)
+        public async Task<ActionResult<ProjectDto>> GetBySlug(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null) return NotFound();
@@ -102,7 +102,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of project member DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("members")]
-        public async Task<ActionResult<IEnumerable<ProjectMemberDTO>>> GetMembers(string owner, string project)
+        public async Task<ActionResult<IEnumerable<ProjectMemberDto>>> GetMembers(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null) return NotFound();
@@ -118,7 +118,7 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A list of promise DTOs ordered by display order.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("promises")]
-        public async Task<ActionResult<IEnumerable<PromiseDTO>>> GetProjectPromises(string owner, string project)
+        public async Task<ActionResult<IEnumerable<PromiseDto>>> GetProjectPromises(string owner, string project)
         {
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null) return NotFound();
@@ -208,9 +208,10 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>The updated project DTO.</returns>
         [Authorize(Policy = "projects.write")]
         [HttpPatch("details")]
-        public async Task<ActionResult<ProjectDTO>> UpdateDetails(string owner, string project, [FromBody] UpdateProjectDetailsRequestDTO request)
+        public async Task<ActionResult<ProjectDto>> UpdateDetails(string owner, string project, [FromBody] UpdateProjectDetailsRequestDto request)
         {
             if (request is null) return BadRequest("Request body is required.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest("Project title is required.");
 
             var projectEntity = await ResolveProjectAsync(owner, project);
@@ -280,21 +281,23 @@ namespace PromiseModelOnline.Api.Controllers
         /// <returns>A paginated list of audit timeline DTOs.</returns>
         [Authorize(Policy = "projects.read")]
         [HttpGet("audit-events")]
-        public async Task<ActionResult<IEnumerable<AuditTimelineItemDTO>>> GetAuditEvents(
+        public async Task<ActionResult<IEnumerable<AuditTimelineItemDto>>> GetAuditEvents(
             string owner, string project,
             [FromQuery] int take = 100, [FromQuery] int skip = 0)
         {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
             var projectEntity = await ResolveProjectAsync(owner, project);
             if (projectEntity is null) return NotFound();
 
-            take = take <= 0 ? 100 : take > 500 ? 500 : take;
+            if (take <= 0) take = 100;
+            else if (take > 500) take = 500;
 
             var query = _context.AuditEvents
                 .Where(entry => entry.ProjectId == projectEntity.Id)
                 .OrderByDescending(entry => entry.OccurredAtUtc)
                 .ThenByDescending(entry => entry.Id);
 
-            Response.Headers["X-Total-Count"] = query.Count().ToString();
+            Response.Headers["X-Total-Count"] = (await query.CountAsync()).ToString();
 
             var events = await query.Skip(skip).Take(take).ToListAsync();
             return Ok(events.Select(MapToAuditDto));
@@ -303,10 +306,10 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Map an AuditEvent to its timeline DTO.</summary>
         /// <param name="auditEvent">The audit event to map.</param>
         /// <returns>The mapped timeline DTO.</returns>
-        private static AuditTimelineItemDTO MapToAuditDto(AuditEvent auditEvent)
+        private static AuditTimelineItemDto MapToAuditDto(AuditEvent auditEvent)
         {
             var changes = DeserializeAuditChanges(auditEvent.ChangesJson);
-            return new AuditTimelineItemDTO
+            return new AuditTimelineItemDto
             {
                 Id = auditEvent.Id, OccurredAtUtc = auditEvent.OccurredAtUtc,
                 ActorUserId = auditEvent.ActorUserId, ActorEmail = auditEvent.ActorEmail,
@@ -319,19 +322,19 @@ namespace PromiseModelOnline.Api.Controllers
         /// <summary>Deserialize the JSON changes dictionary to audit field change DTOs.</summary>
         /// <param name="changesJson">The JSON string containing the changes dictionary.</param>
         /// <returns>A read-only list of field change DTOs, or empty if none.</returns>
-        private static IReadOnlyList<AuditFieldChangeDTO> DeserializeAuditChanges(string? changesJson)
+        private static IReadOnlyList<AuditFieldChangeDto> DeserializeAuditChanges(string? changesJson)
         {
             if (string.IsNullOrWhiteSpace(changesJson)) return [];
-            var changes = JsonSerializer.Deserialize<Dictionary<string, AuditChangeDTO>>(changesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var changes = JsonSerializer.Deserialize<Dictionary<string, AuditChangeDto>>(changesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (changes is null || changes.Count == 0) return [];
-            return changes.Select(entry => new AuditFieldChangeDTO { FieldName = entry.Key, Before = entry.Value.Before, After = entry.Value.After }).ToList();
+            return changes.Select(entry => new AuditFieldChangeDto { FieldName = entry.Key, Before = entry.Value.Before, After = entry.Value.After }).ToList();
         }
 
         /// <summary>Build a human-readable summary from an audit event and its field changes.</summary>
         /// <param name="auditEvent">The audit event.</param>
         /// <param name="changes">The list of field changes.</param>
         /// <returns>A human-readable summary string.</returns>
-        private static string BuildAuditSummary(AuditEvent auditEvent, IReadOnlyList<AuditFieldChangeDTO> changes)
+        private static string BuildAuditSummary(AuditEvent auditEvent, IReadOnlyList<AuditFieldChangeDto> changes)
         {
             if (string.Equals(auditEvent.ActionType, "Created", StringComparison.OrdinalIgnoreCase)) return $"Created {auditEvent.EntityType}";
             if (string.Equals(auditEvent.ActionType, "Deleted", StringComparison.OrdinalIgnoreCase)) return $"Deleted {auditEvent.EntityType}";
@@ -344,7 +347,9 @@ namespace PromiseModelOnline.Api.Controllers
             return $"Updated {auditEvent.EntityType}: {string.Join(", ", changes.Select(c => c.FieldName))}";
         }
 
-        private sealed class AuditChangeDTO { public object? Before { get; set; } public object? After { get; set; } }
+#pragma warning disable S1144 // setters used by System.Text.Json deserialization
+        private sealed class AuditChangeDto { public object? Before { get; set; } = default!; public object? After { get; set; } = default!; }
+#pragma warning restore S1144
 
         /// <summary>Resolve the current user from JWT claims, auto-provisioning if needed.</summary>
         /// <returns>The current user, or <c>null</c> if the email claim is missing.</returns>

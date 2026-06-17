@@ -15,12 +15,12 @@ namespace PromiseModelOnline.Api.BusinessLogic.Interfaces
         /// <summary>Return a user's unread notifications as DTOs.</summary>
         /// <param name="userId">The recipient's user ID.</param>
         /// <returns>Unread notification DTOs.</returns>
-        Task<IEnumerable<NotificationDTO>> GetUnreadNotificationsAsync(int userId);
+        Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int userId);
 
         /// <summary>Return all notifications (read and unread) for a user as DTOs.</summary>
         /// <param name="userId">The recipient's user ID.</param>
         /// <returns>All notification DTOs for the user.</returns>
-        Task<IEnumerable<NotificationDTO>> GetAllNotificationsAsync(int userId);
+        Task<IEnumerable<NotificationDto>> GetAllNotificationsAsync(int userId);
 
         /// <summary>Mark a single notification as read, scoped to the user.</summary>
         /// <param name="notificationId">The notification ID to mark.</param>

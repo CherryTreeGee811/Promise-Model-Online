@@ -1,10 +1,10 @@
 import { navigate } from '../router.mjs';
-import { getJourney, getFlows, updateJourneyDescription } from './api.mjs';
-import { createFlow } from '../flows/api.mjs';
-import { getEpicById } from '../epics/api.mjs';
+import { getJourney, getFlows, updateJourneyDescription } from './api.ts';
+import { createFlow } from '../flows/api.ts';
+import { getEpicById } from '../epics/api.ts';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.mjs';
 import { escapeHtml } from '../utils/html.mjs';
-import { buildGraphViewHref, getGraphProjectIdHintFromUrl, getOwnerProjectFromPath, resolveProjectIdForPromise, upsertGraphViewButton } from '../projects/graph-link.mjs';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.mjs';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,

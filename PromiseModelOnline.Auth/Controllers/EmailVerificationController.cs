@@ -51,7 +51,7 @@ public class EmailVerificationController : Controller
     /// <returns>The verification view, or a redirect to login if the user is not found or already verified.</returns>
     [AllowAnonymous]
     [HttpGet("")]
-    public async Task<IActionResult> Index(string? userId)
+    public async Task<IActionResult> Index(string? userId, [FromQuery] string? resent)
     {
         if (string.IsNullOrWhiteSpace(userId))
             return Redirect("/account/login");
@@ -63,7 +63,7 @@ public class EmailVerificationController : Controller
         if (await _userManager.IsEmailConfirmedAsync(user))
             return RedirectToAction("Index", "Login", new { verified = "true" });
 
-        ViewBag.Resent = (Request?.Query?["resent"].ToString() ?? "") == "true";
+        ViewBag.Resent = resent == "true";
         return View(new VerifyEmailViewModel
         {
             Email = user.Email ?? "",
@@ -80,6 +80,8 @@ public class EmailVerificationController : Controller
     [EnableRateLimiting("VerifyCodePolicy")]
     public async Task<IActionResult> Confirm(VerifyEmailViewModel model)
     {
+        ViewBag.Resent = false;
+
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.UserId))
         {
             var user = await _userManager.FindByIdAsync(model.UserId);

@@ -724,7 +724,8 @@ public static class PromiseHierarchySeeder
         var sb = new StringBuilder();
         var inQuotes = false;
 
-        for (var i = 0; i < line.Length; i++)
+        var i = 0;
+        while (i < line.Length)
         {
             var ch = line[i];
             if (ch == '"')
@@ -732,19 +733,22 @@ public static class PromiseHierarchySeeder
                 if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
                 {
                     sb.Append('"');
-                    i++;
+                    i += 2;
                     continue;
                 }
                 inQuotes = !inQuotes;
+                i++;
                 continue;
             }
             if (ch == ',' && !inQuotes)
             {
                 values.Add(sb.ToString());
                 sb.Clear();
+                i++;
                 continue;
             }
             sb.Append(ch);
+            i++;
         }
         values.Add(sb.ToString());
         return values;

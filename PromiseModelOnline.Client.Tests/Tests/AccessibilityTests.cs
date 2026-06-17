@@ -7,7 +7,7 @@ namespace PromiseModelOnline.Client.Tests.Tests;
 // Requirements: REQ_USE_006 REQ_USE_009 REQ_USE_010 REQ_WCAG_001 REQ_WCAG_002 REQ_WCAG_003 REQ_WCAG_005 REQ_WCAG_007 REQ_WCAG_008
 public class AccessibilityTests : ResponsivePlaywrightTestBase
 {
-    private const string AxeLocalPath = "/js/axe.min.js";
+    private const string AxeLocalPath = "/lib/js/axe.min.js";
 
     private async Task<string> RunAxeScanAsync()
     {
