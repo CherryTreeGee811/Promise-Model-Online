@@ -13,11 +13,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "checkJs": false,
     "noEmit": true,
     "declaration": false,
     "sourceMap": false
   },
   "include": [
-    "PromiseModelOnline.Client/wwwroot/js/**/*.ts"
+    "PromiseModelOnline.Client/wwwroot/js/**/*.ts",
+    "PromiseModelOnline.Client/wwwroot/sw.mjs"
   ]
 }
