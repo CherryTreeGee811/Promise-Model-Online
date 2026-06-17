@@ -1,4 +1,4 @@
-import { apiGet } from '../api.mjs';
+import { apiGet } from '../api.ts';
 
 /**
  * Search for users within a project for @-mention autocomplete.

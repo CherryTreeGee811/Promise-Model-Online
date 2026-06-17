@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiPatch } from '../api.mjs';
+import { apiGet, apiPost, apiPut, apiPatch } from '../api.ts';
 
 /**
  * Fetch an epic by its sequence number.

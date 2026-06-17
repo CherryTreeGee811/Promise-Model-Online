@@ -1,4 +1,4 @@
-import { authFetch, apiGet } from '../api.mjs';
+import { authFetch, apiGet } from '../api.ts';
 
 /**
  * Fetch all projects accessible to the current user.

@@ -1,4 +1,4 @@
-import { apiGet, apiGetList, apiPost } from '../api.mjs';
+import { apiGet, apiGetList, apiPost } from '../api.ts';
 
 /**
  * Fetch all iterations for a project.

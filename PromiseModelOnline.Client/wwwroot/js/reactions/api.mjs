@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, apiDelete } from '../api.mjs';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../api.ts';
 
 /**
  * Fetch reactions for a given parent entity.

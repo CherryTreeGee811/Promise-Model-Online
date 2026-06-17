@@ -1,5 +1,5 @@
 /* Global types for vendor scripts loaded via <script> tags */
-declare var bootstrap: any;
-declare var signalR: any;
-declare var d3: any;
-declare var tippy: any;
+declare const bootstrap: any;
+declare const signalR: any;
+declare const d3: any;
+declare const tippy: any;

@@ -1,4 +1,4 @@
-import { apiGet } from '../api.mjs';
+import { apiGet } from '../api.ts';
 import { escapeHtml } from './html.mjs';
 
 /** Global entity lookup map keyed by "type-seqNumber". */

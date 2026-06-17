@@ -52,8 +52,9 @@ export default tseslint.config(
         ...globals.browser,
         ...globals.es2021,
       },
+      parser: tseslint.parser,
     },
-    plugins: { security },
+    plugins: { security, '@typescript-eslint': tseslint.plugin },
     rules: {
       'security/detect-eval-with-expression': 'warn',
       'security/detect-non-literal-fs-filename': 'off',
@@ -82,6 +83,7 @@ export default tseslint.config(
       'no-var': 'error',
       'eqeqeq': ['warn', 'smart'],
       '@typescript-eslint/no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 );

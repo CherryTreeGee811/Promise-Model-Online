@@ -1,4 +1,4 @@
-import { apiGet, apiPatch } from '../api.mjs';
+import { apiGet, apiPatch } from '../api.ts';
 
 /**
  * Fetch all notifications from the API.

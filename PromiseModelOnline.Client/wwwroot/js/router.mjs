@@ -1,7 +1,7 @@
 import { loadHomePage } from './home.mjs';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.mjs';
 import { isLoggedIn } from './auth-state.mjs';
-import { checkSession } from './api.mjs';
+import { checkSession } from './api.ts';
 import { loadMyTasksPage } from './moments/my-tasks.mjs';
 import { handleNotificationsRoutes } from './notifications/router.mjs';
 import { handleInvitationsRoute } from './invitations/router.mjs';

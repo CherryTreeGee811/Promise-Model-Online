@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '../api.mjs';
+import { apiGet, apiPost } from '../api.ts';
 
 /**
  * Fetch comments for a parent entity.

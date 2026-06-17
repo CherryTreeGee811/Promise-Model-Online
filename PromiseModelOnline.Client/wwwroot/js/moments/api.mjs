@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch } from '../api.mjs';
+import { apiGet, apiPost, apiPatch } from '../api.ts';
 
 /**
  * Fetch a moment by its sequence number.

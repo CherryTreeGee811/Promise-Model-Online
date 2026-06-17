@@ -1,4 +1,4 @@
-import { apiGet, apiGetList, apiPost, apiPatch } from '../api.mjs';
+import { apiGet, apiGetList, apiPost, apiPatch } from '../api.ts';
 
 /**
  * Fetch all strides for a given iteration.
