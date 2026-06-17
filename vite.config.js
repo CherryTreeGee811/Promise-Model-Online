@@ -9,7 +9,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'PromiseModelOnline.Client/wwwroot/js/router.mjs'),
+        main: resolve(__dirname, 'PromiseModelOnline.Client/wwwroot/js/router.ts'),
       },
       output: {
         entryFileNames: 'js/[name].js',
