@@ -29,3 +29,4 @@ secrets/*.txt
 **/*.csproj.lscache
 # Node.js dependencies (installed via npm, not committed)
 node_modules/
+PromiseModelOnline.Client/wwwroot/dist/
