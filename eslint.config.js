@@ -1,7 +1,8 @@
 import globals from 'globals';
 import security from 'eslint-plugin-security';
+import tseslint from 'typescript-eslint';
 
-export default [
+export default tseslint.config(
   {
     files: ['PromiseModelOnline.Client/wwwroot/js/**/*.mjs'],
     languageOptions: {
@@ -14,7 +15,6 @@ export default [
     },
     plugins: { security },
     rules: {
-      // Security
       'security/detect-eval-with-expression': 'warn',
       'security/detect-non-literal-fs-filename': 'off',
       'security/detect-non-literal-regexp': 'warn',
@@ -22,8 +22,6 @@ export default [
       'security/detect-possible-timing-attacks': 'warn',
       'security/detect-pseudoRandomBytes': 'warn',
       'security/detect-unsafe-regex': 'warn',
-
-      // Best practices
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
@@ -39,16 +37,51 @@ export default [
       'no-unmodified-loop-condition': 'warn',
       'no-unreachable-loop': 'warn',
       'require-atomic-updates': 'off',
-
-      // Promise correctness
       'no-async-promise-executor': 'error',
       'no-await-in-loop': 'warn',
       'prefer-promise-reject-errors': 'warn',
-
-      // Style (minimal)
       'prefer-const': 'warn',
       'no-var': 'error',
       'eqeqeq': ['warn', 'smart'],
     },
   },
-];
+  {
+    files: ['PromiseModelOnline.Client/wwwroot/js/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+      },
+    },
+    plugins: { security },
+    rules: {
+      'security/detect-eval-with-expression': 'warn',
+      'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-non-literal-regexp': 'warn',
+      'security/detect-non-literal-require': 'warn',
+      'security/detect-possible-timing-attacks': 'warn',
+      'security/detect-pseudoRandomBytes': 'warn',
+      'security/detect-unsafe-regex': 'warn',
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
+      'no-constant-binary-expression': 'error',
+      'no-constructor-return': 'error',
+      'no-duplicate-imports': 'error',
+      'no-promise-executor-return': 'error',
+      'no-self-assign': 'warn',
+      'no-self-compare': 'warn',
+      'no-template-curly-in-string': 'warn',
+      'no-unmodified-loop-condition': 'warn',
+      'no-unreachable-loop': 'warn',
+      'require-atomic-updates': 'off',
+      'no-async-promise-executor': 'error',
+      'no-await-in-loop': 'warn',
+      'prefer-promise-reject-errors': 'warn',
+      'prefer-const': 'warn',
+      'no-var': 'error',
+      'eqeqeq': ['warn', 'smart'],
+      '@typescript-eslint/no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
+    },
+  },
+);

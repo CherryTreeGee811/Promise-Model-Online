@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "lint": "eslint 'PromiseModelOnline.Client/wwwroot/js/**/*.mjs'"
+    "lint": "eslint 'PromiseModelOnline.Client/wwwroot/js/**/*.{mjs,ts}'",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
@@ -15,10 +16,13 @@
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
     "axe-core": "^4.12.1",
     "eslint": "^10.5.0",
     "eslint-plugin-security": "^4.0.1",
     "globals": "^17.6.0",
+    "typescript": "^6.0.3",
     "vite": "^8.0.16"
   }
 }
