@@ -1,12 +1,27 @@
 import { loadHomePage } from './home.ts';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts';
-import { isLoggedIn } from './auth-state.ts';
+import { requireAuth } from './guards.ts';
 import { checkSession } from './api.ts';
 import { loadMyTasksPage } from './moments/my-tasks.ts';
 import { handleNotificationsRoutes } from './notifications/router.ts';
 import { handleInvitationsRoute } from './invitations/router.ts';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.ts';
 import { initDeleteAccountPage } from './account/delete-account.ts';
+
+/**
+ * @typedef {{ allowed: true } | { allowed: false; redirect?: string }} GuardResult
+ */
+
+/**
+ * @typedef {(navContentDiv: HTMLElement, contentDiv: HTMLElement) => void} RouteHandler
+ */
+
+/**
+ * @typedef {Object} Route
+ * @property {(path: string) => boolean} test
+ * @property {() => GuardResult | Promise<GuardResult>} [guard]
+ * @property {RouteHandler} handler
+ */
 
 interface ProjectRoutesModule {
   /** Handle legacy project routes (non-slug-based) like /projects and /projects/add. */
@@ -24,6 +39,86 @@ let _projectRoutes: Promise<ProjectRoutesModule> | undefined;
 function loadProjectRoutes(): Promise<ProjectRoutesModule> {
   return _projectRoutes || (_projectRoutes = import('./projects/router.ts'));
 }
+
+/**
+ * Declarative route table.
+ * Each entry has a test function, optional guard, and handler.
+ * Routes are evaluated in order; the first match is used.
+ * @type {Route[]}
+ */
+const ROUTES = [
+  {
+    test: (p) => p === '/',
+    handler: (_nav, contentDiv) => {
+      loadTemplate('home.html', contentDiv).then(() => loadHomePage());
+    },
+  },
+  {
+    test: (p) => p.startsWith('/projects'),
+    handler: (navContentDiv, contentDiv) => {
+      const path = window.location.pathname;
+      loadProjectRoutes().then(({ handleLegacyProjectRoutes }) => {
+        handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
+      }).catch(loadTemplateWithError(contentDiv, 'projects'));
+    },
+  },
+  {
+    test: (p) => p === '/moments/my-tasks',
+    guard: requireAuth,
+    handler: (navContentDiv, contentDiv) => {
+      loadTemplate('moments/my-tasks.html', contentDiv)
+        .then(() => loadMyTasksPage(navContentDiv, contentDiv))
+        .catch(loadTemplateWithError(contentDiv, 'my tasks'));
+    },
+  },
+  {
+    test: (p) => p.startsWith('/notifications'),
+    guard: requireAuth,
+    handler: (navContentDiv, contentDiv) => {
+      handleNotificationsRoutes(window.location.pathname, navContentDiv, contentDiv);
+    },
+  },
+  {
+    test: (p) => p.startsWith('/invitations'),
+    guard: requireAuth,
+    handler: (_nav, contentDiv) => {
+      handleInvitationsRoute(window.location.pathname, contentDiv);
+    },
+  },
+  {
+    test: (p) => p === '/change-password',
+    guard: requireAuth,
+    handler: () => {
+      window.location.href = '/account/change-password';
+    },
+  },
+  {
+    test: (p) => p === '/knowledge-base',
+    handler: (navContentDiv, contentDiv) => {
+      handleKnowledgeBaseRoutes(window.location.pathname, navContentDiv, contentDiv);
+    },
+  },
+  {
+    test: (p) => p === '/privacy',
+    handler: (_nav, contentDiv) => {
+      loadTemplate('privacy.html', contentDiv);
+    },
+  },
+  {
+    test: (p) => p === '/tos',
+    handler: (_nav, contentDiv) => {
+      loadTemplate('tos.html', contentDiv);
+    },
+  },
+  {
+    test: (p) => p === '/account/delete',
+    guard: requireAuth,
+    handler: (_nav, contentDiv) => {
+      loadTemplate('account/delete.html', contentDiv)
+        .then(() => initDeleteAccountPage());
+    },
+  },
+];
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(() => {});
@@ -210,79 +305,51 @@ export function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement
 
     loadNavTemplate(navContentDiv, contentDiv);
 
-    switch (true) {
-        case path === '/':
-            loadTemplate('home.html', contentDiv).then(() => {
-                return loadHomePage();
-            });
-            break;
-        case path.startsWith('/projects'):
-            loadProjectRoutes().then(({ handleLegacyProjectRoutes }) => {
-                handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
-            }).catch(loadTemplateWithError(contentDiv, 'projects'));
-            break;
-        case path === '/moments/my-tasks':
-            loadTemplate('moments/my-tasks.html', contentDiv)
-                .then(() => loadMyTasksPage(navContentDiv, contentDiv))
-                .catch(loadTemplateWithError(contentDiv, 'my tasks'));
-            break;
-        case path.startsWith('/notifications'):
-            handleNotificationsRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path.startsWith('/invitations'):
-            handleInvitationsRoute(path, contentDiv);
-            break;
-        case path === '/change-password':
-            if (!isLoggedIn()) {
-                navigate('/login', navContentDiv, contentDiv);
-                break;
+    for (const route of ROUTES) {
+      if (route.test(path)) {
+        if (route.guard) {
+          const result = route.guard();
+          if ('allowed' in result && !result.allowed) {
+            if (result.redirect) {
+              navigate(result.redirect, navContentDiv, contentDiv);
             }
-            window.location.href = '/account/change-password';
-            break;
-        case path === '/knowledge-base':
-            handleKnowledgeBaseRoutes(path, navContentDiv, contentDiv);
-            break;
-        case path === '/privacy':
-            loadTemplate('privacy.html', contentDiv);
-            break;
-        case path === '/tos':
-            loadTemplate('tos.html', contentDiv);
-            break;
-        case path === '/account/delete':
-            loadTemplate('account/delete.html', contentDiv)
-                .then(() => initDeleteAccountPage());
-            break;
-        default: {
-            const segments = path.split('/').filter(Boolean);
-            if (segments.length >= 2) {
-                const owner = segments[0];
-                const project = segments[1];
-                const subPath = '/' + segments.slice(2).join('/') + (path.includes('?') ? path.slice(path.indexOf('?')) : '');
-
-                if (owner === 'account' || owner === 'moments' || owner === 'knowledge-base') {
-                    loadTemplate('404.html', contentDiv)
-                        .catch(() => {
-                            contentDiv.innerHTML = '<h1>Page not found</h1>';
-                            setPageTitle(path);
-                            announceAndFocus();
-                        });
-                } else {
-                    loadProjectRoutes().then(({ handleProjectScopedRoutes }) => {
-                        handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
-                    }).catch(() => {
-                        contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
-                        setPageTitle(path);
-                        announceAndFocus();
-                    });
-                }
-            } else {
-                loadTemplate('404.html', contentDiv)
-                    .catch(() => {
-                        contentDiv.innerHTML = '<h1>Page not found</h1>';
-                        setPageTitle(path);
-                        announceAndFocus();
-                    });
-            }
+            return;
+          }
         }
+        route.handler(navContentDiv, contentDiv);
+        return;
+      }
+    }
+
+    // Default: project-scoped routes or 404
+    const segments = path.split('/').filter(Boolean);
+    if (segments.length >= 2) {
+        const owner = segments[0];
+        const project = segments[1];
+        const subPath = '/' + segments.slice(2).join('/') + (path.includes('?') ? path.slice(path.indexOf('?')) : '');
+
+        if (owner === 'account' || owner === 'moments' || owner === 'knowledge-base') {
+            loadTemplate('404.html', contentDiv)
+                .catch(() => {
+                    contentDiv.innerHTML = '<h1>Page not found</h1>';
+                    setPageTitle(path);
+                    announceAndFocus();
+                });
+        } else {
+            loadProjectRoutes().then(({ handleProjectScopedRoutes }) => {
+                handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+            }).catch(() => {
+                contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
+                setPageTitle(path);
+                announceAndFocus();
+            });
+        }
+    } else {
+        loadTemplate('404.html', contentDiv)
+            .catch(() => {
+                contentDiv.innerHTML = '<h1>Page not found</h1>';
+                setPageTitle(path);
+                announceAndFocus();
+            });
     }
 }
