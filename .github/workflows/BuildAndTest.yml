@@ -28,7 +28,10 @@ jobs:
 
       - name: Check .NET packages for known vulnerabilities
         shell: bash
-        run: dotnet list Promise-Model-Online.sln package --vulnerable
+        run: |
+          for proj in PromiseModelOnline.Api PromiseModelOnline.Api.Tests PromiseModelOnline.Auth PromiseModelOnline.Auth.Tests PromiseModelOnline.BFF; do
+            dotnet list "$proj/$proj.csproj" package --vulnerable
+          done
 
       - name: ESLint (client JS)
         shell: bash
