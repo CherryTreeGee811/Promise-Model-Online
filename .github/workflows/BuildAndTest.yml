@@ -187,12 +187,28 @@ jobs:
       #       --results-directory ./ClientTestResults \
       #       --logger "console;verbosity=normal"
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-1.60.0
+
+      - name: Install Playwright (WebKit)
+        shell: bash
+        run: |
+          if [[ "${{ steps.playwright-cache.outputs.cache-hit }}" == "true" ]]; then
+            echo "Browser cache hit — installing system deps only"
+            pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit 2>&1 | tail -5
+          else
+            pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
+          fi
+
       - name: Run Client Tests (WebKit)
         shell: bash
         env:
           TEST_BROWSER: webkit
         run: |
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
           dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \

@@ -4,6 +4,7 @@ const CACHE = 'pmo-v4';
 /** @type {string[]} */
 const PRECACHE = [
   '/dist/js/main.js',
+  '/css/site.css',
   '/lib/css/bootstrap.min.css',
   '/lib/css/bootstrap-icons.min.css',
   '/lib/js/bootstrap.bundle.min.js',
