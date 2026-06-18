@@ -168,7 +168,7 @@ jobs:
           TEST_BROWSER: chromium
         run: |
           mkdir -p ClientTestResults
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+          npx playwright install chromium
           dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
@@ -180,7 +180,7 @@ jobs:
         env:
           TEST_BROWSER: firefox
         run: |
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
+          npx playwright install firefox
           dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
@@ -192,7 +192,7 @@ jobs:
         env:
           TEST_BROWSER: webkit
         run: |
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
+          npx playwright install webkit
           dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
@@ -250,7 +250,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p E2eTestResults
-          pwsh ./PromiseModelOnline.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+          npx playwright install chromium
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
@@ -290,7 +290,7 @@ jobs:
       - name: Run E2E Tests — Rate Limiting only
         shell: bash
         run: |
-          pwsh ./PromiseModelOnline.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+          npx playwright install chromium
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \

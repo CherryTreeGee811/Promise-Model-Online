@@ -169,7 +169,10 @@ public class PwaTests : PlaywrightTestBase
     [Description("REQ_PWA_003: Chrome's installability engine verifies the app meets all installability criteria")]
     public async Task REQ_PWA_003_ChromeInstallabilityCheck()
     {
-        // Arrange — page loaded by Setup() at /
+        // Arrange - skip on non-Chromium browsers (uses CDP)
+        var browser = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant();
+        Assume.That(browser is null or "chromium", "CDP session is only available in Chromium");
+
         await Page.WaitForFunctionAsync(
             "navigator.serviceWorker.getRegistrations().then(r => r.length > 0 && r[0].active !== null)",
             new PageWaitForFunctionOptions { Timeout = 3000 });
@@ -187,6 +190,39 @@ public class PwaTests : PlaywrightTestBase
             .ToList();
         Assert.That(errorList, Is.Empty,
             "Chrome installability errors: " + string.Join(", ", errorList));
+    }
+
+    [Test]
+    [Description("REQ_PWA_004: Manifest and service worker meet cross-browser PWA installability criteria")]
+    public async Task REQ_PWA_004_ManifestAndServiceWorker_MeetInstallabilityCriteria()
+    {
+        // A valid manifest with required fields is the cross-browser installability signal
+        // (Firefox/Safari don't have a CDP installability check like Chrome)
+
+        await Page.WaitForFunctionAsync(
+            "navigator.serviceWorker.getRegistrations().then(r => r.length > 0 && r[0].active !== null)",
+            new PageWaitForFunctionOptions { Timeout = 3000 });
+
+        // Fetch manifest and validate required fields
+        var manifestResponse = await Page.EvaluateAsync<Dictionary<string, object>>(@"
+            fetch('/manifest.json').then(r => r.json()).then(m => ({
+                name: m.name || '',
+                startUrl: m.start_url || '',
+                display: m.display || '',
+                icons: Array.isArray(m.icons) ? m.icons.length : 0,
+                has192Icon: (m.icons || []).some(i => i.sizes === '192x192'),
+                has512Icon: (m.icons || []).some(i => i.sizes === '512x512')
+            }))");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(manifestResponse["name"], Is.Not.Empty, "Manifest must have a name");
+            Assert.That(manifestResponse["startUrl"], Is.Not.Empty, "Manifest must have a start_url");
+            Assert.That(manifestResponse["display"], Is.EqualTo("standalone"), "Manifest must have display: standalone");
+            Assert.That((long)manifestResponse["icons"], Is.GreaterThan(0), "Manifest must have at least one icon");
+            Assert.That(manifestResponse["has192Icon"], Is.True, "Must have a 192x192 icon");
+            Assert.That(manifestResponse["has512Icon"], Is.True, "Must have a 512x512 icon");
+        });
     }
 
     [Test]
