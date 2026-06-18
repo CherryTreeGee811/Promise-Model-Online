@@ -1,12 +1,12 @@
-import { loadHomePage } from './home.ts';
-import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts';
-import { requireAuth } from './guards.ts';
+import { initDeleteAccountPage } from './account/delete-account.ts';
 import { checkSession } from './api.ts';
-import { loadMyTasksPage } from './moments/my-tasks.ts';
-import { handleNotificationsRoutes } from './notifications/router.ts';
+import { requireAuth } from './guards.ts';
+import { loadHomePage } from './home.ts';
 import { handleInvitationsRoute } from './invitations/router.ts';
 import { handleKnowledgeBaseRoutes } from './knowledge-base/router.ts';
-import { initDeleteAccountPage } from './account/delete-account.ts';
+import { loadMyTasksPage } from './moments/my-tasks.ts';
+import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts';
+import { handleNotificationsRoutes } from './notifications/router.ts';
 
 /**
  * @typedef {{ allowed: true } | { allowed: false; redirect?: string }} GuardResult
@@ -17,7 +17,7 @@ import { initDeleteAccountPage } from './account/delete-account.ts';
  */
 
 /**
- * @typedef {Object} Route
+ * @typedef {object} Route
  * @property {(path: string) => boolean} test
  * @property {() => GuardResult | Promise<GuardResult>} [guard]
  * @property {RouteHandler} handler

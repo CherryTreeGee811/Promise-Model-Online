@@ -12,6 +12,10 @@ export function setupInlineEdit(inputEl: HTMLElement, viewEl: HTMLElement, editB
   let cancelValue = '';
   let cancelViewHtml = '';
 
+  /**
+   *
+   * @param value
+   */
   function showView(value: string): void {
     viewEl.innerHTML = value || '';
     viewEl.style.display = '';
@@ -21,6 +25,9 @@ export function setupInlineEdit(inputEl: HTMLElement, viewEl: HTMLElement, editB
     if (cancelBtn) cancelBtn.style.display = 'none';
   }
 
+  /**
+   *
+   */
   function showEdit(): void {
     cancelValue = (inputEl as HTMLInputElement).value;
     cancelViewHtml = viewEl.innerHTML;

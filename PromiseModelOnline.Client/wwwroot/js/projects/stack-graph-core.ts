@@ -1,30 +1,49 @@
 // @ts-nocheck
 import { getStatusIcon, getStatusBucket } from '../utils/status-utils.ts';
+
 export { getStatusIcon, getStatusBucket };
 
+/** Horizontal gap between graph tiers in full mode. */
 export const STEP_GAP_X = 360;
+/** Vertical gap between graph tiers in full mode. */
 export const STEP_GAP_Y = 190;
+/** Width of a graph card in pixels. */
 export const CARD_WIDTH = 300;
+/** Height of a graph card in pixels. */
 export const CARD_HEIGHT = 144;
+/** Corner radius of graph cards. */
 export const CARD_RADIUS = 18;
+/** Horizontal padding inside graph cards. */
 export const CARD_PADDING_X = 16;
+/** Top padding inside graph cards. */
 export const CARD_PADDING_TOP = 16;
+/** Y-offset for the first detail line on moment cards. */
 export const DETAIL_START_Y = 62;
+/** Vertical gap between detail lines on moment cards. */
 export const DETAIL_LINE_GAP = 22;
+/** Vertical forehead gap above the root card in full mode. */
 export const FOREHEAD_GAP = 88;
 
+/** Horizontal gap between graph tiers in compact (detail-page) mode. */
 export const COMPACT_STEP_GAP_X = 400;
+/** Vertical gap between graph tiers in compact mode. */
 export const COMPACT_STEP_GAP_Y = 180;
+/** Minimum vertical tier gap in compact mode. */
 export const COMPACT_MIN_TIER_GAP_Y = 72;
+/** Forehead gap above the root card in compact mode. */
 export const COMPACT_FOREHEAD_GAP = 40;
+/** Minimum tier gap used for spacing calculations in compact mode. */
 export const COMPACT_MIN_TIER_GAP = 140;
 /** Largest cards when the detail page shows the fewest tiers (promise). */
 export const COMPACT_DETAIL_SCALE_MAX = 1.32;
 /** Smallest cards when the detail page shows the most tiers (moment). */
 export const COMPACT_DETAIL_SCALE_MIN = 0.84;
 
+/** Ordered list of all node types in the promise stack, from broadest to most granular. */
 export const NODE_TYPES = ['promise', 'epic', 'journey', 'flow', 'moment'] as const;
+/** Union type of all valid node type strings. */
 export type NodeType = typeof NODE_TYPES[number];
+/** Map from node type to its URL route segment. */
 export const NODE_ROUTE_SEGMENTS: Record<string, string> = {
     promise: 'promises',
     epic: 'epics',
@@ -32,6 +51,7 @@ export const NODE_ROUTE_SEGMENTS: Record<string, string> = {
     flow: 'flows',
     moment: 'moments',
 };
+/** Map from node type to its index in the NODE_TYPES array for ordering. */
 export const NODE_TYPE_INDEX = new Map(NODE_TYPES.map((type, index) => [type, index]));
 
 /**
@@ -94,7 +114,7 @@ export function getInnerViewportSize(element: HTMLElement): { width: number; hei
 /**
  * Truncate text to a maximum length with ellipsis.
  * @param {string} text - The text to truncate.
- * @param {number} [maxLength=40] - The maximum length before truncation.
+ * @param {number} [maxLength] - The maximum length before truncation.
  * @returns {string} The truncated text.
  */
 export function truncateText(text: unknown, maxLength = 40): string {
@@ -175,7 +195,7 @@ export function getMomentTaskSummary(payload: Record<string, unknown> | null | u
 /**
  * Get the truncated card description for a graph node.
  * @param {object} payload - The node payload containing a description field.
- * @param {number} [maxLength=52] - The maximum description length.
+ * @param {number} [maxLength] - The maximum description length.
  * @returns {string} The truncated description, or 'Description: None' if empty.
  */
 export function getCardDescription(payload: Record<string, unknown> | null | undefined, maxLength = 52): string {
@@ -269,7 +289,7 @@ export function computeChildMetrics(children: Record<string, unknown>[]): { chil
  * Create a new graph node with the given type, payload, and children.
  * @param {string} nodeType - The node type (promise, epic, journey, flow, moment).
  * @param {object} payload - The node's data payload.
- * @param {object[]} [children=[]] - The node's child nodes.
+ * @param {object[]} [children] - The node's child nodes.
  * @returns {object} The created graph node with derived fields.
  */
 export function createNode(nodeType: string, payload: Record<string, unknown>, children: Record<string, unknown>[] = []) {
@@ -305,7 +325,7 @@ export function createNode(nodeType: string, payload: Record<string, unknown>, c
  * Create a graph node pre-populated with child metric calculations.
  * @param {string} nodeType - The node type.
  * @param {object} payload - The node's data payload.
- * @param {object|null} [childMetrics=null] - Optional pre-computed child metrics.
+ * @param {object|null} [childMetrics] - Optional pre-computed child metrics.
  * @returns {object} The created graph node.
  */
 export function createNodeWithMetrics(nodeType: string, payload: Record<string, unknown>, childMetrics: { childCount: number; completedChildCount: number } | null = null) {
@@ -424,7 +444,7 @@ export function countRenderableNodes(node: Record<string, unknown> | null | unde
  * @param {object[]} rootPromises - The top-level promise nodes.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {object|null} [projectEntity=null] - Optional project entity for the root label.
+ * @param {object|null} [projectEntity] - Optional project entity for the root label.
  * @returns {object} The parsed tree with a root node.
  */
 export function parseGraphData(rootPromises: Record<string, unknown>[], owner: string, project: string, projectEntity: Record<string, unknown> | null = null) {
@@ -463,6 +483,8 @@ export function renderEmptyState(contentDiv: HTMLElement | null | undefined, mes
 /**
  * Calculate the rendered position of a node in the graph, accounting for content offsets.
  * @param {object} node - The hierarchy node with x/y coordinates.
+ * @param node.x
+ * @param node.y
  * @param {number} contentOffsetX - The X content offset.
  * @param {number} contentOffsetY - The Y content offset.
  * @returns {{x: number, y: number}} The rendered position.
@@ -482,7 +504,7 @@ function getRenderedNodePosition(node: { x: number; y: number }, contentOffsetX:
  * @param {object} node - The hierarchy node to focus on.
  * @param {number} contentOffsetX - The X content offset.
  * @param {number} contentOffsetY - The Y content offset.
- * @param {number} [scale=1.5] - The zoom scale.
+ * @param {number} [scale] - The zoom scale.
  * @returns {object|null} The zoom transform, or null if no node provided.
  */
 function createFocusTransform(d3: Record<string, unknown>, viewportWidth: number, viewportHeight: number, node: { x: number; y: number } | null | undefined, contentOffsetX: number, contentOffsetY: number, scale = 1.5): Record<string, unknown> | null {
@@ -526,6 +548,7 @@ function getCompactLayoutProfile(visibleCount: number, viewportWidth: number, vi
 /**
  * Uniform card scale for the detail-page facsimile: fewer tiers on screen (higher stack
  * detail pages) => larger cards; more tiers (e.g. moment) => smaller cards.
+ * @param activeDetailNodeType
  */
 export function getDetailPageNodeScale(activeDetailNodeType: string): number {
     const index = NODE_TYPES.indexOf(activeDetailNodeType as NodeType);
@@ -546,6 +569,18 @@ export function getDetailPageNodeScale(activeDetailNodeType: string): number {
  * @param {object[]} renderable - The list of hierarchy nodes to render.
  * @param {object[]} links - The list of link objects between nodes.
  * @param {{contentOffsetX: number, contentOffsetY: number, cardClipPathId: string, owner: string, project: string, focusNodeId: string|null, onContextMenu: function|null, enableZoom: boolean, enableLinks: boolean, uniformNodeScale: number|null, animate: boolean, animationSpeed: number}} options - Rendering options.
+ * @param options.contentOffsetX
+ * @param options.contentOffsetY
+ * @param options.cardClipPathId
+ * @param options.owner
+ * @param options.project
+ * @param options.focusNodeId
+ * @param options.onContextMenu
+ * @param options.enableZoom
+ * @param options.enableLinks
+ * @param options.uniformNodeScale
+ * @param options.animate
+ * @param options.animationSpeed
  */
 function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unknown>, renderable: Record<string, unknown>[], links: Record<string, unknown>[], options: {
     contentOffsetX: number;
@@ -915,7 +950,7 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
  * @param {HTMLElement} contentDiv - The container element to render into.
  * @param {object} d3 - The D3 module instance.
  * @param {object} treeData - The tree data to render.
- * @param {{owner?: string, project?: string, focusNodeId?: string|null, focusNodeData?: object|null, enableZoom?: boolean, compact?: boolean, restoreTransform?: object|null, viewportElement?: HTMLElement|null, clipPathIdPrefix?: string, ariaLabel?: string, emptyMessage?: string, onZoom?: function|null, onContextMenu?: function|null, minGraphWidth?: number|null, minGraphHeight?: number|null, uniformNodeScale?: number|null, renderRootCard?: boolean, enableLinks?: boolean, animate?: boolean, animationSpeed?: number}} [options={}] - Rendering options.
+ * @param {{owner?: string, project?: string, focusNodeId?: string|null, focusNodeData?: object|null, enableZoom?: boolean, compact?: boolean, restoreTransform?: object|null, viewportElement?: HTMLElement|null, clipPathIdPrefix?: string, ariaLabel?: string, emptyMessage?: string, onZoom?: function|null, onContextMenu?: function|null, minGraphWidth?: number|null, minGraphHeight?: number|null, uniformNodeScale?: number|null, renderRootCard?: boolean, enableLinks?: boolean, animate?: boolean, animationSpeed?: number}} [options] - Rendering options.
  * @returns {{node: SVGElement|null, zoom: object|null}} The SVG node and zoom behavior (if enabled).
  */
 export function renderStackGraph(contentDiv: HTMLElement | null | undefined, d3: Record<string, unknown>, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: Record<string, unknown> | null } | null {

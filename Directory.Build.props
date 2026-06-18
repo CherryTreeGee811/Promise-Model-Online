@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <!-- Allow building with SDK previews that may lack prune package metadata -->
-    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <GenerateDocumentationFile Condition="'$(IsTestProject)' != 'true'">true</GenerateDocumentationFile>
   </PropertyGroup>
 </Project>

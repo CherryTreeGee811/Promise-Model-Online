@@ -1,8 +1,14 @@
 // @ts-nocheck
-import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
-import { escapeHtml } from '../utils/html.ts';
 import { renderEmptyTableRow } from '../utils/empty-table.ts';
+import { escapeHtml } from '../utils/html.ts';
 
+import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
+
+/**
+ *
+ * @param modalId
+ * @param modalMarkup
+ */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalEl = document.getElementById(modalId) as HTMLElement | null;
     if (modalEl) return modalEl;
@@ -13,6 +19,9 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     return modalEl;
 }
 
+/**
+ *
+ */
 function ensureRevokeModal(): HTMLElement | null {
     return ensureModal('revoke-modal', `
         <div class="modal fade" id="revoke-modal" tabindex="-1" aria-hidden="true">
@@ -35,6 +44,13 @@ function ensureRevokeModal(): HTMLElement | null {
     `);
 }
 
+/**
+ * Load the share/permissions page for a project, including the permission table and invite modal.
+ * @param owner - The project owner's slug.
+ * @param project - The project's slug.
+ * @param contentDiv - The main content container.
+ * @param permission - The current user's permission object for the project.
+ */
 export function loadSharePage(owner: string, project: string, contentDiv: HTMLElement, permission: { isOwner?: boolean } | null): void {
     const errorEl = document.getElementById('error-text') as HTMLElement | null;
     const loadingEl = document.getElementById('loading-text') as HTMLElement | null;
@@ -49,6 +65,9 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
 
     let acState: AutocompleteState = { items: [], highlightedIndex: -1, open: false };
 
+    /**
+     *
+     */
     function closeAutocomplete(): void {
         const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
         if (dropdown) {
@@ -58,6 +77,9 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         acState = { items: [], highlightedIndex: -1, open: false };
     }
 
+    /**
+     *
+     */
     function renderAutocomplete(): void {
         const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
         if (!dropdown) return;
@@ -82,6 +104,10 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         }
     }
 
+    /**
+     *
+     * @param index
+     */
     function selectAutocompleteItem(index: number): void {
         const item = acState.items[index];
         if (!item) return;
@@ -93,6 +119,10 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         input?.focus();
     }
 
+    /**
+     *
+     * @param query
+     */
     async function fetchAutocompleteSuggestions(query: string): Promise<void> {
         if (query.length < 1) {
             closeAutocomplete();
@@ -119,6 +149,9 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         }
     }
 
+    /**
+     *
+     */
     function setupInviteAutocomplete(): void {
         const input = document.getElementById('invite-email') as HTMLInputElement | null;
         const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
@@ -180,6 +213,13 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         });
     }
 
+    /**
+     *
+     * @param config
+     * @param config.owner
+     * @param config.project
+     * @param config.onInvited
+     */
     function openInviteModal(config: { owner: string; project: string; onInvited: () => Promise<void> }): void {
         const modalEl = ensureModal('invite-modal', `
             <div class="modal fade" id="invite-modal" tabindex="-1" aria-hidden="true">
@@ -271,6 +311,9 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         window.bootstrap?.Modal?.getOrCreateInstance(modalEl!)?.show();
     }
 
+    /**
+     *
+     */
     async function refreshPermissions(): Promise<void> {
         try {
             const isOwner = permission?.isOwner === true;
@@ -332,6 +375,10 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         }
     }
 
+    /**
+     *
+     * @param btn
+     */
     function bindRevokeButton(btn: HTMLElement): void {
         if (!btn || btn.dataset.bound === '1') return;
         btn.dataset.bound = '1';

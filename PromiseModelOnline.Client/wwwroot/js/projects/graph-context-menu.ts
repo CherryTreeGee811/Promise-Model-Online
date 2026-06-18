@@ -1,10 +1,10 @@
 // @ts-nocheck
-const tippy = (window as any).tippy;
-
 import { apiFetch } from '../api.ts';
-import { updateMomentStatus } from '../moments/api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
+import { updateMomentStatus } from '../moments/api.ts';
 import { STATUS_OPTIONS } from '../utils/status-utils.ts';
+
+const tippy = (window as any).tippy;
 
 let _ctxOwner: any = null;
 let _ctxProject: any = null;
@@ -148,7 +148,7 @@ function getCreateFormDefaults(nodeData: any): Record<string, any> | null {
 /**
  * Make an authenticated JSON API request.
  * @param {string} url - The request URL.
- * @param {object} [options={}] - Fetch options (headers, method, body, etc.).
+ * @param {object} [options] - Fetch options (headers, method, body, etc.).
  * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
  * @throws {Error} If the request fails or returns a non-OK status.
  */
@@ -393,7 +393,7 @@ function getMomentEstimateOptions(): Array<{ value: string; label: string }> {
 
 /**
  * Get the option list for stride selection, including a Backlog option.
- * @param {object[]} [strides=[]] - The available strides.
+ * @param {object[]} [strides] - The available strides.
  * @returns {{value: string, label: string}[]} The stride options.
  */
 function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): Array<{ value: string; label: string }> {
@@ -783,7 +783,7 @@ function buildCreateFormElement(
  * @param {function} setNodeChildrenHidden - Function to toggle children visibility.
  * @param {function} revealNextLevel - Function to reveal the next level of children.
  * @param {object} permission - The current user's permission object.
- * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: function}[]} The action list.
+ * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: Function}[]} The action list.
  */
 function buildMenuActions(
     nodeData: any,
@@ -907,7 +907,7 @@ function buildMenuActions(
 
 /**
  * Build the DOM element for the context menu from a list of actions.
- * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: function}[]} actions - The action definitions.
+ * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: Function}[]} actions - The action definitions.
  * @returns {HTMLDivElement} The menu element.
  */
 function buildMenuElement(actions: Array<{
@@ -950,8 +950,32 @@ function buildMenuElement(actions: Array<{
 
 /**
  * Create a context menu controller for the graph visualization using Tippy.js.
- * @param {{owner: string, project: string, getAvailableStrides: function, onGraphMutated: function, onProjectDeleted: function, isNodeChildrenHidden: function, setNodeChildrenHidden: function, revealNextLevel: function, permission: object}} [options={}] - Configuration options.
- * @returns {{hide: function, destroy: function, open: function}} The context menu controller.
+ * @param {{owner: string, project: string, getAvailableStrides: Function, onGraphMutated: Function, onProjectDeleted: Function, isNodeChildrenHidden: Function, setNodeChildrenHidden: Function, revealNextLevel: Function, permission: object}} [options={}] - Configuration options.
+ * @returns {{hide: Function, destroy: Function, open: Function}} The context menu controller.
+ */
+/**
+ * Create a context menu controller for the graph visualization using Tippy.js popups.
+ * @param options.owner - The project owner's slug.
+ * @param root0
+ * @param root0.owner
+ * @param options.project - The project's slug.
+ * @param root0.project
+ * @param options.getAvailableStrides - Function returning available strides (for moment creation).
+ * @param root0.getAvailableStrides
+ * @param options.onGraphMutated - Callback invoked after any graph mutation.
+ * @param root0.onGraphMutated
+ * @param options.onProjectDeleted - Callback invoked when the project is deleted.
+ * @param root0.onProjectDeleted
+ * @param options.isNodeChildrenHidden - Function to check if a node's children are hidden.
+ * @param root0.isNodeChildrenHidden
+ * @param options.setNodeChildrenHidden - Function to toggle a node's children visibility.
+ * @param root0.setNodeChildrenHidden
+ * @param options.revealNextLevel - Function to reveal the next level of children beneath a node.
+ * @param root0.revealNextLevel
+ * @param options.permission - The current user's permission object for gating edit actions.
+ * @param root0.permission
+ * @param root0.permission.permission
+ * @returns An object with hide, destroy, and open methods for the context menu.
  */
 export function createGraphContextMenuController({
     owner,

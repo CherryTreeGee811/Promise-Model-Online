@@ -1,21 +1,22 @@
 // @ts-nocheck
-import { navigate } from '../router.ts';
-import { getEpic, getJourneys, updateEpicDescription } from './api.ts';
+import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { createJourney } from '../journeys/api.ts';
-import { getPromiseById } from '../promises/api.ts';
-import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
     patchChildMetrics,
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.ts';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
+import { getPromiseById } from '../promises/api.ts';
+import { navigate } from '../router.ts';
 import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
+import { escapeHtml } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
+import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
+
+import { getEpic, getJourneys, updateEpicDescription } from './api.ts';
 
 /** @typedef {{ id: number, sequenceNumber: number, statement: string, description?: string, statusColor?: string, createdAt: string, updatedAt?: string, productPromiseId: number }} Epic */
 

@@ -1,4 +1,5 @@
 import { handleDetailRoute, showNotFound } from '../router.ts';
+
 import { loadEpicDetail } from './detail.ts';
 
 /**

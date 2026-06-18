@@ -1,18 +1,19 @@
-import { loadTemplate, loadTemplateWithError, showNotFound } from '../router.ts';
-import { loadProjectList } from './list.ts';
-import { loadAddProjectForm } from './add.ts';
-import { loadStridesPage } from '../strides/router.ts';
-import { loadSharePage } from './share.ts';
-import { loadGraphPage } from './graph.ts';
-import { loadProjectSettingsPage } from './settings.ts';
-import { loadProjectAuditHistoryPage } from './history.ts';
-import { loadPromiseDetail } from '../promises/detail.ts';
 import { loadEpicDetail } from '../epics/detail.ts';
-import { loadJourneyDetail } from '../journeys/detail.ts';
 import { loadFlowDetail } from '../flows/detail.ts';
+import { loadJourneyDetail } from '../journeys/detail.ts';
 import { loadMomentDetail } from '../moments/detail.ts';
-import { fetchMyPermission } from '../utils/permissions.ts';
+import { loadPromiseDetail } from '../promises/detail.ts';
+import { loadTemplate, loadTemplateWithError, showNotFound } from '../router.ts';
 import { projectStore } from '../stores/project.ts';
+import { loadStridesPage } from '../strides/router.ts';
+import { fetchMyPermission } from '../utils/permissions.ts';
+
+import { loadAddProjectForm } from './add.ts';
+import { loadGraphPage } from './graph.ts';
+import { loadProjectAuditHistoryPage } from './history.ts';
+import { loadProjectList } from './list.ts';
+import { loadProjectSettingsPage } from './settings.ts';
+import { loadSharePage } from './share.ts';
 
 /**
  * Handle legacy project routes (non-slug-based) like /projects and /projects/add.

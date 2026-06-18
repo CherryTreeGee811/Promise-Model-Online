@@ -1,10 +1,18 @@
 // @ts-nocheck
 import { navigate } from '../router.ts';
+
 import { getAuditEvents, getProject } from './api.ts';
 import { getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.ts';
 
 const PAGE_SIZE = 25;
 
+/**
+ * Load the project audit history page with paginated audit event table and detail modals.
+ * @param navContentDiv - The navigation content container.
+ * @param contentDiv - The main content container.
+ * @param owner - The project owner's slug.
+ * @param project - The project's slug.
+ */
 export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string): void {
     const titleEl = document.getElementById('project-title') as HTMLElement | null;
     const errorEl = document.getElementById('error-text') as HTMLElement | null;
@@ -25,6 +33,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
 
     ensureModal();
 
+    /**
+     *
+     */
     async function loadProjectName(): Promise<void> {
         try {
             const projectData = await getProject(owner, project);
@@ -34,10 +45,16 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         }
     }
 
+    /**
+     *
+     */
     function getTotalPages(): number {
         return Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
     }
 
+    /**
+     *
+     */
     function renderPagination(): void {
         const totalPages = getTotalPages();
         const previousDisabled = currentPage <= 1;
@@ -74,6 +91,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         });
     }
 
+    /**
+     *
+     */
     function ensureModal(): void {
         let container = document.getElementById(modalContainerId);
         if (!container) {
@@ -85,6 +105,10 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         container.innerHTML = renderAuditDetailsModal();
     }
 
+    /**
+     *
+     * @param item
+     */
     function openAuditDetails(item: unknown): void {
         const payload = getAuditDetailsPayload(item as Parameters<typeof getAuditDetailsPayload>[0]);
         const titleEl = document.getElementById('audit-details-modal-title') as HTMLElement | null;
@@ -101,6 +125,10 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         }
     }
 
+    /**
+     *
+     * @param reset
+     */
     async function loadEntries(reset = false): Promise<void> {
         if (loading) return;
 
@@ -137,6 +165,10 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         }
     }
 
+    /**
+     *
+     * @param items
+     */
     function bindAuditDetailLinks(items: unknown[]): void {
         const detailLinks = listEl!.querySelectorAll('.audit-show-details-link');
         detailLinks.forEach((link, index) => {

@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { renderEmptyStateSection } from './empty-table.ts';
 import { loadD3 } from '../projects/detail-stack-graph.ts';
+
+import { renderEmptyStateSection } from './empty-table.ts';
 
 /** @typedef {{ date: string | Date; remainingEffort: number; idealRemaining?: number }} BurndownPoint */
 

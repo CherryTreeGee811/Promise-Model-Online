@@ -1,21 +1,31 @@
 // @ts-nocheck
-import { navigate } from '../router.ts';
-import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.ts';
+import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { createEpic } from '../epics/api.ts';
-import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
     patchChildMetrics,
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.ts';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
+import { navigate } from '../router.ts';
 import { getStatusHtml, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
+import { escapeHtml } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
+import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
 
+import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.ts';
+
+/**
+ * Load and render the promise detail page with epics, graph, comments, and reactions.
+ * @param owner - The project owner's slug.
+ * @param project - The project's slug.
+ * @param promiseId - The promise's sequence number.
+ * @param navContentDiv - Navigation container for client-side routing.
+ * @param contentDiv - Content container for client-side routing.
+ * @param permission - The user's permission object.
+ */
 export function loadPromiseDetail(owner: string, project: string, promiseId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): void {
     const detailDiv = document.getElementById('promise-detail-content') as HTMLElement | null;
     const errorEl = document.getElementById('error-text') as HTMLElement | null;

@@ -1,11 +1,12 @@
 // @ts-nocheck
 import { getProject } from '../projects/api.ts';
-import { getIterations, getBurndown } from './api.ts';
 import { getStridesByIteration } from '../strides/api.ts';
 import { drawBurndownChart } from '../utils/burndown.ts';
-import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.ts';
+
+import { getIterations, getBurndown } from './api.ts';
 
 /**
  * Format a date string into a locale date representation.

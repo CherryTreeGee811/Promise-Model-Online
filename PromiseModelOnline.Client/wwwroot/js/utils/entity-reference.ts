@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { apiGet } from '../api.ts';
+
 import { escapeHtml } from './html.ts';
 
 /**
@@ -39,6 +40,10 @@ export async function loadEntityLookupMap(parentType: string, parentId: number, 
     }
 }
 
+/**
+ *
+ * @param statusColor
+ */
 function statusIcon(statusColor: string): string {
     const normalized = String(statusColor ?? '').toLowerCase();
     if (normalized.includes('green')) return '\u{1F7E2}';

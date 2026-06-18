@@ -41,6 +41,8 @@ public class LoginController : Controller
     /// <summary>Display the login form with optional status messages.</summary>
     /// <param name="returnUrl">Optional URL to redirect to after successful login.</param>
     /// <param name="error">Optional error message to display.</param>
+    /// <param name="registered">Whether the user just registered.</param>
+    /// <param name="verified">Whether the user just verified their email.</param>
     /// <returns>The login view.</returns>
     [AllowAnonymous]
     [HttpGet("")]

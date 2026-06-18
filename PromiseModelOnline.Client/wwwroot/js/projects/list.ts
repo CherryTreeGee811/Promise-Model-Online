@@ -1,7 +1,8 @@
 // @ts-nocheck
 import { navigate } from "../router.ts";
-import { fetchProjects } from './api.ts';
 import { renderEmptyTableRow } from "../utils/empty-table.ts";
+
+import { fetchProjects } from './api.ts';
 
 /**
  * Load the project listing page, fetching all projects and rendering them in a table.

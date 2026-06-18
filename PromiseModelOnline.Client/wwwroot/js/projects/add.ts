@@ -1,9 +1,15 @@
 // @ts-nocheck
-import { createProject, importProject } from './api.ts';
 import { createPromise } from '../promises/api.ts';
 import { navigate } from '../router.ts';
+
+import { createProject, importProject } from './api.ts';
 import { renderSummaryTable } from './summary.ts';
 
+/**
+ * Load the add-project form, setting up create-from-scratch and import workflows.
+ * @param navContentDiv - The navigation content container.
+ * @param contentDiv - The main content container.
+ */
 export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     const form = document.getElementById('add-project-form') as HTMLFormElement | null;
     const cancelLink = document.getElementById('cancel-add-project-link') as HTMLElement | null;
@@ -31,6 +37,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     let currentMode: 'scratch' | 'import' = 'scratch';
     let isBusy = false;
 
+    /**
+     *
+     */
     function clearMessages(): void {
         errorTextElement.textContent = '';
         errorTextElement.style.display = 'none';
@@ -38,20 +47,35 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         successTextElement.style.display = 'none';
     }
 
+    /**
+     *
+     */
     function getSubmitButtonLabel(): string {
         return currentMode === 'import' ? 'Import Project' : 'Create Project';
     }
 
+    /**
+     *
+     */
     function getBusySubmitButtonLabel(): string {
         return currentMode === 'import' ? 'Importing Project...' : 'Creating Project...';
     }
 
+    /**
+     *
+     * @param busy
+     */
     function setSubmitButtonState(busy: boolean): void {
         createButton.disabled = busy;
         createButtonSpinner.classList.toggle('d-none', !busy);
         createButtonLabel.textContent = busy ? getBusySubmitButtonLabel() : getSubmitButtonLabel();
     }
 
+    /**
+     *
+     * @param busy
+     * @param busyLabel
+     */
     function setImportButtonState(busy: boolean, busyLabel = 'Reading Project...'): void {
         importButton.disabled = busy;
         importButtonSpinner.classList.toggle('d-none', !busy);
@@ -59,6 +83,11 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         importButtonLabel.textContent = busy ? busyLabel : 'Import Project...';
     }
 
+    /**
+     *
+     * @param busy
+     * @param source
+     */
     function setBusyState(busy: boolean, source: 'submit' | 'import' = 'submit'): void {
         isBusy = busy;
         setSubmitButtonState(busy && source === 'submit');
@@ -74,6 +103,10 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         }
     }
 
+    /**
+     *
+     * @param mode
+     */
     function setMode(mode: 'scratch' | 'import'): void {
         currentMode = mode;
         const isImportMode = mode === 'import';
@@ -86,6 +119,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         clearImportButton.style.display = clearImportButton.hidden ? 'none' : '';
     }
 
+    /**
+     *
+     */
     function resetImportState(): void {
         importInput.value = '';
         importSummaryPanel.innerHTML = '';
@@ -101,6 +137,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
 
     const titleHeading = document.querySelector('h1') as HTMLElement | null;
 
+    /**
+     *
+     */
     function refreshHeading(): void {
         const val = nameInput.value.trim();
         const action = currentMode === 'import' ? 'Import' : 'Create';
@@ -132,6 +171,10 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         };
     }
 
+    /**
+     *
+     * @param document
+     */
     function summarizeProjectExport(document: ProjectExportDocument): ProjectExportSummary {
         const project = document.project;
 
@@ -155,6 +198,11 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         };
     }
 
+    /**
+     *
+     * @param document
+     * @param file
+     */
     function renderImportedProjectPreview(document: ProjectExportDocument, file: File): void {
         const project = document.project;
         const summary = summarizeProjectExport(document);
@@ -176,6 +224,10 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         ]);
     }
 
+    /**
+     *
+     * @param file
+     */
     async function readImportedProjectFile(file: File): Promise<ProjectExportDocument> {
         let parsed: ProjectExportDocument;
 
@@ -192,6 +244,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         return parsed;
     }
 
+    /**
+     *
+     */
     async function manageAddProjectSubmission(): Promise<void> {
         clearMessages();
 
@@ -230,6 +285,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         }
     }
 
+    /**
+     *
+     */
     async function manageImportSubmission(): Promise<void> {
         clearMessages();
 

@@ -39,6 +39,10 @@ export interface FormValidator {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ *
+ * @param el
+ */
 function getElementValue(el: HTMLElement): string {
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     return el.value.trim();
@@ -49,6 +53,12 @@ function getElementValue(el: HTMLElement): string {
   return (el as HTMLInputElement).value?.trim() ?? '';
 }
 
+/**
+ *
+ * @param el
+ * @param valid
+ * @param message
+ */
 function setValidity(el: HTMLElement, valid: boolean, message: string): void {
   el.classList.toggle('is-invalid', !valid);
   if (valid) {
@@ -72,6 +82,12 @@ function setValidity(el: HTMLElement, valid: boolean, message: string): void {
   el.parentElement?.appendChild(feedback);
 }
 
+/**
+ *
+ * @param value
+ * @param rule
+ * @param allValues
+ */
 function evaluateRule(value: string, rule: ValidationRule, allValues: Record<string, string>): string | null {
   switch (rule.type) {
     case 'required':
@@ -123,6 +139,9 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     }
   }
 
+  /**
+   *
+   */
   function getValues(): Record<string, string> {
     const values: Record<string, string> = {};
     for (const [id, el] of fields) {
@@ -131,6 +150,10 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     return values;
   }
 
+  /**
+   *
+   * @param fieldId
+   */
   function validateField(fieldId: string): string | null {
     const el = fields.get(fieldId);
     if (!el) return null;
@@ -153,6 +176,9 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     return null;
   }
 
+  /**
+   *
+   */
   function validate(): ValidationResult {
     const errors: Record<string, string> = {};
     let valid = true;
@@ -168,6 +194,10 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     return { valid, errors };
   }
 
+  /**
+   *
+   * @param fieldId
+   */
   function clearFieldError(fieldId: string): void {
     const el = fields.get(fieldId);
     if (!el) return;
@@ -175,6 +205,9 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     el.parentElement?.querySelector('.invalid-feedback')?.remove();
   }
 
+  /**
+   *
+   */
   function clearErrors(): void {
     for (const fieldId of Object.keys(rules)) {
       clearFieldError(fieldId);
@@ -183,6 +216,9 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
 
   const inputHandlers = new Map<string, () => void>();
 
+  /**
+   *
+   */
   function destroy(): void {
     for (const [fieldId, el] of fields) {
       const handler = inputHandlers.get(fieldId);

@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { getComments, addComment } from './api.ts';
-import { escapeHtml } from '../utils/html.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { createCommentAutocomplete } from './autocomplete.ts';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.ts';
+import { escapeHtml } from '../utils/html.ts';
 import { isAtLeast } from '../utils/permissions.ts';
+
+import { getComments, addComment } from './api.ts';
+import { createCommentAutocomplete } from './autocomplete.ts';
 
 /** @typedef {{ id: number, userName?: string, authorName?: string, createdAt: string, text: string, mentionedUsers?: string[], replies?: Array<{ userName?: string, authorName?: string, text: string }> }} Comment */
 

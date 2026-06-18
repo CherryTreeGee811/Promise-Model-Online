@@ -1,6 +1,6 @@
-import { navigate } from '../router.ts';
 import { isLoggedIn } from '../auth-state.ts';
 import { startNotificationPolling } from '../notifications/badge.ts';
+import { navigate } from '../router.ts';
 
 /**
  * Set the aria-current attribute on the navigation link matching the current URL path.

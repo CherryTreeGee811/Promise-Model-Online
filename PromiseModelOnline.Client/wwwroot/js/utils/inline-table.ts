@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { escapeHtml } from './html.ts';
 import { renderEmptyTableRow } from './empty-table.ts';
+import { escapeHtml } from './html.ts';
 
 interface TableConfig {
     headers: string[];
@@ -16,11 +16,18 @@ interface TableConfig {
  * an optional inline add-row at the bottom. Handles empty state.
  * @param container - Target DOM element to render into.
  * @param config.headers - Column header labels.
+ * @param root0
+ * @param root0.headers
  * @param config.items - Array of data items to render.
+ * @param root0.items
  * @param config.emptyMessage - Fallback text when items is empty and no emptyConfig.
+ * @param root0.emptyMessage
  * @param config.emptyConfig - Empty-table-row options (overrides emptyMessage).
+ * @param root0.emptyConfig
  * @param config.renderItemRow - Callback producing HTML for each item row.
+ * @param root0.renderItemRow
  * @param config.renderAddRow - Callback producing HTML for the add row.
+ * @param root0.renderAddRow
  * @returns The tbody element, or null if container is missing.
  */
 export function renderTableWithInlineAddRow(container: HTMLElement, {

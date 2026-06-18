@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
 
 interface AuditChange {
     fieldName: string;
@@ -23,6 +23,13 @@ interface AuditTableOptions {
     showEntity?: boolean;
 }
 
+/**
+ * Render an HTML audit table from a list of audit items.
+ * @param items - The audit items to render, or null/undefined for an empty state.
+ * @param options - Options including whether to show the entity column.
+ * @param options.showEntity
+ * @returns The rendered HTML string.
+ */
 export function renderAuditTable(items: AuditItem[] | null | undefined, { showEntity = false }: AuditTableOptions = {}): string {
     if (!items || items.length === 0) {
         return renderEmptyStateSection({
@@ -68,10 +75,19 @@ export function renderAuditTable(items: AuditItem[] | null | undefined, { showEn
     `;
 }
 
+/**
+ * Render the audit loading spinner HTML.
+ * @param message - The loading message to display.
+ * @returns The loading spinner HTML string.
+ */
 export function renderAuditLoading(message = 'Loading activity'): string {
     return renderLoadingSpinner(message);
 }
 
+/**
+ * Render the audit details modal HTML.
+ * @returns The modal HTML string.
+ */
 export function renderAuditDetailsModal(): string {
     return `
         <div class="modal fade" id="audit-details-modal" tabindex="-1" aria-hidden="true">
@@ -91,6 +107,11 @@ export function renderAuditDetailsModal(): string {
     `;
 }
 
+/**
+ * Format a timestamp value into a human-readable date-time string.
+ * @param value - The timestamp as a string, Date, or null.
+ * @returns The formatted date-time string, or 'Unknown' if invalid.
+ */
 export function formatTimestamp(value: string | Date | null | undefined): string {
     if (!value) return 'Unknown';
 
@@ -108,6 +129,11 @@ export function formatTimestamp(value: string | Date | null | undefined): string
     });
 }
 
+/**
+ * Format a timestamp as a relative time string (e.g. "3 minutes ago").
+ * @param value - The timestamp as a string, Date, or null.
+ * @returns The relative time string, or 'Unknown' if invalid.
+ */
 export function formatRelativeTime(value: string | Date | null | undefined): string {
     if (!value) return 'Unknown';
 
@@ -142,10 +168,20 @@ export function formatRelativeTime(value: string | Date | null | undefined): str
     return rtf.format(0, 'second');
 }
 
+/**
+ * Format the title for an audit details modal from the given audit item.
+ * @param item - The audit item.
+ * @returns The formatted title string.
+ */
 export function formatAuditDetailsTitle(item: AuditItem): string {
     return `${formatEventType(item)} ${formatEntity(item)}`;
 }
 
+/**
+ * Format the full audit details as an HTML definition list.
+ * @param item - The audit item.
+ * @returns The HTML string for the details body.
+ */
 export function formatAuditDetailsHtml(item: AuditItem): string {
     return `
         <dl class="row mb-0">
@@ -170,6 +206,11 @@ interface AuditDetailsPayload {
     html: string;
 }
 
+/**
+ * Get the title and HTML payload for an audit details modal from an audit item.
+ * @param item - The audit item.
+ * @returns An object with title and html properties for the modal.
+ */
 export function getAuditDetailsPayload(item: AuditItem): AuditDetailsPayload {
     return {
         title: formatAuditDetailsTitle(item),
@@ -177,6 +218,10 @@ export function getAuditDetailsPayload(item: AuditItem): AuditDetailsPayload {
     };
 }
 
+/**
+ *
+ * @param changes
+ */
 function renderChanges(changes: AuditChange[] | undefined): string {
     if (!Array.isArray(changes) || changes.length === 0) {
         return '<span class="text-muted">No field details</span>';
@@ -193,10 +238,18 @@ function renderChanges(changes: AuditChange[] | undefined): string {
     `).join('')}</ul>`;
 }
 
+/**
+ *
+ * @param item
+ */
 function formatActor(item: AuditItem): string {
     return item.actorEmail || item.actorSubject || item.actorUserId || 'System';
 }
 
+/**
+ *
+ * @param item
+ */
 function formatEventType(item: AuditItem): string {
     if (item.actionType === 'StatusChanged') return 'Status Changed';
     if (item.actionType === 'Created') return 'Created';
@@ -204,6 +257,10 @@ function formatEventType(item: AuditItem): string {
     return 'Updated';
 }
 
+/**
+ *
+ * @param item
+ */
 function formatChange(item: AuditItem): string {
     const changes = Array.isArray(item.changes) ? item.changes.filter(change => !isIgnoredField(change.fieldName)) : [];
 
@@ -229,18 +286,34 @@ function formatChange(item: AuditItem): string {
     return changes.map(change => change.fieldName).join(', ');
 }
 
+/**
+ *
+ * @param item
+ */
 function formatEntity(item: AuditItem): string {
     return `${item.entityType} #${item.entityId}`;
 }
 
+/**
+ *
+ * @param fieldName
+ */
 function isIgnoredField(fieldName: string): boolean {
     return String(fieldName).toLowerCase() === 'updatedat';
 }
 
+/**
+ *
+ * @param item
+ */
 function encodeAuditDetails(item: AuditItem): string {
     return btoa(unescape(encodeURIComponent(JSON.stringify(getAuditDetailsPayload(item)))));
 }
 
+/**
+ *
+ * @param value
+ */
 function formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') {
         return 'blank';

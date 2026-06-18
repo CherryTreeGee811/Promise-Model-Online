@@ -35,7 +35,7 @@ export const getUnassignedMoments = (owner, project) => apiGetList(`/api/project
  * @param {string} owner - The owner (username or organization).
  * @param {string} project - The project slug.
  * @param {number|string} iterationId - The iteration ID.
- * @param {boolean} [unassigned=false] - Whether to return only unassigned moments.
+ * @param {boolean} [unassigned] - Whether to return only unassigned moments.
  * @returns {Promise<Array>} The list of moments.
  */
 export const getMomentsByIteration = (owner, project, iterationId, unassigned = false) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`);
@@ -51,8 +51,8 @@ export const getIterations = (owner, project) => apiGetList(`/api/projects/${enc
  * Create a new stride in a project.
  * @param {string} owner - The owner (username or organization).
  * @param {string} project - The project slug.
- * @param {Object} data - The stride creation payload.
- * @returns {Promise<Object>} The created stride.
+ * @param {object} data - The stride creation payload.
+ * @returns {Promise<object>} The created stride.
  */
 export const createStride = (owner, project, data) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides`, data);
 
@@ -84,8 +84,8 @@ export async function getMyPermission(owner, project) {
  * @param {string} owner - The owner (username or organization).
  * @param {string} project - The project slug.
  * @param {number|string} strideId - The stride ID.
- * @param {Object} data - The fields to update.
- * @returns {Promise<Object>} The updated stride.
+ * @param {object} data - The fields to update.
+ * @returns {Promise<object>} The updated stride.
  */
 export const updateStride = (owner, project, strideId, data) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}`, data);
 /**
@@ -93,11 +93,11 @@ export const updateStride = (owner, project, strideId, data) => apiPatch(`/api/p
  * @param {string} owner - The owner (username or organization).
  * @param {string} project - The project slug.
  * @param {number|string} strideId - The stride ID.
- * @returns {Promise<Object>} The progressed stride.
+ * @returns {Promise<object>} The progressed stride.
  */
 export const progressStride = (owner, project, strideId) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}/progress`, {});
 /**
  * Trigger a batch run of deadline notifications.
- * @returns {Promise<Object>} The API response.
+ * @returns {Promise<object>} The API response.
  */
 export const triggerDeadlineNotificationRuns = () => apiPost('/api/deadline-notification-runs', {});

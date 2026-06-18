@@ -1,14 +1,15 @@
 // @ts-nocheck
-import { navigate } from '../router.ts';
-import { getProject } from '../projects/api.ts';
-import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.ts';
 import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner, updateMomentType } from '../moments/api.ts';
+import { getProject } from '../projects/api.ts';
 import { buildGraphViewHref } from '../projects/graph-link.ts';
-import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
+import { navigate } from '../router.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
+import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.ts';
-import { openStrideCreateModal } from '../utils/stride-create-modal.ts';
 import { STATUS_OPTIONS } from '../utils/status-utils.ts';
+import { openStrideCreateModal } from '../utils/stride-create-modal.ts';
+
+import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.ts';
 
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues: Record<string, number> = {
@@ -58,7 +59,7 @@ function preserveScroll(action: () => unknown): unknown {
 
 /**
  * Get the numeric timestamp of a stride's start date.
- * @param {Object} stride - The stride object.
+ * @param {object} stride - The stride object.
  * @returns {number} The start date timestamp, or 0 if invalid.
  */
 function getStrideStartDateValue(stride: Record<string, unknown>): number {
@@ -277,7 +278,7 @@ function boardToggleButtonHtml(collapsed: boolean): string {
  * Generate HTML for a board header with toggle button, title, and optional actions.
  * @param {string} title - The board title.
  * @param {boolean} collapsed - Whether the board is collapsed.
- * @param {string} [extraActionsHtml=''] - Optional extra action buttons HTML.
+ * @param {string} [extraActionsHtml] - Optional extra action buttons HTML.
  * @returns {string} The HTML string for the header.
  */
 function boardHeaderHtml(title: string, collapsed: boolean, extraActionsHtml: string = ''): string {
@@ -662,7 +663,7 @@ function ensureBacklogTbody(): HTMLElement | null {
 
 /**
  * Create a table row element for a backlog moment.
- * @param {Object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
+ * @param {object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
  * @returns {HTMLElement} The table row element.
  */
 function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
@@ -723,7 +724,7 @@ function ensureStrideTbody(strideId: number | string): HTMLElement | null {
 
 /**
  * Create a table row element for a moment within a stride.
- * @param {Object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
+ * @param {object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
  * @returns {HTMLElement} The table row element.
  */
 function createStrideRow(moment: Record<string, unknown>): HTMLElement {
@@ -958,7 +959,7 @@ function totalEffort(moments: Record<string, unknown>[]): number {
  * @param {string} project - The project slug.
  * @param {HTMLElement} navContentDiv - The navigation content container.
  * @param {HTMLElement} contentDiv - The main content container.
- * @param {Object} permission - The user's permission object.
+ * @param {object} permission - The user's permission object.
  */
 export function loadStridesList(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown> | null): void {
     const strideBoard = document.getElementById('stride-board')!;

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>CRUD endpoints for promises within a project.</summary>
     [Route("api/projects/{owner}/{project}/promises")]
     public class ProjectPromisesController : ProjectScopedControllerBase
     {

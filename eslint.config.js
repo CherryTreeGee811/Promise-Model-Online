@@ -1,6 +1,17 @@
 import globals from 'globals';
 import security from 'eslint-plugin-security';
+import jsdoc from 'eslint-plugin-jsdoc';
+import importx from 'eslint-plugin-import-x';
 import tseslint from 'typescript-eslint';
+
+const importRules = {
+  'import-x/first': 'warn',
+  'import-x/newline-after-import': 'warn',
+  'import-x/no-duplicates': 'warn',
+  'import-x/no-self-import': 'warn',
+  'import-x/no-useless-path-segments': 'warn',
+  'import-x/order': ['warn', { alphabetize: { order: 'asc' }, 'newlines-between': 'always' }],
+};
 
 export default tseslint.config(
   {
@@ -13,8 +24,10 @@ export default tseslint.config(
         signalR: 'readonly',
       },
     },
-    plugins: { security },
+    plugins: { security, jsdoc, 'import-x': importx },
     rules: {
+      ...jsdoc.configs['flat/recommended'].rules,
+      ...importRules,
       'security/detect-eval-with-expression': 'warn',
       'security/detect-non-literal-fs-filename': 'off',
       'security/detect-non-literal-regexp': 'warn',
@@ -29,7 +42,6 @@ export default tseslint.config(
       'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
       'no-constant-binary-expression': 'error',
       'no-constructor-return': 'error',
-      'no-duplicate-imports': 'error',
       'no-promise-executor-return': 'error',
       'no-self-assign': 'warn',
       'no-self-compare': 'warn',
@@ -54,8 +66,11 @@ export default tseslint.config(
       },
       parser: tseslint.parser,
     },
-    plugins: { security, '@typescript-eslint': tseslint.plugin },
+    plugins: { security, jsdoc, 'import-x': importx, '@typescript-eslint': tseslint.plugin },
     rules: {
+      ...jsdoc.configs['flat/recommended'].rules,
+      ...importRules,
+      'import-x/no-cycle': 'warn',
       'security/detect-eval-with-expression': 'warn',
       'security/detect-non-literal-fs-filename': 'off',
       'security/detect-non-literal-regexp': 'warn',
@@ -68,7 +83,6 @@ export default tseslint.config(
       'no-new-func': 'error',
       'no-constant-binary-expression': 'error',
       'no-constructor-return': 'error',
-      'no-duplicate-imports': 'error',
       'no-promise-executor-return': 'error',
       'no-self-assign': 'warn',
       'no-self-compare': 'warn',

@@ -1,8 +1,9 @@
 // @ts-nocheck
+import { renderEmptyStateSection } from '../utils/empty-table.ts';
+import { escapeHtml } from '../utils/html.ts';
+
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.ts';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { renderEmptyStateSection } from '../utils/empty-table.ts';
 
 let liveListenerRegistered = false;
 

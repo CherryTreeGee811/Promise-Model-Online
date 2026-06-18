@@ -1,6 +1,11 @@
 // @ts-nocheck
 import { createIteration } from '../iterations/api.ts';
 
+/**
+ *
+ * @param modalId
+ * @param modalMarkup
+ */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalEl = document.getElementById(modalId);
     if (modalEl) return modalEl;

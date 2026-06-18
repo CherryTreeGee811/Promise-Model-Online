@@ -8,6 +8,6 @@ export const getPendingInvitations = () => apiGet('/api/permissions/pending');
 /**
  * Accept a pending invitation by permission ID.
  * @param {number} permissionId - The permission ID to accept.
- * @returns {Promise<Object>} The API response.
+ * @returns {Promise<object>} The API response.
  */
 export const acceptInvitation = permissionId => apiPatch(`/api/permissions/${permissionId}`, { status: 'Active' });

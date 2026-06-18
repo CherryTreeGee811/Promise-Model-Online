@@ -1,4 +1,5 @@
 import { loadTemplate, loadTemplateWithError, showNotFound } from '../router.ts';
+
 import { loadInvitationsPage } from './list.ts';
 
 /**

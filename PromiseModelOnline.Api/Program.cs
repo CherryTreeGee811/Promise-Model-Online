@@ -225,7 +225,9 @@ app.MapHub<NotificationHub>("/hubs/notifications");
 
 await app.RunAsync();
 
+/// <summary>Entry point for the Resource API server application.</summary>
 public partial class Program
 {
+    /// <summary>Prevents instantiation of the <see cref="Program"/> class.</summary>
     protected Program() { }
 }

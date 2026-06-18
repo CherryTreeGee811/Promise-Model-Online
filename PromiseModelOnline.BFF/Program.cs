@@ -291,7 +291,9 @@ app.MapReverseProxy(proxyPipeline =>
 
 await app.RunAsync();
 
+/// <summary>Entry point for the BFF server application.</summary>
 public partial class Program
 {
+    /// <summary>Prevents instantiation of the <see cref="Program"/> class.</summary>
     protected Program() { }
 }

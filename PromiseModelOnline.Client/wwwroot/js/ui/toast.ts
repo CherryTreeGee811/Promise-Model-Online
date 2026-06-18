@@ -40,8 +40,8 @@ function ensureContainer() {
  * Show a Bootstrap-style toast notification.
  * The toast auto-dismisses after `duration` ms. Pass 0 for a sticky toast.
  * @param {string} message - The notification text.
- * @param {ToastType} [type='info'] - Visual style.
- * @param {number} [duration=4000] - Auto-dismiss timeout in ms.
+ * @param {ToastType} [type] - Visual style.
+ * @param {number} [duration] - Auto-dismiss timeout in ms.
  */
 export function showToast(message, type = 'info', duration = DEFAULT_DURATION) {
   const container = ensureContainer();

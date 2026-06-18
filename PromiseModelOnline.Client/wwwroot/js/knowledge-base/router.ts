@@ -1,4 +1,5 @@
 import { loadTemplate, loadTemplateWithError } from '../router.ts';
+
 import { loadKnowledgeBase } from './detail.ts';
 
 /**

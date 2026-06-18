@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { getGraphData } from './api.ts';
+import { getUserId } from '../auth-state.ts';
 import { getStrides } from '../strides/api.ts';
 import { escapeHtml } from '../utils/html.ts';
-import { getUserId } from '../auth-state.ts';
-import { createGraphContextMenuController } from './graph-context-menu.ts';
 import { STATUS_OPTIONS } from '../utils/status-utils.ts';
+
+import { getGraphData } from './api.ts';
+import { createGraphContextMenuController } from './graph-context-menu.ts';
 import {
     NODE_TYPES,
     NODE_TYPE_INDEX,
@@ -456,6 +457,8 @@ function matchesNode(node: GraphNode, filters: GraphFilters): boolean {
  * Clone a subtree for rendering, applying collapse state and counting visible/hidden nodes.
  * @param {object} node - The root of the subtree to clone.
  * @param {{visibleNodes: number, hiddenNodes: number}} metrics - Accumulator for node counts.
+ * @param metrics.visibleNodes
+ * @param metrics.hiddenNodes
  * @returns {object} The cloned subtree with collapse metadata.
  */
 function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNodes: number }): GraphNode {
@@ -485,7 +488,7 @@ function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNo
  * @param {object} node - The current tree node.
  * @param {object} filters - The active filter criteria.
  * @param {{visibleNodes: number, directMatches: number, hiddenNodes: number}} metrics - Accumulator for filter result metrics.
- * @param {boolean} [isRoot=false] - Whether this is the root node.
+ * @param {boolean} [isRoot] - Whether this is the root node.
  * @returns {object|null} The filtered subtree, or null if nothing matches.
  */
 function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetrics, isRoot: boolean = false): GraphNode | null {
@@ -876,7 +879,7 @@ function scheduleFilterApply(): void {
 
 /**
  * Request a filter application, debounced to avoid repeated heavy D3 renders.
- * @param {number} [delay=40] - The debounce delay in milliseconds.
+ * @param {number} [delay] - The debounce delay in milliseconds.
  */
 function requestApplyFilters(delay: number = 40): void {
     if (graphState.applyTimer) {
@@ -979,9 +982,9 @@ function initZoomControls(zoomBehavior: unknown, svgNode: SVGElement, d3Instance
  * @param {HTMLElement} _contentDiv - The graph content div (unused, kept for signature).
  * @param {object} d3 - The D3 module instance.
  * @param {object} treeData - The tree data to render.
- * @param {object} [restoreTransform=null] - A D3 zoom transform to restore.
- * @param {object} [focusNodeData=null] - A specific node to focus on.
- * @param {boolean} [animate=false] - Whether to animate the transition.
+ * @param {object} [restoreTransform] - A D3 zoom transform to restore.
+ * @param {object} [focusNodeData] - A specific node to focus on.
+ * @param {boolean} [animate] - Whether to animate the transition.
  */
 function renderTree(_contentDiv: HTMLElement, d3: Record<string, unknown>, treeData: GraphNode, restoreTransform: unknown = null, focusNodeData: GraphNode | null = null, animate: boolean = false): void {
     const graphContent = document.getElementById('graph-content') as HTMLElement | null;
@@ -1126,6 +1129,14 @@ async function loadAvailableStrides(owner: string, project: string): Promise<voi
  * @param {string} project - The project's slug.
  * @param {HTMLElement} contentDiv - The main content container.
  * @param {object} permission - The current user's permission object for the project.
+ */
+/**
+ * Load the project hierarchy graph visualization page with filtering, zoom, and context menus.
+ * @param owner - The project owner's slug.
+ * @param project - The project's slug.
+ * @param contentDiv - The main content container.
+ * @param permission - The current user's permission object for the project.
+ * @returns Resolves when the graph page is fully loaded and rendered.
  */
 export async function loadGraphPage(owner: string, project: string, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
     const errorEl = document.getElementById('error-text') as HTMLElement | null;

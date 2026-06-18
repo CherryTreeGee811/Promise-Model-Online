@@ -1,7 +1,13 @@
 // @ts-nocheck
 import { createStride } from '../strides/api.ts';
+
 import { escapeHtml } from './html.ts';
 
+/**
+ *
+ * @param modalId
+ * @param modalMarkup
+ */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalEl = document.getElementById(modalId);
     if (modalEl) return modalEl;
@@ -17,10 +23,19 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     return modalEl;
 }
 
+/**
+ *
+ * @param date
+ */
 function formatDateInputValue(date: Date | string): string {
     return new Date(date).toISOString().slice(0, 10);
 }
 
+/**
+ *
+ * @param date
+ * @param days
+ */
 function addDays(date: Date, days: number): Date {
     const next = new Date(date);
     next.setDate(next.getDate() + days);
@@ -33,6 +48,10 @@ interface StrideDefaults {
     durationDays: number;
 }
 
+/**
+ *
+ * @param existingStrides
+ */
 function getNewStrideDefaults(existingStrides: Array<{ endDate?: string }> = []): StrideDefaults {
     const now = new Date();
     const strideDurationDays = 14;
@@ -67,11 +86,18 @@ interface StrideCreateOptions {
  * Open a Bootstrap modal for creating a new stride.
  * The modal DOM is created on first invocation and reused.
  * @param options.owner - Project owner slug.
+ * @param root0
+ * @param root0.owner
  * @param options.project - Project slug.
+ * @param root0.project
  * @param options.iterationId - Pre-selected iteration ID.
+ * @param root0.iterationId
  * @param options.iterations - Available iterations for the select dropdown.
+ * @param root0.iterations
  * @param options.existingStrides - Existing strides for auto-calculating date defaults.
+ * @param root0.existingStrides
  * @param options.onCreated - Async callback invoked after successful creation.
+ * @param root0.onCreated
  */
 export function openStrideCreateModal({
     owner,

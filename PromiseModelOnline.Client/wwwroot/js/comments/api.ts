@@ -13,7 +13,7 @@ export const getComments = (_owner, _project, parentType, parentId) => apiGet(`/
  * Add a comment to a parent entity.
  * @param {string} _owner - The owner slug (unused).
  * @param {string} _project - The project slug (unused).
- * @param {Object} data - The comment payload.
- * @returns {Promise<Object>} The created comment.
+ * @param {object} data - The comment payload.
+ * @returns {Promise<object>} The created comment.
  */
 export const addComment = (_owner, _project, data) => apiPost('/api/comments', data);

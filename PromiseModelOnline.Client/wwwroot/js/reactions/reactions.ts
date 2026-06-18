@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { getReactions, addReaction, updateReaction } from './api.ts';
 import { getUsername } from '../auth-state.ts';
+
+import { getReactions, addReaction, updateReaction } from './api.ts';
 
 const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 

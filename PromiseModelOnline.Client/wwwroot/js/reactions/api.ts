@@ -13,8 +13,8 @@ export const getReactions = (_owner, _project, parentType, itemId) => apiGet(`/a
  * Add a new reaction.
  * @param {string} _owner - The owner slug (unused).
  * @param {string} _project - The project slug (unused).
- * @param {Object} data - The reaction data containing parentType, parentId, and emote.
- * @returns {Promise<Object>} The created reaction object.
+ * @param {object} data - The reaction data containing parentType, parentId, and emote.
+ * @returns {Promise<object>} The created reaction object.
  */
 export const addReaction = (_owner, _project, data) => apiPost('/api/reactions', data);
 /**
@@ -22,7 +22,7 @@ export const addReaction = (_owner, _project, data) => apiPost('/api/reactions',
  * @param {string} _owner - The owner slug (unused).
  * @param {string} _project - The project slug (unused).
  * @param {number} reactionId - The reaction ID to update.
- * @returns {Promise<Object>} The updated reaction object.
+ * @returns {Promise<object>} The updated reaction object.
  */
 export const updateReaction = (_owner, _project, reactionId) => apiPatch(`/api/reactions/${reactionId}`, {});
 /**

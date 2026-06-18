@@ -5,6 +5,7 @@ interface StatusOption {
     icon: string;
 }
 
+/** Available status options with value, label, and emoji icon. */
 export const STATUS_OPTIONS: StatusOption[] = [
     { value: 'Todo', label: 'Todo', icon: '\u{1F534}' },
     { value: 'InProgress', label: 'In Progress', icon: '\u{1F7E0}' },

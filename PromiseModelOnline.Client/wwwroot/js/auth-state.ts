@@ -4,12 +4,16 @@
  * directly from `stores/auth.ts` for subscription support.
  */
 
-export { authStore, isLoggedIn, getUsername, getUserId } from './stores/auth.ts';
 import { authStore } from './stores/auth.ts';
+
+export { authStore, isLoggedIn, getUsername, getUserId } from './stores/auth.ts';
 
 /**
  * Update authentication state and persist to session storage.
  * @param {{ isAuthenticated: boolean; username?: string | null; userId?: number | null }} state
+ * @param state.isAuthenticated
+ * @param state.username
+ * @param state.userId
  */
 export function setAuthState(state: { isAuthenticated: boolean; username?: string | null; userId?: number | null }): void {
     authStore.set({

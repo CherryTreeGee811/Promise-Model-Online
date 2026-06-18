@@ -24,33 +24,42 @@ namespace PromiseModelOnline.Api.BusinessLogic
             _repository = repository;
         }
 
-        /// <inheritdoc/>
+        /// <summary>Retrieve every entity of type <typeparamref name="T"/> via the repository.</summary>
+        /// <returns>All entities. Empty if none exist.</returns>
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             return await _repository.GetAllAsync();
         }
 
-        /// <inheritdoc/>
+        /// <summary>Find an entity by its primary-key value via the repository.</summary>
+        /// <param name="id">The primary-key value. Supports <c>int</c>, <c>Guid</c>, <c>string</c>, or composite.</param>
+        /// <returns>The matching entity, or <c>null</c> if not found.</returns>
         public async Task<T?> GetByIdAsync(object id)
         {
             return await _repository.GetByIdAsync(id);
         }
 
-        /// <inheritdoc/>
+        /// <summary>Stage a new entity for creation and persist changes.</summary>
+        /// <param name="entity">The entity to create. Not null.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="entity"/> is <c>null</c>.</exception>
         public virtual async Task AddAsync(T entity)
         {
             await _repository.AddAsync(entity);
             await _repository.SaveChangesAsync();
         }
 
-        /// <inheritdoc/>
+        /// <summary>Update an existing entity and persist changes.</summary>
+        /// <param name="entity">The entity with updated property values. Not null.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="entity"/> is <c>null</c>.</exception>
         public virtual async Task UpdateAsync(T entity)
         {
             _repository.Update(entity);
             await _repository.SaveChangesAsync();
         }
 
-        /// <inheritdoc/>
+        /// <summary>Delete an entity by its primary-key value via the repository.</summary>
+        /// <param name="id">Primary-key value (<c>int</c>, <c>Guid</c>, <c>string</c>, or composite).</param>
+        /// <returns><c>true</c> if found and deleted; <c>false</c> otherwise.</returns>
         public virtual async Task<bool> DeleteByIdAsync(object id)
         {
             return await _repository.DeleteByIdAsync(id);

@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { getPendingInvitations, acceptInvitation } from './api.ts';
-import { escapeHtml } from '../utils/html.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
+import { escapeHtml } from '../utils/html.ts';
+
+import { getPendingInvitations, acceptInvitation } from './api.ts';
 
 /**
  * Load the invitations listing page.

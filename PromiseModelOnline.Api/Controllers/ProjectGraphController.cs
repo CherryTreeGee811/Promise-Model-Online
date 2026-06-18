@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>Endpoints for project dependency/graph data.</summary>
     [Route("api/projects/{owner}/{project}/graph")]
     public class ProjectGraphController : ProjectScopedControllerBase
     {

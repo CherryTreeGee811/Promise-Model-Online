@@ -48,6 +48,7 @@ public class EmailVerificationController : Controller
 
     /// <summary>Display the email verification page for a given user.</summary>
     /// <param name="userId">The user ID to verify.</param>
+    /// <param name="resent">Optional flag indicating the verification email was re-sent.</param>
     /// <returns>The verification view, or a redirect to login if the user is not found or already verified.</returns>
     [AllowAnonymous]
     [HttpGet("")]

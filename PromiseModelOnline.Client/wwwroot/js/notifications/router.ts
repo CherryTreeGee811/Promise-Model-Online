@@ -1,4 +1,5 @@
 import { loadTemplate, loadTemplateWithError, showNotFound } from '../router.ts';
+
 import { loadNotificationsPage } from './list.ts';
 
 /**

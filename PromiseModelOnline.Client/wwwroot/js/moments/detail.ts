@@ -1,22 +1,23 @@
 // @ts-nocheck
-import { navigate } from '../router.ts';
-import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
-import { getStrides } from '../strides/api.ts';
-import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
-import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
-import { getStatusOptionHtml } from '../utils/status-utils.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
-import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
-import { isAtLeast } from '../utils/permissions.ts';
-import { setupInlineEdit } from '../utils/inline-edit.ts';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
     patchDetailStackGraphNode,
     refreshDetailStackGraph,
 } from '../projects/detail-stack-graph.ts';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
+import { navigate } from '../router.ts';
+import { getStrides } from '../strides/api.ts';
+import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
+import { escapeHtml } from '../utils/html.ts';
+import { setupInlineEdit } from '../utils/inline-edit.ts';
+import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.ts';
+import { isAtLeast } from '../utils/permissions.ts';
+import { getStatusOptionHtml } from '../utils/status-utils.ts';
+
+import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
 
 /** @typedef {{ id: number, sequenceNumber: number, statement: string, description?: string, type: string, status: string, statusColor?: string, effortEstimate?: string, assignedStrideId?: number, createdAt: string, completedAt?: string, tasks?: Array<{ id: number, name: string, description: string, isCompleted: boolean }> }} Moment */
 

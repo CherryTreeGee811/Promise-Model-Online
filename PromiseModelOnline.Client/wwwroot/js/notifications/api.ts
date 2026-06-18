@@ -20,11 +20,11 @@ export const fetchAllNotifications = fetchNotifications;
 /**
  * Mark a single notification as read.
  * @param {number} id - The notification ID.
- * @returns {Promise<Object>} The API response.
+ * @returns {Promise<object>} The API response.
  */
 export const markNotificationAsRead = id => apiPatch(`/api/notifications/${id}`, { isRead: true });
 /**
  * Mark all notifications as read.
- * @returns {Promise<Object>} The API response.
+ * @returns {Promise<object>} The API response.
  */
 export const markAllNotificationsAsRead = () => apiPatch('/api/notifications', { isRead: true, applyToAll: true });

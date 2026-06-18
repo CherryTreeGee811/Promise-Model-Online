@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 namespace PromiseModelOnline.Api.Controllers
 {
+    /// <summary>CRUD endpoints for journeys within a project.</summary>
     [Route("api/projects/{owner}/{project}/journeys")]
     public class ProjectJourneysController : ProjectScopedControllerBase
     {

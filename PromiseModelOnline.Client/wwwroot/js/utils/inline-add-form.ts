@@ -1,5 +1,6 @@
-import { removeInlineEmptyRow, insertRowBeforeAddRow } from './inline-table.ts';
 import { patchChildMetrics } from '../projects/detail-stack-graph.ts';
+
+import { removeInlineEmptyRow, insertRowBeforeAddRow } from './inline-table.ts';
 
 /** Configuration for setting up an inline add-child form on a detail page. */
 export interface AddChildConfig {

@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { getMyAssignedMoments, updateMomentType } from './api.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { renderEmptyStateSection } from '../utils/empty-table.ts';
 import { navigate } from '../router.ts';
+import { renderEmptyStateSection } from '../utils/empty-table.ts';
+import { escapeHtml } from '../utils/html.ts';
+
+import { getMyAssignedMoments, updateMomentType } from './api.ts';
 
 /**
  * Load the my-tasks page showing moments assigned to the current user.

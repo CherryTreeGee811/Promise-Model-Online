@@ -11,8 +11,8 @@ export const getIterations = (owner, project) => apiGetList(`/api/projects/${enc
  * Create a new iteration for a project.
  * @param {string} owner - The owner slug.
  * @param {string} project - The project slug.
- * @param {Object} data - The iteration creation data.
- * @returns {Promise<Object>} The created iteration object.
+ * @param {object} data - The iteration creation data.
+ * @returns {Promise<object>} The created iteration object.
  */
 export const createIteration = (owner, project, data) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`, data);
 /**

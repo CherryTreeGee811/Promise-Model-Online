@@ -1,14 +1,24 @@
 // @ts-nocheck
+import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { navigate } from '../router.ts';
-import { exportProject, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.ts';
 import { getProjectMembers } from '../strides/api.ts';
-import { renderSummaryTable } from './summary.ts';
-import { formatTimestamp } from './audit.ts';
+import { formatCommentText } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
-import { formatCommentText } from '../utils/entity-reference.ts';
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 
+import { exportProject, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.ts';
+import { formatTimestamp } from './audit.ts';
+import { renderSummaryTable } from './summary.ts';
+
+
+/**
+ * Load the project settings page with inline editing, summary, export, and delete controls.
+ * @param navContentDiv - The navigation content container.
+ * @param contentDiv - The main content container.
+ * @param owner - The project owner's slug.
+ * @param project - The project's slug.
+ * @param permission - The current user's permission object, used for gating edit/delete actions.
+ */
 export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string, permission: { permission?: string; isOwner?: boolean } | null): void {
     const form = document.getElementById('project-settings-form') as HTMLFormElement | null;
     const titleInput = document.getElementById('project-title-input') as HTMLInputElement | null;
@@ -39,6 +49,9 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         descEditor = setupInlineEdit(descriptionInput, descView, descEditBtn, saveBtn);
     }
 
+    /**
+     *
+     */
     function applyPermissionGating(): void {
         const canEdit = permission?.permission === 'Edit';
         const isOwner = permission?.isOwner === true;
@@ -85,16 +98,26 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         return;
     }
 
+    /**
+     *
+     */
     function clearMessages(): void {
         errorText.textContent = '';
         successText.textContent = '';
     }
 
+    /**
+     *
+     * @param loading
+     */
     function setSummaryLoading(loading: boolean): void {
         summaryLoading.hidden = !loading;
         summaryPanel.hidden = loading;
     }
 
+    /**
+     *
+     */
     function showExportPopover(): void {
         if (typeof bootstrap === 'undefined' || !bootstrap.Popover) {
             successText.textContent = 'Exported!';
@@ -125,10 +148,18 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         }, 2000);
     }
 
+    /**
+     *
+     * @param projectName
+     */
     function getDeletePhrase(projectName: string): string {
         return `delete ${projectName}`;
     }
 
+    /**
+     *
+     * @param projectName
+     */
     function refreshDeleteGate(projectName: string): void {
         const phrase = getDeletePhrase(projectName);
         deleteConfirmationText.textContent = phrase;
@@ -137,17 +168,36 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         deleteButton.dataset.confirmationPhrase = phrase;
     }
 
+    /**
+     *
+     * @param busy
+     */
     function setDeleteButtonState(busy: boolean): void {
         deleteButton.disabled = busy;
         deleteButtonSpinner.classList.toggle('d-none', !busy);
         deleteButtonLabel.textContent = busy ? 'Deleting Project...' : 'Delete Project';
     }
 
+    /**
+     *
+     */
     function updateDeleteButtonState(): void {
         const expected = deleteButton.dataset.confirmationPhrase || '';
         deleteButton.disabled = deleteConfirmationInput.value !== expected;
     }
 
+    /**
+     *
+     * @param project
+     * @param counts
+     * @param counts.promises
+     * @param counts.epics
+     * @param counts.journeys
+     * @param counts.flows
+     * @param counts.moments
+     * @param counts.totalPromises
+     * @param memberCount
+     */
     function renderSummary(project: Record<string, unknown>, counts: { promises: number; epics: number; journeys: number; flows: number; moments: number; totalPromises: number }, memberCount: number): void {
         renderSummaryTable(summaryPanel, [
             { label: 'Created', value: formatDate(project.createdAt as string) },
@@ -161,6 +211,10 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         ]);
     }
 
+    /**
+     *
+     * @param projectObj
+     */
     async function loadSummary(projectObj: Record<string, unknown>): Promise<void> {
         setSummaryLoading(true);
 
@@ -203,6 +257,9 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         }
     }
 
+    /**
+     *
+     */
     async function loadProject(): Promise<void> {
         try {
             const projectData = await getProject(owner, project);
@@ -297,6 +354,11 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
     loadProject();
 }
 
+/**
+ * Trigger a browser download of a blob with the given filename.
+ * @param blob
+ * @param filename
+ */
 function downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -308,6 +370,10 @@ function downloadBlob(blob: Blob, filename: string): void {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * Format a date string for display using the audit timestamp formatter.
+ * @param value
+ */
 function formatDate(value: string): string {
     return formatTimestamp(value);
 }
