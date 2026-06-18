@@ -1,5 +1,2 @@
 <Project>
-  <PropertyGroup>
-    <GenerateDocumentationFile Condition="'$(IsTestProject)' != 'true'">true</GenerateDocumentationFile>
-  </PropertyGroup>
 </Project>
