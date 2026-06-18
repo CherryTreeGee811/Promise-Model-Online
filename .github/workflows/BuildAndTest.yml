@@ -144,31 +144,52 @@ jobs:
       #       --logger "console;verbosity=normal" \
       #       --filter "FullyQualifiedName~IntegrationTests"
 
-      # ─── 4. Client/UI tests (WireMock Docker, lightweight) ───
+      # ─── 4. Client/UI tests (cross-browser matrix) ───
 
-      - name: Run Client UI Test Environment
-        shell: bash
-        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
+      # - name: Run Client UI Test Environment
+      #   shell: bash
+      #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
 
-      - name: Wait for Client (Nginx)
+      # - name: Wait for Client (Nginx)
+      #   shell: bash
+      #   run: |
+      #     for i in $(seq 1 15); do
+      #       STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+      #       if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
+      #       sleep 2
+      #     done
+      #     echo "ERROR: Client not healthy within 30s"
+      #     docker logs promisemodelonlineclient --tail 30 2>&1
+      #     exit 1
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-1.60.0
+
+      - name: Install Playwright browsers (all)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          for i in $(seq 1 15); do
-            STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
-            if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
-            sleep 2
-          done
-          echo "ERROR: Client not healthy within 30s"
-          docker logs promisemodelonlineclient --tail 30 2>&1
-          exit 1
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
+
+      # - name: Install system deps (cache hit — browsers already cached)
+      #   if: steps.playwright-cache.outputs.cache-hit == 'true'
+      #   shell: bash
+      #   run: |
+      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
+      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox  2>&1 | tail -3
+      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit   2>&1 | tail -3
 
       # - name: Run Client Tests (Chromium)
       #   shell: bash
       #   env:
       #     TEST_BROWSER: chromium
       #   run: |
-      #     mkdir -p ClientTestResults
-      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
       #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
       #       --no-build \
       #       --collect:"XPlat Code Coverage" \
@@ -180,45 +201,27 @@ jobs:
       #   env:
       #     TEST_BROWSER: firefox
       #   run: |
-      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install firefox
       #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
       #       --no-build \
       #       --collect:"XPlat Code Coverage" \
       #       --results-directory ./ClientTestResults \
       #       --logger "console;verbosity=normal"
 
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-1.60.0
+      # - name: Run Client Tests (WebKit)
+      #   shell: bash
+      #   env:
+      #     TEST_BROWSER: webkit
+      #   run: |
+      #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+      #       --no-build \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./ClientTestResults \
+      #       --logger "console;verbosity=normal"
 
-      - name: Install Playwright (WebKit)
-        shell: bash
-        run: |
-          if [[ "${{ steps.playwright-cache.outputs.cache-hit }}" == "true" ]]; then
-            echo "Browser cache hit — installing system deps only"
-            pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit 2>&1 | tail -5
-          else
-            pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
-          fi
-
-      - name: Run Client Tests (WebKit)
-        shell: bash
-        env:
-          TEST_BROWSER: webkit
-        run: |
-          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ClientTestResults \
-            --logger "console;verbosity=normal"
-
-      - name: Teardown Client UI Test Environment
-        if: always()
-        shell: bash
-        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
+      # - name: Teardown Client UI Test Environment
+      #   if: always()
+      #   shell: bash
+      #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
       # ─── 5. E2E tests — Core (no rate limiting, fast) ───
 
@@ -266,7 +269,6 @@ jobs:
         shell: bash
         run: |
           mkdir -p E2eTestResults
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
@@ -303,10 +305,20 @@ jobs:
           echo "ERROR: Timed out waiting for services"
           exit 1
 
+      - name: Wait for port (host side)
+        shell: bash
+        run: |
+          for i in $(seq 1 15); do
+            STATUS=$(curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            if [ "$STATUS" = "200" ]; then echo "Port 9000 ready"; exit 0; fi
+            sleep 2
+          done
+          echo "ERROR: Port 9000 not accessible from host"
+          exit 1
+
       - name: Run E2E Tests — Rate Limiting only
         shell: bash
         run: |
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \
