@@ -166,8 +166,8 @@ function reconcileCollapsedNodes(): void {
             reconciled.add(nodeId);
         }
     }
-
     graphState.collapsedNodeIds = reconciled;
+
 }
 
 /**
@@ -297,7 +297,7 @@ function normalizeTypeSelection(types: Set<string>): Set<string> {
 /**
  * Normalize a raw status filter value to a canonical bucket.
  * @param {string} value - The raw status filter value.
- * @returns {string} The normalized status bucket ('all', 'done', 'blocked', 'inprogress', 'todo', 'other').
+ * @returns {string} The normalized status bucket ('all', 'done', 'blocked', 'inprogress', or others).
  */
 function getStatusFilterValue(value: string): string {
     const normalized = normalizeText(value);
@@ -313,11 +313,20 @@ function getStatusFilterValue(value: string): string {
 /**
  * Normalize a raw assignment filter value.
  * @param {string} value - The raw assignment filter value.
- * @returns {string} The normalized value ('all' or 'assigned-to-me').
+ * @returns {string} The normalized value ('all' or the assignment filter).
+ */
+/** Filter value for items assigned to the current user. */
+const ASSIGNED_TO_ME = 'assigned-to-me';
+/** CSS class for graph filter fields. */
+const GRAPH_FILTER_FIELD = 'graph-filter-field';
+/**
+ * Normalize an assignment filter value.
+ * @param {string} value - Raw filter value.
+ * @returns {string} Normalized filter value.
  */
 function getAssignmentFilterValue(value: string): string {
     const normalized = normalizeText(value);
-    if (normalized === 'assigned-to-me') return 'assigned-to-me';
+    if (normalized === ASSIGNED_TO_ME) return ASSIGNED_TO_ME;
     return 'all';
 }
 
@@ -437,7 +446,7 @@ function isNodeMatching(node: GraphNode, filters: GraphFilters): boolean {
         if (statusBucket !== filters.status) return false;
     }
 
-    if (filters.assignment === 'assigned-to-me') {
+    if (filters.assignment === ASSIGNED_TO_ME) {
         if (node.nodeType !== 'moment') return false;
 
         const currentUserId = getUserId();
@@ -490,13 +499,11 @@ function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNo
 }
 
 /**
- * Recursively filter a graph tree according to the active filters.
- * Nodes that don't match are pruned; collapsed subtrees are summarized as a single node.
  * @param {object} node - The current tree node.
  * @param {object} filters - The active filter criteria.
  * @param {{visibleNodes: number, directMatches: number, hiddenNodes: number}} metrics - Accumulator for filter result metrics.
  * @param {boolean} [isRoot] - Whether this is the root node.
- * @returns {object} The filtered subtree, or null if nothing matches.
+ * @returns {object | undefined} The filtered subtree, or undefined if no match.
  */
 function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetrics, isRoot: boolean = false): GraphNode | null {
     const isCollapsed = isNodeCollapsed(node.id);
@@ -547,7 +554,6 @@ function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetri
         };
     }
 
-    return;
 }
 
 /**
@@ -627,7 +633,8 @@ function syncFiltersToUrl(filters: GraphFilters): void {
         parameters.set('focus', graphState.focusNodeId);
     }
 
-    const nextUrl = `${location.pathname}${parameters.toString() ? `?${parameters.toString()}` : ''}${location.hash || ''}`;
+    const query = parameters.toString();
+    const nextUrl = location.pathname + (query ? '?' + query : '') + (location.hash || '');
     history.replaceState({ owner: graphState.owner, project: graphState.project }, '', nextUrl);
 }
 
@@ -645,7 +652,7 @@ function renderFilterBar(): void {
     searchGroup.className = 'graph-filter-search-group';
 
     const searchLabel = document.createElement('label');
-    searchLabel.className = 'graph-filter-field';
+    searchLabel.className = GRAPH_FILTER_FIELD;
     const searchSpan = document.createElement('span');
     searchSpan.textContent = 'Search';
     const searchInput = document.createElement('input');
@@ -658,7 +665,7 @@ function renderFilterBar(): void {
     searchGroup.append(searchLabel);
 
     const checkField = document.createElement('div');
-    checkField.className = 'graph-filter-field graph-filter-checkbox-field';
+    checkField.className = GRAPH_FILTER_FIELD + ' graph-filter-checkbox-field';
     const checkSpan = document.createElement('span');
     checkSpan.textContent = 'Search options';
     const switchDiv = document.createElement('div');
@@ -694,7 +701,7 @@ function renderFilterBar(): void {
     }
 
     const effortLabel = document.createElement('label');
-    effortLabel.className = 'graph-filter-field';
+    effortLabel.className = GRAPH_FILTER_FIELD;
     const effortSpan = document.createElement('span');
     effortSpan.textContent = 'Effort estimate';
     const effortSelect = document.createElement('select');
@@ -715,7 +722,7 @@ function renderFilterBar(): void {
     row.append(effortLabel);
 
     const strideLabel = document.createElement('label');
-    strideLabel.className = 'graph-filter-field';
+    strideLabel.className = GRAPH_FILTER_FIELD;
     const strideSpan = document.createElement('span');
     strideSpan.textContent = 'Stride';
     const strideSelect = document.createElement('select');
@@ -731,7 +738,7 @@ function renderFilterBar(): void {
     row.append(strideLabel);
 
     const statusLabel = document.createElement('label');
-    statusLabel.className = 'graph-filter-field';
+    statusLabel.className = GRAPH_FILTER_FIELD;
     const statusSpan = document.createElement('span');
     statusSpan.textContent = 'Moment status';
     const statusSelect = document.createElement('select');
@@ -746,7 +753,7 @@ function renderFilterBar(): void {
     row.append(statusLabel);
 
     const assignLabel = document.createElement('label');
-    assignLabel.className = 'graph-filter-field';
+    assignLabel.className = GRAPH_FILTER_FIELD;
     const assignSpan = document.createElement('span');
     assignSpan.textContent = 'Assigned to me';
     const assignSelect = document.createElement('select');
@@ -754,7 +761,7 @@ function renderFilterBar(): void {
     assignSelect.className = 'graph-filter-select';
     assignSelect.append(
         createOption('all', 'All', graphState.filters.assignment === 'all'),
-        createOption('assigned-to-me', 'Assigned to me', graphState.filters.assignment === 'assigned-to-me'),
+        createOption(ASSIGNED_TO_ME, 'Assigned to me', graphState.filters.assignment === ASSIGNED_TO_ME),
     );
     assignLabel.append(assignSpan, assignSelect);
     row.append(assignLabel);
@@ -1005,12 +1012,15 @@ function updateFilterSummary(metrics: FilterMetrics): void {
     const visibleLabel = `${metrics.visibleNodes} visible promise${metrics.visibleNodes === 1 ? '' : 's'}`;
     const totalLabel = `${graphState.totalRenderableNodes} total promise${graphState.totalRenderableNodes === 1 ? '' : 's'}`;
 
+    const hiddenSuffix = metrics.hiddenNodes > 0 ? ' (' + metrics.hiddenNodes + ' hidden)' : '';
     if (metrics.directMatches === metrics.visibleNodes) {
-        summaryElement.textContent = `Showing ${visibleLabel} of ${totalLabel}${metrics.hiddenNodes > 0 ? ` (${metrics.hiddenNodes} hidden)` : ''}.`;
+        summaryElement.textContent = 'Showing ' + visibleLabel + ' of ' + totalLabel + hiddenSuffix + '.';
         return;
     }
 
-    summaryElement.textContent = `Showing ${visibleLabel} of ${totalLabel} (${metrics.directMatches} direct match${metrics.directMatches === 1 ? '' : 'es'}${metrics.hiddenNodes > 0 ? `, ${metrics.hiddenNodes} hidden` : ''}).`;
+    const matchLabel = 'direct match' + (metrics.directMatches === 1 ? '' : 'es');
+    const hiddenExtra = metrics.hiddenNodes > 0 ? ', ' + metrics.hiddenNodes + ' hidden' : '';
+    summaryElement.textContent = 'Showing ' + visibleLabel + ' of ' + totalLabel + ' (' + metrics.directMatches + ' ' + matchLabel + hiddenExtra + ').';
 }
 
 /**
@@ -1033,7 +1043,6 @@ function findFirstSearchMatch(treeData: GraphNode): GraphNode | undefined {
         }
     }
 
-    return;
 }
 
 /**

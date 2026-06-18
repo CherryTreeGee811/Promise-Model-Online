@@ -52,7 +52,7 @@ export function getStatusHtml(statusOrColor: string): string {
 /**
  * Normalize a status color string into a bucket key for grouping/filtering.
  * @param {string} statusColor - Raw status color string.
- * @returns {string} One of "done", "blocked", "inprogress", "todo", or "other".
+ * @returns {string} One of "done", "blocked", "inprogress", "not started", or "other".
  */
 export function getStatusBucket(statusColor: string): string {
     const normalized = (statusColor ?? '').trim().toLowerCase();

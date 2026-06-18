@@ -10,6 +10,10 @@ import { openStrideCreateModal } from '../utils/stride-create-modal.ts';
 
 import { getIterations, getStridesByIteration, getMomentsByStride, getMomentsByIteration, getProjectMembers, getMyPermission, progressStride } from './api.ts';
 
+const EFFORT_ESTIMATE_LABEL = 'Effort estimate';
+const IS_COLLAPSED = 'is-collapsed';
+const BTN_SM_CLASSES = BTN_SM_CLASSES;
+
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues: Record<string, number> = {
     XS: 1, S: 2, M: 3, L: 5, XL: 8, XXL: 13, XXXL: 21
@@ -201,7 +205,7 @@ function estimateDropdownHtml(momentSeq: number | string, currentEstimate: strin
     select.className = 'estimate-dropdown';
     select.dataset.momentId = String(momentSeq);
     select.dataset.currentEstimate = currentEstimate ?? '';
-    select.setAttribute('aria-label', 'Effort estimate');
+    select.setAttribute('aria-label', EFFORT_ESTIMATE_LABEL);
     return select;
 }
 
@@ -342,7 +346,7 @@ function boardHeaderHtml(title: string, isCollapsed: boolean, extraActionsElemen
 function setBoardCollapsed(board: HTMLElement, isCollapsed: boolean): void {
     if (!board) return;
 
-    board.classList.toggle('is-collapsed', isCollapsed);
+    board.classList.toggle(IS_COLLAPSED, isCollapsed);
 
     const content = boardContentElement(board);
     if (content) {
@@ -486,7 +490,7 @@ function momentGraphLinkHtml(seqNumber: number | string): HTMLElement | undefine
 
     const a = document.createElement('a');
     a.href = href;
-    a.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+    a.className = BTN_SM_CLASSES;
     a.setAttribute('aria-label', `Open graph view focused on moment ${seqNumber}`);
     const index = document.createElement('i');
     index.className = 'bi bi-diagram-3';
@@ -715,6 +719,150 @@ function findMomentRow(momentId: number | string): HTMLElement | null {
     return document.querySelector(`tr[data-moment-id="${CSS.escape(String(momentId))}"]`);
 }
 
+async function handleStatusChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
+    const momentId = parseInt(select.dataset.momentId!, 10);
+    const previous = select.value;
+    try {
+        const updated = await updateMomentStatus(owner, project, momentId, select.value) as Record<string, unknown>;
+        const row = findMomentRow(momentId);
+        if (row) updateStatusBadge(row, updated.status as string);
+    } catch {
+        select.value = previous;
+        alert('Failed to update status');
+    }
+}
+
+async function handleEstimateChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
+    const momentId = parseInt(select.dataset.momentId!, 10);
+    const previous = select.value;
+    try {
+        const estimate = select.value === '' ? undefined : select.value;
+        await updateMomentEstimate(owner, project, momentId, estimate);
+        const row = findMomentRow(momentId);
+        const card = row?.closest('.stride-card') as HTMLElement | null;
+        if (card) updateStrideTotalEffortFromDom(card);
+    } catch {
+        select.value = previous;
+        alert('Failed to update estimate');
+    }
+}
+
+async function handleOwnerChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
+    const momentId = parseInt(select.dataset.momentId!, 10);
+    const previous = select.value;
+    try {
+        let newOwnerId: number | undefined;
+        if (select.value) newOwnerId = parseInt(select.value, 10);
+        const updated = await updateMomentOwner(owner, project, momentId, newOwnerId) as Record<string, unknown>;
+        select.value = String(updated.ownerId ?? '');
+    } catch {
+        select.value = previous;
+        alert('Failed to update owner');
+    }
+}
+
+async function handleTypeChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
+    const momentId = parseInt(select.dataset.momentId!, 10);
+    const newType = select.value;
+    const previous = select.dataset.currentType || newType;
+    try {
+        await updateMomentType(owner, project, momentId, newType);
+        select.dataset.currentType = newType;
+    } catch {
+        select.value = previous;
+        alert('Failed to update type');
+    }
+}
+
+async function handleViewNav(event: MouseEvent, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<boolean> {
+    const viewLink = (event.target as HTMLElement).closest('a[data-moment-view]');
+    if (viewLink) {
+        event.preventDefault();
+        void navigate(viewLink.getAttribute('href')!, navContentDiv, contentDiv);
+        return true;
+    }
+    return false;
+}
+
+async function handleMoveToBacklog(button: HTMLElement, owner: string, project: string): Promise<void> {
+    const momentId = parseInt(button.dataset.momentId!, 10);
+    promptMoveToBacklog(momentId, async () => {
+        const updated = await assignMomentToStride(owner, project, momentId, undefined) as Record<string, unknown>;
+        preserveScroll(() => {
+            const row = findMomentRow(momentId);
+            const origCard = row?.closest('.stride-card') as HTMLElement | null;
+            if (row) row.remove();
+            const tbody = ensureBacklogTbody();
+            if (tbody) tbody.append(createBacklogRow(updated));
+            if (origCard) {
+                updateStrideTotalEffortFromDom(origCard);
+                ensureNoItemsPlaceholder(origCard);
+            }
+        });
+    });
+}
+
+async function handleMoveToStride(button: HTMLElement, owner: string, project: string): Promise<void> {
+    const momentId = parseInt(button.dataset.momentId!, 10);
+    const row = button.closest('tr') as HTMLElement | null;
+    const select = row?.querySelector('.backlog-target-stride') as HTMLSelectElement | null;
+    let strideId: number | undefined;
+    if (select) strideId = parseInt(select.value, 10);
+    if (!strideId) return;
+    promptMoveToStride(momentId, strideId, async () => {
+        const updated = await assignMomentToStride(owner, project, momentId, strideId) as Record<string, unknown>;
+        preserveScroll(() => {
+            findMomentRow(momentId)?.remove();
+            const tbody = ensureStrideTbody(strideId);
+            const targetCard = document.querySelector('.stride-card[data-stride-id="' + CSS.escape(String(strideId)) + '"]') as HTMLElement | null;
+            if (tbody) tbody.append(createStrideRow(updated));
+            if (targetCard) {
+                updateStrideTotalEffortFromDom(targetCard);
+                removeNoItemsPlaceholder(targetCard);
+            }
+        });
+    });
+}
+
+async function handleProgressStride(button: HTMLElement, owner: string, project: string): Promise<void> {
+    const strideId = parseInt(button.dataset.strideId!, 10);
+    if (!(await promptProgressStride(strideId))) return;
+    try {
+        await progressStride(owner, project, strideId);
+        const successElement = document.querySelector('#success-text');
+        if (successElement) successElement.textContent = '';
+        const { moved, targetVisible: isTargetVisible } = preserveScroll(() =>
+            progressStrideDomUpdate(strideId)
+        ) as { moved: number; targetVisible: boolean };
+        if (successElement) {
+            if (moved === 0) {
+                successElement.textContent = 'Stride progressed. No unfinished moments to move.';
+            } else if (isTargetVisible) {
+                successElement.textContent = 'Stride progressed. Moved ' + moved + ' moment(s) to the next stride.';
+            } else {
+                successElement.textContent = 'Stride progressed. Moved ' + moved + ' moment(s).';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to progress stride', error);
+        alert('Failed to progress stride');
+    }
+}
+
+async function handleStrideActions(event: MouseEvent, owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    if (await handleViewNav(event, navContentDiv, contentDiv)) return;
+    const button = (event.target as HTMLElement).closest('.move-to-backlog-btn, .move-to-stride-from-backlog-btn, .progress-stride-btn') as HTMLElement | null;
+    if (!button) return;
+    if (button.classList.contains('move-to-backlog-btn')) {
+        await handleMoveToBacklog(button, owner, project);
+    } else if (button.classList.contains('move-to-stride-from-backlog-btn')) {
+        await handleMoveToStride(button, owner, project);
+    } else if (button.classList.contains('progress-stride-btn')) {
+        await handleProgressStride(button, owner, project);
+    }
+}
+
+
 /**
  * Ensure the backlog section has a table tbody element, creating the board structure if needed.
  * @returns {HTMLElement|undefined} The backlog tbody element, or undefined.
@@ -798,7 +946,7 @@ function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
     const viewLink = document.createElement('a');
     viewLink.href = `/${_state.cachedOwner}/${_state.cachedProject}/moments/${moment.sequenceNumber as string}`;
     viewLink.dataset.momentView = 'true';
-    viewLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+    viewLink.className = BTN_SM_CLASSES;
     viewLink.textContent = 'View';
     actionsDiv.append(viewLink);
     tdActions.append(actionsDiv);
@@ -897,7 +1045,7 @@ function createStrideRow(moment: Record<string, unknown>): HTMLElement {
     const viewLink = document.createElement('a');
     viewLink.href = `/${_state.cachedOwner}/${_state.cachedProject}/moments/${moment.sequenceNumber as string}`;
     viewLink.dataset.momentView = 'true';
-    viewLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+    viewLink.className = BTN_SM_CLASSES;
     viewLink.textContent = 'View';
     actionsDiv.append(viewLink);
     tdActions.append(actionsDiv);
@@ -927,177 +1075,25 @@ function createStrideRow(moment: Record<string, unknown>): HTMLElement {
 function bindInlineMomentControls(root: HTMLElement | null, owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     if (!root) return;
 
-    // Prevent double binding ON ROOT (not elements)
     if (root.dataset.bound === '1') return;
     root.dataset.bound = '1';
 
     root.addEventListener('change', async (event) => {
         const target = event.target as HTMLElement;
 
-        // STATUS
         if (target.matches('.status-dropdown')) {
-            const momentId = parseInt((target as HTMLSelectElement).dataset.momentId!, 10);
-            const previous = (target as HTMLSelectElement).value;
-
-            try {
-                const updated = await updateMomentStatus(owner, project, momentId, (target as HTMLSelectElement).value) as Record<string, unknown>;
-                const row = findMomentRow(momentId);
-                if (row) updateStatusBadge(row, updated.status as string);
-            } catch {
-                (target as HTMLSelectElement).value = previous;
-                alert('Failed to update status');
-            }
-        }
-
-        // ESTIMATE
-        if (target.matches('.estimate-dropdown') || target.matches('.estimate-dropdown-mobile')) {
-            const momentId = parseInt((target as HTMLSelectElement).dataset.momentId!, 10);
-            const previous = (target as HTMLSelectElement).value;
-
-            try {
-                const estimate = (target as HTMLSelectElement).value === '' ? undefined : (target as HTMLSelectElement).value;
-                await updateMomentEstimate(owner, project, momentId, estimate);
-                // Recalculate totals for the containing stride card immediately
-                const row = findMomentRow(momentId);
-                const card = row?.closest('.stride-card') as HTMLElement | null;
-                if (card) updateStrideTotalEffortFromDom(card);
-            } catch {
-                (target as HTMLSelectElement).value = previous;
-                alert('Failed to update estimate');
-            }
-        }
-
-        // OWNER
-        if (target.matches('.owner-dropdown')) {
-            const momentId = parseInt((target as HTMLSelectElement).dataset.momentId!, 10);
-            const previous = (target as HTMLSelectElement).value;
-
-            try {
-                let newOwnerId;
-                if ((target as HTMLSelectElement).value) {
-                    newOwnerId = parseInt((target as HTMLSelectElement).value, 10);
-                }
-                const updated = await updateMomentOwner(owner, project, momentId, newOwnerId) as Record<string, unknown>;
-                (target as HTMLSelectElement).value = String(updated.ownerId ?? '');
-            } catch {
-                (target as HTMLSelectElement).value = previous;
-                alert('Failed to update owner');
-            }
-        }
-
-        // TYPE
-        if (target.matches('.moment-type-dropdown')) {
-            const momentId = parseInt((target as HTMLSelectElement).dataset.momentId!, 10);
-            const newType = (target as HTMLSelectElement).value;
-            const previous = (target as HTMLSelectElement).dataset.currentType || newType;
-            try {
-                await updateMomentType(owner, project, momentId, newType);
-                (target as HTMLSelectElement).dataset.currentType = newType;
-            } catch {
-                (target as HTMLSelectElement).value = previous;
-                alert('Failed to update type');
-            }
+            await handleStatusChange(target as HTMLSelectElement, owner, project);
+        } else if (target.matches('.estimate-dropdown') || target.matches('.estimate-dropdown-mobile')) {
+            await handleEstimateChange(target as HTMLSelectElement, owner, project);
+        } else if (target.matches('.owner-dropdown')) {
+            await handleOwnerChange(target as HTMLSelectElement, owner, project);
+        } else if (target.matches('.moment-type-dropdown')) {
+            await handleTypeChange(target as HTMLSelectElement, owner, project);
         }
     });
 
     root.addEventListener('click', async (event) => {
-        // Handle View navigation (NO REFRESH)
-        const viewLink = (event.target as HTMLElement).closest('a[data-moment-view]');
-        if (viewLink) {
-            event.preventDefault();
-
-            void navigate(viewLink.getAttribute('href')!, navContentDiv, contentDiv);
-
-            return;
-        }
-
-        const button = (event.target as HTMLElement).closest(
-            '.move-to-backlog-btn, .move-to-stride-from-backlog-btn, .progress-stride-btn'
-        ) as HTMLElement | null;
-
-        if (!button) return;
-
-        // Move to Backlog
-        if (button.classList.contains('move-to-backlog-btn')) {
-            const momentId = parseInt(button.dataset.momentId!, 10);
-            promptMoveToBacklog(momentId, async () => {
-                const updated = await assignMomentToStride(owner, project, momentId, undefined) as Record<string, unknown>;
-                preserveScroll(() => {
-                    const row = findMomentRow(momentId);
-                    const origCard = row?.closest('.stride-card') as HTMLElement | null;
-                    if (row) row.remove();
-
-                    const tbody = ensureBacklogTbody();
-                    if (tbody) {
-                        tbody.append(createBacklogRow(updated));
-                    }
-
-                    if (origCard) {
-                        updateStrideTotalEffortFromDom(origCard);
-                        ensureNoItemsPlaceholder(origCard);
-                    }
-                });
-            });
-        }
-
-        // Move to Stride
-        if (button.classList.contains('move-to-stride-from-backlog-btn')) {
-            const momentId = parseInt(button.dataset.momentId!, 10);
-            const row = button.closest('tr') as HTMLElement | null;
-            const select = row?.querySelector('.backlog-target-stride') as HTMLSelectElement | null;
-            let strideId;
-            if (select) strideId = parseInt(select.value, 10);
-
-            if (!strideId) return;
-            promptMoveToStride(momentId, strideId, async () => {
-                const updated = await assignMomentToStride(owner, project, momentId, strideId) as Record<string, unknown>;
-                preserveScroll(() => {
-                    // Remove backlog row
-                    findMomentRow(momentId)?.remove();
-
-                    const tbody = ensureStrideTbody(strideId);
-                    const targetCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(String(strideId))}"]`) as HTMLElement | null;
-                    if (tbody) {
-                        tbody.append(createStrideRow(updated));
-                    }
-
-                    if (targetCard) {
-                        updateStrideTotalEffortFromDom(targetCard);
-                        removeNoItemsPlaceholder(targetCard);
-                    }
-                });
-            });
-        }
-
-        // Progress Stride
-        if (button.classList.contains('progress-stride-btn')) {
-            const strideId = parseInt(button.dataset.strideId!, 10);
-
-            if (!(await promptProgressStride(strideId))) return;
-
-            try {
-                await progressStride(owner, project, strideId);
-
-                const successElement = document.querySelector('#success-text');
-                if (successElement) successElement.textContent = '';
-
-                const { moved, targetVisible: isTargetVisible } = preserveScroll(() =>
-                    progressStrideDomUpdate(strideId)
-                ) as { moved: number; targetVisible: boolean };
-
-                if (successElement) {
-                    if (moved === 0) {
-                        successElement.textContent = 'Stride progressed. No unfinished moments to move.';
-                    } else if (isTargetVisible) {
-                        successElement.textContent = `Stride progressed. Moved ${moved} moment(s) to the next stride.`;
-                    } else {
-                        successElement.textContent = `Stride progressed. Moved ${moved} moment(s) to the next stride (not shown on this page).`;
-                    }
-                }
-            } catch {
-                alert('Failed to progress stride');
-            }
-        }
+        await handleStrideActions(event, owner, project, navContentDiv, contentDiv);
     });
 }
 
@@ -1298,7 +1294,7 @@ export async function loadStridesList(owner: string, project: string, navContent
                     estSel.className = 'estimate-dropdown';
                     estSel.dataset.momentId = String(m.sequenceNumber);
                     estSel.dataset.currentEstimate = (m.effortEstimate as string | null) ?? '';
-                    estSel.setAttribute('aria-label', 'Effort estimate');
+                    estSel.setAttribute('aria-label', EFFORT_ESTIMATE_LABEL);
                     tdEstimate.append(estSel);
                     tr.append(tdEstimate);
 
@@ -1324,7 +1320,7 @@ export async function loadStridesList(owner: string, project: string, navContent
                     estMobile.className = 'estimate-dropdown-mobile form-select form-select-sm';
                     estMobile.dataset.momentId = String(m.sequenceNumber);
                     estMobile.dataset.currentEstimate = (m.effortEstimate as string | null) ?? '';
-                    estMobile.setAttribute('aria-label', 'Effort estimate');
+                    estMobile.setAttribute('aria-label', EFFORT_ESTIMATE_LABEL);
                     const defaultOption = document.createElement('option');
                     defaultOption.value = '';
                     defaultOption.textContent = '–';
@@ -1341,7 +1337,7 @@ export async function loadStridesList(owner: string, project: string, navContent
                     const vLink = document.createElement('a');
                     vLink.href = `/${owner}/${project}/moments/${m.sequenceNumber as string}`;
                     vLink.dataset.momentView = 'true';
-                    vLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+                    vLink.className = BTN_SM_CLASSES;
                     vLink.textContent = 'View';
                     aDiv.append(vLink);
                     tdActions.append(aDiv);
@@ -1438,7 +1434,7 @@ export async function loadStridesList(owner: string, project: string, navContent
                     const vLink = document.createElement('a');
                     vLink.href = `/${owner}/${project}/moments/${m.sequenceNumber as string}`;
                     vLink.dataset.momentView = 'true';
-                    vLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+                    vLink.className = BTN_SM_CLASSES;
                     vLink.textContent = 'View';
                     aDiv.append(vLink);
                     tdActions.append(aDiv);

@@ -90,39 +90,21 @@ function setValidity(element: HTMLElement, isValid: boolean, message: string): v
  * @param {Record<string, string>} allValues - All form field values for cross-field rules.
  * @returns {string | undefined} The error message, or undefined if valid.
  */
+const ruleHandlers: Record<string, (value: string, rule: ValidationRule, allValues: Record<string, string>) => string | undefined> = {
+  required: (v, r) => v.length === 0 ? r.message : undefined,
+  minLength: (v, r) => v.length < (r.value as number) ? r.message : undefined,
+  maxLength: (v, r) => v.length > (r.value as number) ? r.message : undefined,
+  pattern: (v, r) => {
+    const regex = r.value instanceof RegExp ? r.value : new RegExp(r.value as string);
+    return regex.test(v) ? undefined : r.message;
+  },
+  email: (v, r) => v.length > 0 && !EMAIL_REGEX.test(v) ? r.message : undefined,
+  match: (v, r, all) => v === all[r.matchField ?? ''] ? undefined : r.message,
+};
+
 function evaluateRule(value: string, rule: ValidationRule, allValues: Record<string, string>): string | undefined {
-  switch (rule.type) {
-    case 'required': {
-      return value.length === 0 ? rule.message : undefined;
-    }
-
-    case 'minLength': {
-      return value.length < (rule.value as number) ? rule.message : undefined;
-    }
-
-    case 'maxLength': {
-      return value.length > (rule.value as number) ? rule.message : undefined;
-    }
-
-    case 'pattern': {
-      // eslint-disable-next-line security/detect-non-literal-regexp
-      const regex = rule.value instanceof RegExp ? rule.value : new RegExp(rule.value as string);
-      return regex.test(value) ? undefined : rule.message;
-    }
-
-
-    case 'email': {
-      return value.length > 0 && !EMAIL_REGEX.test(value) ? rule.message : undefined;
-    }
-
-    case 'match': {
-      return value === allValues[rule.matchField ?? ''] ? undefined : rule.message;
-    }
-
-    default: {
-      return;
-    }
-  }
+  const handler = ruleHandlers[rule.type];
+  return handler ? handler(value, rule, allValues) : undefined;
 }
 
 /**
@@ -183,7 +165,6 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     }
 
     setValidity(element, true, '');
-    return;
   }
 
   /**

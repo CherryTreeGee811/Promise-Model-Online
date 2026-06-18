@@ -40,7 +40,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
   /**
    * Detect an @ or # trigger at the cursor position in the textarea.
-   * @returns {{ trigger: string, query: string, start: number } | null} The trigger info or null.
+   * @returns {object | undefined} The trigger info with trigger, query, and start, or undefined.
    */
   function getTriggerAtCursor(): void | { trigger: string; query: string; start: number } {
     const pos = textarea.selectionStart;
@@ -64,7 +64,6 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       }
     }
 
-    return;
   }
 
   /**
@@ -96,7 +95,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     style.width = textarea.clientWidth + 'px';
     style.height = 'auto';
     style.whiteSpace = 'pre-wrap';
-    style.wordWrap = 'break-word';
+    style.overflowWrap = 'break-word';
 
     const textBefore = textarea.value.slice(0, Math.max(0, charIndex));
     mirror.textContent = textBefore;

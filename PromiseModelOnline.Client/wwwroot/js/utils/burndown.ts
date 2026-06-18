@@ -10,6 +10,166 @@ type BurndownPoint = { date: string | Date; remainingEffort: number; idealRemain
  * @param {BurndownPoint[]} points - Ordered burndown data points.
  * @returns {Promise<void>} Promise that resolves when the chart is rendered.
  */
+/** @returns {boolean} */
+function hasBurndownData(element: HTMLElement, points: BurndownPoint[]): boolean {
+    element.replaceChildren();
+    if (!points || points.length === 0) {
+        element.replaceChildren(renderEmptyStateSection({
+            icon: 'bi-graph-down',
+            title: 'No burndown data available.',
+            description: 'Burndown data will appear once moments have status updates.',
+        }));
+        return false;
+    }
+    return true;
+}
+
+/** @returns {{startDate: Date, endDate: Date, days: number[], actualPoints: number[], finalIdeal: number[], lastDay: number}} */
+function processBurndownPoints(points: BurndownPoint[]): { startDate: Date; endDate: Date; days: number[]; actualPoints: number[]; finalIdeal: number[]; lastDay: number } {
+    const sorted = points.toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const startDate = new Date(sorted[0].date);
+    const endDate = new Date(sorted.at(-1)!.date);
+    const days = sorted.map((_, index) => index);
+    const actualPoints = sorted.map(p => p.remainingEffort);
+    const idealPoints = sorted.map(p => p.idealRemaining ?? 0);
+    const startRemaining = actualPoints[0];
+    const lastDay = days.at(-1)!;
+    const finalIdeal = idealPoints.every(v => v === 0) && startRemaining > 0 && lastDay > 0
+        ? days.map(day => Math.max(0, startRemaining - (startRemaining / lastDay) * day))
+        : idealPoints;
+    return { startDate, endDate, days, actualPoints, finalIdeal, lastDay };
+}
+
+function addBurndownTooltip(svg: any, d3: any, xScale: any, days: number[], sorted: BurndownPoint[]): void {
+    const tooltip = d3.select('body').append('div')
+        .attr('class', 'burndown-tooltip')
+        .style('position', 'absolute')
+        .style('background', 'rgba(0,0,0,0.75)')
+        .style('color', '#fff')
+        .style('padding', '6px 12px')
+        .style('border-radius', '20px')
+        .style('font-size', '12px')
+        .style('pointer-events', 'none')
+        .style('opacity', 0)
+        .style('transition', 'opacity 0.2s')
+        .style('z-index', '1000')
+        .style('font-family', 'system-ui, -apple-system, sans-serif');
+
+    svg.selectAll('.actual-point')
+        .data(sorted)
+        .enter()
+        .append('circle')
+        .attr('cx', (d: BurndownPoint, index: number) => xScale(days[index]))
+        .attr('cy', (d: BurndownPoint) => xScale(d.remainingEffort))
+        .attr('r', 5)
+        .attr('fill', '#dc3545')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 1.5)
+        .attr('cursor', 'pointer')
+        .on('mouseover', function(event: MouseEvent, d: BurndownPoint) {
+            const formattedDate = new Date(d.date).toLocaleDateString();
+            d3.select(event.currentTarget as SVGCircleElement).attr('r', 8);
+            tooltip.transition().duration(150).style('opacity', 0.9);
+            tooltip.html('<strong>' + formattedDate + '</strong><br/>Remaining: ' + d.remainingEffort + ' pts')
+                .style('left', (event.pageX + 12) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mousemove', function(event: MouseEvent) {
+            tooltip.style('left', (event.pageX + 12) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function(event: MouseEvent) {
+            d3.select(event.currentTarget as SVGCircleElement).attr('r', 5);
+            tooltip.transition().duration(200).style('opacity', 0);
+        });
+}
+
+function drawLine(svg: any, data: any[], lineGen: any, className: string, stroke: string, width: number, fill: string): void {
+    svg.append('path')
+        .datum(data)
+        .attr('class', className)
+        .attr('d', (d: any) => lineGen(d))
+        .attr('fill', fill)
+        .attr('stroke', stroke)
+        .attr('stroke-width', width)
+        .attr('stroke-linecap', 'round');
+}
+
+function drawArea(svg: any, data: any[], areaGen: any, className: string, fill: string, opacity: number): void {
+    if (data.length < 2) return;
+    svg.append('path')
+        .datum(data)
+        .attr('class', className)
+        .attr('d', areaGen)
+        .attr('fill', fill)
+        .attr('fill-opacity', opacity)
+        .attr('stroke', 'none');
+}
+
+function handleCrossPoint(diffLeft: number, diffRight: number, crossPoint: { x: number; y0: number; y1: number; behind: boolean }, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
+    const behindCopy = { ...crossPoint, behind: true };
+    const aheadCopy = { ...crossPoint, behind: false };
+    if (diffLeft >= 0) behind.push(behindCopy);
+    else ahead.push(aheadCopy);
+    if (diffRight >= 0) behind.push(behindCopy);
+    else ahead.push(aheadCopy);
+}
+
+function processSegment(index: number, days: number[], actualPoints: number[], finalIdeal: number[], xScale: any, yScale: any, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
+    const leftDay = days[index];
+    const rightDay = days[index + 1];
+    const actualLeft = actualPoints[index];
+    const actualRight = actualPoints[index + 1];
+    const idealLeft = finalIdeal[index];
+    const idealRight = finalIdeal[index + 1];
+
+    const diffLeft = actualLeft - idealLeft;
+    const diffRight = actualRight - idealRight;
+
+    const leftPoint = {
+        x: xScale(leftDay),
+        y0: yScale(idealLeft),
+        y1: yScale(actualLeft),
+        behind: diffLeft >= 0
+    };
+    if (leftPoint.behind) behind.push(leftPoint);
+    else ahead.push(leftPoint);
+
+    if (diffLeft * diffRight < 0) {
+        const t = Math.abs(diffLeft) / (Math.abs(diffLeft) + Math.abs(diffRight));
+        const crossDay = leftDay + t * (rightDay - leftDay);
+        const crossIdeal = idealLeft + t * (idealRight - idealLeft);
+        const crossActual = actualLeft + t * (actualRight - actualLeft);
+
+        handleCrossPoint(diffLeft, diffRight, {
+            x: xScale(crossDay),
+            y0: yScale(crossIdeal),
+            y1: yScale(crossActual),
+            behind: diffRight >= 0
+        }, behind, ahead);
+    }
+}
+
+function buildEnhancedPoints(days: number[], actualPoints: number[], finalIdeal: number[], xScale: any, yScale: any): { enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> } {
+    const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+    const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+
+    for (let index = 0; index < days.length - 1; index++) {
+        processSegment(index, days, actualPoints, finalIdeal, xScale, yScale, behind, ahead);
+    }
+    const lastIndex = days.length - 1;
+    const lastPoint = {
+        x: xScale(days[lastIndex]),
+        y0: yScale(finalIdeal[lastIndex]),
+        y1: yScale(actualPoints[lastIndex]),
+        behind: actualPoints[lastIndex] >= finalIdeal[lastIndex]
+    };
+    if (lastPoint.behind) behind.push(lastPoint);
+    else ahead.push(lastPoint);
+
+    return { enhancedBehind: behind, enhancedAhead: ahead };
+}
+
 export async function drawBurndownChart(container: HTMLElement | string, points: BurndownPoint[]): Promise<void> {
     const element = typeof container === 'string' ? document.querySelector('#' + container) : container;
     if (!element) {
@@ -17,34 +177,10 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
         return;
     }
 
-     
-    element.replaceChildren();
-
-    if (!points || points.length === 0) {
-        element.replaceChildren(renderEmptyStateSection({
-            icon: 'bi-graph-down',
-            title: 'No burndown data available.',
-            description: 'Burndown data will appear once moments have status updates.',
-        }));
-        return;
-    }
+    if (!hasBurndownData(element, points)) return;
 
     const d3 = await loadD3() as any;
-
-    const sorted = points.toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const startDate = new Date(sorted[0].date);
-    const endDate = new Date(sorted.at(-1)!.date);
-
-    const days = sorted.map((_, index) => index);
-    const actualPoints = sorted.map(p => p.remainingEffort);
-    const idealPoints = sorted.map(p => p.idealRemaining ?? 0);
-
-    const startRemaining = actualPoints[0];
-    const lastDay = days.at(-1)!;
-
-    const finalIdeal = idealPoints.every(v => v === 0) && startRemaining > 0 && lastDay > 0
-        ? days.map(day => Math.max(0, startRemaining - (startRemaining / lastDay) * day))
-        : idealPoints;
+    const { startDate, endDate, days, actualPoints, finalIdeal, lastDay } = processBurndownPoints(points);
 
     const width = element.clientWidth || 800;
     const height = 400;
@@ -128,160 +264,20 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
         .attr('stroke', '#e9ecef')
         .attr('stroke-dasharray', '4 4');
 
-    const enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
-    const enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
-
-    for (let index = 0; index < days.length - 1; index++) {
-        const leftDay = days[index];
-        const rightDay = days[index + 1];
-        const actualLeft = actualPoints[index];
-        const actualRight = actualPoints[index + 1];
-        const idealLeft = finalIdeal[index];
-        const idealRight = finalIdeal[index + 1];
-
-        const diffLeft = actualLeft - idealLeft;
-        const diffRight = actualRight - idealRight;
-
-        const leftPoint = {
-            x: xScale(leftDay),
-            y0: yScale(idealLeft),
-            y1: yScale(actualLeft),
-            behind: diffLeft >= 0
-        };
-        if (leftPoint.behind) enhancedBehind.push(leftPoint);
-        else enhancedAhead.push(leftPoint);
-
-        if (diffLeft * diffRight < 0) {
-            const t = Math.abs(diffLeft) / (Math.abs(diffLeft) + Math.abs(diffRight));
-            const crossDay = leftDay + t * (rightDay - leftDay);
-            const crossIdeal = idealLeft + t * (idealRight - idealLeft);
-            const crossActual = actualLeft + t * (actualRight - actualLeft);
-
-            const crossPoint = {
-                x: xScale(crossDay),
-                y0: yScale(crossIdeal),
-                y1: yScale(crossActual),
-                behind: diffRight >= 0
-            };
-
-            const behindCopy = { ...crossPoint, behind: true };
-            const aheadCopy = { ...crossPoint, behind: false };
-            if (diffLeft >= 0) {
-                enhancedBehind.push(behindCopy);
-            } else {
-                enhancedAhead.push(aheadCopy);
-            }
-            if (diffRight >= 0) {
-                enhancedBehind.push(behindCopy);
-            } else {
-                enhancedAhead.push(aheadCopy);
-            }
-        }
-    }
-    const lastIndex = days.length - 1;
-    const lastPoint = {
-        x: xScale(days[lastIndex]),
-        y0: yScale(finalIdeal[lastIndex]),
-        y1: yScale(actualPoints[lastIndex]),
-        behind: actualPoints[lastIndex] >= finalIdeal[lastIndex]
-    };
-    if (lastPoint.behind) enhancedBehind.push(lastPoint);
-    else enhancedAhead.push(lastPoint);
+    const { enhancedBehind, enhancedAhead } = buildEnhancedPoints(days, actualPoints, finalIdeal, xScale, yScale);
 
     const behindData = enhancedBehind.map(d => d);
     const aheadData = enhancedAhead.map(d => d);
 
-    const areaGen = d3.area()
-        .x(d => d.x)
-        .y0(d => d.y0)
-        .y1(d => d.y1)
-        .curve(d3.curveLinear);
+    const areaGen = d3.area().x(d => d.x).y0(d => d.y0).y1(d => d.y1).curve(d3.curveLinear);
+    drawArea(svg, behindData, areaGen, 'area-behind', '#dc3545', 0.18);
+    drawArea(svg, aheadData, areaGen, 'area-ahead', '#28a745', 0.2);
 
-    if (behindData.length >= 2) {
-        svg.append('path')
-            .datum(behindData)
-            .attr('class', 'area-behind')
-            .attr('d', areaGen)
-            .attr('fill', '#dc3545')
-            .attr('fill-opacity', 0.18)
-            .attr('stroke', 'none');
-    }
+    const lineGen = d3.line().x((d, index) => xScale(days[index])).y(d => yScale(d)).curve(d3.curveLinear);
+    drawLine(svg, finalIdeal, lineGen, 'ideal-line', '#6c757d', 2, 'none');
+    drawLine(svg, actualPoints, lineGen, 'actual-line', '#dc3545', 2.5, 'none');
 
-    if (aheadData.length >= 2) {
-        svg.append('path')
-            .datum(aheadData)
-            .attr('class', 'area-ahead')
-            .attr('d', areaGen)
-            .attr('fill', '#28a745')
-            .attr('fill-opacity', 0.2)
-            .attr('stroke', 'none');
-    }
-
-    const lineGen = d3.line()
-        .x((d, index) => xScale(days[index]))
-        .y(d => yScale(d))
-        .curve(d3.curveLinear);
-
-    svg.append('path')
-        .datum(finalIdeal)
-        .attr('class', 'ideal-line')
-        .attr('d', d => lineGen(d))
-        .attr('fill', 'none')
-        .attr('stroke', '#6c757d')
-        .attr('stroke-width', 2)
-        .attr('stroke-dasharray', '6 4')
-        .attr('opacity', 0.7);
-
-    svg.append('path')
-        .datum(actualPoints)
-        .attr('class', 'actual-line')
-        .attr('d', d => lineGen(d))
-        .attr('fill', 'none')
-        .attr('stroke', '#dc3545')
-        .attr('stroke-width', 2.5)
-        .attr('stroke-linecap', 'round');
-
-    const tooltip = d3.select('body').append('div')
-        .attr('class', 'burndown-tooltip')
-        .style('position', 'absolute')
-        .style('background', 'rgba(0,0,0,0.75)')
-        .style('color', '#fff')
-        .style('padding', '6px 12px')
-        .style('border-radius', '20px')
-        .style('font-size', '12px')
-        .style('pointer-events', 'none')
-        .style('opacity', 0)
-        .style('transition', 'opacity 0.2s')
-        .style('z-index', '1000')
-        .style('font-family', 'system-ui, -apple-system, sans-serif');
-
-    svg.selectAll('.actual-point')
-        .data(sorted)
-        .enter()
-        .append('circle')
-        .attr('cx', (d, index) => xScale(days[index]))
-        .attr('cy', d => yScale(d.remainingEffort))
-        .attr('r', 5)
-        .attr('fill', '#dc3545')
-        .attr('stroke', 'white')
-        .attr('stroke-width', 1.5)
-        .attr('cursor', 'pointer')
-        .on('mouseover', function(event: MouseEvent, d: BurndownPoint) {
-            const formattedDate = new Date(d.date).toLocaleDateString();
-            d3.select(event.currentTarget as SVGCircleElement).attr('r', 8);
-            tooltip.transition().duration(150).style('opacity', 0.9);
-            tooltip.html(`<strong>${formattedDate}</strong><br/>Remaining: ${d.remainingEffort} pts`)
-                .style('left', (event.pageX + 12) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
-        })
-        .on('mousemove', function(event: MouseEvent) {
-            tooltip.style('left', (event.pageX + 12) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
-        })
-        .on('mouseout', function(event: MouseEvent) {
-            d3.select(event.currentTarget as SVGCircleElement).attr('r', 5);
-            tooltip.transition().duration(200).style('opacity', 0);
-        });
+    addBurndownTooltip(svg, d3, xScale, days, sorted);
 
     const observer = new MutationObserver(() => {
         if (document.body.contains(element)) {

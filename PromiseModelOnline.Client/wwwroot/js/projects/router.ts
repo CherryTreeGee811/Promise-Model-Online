@@ -35,7 +35,7 @@ export async function handleLegacyProjectRoutes(path: string, navContentDiv: HTM
         case '/projects/add': {
             try {
                 await loadTemplate("projects/add.html", contentDiv);
-                void loadAddProjectForm(navContentDiv, contentDiv);
+                loadAddProjectForm(navContentDiv, contentDiv);
             } catch {
                 void loadTemplateWithError(contentDiv, 'add project form')();
             }
@@ -59,7 +59,8 @@ export async function handleLegacyProjectRoutes(path: string, navContentDiv: HTM
 export async function handleProjectScopedRoutes(owner: string, project: string, subPath: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     projectStore.set({ owner, project, permission: undefined, isOwner: false });
 
-    const normalizedSub = subPath.replace(/^\/+/, '').replace(/\/+$/, '');
+    let normalizedSub = subPath.replace(/^\/+/, '');
+    while (normalizedSub.endsWith('/')) normalizedSub = normalizedSub.slice(0, -1);
     const segments = normalizedSub ? normalizedSub.split('/') : [];
 
     if (segments.length === 0) {

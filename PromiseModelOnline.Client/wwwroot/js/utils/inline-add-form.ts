@@ -83,20 +83,7 @@ export function setupAddChildForm(config: AddChildConfig): void {
       const created = await onCreate(statement, extra);
 
       if (created && tbody) {
-        removeInlineEmptyRow(tbody);
-        const row = document.createElement('tr');
-        row.setAttribute(`data-${datasetKey}`, String(created.id));
-        const parser = new DOMParser();
-        const document_ = parser.parseFromString(`<table><tbody>${getRowHtml(created)}</tbody></table>`, 'text/html');
-        const parsedRow = document_.querySelector('tr');
-        if (parsedRow) {
-          row.replaceChildren(...parsedRow.children);
-          const attributeNames = parsedRow.getAttributeNames?.() ?? [];
-          for (const attribute of attributeNames) {
-            if (attribute.startsWith('data-')) row.setAttribute(attribute, parsedRow.getAttribute(attribute)!);
-          }
-        }
-        insertRowBeforeAddRow(tbody, row);
+        insertCreatedRow(tbody, created, datasetKey, getRowHtml, typeSelect);
         statementInput.value = '';
         if (typeSelect) typeSelect.value = 'Story';
         if (onSuccess) onSuccess();
@@ -108,6 +95,30 @@ export function setupAddChildForm(config: AddChildConfig): void {
       submitButton.disabled = false;
     }
   });
+}
+
+/**
+ * @param {HTMLTableSectionElement} tbody
+ * @param {Record<string, unknown>} created
+ * @param {string} datasetKey
+ * @param {(created: Record<string, unknown>) => string} getRowHtml
+ * @param {HTMLSelectElement | undefined} typeSelect
+ */
+function insertCreatedRow(tbody: HTMLTableSectionElement, created: Record<string, unknown>, datasetKey: string, getRowHtml: (created: Record<string, unknown>) => string, typeSelect: HTMLSelectElement | undefined): void {
+  removeInlineEmptyRow(tbody);
+  const row = document.createElement('tr');
+  row.setAttribute('data-' + datasetKey, String(created.id));
+  const parser = new DOMParser();
+  const document_ = parser.parseFromString('<table><tbody>' + getRowHtml(created) + '</tbody></table>', 'text/html');
+  const parsedRow = document_.querySelector('tr');
+  if (parsedRow) {
+    row.replaceChildren(...parsedRow.children);
+    const attributeNames = parsedRow.getAttributeNames?.() ?? [];
+    for (const attribute of attributeNames) {
+      if (attribute.startsWith('data-')) row.setAttribute(attribute, parsedRow.getAttribute(attribute)!);
+    }
+  }
+  insertRowBeforeAddRow(tbody, row);
 }
 
 /**

@@ -165,7 +165,7 @@ export function getChildProgressSummary(nodeData: Record<string, unknown>): stri
     const childCount = (nodeData.childCount as number) ?? 0;
     const completedCount = (nodeData.completedChildCount as number) ?? 0;
 
-    return `${completedCount}/${childCount} ${childCount === 1 ? childLabel : `${childLabel}s`} completed`;
+    return completedCount + '/' + childCount + ' ' + (childCount === 1 ? childLabel : childLabel + 's') + ' completed';
 }
 
 /**
@@ -437,7 +437,6 @@ export function findNodeById(treeData: Record<string, unknown> | undefined, node
         }
     }
 
-    return;
 }
 
 /**
@@ -1132,7 +1131,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
             .attr('preserveAspectRatio', 'xMinYMin meet')
             .attr('width', '100%')
             .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
-            .attr('role', enableZoom ? 'tree' : ((enableLinks as boolean | undefined) ? undefined : 'img'))
+            .attr('role', enableZoom ? 'tree' : undefined)
             .attr('aria-label', ariaLabel);
     }
 

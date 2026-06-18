@@ -31,7 +31,7 @@ export function getGraphProjectIdHintFromUrl(): number | undefined {
  * @returns {OwnerProject} An object with owner and project slugs (both may be null).
  */
 export function getOwnerProjectFromPath(): OwnerProject {
-    const match = location.pathname.match(/^\/([^/]+)\/([^/]+)\//);
+    const match = /^\/([^/]+)\/([^/]+)\//.exec(location.pathname);
     if (match) {
         return { owner: match[1], project: match[2] };
     }
@@ -43,7 +43,7 @@ export function getOwnerProjectFromPath(): OwnerProject {
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {string} focusNodeId - The node ID to focus on in the graph.
- * @returns {string | undefined} The full graph URL with focus parameter, or undefined if any input is missing.
+ * @returns {string | undefined} The graph view URL with focus parameter, or undefined if any input is missing.
  */
 export function buildGraphViewHref(owner: string, project: string, focusNodeId: string): string | undefined {
     const safeOwner = (owner ?? '').trim();
@@ -84,7 +84,6 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
         }
     }
 
-    button.href = href;
 }
 
 /**
@@ -98,7 +97,7 @@ export async function resolveProjectIdForPromise(promiseId: string | number, pre
     if (Number.isNaN(numericPromiseId)) return;
 
     const cached = promiseProjectCache.get(numericPromiseId);
-    if (cached !== null) {
+    if (cached !== undefined) {
         return cached;
     }
 
@@ -113,7 +112,7 @@ export async function resolveProjectIdForPromise(promiseId: string | number, pre
 
     const results = await Promise.all(projectList.map(async (project) => {
         const projectId = toProjectId(project?.id);
-        if (projectId === null) return;
+        if (projectId === undefined) return;
         const promises = await getProjectPromises(project.ownerSlug, project.slug);
         const isMatch = (Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId);
         if (!isMatch) return;
@@ -125,5 +124,4 @@ export async function resolveProjectIdForPromise(promiseId: string | number, pre
         return found;
     }
 
-    return;
 }

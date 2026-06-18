@@ -233,9 +233,10 @@ function renderChanges(changes: AuditChange[] | undefined): string {
         return '<span class="text-muted">No visible field changes</span>';
     }
 
-    return `<ul class="mb-0 ps-3">${visibleChanges.map(change => `
-        <li>${escapeHtml(change.fieldName)}: ${escapeHtml(formatValue(change.before))} → ${escapeHtml(formatValue(change.after))}</li>
-    `).join('')}</ul>`;
+    const items = visibleChanges.map(change =>
+        `<li>${escapeHtml(change.fieldName)}: ${escapeHtml(formatValue(change.before))} → ${escapeHtml(formatValue(change.after))}</li>`
+    ).join('');
+    return `<ul class="mb-0 ps-3">${items}</ul>`;
 }
 
 /**

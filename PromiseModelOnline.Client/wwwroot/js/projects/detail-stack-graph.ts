@@ -378,7 +378,7 @@ export function patchChildMetrics(nodeId: string, children: Record<string, unkno
 
 /**
  * Map a moment status string to a color name for display.
- * @param {string} status - The status value (Done, InProgress, Blocked, Todo).
+ * @param {string} status - The status value (Done, InProgress, Blocked, or not started).
  * @returns {string} The corresponding color name (green, orange, black, red).
  */
 export function momentStatusToColor(status: string): string {

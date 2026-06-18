@@ -164,7 +164,7 @@ jobs:
 
       - name: Run Client UI Test Environment
         shell: bash
-        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d --build
 
       - name: Wait for Client (Nginx)
         shell: bash
@@ -192,12 +192,6 @@ jobs:
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
-
-      - name: Install system deps (cache hit — browsers already cached)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        shell: bash
-        run: |
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
 
       - name: Install system deps (cache hit — browsers already cached)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
@@ -362,6 +356,15 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       # ─── 8. Container & dependency vulnerability scan ───
+
+      - name: Hadolint (all Dockerfiles)
+        if: always()
+        shell: bash
+        run: |
+          for dockerfile in */Dockerfile; do
+            echo "=== Linting $dockerfile ==="
+            docker run --rm -i ghcr.io/hadolint/hadolint < "$dockerfile" || true
+          done
 
       - name: Run Trivy (Dockerfiles + .csproj config)
         if: always()

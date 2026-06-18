@@ -9,7 +9,7 @@ import { loadIterationHistory } from './list.ts';
  * @param {HTMLElement} contentDiv - The main content container element.
  */
 export async function handleIterationRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
-    const match = path.match(/^\/projects\/(\d+)\/iterations$/);
+    const match = /^\/projects\/(\d+)\/iterations$/.exec(path);
     if (match) {
         try {
             await loadTemplate('iterations/list.html', contentDiv);

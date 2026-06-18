@@ -6,6 +6,8 @@ import tseslint from 'typescript-eslint';
 import unicorn from 'eslint-plugin-unicorn';
 import regexp from 'eslint-plugin-regexp';
 import noUnsanitized from 'eslint-plugin-no-unsanitized';
+import sonarjs from 'eslint-plugin-sonarjs';
+import noSecrets from 'eslint-plugin-no-secrets';
 
 const importRules = {
   'import-x/first': 'warn',
@@ -27,12 +29,13 @@ export default tseslint.config(
         signalR: 'readonly',
       },
     },
-    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized, sonarjs, 'no-secrets': noSecrets },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
       ...unicorn.configs.recommended.rules,
       ...regexp.configs['flat/recommended'].rules,
       ...noUnsanitized.configs.recommended.rules,
+      ...sonarjs.configs.recommended.rules,
       'no-unsanitized/property': 'warn',
       'unicorn/filename-case': 'off',
       'unicorn/prefer-number-coercion': 'off',
@@ -64,6 +67,7 @@ export default tseslint.config(
       'prefer-const': 'warn',
       'no-var': 'error',
       'eqeqeq': ['warn', 'smart'],
+      'no-secrets/no-secrets': 'error',
     },
   },
   {
@@ -74,9 +78,9 @@ export default tseslint.config(
         ...globals.es2021,
       },
       parser: tseslint.parser,
-      parserOptions: { projectService: true },
+      parserOptions: { project: true },
     },
-    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized, '@typescript-eslint': tseslint.plugin },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized, '@typescript-eslint': tseslint.plugin, sonarjs, 'no-secrets': noSecrets },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
       ...unicorn.configs.recommended.rules,
@@ -112,9 +116,11 @@ export default tseslint.config(
       'prefer-const': 'warn',
       'no-var': 'error',
       'eqeqeq': ['warn', 'smart'],
+      ...sonarjs.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'error',
+      'no-secrets/no-secrets': 'error',
     },
   },
 );

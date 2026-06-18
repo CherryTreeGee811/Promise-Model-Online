@@ -4,6 +4,30 @@ import { renderEmptyTableRow } from "../utils/empty-table.ts";
 import { fetchProjects } from './api.ts';
 
 /**
+ * @param {HTMLElement} tableBody
+ * @param {HTMLElement} navContentDiv
+ * @param {HTMLElement} contentDiv
+ */
+function showEmptyState(tableBody: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(renderEmptyTableRow({
+        icon: 'bi-folder',
+        title: 'There are no projects yet',
+        description: 'Click "Add Project" to create your first project.',
+        colspan: 2,
+        button: { text: 'Create your first project', icon: 'bi-plus-circle', id: 'empty-state-add-project-btn' },
+    }).outerHTML, 'text/html');
+    tableBody.replaceChildren(...parsed.body.childNodes);
+    const button = document.querySelector('#empty-state-add-project-btn');
+    if (button) {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            void navigate('/projects/add', navContentDiv, contentDiv);
+        });
+    }
+}
+
+/**
  * Load the project listing page, fetching all projects and rendering them in a table.
  * @param {HTMLElement} navContentDiv - The navigation content container.
  * @param {HTMLElement} contentDiv - The main content container.
@@ -35,26 +59,7 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
     try {
         const projects = await fetchProjects();
         if (!projects || projects.length === 0) {
-            const emptyParser = new DOMParser();
-            const emptyDocument = emptyParser.parseFromString(renderEmptyTableRow({
-                icon: 'bi-folder',
-                title: 'There are no projects yet',
-                description: 'Click "Add Project" to create your first project.',
-                colspan: 2,
-                button: {
-                    text: 'Create your first project',
-                    icon: 'bi-plus-circle',
-                    id: 'empty-state-add-project-btn',
-                },
-            }).outerHTML, 'text/html');
-            tableBody!.replaceChildren(...emptyDocument.body.childNodes);
-            const emptyButton = document.querySelector('#empty-state-add-project-btn');
-            if (emptyButton) {
-                emptyButton.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    void navigate('/projects/add', navContentDiv, contentDiv);
-                });
-            }
+            showEmptyState(tableBody!, navContentDiv, contentDiv);
             return;
         }
 

@@ -281,9 +281,9 @@ export function isDetailRoute(
     void (async () => {
       try {
         await loadTemplate(templateName, contentDiv);
-        void loadFunction(segments[1], navContentDiv, contentDiv);
+        loadFunction(segments[1], navContentDiv, contentDiv);
       } catch {
-        void loadTemplateWithError(contentDiv, label)();
+        loadTemplateWithError(contentDiv, label)();
       }
     })();
     return true;

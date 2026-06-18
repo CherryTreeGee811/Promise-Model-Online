@@ -368,7 +368,7 @@ function getMomentTypeOptions(): Array<{ value: string; label: string }> {
 /**
  * Get the current status value of a moment node, mapping statusColor to a canonical status.
  * @param {object} nodeData - The node data.
- * @returns {string} The canonical status value (Done, Blocked, InProgress, Todo).
+ * @returns {string} The canonical status value (Done, Blocked, InProgress, or not started).
  */
 function getMomentStatusValue(nodeData: any): string {
     const payload = nodeData?.payload ?? {};

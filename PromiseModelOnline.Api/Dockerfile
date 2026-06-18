@@ -25,7 +25,7 @@ RUN dotnet publish "./PromiseModelOnline.Api.csproj" -c $BUILD_CONFIGURATION -o 
 FROM base AS final
 WORKDIR /app
 USER root
-RUN apt-get update && apt-get install -y curl \
+RUN apt-get update && apt-get install -y --no-install-recommends curl=8.5.0-2ubuntu10.9 \
     && rm -rf /var/lib/apt/lists/*
 USER app
 COPY --from=publish /app/publish .

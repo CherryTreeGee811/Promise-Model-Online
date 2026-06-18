@@ -10,7 +10,7 @@ RUN npm run build
 # Stage 2: Nginx
 FROM nginx:stable-alpine-slim
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl=8.19.0-r0
 
 RUN addgroup -g 1000 -S appgroup && \
     adduser -u 1000 -S appuser -G appgroup

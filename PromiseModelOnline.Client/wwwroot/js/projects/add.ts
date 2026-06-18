@@ -310,7 +310,14 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
             setBusyState(true, 'submit');
             const result = await importProject(file);
             const { ownerSlug, slug } = result ?? {};
-            const warnings = Array.isArray(result?.warnings) ? result.warnings : (Array.isArray(result?.Warnings) ? result.Warnings : []);
+            let warnings: unknown[];
+            if (Array.isArray(result?.warnings)) {
+                warnings = result.warnings;
+            } else if (Array.isArray(result?.Warnings)) {
+                warnings = result.Warnings;
+            } else {
+                warnings = [];
+            }
 
             successTextElement!.textContent = warnings.length > 0
                 ? `Project imported with ${warnings.length} warning(s).`

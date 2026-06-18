@@ -84,6 +84,177 @@ function buildEmptyState(icon: string, title: string, description?: string): HTM
  * @param {string} project - The project slug
  * @param {{ permission: string } | undefined} permission - Permission object
  */
+async function loadBurndownChart(owner: string, project: string, iterationId: number, burndownCanvas: HTMLElement | null): Promise<void> {
+    const BURNDOWN_TIMEOUT_MS = 10_000;
+    const timeoutPromise = new Promise<{ date: string; remainingEffort: number }[]>((_, reject) => {
+        setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS);
+    });
+    try {
+        const points = await Promise.race([getBurndown(owner, project, iterationId) as Promise<{ date: string; remainingEffort: number }[]>, timeoutPromise]);
+        if (points && points.length > 0) {
+            if (burndownCanvas) void drawBurndownChart(burndownCanvas, points);
+        } else {
+            if (burndownCanvas) burndownCanvas.replaceChildren(buildEmptyState(
+                'bi-graph-down',
+                'No burndown data available for this iteration.',
+                'Burndown data will appear once moments have status updates.',
+            ));
+        }
+    } catch (error) {
+        console.error('Iteration burndown error', error);
+        if (burndownCanvas) {
+            burndownCanvas.replaceChildren();
+            const p = document.createElement('p');
+            p.className = 'error';
+            p.textContent = 'Failed to load iteration burndown.';
+            burndownCanvas.append(p);
+        }
+    }
+}
+
+function showIterationView(iteration: Iteration, viewDiv: HTMLElement | null, detailDiv: HTMLElement | null, burndownCanvas: HTMLElement | null, strideDetailsDiv: HTMLElement | null, owner: string, project: string): void {
+    const iterationId = iteration.id;
+    if (viewDiv) viewDiv.classList.add('d-none');
+    if (detailDiv) detailDiv.classList.remove('d-none');
+    const titleElement = document.querySelector('#iteration-title') as HTMLElement;
+    if (titleElement) titleElement.textContent = iteration.name;
+    if (burndownCanvas) burndownCanvas.replaceChildren(buildLoadingSpinner('Loading burndown chart'));
+    if (strideDetailsDiv) strideDetailsDiv.replaceChildren(buildLoadingSpinner('Loading strides'));
+    void loadBurndownChart(owner, project, iterationId, burndownCanvas);
+}
+
+async function loadIterationData(owner: string, project: string, errorElement: HTMLElement | null, listDiv: HTMLElement | null): Promise<{ projectData: ProjectData | undefined; iterations: Iteration[] } | undefined> {
+    try {
+        return await loadIterationsWithTimeout(owner, project);
+    } catch {
+        if (errorElement) errorElement.textContent = 'Error loading iterations.';
+        if (listDiv) listDiv.replaceChildren();
+        return;
+    }
+}
+
+function renderIterationList(iterations: Iteration[], listDiv: HTMLElement | null, formatDate: (d: string) => string, showDetail: (iteration: Iteration) => Promise<void>): void {
+    try {
+        iterations.sort((a, b) => b.id - a.id);
+        const table = buildIterationsTable(iterations, formatDate);
+        if (listDiv) listDiv.replaceChildren(table);
+        bindIterationViewButtons(iterations, showDetail);
+    } catch (error) {
+        if (listDiv) listDiv.replaceChildren();
+        console.error(error);
+    }
+}
+
+function setupIterationCreateButton(button: HTMLElement | null, canEdit: boolean, owner: string, project: string, permission: { permission: string } | undefined): void {
+    if (!button) return;
+    if (!canEdit) {
+        button.classList.add('d-none');
+    } else if (button.dataset.bound !== '1') {
+        button.dataset.bound = '1';
+        button.addEventListener('click', async () => {
+            openIterationCreateModal(owner, project, () => loadIterationHistory(owner, project, permission));
+        });
+    }
+}
+
+async function loadIterationsWithTimeout(owner: string, project: string): Promise<{ projectData: ProjectData | undefined; iterations: Iteration[] }> {
+    const LOAD_TIMEOUT_MS = 15_000;
+
+    const listTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS);
+    });
+
+    const projectPromise = (async (): Promise<ProjectData | undefined> => {
+        try {
+            return await getProject(owner, project) as ProjectData;
+        } catch {}
+    })();
+
+    const [projectData, iterations] = await Promise.race([
+        Promise.all([
+            projectPromise,
+            getIterations(owner, project) as Promise<Iteration[]>,
+        ]),
+        listTimeoutPromise,
+    ]) as [ProjectData | undefined, Iteration[]];
+
+    return { projectData, iterations };
+}
+
+/** @param {Iteration[]} iterationList @param {HTMLElement | null} listDiv @returns {boolean} true if empty */
+/** @param {Iteration} iteration @param {(d: string) => string} formatDate */
+function createIterationRow(iteration: Iteration, formatDate: (d: string) => string): HTMLTableRowElement {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td');
+    tdName.textContent = iteration.name;
+    tr.append(tdName);
+    const tdCreated = document.createElement('td');
+    tdCreated.textContent = formatDate(iteration.createdAt);
+    tr.append(tdCreated);
+    const tdActions = document.createElement('td');
+    const button = document.createElement('button');
+    button.className = 'view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2';
+    button.type = 'button';
+    button.dataset.iterationId = String(iteration.id);
+    const iconI = document.createElement('i');
+    iconI.className = 'bi bi-eye';
+    iconI.setAttribute('aria-hidden', 'true');
+    button.append(iconI, ' View');
+    tdActions.append(button);
+    tr.append(tdActions);
+    return tr;
+}
+
+function isEmptyIterations(iterationList: Iteration[], listDiv: HTMLElement | null): boolean {
+    if (!iterationList || iterationList.length === 0) {
+        if (listDiv) listDiv.replaceChildren(buildEmptyState(
+            'bi-arrow-repeat',
+            'No iterations found.',
+            'Create an iteration to start organizing your strides.',
+        ));
+        return true;
+    }
+    return false;
+}
+
+/** @param {Iteration[]} iterations */
+function buildIterationsTable(iterations: Iteration[], formatDate: (d: string) => string): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
+    const table = document.createElement('table');
+    table.className = 'table table-sm table-striped table-hover align-middle';
+
+    const thead = document.createElement('thead');
+    thead.className = 'table-light';
+    const headerRow = document.createElement('tr');
+    for (const header of ['Name', 'Created', 'Actions']) {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = header;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+
+    const tbody = document.createElement('tbody');
+    for (const iteration of iterations) {
+        tbody.append(createIterationRow(iteration, formatDate));
+    }
+    table.append(tbody);
+    wrapper.append(table);
+    return wrapper;
+}
+
+function bindIterationViewButtons(iterations: Iteration[], showDetail: (iteration: Iteration) => Promise<void>): void {
+    for (const button of document.querySelectorAll('.view-iteration-btn')) {
+        button.addEventListener('click', () => {
+            const id = parseInt((button as HTMLElement).dataset.iterationId!, 10);
+            const iteration = iterations.find(item => item.id === id);
+            void showDetail(iteration ?? { id, name: 'Iteration #' + id, createdAt: '' });
+        });
+    }
+}
+
 export async function loadIterationHistory(owner: string, project: string, permission: { permission: string } | undefined): Promise<void> {
     const viewDiv = document.querySelector('#iterations-view') as HTMLElement;
     const listDiv = document.querySelector('#iterations-list') as HTMLElement;
@@ -97,115 +268,22 @@ export async function loadIterationHistory(owner: string, project: string, permi
     if (detailDiv) detailDiv.classList.add('d-none');
     if (errorElement) errorElement.textContent = '';
 
-    if (iterationCreateButton) {
-        if (!canEdit) {
-            iterationCreateButton.classList.add('d-none');
-        } else if (iterationCreateButton.dataset.bound !== '1') {
-            iterationCreateButton.dataset.bound = '1';
-            iterationCreateButton.addEventListener('click', async () => {
-                openIterationCreateModal(owner, project, () => loadIterationHistory(owner, project, permission));
-            });
-        }
-    }
+    setupIterationCreateButton(iterationCreateButton, canEdit, owner, project, permission);
 
     if (listDiv) listDiv.replaceChildren(buildLoadingSpinner('Loading iterations'));
 
-    const LOAD_TIMEOUT_MS = 15_000;
+    const data = await loadIterationData(owner, project, errorElement, listDiv);
+    if (!data) return;
 
-    const listTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS);
-    });
+    const { projectData, iterations } = data;
 
-    const projectPromise = (async (): Promise<ProjectData | undefined> => {
-        try {
-            return await getProject(owner, project) as ProjectData;
-        } catch {}
-    })();
-
-    try {
-        const [projectData, iterations] = await Promise.race([
-            Promise.all([
-                projectPromise,
-                getIterations(owner, project) as Promise<Iteration[]>,
-            ]),
-            listTimeoutPromise,
-        ]) as [ProjectData | undefined, Iteration[]];
-
-        if (projectTitle) {
-            projectTitle.textContent = projectData?.name ?? `Project ${owner}/${project}`;
-        }
-
-        if (!iterations || iterations.length === 0) {
-            if (listDiv) listDiv.replaceChildren(buildEmptyState(
-                'bi-arrow-repeat',
-                'No iterations found.',
-                'Create an iteration to start organizing your strides.',
-            ));
-            return;
-        }
-
-        iterations.sort((a, b) => b.id - a.id);
-
-        const tableWrapper = document.createElement('div');
-        tableWrapper.className = 'table-responsive';
-        const table = document.createElement('table');
-        table.className = 'table table-sm table-striped table-hover align-middle';
-
-        const thead = document.createElement('thead');
-        thead.className = 'table-light';
-        const headerRow = document.createElement('tr');
-        const headers = ['Name', 'Created', 'Actions'];
-        for (const h of headers) {
-            const th = document.createElement('th');
-            th.scope = 'col';
-            th.textContent = h;
-            headerRow.append(th);
-        }
-        thead.append(headerRow);
-        table.append(thead);
-
-        const tbody = document.createElement('tbody');
-        for (const index of iterations) {
-            const tr = document.createElement('tr');
-
-            const tdName = document.createElement('td');
-            tdName.textContent = index.name;
-            tr.append(tdName);
-
-            const tdCreated = document.createElement('td');
-            tdCreated.textContent = formatDate(index.createdAt);
-            tr.append(tdCreated);
-
-            const tdActions = document.createElement('td');
-            const button = document.createElement('button');
-            button.className = 'view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2';
-            button.type = 'button';
-            button.dataset.iterationId = String(index.id);
-            const icon = document.createElement('i');
-            icon.className = 'bi bi-eye';
-            icon.setAttribute('aria-hidden', 'true');
-            button.append(icon, ' View');
-            tdActions.append(button);
-            tr.append(tdActions);
-
-            tbody.append(tr);
-        }
-        table.append(tbody);
-        tableWrapper.append(table);
-        if (listDiv) listDiv.replaceChildren(tableWrapper);
-
-        for (const button of document.querySelectorAll('.view-iteration-btn')) {
-            button.addEventListener('click', () => {
-                const iterationId = parseInt((button as HTMLElement).dataset.iterationId!, 10);
-                const iteration = iterations.find(index => index.id === iterationId);
-                void showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}`, createdAt: '' });
-            });
-        }
-    } catch (error) {
-        if (listDiv) listDiv.replaceChildren();
-        if (errorElement) errorElement.textContent = 'Failed to load iterations.';
-        console.error(error);
+    if (projectTitle) {
+        projectTitle.textContent = projectData?.name ?? `Project ${owner}/${project}`;
     }
+
+    if (isEmptyIterations(iterations, listDiv)) return;
+
+    renderIterationList(iterations, listDiv, formatDate, showIterationDetail);
 
     /**
      * @param {Iteration} iteration - The iteration to show
@@ -213,44 +291,7 @@ export async function loadIterationHistory(owner: string, project: string, permi
     async function showIterationDetail(iteration: Iteration): Promise<void> {
         const iterationId = iteration.id;
 
-        if (viewDiv) viewDiv.classList.add('d-none');
-        if (detailDiv) detailDiv.classList.remove('d-none');
-
-        const titleElement = document.querySelector('#iteration-title') as HTMLElement;
-        const burndownCanvas = document.querySelector('#iteration-burndown-canvas') as HTMLElement;
-        const strideDetailsDiv = document.querySelector('#stride-details') as HTMLElement;
-
-        if (titleElement) titleElement.textContent = iteration.name;
-        if (burndownCanvas) burndownCanvas.replaceChildren(buildLoadingSpinner('Loading burndown chart'));
-        if (strideDetailsDiv) strideDetailsDiv.replaceChildren(buildLoadingSpinner('Loading strides'));
-
-        const BURNDOWN_TIMEOUT_MS = 10_000;
-
-        const timeoutPromise = new Promise<{ date: string; remainingEffort: number }[]>((_, reject) => {
-            setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS);
-        });
-
-        try {
-            const points = await Promise.race([getBurndown(owner, project, iterationId) as Promise<{ date: string; remainingEffort: number }[]>, timeoutPromise]);
-            if (points && points.length > 0) {
-                if (burndownCanvas) void drawBurndownChart(burndownCanvas, points);
-            } else {
-                if (burndownCanvas) burndownCanvas.replaceChildren(buildEmptyState(
-                    'bi-graph-down',
-                    'No burndown data available for this iteration.',
-                    'Burndown data will appear once moments have status updates.',
-                ));
-            }
-        } catch (error) {
-            console.error('Iteration burndown error', error);
-            if (burndownCanvas) {
-                burndownCanvas.replaceChildren();
-                const p = document.createElement('p');
-                p.className = 'error';
-                p.textContent = 'Failed to load iteration burndown.';
-                burndownCanvas.append(p);
-            }
-        }
+        showIterationView(iteration, viewDiv, detailDiv, burndownCanvas, strideDetailsDiv, owner, project);
 
         try {
             const strides = await getStridesByIteration(owner, project, iterationId) as Stride[];
@@ -274,10 +315,10 @@ export async function loadIterationHistory(owner: string, project: string, permi
             thead.className = 'table-light';
             const headerRow = document.createElement('tr');
             const headers = ['Stride', 'Start Date', 'End Date', 'Duration'];
-            for (const h of headers) {
+            for (const header of headers) {
                 const th = document.createElement('th');
                 th.scope = 'col';
-                th.textContent = h;
+        th.textContent = header;
                 headerRow.append(th);
             }
             thead.append(headerRow);
