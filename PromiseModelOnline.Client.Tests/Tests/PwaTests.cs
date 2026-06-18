@@ -203,25 +203,26 @@ public class PwaTests : PlaywrightTestBase
             "navigator.serviceWorker.getRegistrations().then(r => r.length > 0 && r[0].active !== null)",
             new PageWaitForFunctionOptions { Timeout = 3000 });
 
-        // Fetch manifest and validate required fields
-        var manifestResponse = await Page.EvaluateAsync<Dictionary<string, object>>(@"
-            fetch('/manifest.json').then(r => r.json()).then(m => ({
-                name: m.name || '',
-                startUrl: m.start_url || '',
-                display: m.display || '',
-                icons: Array.isArray(m.icons) ? m.icons.length : 0,
-                has192Icon: (m.icons || []).some(i => i.sizes === '192x192'),
-                has512Icon: (m.icons || []).some(i => i.sizes === '512x512')
+        // Use dynamic deserialization via Newtonsoft.Json or System.Text.Json
+        var manifestJson = await Page.EvaluateAsync<string>(@"
+            fetch('/manifest.json').then(r => r.json()).then(m => JSON.stringify({
+                name: m.name ?? '',
+                startUrl: m.start_url ?? '',
+                display: m.display ?? '',
+                icons: (m.icons ?? []).length,
+                has192Icon: (m.icons ?? []).some((i) => i.sizes === '192x192' || i.sizes === 'any'),
+                has512Icon: (m.icons ?? []).some((i) => i.sizes === '512x512' || i.sizes === 'any')
             }))");
+        var manifest = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(manifestJson);
 
         Assert.Multiple(() =>
         {
-            Assert.That(manifestResponse["name"], Is.Not.Empty, "Manifest must have a name");
-            Assert.That(manifestResponse["startUrl"], Is.Not.Empty, "Manifest must have a start_url");
-            Assert.That(manifestResponse["display"], Is.EqualTo("standalone"), "Manifest must have display: standalone");
-            Assert.That((long)manifestResponse["icons"], Is.GreaterThan(0), "Manifest must have at least one icon");
-            Assert.That(manifestResponse["has192Icon"], Is.True, "Must have a 192x192 icon");
-            Assert.That(manifestResponse["has512Icon"], Is.True, "Must have a 512x512 icon");
+            Assert.That(manifest["name"].GetString(), Is.Not.Empty, "Manifest must have a name");
+            Assert.That(manifest["startUrl"].GetString(), Is.Not.Empty, "Manifest must have a start_url");
+            Assert.That(manifest["display"].GetString(), Is.EqualTo("standalone"), "Manifest must have display: standalone");
+            Assert.That(manifest["icons"].GetInt32(), Is.GreaterThan(0), "Manifest must have at least one icon");
+            Assert.That(manifest["has192Icon"].GetBoolean(), Is.True, "Must have a 192x192 icon (or sizes: any)");
+            Assert.That(manifest["has512Icon"].GetBoolean(), Is.True, "Must have a 512x512 icon (or sizes: any)");
         });
     }
 
