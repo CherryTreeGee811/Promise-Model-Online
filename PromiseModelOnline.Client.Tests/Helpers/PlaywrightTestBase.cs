@@ -113,16 +113,17 @@ public abstract class PlaywrightTestBase
             catch (TimeoutException)
             {
                 if (attempt == 2) throw;
-                await Task.Delay(100);
+                await Task.Delay(500);
             }
             catch (PlaywrightException ex) when (
                 ex.Message.Contains("ERR_ABORTED") ||
                 ex.Message.Contains("NS_BINDING_ABORTED") ||
                 ex.Message.Contains("NS_ERROR_FAILURE") ||
+                ex.Message.Contains("NS_ERROR_NETONRESET") ||
                 ex.Message.Contains("interrupted by another navigation"))
             {
                 if (attempt == 2) throw;
-                await Task.Delay(100);
+                await Task.Delay(1000);
             }
         }
         await Context.ClearCookiesAsync();
