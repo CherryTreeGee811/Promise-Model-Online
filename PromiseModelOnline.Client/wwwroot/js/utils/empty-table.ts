@@ -25,7 +25,7 @@ export function renderEmptyTableRow({ icon, title, description, button, colspan 
     const descHtml = description
         ? `<p class="text-muted mb-2">${escapeHtml(description)}</p>`
         : '';
-    const btnHtml = button
+    const buttonHtml = button
         ? `<button${button.id ? ` id="${escapeHtml(button.id)}"` : ''} class="${escapeHtml(button.class || 'btn btn-outline-primary rounded-pill mt-2')}" type="button">${button.icon ? `<i class="bi ${escapeHtml(button.icon)} me-1"></i> ` : ''}${escapeHtml(button.text)}</button>`
         : '';
 
@@ -36,7 +36,7 @@ export function renderEmptyTableRow({ icon, title, description, button, colspan 
                     ${iconHtml}
                     ${titleHtml}
                     ${descHtml}
-                    ${btnHtml}
+                    ${buttonHtml}
                 </div>
             </td>
         </tr>
@@ -67,7 +67,7 @@ export function renderEmptyStateSection({ icon, title, description, button }: Em
     const descHtml = description
         ? `<p class="text-muted mb-2">${escapeHtml(description)}</p>`
         : '';
-    const btnHtml = button
+    const buttonHtml = button
         ? `<button${button.id ? ` id="${escapeHtml(button.id)}"` : ''} class="${escapeHtml(button.class || 'btn btn-outline-primary rounded-pill mt-2')}" type="button">${button.icon ? `<i class="bi ${escapeHtml(button.icon)} me-1"></i> ` : ''}${escapeHtml(button.text)}</button>`
         : '';
 
@@ -76,7 +76,7 @@ export function renderEmptyStateSection({ icon, title, description, button }: Em
             ${iconHtml}
             ${titleHtml}
             ${descHtml}
-            ${btnHtml}
+            ${buttonHtml}
         </div>
     `;
 }

@@ -2,17 +2,17 @@
 import { loadComments } from '../comments/comments.ts';
 import { loadReactions } from '../reactions/reactions.ts';
 
-import { getStatusIcon, getStatusLabel, getStatusHtml } from './status-utils.ts';
 
-export { getStatusIcon, getStatusLabel, getStatusHtml };
+
+
 
 /**
  * Wire up the #back-link element to navigate browser history back on click.
  */
 export function initBackLink(): void {
-    const backLink = document.getElementById('back-link');
+    const backLink = document.querySelector('#back-link');
     if (backLink) {
-        backLink.addEventListener('click', () => window.history.back());
+        backLink.addEventListener('click', () => history.back());
     }
 }
 
@@ -26,16 +26,18 @@ export function initBackLink(): void {
  * @param {Record<string, unknown> | null} permission - User's permission object for the project.
  */
 export function loadCommentsAndReactions(detailDiv: HTMLElement, entityType: string, entityId: number, owner: string, project: string, permission: Record<string, unknown> | null): void {
-    const commentsContainer = document.getElementById(`${entityType.toLowerCase()}-comments`);
+    const commentsContainer = document.querySelector(`#${entityType.toLowerCase()}-comments`);
     if (commentsContainer) loadComments(commentsContainer, entityType, entityId, owner, project, permission);
 
-    let reactionsContainer = document.getElementById('reactions-section');
+    let reactionsContainer = document.querySelector('#reactions-section');
     if (!reactionsContainer) {
         reactionsContainer = document.createElement('div');
         reactionsContainer.id = 'reactions-section';
     }
     if (detailDiv) {
-        if (!reactionsContainer.parentNode) detailDiv.appendChild(reactionsContainer);
+        if (!reactionsContainer.parentNode) detailDiv.append(reactionsContainer);
         loadReactions(reactionsContainer, entityType, entityId, owner, project, permission);
     }
 }
+
+export {getStatusIcon, getStatusLabel, getStatusHtml} from './status-utilities.ts';

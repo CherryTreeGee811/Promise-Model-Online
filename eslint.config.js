@@ -3,6 +3,7 @@ import security from 'eslint-plugin-security';
 import jsdoc from 'eslint-plugin-jsdoc';
 import importx from 'eslint-plugin-import-x';
 import tseslint from 'typescript-eslint';
+import unicorn from 'eslint-plugin-unicorn';
 
 const importRules = {
   'import-x/first': 'warn',
@@ -24,9 +25,12 @@ export default tseslint.config(
         signalR: 'readonly',
       },
     },
-    plugins: { security, jsdoc, 'import-x': importx },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
+      ...unicorn.configs.recommended.rules,
+      'unicorn/filename-case': 'off',
+      'unicorn/prefer-number-coercion': 'off',
       ...importRules,
       'security/detect-eval-with-expression': 'warn',
       'security/detect-non-literal-fs-filename': 'off',
@@ -66,9 +70,12 @@ export default tseslint.config(
       },
       parser: tseslint.parser,
     },
-    plugins: { security, jsdoc, 'import-x': importx, '@typescript-eslint': tseslint.plugin },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, '@typescript-eslint': tseslint.plugin },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
+      ...unicorn.configs.recommended.rules,
+      'unicorn/filename-case': 'off',
+      'unicorn/prefer-number-coercion': 'off',
       ...importRules,
       'import-x/no-cycle': 'warn',
       'security/detect-eval-with-expression': 'warn',

@@ -20,9 +20,7 @@ export function createStore(initial) {
      * Get the current state.
      * @returns {T} The current state value.
      */
-    get() {
-      return state;
-    },
+    get: () => state,
 
     /**
      * Merge a partial update into the current state and notify subscribers.
@@ -30,17 +28,17 @@ export function createStore(initial) {
      */
     set(partial) {
       state = { ...state, ...partial };
-      listeners.forEach(fn => { if (typeof fn === 'function') fn(); });
+      for (const function_ of listeners) { if (typeof function_ === 'function') function_(); }
     },
 
     /**
      * Subscribe to state changes. Returns an unsubscribe function.
-     * @param {() => void} fn - The listener function.
+     * @param {() => void} function_ - The listener function.
      * @returns {() => void} The unsubscribe function.
      */
-    subscribe(fn) {
-      listeners.add(fn);
-      return () => { listeners.delete(fn); };
+    subscribe(function_) {
+      listeners.add(function_);
+      return () => { listeners.delete(function_); };
     },
   };
 }

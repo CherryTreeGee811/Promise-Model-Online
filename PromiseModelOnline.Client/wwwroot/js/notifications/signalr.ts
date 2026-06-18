@@ -2,11 +2,13 @@
 /** @typedef {import("@microsoft/signalr").HubConnection} HubConnection */
 import { showToast } from '../ui/toast.ts';
 
-/** @type {HubConnection|null} */
-let connection = null;
-/** @type {((data?: unknown) => void)|null} */
-let onNotificationOrReconnect = null;
-let isStarted = false;
+const state = {
+    /** @type {HubConnection|undefined} */
+    connection: undefined,
+    /** @type {((data?: unknown) => void)|undefined} */
+    onNotificationOrReconnect: undefined,
+    isStarted: false,
+};
 
 /**
  * Start the SignalR connection to the notifications hub.
@@ -17,44 +19,44 @@ let isStarted = false;
  * @returns {Promise<void>}
  */
 export async function startSignalR(onNotification) {
-    if (isStarted) return;
+    if (state.isStarted) return;
 
-    onNotificationOrReconnect = typeof onNotification === 'function' ? onNotification : null;
+    state.onNotificationOrReconnect = typeof onNotification === 'function' ? onNotification : undefined;
 
-    connection = new signalR.HubConnectionBuilder()
+    state.connection = new signalR.HubConnectionBuilder()
         .withUrl('/hubs/notifications')
-        .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+        .withAutomaticReconnect([0, 2000, 5000, 10_000, 30_000])
         .configureLogging(signalR.LogLevel.Warning)
         .build();
 
-    connection.on('ReceiveNotification', (notification) => {
-        if (onNotificationOrReconnect) {
-            onNotificationOrReconnect(notification);
+    state.connection.on('ReceiveNotification', (notification) => {
+        if (state.onNotificationOrReconnect) {
+            state.onNotificationOrReconnect(notification);
         }
     });
 
-    connection.onreconnecting(async () => {
+    state.connection.onreconnecting(async () => {
         showToast('Reconnecting to server...', 'warning', 0);
     });
 
-    connection.onreconnected(async () => {
+    state.connection.onreconnected(async () => {
         showToast('Reconnected.', 'success', 3000);
-        if (onNotificationOrReconnect) {
-            onNotificationOrReconnect(null);
+        if (state.onNotificationOrReconnect) {
+            state.onNotificationOrReconnect(undefined);
         }
     });
 
-    connection.onclose(async () => {
+    state.connection.onclose(async () => {
         showToast('Connection lost. Real-time updates paused.', 'error', 5000);
     });
 
     try {
-        await connection.start();
-        isStarted = true;
-    } catch (err) {
-        console.warn('SignalR connection failed, notifications will not be real-time:', err);
+        await state.connection.start();
+        state.isStarted = true;
+    } catch (error) {
+        console.warn('SignalR connection failed, notifications will not be real-time:', error);
         showToast('Unable to connect to notification service.', 'warning', 5000);
-        connection = null;
+        delete state.connection;
     }
 }
 
@@ -63,15 +65,14 @@ export async function startSignalR(onNotification) {
  * @returns {Promise<void>}
  */
 export async function stopSignalR() {
-    if (connection) {
+    if (state.connection) {
         try {
-            await connection.stop();
-        } catch {
-        }
-        connection = null;
+            await state.connection.stop();
+        } catch {}
+        delete state.connection;
     }
-    isStarted = false;
-    onNotificationOrReconnect = null;
+    state.isStarted = false;
+    delete state.onNotificationOrReconnect;
 }
 
 /**
@@ -79,5 +80,5 @@ export async function stopSignalR() {
  * @returns {boolean} True if the SignalR connection state is Connected.
  */
 export function isSignalRConnected() {
-    return connection && connection.state === signalR.HubConnectionState.Connected;
+    return state.connection && state.connection.state === signalR.HubConnectionState.Connected;
 }

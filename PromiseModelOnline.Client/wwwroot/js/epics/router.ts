@@ -1,4 +1,4 @@
-import { handleDetailRoute, showNotFound } from '../router.ts';
+import { isDetailRoute, showNotFound } from '../router.ts';
 
 import { loadEpicDetail } from './detail.ts';
 
@@ -9,7 +9,7 @@ import { loadEpicDetail } from './detail.ts';
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
  */
 export function handleEpicRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-  if (!handleDetailRoute(path, contentDiv, 'epics', 'epics/detail.html', loadEpicDetail, navContentDiv, 'epic')) {
+  if (!isDetailRoute(path, contentDiv, 'epics', 'epics/detail.html', loadEpicDetail, navContentDiv, 'epic')) {
     showNotFound(contentDiv);
   }
 }

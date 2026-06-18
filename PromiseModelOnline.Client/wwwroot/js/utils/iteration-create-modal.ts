@@ -8,18 +8,18 @@ import { createIteration } from '../iterations/api.ts';
  * @returns {HTMLElement | null} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalEl = document.getElementById(modalId);
-    if (modalEl) return modalEl;
+    let modalElement = document.querySelector('#' + modalId);
+    if (modalElement) return modalElement;
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = modalMarkup.trim();
-    modalEl = wrapper.firstElementChild as HTMLElement | null;
+    modalElement = wrapper.firstElementChild as HTMLElement | null;
 
-    if (modalEl) {
-        document.body.appendChild(modalEl);
+    if (modalElement) {
+        document.body.append(modalElement);
     }
 
-    return modalEl;
+    return modalElement;
 }
 
 /**
@@ -30,7 +30,7 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
  * @param {() => Promise<void> | void} onCreated - Async callback invoked after successful creation.
  */
 export function openIterationCreateModal(owner: string, project: string, onCreated: () => Promise<void> | void): void {
-    const modalEl = ensureModal('iteration-create-modal', `
+    const modalElement = ensureModal('iteration-create-modal', `
         <div class="modal fade" id="iteration-create-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -54,51 +54,51 @@ export function openIterationCreateModal(owner: string, project: string, onCreat
         </div>
     `);
 
-    const form = modalEl?.querySelector('#iteration-create-form');
-    const nameInput = modalEl?.querySelector('#iteration-create-name') as HTMLInputElement | null;
-    const errorEl = modalEl?.querySelector('#iteration-create-error');
-    const submitBtn = modalEl?.querySelector('#iteration-create-submit') as HTMLButtonElement | null;
-    if (!form || !nameInput || !errorEl || !submitBtn) return;
+    const form = modalElement?.querySelector('#iteration-create-form');
+    const nameInput = modalElement?.querySelector('#iteration-create-name') as HTMLInputElement | null;
+    const errorElement = modalElement?.querySelector('#iteration-create-error');
+    const submitButton = modalElement?.querySelector('#iteration-create-submit') as HTMLButtonElement | null;
+    if (!form || !nameInput || !errorElement || !submitButton) return;
 
     form.replaceWith(form.cloneNode(true));
 
-    const liveForm = modalEl.querySelector('#iteration-create-form') as HTMLFormElement;
-    const liveNameInput = modalEl.querySelector('#iteration-create-name') as HTMLInputElement;
-    const liveErrorEl = modalEl.querySelector('#iteration-create-error') as HTMLElement;
-    const liveSubmitBtn = modalEl.querySelector('#iteration-create-submit') as HTMLButtonElement;
+    const liveForm = modalElement.querySelector('#iteration-create-form') as HTMLFormElement;
+    const liveNameInput = modalElement.querySelector('#iteration-create-name') as HTMLInputElement;
+    const liveErrorElement = modalElement.querySelector('#iteration-create-error') as HTMLElement;
+    const liveSubmitButton = modalElement.querySelector('#iteration-create-submit') as HTMLButtonElement;
 
     liveNameInput.value = '';
-    liveErrorEl.textContent = '';
-    liveErrorEl.classList.add('d-none');
-    liveSubmitBtn.disabled = false;
-    liveSubmitBtn.textContent = 'Create Iteration';
+    liveErrorElement.textContent = '';
+    liveErrorElement.classList.add('d-none');
+    liveSubmitButton.disabled = false;
+    liveSubmitButton.textContent = 'Create Iteration';
 
     liveForm.addEventListener('submit', async event => {
         event.preventDefault();
 
         const name = liveNameInput.value.trim();
         if (!name) {
-            liveErrorEl.textContent = 'Iteration name is required.';
-            liveErrorEl.classList.remove('d-none');
+            liveErrorElement.textContent = 'Iteration name is required.';
+            liveErrorElement.classList.remove('d-none');
             liveNameInput.focus();
             return;
         }
 
-        liveSubmitBtn.disabled = true;
-        liveSubmitBtn.textContent = 'Creating...';
+        liveSubmitButton.disabled = true;
+        liveSubmitButton.textContent = 'Creating...';
 
         try {
             await createIteration(owner, project, { name });
-            (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
+            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.hide();
             await onCreated?.();
         } catch (error: any) {
-            liveErrorEl.textContent = error?.message || 'Failed to create iteration.';
-            liveErrorEl.classList.remove('d-none');
+            liveErrorElement.textContent = error?.message || 'Failed to create iteration.';
+            liveErrorElement.classList.remove('d-none');
         } finally {
-            liveSubmitBtn.disabled = false;
-            liveSubmitBtn.textContent = 'Create Iteration';
+            liveSubmitButton.disabled = false;
+            liveSubmitButton.textContent = 'Create Iteration';
         }
     });
 
-    (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
+    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.show();
 }

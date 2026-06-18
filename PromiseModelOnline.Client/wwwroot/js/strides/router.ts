@@ -10,8 +10,11 @@ import { loadStridesList } from './list.ts';
  * @param {HTMLElement} contentDiv - The main content container.
  * @param {Record<string, unknown>} permission - The user's permission object.
  */
-export function loadStridesPage(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): void {
-    loadTemplate('strides/list.html', contentDiv)
-        .then(() => loadStridesList(owner, project, navContentDiv, contentDiv, permission))
-        .catch(loadTemplateWithError(contentDiv, 'strides'));
+export async function loadStridesPage(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
+    try {
+        await loadTemplate('strides/list.html', contentDiv);
+        loadStridesList(owner, project, navContentDiv, contentDiv, permission);
+    } catch {
+        loadTemplateWithError(contentDiv, 'strides')();
+    }
 }

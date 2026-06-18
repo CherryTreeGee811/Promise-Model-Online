@@ -2,13 +2,11 @@
 import { apiFetch } from '../api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { updateMomentStatus } from '../moments/api.ts';
-import { STATUS_OPTIONS } from '../utils/status-utils.ts';
+import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
 
-const tippy = (window as any).tippy;
+const tippy = (globalThis as any).tippy;
 
-let _ctxOwner: any = null;
-let _ctxProject: any = null;
-let _ctxPermission: any = null;
+const _contextState: { owner: any; project: any; permission: any } = { owner: undefined, project: undefined, permission: undefined };
 
 const NODE_CHILD_LABELS: Record<string, string> = {
     root: 'Promise',
@@ -28,19 +26,25 @@ function getDeleteRoute(nodeType: string, nodeId?: string | number): string | nu
     const normalizedType = normalizeNodeType(nodeType);
 
     if (normalizedType === 'root') {
-        return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
+        return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}`;
     }
 
     const numericId = Number.parseInt(nodeId as any, 10);
-    if (Number.isNaN(numericId)) return null;
+    if (Number.isNaN(numericId)) return;
 
     switch (normalizedType) {
-        case 'promise': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/promises/${numericId}`;
-        case 'epic': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/epics/${numericId}`;
-        case 'journey': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/journeys/${numericId}`;
-        case 'flow': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/flows/${numericId}`;
-        case 'moment': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/moments/${numericId}`;
-        default: return null;
+        case 'promise': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/promises/${numericId}`;
+        }
+        case 'epic': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/epics/${numericId}`;
+        }
+        case 'journey': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/journeys/${numericId}`;
+        }
+        case 'flow': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/flows/${numericId}`;
+        }
+        case 'moment': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/moments/${numericId}`;
+        }
+        default: { return;
+        }
     }
 }
 
@@ -69,7 +73,7 @@ function getNodeLabel(nodeData: any): string {
  * @returns {string|null} The child type label, or null if none.
  */
 function getChildLabel(nodeType: string): string | null {
-    return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? null;
+    return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? undefined;
 }
 
 
@@ -82,20 +86,26 @@ function getChildLabel(nodeType: string): string | null {
 function getCreateActionMeta(nodeData: any): { entityLabel: string; endpoint: string; parentField: string } | null {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
 
-    const base = `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
+    const base = `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}`;
     switch (normalizedType) {
-        case 'root':
+        case 'root': {
             return { entityLabel: 'Promise', endpoint: `${base}/promises/create`, parentField: 'projectId' };
-        case 'promise':
+        }
+        case 'promise': {
             return { entityLabel: 'Epic', endpoint: `${base}/epics/create`, parentField: 'productPromiseId' };
-        case 'epic':
+        }
+        case 'epic': {
             return { entityLabel: 'Journey', endpoint: `${base}/journeys/create`, parentField: 'epicId' };
-        case 'journey':
+        }
+        case 'journey': {
             return { entityLabel: 'Flow', endpoint: `${base}/flows/create`, parentField: 'journeyId' };
-        case 'flow':
+        }
+        case 'flow': {
             return { entityLabel: 'Moment', endpoint: `${base}/moments/create`, parentField: 'flowId' };
-        default:
-            return null;
+        }
+        default: {
+            return;
+        }
     }
 }
 
@@ -110,38 +120,44 @@ function getCreateFormDefaults(nodeData: any): Record<string, any> | null {
     const nextDisplayOrder = childCount + 1;
 
     switch (normalizedType) {
-        case 'root':
+        case 'root': {
             return {
                 statement: 'New Promise',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'promise':
+        }
+        case 'promise': {
             return {
                 statement: 'New Epic',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'epic':
+        }
+        case 'epic': {
             return {
                 statement: 'New Journey',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'journey':
+        }
+        case 'journey': {
             return {
                 statement: 'New Flow',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'flow':
+        }
+        case 'flow': {
             return {
                 statement: 'New Moment',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        default:
-            return null;
+        }
+        default: {
+            return;
+        }
     }
 }
 
@@ -160,19 +176,19 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
         headers: {
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
-            ...(optionHeaders ?? {}),
+            ...optionHeaders,
         },
     });
 
     if (response.ok) {
         if (response.status === 204) {
-            return null;
+            return;
         }
         return response.json();
     }
 
     if (response.status === 401) {
-        document.getElementById('login-link')?.click();
+        document.querySelector('#login-link')?.click();
     }
 
     let message = `HTTP error! status: ${response.status}`;
@@ -193,18 +209,18 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
  * @returns {HTMLElement|null} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalEl = document.getElementById(modalId);
-    if (modalEl) return modalEl;
+    let modalElement = document.querySelector(`#${CSS.escape(modalId)}`);
+    if (modalElement) return modalElement;
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = modalMarkup.trim();
-    modalEl = wrapper.firstElementChild as HTMLElement | null;
+    modalElement = wrapper.firstElementChild as HTMLElement | null;
 
-    if (modalEl) {
-        document.body.appendChild(modalEl);
+    if (modalElement) {
+        document.body.append(modalElement);
     }
 
-    return modalEl;
+    return modalElement;
 }
 
 /**
@@ -213,7 +229,7 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
  * @returns {Promise<boolean>} Resolves to true if confirmed, false otherwise.
  */
 function openDeleteConfirmationModal(label: string): Promise<boolean> {
-    const modalEl = ensureModal('graph-delete-confirmation-modal', `
+    const modalElement = ensureModal('graph-delete-confirmation-modal', `
         <div class="modal fade" id="graph-delete-confirmation-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -231,38 +247,38 @@ function openDeleteConfirmationModal(label: string): Promise<boolean> {
         </div>
     `);
 
-    if (!modalEl) {
-        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    if (!modalElement) {
+        return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
     }
 
-    const titleEl = modalEl.querySelector('#graph-delete-confirmation-modal-title');
-    const bodyEl = modalEl.querySelector('#graph-delete-confirmation-modal-body');
-    const confirmButton = modalEl.querySelector('#graph-delete-confirmation-confirm');
+    const titleElement = modalElement.querySelector('#graph-delete-confirmation-modal-title');
+    const bodyElement = modalElement.querySelector('#graph-delete-confirmation-modal-body');
+    const confirmButton = modalElement.querySelector('#graph-delete-confirmation-confirm');
 
-    if (!titleEl || !bodyEl || !confirmButton) {
-        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    if (!titleElement || !bodyElement || !confirmButton) {
+        return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
     }
 
-    titleEl.textContent = `Delete ${label}`;
-    bodyEl.textContent = `Delete ${label}? This cannot be undone.`;
+    titleElement.textContent = `Delete ${label}`;
+    bodyElement.textContent = `Delete ${label}? This cannot be undone.`;
 
     return new Promise<boolean>(resolve => {
-        let settled = false;
+        let isSettled = false;
 
-        const settle = (value: boolean) => {
-            if (settled) return;
-            settled = true;
-            resolve(value);
+        const settle = (isConfirmed: boolean) => {
+            if (isSettled) return;
+            isSettled = true;
+            resolve(isConfirmed);
         };
 
-        const modalInstance = (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl);
+        const modalInstance = (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement);
 
         confirmButton.addEventListener('click', () => {
             settle(true);
             modalInstance?.hide();
         }, { once: true });
 
-        modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
+        modalElement.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
         modalInstance?.show();
     });
 }
@@ -332,7 +348,7 @@ function createSelectField({ name, label, value = '', options = [] }: {
         optionElement.value = option.value;
         optionElement.textContent = option.label;
         optionElement.selected = String(option.value) === String(value);
-        select.appendChild(optionElement);
+        select.append(optionElement);
     }
 
     field.append(fieldLabel, select);
@@ -414,7 +430,7 @@ function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): A
  * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Function returning the list of available strides.
  * @param {(() => void) | undefined} onGraphMutated - Callback after successful creation.
  * @param {() => void} closeMenus - Function to close all context menus.
- * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
+ * @returns {HTMLFormElement|undefined} The form element, or undefined if creation metadata is missing.
  */
 function buildMomentFormElement(
     nodeData: any,
@@ -427,7 +443,7 @@ function buildMomentFormElement(
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!createMeta || !defaults) {
-        return null;
+        return;
     }
 
     const form = document.createElement('form');
@@ -524,24 +540,23 @@ function buildMomentFormElement(
         submitButton.disabled = true;
         submitButton.textContent = 'Creating Moment...';
 
-        const statement = statementField.input.value.trim();
-        const description = descriptionField.input.value.trim();
-
-        if (!statement) {
+        if (!statementField.input.value.trim()) {
             submitButton.disabled = false;
             submitButton.textContent = 'Create Moment';
             statementField.input.focus();
             return;
         }
 
+        const statement = statementField.input.value.trim();
+        const description = descriptionField.input.value.trim();
         const payload: Record<string, any> = {
             statement,
-            description: description || null,
+            description: description || undefined,
             flowId: nodeData.payload?.id,
             type: typeField.select.value,
             status: statusField.select.value,
-            effortEstimate: estimateField.select.value === '-' ? null : estimateField.select.value || null,
-            assignedStrideId: strideField.select.value ? Number.parseInt(strideField.select.value, 10) : null,
+            effortEstimate: estimateField.select.value === '-' ? undefined : estimateField.select.value || undefined,
+            assignedStrideId: strideField.select.value ? Number.parseInt(strideField.select.value, 10) : undefined,
             displayOrder: (Number.parseInt(nodeData.childCount ?? 0, 10) || 0) + 1,
         };
 
@@ -571,16 +586,16 @@ function buildMomentFormElement(
  * @param {object} nodeData - The moment node data.
  * @param {(() => void) | undefined} onGraphMutated - Callback after successful status update.
  * @param {() => void} closeMenus - Function to close all context menus.
- * @returns {HTMLFormElement|null} The form element, or null if the moment sequence number is missing.
+ * @returns {HTMLFormElement|undefined} The form element, or undefined if the moment sequence number is missing.
  */
 function buildMomentStatusFormElement(
     nodeData: any,
-    onGraphMutated: ((...args: any[]) => any) | undefined,
+    onGraphMutated: ((...arguments_: any[]) => any) | undefined,
     closeMenus: () => void,
 ): HTMLFormElement | null {
     const momentSeq = nodeData?.payload?.sequenceNumber;
-    if (momentSeq == null) {
-        return null;
+    if (momentSeq === null) {
+        return;
     }
 
     const form = document.createElement('form');
@@ -627,7 +642,7 @@ function buildMomentStatusFormElement(
         submitButton.textContent = 'Saving Status...';
 
         try {
-            await updateMomentStatus(_ctxOwner, _ctxProject, momentSeq, statusField.select.value);
+            await updateMomentStatus(_contextState.owner, _contextState.project, momentSeq, statusField.select.value);
             closeMenus();
             await onGraphMutated?.();
         } catch (error) {
@@ -649,7 +664,7 @@ function buildMomentStatusFormElement(
  * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Function returning available strides (for moments).
  * @param {(() => void) | undefined} onGraphMutated - Callback after successful creation.
  * @param {() => void} closeMenus - Function to close all context menus.
- * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
+ * @returns {HTMLFormElement|undefined} The form element, or undefined if creation metadata is missing.
  */
 function buildCreateFormElement(
     nodeData: any,
@@ -662,7 +677,7 @@ function buildCreateFormElement(
     const createMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!createMeta || !defaults) {
-        return null;
+        return;
     }
 
     if (createMeta.entityLabel === 'Moment') {
@@ -725,20 +740,19 @@ function buildCreateFormElement(
         submitButton.disabled = true;
         submitButton.textContent = `Creating ${createMeta.entityLabel}...`;
 
-        const statement = statementField.input.value.trim();
-        const description = descriptionField.input.value.trim();
-
-        if (!statement) {
+        if (!statementField.input.value.trim()) {
             submitButton.disabled = false;
             submitButton.textContent = `Create ${createMeta.entityLabel}`;
             statementField.input.focus();
             return;
         }
 
+        const statement = statementField.input.value.trim();
+        const description = descriptionField.input.value.trim();
         const nextDisplayOrder = (Number.parseInt(nodeData.childCount ?? 0, 10) || 0) + 1;
         const payload: Record<string, any> = {
             statement,
-            description: description || null,
+            description: description || undefined,
             displayOrder: nextDisplayOrder,
         };
 
@@ -795,7 +809,7 @@ function buildMenuActions(
     openCreateForm: (nodeData: any, owner: string, project: string, refreshGraph: (() => void) | undefined) => void,
     openMomentStatusForm: (nodeData: any, refreshGraph: (() => void) | undefined) => void,
     isNodeChildrenHidden: ((nodeData: any) => boolean) | undefined,
-    setNodeChildrenHidden: ((nodeData: any, hidden: boolean) => void) | undefined,
+    setNodeChildrenHidden: ((nodeData: any, isHidden: boolean) => void) | undefined,
     revealNextLevel: ((nodeData: any) => void) | undefined,
     permission: { permission?: string } | null | undefined,
 ): Array<{
@@ -819,7 +833,7 @@ function buildMenuActions(
     const childCount = Number.parseInt(nodeData?.childCount ?? 0, 10) || 0;
     const hiddenDescendantCount = Number.parseInt(nodeData?._hiddenDescendantCount ?? 0, 10) || 0;
     const canToggleChildren = childCount > 0 || hiddenDescendantCount > 0;
-    const childrenHidden = canToggleChildren && Boolean(isNodeChildrenHidden?.(nodeData));
+    const isChildrenHidden = canToggleChildren && Boolean(isNodeChildrenHidden?.(nodeData));
 
     if (childLabel) {
         actions.push({
@@ -836,16 +850,16 @@ function buildMenuActions(
 
     if (canToggleChildren) {
         actions.push({
-            id: childrenHidden ? 'reveal-children' : 'hide-children',
-            label: childrenHidden ? 'Reveal Children' : 'Hide Children',
+            id: isChildrenHidden ? 'reveal-children' : 'hide-children',
+            label: isChildrenHidden ? 'Reveal Children' : 'Hide Children',
             danger: false,
             handler: async () => {
-                await setNodeChildrenHidden?.(nodeData, !childrenHidden);
+                await setNodeChildrenHidden?.(nodeData, !isChildrenHidden);
             },
         });
     }
 
-    if (childrenHidden && hiddenDescendantCount > 0) {
+    if (isChildrenHidden && hiddenDescendantCount > 0) {
         actions.push({
             id: 'reveal-next-level',
             label: 'Reveal Next Level',
@@ -942,7 +956,7 @@ function buildMenuElement(actions: Array<{
             await action.handler();
         });
 
-        menu.appendChild(button);
+        menu.append(button);
     }
 
     return menu;
@@ -979,7 +993,7 @@ export function createGraphContextMenuController({
     onGraphMutated?: () => void;
     onProjectDeleted?: () => void;
     isNodeChildrenHidden?: (nodeData: any) => boolean;
-    setNodeChildrenHidden?: (nodeData: any, hidden: boolean) => void;
+    setNodeChildrenHidden?: (nodeData: any, isHidden: boolean) => void;
     revealNextLevel?: (nodeData: any) => void;
     permission?: { permission?: string };
 } = {}): {
@@ -987,14 +1001,14 @@ export function createGraphContextMenuController({
     destroy: () => void;
     open: (event: MouseEvent, nodeData: any) => void;
 } {
-    _ctxOwner = owner;
-    _ctxProject = project;
-    _ctxPermission = permission;
-    let referenceRect: DOMRect | null = null;
+    _contextState.owner = owner;
+    _contextState.project = project;
+    _contextState.permission = permission;
+    let referenceRect: DOMRect | undefined;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
     const appendTarget = () => {
-        const viewport = document.getElementById('graph-viewport');
+        const viewport = document.querySelector('#graph-viewport');
         if (viewport && document.fullscreenElement === viewport) return viewport;
         return document.body;
     };
@@ -1128,7 +1142,7 @@ export function createGraphContextMenuController({
             isNodeChildrenHidden,
             setNodeChildrenHidden,
             revealNextLevel,
-            _ctxPermission,
+            _contextState.permission,
         );
         menuContent.replaceChildren(buildMenuElement(actions));
 

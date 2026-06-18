@@ -8,8 +8,8 @@ import { apiGet } from '../api.ts';
  * @returns {Promise<Array>} A promise resolving to matching user objects.
  */
 export function searchUsers(parentType, parentId, search) {
-  const params = new URLSearchParams({ parentType, parentId, search });
-  return apiGet(`/api/comments/search-users?${params}`);
+  const parameters = new URLSearchParams({ parentType, parentId, search });
+  return apiGet(`/api/comments/search-users?${parameters}`);
 }
 
 /**
@@ -20,6 +20,6 @@ export function searchUsers(parentType, parentId, search) {
  * @returns {Promise<Array>} A promise resolving to matching entity objects.
  */
 export function searchPromises(parentType, parentId, search) {
-  const params = new URLSearchParams({ parentType, parentId, search });
-  return apiGet(`/api/comments/search-promises?${params}`);
+  const parameters = new URLSearchParams({ parentType, parentId, search });
+  return apiGet(`/api/comments/search-promises?${parameters}`);
 }

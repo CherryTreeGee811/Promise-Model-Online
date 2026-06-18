@@ -35,10 +35,10 @@ export const getUnassignedMoments = (owner, project) => apiGetList(`/api/project
  * @param {string} owner - The owner (username or organization).
  * @param {string} project - The project slug.
  * @param {number|string} iterationId - The iteration ID.
- * @param {boolean} [unassigned] - Whether to return only unassigned moments.
+ * @param {boolean} [isUnassigned] - Whether to return only unassigned moments.
  * @returns {Promise<Array>} The list of moments.
  */
-export const getMomentsByIteration = (owner, project, iterationId, unassigned = false) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?iterationId=${iterationId}${unassigned ? '&unassigned=true' : ''}`);
+export const getMomentsByIteration = (owner, project, iterationId, isUnassigned = false) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?iterationId=${iterationId}${isUnassigned ? '&unassigned=true' : ''}`);
 /**
  * Fetch all iterations for a project.
  * @param {string} owner - The owner (username or organization).
@@ -63,8 +63,8 @@ export const createStride = (owner, project, data) => apiPost(`/api/projects/${e
  * @returns {Promise<Array>} The list of project members.
  */
 export async function getProjectMembers(owner, project) {
-    const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
-    return res ?? [];
+    const response = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
+    return response ?? [];
 }
 
 /**
@@ -74,9 +74,9 @@ export async function getProjectMembers(owner, project) {
  * @returns {Promise<string|null>} The permission level string, or null if unavailable.
  */
 export async function getMyPermission(owner, project) {
-    const res = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
-    if (!res) return null;
-    return (res as Record<string, unknown>).permission ?? null;
+    const response = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
+    if (!response) return;
+    return (response as Record<string, unknown>).permission;
 }
 
 /**

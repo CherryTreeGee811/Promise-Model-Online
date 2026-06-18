@@ -3,7 +3,7 @@ import { fetchUnreadNotifications } from './api.ts';
 import { startSignalR, stopSignalR } from './signalr.ts';
 
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
-let started = false;
+const _state = { isStarted: false };
 
 /**
  * Update the notification badge DOM element with the given count.
@@ -11,7 +11,7 @@ let started = false;
  * @param {number} count - The number of unread notifications.
  */
 function setBadgeCount(count) {
-    const badge = /** @type {HTMLElement|null} */ (document.getElementById('notification-badge'));
+    const badge = /** @type {HTMLElement|null} */ (document.querySelector('#notification-badge'));
     if (!badge) return;
 
     const safeCount = Number.isFinite(count) ? count : 0;
@@ -34,7 +34,7 @@ async function handleNotificationUpdate() {
         const count = Array.isArray(notifications) ? notifications.length : 0;
         setBadgeCount(count);
 
-        window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
+        dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
             detail: { notifications: Array.isArray(notifications) ? notifications : [] }
         }));
     } catch {
@@ -53,7 +53,7 @@ export async function updateNotificationBadge() {
  * startNotificationPolling may be called again later.
  */
 export function stopNotificationPolling() {
-    started = false;
+    _state.isStarted = false;
     stopSignalR();
 }
 
@@ -61,8 +61,8 @@ export function stopNotificationPolling() {
 export async function startNotificationPolling() {
     await handleNotificationUpdate();
 
-    if (started) return;
-    started = true;
+    if (_state.isStarted) return;
+    _state.isStarted = true;
 
     startSignalR(() => {
         handleNotificationUpdate();

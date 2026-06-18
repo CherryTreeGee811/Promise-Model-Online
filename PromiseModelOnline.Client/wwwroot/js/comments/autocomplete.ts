@@ -17,17 +17,17 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   dropdown.className = 'comment-autocomplete';
   dropdown.role = 'listbox';
   dropdown.style.display = 'none';
-  document.body.appendChild(dropdown);
+  document.body.append(dropdown);
 
   /** @type {AutocompleteState} */
   const state = {
     open: false,
     items: [],
     highlightedIndex: -1,
-    trigger: null,
+    trigger: undefined,
     triggerStart: -1,
   };
-  let debounceTimer = null;
+  let debounceTimer;
 
   /**
    * Detect an @ or # trigger at the cursor position in the textarea.
@@ -35,18 +35,18 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    */
   function getTriggerAtCursor() {
     const pos = textarea.selectionStart;
-    const val = textarea.value;
+    const value = textarea.value;
 
     let wordStart = pos;
-    while (wordStart > 0 && !/\s/.test(val[wordStart - 1])) {
+    while (wordStart > 0 && !/\s/.test(value[wordStart - 1])) {
       wordStart--;
     }
 
-    const word = val.substring(wordStart, pos);
+    const word = value.slice(wordStart, pos);
 
     if (word.length > 0 && (word[0] === '@' || word[0] === '#')) {
       const trigger = word[0];
-      const query = word.substring(1);
+      const query = word.slice(1);
       if (trigger === '@' && /^\w*$/.test(query)) {
         return { trigger, query, start: wordStart };
       }
@@ -55,7 +55,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       }
     }
 
-    return null;
+    return;
   }
 
   /**
@@ -65,9 +65,9 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    */
   function getCaretRect(charIndex) {
     const mirror = document.createElement('div');
-    const computed = window.getComputedStyle(textarea);
+    const computed = getComputedStyle(textarea);
 
-    const cssProps = [
+    const cssProperties = [
       'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
       'fontStretch', 'lineHeight', 'letterSpacing', 'wordSpacing',
       'textIndent', 'textTransform', 'wordBreak', 'whiteSpace',
@@ -76,8 +76,8 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     ];
 
     const style = mirror.style;
-    for (const prop of cssProps) {
-      (style)[prop] = computed[prop];
+    for (const property of cssProperties) {
+      (style)[property] = computed[property];
     }
     style.position = 'fixed';
     style.top = '0';
@@ -89,15 +89,15 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     style.whiteSpace = 'pre-wrap';
     style.wordWrap = 'break-word';
 
-    const textBefore = textarea.value.substring(0, charIndex);
+    const textBefore = textarea.value.slice(0, Math.max(0, charIndex));
     mirror.textContent = textBefore;
     const marker = document.createElement('span');
     marker.textContent = textarea.value[charIndex] || '|';
-    mirror.appendChild(marker);
+    mirror.append(marker);
 
-    document.body.appendChild(mirror);
+    document.body.append(mirror);
     const rect = marker.getBoundingClientRect();
-    document.body.removeChild(mirror);
+    mirror.remove();
 
     return rect;
   }
@@ -105,7 +105,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   /** Position the autocomplete dropdown below the trigger character in the textarea. */
   function positionDropdown() {
     const textareaRect = textarea.getBoundingClientRect();
-    const computed = window.getComputedStyle(textarea);
+    const computed = getComputedStyle(textarea);
     const borderTop = parseFloat(computed.borderTopWidth) || 0;
     const borderLeft = parseFloat(computed.borderLeftWidth) || 0;
     const lineHeight = parseFloat(computed.lineHeight) || (parseFloat(computed.fontSize) * 1.2) || 20;
@@ -127,11 +127,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   async function fetchSuggestions(triggerInfo) {
     let results;
     try {
-      if (triggerInfo.trigger === '@') {
-        results = await searchUsers(parentType, parentId, triggerInfo.query);
-      } else {
-        results = await searchPromises(parentType, parentId, triggerInfo.query);
-      }
+      results = triggerInfo.trigger === '@' ? (await searchUsers(parentType, parentId, triggerInfo.query)) : (await searchPromises(parentType, parentId, triggerInfo.query));
     } catch {
       close();
       return;
@@ -165,32 +161,28 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   function renderDropdown() {
     dropdown.innerHTML = '';
 
-    for (let i = 0; i < state.items.length; i++) {
-      const item = state.items[i];
-      const el = document.createElement('div');
-      el.className = 'comment-autocomplete__item'
-        + (i === state.highlightedIndex ? ' comment-autocomplete__item--highlight' : '');
-      el.role = 'option';
-      el.ariaSelected = String(i === state.highlightedIndex);
+    for (let index = 0; index < state.items.length; index++) {
+      const item = state.items[index];
+      const element = document.createElement('div');
+      element.className = 'comment-autocomplete__item'
+        + (index === state.highlightedIndex ? ' comment-autocomplete__item--highlight' : '');
+      element.role = 'option';
+      element.ariaSelected = String(index === state.highlightedIndex);
 
-      if (state.trigger === '@') {
-        el.textContent = item.name;
-      } else {
-        el.textContent = '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id) + ' \u2014 ' + item.statement;
-      }
+      element.textContent = state.trigger === '@' ? item.name : '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id) + ' \u{2014} ' + item.statement;
 
-      el.dataset.index = i;
-      el.addEventListener('mousedown', function (e) {
-        e.preventDefault();
-        selectItem(parseInt(this.dataset.index, 10));
+      element.dataset.index = index;
+      element.addEventListener('mousedown', function (event) {
+        event.preventDefault();
+        selectItem(parseInt(element.dataset.index, 10));
       });
 
-      dropdown.appendChild(el);
+      dropdown.append(element);
     }
 
-    const highlightedEl = /** @type {HTMLElement|null} */ (dropdown.children[state.highlightedIndex]);
-    if (highlightedEl) {
-      highlightedEl.scrollIntoView({ block: 'nearest' });
+    const highlightedElement = /** @type {HTMLElement|null} */ (dropdown.children[state.highlightedIndex]);
+    if (highlightedElement) {
+      highlightedElement.scrollIntoView({ block: 'nearest' });
     }
   }
 
@@ -202,7 +194,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   }
 
   /** Move the highlight to the previous item in the dropdown. */
-  function highlightPrev() {
+  function highlightPrevious() {
     if (state.items.length === 0) return;
     state.highlightedIndex = (state.highlightedIndex - 1 + state.items.length) % state.items.length;
     renderDropdown();
@@ -221,16 +213,11 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       return;
     }
 
-    let insertText;
-    if (state.trigger === '@') {
-      insertText = '@' + item.name + ' ';
-    } else {
-      insertText = '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id) + ' ';
-    }
+    const insertText = (state.trigger === '@' ? '@' + item.name : '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id)) + ' ';
 
     const cursorEnd = textarea.selectionStart;
-    const before = textarea.value.substring(0, state.triggerStart);
-    const after = textarea.value.substring(cursorEnd);
+    const before = textarea.value.slice(0, Math.max(0, state.triggerStart));
+    const after = textarea.value.slice(Math.max(0, cursorEnd));
     textarea.value = before + insertText + after;
 
     const newCursor = before.length + insertText.length;
@@ -251,7 +238,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     state.open = false;
     state.items = [];
     state.highlightedIndex = -1;
-    state.trigger = null;
+    delete state.trigger;
     state.triggerStart = -1;
     dropdown.style.display = 'none';
   }
@@ -271,21 +258,23 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
   /**
    * Handle keyboard events for navigating and selecting from the dropdown.
-   * @param {KeyboardEvent} e - The keyboard event.
+   * @param {KeyboardEvent} event - The keyboard event.
    */
-  function onKeydown(e) {
+  function onKeydown(event) {
     if (!state.open) return;
 
-    switch (e.key) {
-      case 'ArrowDown':
+    switch (event.key) {
+      case 'ArrowDown': {
         e.preventDefault();
         highlightNext();
         break;
-      case 'ArrowUp':
+      }
+      case 'ArrowUp': {
         e.preventDefault();
-        highlightPrev();
+        highlightPrevious();
         break;
-      case 'Tab':
+      }
+      case 'Tab': {
         e.preventDefault();
         if (state.highlightedIndex >= 0) {
           selectHighlighted();
@@ -293,17 +282,20 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
           close();
         }
         break;
-      case 'Enter':
+      }
+      case 'Enter': {
         e.preventDefault();
         if (state.highlightedIndex >= 0) {
           selectHighlighted();
         }
         break;
-      case 'Escape':
+      }
+      case 'Escape': {
         e.preventDefault();
         close();
         textarea.focus();
         break;
+      }
     }
   }
 
@@ -318,10 +310,10 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
   /**
    * Handle clicks outside the textarea and dropdown to close the dropdown.
-   * @param {MouseEvent} e - The mouse event.
+   * @param {MouseEvent} event - The mouse event.
    */
-  function onClickOutside(e) {
-    if (textarea.contains(/** @type {Node} */(e.target)) || dropdown.contains(/** @type {Node} */(e.target))) return;
+  function onClickOutside(event) {
+    if (textarea.contains(/** @type {Node} */(event.target)) || dropdown.contains(/** @type {Node} */(event.target))) return;
     close();
   }
 
@@ -350,7 +342,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
         form.removeEventListener('submit', onFormSubmit);
       }
       if (dropdown.parentNode) {
-        dropdown.parentNode.removeChild(dropdown);
+        dropdown.remove();
       }
     },
   };

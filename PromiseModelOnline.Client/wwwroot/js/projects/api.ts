@@ -4,9 +4,8 @@ import { authFetch, apiGet } from '../api.ts';
  * Fetch all projects accessible to the current user.
  * @returns {Promise<object[]|null>} The list of projects, or null if none.
  */
-export function fetchProjects() {
-    return authFetch(`/api/projects`)
-        .then(handleJsonOrNull);
+export async function fetchProjects() {
+    return handleJsonOrNull(await authFetch(`/api/projects`));
 }
 
 /**
@@ -15,19 +14,19 @@ export function fetchProjects() {
  * @returns {Promise<object|null>} The created project, or null.
  */
 export async function createProject(data) {
-    const res = await authFetch(`/api/projects/create`, {
+    const response = await authFetch(`/api/projects/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
 
-    if (res.status === 204) return null;
-    if (!res.ok) {
-        const body = await safeParse(res);
-        throw new Error(body?.message || body?.title || `HTTP ${res.status}`);
+    if (response.status === 204) return;
+    if (!response.ok) {
+        const body = await safeParse(response);
+        throw new Error(body?.message || body?.title || `HTTP ${response.status}`);
     }
 
-    return res.json();
+    return response.json();
 }
 
 /**
@@ -38,18 +37,18 @@ export async function createProject(data) {
  * @returns {Promise<object>} The updated project.
  */
 export async function updateProjectDetails(owner, project, data) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/details`, {
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/details`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
 
-    if (!res.ok) {
-        const body = await safeParse(res);
-        throw new Error(body?.message || body?.title || `HTTP ${res.status}`);
+    if (!response.ok) {
+        const body = await safeParse(response);
+        throw new Error(body?.message || body?.title || `HTTP ${response.status}`);
     }
 
-    return res.json();
+    return response.json();
 }
 
 /**
@@ -58,10 +57,10 @@ export async function updateProjectDetails(owner, project, data) {
  * @param {string} project - The project's slug.
  * @returns {Promise<object|null>} The deletion result, or null.
  */
-export function deleteProject(owner, project) {
-    return authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`, {
+export async function deleteProject(owner, project) {
+    return handleJsonOrNull(await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`, {
         method: 'DELETE'
-    }).then(handleJsonOrNull);
+    }));
 }
 
 /**
@@ -71,12 +70,12 @@ export function deleteProject(owner, project) {
  * @returns {Promise<object|null>} The project data, or null.
  */
 export async function getProject(owner, project) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`);
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`);
 
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (response.status === 204) return;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    return res.json();
+    return response.json();
 }
 
 /**
@@ -86,14 +85,14 @@ export async function getProject(owner, project) {
  * @returns {Promise<Blob>} The export file blob.
  */
 export async function exportProject(owner, project) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/export`);
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/export`);
 
-    if (!res.ok) {
-        const body = await safeParse(res);
-        throw new Error(body?.message || body?.title || `HTTP ${res.status}`);
+    if (!response.ok) {
+        const body = await safeParse(response);
+        throw new Error(body?.message || body?.title || `HTTP ${response.status}`);
     }
 
-    return res.blob();
+    return response.blob();
 }
 
 /**
@@ -105,12 +104,12 @@ export async function exportProject(owner, project) {
  * @returns {Promise<{items: object[], totalCount: number}>} The paginated audit events and total count.
  */
 export async function getAuditEvents(owner, project, take = 10, skip = 0) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/audit-events?take=${take}&skip=${skip}`);
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/audit-events?take=${take}&skip=${skip}`);
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    const items = await res.json();
-    const totalCount = parseInt(res.headers.get('X-Total-Count') || `${items.length}`, 10);
+    const items = await response.json();
+    const totalCount = parseInt(response.headers.get('X-Total-Count') || String(items.length), 10);
 
     return { items, totalCount: Number.isNaN(totalCount) ? items.length : totalCount };
 }
@@ -124,22 +123,22 @@ export async function importProject(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
 
-    const res = await authFetch(`/api/projects/import`, {
+    const response = await authFetch(`/api/projects/import`, {
         method: 'POST',
         body: formData,
     });
 
-    if (!res.ok) {
-        const body = await safeParse(res);
+    if (!response.ok) {
+        const body = await safeParse(response);
         const message = body?.message
             || body?.title
             || (Array.isArray(body?.errors) ? body.errors.join(' ') : '')
-            || `HTTP ${res.status}`;
+            || `HTTP ${response.status}`;
 
         throw new Error(message);
     }
 
-    return res.json();
+    return response.json();
 }
 
 /**
@@ -149,9 +148,9 @@ export async function importProject(file) {
  * @returns {Promise<object[]>} The permission list.
  */
 export async function getPermissions(owner, project) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
 }
 
 /**
@@ -162,13 +161,13 @@ export async function getPermissions(owner, project) {
  * @returns {Promise<object>} The created permission.
  */
 export async function inviteUser(owner, project, data) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`, {
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
 }
 
 /**
@@ -177,8 +176,8 @@ export async function inviteUser(owner, project, data) {
  * @returns {Promise<object[]>} Matching users.
  */
 export async function searchUsers(query) {
-    const params = new URLSearchParams({ q: String(query), max: '10' });
-    return apiGet(`/api/users/search?${params}`);
+    const parameters = new URLSearchParams({ q: String(query), max: '10' });
+    return apiGet(`/api/users/search?${parameters}`);
 }
 
 /**
@@ -189,10 +188,10 @@ export async function searchUsers(query) {
  * @returns {Promise<void>}
  */
 export async function removePermission(owner, project, permissionId) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions/${permissionId}`, {
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions/${permissionId}`, {
         method: 'DELETE'
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 }
 
 /**
@@ -202,9 +201,9 @@ export async function removePermission(owner, project, permissionId) {
  * @returns {Promise<object[]>} The promise list.
  */
 export async function getProjectPromises(owner, project) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/promises`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/promises`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
 }
 
 /**
@@ -214,10 +213,10 @@ export async function getProjectPromises(owner, project) {
  * @returns {Promise<object|null>} The graph data.
  */
 export async function getGraphData(owner, project) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/graph`);
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/graph`);
+    if (response.status === 204) return;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
 }
 
 /**
@@ -227,9 +226,9 @@ export async function getGraphData(owner, project) {
  * @returns {Promise<object[]>} The member list.
  */
 export async function getProjectMembers(owner, project) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res ?? [];
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response ?? [];
 }
 
 /**
@@ -239,32 +238,32 @@ export async function getProjectMembers(owner, project) {
  * @returns {Promise<object|null>} The permission data, or null.
  */
 export async function getMyPermission(owner, project) {
-    const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
-    if (res.status === 204) return null;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
+    if (response.status === 204) return;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
 }
 
 /**
- * Handle a fetch response, returning parsed JSON or null for 204.
+ * Handle a fetch response, returning parsed JSON or undefined for 204.
  * @param {Response} response - The fetch response object.
- * @returns {Promise<object|null>} Parsed JSON body, or null for 204 responses.
+ * @returns {Promise<object|undefined>} Parsed JSON body, or undefined for 204 responses.
  */
 function handleJsonOrNull(response) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    if (response.status === 204) return null;
+    if (response.status === 204) return Promise.resolve();
     return response.json();
 }
 
 /**
  * Safely parse a JSON response, returning null on failure.
- * @param {Response} res - The fetch response object.
+ * @param {Response} response - The fetch response object.
  * @returns {Promise<object|null>} The parsed JSON object, or null if parsing fails.
  */
-async function safeParse(res) {
+async function safeParse(response) {
     try {
-        return await res.json();
+        return await response.json();
     } catch {
-        return null;
+        return;
     }
 }

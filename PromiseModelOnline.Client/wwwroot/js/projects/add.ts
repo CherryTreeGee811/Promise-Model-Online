@@ -11,24 +11,24 @@ import { renderSummaryTable } from './summary.ts';
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const form = document.getElementById('add-project-form') as HTMLFormElement | null;
-    const cancelLink = document.getElementById('cancel-add-project-link') as HTMLElement | null;
-    const nameInput = document.getElementById('project-name-input') as HTMLInputElement | null;
-    const descriptionInput = document.getElementById('project-description-input') as HTMLTextAreaElement | null;
-    const firstPromisePanel = document.getElementById('first-promise-panel') as HTMLElement | null;
-    const firstPromiseInput = document.getElementById('first-promise-input') as HTMLInputElement | null;
-    const createButton = document.getElementById('create-project-btn') as HTMLButtonElement | null;
-    const createButtonSpinner = document.getElementById('create-project-btn-spinner') as HTMLElement | null;
-    const createButtonLabel = document.getElementById('create-project-btn-label') as HTMLElement | null;
-    const importButton = document.getElementById('import-project-btn') as HTMLButtonElement | null;
-    const importButtonSpinner = document.getElementById('import-project-btn-spinner') as HTMLElement | null;
-    const importButtonIcon = document.getElementById('import-project-btn-icon') as HTMLElement | null;
-    const importButtonLabel = document.getElementById('import-project-btn-label') as HTMLElement | null;
-    const clearImportButton = document.getElementById('clear-import-btn') as HTMLButtonElement | null;
-    const importInput = document.getElementById('import-project-input') as HTMLInputElement | null;
-    const importSummaryPanel = document.getElementById('project-import-summary-panel') as HTMLElement | null;
-    const errorTextElement = document.getElementById('error-text') as HTMLElement | null;
-    const successTextElement = document.getElementById('success-text') as HTMLElement | null;
+    const form = document.querySelector('#add-project-form') as HTMLFormElement | null;
+    const cancelLink = document.querySelector('#cancel-add-project-link') as HTMLElement | null;
+    const nameInput = document.querySelector('#project-name-input') as HTMLInputElement | null;
+    const descriptionInput = document.querySelector('#project-description-input') as HTMLTextAreaElement | null;
+    const firstPromisePanel = document.querySelector('#first-promise-panel') as HTMLElement | null;
+    const firstPromiseInput = document.querySelector('#first-promise-input') as HTMLInputElement | null;
+    const createButton = document.querySelector('#create-project-btn') as HTMLButtonElement | null;
+    const createButtonSpinner = document.querySelector('#create-project-btn-spinner') as HTMLElement | null;
+    const createButtonLabel = document.querySelector('#create-project-btn-label') as HTMLElement | null;
+    const importButton = document.querySelector('#import-project-btn') as HTMLButtonElement | null;
+    const importButtonSpinner = document.querySelector('#import-project-btn-spinner') as HTMLElement | null;
+    const importButtonIcon = document.querySelector('#import-project-btn-icon') as HTMLElement | null;
+    const importButtonLabel = document.querySelector('#import-project-btn-label') as HTMLElement | null;
+    const clearImportButton = document.querySelector('#clear-import-btn') as HTMLButtonElement | null;
+    const importInput = document.querySelector('#import-project-input') as HTMLInputElement | null;
+    const importSummaryPanel = document.querySelector('#project-import-summary-panel') as HTMLElement | null;
+    const errorTextElement = document.querySelector('#error-text') as HTMLElement | null;
+    const successTextElement = document.querySelector('#success-text') as HTMLElement | null;
 
     if (!form || !nameInput || !descriptionInput || !firstPromisePanel || !firstPromiseInput || !createButton || !createButtonSpinner || !createButtonLabel || !importButton || !importButtonSpinner || !importButtonIcon || !importButtonLabel || !clearImportButton || !importInput || !importSummaryPanel || !errorTextElement || !successTextElement) {
         return;
@@ -65,42 +65,42 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
 
     /**
      * Update the submit button's disabled state and label.
-     * @param {boolean} busy - Whether the button should be disabled.
+     * @param {boolean} isBusy - Whether the button should be disabled.
      */
-    function setSubmitButtonState(busy: boolean): void {
-        createButton.disabled = busy;
-        createButtonSpinner.classList.toggle('d-none', !busy);
-        createButtonLabel.textContent = busy ? getBusySubmitButtonLabel() : getSubmitButtonLabel();
+    function setSubmitButtonState(isBusy: boolean): void {
+        createButton.disabled = isBusy;
+        createButtonSpinner.classList.toggle('d-none', !isBusy);
+        createButtonLabel.textContent = (isBusy ? getBusySubmitButtonLabel : getSubmitButtonLabel)();
     }
 
     /**
      * Update the import button's disabled state and label.
-     * @param {boolean} busy - Whether the button should be disabled.
+     * @param {boolean} isBusy - Whether the button should be disabled.
      * @param {string} [busyLabel] - The label to show while busy.
      */
-    function setImportButtonState(busy: boolean, busyLabel = 'Reading Project...'): void {
-        importButton.disabled = busy;
-        importButtonSpinner.classList.toggle('d-none', !busy);
-        importButtonIcon.classList.toggle('d-none', busy);
-        importButtonLabel.textContent = busy ? busyLabel : 'Import Project...';
+    function setImportButtonState(isBusy: boolean, busyLabel = 'Reading Project...'): void {
+        importButton.disabled = isBusy;
+        importButtonSpinner.classList.toggle('d-none', !isBusy);
+        importButtonIcon.classList.toggle('d-none', isBusy);
+        importButtonLabel.textContent = isBusy ? busyLabel : 'Import Project...';
     }
 
     /**
      * Set the global busy state, disabling/enabling all interactive elements.
-     * @param {boolean} busy - Whether the UI should be in busy state.
+     * @param {boolean} isBusyParameter - Whether the UI should be in busy state.
      * @param {'submit' | 'import'} [source] - Which action triggered the busy state.
      */
-    function setBusyState(busy: boolean, source: 'submit' | 'import' = 'submit'): void {
-        isBusy = busy;
-        setSubmitButtonState(busy && source === 'submit');
-        setImportButtonState(busy && source === 'import', source === 'submit' ? 'Importing Project...' : 'Reading Project...');
-        createButton.disabled = busy;
-        clearImportButton.disabled = busy;
-        importButton.disabled = busy;
-        nameInput.disabled = busy;
-        descriptionInput.disabled = busy;
-        firstPromiseInput.disabled = busy;
-        if (!busy) {
+    function setBusyState(isBusyParameter: boolean, source: 'submit' | 'import' = 'submit'): void {
+        isBusy = isBusyParameter;
+        setSubmitButtonState(isBusyParameter && source === 'submit');
+        setImportButtonState(isBusyParameter && source === 'import', source === 'submit' ? 'Importing Project...' : 'Reading Project...');
+        createButton.disabled = isBusyParameter;
+        clearImportButton.disabled = isBusyParameter;
+        importButton.disabled = isBusyParameter;
+        nameInput.disabled = isBusyParameter;
+        descriptionInput.disabled = isBusyParameter;
+        firstPromiseInput.disabled = isBusyParameter;
+        if (!isBusyParameter) {
             setMode(currentMode);
         }
     }
@@ -116,7 +116,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         firstPromisePanel.hidden = isImportMode;
         nameInput.readOnly = isImportMode;
         descriptionInput.readOnly = isImportMode;
-        createButtonLabel.textContent = isBusy ? getBusySubmitButtonLabel() : getSubmitButtonLabel();
+        createButtonLabel.textContent = (isBusy ? getBusySubmitButtonLabel : getSubmitButtonLabel)();
         clearImportButton.hidden = !isImportMode || !hasImportFile;
         clearImportButton.style.display = clearImportButton.hidden ? 'none' : '';
     }
@@ -143,10 +143,10 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
      * Update the page heading with the current project name and action.
      */
     function refreshHeading(): void {
-        const val = nameInput.value.trim();
+        const value = nameInput.value.trim();
         const action = currentMode === 'import' ? 'Import' : 'Create';
 
-        if (val && titleHeading) titleHeading.textContent = `${action} '${val}'`;
+        if (value && titleHeading) titleHeading.textContent = `${action} '${value}'`;
         else if (titleHeading) titleHeading.textContent = `${action} Project`;
     }
     nameInput.addEventListener('input', refreshHeading);
@@ -257,14 +257,15 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         clearMessages();
 
         const name = nameInput.value.trim();
-        const description = descriptionInput.value.trim();
-        const firstPromiseStatement = firstPromiseInput.value.trim();
 
         if (!name) {
             errorTextElement.textContent = 'Project name is required.';
             errorTextElement.style.display = 'block';
             return;
         }
+
+        const description = descriptionInput.value.trim();
+        const firstPromiseStatement = firstPromiseInput.value.trim();
 
         if (!firstPromiseStatement) {
             errorTextElement.textContent = 'The first Product Promise is required when creating from scratch.';
@@ -274,11 +275,11 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
 
         try {
             setBusyState(true, 'submit');
-            const createdProject = await createProject({ name, description: description || null });
+            const createdProject = await createProject({ name, description: description || undefined });
 
             await createPromise(createdProject.ownerSlug, createdProject.slug, {
                 statement: firstPromiseStatement,
-                description: null,
+                description: undefined,
                 displayOrder: 0,
             });
 
@@ -309,7 +310,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
             setBusyState(true, 'submit');
             const result = await importProject(file);
             const { ownerSlug, slug } = result ?? {};
-            const warnings = Array.isArray(result?.warnings) ? result.warnings : Array.isArray(result?.Warnings) ? result.Warnings : [];
+            const warnings = Array.isArray(result?.warnings) ? result.warnings : (Array.isArray(result?.Warnings) ? result.Warnings : []);
 
             successTextElement.textContent = warnings.length > 0
                 ? `Project imported with ${warnings.length} warning(s).`

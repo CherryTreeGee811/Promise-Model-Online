@@ -26,6 +26,10 @@ jobs:
         shell: bash
         run: dotnet build Promise-Model-Online.sln
 
+      - name: Check .NET packages for known vulnerabilities
+        shell: bash
+        run: dotnet list Promise-Model-Online.sln package --vulnerable
+
       - name: ESLint (client JS)
         shell: bash
         run: |

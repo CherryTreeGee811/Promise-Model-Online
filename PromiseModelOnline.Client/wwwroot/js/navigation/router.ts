@@ -7,8 +7,8 @@ import { navigate } from '../router.ts';
  * Removes the attribute from all links before applying it to the active match.
  */
 function setActiveNavLink(): void {
-    const currentPath = window.location.pathname;
-    document.querySelectorAll('#main-menu a[data-nav]').forEach(link => {
+    const currentPath = location.pathname;
+    for (const link of document.querySelectorAll('#main-menu a[data-nav]')) {
         const href = link.getAttribute('href');
         if (!href || href === '#') return;
         const isActive = href === currentPath ||
@@ -17,24 +17,24 @@ function setActiveNavLink(): void {
         if (isActive) {
             link.setAttribute('aria-current', 'page');
         }
-    });
+    }
 }
 
 /**
  * Handle a click event on a navigation link by calling navigate().
  * Prevents default anchor behaviour and delegates to the SPA router.
- * @param {Event} e - The click event.
+ * @param {Event} event - The click event.
  * @param {HTMLElement} navContentDiv - The navigation container element.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
-function handleNavClick(e: Event, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const link = (e.target as Element).closest('a[data-nav]');
+function handleNavClick(event: Event, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
+    const link = (event.target as Element).closest('a[data-nav]');
     if (!link) return;
 
     const path = link.getAttribute('href');
     if (!path || path === '#') return;
 
-    e.preventDefault();
+    event.preventDefault();
     navigate(path, navContentDiv, contentDiv);
 }
 
@@ -48,23 +48,20 @@ function handleNavClick(e: Event, navContentDiv: HTMLElement, contentDiv: HTMLEl
  * @returns {Promise<void>} Resolves when the template has been loaded and rendered.
  * @throws {Error} If the fetch request fails.
  */
-export function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+export async function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const templateName = isLoggedIn() ? 'authenticated.html' : 'anonymous.html';
 
-    return fetch(`/templates/navigation/${templateName}`)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.text();
-        })
-        .then(html => {
-            navContentDiv.innerHTML = html;
-            setActiveNavLink();
-            if (isLoggedIn()) startNotificationPolling();
-        })
-        .catch((error: Error) => {
-            navContentDiv.innerHTML = `<h1>Error loading template</h1><p>${error.message}</p>`;
-            throw error;
-        });
+    try {
+        const response = await fetch(`/templates/navigation/${templateName}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const html = await response.text();
+        navContentDiv.innerHTML = html;
+        setActiveNavLink();
+        if (isLoggedIn()) startNotificationPolling();
+    } catch (error: any) {
+        navContentDiv.innerHTML = `<h1>Error loading template</h1><p>${(error as Error).message}</p>`;
+        throw error;
+    }
 }
 
 /**
@@ -76,9 +73,9 @@ export function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HTMLElem
  * @param {HTMLElement} contentDiv - The main content container element.
  */
 export function initNavEventDelegation(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const menu = document.getElementById('main-menu');
+    const menu = document.querySelector<HTMLElement>('#main-menu');
     if (!menu || menu.dataset.navBound) return;
     menu.dataset.navBound = '1';
 
-    menu.addEventListener('click', (e) => handleNavClick(e, navContentDiv, contentDiv));
+    menu.addEventListener('click', (event) => handleNavClick(event, navContentDiv, contentDiv));
 }

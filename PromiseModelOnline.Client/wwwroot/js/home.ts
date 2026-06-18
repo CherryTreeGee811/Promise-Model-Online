@@ -29,8 +29,8 @@ export function loadHomePage(): void {
         <i class="bi bi-person-plus" aria-hidden="true"></i> Register
       </a>`;
 
-  const ctaTop = document.getElementById('home-cta-area');
-  const ctaBottom = document.getElementById('home-cta-area-bottom');
+  const ctaTop = document.querySelector('#home-cta-area');
+  const ctaBottom = document.querySelector('#home-cta-area-bottom');
 
   if (ctaTop) ctaTop.innerHTML = ctaHtml;
   if (ctaBottom) ctaBottom.innerHTML = ctaHtml;

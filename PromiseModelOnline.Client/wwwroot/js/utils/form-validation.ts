@@ -27,8 +27,8 @@ export interface ValidationResult {
 export interface FormValidator {
   /** Validate all fields. Returns whether the form is valid and a map of field errors. */
   validate(): ValidationResult;
-  /** Validate a single field. Returns the error message or null. */
-  validateField(fieldId: string): string | null;
+  /** Validate a single field. Returns the error message or undefined. */
+  validateField(fieldId: string): string | undefined;
   /** Clear all validation errors from the form. */
   clearErrors(): void;
   /** Clear validation error from a single field. */
@@ -41,33 +41,33 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Get the trimmed value of a form element.
- * @param {HTMLElement} el - The form element.
+ * @param {HTMLElement} element - The form element.
  * @returns {string} The element's value.
  */
-function getElementValue(el: HTMLElement): string {
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-    return el.value.trim();
+function getElementValue(element: HTMLElement): string {
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    return element.value.trim();
   }
-  if (el instanceof HTMLSelectElement) {
-    return el.value;
+  if (element instanceof HTMLSelectElement) {
+    return element.value;
   }
-  return (el as HTMLInputElement).value?.trim() ?? '';
+  return (element as HTMLInputElement).value?.trim() ?? '';
 }
 
 /**
  * Set or clear the validation state on a form element.
- * @param {HTMLElement} el - The form element.
- * @param {boolean} valid - Whether the element is valid.
+ * @param {HTMLElement} element - The form element.
+ * @param {boolean} isValid - Whether the element is valid.
  * @param {string} message - The error message to display when invalid.
  */
-function setValidity(el: HTMLElement, valid: boolean, message: string): void {
-  el.classList.toggle('is-invalid', !valid);
-  if (valid) {
-    el.classList.remove('is-invalid');
+function setValidity(element: HTMLElement, isValid: boolean, message: string): void {
+  element.classList.toggle('is-invalid', !isValid);
+  if (isValid) {
+    element.classList.remove('is-invalid');
   }
 
-  const existing = el.parentElement?.querySelector('.invalid-feedback') as HTMLElement | null;
-  if (valid) {
+  const existing = element.parentElement?.querySelector('.invalid-feedback') as HTMLElement | null;
+  if (isValid) {
     existing?.remove();
     return;
   }
@@ -80,7 +80,7 @@ function setValidity(el: HTMLElement, valid: boolean, message: string): void {
   const feedback = document.createElement('div');
   feedback.className = 'invalid-feedback';
   feedback.textContent = message;
-  el.parentElement?.appendChild(feedback);
+  element.parentElement?.append(feedback);
 }
 
 /**
@@ -88,34 +88,40 @@ function setValidity(el: HTMLElement, valid: boolean, message: string): void {
  * @param {string} value - The field value to validate.
  * @param {ValidationRule} rule - The validation rule to apply.
  * @param {Record<string, string>} allValues - All form field values for cross-field rules.
- * @returns {string | null} The error message, or null if valid.
+ * @returns {string | undefined} The error message, or undefined if valid.
  */
-function evaluateRule(value: string, rule: ValidationRule, allValues: Record<string, string>): string | null {
+function evaluateRule(value: string, rule: ValidationRule, allValues: Record<string, string>): string | undefined {
   switch (rule.type) {
-    case 'required':
-      return value.length === 0 ? rule.message : null;
+    case 'required': {
+      return value.length === 0 ? rule.message : undefined;
+    }
 
-    case 'minLength':
-      return value.length < (rule.value as number) ? rule.message : null;
+    case 'minLength': {
+      return value.length < (rule.value as number) ? rule.message : undefined;
+    }
 
-    case 'maxLength':
-      return value.length > (rule.value as number) ? rule.message : null;
+    case 'maxLength': {
+      return value.length > (rule.value as number) ? rule.message : undefined;
+    }
 
     case 'pattern': {
       // eslint-disable-next-line security/detect-non-literal-regexp
       const regex = rule.value instanceof RegExp ? rule.value : new RegExp(rule.value as string);
-      return regex.test(value) ? null : rule.message;
+      return regex.test(value) ? undefined : rule.message;
     }
 
 
-    case 'email':
-      return value.length > 0 && !EMAIL_REGEX.test(value) ? rule.message : null;
+    case 'email': {
+      return value.length > 0 && !EMAIL_REGEX.test(value) ? rule.message : undefined;
+    }
 
-    case 'match':
-      return value !== allValues[rule.matchField ?? ''] ? rule.message : null;
+    case 'match': {
+      return value === allValues[rule.matchField ?? ''] ? undefined : rule.message;
+    }
 
-    default:
-      return null;
+    default: {
+      return;
+    }
   }
 }
 
@@ -127,7 +133,7 @@ function evaluateRule(value: string, rule: ValidationRule, allValues: Record<str
  * @returns {FormValidator} A {@link FormValidator} instance bound to the form.
  */
 export function createValidator(formId: string, rules: FieldRules): FormValidator {
-  const form = document.getElementById(formId) as HTMLFormElement | null;
+  const form = document.querySelector('#' + formId) as HTMLFormElement | null;
   if (!form) {
     throw new Error(`Form with id "${formId}" not found.`);
   }
@@ -135,9 +141,9 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   const fields = new Map<string, HTMLElement>();
 
   for (const fieldId of Object.keys(rules)) {
-    const el = document.getElementById(fieldId);
-    if (el) {
-      fields.set(fieldId, el);
+    const element = document.querySelector('#' + fieldId);
+    if (element) {
+      fields.set(fieldId, element as HTMLElement);
     }
   }
 
@@ -147,8 +153,8 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
    */
   function getValues(): Record<string, string> {
     const values: Record<string, string> = {};
-    for (const [id, el] of fields) {
-      values[id] = getElementValue(el);
+    for (const [id, element] of fields) {
+      values[id] = getElementValue(element);
     }
     return values;
   }
@@ -156,28 +162,28 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   /**
    * Validate a single field and update its UI state.
    * @param {string} fieldId - The field ID to validate.
-   * @returns {string | null} The error message, or null if valid.
+   * @returns {string | undefined} The error message, or undefined if valid.
    */
-  function validateField(fieldId: string): string | null {
-    const el = fields.get(fieldId);
-    if (!el) return null;
+  function validateField(fieldId: string): string | undefined {
+    const element = fields.get(fieldId);
+    if (!element) return;
 
-    const value = getElementValue(el);
+    const value = getElementValue(element);
     const fieldRules = rules[fieldId];
-    if (!fieldRules) return null;
+    if (!fieldRules) return;
 
     const allValues = getValues();
 
     for (const rule of fieldRules) {
       const error = evaluateRule(value, rule, allValues);
-      if (error !== null) {
-        setValidity(el, false, error);
+      if (error !== undefined) {
+        setValidity(element, false, error);
         return error;
       }
     }
 
-    setValidity(el, true, '');
-    return null;
+    setValidity(element, true, '');
+    return;
   }
 
   /**
@@ -186,17 +192,17 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
    */
   function validate(): ValidationResult {
     const errors: Record<string, string> = {};
-    let valid = true;
+    let isValid = true;
 
     for (const fieldId of Object.keys(rules)) {
       const error = validateField(fieldId);
-      if (error !== null) {
+      if (error !== undefined) {
         errors[fieldId] = error;
-        valid = false;
+        isValid = false;
       }
     }
 
-    return { valid, errors };
+    return { valid: isValid, errors };
   }
 
   /**
@@ -204,10 +210,10 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
    * @param {string} fieldId - The field ID to clear.
    */
   function clearFieldError(fieldId: string): void {
-    const el = fields.get(fieldId);
-    if (!el) return;
-    el.classList.remove('is-invalid');
-    el.parentElement?.querySelector('.invalid-feedback')?.remove();
+    const element = fields.get(fieldId);
+    if (!element) return;
+    element.classList.remove('is-invalid');
+    element.parentElement?.querySelector('.invalid-feedback')?.remove();
   }
 
   /**
@@ -225,11 +231,11 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
    * Remove all event listeners and error elements.
    */
   function destroy(): void {
-    for (const [fieldId, el] of fields) {
+    for (const [fieldId, element] of fields) {
       const handler = inputHandlers.get(fieldId);
       if (handler) {
-        el.removeEventListener('input', handler);
-        el.removeEventListener('blur', handler);
+        element.removeEventListener('input', handler);
+        element.removeEventListener('blur', handler);
       }
       clearFieldError(fieldId);
     }
@@ -237,17 +243,17 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     inputHandlers.clear();
   }
 
-  for (const [fieldId, el] of fields) {
+  for (const [fieldId, element] of fields) {
     const handler = () => {
       const error = validateField(fieldId);
-      if (error === null) {
-        el.classList.remove('is-invalid');
-        el.parentElement?.querySelector('.invalid-feedback')?.remove();
+      if (error === undefined) {
+        element.classList.remove('is-invalid');
+        element.parentElement?.querySelector('.invalid-feedback')?.remove();
       }
     };
     inputHandlers.set(fieldId, handler);
-    el.addEventListener('input', handler);
-    el.addEventListener('blur', handler);
+    element.addEventListener('input', handler);
+    element.addEventListener('blur', handler);
   }
 
   return { validate, validateField, clearErrors, clearFieldError, destroy };

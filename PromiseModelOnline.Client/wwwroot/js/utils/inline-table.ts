@@ -33,11 +33,11 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
     renderAddRow = () => '',
 }: TableConfig): HTMLElement | null {
     const columnCount = headers.length;
-    const rowsHtml = items && items.length
-        ? items.map(renderItemRow).join('')
-        : emptyConfig
+    const rowsHtml = items && items.length > 0
+        ? items.map(item => renderItemRow(item)).join('')
+        : (emptyConfig
             ? renderEmptyTableRow({ colspan: columnCount, ...emptyConfig })
-            : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`;
+            : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`);
 
     const addRowHtml = renderAddRow ? renderAddRow() : '';
 
@@ -67,11 +67,11 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
 export function insertRowBeforeAddRow(tbody: HTMLElement, rowElement: HTMLElement): void {
     const addRow = tbody.querySelector('tr[data-inline-add-row="1"]');
     if (addRow) {
-        tbody.insertBefore(rowElement, addRow);
+        addRow.before(rowElement);
         return;
     }
 
-    tbody.appendChild(rowElement);
+    tbody.append(rowElement);
 }
 
 /**

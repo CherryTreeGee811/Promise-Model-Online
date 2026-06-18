@@ -30,7 +30,7 @@ interface ProjectRoutesModule {
   handleProjectScopedRoutes: (owner: string, project: string, subPath: string, navContentDiv: HTMLElement, contentDiv: HTMLElement) => void;
 }
 
-let _projectRoutes: Promise<ProjectRoutesModule> | undefined;
+const _routeCache: { projectRoutes: Promise<ProjectRoutesModule> | undefined } = { projectRoutes: undefined };
 
 /**
  * Lazy-load the project routes module.
@@ -38,7 +38,10 @@ let _projectRoutes: Promise<ProjectRoutesModule> | undefined;
  * @returns {Promise<ProjectRoutesModule>} The project routes module.
  */
 function loadProjectRoutes(): Promise<ProjectRoutesModule> {
-  return _projectRoutes || (_projectRoutes = import('./projects/router.ts'));
+  if (!_routeCache.projectRoutes) {
+    _routeCache.projectRoutes = import('./projects/router.ts');
+  }
+  return _routeCache.projectRoutes;
 }
 
 /**
@@ -50,53 +53,60 @@ function loadProjectRoutes(): Promise<ProjectRoutesModule> {
 const ROUTES = [
   {
     test: (p) => p === '/',
-    handler: (_nav, contentDiv) => {
-      loadTemplate('home.html', contentDiv).then(() => loadHomePage());
+    handler: async (_nav, contentDiv) => {
+      await loadTemplate('home.html', contentDiv);
+      loadHomePage();
     },
   },
   {
     test: (p) => p.startsWith('/projects'),
-    handler: (navContentDiv, contentDiv) => {
-      const path = window.location.pathname;
-      loadProjectRoutes().then(({ handleLegacyProjectRoutes }) => {
+    handler: async (navContentDiv, contentDiv) => {
+      const path = location.pathname;
+      try {
+        const { handleLegacyProjectRoutes } = await loadProjectRoutes();
         handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
-      }).catch(loadTemplateWithError(contentDiv, 'projects'));
+      } catch {
+        loadTemplateWithError(contentDiv, 'projects')();
+      }
     },
   },
   {
     test: (p) => p === '/moments/my-tasks',
     guard: requireAuth,
-    handler: (navContentDiv, contentDiv) => {
-      loadTemplate('moments/my-tasks.html', contentDiv)
-        .then(() => loadMyTasksPage(navContentDiv, contentDiv))
-        .catch(loadTemplateWithError(contentDiv, 'my tasks'));
+    handler: async (navContentDiv, contentDiv) => {
+      try {
+        await loadTemplate('moments/my-tasks.html', contentDiv);
+        loadMyTasksPage(navContentDiv, contentDiv);
+      } catch {
+        loadTemplateWithError(contentDiv, 'my tasks')();
+      }
     },
   },
   {
     test: (p) => p.startsWith('/notifications'),
     guard: requireAuth,
     handler: (navContentDiv, contentDiv) => {
-      handleNotificationsRoutes(window.location.pathname, navContentDiv, contentDiv);
+      handleNotificationsRoutes(location.pathname, navContentDiv, contentDiv);
     },
   },
   {
     test: (p) => p.startsWith('/invitations'),
     guard: requireAuth,
     handler: (_nav, contentDiv) => {
-      handleInvitationsRoute(window.location.pathname, contentDiv);
+      handleInvitationsRoute(location.pathname, contentDiv);
     },
   },
   {
     test: (p) => p === '/change-password',
     guard: requireAuth,
     handler: () => {
-      window.location.href = '/account/change-password';
+      location.assign('/account/change-password');
     },
   },
   {
     test: (p) => p === '/knowledge-base',
     handler: (navContentDiv, contentDiv) => {
-      handleKnowledgeBaseRoutes(window.location.pathname, navContentDiv, contentDiv);
+      handleKnowledgeBaseRoutes(location.pathname, navContentDiv, contentDiv);
     },
   },
   {
@@ -114,54 +124,73 @@ const ROUTES = [
   {
     test: (p) => p === '/account/delete',
     guard: requireAuth,
-    handler: (_nav, contentDiv) => {
-      loadTemplate('account/delete.html', contentDiv)
-        .then(() => initDeleteAccountPage());
+    handler: async (_nav, contentDiv) => {
+      await loadTemplate('account/delete.html', contentDiv);
+      initDeleteAccountPage();
     },
   },
 ];
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.mjs', { scope: '/' }).catch(err => console.warn('SW registration failed:', err));
+/**
+ *
+ */
+async function initServiceWorker(): Promise<void> {
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('/sw.mjs', { scope: '/' });
+    } catch (error) {
+      console.warn('SW registration failed:', error);
+    }
+  }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const contentDiv = document.getElementById('content') as HTMLElement;
-    const navContentDiv = document.getElementById('main-menu') as HTMLElement;
+/**
+ *
+ */
+function initApplication(): void {
+  initServiceWorker();
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const contentDiv = document.querySelector('#content') as HTMLElement;
+    const navContentDiv = document.querySelector('#main-menu') as HTMLElement;
 
     await checkSession();
 
     initNavEventDelegation(navContentDiv, contentDiv);
 
-    document.addEventListener('click', (e: MouseEvent) => {
-      const navLink = (e.target as Element).closest('a[data-nav]');
+    document.addEventListener('click', (event: MouseEvent) => {
+      const navLink = (event.target as Element).closest('a[data-nav]');
       if (navLink) {
         const path = navLink.getAttribute('href');
         if (path && path !== '#') {
-          e.preventDefault();
+          event.preventDefault();
           navigate(path, navContentDiv, contentDiv);
           return;
         }
       }
 
-      const backBtn = (e.target as Element).closest('[data-action="back"]');
-      if (backBtn) {
-        e.preventDefault();
-        window.history.back();
+      const backButton = (event.target as Element).closest('[data-action="back"]');
+      if (backButton) {
+        event.preventDefault();
+        history.back();
       }
     });
 
-    document.getElementById('home-link')?.addEventListener('click', (e: Event) => {
-        e.preventDefault();
+    document.querySelector('#home-link')?.addEventListener('click', (event: Event) => {
+        event.preventDefault();
         navigate('/', navContentDiv, contentDiv);
     });
 
-    window.addEventListener('popstate', () => {
+    addEventListener('popstate', () => {
         routeHandler(navContentDiv, contentDiv);
     });
 
     routeHandler(navContentDiv, contentDiv);
-});
+  });
+}
+
+/* eslint-disable-next-line unicorn/no-top-level-side-effects */
+initApplication();
 
 /**
  * Navigate to a new path, updating the URL and rendering the page.
@@ -170,9 +199,9 @@ document.addEventListener('DOMContentLoaded', async () => {
  * @param {HTMLElement} contentDiv - The main content container element.
  * @returns {void}
  */
-export function navigate(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    window.history.pushState({}, '', path);
-    return routeHandler(navContentDiv, contentDiv);
+export async function navigate(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    history.pushState({}, '', path);
+    await routeHandler(navContentDiv, contentDiv);
 }
 
 
@@ -190,8 +219,8 @@ const PAGE_TITLES: Record<string, string> = {
  * Uses requestAnimationFrame to ensure the DOM is ready before focusing.
  */
 function announceAndFocus(): void {
-  const mainEl = document.getElementById('main-content');
-  if (mainEl) { requestAnimationFrame(() => mainEl.focus()); }
+  const mainElement = document.querySelector('#main-content');
+  if (mainElement) { requestAnimationFrame(() => (mainElement as HTMLElement).focus()); }
 }
 
 /**
@@ -199,15 +228,15 @@ function announceAndFocus(): void {
  * @param {string} path - The current URL path.
  */
 function setPageTitle(path: string): void {
-  const titleEl = document.getElementById('page-title');
-  if (!titleEl) return;
+  const titleElement = document.querySelector('#page-title');
+  if (!titleElement) return;
   let title = PAGE_TITLES[path];
   if (!title) {
     const segments = path.split('/').filter(Boolean);
-    title = segments.length ? segments[segments.length - 1] : 'Home';
-    title = title.charAt(0).toUpperCase() + title.slice(1).replace(/-/g, ' ');
+    title = segments.length > 0 ? segments.at(-1)! : 'Home';
+    title = title.charAt(0).toUpperCase() + title.slice(1).replaceAll('-', ' ');
   }
-  titleEl.textContent = `${title} - Promise Model Online`;
+  titleElement.textContent = `${title} - Promise Model Online`;
 }
 
 /**
@@ -216,17 +245,13 @@ function setPageTitle(path: string): void {
  * @param {HTMLElement} contentDiv - The container to render into.
  * @returns {Promise<void>} Promise that resolves when the template is loaded.
  */
-export function loadTemplate(templateName: string, contentDiv: HTMLElement): Promise<void> {
-    return fetch(`/templates/${templateName}`)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.text();
-        })
-        .then(html => {
-            contentDiv.innerHTML = html;
-            setPageTitle(window.location.pathname);
-            announceAndFocus();
-        });
+export async function loadTemplate(templateName: string, contentDiv: HTMLElement): Promise<void> {
+    const response = await fetch(`/templates/${templateName}`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    const html = await response.text();
+    contentDiv.innerHTML = html;
+    setPageTitle(location.pathname);
+    announceAndFocus();
 }
 
 /**
@@ -235,25 +260,30 @@ export function loadTemplate(templateName: string, contentDiv: HTMLElement): Pro
  * @param {HTMLElement} contentDiv - The main content container.
  * @param {string} routePrefix - The route prefix to match (e.g., "epics").
  * @param {string} templateName - The template to load on match.
- * @param {(...args: unknown[]) => void} loadFn - The module function to initialize the page.
+ * @param {(...args: unknown[]) => void} loadFunction - The module function to initialize the page.
  * @param {HTMLElement} navContentDiv - The navigation container.
  * @param {string} label - Human-readable label for error messages.
  * @returns {boolean} True if the route was handled.
  */
-export function handleDetailRoute(
+export function isDetailRoute(
   path: string,
   contentDiv: HTMLElement,
   routePrefix: string,
   templateName: string,
-  loadFn: (...args: any[]) => void,
+  loadFunction: (...arguments_: any[]) => void,
   navContentDiv: HTMLElement,
   label: string
 ): boolean {
   const segments = path.split('/').filter(Boolean);
   if (segments.length === 2 && segments[0] === routePrefix) {
-    loadTemplate(templateName, contentDiv)
-      .then(() => loadFn(segments[1], navContentDiv, contentDiv))
-      .catch(loadTemplateWithError(contentDiv, label));
+    (async () => {
+      try {
+        await loadTemplate(templateName, contentDiv);
+        loadFunction(segments[1], navContentDiv, contentDiv);
+      } catch {
+        loadTemplateWithError(contentDiv, label)();
+      }
+    })();
     return true;
   }
   return false;
@@ -274,23 +304,22 @@ export function showNotFound(contentDiv: HTMLElement): void {
  * @returns {() => Promise<void>} The error handler.
  */
 export function loadTemplateWithError(contentDiv: HTMLElement, label: string): () => Promise<void> {
-  return () => {
-    return fetch('/templates/error.html')
-      .then(r => r.text())
-      .then(html => {
-        contentDiv.innerHTML = html;
-        setPageTitle(window.location.pathname);
-        const titleEl = document.getElementById('error-title');
-        const msgEl = document.getElementById('error-message');
-        if (titleEl) titleEl.textContent = 'Something went wrong';
-        if (msgEl) msgEl.textContent = `Failed to load ${label}. Please try again.`;
-        announceAndFocus();
-      })
-      .catch(() => {
-        contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Please try again.</p>';
-        setPageTitle(window.location.pathname);
-        announceAndFocus();
-      });
+  return async () => {
+    try {
+      const r = await fetch('/templates/error.html');
+      const html = await r.text();
+      contentDiv.innerHTML = html;
+      setPageTitle(location.pathname);
+      const titleElement = document.querySelector('#error-title');
+      const messageElement = document.querySelector('#error-message');
+      if (titleElement) titleElement.textContent = 'Something went wrong';
+      if (messageElement) messageElement.textContent = `Failed to load ${label}. Please try again.`;
+      announceAndFocus();
+    } catch {
+      contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Please try again.</p>';
+      setPageTitle(location.pathname);
+      announceAndFocus();
+    }
   };
 }
 
@@ -299,11 +328,11 @@ export function loadTemplateWithError(contentDiv: HTMLElement, label: string): (
  * @param {HTMLElement} navContentDiv - The navigation container.
  * @param {HTMLElement} contentDiv - The main content container.
  */
-export function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const path = window.location.pathname;
+export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const path = location.pathname;
 
-    if (path === '/login' || path === '/logout' || path === '/register') {
-        window.location.href = path;
+    if (['/login', '/logout', '/register'].includes(path)) {
+        location.assign(path);
         return;
     }
 
@@ -332,28 +361,31 @@ export function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement
         const project = segments[1];
         const subPath = '/' + segments.slice(2).join('/') + (path.includes('?') ? path.slice(path.indexOf('?')) : '');
 
-        if (owner === 'account' || owner === 'moments' || owner === 'knowledge-base') {
-            loadTemplate('404.html', contentDiv)
-                .catch(() => {
-                    contentDiv.innerHTML = '<h1>Page not found</h1>';
-                    setPageTitle(path);
-                    announceAndFocus();
-                });
-        } else {
-            loadProjectRoutes().then(({ handleProjectScopedRoutes }) => {
-                handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
-            }).catch(() => {
-                contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
-                setPageTitle(path);
-                announceAndFocus();
-            });
-        }
-    } else {
-        loadTemplate('404.html', contentDiv)
-            .catch(() => {
+        if (['account', 'moments', 'knowledge-base'].includes(owner)) {
+            try {
+                await loadTemplate('404.html', contentDiv);
+            } catch {
                 contentDiv.innerHTML = '<h1>Page not found</h1>';
                 setPageTitle(path);
                 announceAndFocus();
-            });
+            }
+        } else {
+            try {
+                const { handleProjectScopedRoutes } = await loadProjectRoutes();
+                handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+            } catch {
+                contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
+                setPageTitle(path);
+                announceAndFocus();
+            }
+        }
+    } else {
+        try {
+            await loadTemplate('404.html', contentDiv);
+        } catch {
+            contentDiv.innerHTML = '<h1>Page not found</h1>';
+            setPageTitle(path);
+            announceAndFocus();
+        }
     }
 }

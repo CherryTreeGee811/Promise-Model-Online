@@ -1,4 +1,4 @@
-import { handleDetailRoute, showNotFound } from '../router.ts';
+import { isDetailRoute, showNotFound } from '../router.ts';
 
 import { loadPromiseDetail } from './detail.ts';
 
@@ -9,7 +9,7 @@ import { loadPromiseDetail } from './detail.ts';
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
  */
 export function handlePromiseRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-  if (!handleDetailRoute(path, contentDiv, 'promises', 'promises/detail.html', loadPromiseDetail, navContentDiv, 'promise')) {
+  if (!isDetailRoute(path, contentDiv, 'promises', 'promises/detail.html', loadPromiseDetail, navContentDiv, 'promise')) {
     showNotFound(contentDiv);
   }
 }

@@ -10,19 +10,20 @@ import { fetchProjects } from './api.ts';
  * @param {HTMLElement} contentDiv - The main content container.
  * @returns {void}
  */
-export function loadProjectList(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const tableBody = document.getElementById('project-list-table-body') as HTMLElement | null;
-    const errorTextElement = document.getElementById("error-text") as HTMLElement | null;
-    const successTextElement = document.getElementById("success-text") as HTMLElement | null;
-    const addProjectLink = document.getElementById('add-project-link') as HTMLElement | null;
+export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const tableBody = document.querySelector('#project-list-table-body') as HTMLElement | null;
+    const errorTextElement = document.querySelector("#error-text") as HTMLElement | null;
+    const successTextElement = document.querySelector("#success-text") as HTMLElement | null;
 
     if (!tableBody || !errorTextElement || !successTextElement) {
         return;
     }
 
+    const addProjectLink = document.querySelector('#add-project-link') as HTMLElement | null;
+
     if (addProjectLink) {
-        addProjectLink.addEventListener('click', (e) => {
-            e.preventDefault();
+        addProjectLink.addEventListener('click', (event) => {
+            event.preventDefault();
             navigate('/projects/add', navContentDiv, contentDiv);
         });
     }
@@ -31,7 +32,8 @@ export function loadProjectList(navContentDiv: HTMLElement, contentDiv: HTMLElem
     successTextElement.textContent = '';
     tableBody.innerHTML = '';
 
-    fetchProjects().then(projects => {
+    try {
+        const projects = await fetchProjects();
         if (!projects || projects.length === 0) {
             tableBody!.innerHTML = renderEmptyTableRow({
                 icon: 'bi-folder',
@@ -44,17 +46,17 @@ export function loadProjectList(navContentDiv: HTMLElement, contentDiv: HTMLElem
                     id: 'empty-state-add-project-btn',
                 },
             });
-            const emptyBtn = document.getElementById('empty-state-add-project-btn');
-            if (emptyBtn) {
-                emptyBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
+            const emptyButton = document.querySelector('#empty-state-add-project-btn');
+            if (emptyButton) {
+                emptyButton.addEventListener('click', (event) => {
+                    event.preventDefault();
                     navigate('/projects/add', navContentDiv, contentDiv);
                 });
             }
             return;
         }
 
-        projects.forEach(project => {
+        for (const project of projects) {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${project.name ?? ''}</td>
@@ -74,54 +76,54 @@ export function loadProjectList(navContentDiv: HTMLElement, contentDiv: HTMLElem
                     </a>
                 </td>
             `;
-            tableBody!.appendChild(row);
-        });
+            tableBody!.append(row);
+        }
 
-        tableBody!.querySelectorAll('.view-iterations-btn[data-owner-slug]').forEach(viewBtn => {
-            viewBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const owner = viewBtn.getAttribute('data-owner-slug');
-                const project = viewBtn.getAttribute('data-project-slug');
+        for (const viewButton of tableBody!.querySelectorAll('.view-iterations-btn[data-owner-slug]')) {
+            viewButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                const owner = viewButton.dataset.ownerSlug;
+                const project = viewButton.dataset.projectSlug;
                 navigate(`/${owner}/${project}/strides`, navContentDiv, contentDiv);
             });
-        });
+        }
 
-        tableBody!.querySelectorAll('.graph-btn[data-owner-slug]').forEach(graphBtn => {
-            graphBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const owner = graphBtn.getAttribute('data-owner-slug');
-                const project = graphBtn.getAttribute('data-project-slug');
+        for (const graphButton of tableBody!.querySelectorAll('.graph-btn[data-owner-slug]')) {
+            graphButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                const owner = graphButton.dataset.ownerSlug;
+                const project = graphButton.dataset.projectSlug;
                 navigate(`/${owner}/${project}/graph`, navContentDiv, contentDiv);
             });
-        });
+        }
 
-        tableBody!.querySelectorAll('.settings-btn[data-owner-slug]').forEach(settingsBtn => {
-            settingsBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const owner = settingsBtn.getAttribute('data-owner-slug');
-                const project = settingsBtn.getAttribute('data-project-slug');
+        for (const settingsButton of tableBody!.querySelectorAll('.settings-btn[data-owner-slug]')) {
+            settingsButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                const owner = settingsButton.dataset.ownerSlug;
+                const project = settingsButton.dataset.projectSlug;
                 navigate(`/${owner}/${project}/settings`, navContentDiv, contentDiv);
             });
-        });
+        }
 
-        tableBody!.querySelectorAll('.share-btn[data-owner-slug]').forEach(shareBtn => {
-            shareBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const owner = shareBtn.getAttribute('data-owner-slug');
-                const project = shareBtn.getAttribute('data-project-slug');
+        for (const shareButton of tableBody!.querySelectorAll('.share-btn[data-owner-slug]')) {
+            shareButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                const owner = shareButton.dataset.ownerSlug;
+                const project = shareButton.dataset.projectSlug;
                 navigate(`/${owner}/${project}/share`, navContentDiv, contentDiv);
             });
-        });
+        }
 
-        tableBody!.querySelectorAll('.audit-log-btn[data-owner-slug]').forEach(auditBtn => {
-            auditBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const owner = auditBtn.getAttribute('data-owner-slug');
-                const project = auditBtn.getAttribute('data-project-slug');
+        for (const auditButton of tableBody!.querySelectorAll('.audit-log-btn[data-owner-slug]')) {
+            auditButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                const owner = auditButton.dataset.ownerSlug;
+                const project = auditButton.dataset.projectSlug;
                 navigate(`/${owner}/${project}/history`, navContentDiv, contentDiv);
             });
-        });
-    }).catch(error => {
+        }
+    } catch (error) {
         if ((error as Error).message.includes("404")) {
             errorTextElement!.textContent = "Endpoint not found";
         } else if ((error as Error).message.includes("500")) {
@@ -129,5 +131,5 @@ export function loadProjectList(navContentDiv: HTMLElement, contentDiv: HTMLElem
         } else {
             errorTextElement!.textContent = "Unknown error";
         }
-    });
+    }
 }

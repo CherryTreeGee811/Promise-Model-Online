@@ -3,37 +3,42 @@
  * Initialize the delete-account page with form handlers.
  */
 export function initDeleteAccountPage() {
-    const form = /** @type {HTMLFormElement|null} */ (document.getElementById('delete-account-form'));
-    const btn = /** @type {HTMLElement|null} */ (document.getElementById('delete-account-btn'));
-    const text = /** @type {HTMLElement|null} */ (document.getElementById('delete-btn-text'));
-    const spinner = /** @type {HTMLElement|null} */ (document.getElementById('delete-spinner'));
-    const errorEl = /** @type {HTMLElement|null} */ (document.getElementById('delete-error'));
-    const successEl = /** @type {HTMLElement|null} */ (document.getElementById('delete-success'));
-    const passwordInput = /** @type {HTMLInputElement|null} */ (document.getElementById('delete-password'));
+    const form = /** @type {HTMLFormElement|null} */ (document.querySelector('#delete-account-form'));
+    const button = /** @type {HTMLElement|null} */ (document.querySelector('#delete-account-btn'));
+    const text = /** @type {HTMLElement|null} */ (document.querySelector('#delete-btn-text'));
+    const spinner = /** @type {HTMLElement|null} */ (document.querySelector('#delete-spinner'));
+    const errorElement = /** @type {HTMLElement|null} */ (document.querySelector('#delete-error'));
+    const successElement = /** @type {HTMLElement|null} */ (document.querySelector('#delete-success'));
+    const passwordInput = /** @type {HTMLInputElement|null} */ (document.querySelector('#delete-password'));
 
-    const exportBtn = /** @type {HTMLElement|null} */ (document.getElementById('export-data-btn'));
-    const exportText = /** @type {HTMLElement|null} */ (document.getElementById('export-btn-text'));
-    const exportSpinner = /** @type {HTMLElement|null} */ (document.getElementById('export-spinner'));
-    const exportError = /** @type {HTMLElement|null} */ (document.getElementById('export-error'));
+    const exportButton = /** @type {HTMLElement|null} */ (document.querySelector('#export-data-btn'));
+    const exportText = /** @type {HTMLElement|null} */ (document.querySelector('#export-btn-text'));
+    const exportSpinner = /** @type {HTMLElement|null} */ (document.querySelector('#export-spinner'));
+    const exportError = /** @type {HTMLElement|null} */ (document.querySelector('#export-error'));
 
-    const exportLinkTop = /** @type {HTMLElement|null} */ (document.getElementById('export-link-top'));
+    const exportLinkTop = /** @type {HTMLElement|null} */ (document.querySelector('#export-link-top'));
 
-    if (!exportLinkTop || !exportBtn) return;
+    if (!exportLinkTop || !exportButton) return;
 
-    exportLinkTop.addEventListener('click', (e) => {
-        e.preventDefault();
-        exportBtn.scrollIntoView({ behavior: 'smooth' });
-        exportBtn.focus();
+    exportLinkTop.addEventListener('click', (event) => {
+        event.preventDefault();
+        exportButton.scrollIntoView({ behavior: 'smooth' });
+        exportButton.focus();
     });
 
-    exportBtn.addEventListener('click', async () => {
+    exportButton.addEventListener('click', async () => {
         exportError.classList.add('d-none');
         setExportLoading(true);
 
         try {
             const response = await fetch('/api/users/me/export', { credentials: 'include' });
             if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
+                let data;
+            try {
+                data = await response.json();
+            } catch {
+                data = {};
+            }
                 showExportError(data.message || 'Failed to export data.');
                 return;
             }
@@ -43,7 +48,7 @@ export function initDeleteAccountPage() {
             const a = document.createElement('a');
             a.href = url;
             a.download = 'pmo-data-export.json';
-            document.body.appendChild(a);
+            document.body.append(a);
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
@@ -56,11 +61,11 @@ export function initDeleteAccountPage() {
 
     /**
      * Display an export error message in the export error element.
-     * @param {string} msg - The error message to display.
+     * @param {string} message - The error message to display.
      */
-    function showExportError(msg) {
+    function showExportError(message) {
         if (!exportError) return;
-        exportError.textContent = msg;
+        exportError.textContent = message;
         exportError.classList.remove('d-none');
     }
 
@@ -69,18 +74,18 @@ export function initDeleteAccountPage() {
      * @param {boolean} loading - Whether the export operation is in progress.
      */
     function setExportLoading(loading) {
-        if (!exportBtn || !exportText || !exportSpinner) return;
-        exportBtn.disabled = loading;
+        if (!exportButton || !exportText || !exportSpinner) return;
+        exportButton.disabled = loading;
         exportText.classList.toggle('d-none', loading);
         exportSpinner.classList.toggle('d-none', !loading);
     }
 
-    if (!form || !errorEl || !successEl || !passwordInput || !btn || !text || !spinner) return;
+    if (!form || !errorElement || !successElement || !passwordInput || !button || !text || !spinner) return;
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorEl.classList.add('d-none');
-        successEl.classList.add('d-none');
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        errorElement.classList.add('d-none');
+        successElement.classList.add('d-none');
 
         const password = passwordInput.value.trim();
         if (!password) {
@@ -110,10 +115,10 @@ export function initDeleteAccountPage() {
             });
 
             if (authResponse.status === 204) {
-                successEl.textContent = 'Your account and all associated data have been permanently deleted. You will be redirected shortly.';
-                successEl.classList.remove('d-none');
+                successElement.textContent = 'Your account and all associated data have been permanently deleted. You will be redirected shortly.';
+                successElement.classList.remove('d-none');
                 form.style.display = 'none';
-                setTimeout(() => { window.location.href = '/'; }, 3000);
+                setTimeout(() => { location.assign('/'); }, 3000);
             } else if (authResponse.status === 401) {
                 showError('Incorrect password. Please try again.');
             } else {
@@ -128,11 +133,11 @@ export function initDeleteAccountPage() {
 
     /**
      * Display a form error message in the delete-error element.
-     * @param {string} msg - The error message to display.
+     * @param {string} message - The error message to display.
      */
-    function showError(msg) {
-        errorEl.textContent = msg;
-        errorEl.classList.remove('d-none');
+    function showError(message) {
+        errorElement.textContent = message;
+        errorElement.classList.remove('d-none');
     }
 
     /**
@@ -140,7 +145,7 @@ export function initDeleteAccountPage() {
      * @param {boolean} loading - Whether the delete operation is in progress.
      */
     function setLoading(loading) {
-        btn.disabled = loading;
+        button.disabled = loading;
         text.classList.toggle('d-none', loading);
         spinner.classList.toggle('d-none', !loading);
     }

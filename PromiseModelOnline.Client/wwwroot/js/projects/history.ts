@@ -14,22 +14,22 @@ const PAGE_SIZE = 25;
  * @param {string} project - The project's slug.
  */
 export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string): void {
-    const titleEl = document.getElementById('project-title') as HTMLElement | null;
-    const errorEl = document.getElementById('error-text') as HTMLElement | null;
-    const listEl = document.getElementById('audit-history-list') as HTMLElement | null;
-    const loadingEl = document.getElementById('audit-history-loading') as HTMLElement | null;
-    const paginationEl = document.getElementById('audit-history-pagination') as HTMLElement | null;
-    const backBtn = document.getElementById('back-to-projects-btn') as HTMLElement | null;
-    const modalContainerId = 'project-history-audit-modal-container';
-
-    let currentPage = 1;
-    let skip = 0;
-    let loading = false;
-    let totalCount = 0;
-
-    if (!titleEl || !errorEl || !listEl || !loadingEl || !paginationEl || !backBtn) {
+    const titleElement = document.querySelector('#project-title') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const listElement = document.querySelector('#audit-history-list') as HTMLElement | null;
+    const loadingElement = document.querySelector('#audit-history-loading') as HTMLElement | null;
+    const paginationElement = document.querySelector('#audit-history-pagination') as HTMLElement | null;
+    const backButton = document.querySelector('#back-to-projects-btn') as HTMLElement | null;
+    if (!titleElement || !errorElement || !listElement || !loadingElement || !paginationElement || !backButton) {
         return;
     }
+
+    const modalContainerId = 'project-history-audit-modal-container';
+    let currentPage = 1;
+    let skip = 0;
+    let isLoading = false;
+
+    let totalCount = 0;
 
     ensureModal();
 
@@ -40,9 +40,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     async function loadProjectName(): Promise<void> {
         try {
             const projectData = await getProject(owner, project);
-            titleEl.textContent = projectData?.name ? `${projectData.name} activity` : `Project ${owner}/${project} activity`;
+            titleElement.textContent = projectData?.name ? `${projectData.name} activity` : `Project ${owner}/${project} activity`;
         } catch {
-            titleEl.textContent = `Project ${owner}/${project} activity`;
+            titleElement.textContent = `Project ${owner}/${project} activity`;
         }
     }
 
@@ -59,26 +59,26 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
      */
     function renderPagination(): void {
         const totalPages = getTotalPages();
-        const previousDisabled = currentPage <= 1;
-        const nextDisabled = currentPage >= totalPages;
+        const isPreviousDisabled = currentPage <= 1;
+        const isNextDisabled = currentPage >= totalPages;
 
-        paginationEl!.innerHTML = `
+        paginationElement!.innerHTML = `
             <nav aria-label="Audit history pages">
                 <ul class="pagination justify-content-center mb-0">
-                    <li class="page-item ${previousDisabled ? 'disabled' : ''}">
-                        <button class="page-link" type="button" data-page-action="previous" ${previousDisabled ? 'disabled' : ''}>Previous</button>
+                    <li class="page-item ${isPreviousDisabled ? 'disabled' : ''}">
+                        <button class="page-link" type="button" data-page-action="previous" ${isPreviousDisabled ? 'disabled' : ''}>Previous</button>
                     </li>
                     <li class="page-item active" aria-current="page">
                         <span class="page-link">Page ${currentPage} of ${totalPages}</span>
                     </li>
-                    <li class="page-item ${nextDisabled ? 'disabled' : ''}">
-                        <button class="page-link" type="button" data-page-action="next" ${nextDisabled ? 'disabled' : ''}>Next</button>
+                    <li class="page-item ${isNextDisabled ? 'disabled' : ''}">
+                        <button class="page-link" type="button" data-page-action="next" ${isNextDisabled ? 'disabled' : ''}>Next</button>
                     </li>
                 </ul>
             </nav>
         `;
 
-        paginationEl!.querySelectorAll('[data-page-action]').forEach(button => {
+        for (const button of paginationElement!.querySelectorAll('[data-page-action]')) {
             button.addEventListener('click', () => {
                 const direction = (button as HTMLElement).dataset.pageAction;
                 if (direction === 'previous' && currentPage > 1) {
@@ -90,18 +90,18 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
                     loadEntries();
                 }
             });
-        });
+        }
     }
 
     /**
      * Ensure the audit details modal container exists in the DOM.
      */
     function ensureModal(): void {
-        let container = document.getElementById(modalContainerId);
+        let container = document.querySelector(`#${CSS.escape(modalContainerId)}`);
         if (!container) {
             container = document.createElement('div');
             container.id = modalContainerId;
-            document.body.appendChild(container);
+            document.body.append(container);
         }
 
         container.innerHTML = renderAuditDetailsModal();
@@ -113,58 +113,58 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
      */
     function openAuditDetails(item: unknown): void {
         const payload = getAuditDetailsPayload(item as Parameters<typeof getAuditDetailsPayload>[0]);
-        const titleEl = document.getElementById('audit-details-modal-title') as HTMLElement | null;
-        const bodyEl = document.getElementById('audit-details-modal-body') as HTMLElement | null;
-        const modalEl = document.getElementById('audit-details-modal') as HTMLElement | null;
+        const titleElement = document.querySelector('#audit-details-modal-title') as HTMLElement | null;
+        const bodyElement = document.querySelector('#audit-details-modal-body') as HTMLElement | null;
+        const modalElement = document.querySelector('#audit-details-modal') as HTMLElement | null;
 
-        if (!titleEl || !bodyEl || !modalEl) return;
+        if (!titleElement || !bodyElement || !modalElement) return;
 
-        titleEl.textContent = payload.title;
-        bodyEl.innerHTML = payload.html;
+        titleElement.textContent = payload.title;
+        bodyElement.innerHTML = payload.html;
 
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            bootstrap.Modal.getOrCreateInstance(modalElement).show();
         }
     }
 
     /**
      * Load a page of audit entries from the API and render them.
-     * @param {boolean} [reset] - Whether to reset to page 1.
+     * @param {boolean} [isReset] - Whether to reset to page 1.
      * @returns {Promise<void>}
      */
-    async function loadEntries(reset = false): Promise<void> {
-        if (loading) return;
+    async function loadEntries(isReset = false): Promise<void> {
+        if (isLoading) return;
 
-        loading = true;
-        errorEl!.textContent = '';
+        isLoading = true;
+        errorElement!.textContent = '';
 
-        if (reset) {
+        if (isReset) {
             currentPage = 1;
             skip = 0;
-            listEl!.innerHTML = '';
+            listElement!.innerHTML = '';
         }
 
-        loadingEl!.hidden = false;
-        listEl!.hidden = true;
+        loadingElement!.hidden = false;
+        listElement!.hidden = true;
 
         try {
             skip = (currentPage - 1) * PAGE_SIZE;
             const { items, totalCount: total } = await getAuditEvents(owner, project, PAGE_SIZE, skip);
             totalCount = total;
-            listEl!.innerHTML = renderAuditTable(items, { showEntity: true });
+            listElement!.innerHTML = renderAuditTable(items, { showEntity: true });
             bindAuditDetailLinks(items);
             renderPagination();
         } catch (error) {
-            if (reset) {
-                listEl!.innerHTML = '<p class="text-danger mb-0">Failed to load audit history.</p>';
+        if (isReset) {
+                listElement!.innerHTML = '<p class="text-danger mb-0">Failed to load audit history.</p>';
             } else {
-                errorEl!.textContent = 'Failed to load more audit history.';
+                errorElement!.textContent = 'Failed to load more audit history.';
             }
             console.warn('Failed to load project audit history page:', error);
         } finally {
-            loading = false;
-            loadingEl!.hidden = true;
-            listEl!.hidden = false;
+            isLoading = false;
+            loadingElement!.hidden = true;
+            listElement!.hidden = false;
         }
     }
 
@@ -173,18 +173,24 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
      * @param {object[]} items - The audit event items.
      */
     function bindAuditDetailLinks(items: unknown[]): void {
-        const detailLinks = listEl!.querySelectorAll('.audit-show-details-link');
-        detailLinks.forEach((link, index) => {
+        const detailLinks = listElement!.querySelectorAll('.audit-show-details-link');
+        let linkIndex = 0;
+        for (const link of detailLinks) {
+            const currentIndex = linkIndex;
             link.addEventListener('click', (event) => {
                 event.preventDefault();
-                openAuditDetails(items[index]);
+                openAuditDetails(items[currentIndex]);
             });
-        });
+            linkIndex++;
+        }
     }
 
-    loadProjectName().then(() => loadEntries(true));
+    (async () => {
+        await loadProjectName();
+        loadEntries(true);
+    })();
 
-    backBtn.addEventListener('click', () => {
+    backButton.addEventListener('click', () => {
         navigate('/projects', navContentDiv, contentDiv);
     });
 }

@@ -12,7 +12,7 @@ import { renderEmptyStateSection } from './empty-table.ts';
  * @returns {Promise<void>} Promise that resolves when the chart is rendered.
  */
 export async function drawBurndownChart(container: HTMLElement | string, points: BurndownPoint[]): Promise<void> {
-    const element = typeof container === 'string' ? document.getElementById(container) : container;
+    const element = typeof container === 'string' ? document.querySelector('#' + container) : container;
     if (!element) {
         console.error('Burndown container not found');
         return;
@@ -31,21 +31,20 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
 
     const d3 = await loadD3();
 
-    const sorted = [...points].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sorted = points.toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const startDate = new Date(sorted[0].date);
-    const endDate = new Date(sorted[sorted.length - 1].date);
+    const endDate = new Date(sorted.at(-1).date);
 
-    const days = sorted.map((_, idx) => idx);
+    const days = sorted.map((_, index) => index);
     const actualPoints = sorted.map(p => p.remainingEffort);
     const idealPoints = sorted.map(p => p.idealRemaining ?? 0);
 
     const startRemaining = actualPoints[0];
-    const lastDay = days[days.length - 1];
+    const lastDay = days.at(-1);
 
-    let finalIdeal = idealPoints;
-    if (idealPoints.every(v => v === 0) && startRemaining > 0 && lastDay > 0) {
-        finalIdeal = days.map(day => Math.max(0, startRemaining - (startRemaining / lastDay) * day));
-    }
+    const finalIdeal = idealPoints.every(v => v === 0) && startRemaining > 0 && lastDay > 0
+        ? days.map(day => Math.max(0, startRemaining - (startRemaining / lastDay) * day))
+        : idealPoints;
 
     const width = element.clientWidth || 800;
     const height = 400;
@@ -97,7 +96,7 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
 
     const xAxisCustom = d3.axisBottom(xScale)
         .tickValues(tickValues)
-        .tickFormat((d, i) => tickLabels[i]);
+        .tickFormat((d, index) => tickLabels[index]);
 
     xAxisGroup.call(xAxisCustom)
         .style('font-size', '11px')
@@ -132,13 +131,13 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
     const enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
     const enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
 
-    for (let i = 0; i < days.length - 1; i++) {
-        const leftDay = days[i];
-        const rightDay = days[i + 1];
-        const actualLeft = actualPoints[i];
-        const actualRight = actualPoints[i + 1];
-        const idealLeft = finalIdeal[i];
-        const idealRight = finalIdeal[i + 1];
+    for (let index = 0; index < days.length - 1; index++) {
+        const leftDay = days[index];
+        const rightDay = days[index + 1];
+        const actualLeft = actualPoints[index];
+        const actualRight = actualPoints[index + 1];
+        const idealLeft = finalIdeal[index];
+        const idealRight = finalIdeal[index + 1];
 
         const diffLeft = actualLeft - idealLeft;
         const diffRight = actualRight - idealRight;
@@ -179,12 +178,12 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
             }
         }
     }
-    const lastIdx = days.length - 1;
+    const lastIndex = days.length - 1;
     const lastPoint = {
-        x: xScale(days[lastIdx]),
-        y0: yScale(finalIdeal[lastIdx]),
-        y1: yScale(actualPoints[lastIdx]),
-        behind: (actualPoints[lastIdx] - finalIdeal[lastIdx]) >= 0
+        x: xScale(days[lastIndex]),
+        y0: yScale(finalIdeal[lastIndex]),
+        y1: yScale(actualPoints[lastIndex]),
+        behind: actualPoints[lastIndex] >= finalIdeal[lastIndex]
     };
     if (lastPoint.behind) enhancedBehind.push(lastPoint);
     else enhancedAhead.push(lastPoint);
@@ -219,7 +218,7 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
     }
 
     const lineGen = d3.line<number>()
-        .x((d, i) => xScale(days[i]))
+        .x((d, index) => xScale(days[index]))
         .y(d => yScale(d))
         .curve(d3.curveLinear);
 
@@ -260,16 +259,16 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
         .data(sorted)
         .enter()
         .append('circle')
-        .attr('cx', (d, i) => xScale(days[i]))
+        .attr('cx', (d, index) => xScale(days[index]))
         .attr('cy', d => yScale(d.remainingEffort))
         .attr('r', 5)
         .attr('fill', '#dc3545')
         .attr('stroke', 'white')
         .attr('stroke-width', 1.5)
         .attr('cursor', 'pointer')
-        .on('mouseover', function(this: SVGCircleElement, event: MouseEvent, d: BurndownPoint) {
+        .on('mouseover', function(event: MouseEvent, d: BurndownPoint) {
             const formattedDate = new Date(d.date).toLocaleDateString();
-            d3.select(this).attr('r', 8);
+            d3.select(event.currentTarget as SVGCircleElement).attr('r', 8);
             tooltip.transition().duration(150).style('opacity', 0.9);
             tooltip.html(`<strong>${formattedDate}</strong><br/>Remaining: ${d.remainingEffort} pts`)
                 .style('left', (event.pageX + 12) + 'px')
@@ -279,16 +278,18 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
             tooltip.style('left', (event.pageX + 12) + 'px')
                 .style('top', (event.pageY - 28) + 'px');
         })
-        .on('mouseout', function(this: SVGCircleElement) {
-            d3.select(this).attr('r', 5);
+        .on('mouseout', function(event: MouseEvent) {
+            d3.select(event.currentTarget as SVGCircleElement).attr('r', 5);
             tooltip.transition().duration(200).style('opacity', 0);
         });
 
     const observer = new MutationObserver(() => {
-        if (!document.body.contains(element)) {
-            tooltip.remove();
-            observer.disconnect();
+        if (document.body.contains(element)) {
+        	return;
         }
+
+        tooltip.remove();
+        observer.disconnect();
     });
     observer.observe(document.body, { childList: true, subtree: true });
 }

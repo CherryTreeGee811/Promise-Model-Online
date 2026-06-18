@@ -18,8 +18,8 @@ export { authStore, isLoggedIn, getUsername, getUserId } from './stores/auth.ts'
 export function setAuthState(state: { isAuthenticated: boolean; username?: string | null; userId?: number | null }): void {
     authStore.set({
         isAuthenticated: !!state.isAuthenticated,
-        username: state.username || null,
-        userId: state.userId ?? null,
+        username: state.username || undefined,
+        userId: state.userId ?? undefined,
     });
 }
 
@@ -27,6 +27,6 @@ export function setAuthState(state: { isAuthenticated: boolean; username?: strin
  * Clear all authentication state.
  */
 export function clearAuth(): void {
-    authStore.set({ isAuthenticated: false, username: null, userId: null });
-    authStore.set({ isAuthenticated: false, username: null, userId: null });
+    authStore.set({ isAuthenticated: false, username: undefined, userId: undefined });
+    authStore.set({ isAuthenticated: false, username: undefined, userId: undefined });
 }

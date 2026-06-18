@@ -17,7 +17,7 @@ function section(id, title, content) {
 
 /** Load the knowledge base page content. */
 export function loadKnowledgeBase() {
-    const kbContent = /** @type {HTMLElement} */ (document.getElementById('kb-content'));
+    const kbContent = /** @type {HTMLElement} */ (document.querySelector('#kb-content'));
 
     kbContent.innerHTML = [
       section('overview', 'The Promise Stack Overview', `
@@ -100,46 +100,48 @@ export function loadKnowledgeBase() {
 /** Initialize smooth scrolling for knowledge base sidebar navigation links. */
 function initSidebarScroll() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', e => {
+    for (const link of navLinks) {
+        link.addEventListener('click', event => {
             const hash = link.getAttribute('href');
             if (!hash || !hash.startsWith('#')) return;
-            e.preventDefault();
+            event.preventDefault();
 
-            const target = document.getElementById(hash.slice(1));
+            const target = document.querySelector(hash);
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                navLinks.forEach(l => l.removeAttribute('aria-current'));
+                for (const l of navLinks) l.removeAttribute('aria-current');
                 link.setAttribute('aria-current', 'true');
             }
         });
-    });
+    }
 }
 
 /** Initialize scroll spy to highlight the active knowledge base section in the sidebar. */
 function initScrollSpy() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
     const sections = document.querySelectorAll('.kb-section[id]');
-    if (!sections.length) return;
+    if (sections.length === 0) return;
 
-    let ticking = false;
+    let isTicking = false;
     const onScroll = () => {
-        if (!ticking) {
-            window.requestAnimationFrame(() => {
-                const scrollY = window.scrollY + 100;
-                let currentId = null;
-                sections.forEach(section => {
-                    const top = section.offsetTop;
-                    if (scrollY >= top) currentId = section.id;
-                });
-                navLinks.forEach(link => {
-                    const isCurrent = link.getAttribute('href') === `#${currentId}`;
-                    link.setAttribute('aria-current', isCurrent ? 'true' : 'false');
-                });
-                ticking = false;
-            });
-            ticking = true;
+        if (isTicking) {
+        	return;
         }
+
+        requestAnimationFrame(() => {
+            const scrollY = window.scrollY + 100;
+            let currentId;
+            for (const section of sections) {
+                const top = section.offsetTop;
+                if (scrollY >= top) currentId = section.id;
+            }
+            for (const link of navLinks) {
+                const isCurrent = link.getAttribute('href') === `#${currentId}`;
+                link.setAttribute('aria-current', isCurrent ? 'true' : 'false');
+            }
+            isTicking = false;
+        });
+        isTicking = true;
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });

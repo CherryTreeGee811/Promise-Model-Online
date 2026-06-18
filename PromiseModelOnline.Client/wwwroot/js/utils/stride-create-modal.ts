@@ -10,18 +10,18 @@ import { escapeHtml } from './html.ts';
  * @returns {HTMLElement | null} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalEl = document.getElementById(modalId);
-    if (modalEl) return modalEl;
+    let modalElement = document.querySelector('#' + modalId);
+    if (modalElement) return modalElement;
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = modalMarkup.trim();
-    modalEl = wrapper.firstElementChild as HTMLElement | null;
+    modalElement = wrapper.firstElementChild as HTMLElement | null;
 
-    if (modalEl) {
-        document.body.appendChild(modalEl);
+    if (modalElement) {
+        document.body.append(modalElement);
     }
 
-    return modalEl;
+    return modalElement;
 }
 
 /**
@@ -64,8 +64,8 @@ function getNewStrideDefaults(existingStrides: Array<{ endDate?: string }> = [])
         ? existingStrides
             .map(stride => new Date(stride?.endDate ?? ''))
             .filter(date => Number.isFinite(date.getTime()))
-            .sort((left, right) => right.getTime() - left.getTime())[0]
-        : null;
+            .toSorted((left, right) => right.getTime() - left.getTime())[0]
+        : undefined;
 
     const startDate = latestEndDate ? addDays(latestEndDate, 1) : now;
     const endDate = addDays(startDate, strideDurationDays - 1);
@@ -105,7 +105,7 @@ export function openStrideCreateModal({
     existingStrides = [],
     onCreated,
 }: StrideCreateOptions): void {
-    const modalEl = ensureModal('stride-create-modal', `
+    const modalElement = ensureModal('stride-create-modal', `
         <div class="modal fade" id="stride-create-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
@@ -149,26 +149,26 @@ export function openStrideCreateModal({
         </div>
     `);
 
-    const form = modalEl?.querySelector('#stride-create-form');
-    const nameInput = modalEl?.querySelector('#stride-create-name') as HTMLInputElement | null;
-    const iterationSelect = modalEl?.querySelector('#stride-create-iteration') as HTMLSelectElement | null;
-    const durationInput = modalEl?.querySelector('#stride-create-duration') as HTMLInputElement | null;
-    const startInput = modalEl?.querySelector('#stride-create-start') as HTMLInputElement | null;
-    const endInput = modalEl?.querySelector('#stride-create-end') as HTMLInputElement | null;
-    const errorEl = modalEl?.querySelector('#stride-create-error');
-    const submitBtn = modalEl?.querySelector('#stride-create-submit') as HTMLButtonElement | null;
-    if (!form || !nameInput || !iterationSelect || !durationInput || !startInput || !endInput || !errorEl || !submitBtn) return;
+    const form = modalElement?.querySelector('#stride-create-form');
+    const nameInput = modalElement?.querySelector('#stride-create-name') as HTMLInputElement | null;
+    const iterationSelect = modalElement?.querySelector('#stride-create-iteration') as HTMLSelectElement | null;
+    const durationInput = modalElement?.querySelector('#stride-create-duration') as HTMLInputElement | null;
+    const startInput = modalElement?.querySelector('#stride-create-start') as HTMLInputElement | null;
+    const endInput = modalElement?.querySelector('#stride-create-end') as HTMLInputElement | null;
+    const errorElement = modalElement?.querySelector('#stride-create-error');
+    const submitButton = modalElement?.querySelector('#stride-create-submit') as HTMLButtonElement | null;
+    if (!form || !nameInput || !iterationSelect || !durationInput || !startInput || !endInput || !errorElement || !submitButton) return;
 
     form.replaceWith(form.cloneNode(true));
 
-    const liveForm = modalEl.querySelector('#stride-create-form') as HTMLFormElement;
-    const liveNameInput = modalEl.querySelector('#stride-create-name') as HTMLInputElement;
-    const liveIterationSelect = modalEl.querySelector('#stride-create-iteration') as HTMLSelectElement;
-    const liveDurationInput = modalEl.querySelector('#stride-create-duration') as HTMLInputElement;
-    const liveStartInput = modalEl.querySelector('#stride-create-start') as HTMLInputElement;
-    const liveEndInput = modalEl.querySelector('#stride-create-end') as HTMLInputElement;
-    const liveErrorEl = modalEl.querySelector('#stride-create-error') as HTMLElement;
-    const liveSubmitBtn = modalEl.querySelector('#stride-create-submit') as HTMLButtonElement;
+    const liveForm = modalElement.querySelector('#stride-create-form') as HTMLFormElement;
+    const liveNameInput = modalElement.querySelector('#stride-create-name') as HTMLInputElement;
+    const liveIterationSelect = modalElement.querySelector('#stride-create-iteration') as HTMLSelectElement;
+    const liveDurationInput = modalElement.querySelector('#stride-create-duration') as HTMLInputElement;
+    const liveStartInput = modalElement.querySelector('#stride-create-start') as HTMLInputElement;
+    const liveEndInput = modalElement.querySelector('#stride-create-end') as HTMLInputElement;
+    const liveErrorElement = modalElement.querySelector('#stride-create-error') as HTMLElement;
+    const liveSubmitButton = modalElement.querySelector('#stride-create-submit') as HTMLButtonElement;
 
     const iterationList = Array.isArray(iterations) ? iterations : [];
     liveIterationSelect.innerHTML = iterationList.map(iteration => `
@@ -182,10 +182,10 @@ export function openStrideCreateModal({
     liveDurationInput.value = String(defaults.durationDays);
     liveStartInput.value = defaults.startDate;
     liveEndInput.value = defaults.endDate;
-    liveErrorEl.textContent = '';
-    liveErrorEl.classList.add('d-none');
-    liveSubmitBtn.disabled = false;
-    liveSubmitBtn.textContent = 'Create Stride';
+    liveErrorElement.textContent = '';
+    liveErrorElement.classList.add('d-none');
+    liveSubmitButton.disabled = false;
+    liveSubmitButton.textContent = 'Create Stride';
 
     liveDurationInput.addEventListener('input', () => {
         const duration = Math.max(1, Number.parseInt(liveDurationInput.value, 10) || 1);
@@ -209,27 +209,28 @@ export function openStrideCreateModal({
         event.preventDefault();
 
         const name = liveNameInput.value.trim();
-        const selectedIterationId = Number.parseInt(liveIterationSelect.value, 10);
-        const durationDays = Math.max(1, Number.parseInt(liveDurationInput.value, 10) || 1);
-        const startDate = liveStartInput.value;
-        const endDate = liveEndInput.value;
 
         if (!name) {
-            liveErrorEl.textContent = 'Stride name is required.';
-            liveErrorEl.classList.remove('d-none');
+            liveErrorElement.textContent = 'Stride name is required.';
+            liveErrorElement.classList.remove('d-none');
             liveNameInput.focus();
             return;
         }
 
+        const selectedIterationId = Number.parseInt(liveIterationSelect.value, 10);
+
         if (!selectedIterationId) {
-            liveErrorEl.textContent = 'Select an iteration for this stride.';
-            liveErrorEl.classList.remove('d-none');
+            liveErrorElement.textContent = 'Select an iteration for this stride.';
+            liveErrorElement.classList.remove('d-none');
             liveIterationSelect.focus();
             return;
         }
 
-        liveSubmitBtn.disabled = true;
-        liveSubmitBtn.textContent = 'Creating...';
+        const durationDays = Math.max(1, Number.parseInt(liveDurationInput.value, 10) || 1);
+        const startDate = liveStartInput.value;
+        const endDate = liveEndInput.value;
+        liveSubmitButton.disabled = true;
+        liveSubmitButton.textContent = 'Creating...';
 
         try {
             await createStride(owner, project, {
@@ -241,16 +242,16 @@ export function openStrideCreateModal({
                 isActive: true,
             });
 
-            (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
+            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.hide();
             await onCreated?.();
         } catch (error: any) {
-            liveErrorEl.textContent = error?.message || 'Failed to create stride.';
-            liveErrorEl.classList.remove('d-none');
+            liveErrorElement.textContent = error?.message || 'Failed to create stride.';
+            liveErrorElement.classList.remove('d-none');
         } finally {
-            liveSubmitBtn.disabled = false;
-            liveSubmitBtn.textContent = 'Create Stride';
+            liveSubmitButton.disabled = false;
+            liveSubmitButton.textContent = 'Create Stride';
         }
     });
 
-    (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
+    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.show();
 }

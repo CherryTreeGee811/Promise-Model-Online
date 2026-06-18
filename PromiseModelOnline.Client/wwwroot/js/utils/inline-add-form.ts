@@ -9,7 +9,7 @@ export interface AddChildConfig {
   /** The `id` of the statement text input. */
   inputId: string;
   /** The `id` of the submit button. */
-  submitBtnId: string;
+  submitButtonId: string;
   /** The `id` of the message span for validation/api errors. */
   msgId: string;
   /** Optional `id` of a type select element (used by moments detail). */
@@ -50,32 +50,33 @@ export interface AddChildConfig {
  */
 export function setupAddChildForm(config: AddChildConfig): void {
   const {
-    formId, inputId, submitBtnId, msgId, typeSelectId,
+    formId, inputId, submitButtonId, msgId, typeSelectId,
     tbody,
     onCreate, getRowHtml, datasetKey, childMetricsKey,
     items, onSuccess, getExtra
   } = config;
 
-  const form = document.getElementById(formId) as HTMLFormElement | null;
-  const statementInput = document.getElementById(inputId) as HTMLInputElement | null;
-  const msg = document.getElementById(msgId) as HTMLElement | null;
-  const submitBtn = document.getElementById(submitBtnId) as HTMLButtonElement | null;
-  const typeSelect = typeSelectId ? document.getElementById(typeSelectId) as HTMLSelectElement | null : null;
+  const form = document.querySelector('#' + formId) as HTMLFormElement | null;
+  const statementInput = document.querySelector('#' + inputId) as HTMLInputElement | null;
+  const message = document.querySelector('#' + msgId) as HTMLElement | null;
+  const submitButton = document.querySelector('#' + submitButtonId) as HTMLButtonElement | null;
 
-  if (!form || !statementInput || !msg || !submitBtn) return;
+  if (!form || !statementInput || !message || !submitButton) return;
+
+  const typeSelect = typeSelectId ? document.querySelector('#' + typeSelectId) as HTMLSelectElement | null : undefined;
   if (typeSelectId && !typeSelect) return;
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    msg.textContent = '';
+    message.textContent = '';
 
     const statement = statementInput.value.trim();
     if (!statement) {
-      msg.textContent = 'Statement is required.';
+      message.textContent = 'Statement is required.';
       return;
     }
 
-    submitBtn.disabled = true;
+    submitButton.disabled = true;
 
     try {
       const extra = getExtra ? getExtra() : undefined;
@@ -93,9 +94,9 @@ export function setupAddChildForm(config: AddChildConfig): void {
         patchChildMetrics(childMetricsKey, [...(items || []), created]);
       }
     } catch {
-      msg.textContent = `Failed to add ${datasetKey}.`;
+      message.textContent = `Failed to add ${datasetKey}.`;
     } finally {
-      submitBtn.disabled = false;
+      submitButton.disabled = false;
     }
   });
 }
@@ -104,16 +105,16 @@ export function setupAddChildForm(config: AddChildConfig): void {
  * Disable the add-child form controls when the user lacks Edit permission.
  * @param {string} formId - The `id` of the form element.
  * @param {string} inputId - The `id` of the statement input.
- * @param {string} submitBtnId - The `id` of the submit button.
+ * @param {string} submitButtonId - The `id` of the submit button.
  * @param {string} [typeSelectId] - Optional `id` of the type select (moments detail).
  */
-export function gateAddChildControls(formId: string, inputId: string, submitBtnId: string, typeSelectId?: string): void {
-  const addInput = document.getElementById(inputId) as HTMLInputElement | null;
-  const addSubmit = document.getElementById(submitBtnId) as HTMLButtonElement | null;
+export function gateAddChildControls(formId: string, inputId: string, submitButtonId: string, typeSelectId?: string): void {
+  const addInput = document.querySelector('#' + inputId) as HTMLInputElement | null;
+  const addSubmit = document.querySelector('#' + submitButtonId) as HTMLButtonElement | null;
   if (addInput) addInput.disabled = true;
   if (addSubmit) { addSubmit.disabled = true; addSubmit.title = 'Requires Edit permission.'; }
   if (typeSelectId) {
-    const typeEl = document.getElementById(typeSelectId) as HTMLSelectElement | null;
-    if (typeEl) typeEl.disabled = true;
+    const typeElement = document.querySelector('#' + typeSelectId) as HTMLSelectElement | null;
+    if (typeElement) typeElement.disabled = true;
   }
 }

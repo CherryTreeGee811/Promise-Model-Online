@@ -7,11 +7,14 @@ import { loadInvitationsPage } from './list.ts';
  * @param {string} path - The URL path to match.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
-export function handleInvitationsRoute(path: string, contentDiv: HTMLElement): void {
+export async function handleInvitationsRoute(path: string, contentDiv: HTMLElement): Promise<void> {
     if (path === '/invitations') {
-        loadTemplate('invitations/list.html', contentDiv)
-            .then(() => loadInvitationsPage(contentDiv))
-            .catch(loadTemplateWithError(contentDiv, 'invitations'));
+        try {
+            await loadTemplate('invitations/list.html', contentDiv);
+            loadInvitationsPage(contentDiv);
+        } catch {
+            await loadTemplateWithError(contentDiv, 'invitations')();
+        }
     } else {
         showNotFound(contentDiv);
     }

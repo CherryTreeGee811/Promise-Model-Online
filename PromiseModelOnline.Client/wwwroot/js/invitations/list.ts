@@ -9,8 +9,8 @@ import { getPendingInvitations, acceptInvitation } from './api.ts';
  * @param {HTMLElement} contentDiv - The main content container element.
  */
 export function loadInvitationsPage(contentDiv) {
-    const listDiv = /** @type {HTMLElement} */ (document.getElementById('invitations-list'));
-    const errorEl = /** @type {HTMLElement} */ (document.getElementById('error-text'));
+    const listDiv = /** @type {HTMLElement} */ (document.querySelector('#invitations-list'));
+    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
 
     /** Fetch and render pending invitations. */
     async function refresh() {
@@ -49,16 +49,16 @@ export function loadInvitationsPage(contentDiv) {
                 </table>
             `;
 
-            document.querySelectorAll('.accept-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const id = parseInt(/** @type {string} */(btn.dataset.permissionId), 10);
+            for (const button of document.querySelectorAll('.accept-btn')) {
+                button.addEventListener('click', async () => {
+                    const id = parseInt(/** @type {string} */(button.dataset.permissionId), 10);
                     try {
                         await acceptInvitation(id);
                         const y = window.scrollY;
-                        const row = btn.closest('tr');
+                        const row = button.closest('tr');
                         row?.remove();
 
-                        const remaining = listDiv.querySelectorAll('tbody tr').length;
+                        const remaining = listDiv.querySelectorAll(':scope tbody tr').length;
                         if (remaining === 0) {
                             listDiv.innerHTML = renderEmptyStateSection({
                                 icon: 'bi-envelope',
@@ -67,14 +67,14 @@ export function loadInvitationsPage(contentDiv) {
                             });
                         }
                         window.scrollTo(0, y);
-                    } catch (err) {
+                    } catch (error) {
                         alert('Failed to accept invitation');
-                        console.error(err);
+                        console.error(error);
                     }
                 });
-            });
-        } catch (err) {
-            errorEl.textContent = 'Failed to load invitations.';
+            }
+        } catch {
+            errorElement.textContent = 'Failed to load invitations.';
         }
     }
 

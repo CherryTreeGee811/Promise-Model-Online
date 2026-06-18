@@ -26,12 +26,12 @@ const BG_CLASSES = {
  * @returns {HTMLElement} The toast container element.
  */
 function ensureContainer() {
-  let container = document.getElementById(TOAST_CONTAINER_ID);
+  let container = document.querySelector('#' + TOAST_CONTAINER_ID);
   if (!container) {
-    container = document.createElement('div');
+    container = document.createElement('div') as HTMLElement;
     container.id = TOAST_CONTAINER_ID;
-    container.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;max-width:24rem';
-    document.body.appendChild(container);
+    (container as HTMLElement).style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;max-width:24rem';
+    document.body.append(container);
   }
   return container;
 }
@@ -63,7 +63,7 @@ export function showToast(message, type = 'info', duration = DEFAULT_DURATION) {
     </div>
   `;
 
-  container.appendChild(toast);
+  container.append(toast);
 
   requestAnimationFrame(() => { toast.style.opacity = '1'; });
 
@@ -74,9 +74,9 @@ export function showToast(message, type = 'info', duration = DEFAULT_DURATION) {
     }, duration);
   }
 
-  const closeBtn = toast.querySelector('.btn-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
+  const closeButton = toast.querySelector('.btn-close');
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
       toast.style.opacity = '0';
       setTimeout(() => toast.remove(), 300);
     });

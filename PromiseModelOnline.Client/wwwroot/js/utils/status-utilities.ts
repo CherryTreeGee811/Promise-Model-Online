@@ -9,7 +9,7 @@ interface StatusOption {
 export const STATUS_OPTIONS: StatusOption[] = [
     { value: 'Todo', label: 'Todo', icon: '\u{1F534}' },
     { value: 'InProgress', label: 'In Progress', icon: '\u{1F7E0}' },
-    { value: 'Blocked', label: 'Blocked', icon: '\u{26AB}\uFE0F' },
+    { value: 'Blocked', label: 'Blocked', icon: '\u{26AB}\u{FE0F}' },
     { value: 'Done', label: 'Done', icon: '\u{1F7E2}' },
 ];
 
@@ -21,10 +21,10 @@ export const STATUS_OPTIONS: StatusOption[] = [
 export function getStatusIcon(statusOrColor: string): string {
     const normalized = String(statusOrColor ?? '').toLowerCase();
     if (normalized.includes('green')) return '\u{1F7E2}';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '\u{26AB}\uFE0F';
+    if (normalized.includes('black') || normalized.includes('blocked')) return '\u{26AB}\u{FE0F}';
     if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '\u{1F7E0}';
     if (normalized.includes('red') || normalized.includes('todo')) return '\u{1F534}';
-    return '\u26AA';
+    return '\u{26AA}';
 }
 
 /**

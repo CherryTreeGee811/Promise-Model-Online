@@ -18,7 +18,7 @@ import { createCommentAutocomplete } from './autocomplete.ts';
  * @param {string} project - The project slug.
  * @param {{ permission?: string }} permission - The user's permission object.
  */
-export function loadComments(container, parentType, parentId, owner, project, permission) {
+export async function loadComments(container, parentType, parentId, owner, project, permission) {
     const canComment = isAtLeast(permission?.permission, 'Comment');
 
     container.innerHTML = `
@@ -42,20 +42,21 @@ export function loadComments(container, parentType, parentId, owner, project, pe
 
     const mapPromise = loadEntityLookupMap(parentType, parentId, owner, project);
 
-    Promise.all([
-        getComments(owner, project, parentType, parentId),
-        mapPromise,
-    ])
-        .then(([comments]) => renderComments(commentsList, comments, canComment))
-        .catch(() => {
-            commentsList.removeAttribute('role');
-            commentsList.removeAttribute('aria-label');
-            commentsList.innerHTML = '<p class="error">Failed to load comments.</p>';
-        });
+    try {
+        const [comments] = await Promise.all([
+            getComments(owner, project, parentType, parentId),
+            mapPromise,
+        ]);
+        renderComments(commentsList, comments, canComment);
+    } catch {
+        commentsList.removeAttribute('role');
+        commentsList.removeAttribute('aria-label');
+        commentsList.innerHTML = '<p class="error">Failed to load comments.</p>';
+    }
 
     if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
             const text = textarea.value.trim();
             if (!text) return;
             try {
@@ -64,9 +65,9 @@ export function loadComments(container, parentType, parentId, owner, project, pe
                 appendComment(commentsList, created);
                 textarea.value = '';
                 window.scrollTo(0, y);
-            } catch (err) {
+            } catch (error) {
                 alert('Failed to post comment.');
-                console.error(err);
+                console.error(error);
             }
         });
     }
@@ -88,7 +89,7 @@ function renderComments(container, comments, canComment) {
         });
         return;
     }
-    comments.forEach(comment => container.appendChild(createCommentElement(comment)));
+    for (const comment of comments) { container.append(createCommentElement(comment)); }
 }
 
 /**
@@ -99,7 +100,7 @@ function renderComments(container, comments, canComment) {
 function appendComment(container, comment) {
     const empty = container.querySelector('.no-items');
     if (empty) empty.remove();
-    container.appendChild(createCommentElement(comment));
+    container.append(createCommentElement(comment));
 }
 
 /**
@@ -110,14 +111,14 @@ function appendComment(container, comment) {
 function createCommentElement(comment) {
     const div = document.createElement('div');
     div.className = 'comment-item';
-    const userName = comment.userName || comment.authorName || 'Unknown';
+    const username = comment.userName || comment.authorName || 'Unknown';
     div.innerHTML = `
         <div class="comment-meta">
-            <strong>${escapeHtml(userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
+            <strong>${escapeHtml(username)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
         </div>
         <div class="comment-text">${formatCommentText(comment.text)}</div>
-        ${comment.mentionedUsers && comment.mentionedUsers.length ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
-        ${comment.replies && comment.replies.length ? `<div class="comment-replies">${comment.replies.map(r => `
+        ${comment.mentionedUsers && comment.mentionedUsers.length > 0 ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
+        ${comment.replies && comment.replies.length > 0 ? `<div class="comment-replies">${comment.replies.map(r => `
             <div class="comment-item reply">
                 <strong>${escapeHtml(r.userName || r.authorName || 'Unknown')}</strong>: ${escapeHtml(r.text)}
             </div>

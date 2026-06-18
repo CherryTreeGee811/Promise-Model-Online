@@ -14,8 +14,8 @@ interface OwnerProject {
  * @returns {number | null} The parsed project ID, or null if invalid.
  */
 function toProjectId(value: unknown): number | null {
-    const parsed = Number.parseInt(String(value ?? ''), 10);
-    return Number.isNaN(parsed) ? null : parsed;
+    const parsed = Math.trunc(Number(value ?? ''));
+    return Number.isNaN(parsed) ? undefined : parsed;
 }
 
 /**
@@ -23,8 +23,8 @@ function toProjectId(value: unknown): number | null {
  * @returns {number | null} The project ID if present and valid, or null.
  */
 export function getGraphProjectIdHintFromUrl(): number | null {
-    const params = new URLSearchParams(window.location.search);
-    return toProjectId(params.get('graphProjectId'));
+    const parameters = new URLSearchParams(location.search);
+    return toProjectId(parameters.get('graphProjectId'));
 }
 
 /**
@@ -32,11 +32,11 @@ export function getGraphProjectIdHintFromUrl(): number | null {
  * @returns {OwnerProject} An object with owner and project slugs (both may be null).
  */
 export function getOwnerProjectFromPath(): OwnerProject {
-    const match = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\//);
+    const match = location.pathname.match(/^\/([^/]+)\/([^/]+)\//);
     if (match) {
         return { owner: match[1], project: match[2] };
     }
-    return { owner: null, project: null };
+    return { owner: undefined, project: undefined };
 }
 
 /**
@@ -44,14 +44,14 @@ export function getOwnerProjectFromPath(): OwnerProject {
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {string} focusNodeId - The node ID to focus on in the graph.
- * @returns {string | null} The full graph URL with focus parameter, or null if any input is missing.
+ * @returns {string | undefined} The full graph URL with focus parameter, or undefined if any input is missing.
  */
 export function buildGraphViewHref(owner: string, project: string, focusNodeId: string): string | null {
     const safeOwner = String(owner ?? '').trim();
     const safeProject = String(project ?? '').trim();
     const safeFocus = String(focusNodeId ?? '').trim();
 
-    if (!safeOwner || !safeProject || !safeFocus) return null;
+    if (!safeOwner || !safeProject || !safeFocus) return;
     return `/${safeOwner}/${safeProject}/graph?focus=${encodeURIComponent(safeFocus)}`;
 }
 
@@ -72,10 +72,10 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
 
         const backButton = detailContainer.querySelector<HTMLElement>('#back-link');
         if (backButton?.parentElement) {
-            backButton.insertAdjacentElement('beforebegin', button);
-            backButton.insertAdjacentText('beforebegin', ' ');
+            backButton.before(button);
+            backButton.before(' ');
         } else {
-            detailContainer.appendChild(button);
+            detailContainer.append(button);
         }
     }
 
@@ -88,17 +88,17 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
  * @param {string | number | null} [preferredProjectId] - An optional preferred project ID to short-circuit the search.
  * @returns {Promise<number | null>} The resolved project ID, or null if not found.
  */
-export async function resolveProjectIdForPromise(promiseId: string | number, preferredProjectId: string | number | null = null): Promise<number | null> {
-    const numericPromiseId = Number.parseInt(String(promiseId), 10);
-    if (Number.isNaN(numericPromiseId)) return null;
+export async function resolveProjectIdForPromise(promiseId: string | number, preferredProjectId: string | number | undefined = undefined): Promise<number | null> {
+    const numericPromiseId = Math.trunc(Number(promiseId));
+    if (Number.isNaN(numericPromiseId)) return;
 
     const cached = promiseProjectCache.get(numericPromiseId);
-    if (cached != null) {
+    if (cached !== null) {
         return cached;
     }
 
     const preferred = toProjectId(preferredProjectId);
-    if (preferred != null) {
+    if (preferred !== null) {
         promiseProjectCache.set(numericPromiseId, preferred);
         return preferred;
     }
@@ -108,16 +108,16 @@ export async function resolveProjectIdForPromise(promiseId: string | number, pre
 
     const results = await Promise.all(projectList.map(async (project) => {
         const projectId = toProjectId(project?.id);
-        if (projectId == null) return null;
+        if (projectId === null) return;
         const promises = await getProjectPromises(project.ownerSlug, project.slug);
         const match = (Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId);
-        return match ? projectId : null;
+        return match ? projectId : undefined;
     }));
-    const found = results.find(id => id != null);
-    if (found != null) {
+    const found = results.find(id => id !== null);
+    if (found !== null) {
         promiseProjectCache.set(numericPromiseId, found);
         return found;
     }
 
-    return null;
+    return;
 }

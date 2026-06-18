@@ -10,11 +10,11 @@ import { getIterations, getBurndown } from './api.ts';
 
 /**
  * Format a date string into a locale date representation.
- * @param {string} dateStr - The date string to format.
+ * @param {string} dateString - The date string to format.
  * @returns {string} The formatted date string, or 'N/A' if the input is falsy.
  */
-function formatDate(dateStr) {
-    return dateStr ? new Date(dateStr).toLocaleDateString('en-CA') : 'N/A';
+function formatDate(dateString) {
+    return dateString ? new Date(dateString).toLocaleDateString('en-CA') : 'N/A';
 }
 
 /**
@@ -28,25 +28,25 @@ function formatDate(dateStr) {
  * @param {string} project - The project slug.
  * @param {{ permission?: string }} permission - The user's permission object for this project.
  */
-export function loadIterationHistory(owner, project, permission) {
-    const viewDiv = /** @type {HTMLElement} */ (document.getElementById('iterations-view'));
-    const listDiv = /** @type {HTMLElement} */ (document.getElementById('iterations-list'));
-    const detailDiv = /** @type {HTMLElement} */ (document.getElementById('iteration-detail'));
-    const errorEl = /** @type {HTMLElement} */ (document.getElementById('error-text'));
-    const projectTitle = /** @type {HTMLElement|null} */ (document.getElementById('project-title'));
-    const createIterationBtn = /** @type {HTMLElement|null} */ (document.getElementById('create-iteration-btn'));
+export async function loadIterationHistory(owner, project, permission) {
+    const viewDiv = /** @type {HTMLElement} */ (document.querySelector('#iterations-view'));
+    const listDiv = /** @type {HTMLElement} */ (document.querySelector('#iterations-list'));
+    const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#iteration-detail'));
+    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
+    const projectTitle = /** @type {HTMLElement|null} */ (document.querySelector('#project-title'));
+    const createIterationButton = /** @type {HTMLElement|null} */ (document.querySelector('#create-iteration-btn'));
 
     const canEdit = permission?.permission === 'Edit';
 
     detailDiv.classList.add('d-none');
-    errorEl.textContent = '';
+    errorElement.textContent = '';
 
-    if (createIterationBtn) {
+    if (createIterationButton) {
         if (!canEdit) {
-            createIterationBtn.classList.add('d-none');
-        } else if (createIterationBtn.dataset.bound !== '1') {
-            createIterationBtn.dataset.bound = '1';
-            createIterationBtn.addEventListener('click', async () => {
+            createIterationButton.classList.add('d-none');
+        } else if (createIterationButton.dataset.bound !== '1') {
+            createIterationButton.dataset.bound = '1';
+            createIterationButton.addEventListener('click', async () => {
                 openIterationCreateModal(owner, project, () => loadIterationHistory(owner, project, permission));
             });
         }
@@ -54,165 +54,169 @@ export function loadIterationHistory(owner, project, permission) {
 
     listDiv.innerHTML = renderLoadingSpinner('Loading iterations');
 
-    const LOAD_TIMEOUT_MS = 15000;
+    const LOAD_TIMEOUT_MS = 15_000;
 
     const listTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS);
     });
 
-    Promise.race([
-        Promise.all([
-            getProject(owner, project).catch(() => null),
-            getIterations(owner, project)
-        ]),
-        listTimeoutPromise
-    ])
-        .then(([projectData, iterations]) => {
-            if (projectTitle) {
-                projectTitle.textContent = projectData?.name ?? `Project ${owner}/${project}`;
-            }
+    const projectPromise = (async () => {
+        try {
+            return await getProject(owner, project);
+        } catch {}
+    })();
 
-            if (!iterations || iterations.length === 0) {
-                listDiv.innerHTML = renderEmptyStateSection({
-                    icon: 'bi-arrow-repeat',
-                    title: 'No iterations found.',
-                    description: 'Create an iteration to start organizing your strides.',
+    try {
+        const [projectData, iterations] = await Promise.race([
+            Promise.all([
+                projectPromise,
+                getIterations(owner, project),
+            ]),
+            listTimeoutPromise,
+        ]);
+
+        if (projectTitle) {
+            projectTitle.textContent = projectData?.name ?? `Project ${owner}/${project}`;
+        }
+
+        if (!iterations || iterations.length === 0) {
+            listDiv.innerHTML = renderEmptyStateSection({
+                icon: 'bi-arrow-repeat',
+                title: 'No iterations found.',
+                description: 'Create an iteration to start organizing your strides.',
+            });
+            return;
+        }
+
+        iterations.sort((a, b) => b.id - a.id);
+
+        listDiv.innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Created</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${iterations.map(index => `
+                            <tr>
+                                <td>${escapeHtml(index.name)}</td>
+                                <td>${formatDate(index.createdAt)}</td>
+                                <td>
+                                    <button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${index.id}" type="button">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        for (const button of document.querySelectorAll('.view-iteration-btn')) {
+            button.addEventListener('click', () => {
+                const iterationId = parseInt(/** @type {string} */(button.dataset.iterationId), 10);
+                const iteration = iterations.find(index => index.id === iterationId);
+                showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}` });
+            });
+        }
+    } catch (error) {
+        listDiv.innerHTML = '';
+        errorElement.textContent = 'Failed to load iterations.';
+        console.error(error);
+    }
+
+    /**
+     * Display the detail view for a specific iteration, including burndown chart and strides.
+     * @param {Iteration} iteration - The iteration object.
+     */
+    async function showIterationDetail(iteration) {
+        const iterationId = iteration.id;
+
+        viewDiv.classList.add('d-none');
+        detailDiv.classList.remove('d-none');
+
+        const titleElement = /** @type {HTMLElement} */ (document.querySelector('#iteration-title'));
+        const burndownCanvas = /** @type {HTMLElement} */ (document.querySelector('#iteration-burndown-canvas'));
+        const strideDetailsDiv = /** @type {HTMLElement} */ (document.querySelector('#stride-details'));
+
+        titleElement.textContent = iteration.name;
+        burndownCanvas.innerHTML = renderLoadingSpinner('Loading burndown chart');
+        strideDetailsDiv.innerHTML = renderLoadingSpinner('Loading strides');
+
+        const BURNDOWN_TIMEOUT_MS = 10_000;
+
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS);
+        });
+
+        try {
+            const points = await Promise.race([getBurndown(owner, project, iterationId), timeoutPromise]);
+            if (points && points.length > 0) {
+                drawBurndownChart(burndownCanvas, points);
+            } else {
+                burndownCanvas.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-graph-down',
+                    title: 'No burndown data available for this iteration.',
+                    description: 'Burndown data will appear once moments have status updates.',
+                });
+            }
+        } catch (error) {
+            console.error('Iteration burndown error', error);
+            burndownCanvas.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
+        }
+
+        try {
+            const strides = await getStridesByIteration(owner, project, iterationId);
+            if (!strides || strides.length === 0) {
+                strideDetailsDiv.innerHTML = renderEmptyStateSection({
+                    icon: 'bi-kanban',
+                    title: 'No strides in this iteration.',
+                    description: 'Create strides to organize your work within this iteration.',
                 });
                 return;
             }
 
-            iterations.sort((a, b) => b.id - a.id);
+            strides.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
-            listDiv.innerHTML = `
+            strideDetailsDiv.innerHTML = `
                 <div class="table-responsive">
-                    <table class="table table-sm table-striped table-hover align-middle">
+                    <table class="table table-sm table-striped table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col">Name</th>
-                                <th scope="col">Created</th>
-                                <th scope="col">Actions</th>
+                                <th scope="col">Stride</th>
+                                <th scope="col">Start Date</th>
+                                <th scope="col">End Date</th>
+                                <th scope="col">Duration</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${iterations.map(i => `
+                            ${strides.map(s => `
                                 <tr>
-                                    <td>${escapeHtml(i.name)}</td>
-                                    <td>${formatDate(i.createdAt)}</td>
-                                    <td>
-                                        <button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${i.id}" type="button">
-                                            <i class="bi bi-eye" aria-hidden="true"></i>
-                                            View
-                                        </button>
-                                    </td>
+                                    <td>${escapeHtml(s.name)}</td>
+                                    <td>${formatDate(s.startDate)}</td>
+                                    <td>${formatDate(s.endDate)}</td>
+                                    <td>${s.durationDays} days</td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
                 </div>
             `;
-
-            document.querySelectorAll('.view-iteration-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const iterationId = parseInt(/** @type {string} */(btn.dataset.iterationId), 10);
-                    const iteration = iterations.find(i => i.id === iterationId);
-                    showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}` });
-                });
-            });
-        })
-        .catch(err => {
-            listDiv.innerHTML = '';
-            errorEl.textContent = 'Failed to load iterations.';
-            console.error(err);
-        });
-
-    /**
-     * Display the detail view for a specific iteration, including burndown chart and strides.
-     * @param {Iteration} iteration - The iteration object.
-     */
-    function showIterationDetail(iteration) {
-        const iterationId = iteration.id;
-
-        viewDiv.classList.add('d-none');
-        detailDiv.classList.remove('d-none');
-
-        const titleEl = /** @type {HTMLElement} */ (document.getElementById('iteration-title'));
-        const burndownCanvas = /** @type {HTMLElement} */ (document.getElementById('iteration-burndown-canvas'));
-        const strideDetailsDiv = /** @type {HTMLElement} */ (document.getElementById('stride-details'));
-
-        titleEl.textContent = iteration.name;
-        burndownCanvas.innerHTML = renderLoadingSpinner('Loading burndown chart');
-        strideDetailsDiv.innerHTML = renderLoadingSpinner('Loading strides');
-
-        const BURNDOWN_TIMEOUT_MS = 10000;
-
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS);
-        });
-
-        Promise.race([getBurndown(owner, project, iterationId), timeoutPromise])
-            .then(points => {
-                if (points && points.length > 0) {
-                    drawBurndownChart(burndownCanvas, points);
-                } else {
-                    burndownCanvas.innerHTML = renderEmptyStateSection({
-                        icon: 'bi-graph-down',
-                        title: 'No burndown data available for this iteration.',
-                        description: 'Burndown data will appear once moments have status updates.',
-                    });
-                }
-            })
-            .catch(err => {
-                console.error('Iteration burndown error', err);
-                burndownCanvas.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
-            });
-
-        getStridesByIteration(owner, project, iterationId)
-            .then(strides => {
-                if (!strides || strides.length === 0) {
-                    strideDetailsDiv.innerHTML = renderEmptyStateSection({
-                        icon: 'bi-kanban',
-                        title: 'No strides in this iteration.',
-                        description: 'Create strides to organize your work within this iteration.',
-                    });
-                    return;
-                }
-
-                strides.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-
-                strideDetailsDiv.innerHTML = `
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th scope="col">Stride</th>
-                                    <th scope="col">Start Date</th>
-                                    <th scope="col">End Date</th>
-                                    <th scope="col">Duration</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${strides.map(s => `
-                                    <tr>
-                                        <td>${escapeHtml(s.name)}</td>
-                                        <td>${formatDate(s.startDate)}</td>
-                                        <td>${formatDate(s.endDate)}</td>
-                                        <td>${s.durationDays} days</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            })
-            .catch(err => {
-                strideDetailsDiv.innerHTML = '<p class="error">Failed to load strides.</p>';
-                console.error(err);
-            });
+        } catch (error) {
+            strideDetailsDiv.innerHTML = '<p class="error">Failed to load strides.</p>';
+            console.error(error);
+        }
     }
 
-    const backBtn = document.getElementById('back-to-iterations-btn');
-    if (backBtn) {
-        backBtn.addEventListener('click', () => {
+    const backButton = document.querySelector('#back-to-iterations-btn');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
             detailDiv.classList.add('d-none');
             viewDiv.classList.remove('d-none');
         });

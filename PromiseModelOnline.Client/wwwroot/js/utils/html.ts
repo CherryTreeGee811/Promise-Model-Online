@@ -5,7 +5,7 @@
  * @returns {string} Escaped HTML-safe string.
  */
 export function escapeHtml(value: unknown): string {
-    return String(value).replace(/[&<>"']/g, match => ({
+    return String(value).replaceAll(/[&<>"']/g, match => ({
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',

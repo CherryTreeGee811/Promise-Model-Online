@@ -7,10 +7,10 @@ import { authStore } from './stores/auth.ts';
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiGet<T = unknown>(url: string): Promise<T | null> {
-  const res = await apiFetch(url);
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const response = await apiFetch(url);
+  if (response.status === 204) return undefined as T;
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
 }
 
 /**
@@ -31,14 +31,14 @@ export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | null> {
-  const res = await apiFetch(url, {
+  const response = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  if (response.status === 204) return undefined as T;
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
 }
 
 /**
@@ -49,12 +49,12 @@ export async function apiPost<T = unknown>(url: string, body: unknown): Promise<
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPut(url: string, body: unknown): Promise<boolean> {
-  const res = await apiFetch(url, {
+  const response = await apiFetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return true;
 }
 
@@ -66,14 +66,14 @@ export async function apiPut(url: string, body: unknown): Promise<boolean> {
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPatch<T = unknown>(url: string, body: unknown): Promise<T | null> {
-  const res = await apiFetch(url, {
+  const response = await apiFetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  if (response.status === 204) return undefined as T;
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
 }
 
 /**
@@ -83,8 +83,8 @@ export async function apiPatch<T = unknown>(url: string, body: unknown): Promise
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiDelete(url: string): Promise<boolean> {
-  const res = await apiFetch(url, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const response = await apiFetch(url, { method: 'DELETE' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return true;
 }
 
@@ -113,14 +113,14 @@ export async function apiFetch(url: string, options: Record<string, unknown> = {
         credentials: 'include',
         headers: {
             'Accept': 'application/json',
-            ...(options.headers as Record<string, string> || {}),
+            ...options.headers as Record<string, string>,
         }
     });
 
     if (response.status === 401) {
-        authStore.set({ isAuthenticated: false, username: null, userId: null });
-        if (!window.location.pathname.startsWith('/login')) {
-            window.location.href = '/login';
+        authStore.set({ isAuthenticated: false, username: undefined, userId: undefined });
+        if (!location.pathname.startsWith('/login')) {
+            location.assign('/login');
         }
         throw new Error('Unauthorized');
     }
@@ -151,6 +151,6 @@ export async function checkSession() {
         // No session
     }
 
-    authStore.set({ isAuthenticated: false, username: null, userId: null });
+    authStore.set({ isAuthenticated: false, username: undefined, userId: undefined });
     return false;
 }

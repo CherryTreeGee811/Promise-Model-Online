@@ -11,13 +11,13 @@ import { getPermissions, inviteUser, removePermission, searchUsers } from './api
  * @returns {HTMLElement | null} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalEl = document.getElementById(modalId) as HTMLElement | null;
-    if (modalEl) return modalEl;
+    let modalElement = document.querySelector(`#${CSS.escape(modalId)}`) as HTMLElement | null;
+    if (modalElement) return modalElement;
     const wrapper = document.createElement('div');
     wrapper.innerHTML = modalMarkup.trim();
-    modalEl = wrapper.firstElementChild as HTMLElement | null;
-    if (modalEl) document.body.appendChild(modalEl);
-    return modalEl;
+    modalElement = wrapper.firstElementChild as HTMLElement | null;
+    if (modalElement) document.body.append(modalElement);
+    return modalElement;
 }
 
 /**
@@ -54,10 +54,10 @@ function ensureRevokeModal(): HTMLElement | null {
  * @param {{ isOwner?: boolean } | null} permission - The current user's permission object for the project.
  */
 export function loadSharePage(owner: string, project: string, contentDiv: HTMLElement, permission: { isOwner?: boolean } | null): void {
-    const errorEl = document.getElementById('error-text') as HTMLElement | null;
-    const loadingEl = document.getElementById('loading-text') as HTMLElement | null;
-    const successEl = document.getElementById('success-text') as HTMLElement | null;
-    const section = document.getElementById('permissions-section') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const loadingElement = document.querySelector('#loading-text') as HTMLElement | null;
+    const successElement = document.querySelector('#success-text') as HTMLElement | null;
+    const section = document.querySelector('#permissions-section') as HTMLElement | null;
 
     interface AutocompleteState {
         items: { name: string; email: string }[];
@@ -71,7 +71,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
      * Close the autocomplete dropdown and reset state.
      */
     function closeAutocomplete(): void {
-        const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
+        const dropdown = document.querySelector('#invite-autocomplete') as HTMLElement | null;
         if (dropdown) {
             dropdown.style.display = 'none';
             dropdown.innerHTML = '';
@@ -83,22 +83,22 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
      * Render the autocomplete dropdown items from state.
      */
     function renderAutocomplete(): void {
-        const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
+        const dropdown = document.querySelector('#invite-autocomplete') as HTMLElement | null;
         if (!dropdown) return;
         dropdown.innerHTML = '';
-        for (let i = 0; i < acState.items.length; i++) {
-            const item = acState.items[i];
-            const el = document.createElement('div');
-            el.className = 'comment-autocomplete__item' + (i === acState.highlightedIndex ? ' comment-autocomplete__item--highlight' : '');
-            el.role = 'option';
-            el.ariaSelected = String(i === acState.highlightedIndex);
-            el.textContent = item.name + ' (' + item.email + ')';
-            el.dataset.index = String(i);
-            el.addEventListener('mousedown', function (e) {
-                e.preventDefault();
-                selectAutocompleteItem(parseInt(this.dataset.index!, 10));
+        for (let index = 0; index < acState.items.length; index++) {
+            const item = acState.items[index];
+            const element = document.createElement('div');
+            element.className = 'comment-autocomplete__item' + (index === acState.highlightedIndex ? ' comment-autocomplete__item--highlight' : '');
+            element.role = 'option';
+            element.ariaSelected = String(index === acState.highlightedIndex);
+            element.textContent = item.name + ' (' + item.email + ')';
+            element.dataset.index = String(index);
+            element.addEventListener('mousedown', (event) => {
+                event.preventDefault();
+                selectAutocompleteItem(parseInt(element.dataset.index!, 10));
             });
-            dropdown.appendChild(el);
+            dropdown.append(element);
         }
         if (acState.items.length > 0) {
             const highlighted = dropdown.children[acState.highlightedIndex] as HTMLElement | null;
@@ -113,7 +113,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     function selectAutocompleteItem(index: number): void {
         const item = acState.items[index];
         if (!item) return;
-        const input = document.getElementById('invite-email') as HTMLInputElement | null;
+        const input = document.querySelector('#invite-email') as HTMLInputElement | null;
         if (input) {
             input.value = item.email;
         }
@@ -127,7 +127,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
      * @returns {Promise<void>}
      */
     async function fetchAutocompleteSuggestions(query: string): Promise<void> {
-        if (query.length < 1) {
+        if (query.length === 0) {
             closeAutocomplete();
             return;
         }
@@ -142,7 +142,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
             acState.items = results;
             acState.highlightedIndex = 0;
             acState.open = true;
-            const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
+            const dropdown = document.querySelector('#invite-autocomplete') as HTMLElement | null;
             if (dropdown) {
                 dropdown.style.display = 'block';
             }
@@ -156,58 +156,63 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
      * Set up event handlers for the invite email autocomplete input.
      */
     function setupInviteAutocomplete(): void {
-        const input = document.getElementById('invite-email') as HTMLInputElement | null;
-        const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
+        const input = document.querySelector('#invite-email') as HTMLInputElement | null;
+        const dropdown = document.querySelector('#invite-autocomplete') as HTMLElement | null;
         if (!input || !dropdown) return;
 
-        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+        let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-        input.addEventListener('input', function () {
+        input.addEventListener('input', () => {
             if (debounceTimer) clearTimeout(debounceTimer);
-            const val = this.value.trim();
-            if (!val) {
+            const value = input.value.trim();
+            if (!value) {
                 closeAutocomplete();
                 return;
             }
             debounceTimer = setTimeout(function () {
-                fetchAutocompleteSuggestions(val);
+                fetchAutocompleteSuggestions(value);
             }, 200);
         });
 
-        input.addEventListener('keydown', function (e) {
+        input.addEventListener('keydown', (event) => {
             if (!acState.open || acState.items.length === 0) return;
-            switch (e.key) {
-                case 'ArrowDown':
+            switch (event.key) {
+                case 'ArrowDown': {
                     e.preventDefault();
                     acState.highlightedIndex = (acState.highlightedIndex + 1) % acState.items.length;
                     renderAutocomplete();
                     break;
-                case 'ArrowUp':
+                }
+                case 'ArrowUp': {
                     e.preventDefault();
                     acState.highlightedIndex = (acState.highlightedIndex - 1 + acState.items.length) % acState.items.length;
                     renderAutocomplete();
                     break;
-                case 'Enter':
+                }
+                case 'Enter': {
                     e.preventDefault();
                     if (acState.highlightedIndex >= 0) {
                         selectAutocompleteItem(acState.highlightedIndex);
                     }
                     break;
-                case 'Tab':
+                }
+                case 'Tab': {
                     if (acState.highlightedIndex >= 0) {
                         selectAutocompleteItem(acState.highlightedIndex);
                     } else {
                         closeAutocomplete();
                     }
                     break;
-                case 'Escape':
+                }
+                case 'Escape': {
                     e.preventDefault();
                     closeAutocomplete();
                     break;
+                }
             }
         });
 
-        input.addEventListener('blur', function () {
+        input.addEventListener('blur', () => {
             setTimeout(function () {
                 if (document.activeElement !== dropdown && !dropdown.contains(document.activeElement)) {
                     closeAutocomplete();
@@ -224,7 +229,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
      * @param {() => Promise<void>} config.onInvited - Callback after a successful invitation.
      */
     function openInviteModal(config: { owner: string; project: string; onInvited: () => Promise<void> }): void {
-        const modalEl = ensureModal('invite-modal', `
+        const modalElement = ensureModal('invite-modal', `
             <div class="modal fade" id="invite-modal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -259,59 +264,60 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
             </div>
         `);
 
-        const form = modalEl?.querySelector('#invite-modal-form') as HTMLFormElement | null;
-        const emailInput = modalEl?.querySelector('#invite-email') as HTMLInputElement | null;
-        const levelSelect = modalEl?.querySelector('#invite-level') as HTMLSelectElement | null;
-        const errorEl = modalEl?.querySelector('#invite-modal-error') as HTMLElement | null;
-        const submitBtn = modalEl?.querySelector('#invite-modal-submit') as HTMLButtonElement | null;
-        if (!form || !emailInput || !levelSelect || !errorEl || !submitBtn) return;
+        const form = modalElement?.querySelector('#invite-modal-form') as HTMLFormElement | null;
+        const emailInput = modalElement?.querySelector('#invite-email') as HTMLInputElement | null;
+        const levelSelect = modalElement?.querySelector('#invite-level') as HTMLSelectElement | null;
+        const errorElement_ = modalElement?.querySelector('#invite-modal-error') as HTMLElement | null;
+        const submitButton = modalElement?.querySelector('#invite-modal-submit') as HTMLButtonElement | null;
+        if (!form || !emailInput || !levelSelect || !errorElement_ || !submitButton) return;
 
         form.replaceWith(form.cloneNode(true));
 
-        const liveForm = modalEl!.querySelector('#invite-modal-form') as HTMLFormElement;
-        const liveEmailInput = modalEl!.querySelector('#invite-email') as HTMLInputElement;
-        const liveLevelSelect = modalEl!.querySelector('#invite-level') as HTMLSelectElement;
-        const liveErrorEl = modalEl!.querySelector('#invite-modal-error') as HTMLElement;
-        const liveSubmitBtn = modalEl!.querySelector('#invite-modal-submit') as HTMLButtonElement;
+        const liveForm = modalElement!.querySelector('#invite-modal-form') as HTMLFormElement;
+        const liveEmailInput = modalElement!.querySelector('#invite-email') as HTMLInputElement;
+        const liveLevelSelect = modalElement!.querySelector('#invite-level') as HTMLSelectElement;
+        const liveErrorElement = modalElement!.querySelector('#invite-modal-error') as HTMLElement;
+        const liveSubmitButton = modalElement!.querySelector('#invite-modal-submit') as HTMLButtonElement;
 
         liveEmailInput.value = '';
         liveLevelSelect.value = 'View';
-        liveErrorEl.textContent = '';
-        liveErrorEl.classList.add('d-none');
-        liveSubmitBtn.disabled = false;
-        liveSubmitBtn.textContent = 'Send Invitation';
+        liveErrorElement.textContent = '';
+        liveErrorElement.classList.add('d-none');
+        liveSubmitButton.disabled = false;
+        liveSubmitButton.textContent = 'Send Invitation';
         closeAutocomplete();
 
         setupInviteAutocomplete();
 
-        liveForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        liveForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
             const email = liveEmailInput.value.trim();
-            const level = liveLevelSelect.value;
             if (!email) return;
 
-            liveSubmitBtn.disabled = true;
-            liveSubmitBtn.textContent = 'Sending...';
-            liveErrorEl.classList.add('d-none');
+            const level = liveLevelSelect.value;
+
+            liveSubmitButton.disabled = true;
+            liveSubmitButton.textContent = 'Sending...';
+            liveErrorElement.classList.add('d-none');
 
             try {
                 await inviteUser(owner, project, { email, level });
-                window.bootstrap?.Modal?.getOrCreateInstance(modalEl!)?.hide();
-                if (successEl) {
-                    successEl.textContent = 'Invitation sent.';
-                    successEl.classList.remove('d-none');
+                globalThis.bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.hide();
+                if (successElement) {
+                    successElement.textContent = 'Invitation sent.';
+                    successElement.classList.remove('d-none');
                 }
                 await config.onInvited?.();
-            } catch (err) {
-                liveErrorEl.textContent = (err as Error)?.message || 'Failed to invite user.';
-                liveErrorEl.classList.remove('d-none');
+            } catch (error) {
+                liveErrorElement.textContent = (error as Error)?.message || 'Failed to invite user.';
+                liveErrorElement.classList.remove('d-none');
             } finally {
-                liveSubmitBtn.disabled = false;
-                liveSubmitBtn.textContent = 'Send Invitation';
+                liveSubmitButton.disabled = false;
+                liveSubmitButton.textContent = 'Send Invitation';
             }
         });
 
-        window.bootstrap?.Modal?.getOrCreateInstance(modalEl!)?.show();
+        globalThis.bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
     }
 
     /**
@@ -322,9 +328,9 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         try {
             const isOwner = permission?.isOwner === true;
             const permissions = await getPermissions(owner, project);
-            if (loadingEl) loadingEl.classList.add('d-none');
-            if (errorEl) errorEl.classList.add('d-none');
-            if (successEl) successEl.classList.add('d-none');
+            if (loadingElement) loadingElement.classList.add('d-none');
+            if (errorElement) errorElement.classList.add('d-none');
+            if (successElement) successElement.classList.add('d-none');
             const tbodyHtml = permissions && permissions.length > 0
                 ? permissions.map((p: { id: string; userName: string; level: string; status: string }) => `
                     <tr data-permission-id="${p.id}">
@@ -355,43 +361,43 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
                     <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>${tbodyHtml}</tbody>
                 </table>
-                ${!isOwner ? '<p class="text-muted mt-4">Only the project owner can manage permissions.</p>' : ''}`;
+                ${isOwner ? '' : '<p class="text-muted mt-4">Only the project owner can manage permissions.</p>'}`;
             }
 
-            document.querySelectorAll('.revoke-btn').forEach(btn => {
-                bindRevokeButton(btn as HTMLElement);
-            });
+            for (const button of document.querySelectorAll('.revoke-btn')) {
+                bindRevokeButton(button as HTMLElement);
+            }
 
-            const topInviteBtn = document.getElementById('invite-btn-top');
-            topInviteBtn?.addEventListener('click', () => {
+            const topInviteButton = document.querySelector('#invite-btn-top');
+            topInviteButton?.addEventListener('click', () => {
                 openInviteModal({ owner, project, onInvited: refreshPermissions });
             });
-            const emptyInviteBtn = document.getElementById('empty-state-invite-btn');
-            emptyInviteBtn?.addEventListener('click', () => {
+            const emptyInviteButton = document.querySelector('#empty-state-invite-btn');
+            emptyInviteButton?.addEventListener('click', () => {
                 openInviteModal({ owner, project, onInvited: refreshPermissions });
             });
-        } catch (err) {
-            if (loadingEl) loadingEl.classList.add('d-none');
-            if (errorEl) {
-                errorEl.textContent = 'Failed to load permissions.';
-                errorEl.classList.remove('d-none');
+        } catch {
+            if (loadingElement) loadingElement.classList.add('d-none');
+            if (errorElement) {
+                errorElement.textContent = 'Failed to load permissions.';
+                errorElement.classList.remove('d-none');
             }
         }
     }
 
     /**
      * Bind click handler to a revoke permission button.
-     * @param {HTMLElement} btn - The revoke button element.
+     * @param {HTMLElement} button - The revoke button element.
      */
-    function bindRevokeButton(btn: HTMLElement): void {
-        if (!btn || btn.dataset.bound === '1') return;
-        btn.dataset.bound = '1';
-        btn.addEventListener('click', async () => {
-            const id = parseInt(btn.dataset.permissionId!, 10);
+    function bindRevokeButton(button: HTMLElement): void {
+        if (!button || button.dataset.bound === '1') return;
+        button.dataset.bound = '1';
+        button.addEventListener('click', async () => {
+            const id = parseInt(button.dataset.permissionId!, 10);
             if (!Number.isFinite(id)) return;
 
-            const modalEl = ensureRevokeModal()!;
-            const confirmButton = modalEl.querySelector('#revoke-modal-confirm') as HTMLButtonElement;
+            const modalElement = ensureRevokeModal()!;
+            const confirmButton = modalElement.querySelector('#revoke-modal-confirm') as HTMLButtonElement;
             if (!confirmButton) return;
 
             const nextButton = confirmButton.cloneNode(true) as HTMLButtonElement;
@@ -400,26 +406,26 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
                 nextButton.disabled = true;
                 try {
                     await removePermission(owner, project, id);
-                    window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.hide();
+                    globalThis.bootstrap?.Modal?.getOrCreateInstance(modalElement)?.hide();
                     const y = window.scrollY;
                     btn.closest('tr')?.remove();
-                    if (successEl) {
-                        successEl.textContent = 'Permission revoked.';
-                        successEl.classList.remove('d-none');
+                    if (successElement) {
+                        successElement.textContent = 'Permission revoked.';
+                        successElement.classList.remove('d-none');
                     }
                     window.scrollTo(0, y);
-                } catch (err) {
-                    if (errorEl) {
-                        errorEl.textContent = 'Failed to revoke permission.';
-                        errorEl.classList.remove('d-none');
+                } catch (error) {
+                    if (errorElement) {
+                        errorElement.textContent = 'Failed to revoke permission.';
+                        errorElement.classList.remove('d-none');
                     }
-                    console.error(err);
+                    console.error(error);
                 } finally {
                     nextButton.disabled = false;
                 }
             }, { once: true });
 
-            window.bootstrap?.Modal?.getOrCreateInstance(modalEl)?.show();
+            globalThis.bootstrap?.Modal?.getOrCreateInstance(modalElement)?.show();
         });
     }
 

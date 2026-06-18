@@ -1,5 +1,0 @@
-{
-  "extends": ["progressive-web-apps"],
-  "formatters": ["summary"],
-  "hintsTimeout": 120000
-}

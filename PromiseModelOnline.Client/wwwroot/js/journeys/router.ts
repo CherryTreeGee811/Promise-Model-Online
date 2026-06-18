@@ -1,4 +1,4 @@
-import { handleDetailRoute, showNotFound } from '../router.ts';
+import { isDetailRoute, showNotFound } from '../router.ts';
 
 import { loadJourneyDetail } from './detail.ts';
 
@@ -9,7 +9,7 @@ import { loadJourneyDetail } from './detail.ts';
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
  */
 export function handleJourneyRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-  if (!handleDetailRoute(path, contentDiv, 'journeys', 'journeys/detail.html', loadJourneyDetail, navContentDiv, 'journey')) {
+  if (!isDetailRoute(path, contentDiv, 'journeys', 'journeys/detail.html', loadJourneyDetail, navContentDiv, 'journey')) {
     showNotFound(contentDiv);
   }
 }

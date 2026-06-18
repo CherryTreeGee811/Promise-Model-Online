@@ -8,11 +8,14 @@ import { loadNotificationsPage } from './list.ts';
  * @param {HTMLElement} navContentDiv - The navigation content container element.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
-export function handleNotificationsRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
+export async function handleNotificationsRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     if (path === '/notifications') {
-        loadTemplate('notifications/list.html', contentDiv)
-            .then(() => loadNotificationsPage(contentDiv))
-            .catch(loadTemplateWithError(contentDiv, 'notifications'));
+        try {
+            await loadTemplate('notifications/list.html', contentDiv);
+            await loadNotificationsPage(contentDiv);
+        } catch {
+            await loadTemplateWithError(contentDiv, 'notifications')();
+        }
     } else {
         showNotFound(contentDiv);
     }

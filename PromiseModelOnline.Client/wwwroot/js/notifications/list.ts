@@ -5,14 +5,14 @@ import { escapeHtml } from '../utils/html.ts';
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.ts';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.ts';
 
-let liveListenerRegistered = false;
+const _listState = { isLiveListenerRegistered: false };
 
 /**
  * Update the notification badge count in the UI.
  * @param {number} count - The new badge count.
  */
 function setBadgeCount(count) {
-    const badge = /** @type {HTMLElement|null} */ (document.getElementById('notification-badge'));
+    const badge = /** @type {HTMLElement|null} */ (document.querySelector('#notification-badge'));
     if (!badge) return;
 
     const safeCount = Number.isFinite(count) ? count : 0;
@@ -27,7 +27,7 @@ function setBadgeCount(count) {
 
 /** Decrement the badge count by one if the badge is visible. */
 function decrementBadgeIfVisible() {
-    const badge = /** @type {HTMLElement|null} */ (document.getElementById('notification-badge'));
+    const badge = /** @type {HTMLElement|null} */ (document.querySelector('#notification-badge'));
     if (!badge || badge.style.display === 'none') return;
 
     const current = parseInt(badge.textContent || '0', 10);
@@ -101,9 +101,9 @@ function renderNotificationsInto(listDiv, notifications) {
                         <td>${n.type}</td>
                         <td>${new Date(n.createdAt).toLocaleString('en-CA')}</td>
                         <td data-actions="1">
-                            ${!n.isRead 
-                                ? `<button class="btn btn-sm btn-outline-primary mark-read-btn" type="button" data-id="${n.id}">Read</button>` 
-                                : '✓ Read'}
+                            ${n.isRead 
+                                ? '✓ Read' 
+                                : `<button class="btn btn-sm btn-outline-primary mark-read-btn" type="button" data-id="${n.id}">Read</button>`}
                         </td>
                     </tr>
                 `).join('')}
@@ -111,58 +111,58 @@ function renderNotificationsInto(listDiv, notifications) {
         </table>
     `;
 
-    document.getElementById('mark-all-read')?.addEventListener('click', async () => {
+    document.querySelector('#mark-all-read')?.addEventListener('click', async () => {
         try {
             await markAllNotificationsAsRead();
 
             const y = window.scrollY;
 
-            listDiv.querySelectorAll('tbody tr').forEach(tr => {
+            for (const tr of listDiv.querySelectorAll(':scope tbody tr')) {
                 tr.classList.remove('unread');
 
-                const actionsCell = /** @type {HTMLElement|null} */ (tr.querySelector('td[data-actions="1"]'));
+                const actionsCell = /** @type {HTMLElement|null} */ (tr.querySelector(':scope > td[data-actions="1"]'));
                 if (actionsCell) actionsCell.textContent = '✓ Read';
-            });
+            }
 
             setBadgeCount(0);
             window.scrollTo(0, y);
 
-        } catch (err) {
+        } catch (error) {
             alert('Failed to mark all as read');
-            console.error(err);
+            console.error(error);
         }
     });
 
-    listDiv.querySelectorAll('.mark-read-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const id = parseInt(/** @type {string} */(btn.dataset.id), 10);
+    for (const button of listDiv.querySelectorAll('.mark-read-btn')) {
+        button.addEventListener('click', async () => {
+            const id = parseInt(/** @type {string} */(button.dataset.id), 10);
 
             try {
                 await markNotificationAsRead(id);
 
                 const y = window.scrollY;
 
-                const row = listDiv.querySelector(`tr[data-notification-id="${id}"]`);
+                const row = listDiv.querySelector(`tr[data-notification-id="${CSS.escape(id)}"]`);
                 markRowRead(row);
 
                 window.scrollTo(0, y);
 
-            } catch (err) {
+            } catch (error) {
                 alert('Failed to mark notification as read');
-                console.error(err);
+                console.error(error);
             }
         });
-    });
+    }
 }
 
 /** Refresh the notifications page by fetching all notifications and re-rendering. */
 async function refreshNotificationsPage() {
-    const listDiv = /** @type {HTMLElement|null} */ (document.getElementById('notifications-list'));
-    const errorEl = /** @type {HTMLElement|null} */ (document.getElementById('error-text'));
+    const listDiv = /** @type {HTMLElement|null} */ (document.querySelector('#notifications-list'));
+    const errorElement = /** @type {HTMLElement|null} */ (document.querySelector('#error-text'));
 
-    if (!listDiv || !errorEl) return;
+    if (!listDiv || !errorElement) return;
 
-    errorEl.textContent = '';
+    errorElement.textContent = '';
 
     try {
         const notifications = await fetchAllNotifications();
@@ -172,7 +172,7 @@ async function refreshNotificationsPage() {
         updateNotificationBadge();
 
     } catch {
-        errorEl.textContent = 'Failed to load notifications.';
+        errorElement.textContent = 'Failed to load notifications.';
     }
 }
 
@@ -181,16 +181,16 @@ async function refreshNotificationsPage() {
  * @param {HTMLElement} contentDiv - The main content container element.
  */
 export function loadNotificationsPage(contentDiv) {
-    if (!liveListenerRegistered) {
-        liveListenerRegistered = true;
+    if (!_listState.isLiveListenerRegistered) {
+        _listState.isLiveListenerRegistered = true;
 
         const eventName = getUnreadNotificationsEventName();
 
-        window.addEventListener(eventName, (/** @type {CustomEvent} */ e) => {
-            const listDiv = /** @type {HTMLElement|null} */ (document.getElementById('notifications-list'));
+        addEventListener(eventName, (/** @type {CustomEvent} */ event) => {
+            const listDiv = /** @type {HTMLElement|null} */ (document.querySelector('#notifications-list'));
             if (!listDiv) return;
 
-            const notifications = e?.detail?.notifications;
+            const notifications = event?.detail?.notifications;
 
             renderNotificationsInto(
                 listDiv,

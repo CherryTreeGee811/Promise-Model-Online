@@ -16,14 +16,14 @@ function loadFromStorage() {
       const parsed = JSON.parse(stored);
       return {
         isAuthenticated: !!parsed.isAuthenticated,
-        username: parsed.username || null,
-        userId: parsed.userId ?? null,
+        username: parsed.username || undefined,
+        userId: parsed.userId ?? undefined,
       };
     }
   } catch {
     // Ignore storage errors
   }
-  return { isAuthenticated: false, username: null, userId: null };
+  return { isAuthenticated: false, username: undefined, userId: undefined };
 }
 
 /**

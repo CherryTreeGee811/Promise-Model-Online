@@ -268,19 +268,17 @@ function formatEventType(item: AuditItem): string {
 function formatChange(item: AuditItem): string {
     const changes = Array.isArray(item.changes) ? item.changes.filter(change => !isIgnoredField(change.fieldName)) : [];
 
-    if (item.actionType === 'StatusChanged') {
-        const statusChange = changes.find(change => change.fieldName === 'Status');
-        if (statusChange) {
-            return `${formatValue(statusChange.before)} → ${formatValue(statusChange.after)}`;
+    switch (item.actionType) {
+        case 'StatusChanged': {
+            const statusChange = changes.find(change => change.fieldName === 'Status');
+            if (statusChange) {
+                return `${formatValue(statusChange.before)} → ${formatValue(statusChange.after)}`;
+            }
+
+            break;
         }
-    }
-
-    if (item.actionType === 'Created') {
-        return 'Created';
-    }
-
-    if (item.actionType === 'Deleted') {
-        return 'Deleted';
+        case 'Created': { return 'Created'; }
+        case 'Deleted': { return 'Deleted'; }
     }
 
     if (changes.length === 0) {
@@ -305,7 +303,7 @@ function formatEntity(item: AuditItem): string {
  * @returns {boolean} True if the field should be ignored.
  */
 function isIgnoredField(fieldName: string): boolean {
-    return String(fieldName).toLowerCase() === 'updatedat';
+    return fieldName.toLowerCase() === 'updatedat';
 }
 
 /**
@@ -314,7 +312,9 @@ function isIgnoredField(fieldName: string): boolean {
  * @returns {string} The base64-encoded details string.
  */
 function encodeAuditDetails(item: AuditItem): string {
-    return btoa(unescape(encodeURIComponent(JSON.stringify(getAuditDetailsPayload(item)))));
+    const json = JSON.stringify(getAuditDetailsPayload(item));
+    const bytes = new TextEncoder().encode(json);
+    return bytes.toBase64();
 }
 
 /**
@@ -323,7 +323,7 @@ function encodeAuditDetails(item: AuditItem): string {
  * @returns {string} The formatted display string.
  */
 function formatValue(value: unknown): string {
-    if (value === null || value === undefined || value === '') {
+    if (value === undefined || value === '') {
         return 'blank';
     }
 
