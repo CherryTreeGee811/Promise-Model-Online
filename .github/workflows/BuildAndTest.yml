@@ -184,6 +184,7 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-1.60.0
+          save-always: true
 
       - name: Install Playwright browsers (all)
         if: steps.playwright-cache.outputs.cache-hit != 'true'

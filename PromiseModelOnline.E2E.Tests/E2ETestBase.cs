@@ -91,7 +91,7 @@ public abstract class E2ETestBase
             await route.FulfillAsync(new RouteFulfillOptions
             {
                 Status = 302,
-                Headers = new[] { new KeyValuePair<string, string>("Location", "https://localhost:5001/account/login?returnUrl=" + Uri.EscapeDataString(returnUrl)) }
+                Headers = new[] { new KeyValuePair<string, string>("Location", $"{BaseUrl}/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}") }
             });
         });
 
