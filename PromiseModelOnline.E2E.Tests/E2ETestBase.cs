@@ -46,7 +46,14 @@ public abstract class E2ETestBase
     {
         _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
 
-        _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        var browserType = Environment.GetEnvironmentVariable("E2E_BROWSER")?.ToLowerInvariant() switch
+        {
+            "firefox" => _playwright.Firefox,
+            "webkit" => _playwright.Webkit,
+            _ => _playwright.Chromium,
+        };
+
+        _browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
         {
             Headless = true,
             Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage" }
@@ -60,12 +67,105 @@ public abstract class E2ETestBase
 
         Page = await _context.NewPageAsync();
 
+        await MockOidcLoginAsync();
+
         Client = new HttpClient(new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
             AllowAutoRedirect = false
         });
         Client.BaseAddress = new Uri(BaseUrl);
+    }
+
+    /// <summary>Set up Playwright route interception to mock the OIDC login flow.</summary>
+    /// <remarks>
+    ///   Intercepts requests to the Auth server's login endpoints so tests
+    ///   can authenticate without a running OIDC provider. The mock login
+    ///   page accepts the configured test credentials and sets the session cookie.
+    /// </remarks>
+    private async Task MockOidcLoginAsync()
+    {
+        await Page.RouteAsync("**/login**", async route =>
+        {
+            var url = route.Request.Url;
+            var returnUrl = "https://localhost:9000/";
+            if (url.Contains("returnUrl="))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(url, @"returnUrl=([^&]+)");
+                if (match.Success)
+                    returnUrl = "https://localhost:9000" + Uri.UnescapeDataString(match.Groups[1].Value);
+            }
+            await route.FulfillAsync(new RouteFulfillOptions
+            {
+                Status = 302,
+                Headers = new[] { new KeyValuePair<string, string>("Location", "https://localhost:5001/account/login?returnUrl=" + Uri.EscapeDataString(returnUrl)) }
+            });
+        });
+
+        await Page.RouteAsync("**/account/login**", async route =>
+        {
+            if (route.Request.Method == "GET")
+            {
+                var returnUrl = "https://localhost:9000/";
+                var url = route.Request.Url;
+                if (url.Contains("returnUrl="))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(url, @"returnUrl=([^&]+)");
+                    if (match.Success)
+                        returnUrl = Uri.UnescapeDataString(match.Groups[1].Value);
+                }
+                await route.FulfillAsync(new RouteFulfillOptions
+                {
+                    Status = 200,
+                    ContentType = "text/html",
+                    Body = $"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>Login</title></head>
+                    <body>
+                        <form method="post" action="/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}">
+                            <input name="Username" type="text" />
+                            <input name="Password" type="password" />
+                            <button type="submit">Login</button>
+                        </form>
+                    </body>
+                    </html>
+                    """
+                });
+            }
+            else
+            {
+                var formData = route.Request.PostData;
+                if (formData is not null && formData.Contains(TestUsername) && formData.Contains(TestPassword))
+                {
+                    await Page.Context.AddCookiesAsync([
+                        new Microsoft.Playwright.Cookie { Name = "__Host-pmo.session", Value = "owner-session", Url = BaseUrl, Secure = true }
+                    ]);
+                    var url = route.Request.Url;
+                    var returnUrl = "https://localhost:9000/";
+                    if (url.Contains("returnUrl="))
+                    {
+                        var match = System.Text.RegularExpressions.Regex.Match(url, @"returnUrl=([^&]+)");
+                        if (match.Success)
+                            returnUrl = Uri.UnescapeDataString(match.Groups[1].Value);
+                    }
+                    await route.FulfillAsync(new RouteFulfillOptions
+                    {
+                        Status = 302,
+                        Headers = new[] { new KeyValuePair<string, string>("Location", returnUrl) }
+                    });
+                }
+                else
+                {
+                    await route.FulfillAsync(new RouteFulfillOptions
+                    {
+                        Status = 401,
+                        ContentType = "text/plain",
+                        Body = "Invalid credentials"
+                    });
+                }
+            }
+        });
     }
 
     /// <summary>Clean up browser, context, and HTTP client after each test.</summary>

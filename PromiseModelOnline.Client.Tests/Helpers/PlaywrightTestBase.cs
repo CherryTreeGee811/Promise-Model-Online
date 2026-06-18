@@ -36,7 +36,15 @@ public abstract class PlaywrightTestBase
             if (_initialized) return;
 
             _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
-            _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+
+            var browserType = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant() switch
+            {
+                "firefox" => _playwright.Firefox,
+                "webkit" => _playwright.Webkit,
+                _ => _playwright.Chromium,
+            };
+
+            _browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = IsHeadless,
                 Args = new[]
