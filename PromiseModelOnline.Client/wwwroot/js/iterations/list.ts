@@ -33,20 +33,20 @@ export async function loadIterationHistory(owner, project, permission) {
     const listDiv = /** @type {HTMLElement} */ (document.querySelector('#iterations-list'));
     const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#iteration-detail'));
     const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const projectTitle = /** @type {HTMLElement|null} */ (document.querySelector('#project-title'));
-    const createIterationButton = /** @type {HTMLElement|null} */ (document.querySelector('#create-iteration-btn'));
+    const projectTitle = /** @type {HTMLElement} */ (document.querySelector('#project-title'));
+    const iterationCreateButton = /** @type {HTMLElement} */ (document.querySelector('#create-iteration-btn'));
 
     const canEdit = permission?.permission === 'Edit';
 
     detailDiv.classList.add('d-none');
     errorElement.textContent = '';
 
-    if (createIterationButton) {
+    if (iterationCreateButton) {
         if (!canEdit) {
-            createIterationButton.classList.add('d-none');
-        } else if (createIterationButton.dataset.bound !== '1') {
-            createIterationButton.dataset.bound = '1';
-            createIterationButton.addEventListener('click', async () => {
+            iterationCreateButton.classList.add('d-none');
+        } else if (iterationCreateButton.dataset.bound !== '1') {
+            iterationCreateButton.dataset.bound = '1';
+            iterationCreateButton.addEventListener('click', async () => {
                 openIterationCreateModal(owner, project, () => loadIterationHistory(owner, project, permission));
             });
         }
@@ -122,7 +122,7 @@ export async function loadIterationHistory(owner, project, permission) {
             button.addEventListener('click', () => {
                 const iterationId = parseInt(/** @type {string} */(button.dataset.iterationId), 10);
                 const iteration = iterations.find(index => index.id === iterationId);
-                showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}` });
+                void showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}` });
             });
         }
     } catch (error) {
@@ -158,7 +158,7 @@ export async function loadIterationHistory(owner, project, permission) {
         try {
             const points = await Promise.race([getBurndown(owner, project, iterationId), timeoutPromise]);
             if (points && points.length > 0) {
-                drawBurndownChart(burndownCanvas, points);
+                void drawBurndownChart(burndownCanvas, points);
             } else {
                 burndownCanvas.innerHTML = renderEmptyStateSection({
                     icon: 'bi-graph-down',

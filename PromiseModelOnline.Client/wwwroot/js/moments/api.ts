@@ -34,7 +34,7 @@ export const getMyAssignedMoments = () => apiGet('/api/moments/assigned-to-me');
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {number|string} momentSeq - The moment's sequence number.
- * @param {number|null} strideId - The stride ID to assign, or null for backlog.
+ * @param {number} strideId - The stride ID to assign, or null for backlog.
  * @returns {Promise<object>} The updated moment.
  */
 export const assignMomentToStride = (owner, project, momentSeq, strideId) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/stride-assignment`, { strideId });
@@ -52,7 +52,7 @@ export const updateMomentStatus = (owner, project, momentSeq, status) => apiPatc
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {number|string} momentSeq - The moment's sequence number.
- * @param {string|null} estimate - The effort estimate value or null.
+ * @param {string} estimate - The effort estimate value or null.
  * @returns {Promise<object>} The updated moment.
  */
 export const updateMomentEstimate = (owner, project, momentSeq, estimate) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/estimate`, { estimate });
@@ -70,7 +70,7 @@ export const updateMomentType = (owner, project, momentSeq, type) => apiPatch(`/
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {number|string} momentSeq - The moment's sequence number.
- * @param {number|null} userId - The user ID to assign, or null to unassign.
+ * @param {number} userId - The user ID to assign, or null to unassign.
  * @returns {Promise<object>} The updated moment.
  */
 export const updateMomentOwner = (owner, project, momentSeq, userId) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/owner`, { userId });

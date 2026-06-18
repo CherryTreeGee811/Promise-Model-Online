@@ -78,5 +78,5 @@ export function loadInvitationsPage(contentDiv) {
         }
     }
 
-    refresh();
+    void refresh();
 }

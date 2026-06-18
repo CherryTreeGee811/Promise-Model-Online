@@ -3,20 +3,20 @@
  * Initialize the delete-account page with form handlers.
  */
 export function initDeleteAccountPage() {
-    const form = /** @type {HTMLFormElement|null} */ (document.querySelector('#delete-account-form'));
-    const button = /** @type {HTMLElement|null} */ (document.querySelector('#delete-account-btn'));
-    const text = /** @type {HTMLElement|null} */ (document.querySelector('#delete-btn-text'));
-    const spinner = /** @type {HTMLElement|null} */ (document.querySelector('#delete-spinner'));
-    const errorElement = /** @type {HTMLElement|null} */ (document.querySelector('#delete-error'));
-    const successElement = /** @type {HTMLElement|null} */ (document.querySelector('#delete-success'));
-    const passwordInput = /** @type {HTMLInputElement|null} */ (document.querySelector('#delete-password'));
+    const form = /** @type {HTMLFormElement} */ (document.querySelector('#delete-account-form'));
+    const button = /** @type {HTMLElement} */ (document.querySelector('#delete-account-btn'));
+    const text = /** @type {HTMLElement} */ (document.querySelector('#delete-btn-text'));
+    const spinner = /** @type {HTMLElement} */ (document.querySelector('#delete-spinner'));
+    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#delete-error'));
+    const successElement = /** @type {HTMLElement} */ (document.querySelector('#delete-success'));
+    const passwordInput = /** @type {HTMLInputElement} */ (document.querySelector('#delete-password'));
 
-    const exportButton = /** @type {HTMLElement|null} */ (document.querySelector('#export-data-btn'));
-    const exportText = /** @type {HTMLElement|null} */ (document.querySelector('#export-btn-text'));
-    const exportSpinner = /** @type {HTMLElement|null} */ (document.querySelector('#export-spinner'));
-    const exportError = /** @type {HTMLElement|null} */ (document.querySelector('#export-error'));
+    const exportButton = /** @type {HTMLElement} */ (document.querySelector('#export-data-btn'));
+    const exportText = /** @type {HTMLElement} */ (document.querySelector('#export-btn-text'));
+    const exportSpinner = /** @type {HTMLElement} */ (document.querySelector('#export-spinner'));
+    const exportError = /** @type {HTMLElement} */ (document.querySelector('#export-error'));
 
-    const exportLinkTop = /** @type {HTMLElement|null} */ (document.querySelector('#export-link-top'));
+    const exportLinkTop = /** @type {HTMLElement} */ (document.querySelector('#export-link-top'));
 
     if (!exportLinkTop || !exportButton) return;
 

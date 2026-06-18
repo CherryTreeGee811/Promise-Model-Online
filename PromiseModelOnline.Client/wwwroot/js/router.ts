@@ -66,7 +66,7 @@ const ROUTES = [
         const { handleLegacyProjectRoutes } = await loadProjectRoutes();
         handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
       } catch {
-        loadTemplateWithError(contentDiv, 'projects')();
+        void loadTemplateWithError(contentDiv, 'projects')();
       }
     },
   },
@@ -76,9 +76,9 @@ const ROUTES = [
     handler: async (navContentDiv, contentDiv) => {
       try {
         await loadTemplate('moments/my-tasks.html', contentDiv);
-        loadMyTasksPage(navContentDiv, contentDiv);
+        void loadMyTasksPage(navContentDiv, contentDiv);
       } catch {
-        loadTemplateWithError(contentDiv, 'my tasks')();
+        void loadTemplateWithError(contentDiv, 'my tasks')();
       }
     },
   },
@@ -86,14 +86,14 @@ const ROUTES = [
     test: (p) => p.startsWith('/notifications'),
     guard: requireAuth,
     handler: (navContentDiv, contentDiv) => {
-      handleNotificationsRoutes(location.pathname, navContentDiv, contentDiv);
+      void handleNotificationsRoutes(location.pathname, navContentDiv, contentDiv);
     },
   },
   {
     test: (p) => p.startsWith('/invitations'),
     guard: requireAuth,
     handler: (_nav, contentDiv) => {
-      handleInvitationsRoute(location.pathname, contentDiv);
+      void handleInvitationsRoute(location.pathname, contentDiv);
     },
   },
   {
@@ -106,19 +106,19 @@ const ROUTES = [
   {
     test: (p) => p === '/knowledge-base',
     handler: (navContentDiv, contentDiv) => {
-      handleKnowledgeBaseRoutes(location.pathname, navContentDiv, contentDiv);
+      void handleKnowledgeBaseRoutes(location.pathname, navContentDiv, contentDiv);
     },
   },
   {
     test: (p) => p === '/privacy',
     handler: (_nav, contentDiv) => {
-      loadTemplate('privacy.html', contentDiv);
+      void loadTemplate('privacy.html', contentDiv);
     },
   },
   {
     test: (p) => p === '/tos',
     handler: (_nav, contentDiv) => {
-      loadTemplate('tos.html', contentDiv);
+      void loadTemplate('tos.html', contentDiv);
     },
   },
   {
@@ -148,7 +148,7 @@ async function initServiceWorker(): Promise<void> {
  *
  */
 function initApplication(): void {
-  initServiceWorker();
+  void initServiceWorker();
 
   document.addEventListener('DOMContentLoaded', async () => {
     const contentDiv = document.querySelector('#content') as HTMLElement;
@@ -164,7 +164,7 @@ function initApplication(): void {
         const path = navLink.getAttribute('href');
         if (path && path !== '#') {
           event.preventDefault();
-          navigate(path, navContentDiv, contentDiv);
+          void navigate(path, navContentDiv, contentDiv);
           return;
         }
       }
@@ -178,14 +178,14 @@ function initApplication(): void {
 
     document.querySelector('#home-link')?.addEventListener('click', (event: Event) => {
         event.preventDefault();
-        navigate('/', navContentDiv, contentDiv);
+        void navigate('/', navContentDiv, contentDiv);
     });
 
     addEventListener('popstate', () => {
-        routeHandler(navContentDiv, contentDiv);
+        void routeHandler(navContentDiv, contentDiv);
     });
 
-    routeHandler(navContentDiv, contentDiv);
+    void routeHandler(navContentDiv, contentDiv);
   });
 }
 
@@ -276,12 +276,12 @@ export function isDetailRoute(
 ): boolean {
   const segments = path.split('/').filter(Boolean);
   if (segments.length === 2 && segments[0] === routePrefix) {
-    (async () => {
+    void (async () => {
       try {
         await loadTemplate(templateName, contentDiv);
-        loadFunction(segments[1], navContentDiv, contentDiv);
+        void loadFunction(segments[1], navContentDiv, contentDiv);
       } catch {
-        loadTemplateWithError(contentDiv, label)();
+        void loadTemplateWithError(contentDiv, label)();
       }
     })();
     return true;
@@ -294,7 +294,7 @@ export function isDetailRoute(
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export function showNotFound(contentDiv: HTMLElement): void {
-  loadTemplate('404.html', contentDiv);
+  void loadTemplate('404.html', contentDiv);
 }
 
 /**
@@ -336,7 +336,7 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
         return;
     }
 
-    loadNavTemplate(navContentDiv, contentDiv);
+    void loadNavTemplate(navContentDiv, contentDiv);
 
     for (const route of ROUTES) {
       if (route.test(path)) {
@@ -344,12 +344,12 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
           const result = route.guard();
           if ('allowed' in result && !result.allowed) {
             if (result.redirect) {
-              navigate(result.redirect, navContentDiv, contentDiv);
+              void navigate(result.redirect, navContentDiv, contentDiv);
             }
             return;
           }
         }
-        route.handler(navContentDiv, contentDiv);
+        void route.handler(navContentDiv, contentDiv);
         return;
       }
     }

@@ -7,7 +7,7 @@ import { escapeHtml } from './html.ts';
  * Ensure a modal element exists in the DOM, creating it from markup if needed.
  * @param {string} modalId - The ID of the modal element.
  * @param {string} modalMarkup - The HTML markup for the modal.
- * @returns {HTMLElement | null} The modal element, or null if creation failed.
+ * @returns {HTMLElement } The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalElement = document.querySelector('#' + modalId);

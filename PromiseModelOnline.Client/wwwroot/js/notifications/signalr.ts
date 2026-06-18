@@ -14,7 +14,7 @@ const state = {
  * Start the SignalR connection to the notifications hub.
  * Registers a callback for incoming notifications, reconnection, and connection state toasts.
  * The connection uses automatic reconnect with incremental delays.
- * @param {((data?: unknown) => void)|null} onNotification - Callback invoked with notification data on new notifications,
+ * @param {((data?: unknown) => void)} onNotification - Callback invoked with notification data on new notifications,
  *                                          or with null after a successful reconnect.
  * @returns {Promise<void>}
  */

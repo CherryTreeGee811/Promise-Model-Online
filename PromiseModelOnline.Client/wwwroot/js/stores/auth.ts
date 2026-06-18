@@ -61,7 +61,7 @@ export function isLoggedIn() {
 
 /**
  * Get the current user's display name.
- * @returns {string | null} The username, or null if not authenticated.
+ * @returns {string } The username, or null if not authenticated.
  */
 export function getUsername() {
   return authStore.get().username;
@@ -69,7 +69,7 @@ export function getUsername() {
 
 /**
  * Get the current user's numeric ID.
- * @returns {number | null} The user ID, or null if not authenticated.
+ * @returns {number } The user ID, or null if not authenticated.
  */
 export function getUserId() {
   return authStore.get().userId;

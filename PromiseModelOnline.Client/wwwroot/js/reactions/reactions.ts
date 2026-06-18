@@ -69,7 +69,7 @@ export function loadReactions(container, parentType, parentId, owner, project, p
         }
     }
 
-    refresh();
+    void refresh();
 
     for (const button of buttons) {
         button.addEventListener('click', async () => {

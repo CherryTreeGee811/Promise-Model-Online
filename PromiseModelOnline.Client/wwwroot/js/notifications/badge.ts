@@ -11,7 +11,7 @@ const _state = { isStarted: false };
  * @param {number} count - The number of unread notifications.
  */
 function setBadgeCount(count) {
-    const badge = /** @type {HTMLElement|null} */ (document.querySelector('#notification-badge'));
+    const badge = /** @type {HTMLElement} */ (document.querySelector('#notification-badge'));
     if (!badge) return;
 
     const safeCount = Number.isFinite(count) ? count : 0;
@@ -54,7 +54,7 @@ export async function updateNotificationBadge() {
  */
 export function stopNotificationPolling() {
     _state.isStarted = false;
-    stopSignalR();
+    void stopSignalR();
 }
 
 /** Start polling for unread notification updates. */
@@ -64,8 +64,8 @@ export async function startNotificationPolling() {
     if (_state.isStarted) return;
     _state.isStarted = true;
 
-    startSignalR(() => {
-        handleNotificationUpdate();
+    void startSignalR(() => {
+        void handleNotificationUpdate();
     });
 }
 

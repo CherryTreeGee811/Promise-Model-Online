@@ -17,9 +17,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     const descriptionInput = document.querySelector('#project-description-input') as HTMLTextAreaElement | null;
     const firstPromisePanel = document.querySelector('#first-promise-panel') as HTMLElement | null;
     const firstPromiseInput = document.querySelector('#first-promise-input') as HTMLInputElement | null;
-    const createButton = document.querySelector('#create-project-btn') as HTMLButtonElement | null;
-    const createButtonSpinner = document.querySelector('#create-project-btn-spinner') as HTMLElement | null;
-    const createButtonLabel = document.querySelector('#create-project-btn-label') as HTMLElement | null;
+    const newButtonElement = document.querySelector('#create-project-btn') as HTMLButtonElement | null;
+    const newButtonSpinnerElement = document.querySelector('#create-project-btn-spinner') as HTMLElement | null;
+    const newButtonLabelElement = document.querySelector('#create-project-btn-label') as HTMLElement | null;
     const importButton = document.querySelector('#import-project-btn') as HTMLButtonElement | null;
     const importButtonSpinner = document.querySelector('#import-project-btn-spinner') as HTMLElement | null;
     const importButtonIcon = document.querySelector('#import-project-btn-icon') as HTMLElement | null;
@@ -30,7 +30,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     const errorTextElement = document.querySelector('#error-text') as HTMLElement | null;
     const successTextElement = document.querySelector('#success-text') as HTMLElement | null;
 
-    if (!form || !nameInput || !descriptionInput || !firstPromisePanel || !firstPromiseInput || !createButton || !createButtonSpinner || !createButtonLabel || !importButton || !importButtonSpinner || !importButtonIcon || !importButtonLabel || !clearImportButton || !importInput || !importSummaryPanel || !errorTextElement || !successTextElement) {
+    if (!form || !nameInput || !descriptionInput || !firstPromisePanel || !firstPromiseInput || !newButtonElement || !newButtonSpinnerElement || !newButtonLabelElement || !importButton || !importButtonSpinner || !importButtonIcon || !importButtonLabel || !clearImportButton || !importInput || !importSummaryPanel || !errorTextElement || !successTextElement) {
         return;
     }
 
@@ -68,9 +68,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
      * @param {boolean} isBusy - Whether the button should be disabled.
      */
     function setSubmitButtonState(isBusy: boolean): void {
-        createButton.disabled = isBusy;
-        createButtonSpinner.classList.toggle('d-none', !isBusy);
-        createButtonLabel.textContent = (isBusy ? getBusySubmitButtonLabel : getSubmitButtonLabel)();
+        newButtonElement.disabled = isBusy;
+        newButtonSpinnerElement.classList.toggle('d-none', !isBusy);
+        newButtonLabelElement.textContent = (isBusy ? getBusySubmitButtonLabel : getSubmitButtonLabel)();
     }
 
     /**
@@ -94,7 +94,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         isBusy = isBusyParameter;
         setSubmitButtonState(isBusyParameter && source === 'submit');
         setImportButtonState(isBusyParameter && source === 'import', source === 'submit' ? 'Importing Project...' : 'Reading Project...');
-        createButton.disabled = isBusyParameter;
+        newButtonElement.disabled = isBusyParameter;
         clearImportButton.disabled = isBusyParameter;
         importButton.disabled = isBusyParameter;
         nameInput.disabled = isBusyParameter;
@@ -116,7 +116,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         firstPromisePanel.hidden = isImportMode;
         nameInput.readOnly = isImportMode;
         descriptionInput.readOnly = isImportMode;
-        createButtonLabel.textContent = (isBusy ? getBusySubmitButtonLabel : getSubmitButtonLabel)();
+        newButtonLabelElement.textContent = (isBusy ? getBusySubmitButtonLabel : getSubmitButtonLabel)();
         clearImportButton.hidden = !isImportMode || !hasImportFile;
         clearImportButton.style.display = clearImportButton.hidden ? 'none' : '';
     }
@@ -283,7 +283,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
                 displayOrder: 0,
             });
 
-            navigate(`/${createdProject.ownerSlug}/${createdProject.slug}/graph`, navContentDiv, contentDiv);
+            void navigate(`/${createdProject.ownerSlug}/${createdProject.slug}/graph`, navContentDiv, contentDiv);
         } catch (error) {
             errorTextElement.textContent = (error as Error).message || 'Failed to create project.';
             errorTextElement.style.display = 'block';
@@ -318,9 +318,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
             successTextElement.style.display = 'block';
 
             if (ownerSlug && slug) {
-                navigate(`/${ownerSlug}/${slug}/graph`, navContentDiv, contentDiv);
+                void navigate(`/${ownerSlug}/${slug}/graph`, navContentDiv, contentDiv);
             } else {
-                navigate('/projects', navContentDiv, contentDiv);
+                void navigate('/projects', navContentDiv, contentDiv);
             }
         } catch (error) {
             errorTextElement.textContent = (error as Error).message || 'Failed to import project.';
@@ -380,7 +380,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     if (cancelLink) {
         cancelLink.addEventListener('click', (event) => {
             event.preventDefault();
-            navigate('/projects', navContentDiv, contentDiv);
+            void navigate('/projects', navContentDiv, contentDiv);
         });
     }
 

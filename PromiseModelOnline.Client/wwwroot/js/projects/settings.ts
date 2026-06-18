@@ -17,7 +17,7 @@ import { renderSummaryTable } from './summary.ts';
  * @param {HTMLElement} contentDiv - The main content container.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {{ permission?: string; isOwner?: boolean } | null} permission - The current user's permission object, used for gating edit/delete actions.
+ * @param {{ permission?: string; isOwner?: boolean } } permission - The current user's permission object, used for gating edit/delete actions.
  */
 export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string, permission: { permission?: string; isOwner?: boolean } | null): void {
     const form = document.querySelector('#project-settings-form') as HTMLFormElement | null;
@@ -28,13 +28,13 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
     const errorText = document.querySelector('#error-text') as HTMLElement | null;
     const successText = document.querySelector('#success-text') as HTMLElement | null;
     const exportButton = document.querySelector('#export-project-btn') as HTMLButtonElement | null;
-    const deleteButton = document.querySelector('#delete-project-btn') as HTMLButtonElement | null;
-    const deleteButtonSpinner = document.querySelector('#delete-project-btn-spinner') as HTMLElement | null;
-    const deleteButtonLabel = document.querySelector('#delete-project-btn-label') as HTMLElement | null;
-    const deleteConfirmationInput = document.querySelector('#project-delete-confirmation-input') as HTMLInputElement | null;
-    const deleteConfirmationText = document.querySelector('#project-delete-confirmation-text') as HTMLElement | null;
+    const dangerButtonElement = document.querySelector('#delete-project-btn') as HTMLButtonElement | null;
+    const dangerButtonSpinnerElement = document.querySelector('#delete-project-btn-spinner') as HTMLElement | null;
+    const dangerButtonLabelElement = document.querySelector('#delete-project-btn-label') as HTMLElement | null;
+    const phraseInputElement = document.querySelector('#project-delete-confirmation-input') as HTMLInputElement | null;
+    const phrasePromptElement = document.querySelector('#project-delete-confirmation-text') as HTMLElement | null;
 
-    if (!form || !titleInput || !descriptionInput || !summaryPanel || !summaryLoading || !errorText || !successText || !exportButton || !deleteButton || !deleteConfirmationInput || !deleteConfirmationText) {
+    if (!form || !titleInput || !descriptionInput || !summaryPanel || !summaryLoading || !errorText || !successText || !exportButton || !dangerButtonElement || !phraseInputElement || !phrasePromptElement) {
         return;
     }
 
@@ -122,10 +122,10 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
  */
 function refreshDeleteGate(projectName: string): void {
         const phrase = getDeletePhrase(projectName);
-        deleteConfirmationText.textContent = phrase;
-        deleteConfirmationInput.value = '';
-        deleteButton.disabled = true;
-        deleteButton.dataset.confirmationPhrase = phrase;
+        phrasePromptElement.textContent = phrase;
+        phraseInputElement.value = '';
+        dangerButtonElement.disabled = true;
+        dangerButtonElement.dataset.confirmationPhrase = phrase;
     }
 
 /**
@@ -133,17 +133,17 @@ function refreshDeleteGate(projectName: string): void {
  * @param {boolean} isBusy - Whether the delete operation is in progress.
  */
 function setDeleteButtonState(isBusy: boolean): void {
-        deleteButton.disabled = isBusy;
-        deleteButtonSpinner.classList.toggle('d-none', !isBusy);
-        deleteButtonLabel.textContent = isBusy ? 'Deleting Project...' : 'Delete Project';
+        dangerButtonElement.disabled = isBusy;
+        dangerButtonSpinnerElement.classList.toggle('d-none', !isBusy);
+        dangerButtonLabelElement.textContent = isBusy ? 'Deleting Project...' : 'Delete Project';
     }
 
     /**
      *
      */
     function updateDeleteButtonState(): void {
-        const expected = deleteButton.dataset.confirmationPhrase || '';
-        deleteButton.disabled = deleteConfirmationInput.value !== expected;
+        const expected = dangerButtonElement.dataset.confirmationPhrase || '';
+        dangerButtonElement.disabled = phraseInputElement.value !== expected;
     }
 
 /**
@@ -271,7 +271,7 @@ async function loadSummary(projectObjectect: Record<string, unknown>): Promise<v
         }
     });
 
-    deleteConfirmationInput.addEventListener('input', updateDeleteButtonState);
+    phraseInputElement.addEventListener('input', updateDeleteButtonState);
 
     exportButton.addEventListener('click', async () => {
         clearMessages();
@@ -285,7 +285,7 @@ async function loadSummary(projectObjectect: Record<string, unknown>): Promise<v
         }
     });
 
-    deleteButton.addEventListener('click', async () => {
+    dangerButtonElement.addEventListener('click', async () => {
         clearMessages();
 
         if (!currentProject) {
@@ -293,7 +293,7 @@ async function loadSummary(projectObjectect: Record<string, unknown>): Promise<v
             return;
         }
 
-        if (deleteConfirmationInput.value !== deleteButton.dataset.confirmationPhrase) {
+        if (phraseInputElement.value !== dangerButtonElement.dataset.confirmationPhrase) {
             errorText.textContent = 'Type the exact confirmation phrase to delete the project.';
             return;
         }
@@ -302,7 +302,7 @@ async function loadSummary(projectObjectect: Record<string, unknown>): Promise<v
 
         try {
             await deleteProject(owner, project);
-            navigate('/projects', navContentDiv, contentDiv);
+            void navigate('/projects', navContentDiv, contentDiv);
         } catch (error) {
             errorText.textContent = (error as Error).message || 'Failed to delete project.';
         } finally {
@@ -310,7 +310,7 @@ async function loadSummary(projectObjectect: Record<string, unknown>): Promise<v
         }
     });
 
-    loadProject();
+    void loadProject();
 }
 
 /**

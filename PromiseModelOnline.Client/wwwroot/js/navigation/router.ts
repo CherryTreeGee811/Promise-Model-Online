@@ -35,7 +35,7 @@ function handleNavClick(event: Event, navContentDiv: HTMLElement, contentDiv: HT
     if (!path || path === '#') return;
 
     event.preventDefault();
-    navigate(path, navContentDiv, contentDiv);
+    void navigate(path, navContentDiv, contentDiv);
 }
 
 /**
@@ -57,7 +57,7 @@ export async function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HT
         const html = await response.text();
         navContentDiv.innerHTML = html;
         setActiveNavLink();
-        if (isLoggedIn()) startNotificationPolling();
+        if (isLoggedIn()) void startNotificationPolling();
     } catch (error: any) {
         navContentDiv.innerHTML = `<h1>Error loading template</h1><p>${(error as Error).message}</p>`;
         throw error;

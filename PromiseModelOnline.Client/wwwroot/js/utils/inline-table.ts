@@ -22,7 +22,7 @@ interface TableConfig {
  * @param {Record<string, unknown>} [config.emptyConfig] - Empty-table-row options (overrides emptyMessage).
  * @param {(item: unknown) => string} config.renderItemRow - Callback producing HTML for each item row.
  * @param {() => string} [config.renderAddRow] - Callback producing HTML for the add row.
- * @returns {HTMLElement | null} The tbody element, or null if container is missing.
+ * @returns {HTMLElement } The tbody element, or null if container is missing.
  */
 export function renderTableWithInlineAddRow(container: HTMLElement, {
     headers,
@@ -39,7 +39,7 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
             ? renderEmptyTableRow({ colspan: columnCount, ...emptyConfig })
             : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`);
 
-    const addRowHtml = renderAddRow ? renderAddRow() : '';
+    const rowHtmlText = renderAddRow ? renderAddRow() : '';
 
     container.innerHTML = `
         <div class="table-responsive">
@@ -49,7 +49,7 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
             </thead>
             <tbody>
                 ${rowsHtml}
-                ${addRowHtml}
+                ${rowHtmlText}
             </tbody>
         </table>
         </div>
@@ -65,9 +65,9 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
  * @param {HTMLElement} rowElement - The new row element to insert.
  */
 export function insertRowBeforeAddRow(tbody: HTMLElement, rowElement: HTMLElement): void {
-    const addRow = tbody.querySelector('tr[data-inline-add-row="1"]');
-    if (addRow) {
-        addRow.before(rowElement);
+    const rowElement_ = tbody.querySelector('tr[data-inline-add-row="1"]');
+    if (rowElement_) {
+        rowElement_.before(rowElement);
         return;
     }
 

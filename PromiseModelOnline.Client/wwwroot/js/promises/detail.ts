@@ -24,7 +24,7 @@ import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.t
  * @param {string} promiseId - The promise's sequence number.
  * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string } | null} permission - The user's permission object.
+ * @param {{ permission?: string } } permission - The user's permission object.
  */
 export async function loadPromiseDetail(owner: string, project: string, promiseId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): Promise<void> {
     const detailDiv = document.querySelector('#promise-detail-content') as HTMLElement | null;
@@ -79,7 +79,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
             editor = setupInlineEdit(descInput, descView, editButton, saveButton, cancelButton);
         }
 
-        mountDetailStackGraph({
+        void mountDetailStackGraph({
             nodeType: 'promise',
             nodeId: promiseId,
             owner,
@@ -186,7 +186,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
                     event.preventDefault();
 
-                    navigate(`/${owner}/${project}/epics/${link.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
+                    void navigate(`/${owner}/${project}/epics/${link.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
                 });
             };
         } catch {
@@ -203,10 +203,10 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
                 if (saveButton_) { saveButton_.disabled = true; saveButton_.title = 'Requires Edit permission.'; }
                 if (descInput) descInput.disabled = true;
 
-                const addEpicInput = document.querySelector('#add-epic-statement') as HTMLInputElement | null;
-                const addEpicSubmit = document.querySelector('#add-epic-submit') as HTMLButtonElement | null;
-                if (addEpicInput) addEpicInput.disabled = true;
-                if (addEpicSubmit) { addEpicSubmit.disabled = true; addEpicSubmit.title = 'Requires Edit permission.'; }
+                const epicInputElement = document.querySelector('#add-epic-statement') as HTMLInputElement | null;
+                const epicSubmitElement = document.querySelector('#add-epic-submit') as HTMLButtonElement | null;
+                if (epicInputElement) epicInputElement.disabled = true;
+                if (epicSubmitElement) { epicSubmitElement.disabled = true; epicSubmitElement.title = 'Requires Edit permission.'; }
             }
         })();
 

@@ -13,8 +13,8 @@ import { loadStridesList } from './list.ts';
 export async function loadStridesPage(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
     try {
         await loadTemplate('strides/list.html', contentDiv);
-        loadStridesList(owner, project, navContentDiv, contentDiv, permission);
+        await loadStridesList(owner, project, navContentDiv, contentDiv, permission);
     } catch {
-        loadTemplateWithError(contentDiv, 'strides')();
+        void loadTemplateWithError(contentDiv, 'strides')();
     }
 }

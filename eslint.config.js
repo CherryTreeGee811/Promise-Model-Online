@@ -4,6 +4,7 @@ import jsdoc from 'eslint-plugin-jsdoc';
 import importx from 'eslint-plugin-import-x';
 import tseslint from 'typescript-eslint';
 import unicorn from 'eslint-plugin-unicorn';
+import regexp from 'eslint-plugin-regexp';
 
 const importRules = {
   'import-x/first': 'warn',
@@ -25,10 +26,11 @@ export default tseslint.config(
         signalR: 'readonly',
       },
     },
-    plugins: { security, jsdoc, 'import-x': importx, unicorn },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
       ...unicorn.configs.recommended.rules,
+      ...regexp.configs['flat/recommended'].rules,
       'unicorn/filename-case': 'off',
       'unicorn/prefer-number-coercion': 'off',
       ...importRules,
@@ -69,11 +71,13 @@ export default tseslint.config(
         ...globals.es2021,
       },
       parser: tseslint.parser,
+      parserOptions: { projectService: true },
     },
-    plugins: { security, jsdoc, 'import-x': importx, unicorn, '@typescript-eslint': tseslint.plugin },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, '@typescript-eslint': tseslint.plugin },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
       ...unicorn.configs.recommended.rules,
+      ...regexp.configs['flat/recommended'].rules,
       'unicorn/filename-case': 'off',
       'unicorn/prefer-number-coercion': 'off',
       ...importRules,
@@ -105,6 +109,7 @@ export default tseslint.config(
       'eqeqeq': ['warn', 'smart'],
       '@typescript-eslint/no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'error',
     },
   },
 );

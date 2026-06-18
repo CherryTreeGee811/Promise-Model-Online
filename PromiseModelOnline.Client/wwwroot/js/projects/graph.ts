@@ -261,14 +261,14 @@ function createDefaultFilters(): GraphFilters {
 
 /**
  * Parse a comma-separated type filter string into a set of node types.
- * @param {string|null} value - The raw type filter value.
+ * @param {string} value - The raw type filter value.
  * @returns {Set<string>} The parsed set of node types.
  */
 function parseTypeList(value: string | null): Set<string> {
     if (value === null) return new Set(NODE_TYPES);
 
     const types = new Set<string>();
-    for (const item of String(value).split(',')) {
+    for (const item of value.split(',')) {
         const type = normalizeText(item);
         if (NODE_TYPES.includes(type)) {
             types.add(type);
@@ -497,7 +497,7 @@ function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNo
  * @param {object} filters - The active filter criteria.
  * @param {{visibleNodes: number, directMatches: number, hiddenNodes: number}} metrics - Accumulator for filter result metrics.
  * @param {boolean} [isRoot] - Whether this is the root node.
- * @returns {object|null} The filtered subtree, or null if nothing matches.
+ * @returns {object} The filtered subtree, or null if nothing matches.
  */
 function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetrics, isRoot: boolean = false): GraphNode | null {
     const isCollapsed = isNodeCollapsed(node.id);
@@ -579,11 +579,11 @@ function readFiltersFromUrl(): GraphFilters {
 
 /**
  * Read the graph focus node ID from the current URL search parameters.
- * @returns {string|null} The focus node ID, or null.
+ * @returns {string} The focus node ID, or null.
  */
 function readGraphFocusFromUrl(): string | null {
     const parameters = new URLSearchParams(location.search);
-    return String(parameters.get('focus') ?? '').trim() || undefined;
+    return (parameters.get('focus') ?? '').trim() || undefined;
 }
 
 /**
@@ -644,7 +644,7 @@ function renderFilterBar(): void {
         `<option value="backlog" ${graphState.filters.stride === 'backlog' ? 'selected' : ''}>Backlog</option>`,
         ...graphState.availableStrides.map(stride => {
             const label = stride.name ? `Stride #${stride.id} - ${escapeHtml(stride.name)}` : `Stride #${stride.id}`;
-            return `<option value="${String(stride.id)}" ${String(graphState.filters.stride) === String(stride.id) ? 'selected' : ''}>${label}</option>`;
+            return `<option value="${String(stride.id)}" ${graphState.filters.stride === String(stride.id) ? 'selected' : ''}>${label}</option>`;
         }),
     ].join('');
 
@@ -844,7 +844,7 @@ function bindFilterControls(): void {
 
     if (refreshButton) {
         refreshButton.addEventListener('click', () => {
-            reloadGraphData();
+            void reloadGraphData();
         });
     }
 }
@@ -979,9 +979,9 @@ function initZoomControls(zoomBehavior: unknown, svgNode: SVGElement, d3Instance
     fullscreenButton?.addEventListener('click', () => {
         const viewport = document.querySelector('#graph-viewport') as HTMLElement;
         if (document.fullscreenElement) {
-            document.exitFullscreen?.();
+            void document.exitFullscreen?.();
         } else {
-            (viewport as unknown as { requestFullscreen?: () => Promise<void> }).requestFullscreen?.();
+            void (viewport as unknown as { requestFullscreen?: () => Promise<void> }).requestFullscreen?.();
         }
     });
 }
@@ -1049,7 +1049,7 @@ function applyFilters(): void {
 
     const metrics: FilterMetrics = { visibleNodes: 0, directMatches: 0, hiddenNodes: 0 };
     graphState.filteredTree = filterTree(graphState.rawTree, graphState.filters, metrics, true);
-    const animate = graphState.hasRendered;
+    const isAnimate = graphState.hasRendered;
 
     syncFiltersToUrl(graphState.filters);
 
@@ -1079,7 +1079,7 @@ function applyFilters(): void {
         } as Record<string, unknown>);
 
         const restoreTransform = focusNode ? undefined : (graphState.userZoomTransform ?? graphState.zoomTransform);
-        renderTree(graphContent!, graphState.d3 as Record<string, unknown>, graphState.filteredTree, restoreTransform, focusNode, animate);
+        renderTree(graphContent!, graphState.d3 as Record<string, unknown>, graphState.filteredTree, restoreTransform, focusNode, isAnimate);
     } else {
         renderEmptyState(graphContent, 'No cards match the current filters.');
     }
@@ -1145,7 +1145,7 @@ async function loadAvailableStrides(owner: string, project: string): Promise<voi
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {HTMLElement} contentDiv - The main content container.
- * @param {Record<string, unknown> | null} permission - The current user's permission object for the project.
+ * @param {Record<string, unknown> } permission - The current user's permission object for the project.
  * @returns {Promise<void>} Resolves when the graph page is fully loaded and rendered.
  */
 export async function loadGraphPage(owner: string, project: string, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
@@ -1198,7 +1198,7 @@ export async function loadGraphPage(owner: string, project: string, contentDiv: 
 
     graphState.pageShowRefreshHandler = (event: PageTransitionEvent) => {
         if (!event.persisted) return;
-        reloadGraphData();
+        void reloadGraphData();
     };
     window.addEventListener('pageshow', graphState.pageShowRefreshHandler);
 

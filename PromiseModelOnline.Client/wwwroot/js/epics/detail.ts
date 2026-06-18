@@ -27,12 +27,12 @@ import { getEpic, getJourneys, updateEpicDescription } from './api.ts';
  * @param {string} epicId - The epic's sequence number.
  * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * @param {{ permission?: string }} permission - The user's permission object.
  */
 export async function loadEpicDetail(owner, project, epicId, navContentDiv, contentDiv, permission) {
     const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#epic-detail-content'));
     const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const loadingElement = /** @type {HTMLElement|null} */ (document.querySelector('#epic-detail-loading'));
+    const loadingElement = /** @type {HTMLElement} */ (document.querySelector('#epic-detail-loading'));
 
     destroyDetailStackGraph();
     if (loadingElement) loadingElement.hidden = false;
@@ -44,7 +44,7 @@ export async function loadEpicDetail(owner, project, epicId, navContentDiv, cont
 
         if (loadingElement) loadingElement.hidden = true;
 
-        mountDetailStackGraph({
+        void mountDetailStackGraph({
             nodeType: 'epic',
             nodeId: epicId,
             owner,
@@ -80,11 +80,11 @@ export async function loadEpicDetail(owner, project, epicId, navContentDiv, cont
             </div>
         `;
 
-        const descInput = /** @type {HTMLTextAreaElement|null} */ (document.querySelector('#description-input'));
-        const descView = /** @type {HTMLElement|null} */ (document.querySelector('#description-view'));
-        const editButton = /** @type {HTMLElement|null} */ (document.querySelector('#edit-desc-btn'));
-        const saveButton = /** @type {HTMLElement|null} */ (document.querySelector('#save-desc'));
-        const cancelButton = /** @type {HTMLElement|null} */ (document.querySelector('#cancel-desc'));
+        const descInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#description-input'));
+        const descView = /** @type {HTMLElement} */ (document.querySelector('#description-view'));
+        const editButton = /** @type {HTMLElement} */ (document.querySelector('#edit-desc-btn'));
+        const saveButton = /** @type {HTMLElement} */ (document.querySelector('#save-desc'));
+        const cancelButton = /** @type {HTMLElement} */ (document.querySelector('#cancel-desc'));
         let editor;
         if (descInput && descView && editButton) {
             createCommentAutocomplete(descInput, 'Epic', epic.id);
@@ -104,7 +104,7 @@ export async function loadEpicDetail(owner, project, epicId, navContentDiv, cont
                 link.addEventListener('click', (event) => {
                     if (event.ctrlKey || event.metaKey || event.button === 1) return;
                     event.preventDefault();
-                    navigate(link.getAttribute('href'), navContentDiv, contentDiv);
+                    void navigate(link.getAttribute('href'), navContentDiv, contentDiv);
                 });
             }
         } catch {
@@ -209,7 +209,7 @@ export async function loadEpicDetail(owner, project, epicId, navContentDiv, cont
                 link.addEventListener('click', (event) => {
                     if (event.ctrlKey || event.metaKey || event.button === 1) return;
                     event.preventDefault();
-                    navigate(`/${owner}/${project}/journeys/${link.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
+                    void navigate(`/${owner}/${project}/journeys/${link.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
                 });
             }
         } catch {
@@ -227,10 +227,10 @@ export async function loadEpicDetail(owner, project, epicId, navContentDiv, cont
                 if (saveButton_) { saveButton_.disabled = true; saveButton_.title = 'Requires Edit permission.'; }
                 if (descInput) descInput.disabled = true;
 
-                const addJourneyInput = document.querySelector('#add-journey-statement');
-                const addJourneySubmit = document.querySelector('#add-journey-submit');
-                if (addJourneyInput) addJourneyInput.disabled = true;
-                if (addJourneySubmit) { addJourneySubmit.disabled = true; addJourneySubmit.title = 'Requires Edit permission.'; }
+                const journeyStatementInput = document.querySelector('#add-journey-statement');
+                const journeySubmitButton = document.querySelector('#add-journey-submit');
+                if (journeyStatementInput) journeyStatementInput.disabled = true;
+                if (journeySubmitButton) { journeySubmitButton.disabled = true; journeySubmitButton.title = 'Requires Edit permission.'; }
             }
         })();
 

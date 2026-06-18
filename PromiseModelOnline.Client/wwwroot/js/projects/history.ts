@@ -83,11 +83,11 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
                 const direction = (button as HTMLElement).dataset.pageAction;
                 if (direction === 'previous' && currentPage > 1) {
                     currentPage -= 1;
-                    loadEntries();
+                    void loadEntries();
                 }
                 if (direction === 'next' && currentPage < totalPages) {
                     currentPage += 1;
-                    loadEntries();
+                    void loadEntries();
                 }
             });
         }
@@ -185,12 +185,12 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         }
     }
 
-    (async () => {
+    void (async () => {
         await loadProjectName();
-        loadEntries(true);
+        void loadEntries(true);
     })();
 
     backButton.addEventListener('click', () => {
-        navigate('/projects', navContentDiv, contentDiv);
+        void navigate('/projects', navContentDiv, contentDiv);
     });
 }

@@ -31,7 +31,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
   /**
    * Detect an @ or # trigger at the cursor position in the textarea.
-   * @returns {{ trigger: string, query: string, start: number }|null} The trigger info or null.
+   * @returns {{ trigger: string, query: string, start: number }} The trigger info or null.
    */
   function getTriggerAtCursor() {
     const pos = textarea.selectionStart;
@@ -180,7 +180,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       dropdown.append(element);
     }
 
-    const highlightedElement = /** @type {HTMLElement|null} */ (dropdown.children[state.highlightedIndex]);
+    const highlightedElement = /** @type {HTMLElement} */ (dropdown.children[state.highlightedIndex]);
     if (highlightedElement) {
       highlightedElement.scrollIntoView({ block: 'nearest' });
     }
@@ -249,7 +249,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     debounceTimer = setTimeout(function () {
       const trigger = getTriggerAtCursor();
       if (trigger) {
-        fetchSuggestions(trigger);
+        void fetchSuggestions(trigger);
       } else {
         close();
       }

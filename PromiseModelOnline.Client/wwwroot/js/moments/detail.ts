@@ -28,12 +28,12 @@ import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, u
  * @param {string} momentId - The moment's sequence number.
  * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * @param {{ permission?: string }} permission - The user's permission object.
  */
 export async function loadMomentDetail(owner, project, momentId, navContentDiv, contentDiv, permission) {
     const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#moment-detail-content'));
     const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const loadingElement = /** @type {HTMLElement|null} */ (document.querySelector('#moment-detail-loading'));
+    const loadingElement = /** @type {HTMLElement} */ (document.querySelector('#moment-detail-loading'));
 
     destroyDetailStackGraph();
     if (loadingElement) loadingElement.hidden = false;
@@ -44,7 +44,7 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
         await loadEntityLookupMap('Moment', moment.id, owner, project);
         if (loadingElement) loadingElement.hidden = true;
 
-        mountDetailStackGraph({
+        void mountDetailStackGraph({
             nodeType: 'moment',
             nodeId: momentId,
             owner,
@@ -113,11 +113,11 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             </div>
         `;
 
-        const momentDescInput = /** @type {HTMLTextAreaElement|null} */ (document.querySelector('#moment-description-input'));
-        const momentDescView = /** @type {HTMLElement|null} */ (document.querySelector('#moment-description-view'));
-        const momentEditButton = /** @type {HTMLElement|null} */ (document.querySelector('#edit-moment-desc-btn'));
-        const descriptionSaveButton = /** @type {HTMLElement|null} */ (document.querySelector('#moment-description-save'));
-        const momentDescriptionCancelButton = /** @type {HTMLElement|null} */ (document.querySelector('#moment-description-cancel'));
+        const momentDescInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#moment-description-input'));
+        const momentDescView = /** @type {HTMLElement} */ (document.querySelector('#moment-description-view'));
+        const momentEditButton = /** @type {HTMLElement} */ (document.querySelector('#edit-moment-desc-btn'));
+        const descriptionSaveButton = /** @type {HTMLElement} */ (document.querySelector('#moment-description-save'));
+        const momentDescriptionCancelButton = /** @type {HTMLElement} */ (document.querySelector('#moment-description-cancel'));
         let momentEditor;
         if (momentDescInput && momentDescView && momentEditButton) {
             createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
@@ -148,8 +148,8 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
         const tasksContainer = /** @type {HTMLElement} */ (document.querySelector('#moment-tasks'));
         renderMomentTasks(tasksContainer, momentId, moment.tasks, moment, permission, owner, project);
 
-        const descriptionInput = /** @type {HTMLTextAreaElement|null} */ (document.querySelector('#moment-description-input'));
-        const descriptionMessage = /** @type {HTMLElement|null} */ (document.querySelector('#moment-description-msg'));
+        const descriptionInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#moment-description-input'));
+        const descriptionMessage = /** @type {HTMLElement} */ (document.querySelector('#moment-description-msg'));
         if (descriptionSaveButton && descriptionInput && descriptionMessage) {
             descriptionSaveButton.addEventListener('click', async () => {
                 descriptionMessage.textContent = '';
@@ -179,10 +179,10 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             if (event.ctrlKey || event.metaKey || event.button === 1) return;
 
             event.preventDefault();
-            navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
+            void navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
         });
 
-        const estSelect = /** @type {HTMLSelectElement|null} */ (document.querySelector('#moment-estimate-select'));
+        const estSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-estimate-select'));
         if (estSelect) {
             estSelect.addEventListener('change', async () => {
                 const estimate = estSelect.value === '-' ? undefined : estSelect.value;
@@ -199,7 +199,7 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             });
         }
 
-        const strideSelect = /** @type {HTMLSelectElement|null} */ (document.querySelector('#moment-stride-select'));
+        const strideSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-stride-select'));
         if (strideSelect) {
             try {
                 const strides = await getStrides(owner, project);
@@ -234,8 +234,8 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             }
         }
 
-        const statusSelect = /** @type {HTMLSelectElement|null} */ (document.querySelector('#moment-status-select'));
-        const completedCell = /** @type {HTMLElement|null} */ (detailDiv.querySelector(':scope tr:nth-last-child(1) td'));
+        const statusSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-status-select'));
+        const completedCell = /** @type {HTMLElement} */ (detailDiv.querySelector(':scope tr:nth-last-child(1) td'));
         if (statusSelect) {
             statusSelect.addEventListener('change', async () => {
                 const previous = statusSelect.value;
@@ -259,7 +259,7 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             });
         }
 
-        const typeSelect = /** @type {HTMLSelectElement|null} */ (document.querySelector('#moment-type-select'));
+        const typeSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-type-select'));
         if (typeSelect) {
             typeSelect.addEventListener('change', async () => {
                 const newType = typeSelect.value;
@@ -300,7 +300,7 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
  * @param {number} momentId - The moment ID.
  * @param {Array} tasks - The list of tasks.
  * @param {Moment} moment - The moment data object.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * @param {{ permission?: string }} permission - The user's permission object.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  */
@@ -347,11 +347,11 @@ function renderMomentTasks(container, momentId, tasks, moment, permission, owner
         `,
     });
 
-    const addTaskName = /** @type {HTMLInputElement|null} */ (container.querySelector('#add-moment-task-name'));
-    const addTaskDescription = /** @type {HTMLInputElement|null} */ (container.querySelector('#add-moment-task-description'));
-    const addTaskCompleted = /** @type {HTMLInputElement|null} */ (container.querySelector('#add-moment-task-completed'));
-    const addTaskButton = /** @type {HTMLElement|null} */ (container.querySelector('#add-moment-task-submit'));
-    const addTaskMessage = /** @type {HTMLElement|null} */ (container.querySelector('#add-moment-task-msg'));
+    const addTaskName = /** @type {HTMLInputElement} */ (container.querySelector('#add-moment-task-name'));
+    const addTaskDescription = /** @type {HTMLInputElement} */ (container.querySelector('#add-moment-task-description'));
+    const addTaskCompleted = /** @type {HTMLInputElement} */ (container.querySelector('#add-moment-task-completed'));
+    const addTaskButton = /** @type {HTMLElement} */ (container.querySelector('#add-moment-task-submit'));
+    const addTaskMessage = /** @type {HTMLElement} */ (container.querySelector('#add-moment-task-msg'));
 
     if (addTaskDescription) createCommentAutocomplete(addTaskDescription, 'Moment', moment.id);
 
@@ -433,7 +433,7 @@ function syncMomentTasksToStackGraph(momentId, moment) {
  * @param {HTMLElement} tbody - The table body containing the checkboxes.
  * @param {number} momentId - The moment's sequence number.
  * @param {Moment} moment - The moment data object.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * @param {{ permission?: string }} permission - The user's permission object.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  */

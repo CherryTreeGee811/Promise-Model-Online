@@ -19,7 +19,7 @@ export const STATUS_OPTIONS: StatusOption[] = [
  * @returns {string} Emoji character representing the status.
  */
 export function getStatusIcon(statusOrColor: string): string {
-    const normalized = String(statusOrColor ?? '').toLowerCase();
+    const normalized = (statusOrColor ?? '').toLowerCase();
     if (normalized.includes('green')) return '\u{1F7E2}';
     if (normalized.includes('black') || normalized.includes('blocked')) return '\u{26AB}\u{FE0F}';
     if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '\u{1F7E0}';
@@ -33,7 +33,7 @@ export function getStatusIcon(statusOrColor: string): string {
  * @returns {string} Human-readable status name.
  */
 export function getStatusLabel(statusOrColor: string): string {
-    const normalized = String(statusOrColor ?? '').toLowerCase();
+    const normalized = (statusOrColor ?? '').toLowerCase();
     if (normalized.includes('green')) return 'Done';
     if (normalized.includes('black') || normalized.includes('blocked')) return 'Blocked';
     if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return 'In Progress';
@@ -56,7 +56,7 @@ export function getStatusHtml(statusOrColor: string): string {
  * @returns {string} One of "done", "blocked", "inprogress", "todo", or "other".
  */
 export function getStatusBucket(statusColor: string): string {
-    const normalized = String(statusColor ?? '').trim().toLowerCase();
+    const normalized = (statusColor ?? '').trim().toLowerCase();
 
     if (!normalized || normalized === 'all') return 'other';
     if (normalized.includes('green') || normalized.includes('done')) return 'done';

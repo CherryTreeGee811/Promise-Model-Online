@@ -12,8 +12,8 @@ export { authStore, isLoggedIn, getUsername, getUserId } from './stores/auth.ts'
  * Update authentication state and persist to session storage.
  * @param {object} state - Authentication state object.
  * @param {boolean} state.isAuthenticated - Whether the user is authenticated.
- * @param {string | null} [state.username] - The user's username.
- * @param {number | null} [state.userId] - The user's ID.
+ * @param {string } [state.username] - The user's username.
+ * @param {number } [state.userId] - The user's ID.
  */
 export function setAuthState(state: { isAuthenticated: boolean; username?: string | null; userId?: number | null }): void {
     authStore.set({

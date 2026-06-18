@@ -37,7 +37,7 @@ export interface FormValidator {
   destroy(): void;
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 
 /**
  * Get the trimmed value of a form element.

@@ -136,7 +136,7 @@ export function formatEstimate(value: unknown): string {
 /**
  * Get the display label for the child type of a given node type.
  * @param {string} nodeType - The parent node type.
- * @returns {string|null} The child type label, or null for unknown types.
+ * @returns {string} The child type label, or null for unknown types.
  */
 export function getChildTypeLabel(nodeType: string): string | null {
     switch (nodeType) {
@@ -330,7 +330,7 @@ export function createNode(nodeType: string, payload: Record<string, unknown>, c
  * Create a graph node pre-populated with child metric calculations.
  * @param {string} nodeType - The node type.
  * @param {object} payload - The node's data payload.
- * @param {object|null} [childMetrics] - Optional pre-computed child metrics.
+ * @param {object} [childMetrics] - Optional pre-computed child metrics.
  * @returns {object} The created graph node.
  */
 export function createNodeWithMetrics(nodeType: string, payload: Record<string, unknown>, childMetrics?: { childCount: number; completedChildCount: number } | null) {
@@ -462,7 +462,7 @@ export function countRenderableNodes(node: Record<string, unknown> | null | unde
  * @param {object[]} rootPromises - The top-level promise nodes.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {object|null} [projectEntity] - Optional project entity for the root label.
+ * @param {object} [projectEntity] - Optional project entity for the root label.
  * @returns {object} The parsed tree with a root node.
  */
 export function parseGraphData(rootPromises: Record<string, unknown>[], owner: string, project: string, projectEntity?: Record<string, unknown> | null) {
@@ -591,13 +591,13 @@ export function getDetailPageNodeScale(activeDetailNodeType: string): number {
  * @param {number} options.contentOffsetX - The X content offset.
  * @param {number} options.contentOffsetY - The Y content offset.
  * @param {string} options.cardClipPathId - The clip path ID for card masking.
- * @param {string | null} options.owner - The project owner's slug.
- * @param {string | null} options.project - The project's slug.
- * @param {string | null} options.focusNodeId - The focused node ID.
- * @param {((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: Record<string, unknown>) => void) | null} options.onContextMenu - Context menu event handler.
+ * @param {string } options.owner - The project owner's slug.
+ * @param {string } options.project - The project's slug.
+ * @param {string } options.focusNodeId - The focused node ID.
+ * @param {((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: Record<string, unknown>) => void) } options.onContextMenu - Context menu event handler.
  * @param {boolean} options.enableZoom - Whether zoom is enabled.
  * @param {boolean} [options.enableLinks] - Whether links are enabled.
- * @param {number | null} [options.uniformNodeScale] - Uniform node scale factor.
+ * @param {number } [options.uniformNodeScale] - Uniform node scale factor.
  * @param {boolean} [options.animate] - Whether to animate transitions.
  * @param {number} [options.animationSpeed] - Animation speed multiplier.
  */
@@ -623,15 +623,15 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
         project,
         focusNodeId,
         onContextMenu,
-        enableZoom,
-        enableLinks = enableZoom,
+        enableZoom: isEnableZoom,
+        enableLinks: isEnableLinks = isEnableZoom,
         uniformNodeScale,
-        animate = false,
+        animate: isAnimate = false,
         animationSpeed = 1,
     } = options;
 
     const nodeScale = uniformNodeScale ?? 1;
-    const containerTag = enableLinks ? 'a' : 'g';
+    const containerTag = isEnableLinks ? 'a' : 'g';
     const duration = Math.max(0, Math.round(200 / Math.max(0.1, animationSpeed)));
     const t = (d3.transition as (...arguments_: unknown[]) => Record<string, unknown>)().duration(duration);
 
@@ -701,7 +701,7 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
         .attr('opacity', 0)
         .attr('d', (d: Record<string, unknown>) => getFinalLinkPath(d));
 
-    if (animate) {
+    if (isAnimate) {
         (linkEnter.transition as (...arguments_: unknown[]) => Record<string, unknown>)(t).attr('opacity', 1);
     } else {
         (linkEnter.attr as (attribute: string, value: unknown) => Record<string, unknown>)('opacity', 1);
@@ -901,7 +901,7 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
         }
     });
 
-    if (enableLinks) {
+    if (isEnableLinks) {
         (node.attr as (attribute: string, value: unknown) => Record<string, unknown>)('href', (current: Record<string, unknown>) => getNodeHref(current.data as Record<string, unknown>, owner as string, project as string))
             .attr('xlink:href', (current: Record<string, unknown>) => getNodeHref(current.data as Record<string, unknown>, owner as string, project as string))
             .attr('data-nav', '');
@@ -930,10 +930,10 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
         .classed('is-focused', (current: Record<string, unknown>) => (focusNodeId !== null && (current.data as Record<string, unknown>).id === focusNodeId))
         .attr('tabindex', (current: Record<string, unknown>) => {
             if ((current.data as Record<string, unknown>).nodeType === 'root') return;
-            return enableZoom ? 0 : -1;
+            return isEnableZoom ? 0 : -1;
         })
-        .attr('role', (current: Record<string, unknown>) => (enableZoom && (current.data as Record<string, unknown>).nodeType !== 'root') ? 'treeitem' : undefined)
-        .attr('aria-label', (current: Record<string, unknown>) => (enableZoom && (current.data as Record<string, unknown>).nodeType !== 'root') ? (getNodeTitle(current.data as Record<string, unknown>) || 'Graph node') : undefined);
+        .attr('role', (current: Record<string, unknown>) => (isEnableZoom && (current.data as Record<string, unknown>).nodeType !== 'root') ? 'treeitem' : undefined)
+        .attr('aria-label', (current: Record<string, unknown>) => (isEnableZoom && (current.data as Record<string, unknown>).nodeType !== 'root') ? (getNodeTitle(current.data as Record<string, unknown>) || 'Graph node') : undefined);
 
     if (onContextMenu) {
         (node.on as (event: string, handler: (...arguments_: unknown[]) => void) => Record<string, unknown>)('contextmenu', (event: MouseEvent, current: Record<string, unknown>) => {
@@ -954,7 +954,7 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
     (nodeBound.attr as (attribute: string, value: unknown) => Record<string, unknown>)('opacity', 1)
         .attr('transform', (d: Record<string, unknown>) => getFinalTransform(d));
 
-    if (animate) {
+    if (isAnimate) {
         (nodeEnter.transition as (...arguments_: unknown[]) => Record<string, unknown>)(t)
             .attr('opacity', 1)
             .attr('transform', (d: Record<string, unknown>) => getFinalTransform(d));
@@ -973,25 +973,25 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
  * @param {object} [options] - Rendering options.
  * @param {string} [options.owner] - The project owner's slug.
  * @param {string} [options.project] - The project's slug.
- * @param {string | null} [options.focusNodeId] - The focused node ID.
- * @param {object | null} [options.focusNodeData] - Specific node data to focus on.
+ * @param {string } [options.focusNodeId] - The focused node ID.
+ * @param {object } [options.focusNodeData] - Specific node data to focus on.
  * @param {boolean} [options.enableZoom] - Whether zoom is enabled.
  * @param {boolean} [options.compact] - Whether to use compact detail-page mode.
- * @param {object | null} [options.restoreTransform] - A D3 zoom transform to restore.
- * @param {HTMLElement | null} [options.viewportElement] - The viewport element for scroll/clipping.
+ * @param {object } [options.restoreTransform] - A D3 zoom transform to restore.
+ * @param {HTMLElement } [options.viewportElement] - The viewport element for scroll/clipping.
  * @param {string} [options.clipPathIdPrefix] - Prefix for the clip path ID.
  * @param {string} [options.ariaLabel] - The SVG aria-label.
  * @param {string} [options.emptyMessage] - Message when no cards to display.
- * @param {((transform: object, meta: { user?: boolean }) => void) | null} [options.onZoom] - Zoom event callback.
- * @param {((event: Event, nodeData: object) => void) | null} [options.onContextMenu] - Context menu event callback.
- * @param {number | null} [options.minGraphWidth] - Minimum graph width.
- * @param {number | null} [options.minGraphHeight] - Minimum graph height.
- * @param {number | null} [options.uniformNodeScale] - Uniform node scale factor.
+ * @param {((transform: object, meta: { user?: boolean }) => void) } [options.onZoom] - Zoom event callback.
+ * @param {((event: Event, nodeData: object) => void) } [options.onContextMenu] - Context menu event callback.
+ * @param {number } [options.minGraphWidth] - Minimum graph width.
+ * @param {number } [options.minGraphHeight] - Minimum graph height.
+ * @param {number } [options.uniformNodeScale] - Uniform node scale factor.
  * @param {boolean} [options.renderRootCard] - Whether to render the root card.
  * @param {boolean} [options.enableLinks] - Whether links are enabled.
  * @param {boolean} [options.animate] - Whether to animate transitions.
  * @param {number} [options.animationSpeed] - Animation speed multiplier.
- * @returns {{node: SVGElement | null, zoom: object | null} | undefined} The SVG node and zoom behavior (if enabled).
+ * @returns {{node: SVGElement | null, zoom: object } | undefined} The SVG node and zoom behavior (if enabled).
  */
 export function renderStackGraph(contentDiv: HTMLElement | null | undefined, d3: Record<string, unknown>, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: Record<string, unknown> | null } | null {
     const {
@@ -1021,8 +1021,8 @@ export function renderStackGraph(contentDiv: HTMLElement | null | undefined, d3:
     if (!contentDiv) return;
 
     const existingSvgElement = animate ? contentDiv.querySelector('svg') : undefined;
-    const prefersReducedMotion = typeof window !== 'undefined' && globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const resolvedAnimate = animate && !prefersReducedMotion;
+    const isPrefersReducedMotion = typeof window !== 'undefined' && globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const resolvedAnimate = animate && !isPrefersReducedMotion;
 
     const margin = compact
         ? { top: 12, right: 20, bottom: 12, left: 20 }

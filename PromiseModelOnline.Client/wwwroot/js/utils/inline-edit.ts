@@ -4,8 +4,8 @@
  * @param {HTMLElement} inputElement - The hidden input element.
  * @param {HTMLElement} viewElement - The visible display element.
  * @param {HTMLElement} editButton - Button to switch from view mode to edit mode.
- * @param {HTMLElement | null} saveButton - Button to save (optional; shows "Saved!" popover if provided).
- * @param {HTMLElement | null} cancelButton - Button to cancel and restore previous value.
+ * @param {HTMLElement } saveButton - Button to save (optional; shows "Saved!" popover if provided).
+ * @param {HTMLElement } cancelButton - Button to cancel and restore previous value.
  * @returns {object} An object with `showView` and `showSavedPopover` helper methods.
  */
 export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElement, editButton: HTMLElement, saveButton: HTMLElement | null, cancelButton: HTMLElement | null): { showView: (value: string) => void; showSavedPopover: (value: string) => void } {

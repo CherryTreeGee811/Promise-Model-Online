@@ -83,7 +83,7 @@ export async function loadMyTasksPage(navContentDiv, contentDiv) {
                 const owner = link.dataset.owner;
                 const project = link.dataset.project;
                 const seq = link.getAttribute('moment-seq');
-                navigate(`/${owner}/${project}/moments/${seq}`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/moments/${seq}`, navContentDiv, contentDiv);
             });
         }
     } catch (error) {

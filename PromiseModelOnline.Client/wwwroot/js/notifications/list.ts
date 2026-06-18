@@ -12,7 +12,7 @@ const _listState = { isLiveListenerRegistered: false };
  * @param {number} count - The new badge count.
  */
 function setBadgeCount(count) {
-    const badge = /** @type {HTMLElement|null} */ (document.querySelector('#notification-badge'));
+    const badge = /** @type {HTMLElement} */ (document.querySelector('#notification-badge'));
     if (!badge) return;
 
     const safeCount = Number.isFinite(count) ? count : 0;
@@ -27,7 +27,7 @@ function setBadgeCount(count) {
 
 /** Decrement the badge count by one if the badge is visible. */
 function decrementBadgeIfVisible() {
-    const badge = /** @type {HTMLElement|null} */ (document.querySelector('#notification-badge'));
+    const badge = /** @type {HTMLElement} */ (document.querySelector('#notification-badge'));
     if (!badge || badge.style.display === 'none') return;
 
     const current = parseInt(badge.textContent || '0', 10);
@@ -42,7 +42,7 @@ function decrementBadgeIfVisible() {
 
 /**
  * Mark a notification table row as read by removing the unread class and updating the actions cell.
- * @param {HTMLElement|null} row - The table row element to mark as read.
+ * @param {HTMLElement} row - The table row element to mark as read.
  */
 function markRowRead(row) {
     if (!row) return;
@@ -50,7 +50,7 @@ function markRowRead(row) {
     const wasUnread = row.classList.contains('unread');
     row.classList.remove('unread');
 
-    const actionsCell = /** @type {HTMLElement|null} */ (row.querySelector('td[data-actions="1"]'));
+    const actionsCell = /** @type {HTMLElement} */ (row.querySelector('td[data-actions="1"]'));
     if (actionsCell) {
         actionsCell.textContent = '✓ Read';
     }
@@ -120,7 +120,7 @@ function renderNotificationsInto(listDiv, notifications) {
             for (const tr of listDiv.querySelectorAll(':scope tbody tr')) {
                 tr.classList.remove('unread');
 
-                const actionsCell = /** @type {HTMLElement|null} */ (tr.querySelector(':scope > td[data-actions="1"]'));
+                const actionsCell = /** @type {HTMLElement} */ (tr.querySelector(':scope > td[data-actions="1"]'));
                 if (actionsCell) actionsCell.textContent = '✓ Read';
             }
 
@@ -157,8 +157,8 @@ function renderNotificationsInto(listDiv, notifications) {
 
 /** Refresh the notifications page by fetching all notifications and re-rendering. */
 async function refreshNotificationsPage() {
-    const listDiv = /** @type {HTMLElement|null} */ (document.querySelector('#notifications-list'));
-    const errorElement = /** @type {HTMLElement|null} */ (document.querySelector('#error-text'));
+    const listDiv = /** @type {HTMLElement} */ (document.querySelector('#notifications-list'));
+    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
 
     if (!listDiv || !errorElement) return;
 
@@ -169,7 +169,7 @@ async function refreshNotificationsPage() {
 
         renderNotificationsInto(listDiv, notifications);
 
-        updateNotificationBadge();
+        void updateNotificationBadge();
 
     } catch {
         errorElement.textContent = 'Failed to load notifications.';
@@ -187,7 +187,7 @@ export function loadNotificationsPage(contentDiv) {
         const eventName = getUnreadNotificationsEventName();
 
         addEventListener(eventName, (/** @type {CustomEvent} */ event) => {
-            const listDiv = /** @type {HTMLElement|null} */ (document.querySelector('#notifications-list'));
+            const listDiv = /** @type {HTMLElement} */ (document.querySelector('#notifications-list'));
             if (!listDiv) return;
 
             const notifications = event?.detail?.notifications;
@@ -199,5 +199,5 @@ export function loadNotificationsPage(contentDiv) {
         });
     }
 
-    refreshNotificationsPage();
+    void refreshNotificationsPage();
 }

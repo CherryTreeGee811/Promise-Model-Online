@@ -56,7 +56,7 @@ export function loadD3(): Promise<unknown> {
 
 /**
  * Get the detail stack graph container element.
- * @returns {HTMLElement | null} The container element, or null if not found.
+ * @returns {HTMLElement } The container element, or null if not found.
  */
 function getContainer(): HTMLElement | null {
     return document.querySelector('#detail-stack-graph');
@@ -64,7 +64,7 @@ function getContainer(): HTMLElement | null {
 
 /**
  * Render a loading spinner inside the container element.
- * @param {HTMLElement | null} container - The container element to render into.
+ * @param {HTMLElement } container - The container element to render into.
  */
 function renderLoadingSpinner(container: HTMLElement | null): void {
     if (!container) return;
@@ -198,11 +198,11 @@ interface ChildMetrics {
 /**
  * Fetch child metrics for each entity in the path.
  * @param {PathEntities} root0 - The path entities object.
- * @param {Record<string, unknown> | null} root0.moment - The moment entity.
- * @param {Record<string, unknown> | null} root0.flow - The flow entity.
- * @param {Record<string, unknown> | null} root0.journey - The journey entity.
- * @param {Record<string, unknown> | null} root0.epic - The epic entity.
- * @param {Record<string, unknown> | null} root0.promise - The promise entity.
+ * @param {Record<string, unknown> } root0.moment - The moment entity.
+ * @param {Record<string, unknown> } root0.flow - The flow entity.
+ * @param {Record<string, unknown> } root0.journey - The journey entity.
+ * @param {Record<string, unknown> } root0.epic - The epic entity.
+ * @param {Record<string, unknown> } root0.promise - The promise entity.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @returns {Promise<Record<string, ChildMetrics>>} The child metrics keyed by node type.
@@ -259,7 +259,7 @@ async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }
 /**
  * Wrap a node with a single child node.
  * @param {Record<string, unknown>} node - The parent node.
- * @param {Record<string, unknown> | null} child - The child node to wrap, or null for no children.
+ * @param {Record<string, unknown> } child - The child node to wrap, or null for no children.
  * @returns {Record<string, unknown>} The wrapped node with children array.
  */
 function wrapWithChild(node: Record<string, unknown>, child: Record<string, unknown> | null): Record<string, unknown> {
@@ -373,7 +373,7 @@ export function patchChildMetrics(nodeId: string, children: Record<string, unkno
  * @returns {string} The corresponding color name (green, orange, black, red).
  */
 export function momentStatusToColor(status: string): string {
-    switch (String(status ?? '')) {
+    switch ((status ?? '')) {
         case 'Done': { return 'green';
         }
         case 'InProgress': { return 'orange';

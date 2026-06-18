@@ -27,12 +27,12 @@ import { getFlow, getMoments, updateFlowDescription } from './api.ts';
  * @param {string} flowId - The flow's sequence number.
  * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * @param {{ permission?: string }} permission - The user's permission object.
  */
 export async function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv, permission) {
     const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#flow-detail-content'));
     const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const loadingElement = /** @type {HTMLElement|null} */ (document.querySelector('#flow-detail-loading'));
+    const loadingElement = /** @type {HTMLElement} */ (document.querySelector('#flow-detail-loading'));
 
     destroyDetailStackGraph();
     if (loadingElement) loadingElement.hidden = false;
@@ -44,7 +44,7 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
 
         if (loadingElement) loadingElement.hidden = true;
 
-        mountDetailStackGraph({
+        void mountDetailStackGraph({
             nodeType: 'flow',
             nodeId: flowId,
             owner,
@@ -82,11 +82,11 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
             </div>
         `;
 
-        const descInput = /** @type {HTMLTextAreaElement|null} */ (document.querySelector('#description-input'));
-        const descView = /** @type {HTMLElement|null} */ (document.querySelector('#description-view'));
-        const editButton = /** @type {HTMLElement|null} */ (document.querySelector('#edit-desc-btn'));
-        const saveButton = /** @type {HTMLElement|null} */ (document.querySelector('#save-desc'));
-        const cancelButton = /** @type {HTMLElement|null} */ (document.querySelector('#cancel-desc'));
+        const descInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#description-input'));
+        const descView = /** @type {HTMLElement} */ (document.querySelector('#description-view'));
+        const editButton = /** @type {HTMLElement} */ (document.querySelector('#edit-desc-btn'));
+        const saveButton = /** @type {HTMLElement} */ (document.querySelector('#save-desc'));
+        const cancelButton = /** @type {HTMLElement} */ (document.querySelector('#cancel-desc'));
         let editor;
         if (descInput && descView && editButton) {
             createCommentAutocomplete(descInput, 'Flow', flow.id);
@@ -98,7 +98,7 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
             journeyLink.addEventListener('click', (event) => {
                 if (event.ctrlKey || event.metaKey || event.button === 1) return;
                 event.preventDefault();
-                navigate(`/${owner}/${project}/journeys/${journeyLink.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/journeys/${journeyLink.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
             });
         }
 
@@ -235,7 +235,7 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
                 link.addEventListener('click', (event) => {
                     if (event.ctrlKey || event.metaKey || event.button === 1) return;
                     event.preventDefault();
-                    navigate(`/${owner}/${project}/moments/${link.getAttribute('moment-seq')}`, navContentDiv, contentDiv);
+                    void navigate(`/${owner}/${project}/moments/${link.getAttribute('moment-seq')}`, navContentDiv, contentDiv);
                 });
             }
         } catch {
@@ -256,7 +256,7 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
                 link.addEventListener('click', (event) => {
                     if (event.ctrlKey || event.metaKey || event.button === 1) return;
                     event.preventDefault();
-                    navigate(link.getAttribute('href'), navContentDiv, contentDiv);
+                    void navigate(link.getAttribute('href'), navContentDiv, contentDiv);
                 });
             }
         } catch {}
@@ -294,13 +294,13 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
                 if (saveButton) { saveButton.disabled = true; saveButton.title = 'Requires Edit permission.'; }
                 if (descInput) descInput.disabled = true;
 
-                const addMomentInput = document.querySelector('#add-moment-statement');
-                const addMomentSubmit = document.querySelector('#add-moment-submit');
-                if (addMomentInput) addMomentInput.disabled = true;
-                if (addMomentSubmit) { addMomentSubmit.disabled = true; addMomentSubmit.title = 'Requires Edit permission.'; }
+                const momentStatementInput = document.querySelector('#add-moment-statement');
+                const momentSubmitButton = document.querySelector('#add-moment-submit');
+                if (momentStatementInput) momentStatementInput.disabled = true;
+                if (momentSubmitButton) { momentSubmitButton.disabled = true; momentSubmitButton.title = 'Requires Edit permission.'; }
 
-                const addMomentType = document.querySelector('#add-moment-type');
-                if (addMomentType) addMomentType.disabled = true;
+                const momentTypeSelect = document.querySelector('#add-moment-type');
+                if (momentTypeSelect) momentTypeSelect.disabled = true;
             }
         })();
 

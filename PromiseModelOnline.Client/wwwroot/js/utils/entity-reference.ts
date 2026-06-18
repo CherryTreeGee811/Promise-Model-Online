@@ -48,7 +48,7 @@ export async function loadEntityLookupMap(parentType: string, parentId: number, 
  * @returns {string} Emoji character for the status.
  */
 function statusIcon(statusColor: string): string {
-    const normalized = String(statusColor ?? '').toLowerCase();
+    const normalized = (statusColor ?? '').toLowerCase();
     if (normalized.includes('green')) return '\u{1F7E2}';
     if (normalized.includes('black') || normalized.includes('blocked')) return '\u{26AB}\u{FE0F}';
     if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '\u{1F7E0}';

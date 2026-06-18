@@ -26,18 +26,18 @@ export async function handleLegacyProjectRoutes(path: string, navContentDiv: HTM
         case '/projects': {
             try {
                 await loadTemplate("projects/list.html", contentDiv);
-                loadProjectList(navContentDiv, contentDiv);
+                void loadProjectList(navContentDiv, contentDiv);
             } catch {
-                loadTemplateWithError(contentDiv, 'project list')();
+                void loadTemplateWithError(contentDiv, 'project list')();
             }
             break;
         }
         case '/projects/add': {
             try {
                 await loadTemplate("projects/add.html", contentDiv);
-                loadAddProjectForm(navContentDiv, contentDiv);
+                void loadAddProjectForm(navContentDiv, contentDiv);
             } catch {
-                loadTemplateWithError(contentDiv, 'add project form')();
+                void loadTemplateWithError(contentDiv, 'add project form')();
             }
             break;
         }
@@ -66,7 +66,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
         try {
             const perm = await fetchMyPermission(owner, project);
             projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-            loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
+            void loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
         } catch {
             // fetchMyPermission failure falls through
         }
@@ -81,7 +81,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
             try {
                 const perm = await fetchMyPermission(owner, project);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
+                void loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
             } catch {
                 // fetchMyPermission failure falls through
             }
@@ -94,9 +94,9 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadGraphPage(owner, project, contentDiv, perm);
+                void loadGraphPage(owner, project, contentDiv, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'graph page')();
+                void loadTemplateWithError(contentDiv, 'graph page')();
             }
             break;
         }
@@ -109,7 +109,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
                 loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'project settings')();
+                void loadTemplateWithError(contentDiv, 'project settings')();
             }
             break;
         }
@@ -122,7 +122,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
                 loadSharePage(owner, project, contentDiv, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'share page')();
+                void loadTemplateWithError(contentDiv, 'share page')();
             }
             break;
         }
@@ -131,7 +131,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                 await loadTemplate('projects/history.html', contentDiv);
                 loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, project);
             } catch {
-                loadTemplateWithError(contentDiv, 'project activity')();
+                void loadTemplateWithError(contentDiv, 'project activity')();
             }
             break;
         }
@@ -143,9 +143,9 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
                 const module = await import('../iterations/list.ts');
-                module.loadIterationHistory(owner, project, perm);
+                void module.loadIterationHistory(owner, project, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'iterations')();
+                void loadTemplateWithError(contentDiv, 'iterations')();
             }
             break;
         }
@@ -156,9 +156,9 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadPromiseDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadPromiseDetail(owner, project, seq, navContentDiv, contentDiv, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'promise')();
+                void loadTemplateWithError(contentDiv, 'promise')();
             }
             break;
         }
@@ -169,9 +169,9 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'epic')();
+                void loadTemplateWithError(contentDiv, 'epic')();
             }
             break;
         }
@@ -182,9 +182,9 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'journey')();
+                void loadTemplateWithError(contentDiv, 'journey')();
             }
             break;
         }
@@ -195,9 +195,9 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'flow')();
+                void loadTemplateWithError(contentDiv, 'flow')();
             }
             break;
         }
@@ -208,9 +208,9 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadMomentDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadMomentDetail(owner, project, seq, navContentDiv, contentDiv, perm);
             } catch {
-                loadTemplateWithError(contentDiv, 'moment')();
+                void loadTemplateWithError(contentDiv, 'moment')();
             }
             break;
         }

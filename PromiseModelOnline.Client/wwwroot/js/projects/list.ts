@@ -19,12 +19,12 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
         return;
     }
 
-    const addProjectLink = document.querySelector('#add-project-link') as HTMLElement | null;
+    const projectLinkElement = document.querySelector('#add-project-link') as HTMLElement | null;
 
-    if (addProjectLink) {
-        addProjectLink.addEventListener('click', (event) => {
+    if (projectLinkElement) {
+        projectLinkElement.addEventListener('click', (event) => {
             event.preventDefault();
-            navigate('/projects/add', navContentDiv, contentDiv);
+            void navigate('/projects/add', navContentDiv, contentDiv);
         });
     }
 
@@ -50,7 +50,7 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
             if (emptyButton) {
                 emptyButton.addEventListener('click', (event) => {
                     event.preventDefault();
-                    navigate('/projects/add', navContentDiv, contentDiv);
+                    void navigate('/projects/add', navContentDiv, contentDiv);
                 });
             }
             return;
@@ -84,7 +84,7 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
                 event.preventDefault();
                 const owner = viewButton.dataset.ownerSlug;
                 const project = viewButton.dataset.projectSlug;
-                navigate(`/${owner}/${project}/strides`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/strides`, navContentDiv, contentDiv);
             });
         }
 
@@ -93,7 +93,7 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
                 event.preventDefault();
                 const owner = graphButton.dataset.ownerSlug;
                 const project = graphButton.dataset.projectSlug;
-                navigate(`/${owner}/${project}/graph`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/graph`, navContentDiv, contentDiv);
             });
         }
 
@@ -102,7 +102,7 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
                 event.preventDefault();
                 const owner = settingsButton.dataset.ownerSlug;
                 const project = settingsButton.dataset.projectSlug;
-                navigate(`/${owner}/${project}/settings`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/settings`, navContentDiv, contentDiv);
             });
         }
 
@@ -111,7 +111,7 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
                 event.preventDefault();
                 const owner = shareButton.dataset.ownerSlug;
                 const project = shareButton.dataset.projectSlug;
-                navigate(`/${owner}/${project}/share`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/share`, navContentDiv, contentDiv);
             });
         }
 
@@ -120,7 +120,7 @@ export async function loadProjectList(navContentDiv: HTMLElement, contentDiv: HT
                 event.preventDefault();
                 const owner = auditButton.dataset.ownerSlug;
                 const project = auditButton.dataset.projectSlug;
-                navigate(`/${owner}/${project}/history`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/history`, navContentDiv, contentDiv);
             });
         }
     } catch (error) {

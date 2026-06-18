@@ -8,7 +8,7 @@ import { getPermissions, inviteUser, removePermission, searchUsers } from './api
  * Ensure a modal element exists in the DOM, creating and appending it if needed.
  * @param {string} modalId - The modal element's ID.
  * @param {string} modalMarkup - The HTML markup for the modal.
- * @returns {HTMLElement | null} The modal element, or null if creation failed.
+ * @returns {HTMLElement } The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalElement = document.querySelector(`#${CSS.escape(modalId)}`) as HTMLElement | null;
@@ -22,7 +22,7 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
 
 /**
  * Ensure the revoke confirmation modal exists in the DOM.
- * @returns {HTMLElement | null} The revoke modal element, or null.
+ * @returns {HTMLElement } The revoke modal element, or null.
  */
 function ensureRevokeModal(): HTMLElement | null {
     return ensureModal('revoke-modal', `
@@ -51,7 +51,7 @@ function ensureRevokeModal(): HTMLElement | null {
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {HTMLElement} contentDiv - The main content container.
- * @param {{ isOwner?: boolean } | null} permission - The current user's permission object for the project.
+ * @param {{ isOwner?: boolean } } permission - The current user's permission object for the project.
  */
 export function loadSharePage(owner: string, project: string, contentDiv: HTMLElement, permission: { isOwner?: boolean } | null): void {
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
@@ -170,7 +170,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
                 return;
             }
             debounceTimer = setTimeout(function () {
-                fetchAutocompleteSuggestions(value);
+                void fetchAutocompleteSuggestions(value);
             }, 200);
         });
 
@@ -429,5 +429,5 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         });
     }
 
-    refreshPermissions();
+    void refreshPermissions();
 }

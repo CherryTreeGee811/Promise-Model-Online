@@ -195,7 +195,7 @@ function progressStrideDomUpdate(strideId: number | string): { moved: number; ta
 /**
  * Generate HTML for an estimate (effort) dropdown select element.
  * @param {number|string} momentSeq - The moment sequence number.
- * @param {string|null} currentEstimate - The current estimate value.
+ * @param {string} currentEstimate - The current estimate value.
  * @returns {string} The HTML string for the dropdown.
  */
 function estimateDropdownHtml(momentSeq: number | string, currentEstimate: string | null): string {
@@ -205,7 +205,7 @@ function estimateDropdownHtml(momentSeq: number | string, currentEstimate: strin
 /**
  * Generate HTML for an owner dropdown select element.
  * @param {number|string} momentSeq - The moment sequence number.
- * @param {number|string|null} ownerId - The current owner's ID.
+ * @param {number|string} ownerId - The current owner's ID.
  * @returns {string} The HTML string for the dropdown.
  */
 function ownerDropdownHtml(momentSeq: number | string, ownerId: number | string | null): string {
@@ -230,7 +230,7 @@ function momentTypeDropdownHtml(momentId: number | string, currentType: string):
 /**
  * Generate HTML for a status dropdown select element.
  * @param {number|string} momentSeq - The moment sequence number.
- * @param {string|null} status - The current status value.
+ * @param {string} status - The current status value.
  * @returns {string} The HTML string for the dropdown.
  */
 function statusDropdownHtml(momentSeq: number | string, status: string | null): string {
@@ -255,13 +255,13 @@ function updateStatusBadge(row: HTMLElement, newStatus: string): void {
     for (const c of statusClasses) {
         badge.classList.remove(c);
     }
-    badge.classList.add(`status-${String(safeStatus).toLowerCase()}`);
+    badge.classList.add(`status-${safeStatus.toLowerCase()}`);
 }
 
 /**
  * Get the content element (moments container or backlog content) within a board.
  * @param {HTMLElement} board - The board element (stride card or backlog).
- * @returns {HTMLElement|null} The content element, or null.
+ * @returns {HTMLElement} The content element, or null.
  */
 function boardContentElement(board: HTMLElement): HTMLElement | null {
     return board?.querySelector('.stride-moments, .backlog-content');
@@ -629,7 +629,7 @@ function promptMoveToStride(momentId: number | string, strideId: number | string
 function truncateMomentStatement(momentId: number | string): string {
     const row = findMomentRow(momentId);
     const statementCell = row?.querySelector('td');
-    const statement = String(statementCell?.textContent ?? '').trim();
+    const statement = (statementCell?.textContent ?? '').trim();
     if (!statement) return `moment ${momentId}`;
     return statement.slice(0, 35);
 }
@@ -637,7 +637,7 @@ function truncateMomentStatement(momentId: number | string): string {
 /**
  * Find a moment table row element by its data-moment-id attribute.
  * @param {number|string} momentId - The moment ID.
- * @returns {HTMLElement|null} The table row element, or null.
+ * @returns {HTMLElement} The table row element, or null.
  */
 function findMomentRow(momentId: number | string): HTMLElement | null {
     return document.querySelector(`tr[data-moment-id="${CSS.escape(momentId)}"]`);
@@ -861,7 +861,7 @@ function bindInlineMomentControls(root: HTMLElement | null, owner: string, proje
         if (viewLink) {
             e.preventDefault();
 
-            navigate(viewLink.getAttribute('href'), navContentDiv, contentDiv);
+            void navigate(viewLink.getAttribute('href'), navContentDiv, contentDiv);
 
             return;
         }
@@ -936,14 +936,14 @@ function bindInlineMomentControls(root: HTMLElement | null, owner: string, proje
                 const successElement = document.querySelector('#success-text');
                 if (successElement) successElement.textContent = '';
 
-                const { moved, targetVisible } = preserveScroll(() =>
+                const { moved, targetVisible: isTargetVisible } = preserveScroll(() =>
                     progressStrideDomUpdate(strideId)
                 ) as { moved: number; targetVisible: boolean };
 
                 if (successElement) {
                     if (moved === 0) {
                         successElement.textContent = 'Stride progressed. No unfinished moments to move.';
-                    } else if (targetVisible) {
+                    } else if (isTargetVisible) {
                         successElement.textContent = `Stride progressed. Moved ${moved} moment(s) to the next stride.`;
                     } else {
                         successElement.textContent = `Stride progressed. Moved ${moved} moment(s) to the next stride (not shown on this page).`;
@@ -972,15 +972,15 @@ function totalEffort(moments: Record<string, unknown>[]): number {
  * @param {string} project - The project slug.
  * @param {HTMLElement} navContentDiv - The navigation content container.
  * @param {HTMLElement} contentDiv - The main content container.
- * @param {Record<string, unknown> | null} permission - The user's permission object.
+ * @param {Record<string, unknown> } permission - The user's permission object.
  */
 export async function loadStridesList(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
     const strideBoard = document.querySelector('#stride-board')!;
     const backlogSection = document.querySelector('#backlog-section');
     const errorElement = document.querySelector('#error-text')!;
     const projectTitle = document.querySelector('#project-title');
-    const createStrideButton = document.querySelector('#create-stride-btn');
-    const createStrideButtonLabel = document.querySelector('#create-stride-btn-label');
+    const strideButtonElement = document.querySelector('#create-stride-btn');
+    const strideButtonLabelElement = document.querySelector('#create-stride-btn-label');
 
     _state.cachedOwner = owner;
     _state.cachedProject = project;
@@ -994,12 +994,12 @@ export async function loadStridesList(owner: string, project: string, navContent
 
     const canEdit = permission?.permission === 'Edit';
 
-    if (createStrideButton) {
+    if (strideButtonElement) {
         if (!canEdit) {
-            createStrideButton.classList.add('d-none');
-        } else if (createStrideButton.dataset.bound !== '1') {
-            createStrideButton.dataset.bound = '1';
-            createStrideButton.addEventListener('click', () => {
+            strideButtonElement.classList.add('d-none');
+        } else if (strideButtonElement.dataset.bound !== '1') {
+            strideButtonElement.dataset.bound = '1';
+            strideButtonElement.addEventListener('click', () => {
             if (_state.cachedIterations.length === 0) {
                 openIterationCreateModal(owner, project, () => loadStridesList(owner, project, navContentDiv, contentDiv, permission));
                 return;
@@ -1038,22 +1038,22 @@ export async function loadStridesList(owner: string, project: string, navContent
             if (projectTitle) {
                 projectTitle.innerHTML = `<h2>${escapeHtml((projectData as Record<string, unknown>)?.name as string ?? `Project ${owner}/${project}`)}</h2>`;
             }
-            if (createStrideButtonLabel) {
-                createStrideButtonLabel.textContent = 'Create First Iteration';
+            if (strideButtonLabelElement) {
+                strideButtonLabelElement.textContent = 'Create First Iteration';
             }
             return;
         }
         const latestIteration = _state.cachedIterations[0];
         const projectName = (projectData as Record<string, unknown>)?.name as string ?? `Project ${owner}/${project}`;
         projectTitle.innerHTML = `<h2>${escapeHtml(projectName)} – ${escapeHtml(latestIteration.name as string)}</h2>`;
-        if (createStrideButtonLabel) {
-            createStrideButtonLabel.textContent = 'New Stride';
+        if (strideButtonLabelElement) {
+            strideButtonLabelElement.textContent = 'New Stride';
         }
 
         const historyLink = document.querySelector('#iteration-history-link');
         if (historyLink) {
             historyLink.addEventListener('click', () => {
-                navigate(`/${owner}/${project}/iterations`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/iterations`, navContentDiv, contentDiv);
             });
         }
         
@@ -1166,12 +1166,12 @@ export async function loadStridesList(owner: string, project: string, navContent
 
         // Render Backlog
         if (backlogSection) {
-            const backlogCollapsed = allStrides && allStrides.length > 0;
+            const isBacklogCollapsed = allStrides && allStrides.length > 0;
             if (!backlogMoments || (backlogMoments as Record<string, unknown>[]).length === 0) {
                 backlogSection.innerHTML = `
-                    <div class="stride-card backlog-board${backlogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
-                        ${boardHeaderHtml('Backlog', backlogCollapsed)}
-                        <div class="stride-moments backlog-content${backlogCollapsed ? ' hidden' : ''}">
+                    <div class="stride-card backlog-board${isBacklogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
+                        ${boardHeaderHtml('Backlog', isBacklogCollapsed)}
+                        <div class="stride-moments backlog-content${isBacklogCollapsed ? ' hidden' : ''}">
                             ${renderEmptyStateSection({
                                 icon: 'bi-inbox',
                                 title: 'No unassigned moments.',
@@ -1182,9 +1182,9 @@ export async function loadStridesList(owner: string, project: string, navContent
                 `;
             } else {
                 backlogSection.innerHTML = `
-                    <div class="stride-card backlog-board${backlogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
-                        ${boardHeaderHtml('Backlog', backlogCollapsed)}
-                        <div class="stride-moments backlog-content${backlogCollapsed ? ' hidden' : ''}">
+                    <div class="stride-card backlog-board${isBacklogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
+                        ${boardHeaderHtml('Backlog', isBacklogCollapsed)}
+                        <div class="stride-moments backlog-content${isBacklogCollapsed ? ' hidden' : ''}">
                             <table class="promisemodel-table">
                                 <thead><tr><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead>
                                 <tbody>
@@ -1275,14 +1275,14 @@ function attachPlanningListeners(owner: string, project: string, navContentDiv: 
 
 /**
  * Create a DOM option element.
- * @param {string|null} value - The option value.
- * @param {string|null} text - The option display text.
+ * @param {string} value - The option value.
+ * @param {string} text - The option display text.
  * @param {boolean} isSelected - Whether the option is selected.
  * @returns {HTMLOptionElement} The option element.
  */
 function createOption(value: string | null, text: string | null, isSelected: boolean): HTMLOptionElement {
     const opt = document.createElement('option');
-    opt.value = String(value ?? '');
+    opt.value = (value ?? '');
     opt.textContent = text ?? '';
     if (isSelected) opt.selected = true;
     return opt;
@@ -1299,7 +1299,7 @@ function populateEstimateSelect(select: HTMLSelectElement): void {
     const current = select.dataset.currentEstimate || select.value || '';
     select.innerHTML = '';
     select.append(createOption('', '–', current === ''));
-    for (const k of estimateOrder) select.append(createOption(k, k, String(current) === String(k)));
+    for (const k of estimateOrder) select.append(createOption(k, k, current === k));
 }
 
 /**
@@ -1326,10 +1326,10 @@ function populateOwnerSelect(select: HTMLSelectElement): void {
     select.append(createOption('', 'Unassigned', previous === ''));
     const cachedMembersList = _state.cachedMembers || [];
     for (const member of cachedMembersList) {
-        select.append(createOption(String((member as Record<string, unknown>).userId), (member as Record<string, unknown>).userName as string, String(previous) === String((member as Record<string, unknown>).userId)));
+        select.append(createOption(String((member as Record<string, unknown>).userId), (member as Record<string, unknown>).userName as string, previous === String((member as Record<string, unknown>).userId)));
     }
     // If previous isn't valid, ensure default
-    if ([...select.options].every(o => o.value !== String(previous))) {
+    if ([...select.options].every(o => o.value !== previous)) {
         select.value = '';
     }
 }
@@ -1344,9 +1344,9 @@ function populateBacklogStrideSelect(select: HTMLSelectElement): void {
     select.innerHTML = '';
     const allCachedStrides = _state.cachedAllStrides || [];
     for (const stride of allCachedStrides) {
-        select.append(createOption(String((stride as Record<string, unknown>).id), (stride as Record<string, unknown>).name as string, String(previous) === String((stride as Record<string, unknown>).id)));
+        select.append(createOption(String((stride as Record<string, unknown>).id), (stride as Record<string, unknown>).name as string, previous === String((stride as Record<string, unknown>).id)));
     }
-    if ([...select.options].every(o => o.value !== String(previous))) select.value = (select.options[0] && select.options[0].value) || '';
+    if ([...select.options].every(o => o.value !== previous)) select.value = (select.options[0] && select.options[0].value) || '';
 }
 
 /**

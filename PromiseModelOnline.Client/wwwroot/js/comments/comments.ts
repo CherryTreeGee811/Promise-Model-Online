@@ -33,8 +33,8 @@ export async function loadComments(container, parentType, parentId, owner, proje
     `;
 
     const commentsList = /** @type {HTMLElement} */ (container.querySelector('#comments-list'));
-    const form = /** @type {HTMLFormElement|null} */ (container.querySelector('#comment-form'));
-    const textarea = /** @type {HTMLTextAreaElement|null} */ (container.querySelector('#comment-textarea'));
+    const form = /** @type {HTMLFormElement} */ (container.querySelector('#comment-form'));
+    const textarea = /** @type {HTMLTextAreaElement} */ (container.querySelector('#comment-textarea'));
 
     if (textarea) {
         createCommentAutocomplete(textarea, parentType, parentId);

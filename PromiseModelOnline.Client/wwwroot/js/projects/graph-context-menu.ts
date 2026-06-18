@@ -20,7 +20,7 @@ const NODE_CHILD_LABELS: Record<string, string> = {
  * Get the API route for deleting a graph node by its type and ID.
  * @param {string} nodeType - The node type.
  * @param {string|number} nodeId - The node's ID.
- * @returns {string|null} The delete API route, or null if invalid.
+ * @returns {string} The delete API route, or null if invalid.
  */
 function getDeleteRoute(nodeType: string, nodeId?: string | number): string | null {
     const normalizedType = normalizeNodeType(nodeType);
@@ -54,7 +54,7 @@ function getDeleteRoute(nodeType: string, nodeId?: string | number): string | nu
  * @returns {string} The normalized node type.
  */
 function normalizeNodeType(nodeType: string): string {
-    return String(nodeType ?? '').trim().toLowerCase();
+    return (nodeType ?? '').trim().toLowerCase();
 }
 
 /**
@@ -70,7 +70,7 @@ function getNodeLabel(nodeData: any): string {
 /**
  * Get the label for the child type of a given node type.
  * @param {string} nodeType - The parent node type.
- * @returns {string|null} The child type label, or null if none.
+ * @returns {string} The child type label, or null if none.
  */
 function getChildLabel(nodeType: string): string | null {
     return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? undefined;
@@ -81,7 +81,7 @@ function getChildLabel(nodeType: string): string | null {
 /**
  * Get the API metadata for creating a child entity under a given node.
  * @param {object} nodeData - The parent node data.
- * @returns {{entityLabel: string, endpoint: string, parentField: string}|null} The create action metadata, or null.
+ * @returns {{entityLabel: string, endpoint: string, parentField: string}} The create action metadata, or null.
  */
 function getCreateActionMeta(nodeData: any): { entityLabel: string; endpoint: string; parentField: string } | null {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
@@ -112,7 +112,7 @@ function getCreateActionMeta(nodeData: any): { entityLabel: string; endpoint: st
 /**
  * Get default values for the create form based on the parent node type.
  * @param {object} nodeData - The parent node data.
- * @returns {object|null} Default form values (statement, description, displayOrder), or null.
+ * @returns {object} Default form values (statement, description, displayOrder), or null.
  */
 function getCreateFormDefaults(nodeData: any): Record<string, any> | null {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
@@ -206,7 +206,7 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
  * Ensure a Bootstrap modal element exists in the DOM, creating it if necessary.
  * @param {string} modalId - The ID for the modal element.
  * @param {string} modalMarkup - The HTML markup for the modal.
- * @returns {HTMLElement|null} The modal element, or null if creation failed.
+ * @returns {HTMLElement} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalElement = document.querySelector(`#${CSS.escape(modalId)}`);
@@ -347,7 +347,7 @@ function createSelectField({ name, label, value = '', options = [] }: {
         const optionElement = document.createElement('option');
         optionElement.value = option.value;
         optionElement.textContent = option.label;
-        optionElement.selected = String(option.value) === String(value);
+        optionElement.selected = option.value === value;
         select.append(optionElement);
     }
 
@@ -440,9 +440,9 @@ function buildMomentFormElement(
     onGraphMutated: (() => void) | undefined,
     closeMenus: () => void,
 ): HTMLFormElement | null {
-    const createMeta = getCreateActionMeta(nodeData);
+    const actionMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
-    if (!createMeta || !defaults) {
+    if (!actionMeta || !defaults) {
         return;
     }
 
@@ -561,7 +561,7 @@ function buildMomentFormElement(
         };
 
         try {
-            await requestJson(createMeta.endpoint, {
+            await requestJson(actionMeta.endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -674,13 +674,13 @@ function buildCreateFormElement(
     onGraphMutated: (() => void) | undefined,
     closeMenus: () => void,
 ): HTMLFormElement | null {
-    const createMeta = getCreateActionMeta(nodeData);
+    const actionMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
-    if (!createMeta || !defaults) {
+    if (!actionMeta || !defaults) {
         return;
     }
 
-    if (createMeta.entityLabel === 'Moment') {
+    if (actionMeta.entityLabel === 'Moment') {
         return buildMomentFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus);
     }
 
@@ -689,17 +689,17 @@ function buildCreateFormElement(
 
     const title = document.createElement('div');
     title.className = 'graph-context-menu-form__title';
-    title.textContent = `Create ${createMeta.entityLabel}`;
+    title.textContent = `Create ${actionMeta.entityLabel}`;
 
     const subtitle = document.createElement('div');
     subtitle.className = 'graph-context-menu-form__subtitle';
-    subtitle.textContent = `Add a new ${createMeta.entityLabel.toLowerCase()} beneath this card.`;
+    subtitle.textContent = `Add a new ${actionMeta.entityLabel.toLowerCase()} beneath this card.`;
 
     const statementField = createInputField({
         name: 'statement',
         label: 'Statement',
         value: defaults.statement,
-        placeholder: `New ${createMeta.entityLabel}`,
+        placeholder: `New ${actionMeta.entityLabel}`,
     });
 
     const descriptionField = createInputField({
@@ -726,7 +726,7 @@ function buildCreateFormElement(
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
     submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
-    submitButton.textContent = `Create ${createMeta.entityLabel}`;
+    submitButton.textContent = `Create ${actionMeta.entityLabel}`;
 
     actions.append(cancelButton, submitButton);
 
@@ -738,11 +738,11 @@ function buildCreateFormElement(
     form.addEventListener('submit', async event => {
         event.preventDefault();
         submitButton.disabled = true;
-        submitButton.textContent = `Creating ${createMeta.entityLabel}...`;
+        submitButton.textContent = `Creating ${actionMeta.entityLabel}...`;
 
         if (!statementField.input.value.trim()) {
             submitButton.disabled = false;
-            submitButton.textContent = `Create ${createMeta.entityLabel}`;
+            submitButton.textContent = `Create ${actionMeta.entityLabel}`;
             statementField.input.focus();
             return;
         }
@@ -756,14 +756,14 @@ function buildCreateFormElement(
             displayOrder: nextDisplayOrder,
         };
 
-        if (createMeta.parentField === 'projectId') {
+        if (actionMeta.parentField === 'projectId') {
             // projectId context is encoded in the endpoint URL; no separate body field needed
         } else {
-            payload[createMeta.parentField] = nodeData.payload?.id;
+            payload[actionMeta.parentField] = nodeData.payload?.id;
         }
 
         try {
-            await requestJson(createMeta.endpoint, {
+            await requestJson(actionMeta.endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -775,7 +775,7 @@ function buildCreateFormElement(
             await onGraphMutated?.();
         } catch (error) {
             submitButton.disabled = false;
-            submitButton.textContent = `Create ${createMeta.entityLabel}`;
+            submitButton.textContent = `Create ${actionMeta.entityLabel}`;
             throw error;
         }
     });
@@ -894,24 +894,24 @@ function buildMenuActions(
             const confirmationLabel = nodeData.nodeType === 'root' ? 'project' : label;
             closeMenus?.();
 
-            const confirmed = await openDeleteConfirmationModal(confirmationLabel);
-            if (!confirmed) {
+            const isConfirmed = await openDeleteConfirmationModal(confirmationLabel);
+            if (!isConfirmed) {
                 return;
             }
 
             if (normalizeNodeType(nodeData.nodeType) === 'root') {
-                const deleteRoute = getDeleteRoute('root');
-                await requestJson(deleteRoute, { method: 'DELETE' });
+                const endpointUrl = getDeleteRoute('root');
+                await requestJson(endpointUrl, { method: 'DELETE' });
                 await onProjectDeleted?.();
                 return;
             }
 
-            const deleteRoute = getDeleteRoute(nodeData.nodeType, nodeData.payload?.id);
-            if (!deleteRoute) {
+            const endpointUrl = getDeleteRoute(nodeData.nodeType, nodeData.payload?.id);
+            if (!endpointUrl) {
                 throw new Error('Unable to determine the delete route for this node.');
             }
 
-            await requestJson(deleteRoute, { method: 'DELETE' });
+            await requestJson(endpointUrl, { method: 'DELETE' });
             await onGraphMutated?.();
         },
     });

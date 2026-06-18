@@ -27,12 +27,12 @@ import { getJourney, getFlows, updateJourneyDescription } from './api.ts';
  * @param {string} journeyId - The journey's sequence number.
  * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
  * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * @param {{ permission?: string }} permission - The user's permission object.
  */
 export async function loadJourneyDetail(owner, project, journeyId, navContentDiv, contentDiv, permission) {
     const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#journey-detail-content'));
     const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const loadingElement = /** @type {HTMLElement|null} */ (document.querySelector('#journey-detail-loading'));
+    const loadingElement = /** @type {HTMLElement} */ (document.querySelector('#journey-detail-loading'));
 
     destroyDetailStackGraph();
     if (loadingElement) loadingElement.hidden = false;
@@ -43,7 +43,7 @@ export async function loadJourneyDetail(owner, project, journeyId, navContentDiv
         await loadEntityLookupMap('Journey', journey.id, owner, project);
         if (loadingElement) loadingElement.hidden = true;
 
-        mountDetailStackGraph({
+        void mountDetailStackGraph({
             nodeType: 'journey',
             nodeId: journeyId,
             owner,
@@ -81,11 +81,11 @@ export async function loadJourneyDetail(owner, project, journeyId, navContentDiv
             </div>
         `;
 
-        const descInput = /** @type {HTMLTextAreaElement|null} */ (document.querySelector('#description-input'));
-        const descView = /** @type {HTMLElement|null} */ (document.querySelector('#description-view'));
-        const editButton = /** @type {HTMLElement|null} */ (document.querySelector('#edit-desc-btn'));
-        const saveButton = /** @type {HTMLElement|null} */ (document.querySelector('#save-desc'));
-        const cancelButton = /** @type {HTMLElement|null} */ (document.querySelector('#cancel-desc'));
+        const descInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#description-input'));
+        const descView = /** @type {HTMLElement} */ (document.querySelector('#description-view'));
+        const editButton = /** @type {HTMLElement} */ (document.querySelector('#edit-desc-btn'));
+        const saveButton = /** @type {HTMLElement} */ (document.querySelector('#save-desc'));
+        const cancelButton = /** @type {HTMLElement} */ (document.querySelector('#cancel-desc'));
         let editor;
         if (descInput && descView && editButton) {
             createCommentAutocomplete(descInput, 'Journey', journey.id);
@@ -97,7 +97,7 @@ export async function loadJourneyDetail(owner, project, journeyId, navContentDiv
             epicLink.addEventListener('click', (event) => {
                 if (event.ctrlKey || event.metaKey || event.button === 1) return;
                 event.preventDefault();
-                navigate(`/${owner}/${project}/epics/${epicLink.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/epics/${epicLink.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
             });
         }
 
@@ -199,7 +199,7 @@ export async function loadJourneyDetail(owner, project, journeyId, navContentDiv
                 link.addEventListener('click', (event) => {
                     if (event.ctrlKey || event.metaKey || event.button === 1) return;
                     event.preventDefault();
-                    navigate(`/${owner}/${project}/flows/${link.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
+                    void navigate(`/${owner}/${project}/flows/${link.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
                 });
             }
         } catch {
@@ -220,7 +220,7 @@ export async function loadJourneyDetail(owner, project, journeyId, navContentDiv
                 link.addEventListener('click', (event) => {
                     if (event.ctrlKey || event.metaKey || event.button === 1) return;
                     event.preventDefault();
-                    navigate(link.getAttribute('href'), navContentDiv, contentDiv);
+                    void navigate(link.getAttribute('href'), navContentDiv, contentDiv);
                 });
             }
         } catch {}
@@ -258,10 +258,10 @@ export async function loadJourneyDetail(owner, project, journeyId, navContentDiv
                 if (saveButton) { saveButton.disabled = true; saveButton.title = 'Requires Edit permission.'; }
                 if (descInput) descInput.disabled = true;
 
-                const addFlowInput = document.querySelector('#add-flow-statement');
-                const addFlowSubmit = document.querySelector('#add-flow-submit');
-                if (addFlowInput) addFlowInput.disabled = true;
-                if (addFlowSubmit) { addFlowSubmit.disabled = true; addFlowSubmit.title = 'Requires Edit permission.'; }
+                const flowStatementInput = document.querySelector('#add-flow-statement');
+                const flowSubmitButton = document.querySelector('#add-flow-submit');
+                if (flowStatementInput) flowStatementInput.disabled = true;
+                if (flowSubmitButton) { flowSubmitButton.disabled = true; flowSubmitButton.title = 'Requires Edit permission.'; }
             }
         })();
 

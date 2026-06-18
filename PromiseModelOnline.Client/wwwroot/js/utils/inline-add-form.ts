@@ -109,10 +109,10 @@ export function setupAddChildForm(config: AddChildConfig): void {
  * @param {string} [typeSelectId] - Optional `id` of the type select (moments detail).
  */
 export function gateAddChildControls(formId: string, inputId: string, submitButtonId: string, typeSelectId?: string): void {
-  const addInput = document.querySelector('#' + inputId) as HTMLInputElement | null;
-  const addSubmit = document.querySelector('#' + submitButtonId) as HTMLButtonElement | null;
-  if (addInput) addInput.disabled = true;
-  if (addSubmit) { addSubmit.disabled = true; addSubmit.title = 'Requires Edit permission.'; }
+  const inputElement = document.querySelector('#' + inputId) as HTMLInputElement | null;
+  const submitElement = document.querySelector('#' + submitButtonId) as HTMLButtonElement | null;
+  if (inputElement) inputElement.disabled = true;
+  if (submitElement) { submitElement.disabled = true; submitElement.title = 'Requires Edit permission.'; }
   if (typeSelectId) {
     const typeElement = document.querySelector('#' + typeSelectId) as HTMLSelectElement | null;
     if (typeElement) typeElement.disabled = true;
