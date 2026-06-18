@@ -214,10 +214,11 @@ public class PwaTests : PlaywrightTestBase
                 has512Icon: (m.icons ?? []).some((i) => i.sizes === '512x512' || i.sizes === 'any')
             }))");
         var manifest = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(manifestJson);
+        Assert.That(manifest, Is.Not.Null, "Manifest JSON should deserialize");
 
         Assert.Multiple(() =>
         {
-            Assert.That(manifest["name"].GetString(), Is.Not.Empty, "Manifest must have a name");
+            Assert.That(manifest!["name"].GetString(), Is.Not.Empty, "Manifest must have a name");
             Assert.That(manifest["startUrl"].GetString(), Is.Not.Empty, "Manifest must have a start_url");
             Assert.That(manifest["display"].GetString(), Is.EqualTo("standalone"), "Manifest must have display: standalone");
             Assert.That(manifest["icons"].GetInt32(), Is.GreaterThan(0), "Manifest must have at least one icon");
