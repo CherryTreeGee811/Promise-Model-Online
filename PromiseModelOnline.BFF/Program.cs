@@ -136,6 +136,7 @@ builder.Services
 
         options.ClientId = "pmo-spa";
         options.ResponseType = "code";
+        options.ResponseMode = "query";
         options.UsePkce = true;
         options.SaveTokens = true;
         options.SignInScheme = "cookie";

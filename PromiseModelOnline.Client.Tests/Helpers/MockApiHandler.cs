@@ -72,13 +72,13 @@ public static partial class MockApiHandler
         if (isBinary)
         {
             var bytes = File.ReadAllBytes(filePath);
-            var binResponse = new MockResponse(200, contentType, "", []) { BodyBytes = bytes };
+            var binResponse = new MockResponse(200, contentType, "", CorsHeaders) { BodyBytes = bytes };
             StaticFileCache[path] = binResponse;
             return binResponse;
         }
 
         var text = File.ReadAllText(filePath);
-        var result = new MockResponse(200, contentType, text, []);
+        var result = new MockResponse(200, contentType, text, CorsHeaders);
         StaticFileCache[path] = result;
         return result;
     }
@@ -154,12 +154,19 @@ public static partial class MockApiHandler
         public byte[]? BodyBytes { get; init; }
     }
 
-    private static MockResponse Json(int status, string body) => new(status, "application/json", body, []);
-    private static MockResponse Html(int status, string body) => new(status, "text/html", body, []);
+    /// <summary>Base CORS headers required for credentialed fetches in WebKit.</summary>
+    private static readonly Dictionary<string, string> CorsHeaders = new()
+    {
+        ["Access-Control-Allow-Origin"] = "https://localhost:9000",
+        ["Access-Control-Allow-Credentials"] = "true",
+    };
+
+    private static MockResponse Json(int status, string body) => new(status, "application/json", body, CorsHeaders);
+    private static MockResponse Html(int status, string body) => new(status, "text/html", body, CorsHeaders);
 
     private static MockResponse MetaRefresh(string url) =>
         Html(200, $"""<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url={url}"></head><body></body></html>""");
-    private static MockResponse Redirect(string location) => new(302, "text/plain", "", new() { ["Location"] = location });
+    private static MockResponse Redirect(string location) => new(302, "text/plain", "", new(CorsHeaders) { ["Location"] = location });
 
     private static bool HasGrantType(IRequest request, string grantType) =>
         request.PostData?.Contains($"grant_type={grantType}", StringComparison.Ordinal) == true;

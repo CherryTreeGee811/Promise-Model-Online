@@ -23,6 +23,7 @@ namespace PromiseModelOnline.Auth.Extensions
             {
                 ClientId = "pmo-spa",
                 ClientType = OpenIddictConstants.ClientTypes.Public,
+                ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
                 DisplayName = "PMO BFF Client",
                 RedirectUris =
                 {
