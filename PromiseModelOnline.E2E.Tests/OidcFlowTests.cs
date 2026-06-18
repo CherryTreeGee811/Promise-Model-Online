@@ -43,14 +43,14 @@ public class OidcFlowTests : E2ETestBase
     public async Task REQ_INT_015_Login_InvalidCredentials_ShowsError()
     {
         // Arrange
-        await Page.GotoAsync("/login?returnUrl=/");
-        await Page.WaitForURLAsync("**/account/login**");
+        await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 5000 });
+        await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 5000 });
 
         await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", TestUsername);
         await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", "wrong");
         // Act
         await Page.ClickAsync("button[type=\"submit\"]");
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 10000 });
 
         var body = await Page.TextContentAsync("body") ?? "";
         // Assert

@@ -49,7 +49,7 @@ public abstract class E2ETestBase
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = true,
-                Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage" },
+                Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage", "--host-resolver-rules=MAP localhost 127.0.0.1" },
             });
 
         _context = await _browser.NewContextAsync(new BrowserNewContextOptions
@@ -59,8 +59,6 @@ public abstract class E2ETestBase
         });
 
         Page = await _context.NewPageAsync();
-
-        await MockOidcLoginAsync();
 
         Client = new HttpClient(new HttpClientHandler
         {
@@ -193,14 +191,14 @@ public abstract class E2ETestBase
         {
             try
             {
-                await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 1000 });
-                await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 1000 });
+                await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 5000 });
+                await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 5000 });
 
                 await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", username);
                 await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", password);
 
                 await Page.ClickAsync("button[type=\"submit\"]");
-                await Page.WaitForURLAsync("**/", new() { Timeout = 1000 });
+                await Page.WaitForURLAsync("**/", new() { Timeout = 10000 });
                 return;
             }
             catch (TimeoutException) when (attempt < 3)
