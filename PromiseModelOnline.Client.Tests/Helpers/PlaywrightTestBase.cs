@@ -118,6 +118,7 @@ public abstract class PlaywrightTestBase
             catch (PlaywrightException ex) when (
                 ex.Message.Contains("ERR_ABORTED") ||
                 ex.Message.Contains("NS_BINDING_ABORTED") ||
+                ex.Message.Contains("NS_ERROR_FAILURE") ||
                 ex.Message.Contains("interrupted by another navigation"))
             {
                 if (attempt == 2) throw;
