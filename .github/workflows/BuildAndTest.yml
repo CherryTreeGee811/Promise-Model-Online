@@ -104,79 +104,79 @@ jobs:
 
       # ─── 2. Unit tests (no infrastructure needed) ───
 
-      # - name: Run Auth Unit Tests
-      #   shell: bash
-      #   run: |
-      #     mkdir -p AuthTestResults
-      #     dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./AuthTestResults \
-      #       --logger "console;verbosity=normal" \
-      #       --filter "FullyQualifiedName!~IntegrationTests"
+      - name: Run Auth Unit Tests
+        shell: bash
+        run: |
+          mkdir -p AuthTestResults
+          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./AuthTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~IntegrationTests"
 
-      # - name: Run API Unit Tests
-      #   shell: bash
-      #   run: |
-      #     mkdir -p ApiUnitTestResults
-      #     dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./ApiUnitTestResults \
-      #       --logger "console;verbosity=normal" \
-      #       --filter "FullyQualifiedName!~IntegrationTests"
+      - name: Run API Unit Tests
+        shell: bash
+        run: |
+          mkdir -p ApiUnitTestResults
+          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ApiUnitTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~IntegrationTests"
 
-      # # ─── 3. Integration tests (in-memory, no Docker) ───
+      # ─── 3. Integration tests (in-memory, no Docker) ───
 
-      # - name: Run Auth Integration Tests
-      #   shell: bash
-      #   run: |
-      #     dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./AuthTestResults \
-      #       --logger "console;verbosity=normal" \
-      #       --filter "FullyQualifiedName~IntegrationTests"
+      - name: Run Auth Integration Tests
+        shell: bash
+        run: |
+          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./AuthTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
 
-      # - name: Run BFF Integration Tests
-      #   shell: bash
-      #   run: |
-      #     mkdir -p BffTestResults
-      #     dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./BffTestResults \
-      #       --logger "console;verbosity=normal" \
-      #       --filter "FullyQualifiedName~IntegrationTests"
+      - name: Run BFF Integration Tests
+        shell: bash
+        run: |
+          mkdir -p BffTestResults
+          dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./BffTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
 
-      # - name: Run API Integration Tests
-      #   shell: bash
-      #   run: |
-      #     mkdir -p ApiIntegrationTestResults
-      #     dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./ApiIntegrationTestResults \
-      #       --logger "console;verbosity=normal" \
-      #       --filter "FullyQualifiedName~IntegrationTests"
+      - name: Run API Integration Tests
+        shell: bash
+        run: |
+          mkdir -p ApiIntegrationTestResults
+          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ApiIntegrationTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
 
       # ─── 4. Client/UI tests (cross-browser matrix) ───
 
-      # - name: Run Client UI Test Environment
-      #   shell: bash
-      #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
+      - name: Run Client UI Test Environment
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d
 
-      # - name: Wait for Client (Nginx)
-      #   shell: bash
-      #   run: |
-      #     for i in $(seq 1 15); do
-      #       STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
-      #       if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
-      #       sleep 2
-      #     done
-      #     echo "ERROR: Client not healthy within 30s"
-      #     docker logs promisemodelonlineclient --tail 30 2>&1
-      #     exit 1
+      - name: Wait for Client (Nginx)
+        shell: bash
+        run: |
+          for i in $(seq 1 15); do
+            STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
+            sleep 2
+          done
+          echo "ERROR: Client not healthy within 30s"
+          docker logs promisemodelonlineclient --tail 30 2>&1
+          exit 1
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -184,15 +184,14 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-1.60.0
-          save-always: true
 
       - name: Install Playwright browsers (all)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
-          # pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
-          # pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
 
       - name: Install system deps (cache hit — browsers already cached)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
@@ -200,51 +199,51 @@ jobs:
         run: |
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
 
-      # - name: Install system deps (cache hit — browsers already cached)
-      #   if: steps.playwright-cache.outputs.cache-hit == 'true'
-      #   shell: bash
-      #   run: |
-      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
-      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox  2>&1 | tail -3
-      #     pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit   2>&1 | tail -3
+      - name: Install system deps (cache hit — browsers already cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox  2>&1 | tail -3
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit   2>&1 | tail -3
 
-      # - name: Run Client Tests (Chromium)
-      #   shell: bash
-      #   env:
-      #     TEST_BROWSER: chromium
-      #   run: |
-      #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./ClientTestResults \
-      #       --logger "console;verbosity=normal"
+      - name: Run Client Tests (Chromium)
+        shell: bash
+        env:
+          TEST_BROWSER: chromium
+        run: |
+          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ClientTestResults \
+            --logger "console;verbosity=normal"
 
-      # - name: Run Client Tests (Firefox)
-      #   shell: bash
-      #   env:
-      #     TEST_BROWSER: firefox
-      #   run: |
-      #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./ClientTestResults \
-      #       --logger "console;verbosity=normal"
+      - name: Run Client Tests (Firefox)
+        shell: bash
+        env:
+          TEST_BROWSER: firefox
+        run: |
+          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ClientTestResults \
+            --logger "console;verbosity=normal"
 
-      # - name: Run Client Tests (WebKit)
-      #   shell: bash
-      #   env:
-      #     TEST_BROWSER: webkit
-      #   run: |
-      #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-      #       --no-build \
-      #       --collect:"XPlat Code Coverage" \
-      #       --results-directory ./ClientTestResults \
-      #       --logger "console;verbosity=normal"
+      - name: Run Client Tests (WebKit)
+        shell: bash
+        env:
+          TEST_BROWSER: webkit
+        run: |
+          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ClientTestResults \
+            --logger "console;verbosity=normal"
 
-      # - name: Teardown Client UI Test Environment
-      #   if: always()
-      #   shell: bash
-      #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
+      - name: Teardown Client UI Test Environment
+        if: always()
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
       # ─── 5. E2E tests — Core (no rate limiting, fast) ───
 
