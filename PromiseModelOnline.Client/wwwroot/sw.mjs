@@ -144,12 +144,18 @@ self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
   }
 
   if (isTemplate(path)) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(
+      networkFirst(request).catch(() => caches.match('/templates/error.html')
+        .then(offline => offline || new Response('Offline', { status: 503 })))
+    );
     return;
   }
 
   if (path === '/' || path === '/index.html' || path === '/manifest.json') {
-    event.respondWith(networkFirst(request));
+    event.respondWith(
+      networkFirst(request).catch(() => caches.match('/templates/error.html')
+        .then(offline => offline || new Response('Offline', { status: 503 })))
+    );
     return;
   }
 

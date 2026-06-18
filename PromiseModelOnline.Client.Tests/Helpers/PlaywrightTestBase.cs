@@ -120,6 +120,7 @@ public abstract class PlaywrightTestBase
                 ex.Message.Contains("NS_BINDING_ABORTED") ||
                 ex.Message.Contains("NS_ERROR_FAILURE") ||
                 ex.Message.Contains("NS_ERROR_NETONRESET") ||
+                ex.Message.Contains("Download is starting") ||
                 ex.Message.Contains("interrupted by another navigation"))
             {
                 if (attempt == 2) throw;
