@@ -10,8 +10,14 @@ export function loadHomePage(): void {
   const ctaBottom = document.querySelector('#home-cta-area-bottom');
 
   const buttons = buildCtaButtons(isLogged);
-  if (ctaTop) ctaTop.replaceChildren(...buttons);
-  if (ctaBottom) ctaBottom.replaceChildren(...buttons);
+    if (ctaTop) {
+      ctaTop.replaceChildren();
+      for (const button of buttons) ctaTop.append(button.cloneNode(true));
+    }
+    if (ctaBottom) {
+      ctaBottom.replaceChildren();
+      for (const button of buttons) ctaBottom.append(button);
+    }
 }
 
 /**
