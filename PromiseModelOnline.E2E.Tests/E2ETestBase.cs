@@ -46,26 +46,11 @@ public abstract class E2ETestBase
     {
         _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
 
-        var browserType = Environment.GetEnvironmentVariable("E2E_BROWSER")?.ToLowerInvariant() switch
-        {
-            "firefox" => _playwright.Firefox,
-            "webkit" => _playwright.Webkit,
-            _ => _playwright.Chromium,
-        };
-
-        var browserName = Environment.GetEnvironmentVariable("E2E_BROWSER")?.ToLowerInvariant() ?? "chromium";
-        var launchArgs = browserName switch
-        {
-            "firefox" => new[] { "--no-sandbox" },
-            "webkit" => Array.Empty<string>(),
-            _ => new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage" },
-        };
-
-        _browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
-        {
-            Headless = true,
-            Args = launchArgs,
-        });
+            _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            {
+                Headless = true,
+                Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage" },
+            });
 
         _context = await _browser.NewContextAsync(new BrowserNewContextOptions
         {

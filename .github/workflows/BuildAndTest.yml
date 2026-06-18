@@ -22,6 +22,22 @@ jobs:
 
       # ─── 1. Build all projects (fail fast on compilation errors) ───
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        id: nuget-cache
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.sln') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Cache npm packages
+        uses: actions/cache@v5
+        id: npm-cache
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Restore & Build All Projects
         shell: bash
         run: dotnet build Promise-Model-Online.sln
@@ -176,6 +192,12 @@ jobs:
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
+
+      - name: Install system deps (cache hit — browsers already cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
 
       # - name: Install system deps (cache hit — browsers already cached)
       #   if: steps.playwright-cache.outputs.cache-hit == 'true'
