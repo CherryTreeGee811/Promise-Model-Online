@@ -190,8 +190,8 @@ jobs:
         shell: bash
         run: |
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
-          pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
+          # pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
+          # pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
 
       - name: Install system deps (cache hit — browsers already cached)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
