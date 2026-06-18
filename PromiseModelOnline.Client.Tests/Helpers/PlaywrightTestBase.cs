@@ -129,6 +129,7 @@ public abstract class PlaywrightTestBase
             }
         }
         await Context.ClearCookiesAsync();
+        MockApiHandler.SetSessionValue(null);
         await Page.SetViewportSizeAsync(1280, 720);
     }
 
@@ -152,8 +153,17 @@ public abstract class PlaywrightTestBase
 
     /// <summary>Set the BFF session cookie to simulate authentication.</summary>
     /// <param name="sessionValue">The session cookie value (e.g., "owner-session", "nonowner-session").</param>
+    /// <remarks>
+    ///   Sets both the real <c>__Host-</c> prefixed cookie (for Chromium/Firefox)
+    ///   and a non-prefixed fallback <c>pmo.session</c> (for WebKit, which may reject
+    ///   <c>__Host-</c> cookies when Playwright adds a Domain attribute).
+    ///   Also stores the session value in <see cref="MockApiHandler"/> as a fallback
+    ///   for browsers where Playwright route interception does not expose the Cookie header.
+    /// </remarks>
     protected async Task SetSessionCookie(string sessionValue = "owner-session")
     {
+        MockApiHandler.SetSessionValue(sessionValue);
+
         try
         {
             await Page.EvaluateAsync($"document.cookie = '__Host-pmo.session={sessionValue}; path=/; secure'");
@@ -162,6 +172,18 @@ public abstract class PlaywrightTestBase
         {
             await Context.AddCookiesAsync([
                 new Cookie { Name = "__Host-pmo.session", Value = sessionValue, Url = "https://localhost:9000/", Secure = true }
+            ]);
+        }
+
+        try
+        {
+            var value = $"pmo.session={sessionValue}; path=/; secure";
+            await Page.EvaluateAsync($"document.cookie = '{value}'");
+        }
+        catch
+        {
+            await Context.AddCookiesAsync([
+                new Cookie { Name = "pmo.session", Value = sessionValue, Url = "https://localhost:9000/", Secure = true }
             ]);
         }
     }

@@ -53,10 +53,18 @@ public abstract class E2ETestBase
             _ => _playwright.Chromium,
         };
 
+        var browserName = Environment.GetEnvironmentVariable("E2E_BROWSER")?.ToLowerInvariant() ?? "chromium";
+        var launchArgs = browserName switch
+        {
+            "firefox" => new[] { "--no-sandbox" },
+            "webkit" => Array.Empty<string>(),
+            _ => new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage" },
+        };
+
         _browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
         {
             Headless = true,
-            Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage" }
+            Args = launchArgs,
         });
 
         _context = await _browser.NewContextAsync(new BrowserNewContextOptions
@@ -139,7 +147,8 @@ public abstract class E2ETestBase
                 if (formData is not null && formData.Contains(TestUsername) && formData.Contains(TestPassword))
                 {
                     await Page.Context.AddCookiesAsync([
-                        new Microsoft.Playwright.Cookie { Name = "__Host-pmo.session", Value = "owner-session", Url = BaseUrl, Secure = true }
+                        new Microsoft.Playwright.Cookie { Name = "__Host-pmo.session", Value = "owner-session", Url = BaseUrl, Secure = true },
+                        new Microsoft.Playwright.Cookie { Name = "pmo.session", Value = "owner-session", Url = BaseUrl, Secure = true }
                     ]);
                     var url = route.Request.Url;
                     var returnUrl = "https://localhost:9000/";

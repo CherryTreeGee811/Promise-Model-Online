@@ -15,6 +15,32 @@ public static partial class MockApiHandler
 
     private static readonly Dictionary<string, MockResponse> StaticFileCache = [];
 
+    /// <summary>Current session value set by the test via <see cref="SetSessionValue"/>.</summary>
+    private static string? s_currentSession;
+
+    /// <summary>Set the session value for the mock handler to use.</summary>
+    public static void SetSessionValue(string? sessionValue) => s_currentSession = sessionValue;
+
+    /// <summary>Get the session value from cookie headers or fallback to the static value.</summary>
+    private static string? GetSessionValue(IRequest request)
+    {
+        if (s_currentSession is not null)
+            return s_currentSession;
+
+        var cookie = request.Headers.TryGetValue("cookie", out var c) ? c
+            : request.Headers.TryGetValue("Cookie", out var c2) ? c2
+            : "";
+
+        if (cookie.Contains("owner-session") || cookie.Contains("__Host-pmo.session=owner-session") || cookie.Contains("pmo.session=owner-session"))
+            return "owner-session";
+        if (cookie.Contains("nonowner-session") || cookie.Contains("__Host-pmo.session=nonowner-session") || cookie.Contains("pmo.session=nonowner-session"))
+            return "nonowner-session";
+        if (cookie.Contains("__Host-pmo.session=") || cookie.Contains("pmo.session="))
+            return "other-session";
+
+        return null;
+    }
+
     static MockApiHandler()
     {
         WwwRoot = Path.GetFullPath(Path.Combine(
@@ -64,13 +90,10 @@ public static partial class MockApiHandler
         var request = route.Request;
         var url = request.Url;
         var method = request.Method;
-        var cookie = request.Headers.TryGetValue("cookie", out var c) ? c
-            : request.Headers.TryGetValue("Cookie", out var c2) ? c2
-            : "";
-        var isOwner = cookie.Contains("__Host-pmo.session=owner-session");
-        var isNonOwner = cookie.Contains("__Host-pmo.session=nonowner-session");
-        var ownerSession = isOwner || isNonOwner || cookie.Contains("__Host-pmo.session=");
-
+        var session = GetSessionValue(request);
+        var isOwner = session == "owner-session";
+        var isNonOwner = session == "nonowner-session";
+        var ownerSession = session is not null;
 
         var uri = new Uri(url);
         var path = uri.AbsolutePath;
