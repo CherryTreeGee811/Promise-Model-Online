@@ -1,6 +1,4 @@
-// @ts-nocheck
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { escapeHtml } from '../utils/html.ts';
 
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.ts';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.ts';
@@ -12,7 +10,7 @@ const _listState = { isLiveListenerRegistered: false };
  * @param {number} count - The new badge count.
  */
 function setBadgeCount(count) {
-    const badge = /** @type {HTMLElement} */ (document.querySelector('#notification-badge'));
+    const badge = document.querySelector('#notification-badge') as HTMLElement | null;
     if (!badge) return;
 
     const safeCount = Number.isFinite(count) ? count : 0;
@@ -27,7 +25,7 @@ function setBadgeCount(count) {
 
 /** Decrement the badge count by one if the badge is visible. */
 function decrementBadgeIfVisible() {
-    const badge = /** @type {HTMLElement} */ (document.querySelector('#notification-badge'));
+    const badge = document.querySelector('#notification-badge') as HTMLElement | null;
     if (!badge || badge.style.display === 'none') return;
 
     const current = parseInt(badge.textContent || '0', 10);
@@ -73,43 +71,74 @@ function renderNotificationsInto(listDiv, notifications) {
     if (!listDiv) return;
 
     if (!notifications || notifications.length === 0) {
-        listDiv.innerHTML = renderEmptyStateSection({
+        listDiv.replaceChildren(renderEmptyStateSection({
             icon: 'bi-bell',
             title: 'No notifications yet.',
             description: 'You\'ll see notifications here when there is activity related to you.',
-        });
+        }));
         return;
     }
 
-    listDiv.innerHTML = `
-        <div class="mb-3">
-            <button id="mark-all-read" class="btn btn-primary btn-sm" type="button">Mark All as Read</button>
-        </div>
-        <table class="table table-sm table-striped table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Message</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${notifications.map(n => `
-                    <tr class="${n.isRead ? '' : 'unread'}" data-notification-id="${n.id}">
-                        <td>${escapeHtml(n.message)}</td>
-                        <td>${n.type}</td>
-                        <td>${new Date(n.createdAt).toLocaleString('en-CA')}</td>
-                        <td data-actions="1">
-                            ${n.isRead 
-                                ? '✓ Read' 
-                                : `<button class="btn btn-sm btn-outline-primary mark-read-btn" type="button" data-id="${n.id}">Read</button>`}
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
+    listDiv.replaceChildren();
+
+    const toolbarDiv = document.createElement('div');
+    toolbarDiv.className = 'mb-3';
+    const markAllButton = document.createElement('button');
+    markAllButton.id = 'mark-all-read';
+    markAllButton.className = 'btn btn-primary btn-sm';
+    markAllButton.type = 'button';
+    markAllButton.textContent = 'Mark All as Read';
+    toolbarDiv.append(markAllButton);
+    listDiv.append(toolbarDiv);
+
+    const table = document.createElement('table');
+    table.className = 'table table-sm table-striped table-hover align-middle';
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    for (const text of ['Message', 'Type', 'Date', 'Actions']) {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+
+    const tbody = document.createElement('tbody');
+    for (const n of notifications) {
+        const tr = document.createElement('tr');
+        if (!n.isRead) tr.className = 'unread';
+        tr.dataset.notificationId = String(n.id);
+
+        const messageTd = document.createElement('td');
+        messageTd.textContent = n.message;
+        tr.append(messageTd);
+
+        const typeTd = document.createElement('td');
+        typeTd.textContent = n.type;
+        tr.append(typeTd);
+
+        const dateTd = document.createElement('td');
+        dateTd.textContent = new Date(n.createdAt).toLocaleString('en-CA');
+        tr.append(dateTd);
+
+        const actionsTd = document.createElement('td');
+        actionsTd.dataset.actions = '1';
+        if (n.isRead) {
+            actionsTd.textContent = '✓ Read';
+        } else {
+            const readButton = document.createElement('button');
+            readButton.className = 'btn btn-sm btn-outline-primary mark-read-btn';
+            readButton.type = 'button';
+            readButton.dataset.id = String(n.id);
+            readButton.textContent = 'Read';
+            actionsTd.append(readButton);
+        }
+        tr.append(actionsTd);
+        tbody.append(tr);
+    }
+    table.append(tbody);
+    listDiv.append(table);
 
     document.querySelector('#mark-all-read')?.addEventListener('click', async () => {
         try {
@@ -142,7 +171,7 @@ function renderNotificationsInto(listDiv, notifications) {
 
                 const y = window.scrollY;
 
-                const row = listDiv.querySelector(`tr[data-notification-id="${CSS.escape(id)}"]`);
+                const row = listDiv.querySelector(`tr[data-notification-id="${CSS.escape(String(id))}"]`);
                 markRowRead(row);
 
                 window.scrollTo(0, y);
@@ -186,11 +215,11 @@ export function loadNotificationsPage(contentDiv) {
 
         const eventName = getUnreadNotificationsEventName();
 
-        addEventListener(eventName, (/** @type {CustomEvent} */ event) => {
-            const listDiv = /** @type {HTMLElement} */ (document.querySelector('#notifications-list'));
+        addEventListener(eventName, (event: Event) => {
+            const listDiv = document.querySelector('#notifications-list') as HTMLElement;
             if (!listDiv) return;
 
-            const notifications = event?.detail?.notifications;
+            const notifications = (event as CustomEvent)?.detail?.notifications;
 
             renderNotificationsInto(
                 listDiv,

@@ -53,15 +53,28 @@ export function showToast(message, type = 'info', duration = DEFAULT_DURATION) {
   toast.setAttribute('aria-atomic', 'true');
   toast.style.cssText = 'display:flex;opacity:0;transition:opacity 0.3s ease';
 
-  toast.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body d-flex align-items-center gap-2">
-        <i class="bi ${ICONS[type]}"></i>
-        <span>${message}</span>
-      </div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-  `;
+  toast.append(
+    (() => {
+      const flexDiv = document.createElement('div');
+      flexDiv.className = 'd-flex';
+      const body = document.createElement('div');
+      body.className = 'toast-body d-flex align-items-center gap-2';
+      const icon = document.createElement('i');
+      icon.className = `bi ${ICONS[type]}`;
+      body.append(icon);
+      const span = document.createElement('span');
+      span.textContent = message;
+      body.append(span);
+      flexDiv.append(body);
+      const closeButton_ = document.createElement('button');
+      closeButton_.type = 'button';
+      closeButton_.className = 'btn-close btn-close-white me-2 m-auto';
+      closeButton_.dataset.bsDismiss = 'toast';
+      closeButton_.setAttribute('aria-label', 'Close');
+      flexDiv.append(closeButton_);
+      return flexDiv;
+    })()
+  );
 
   container.append(toast);
 

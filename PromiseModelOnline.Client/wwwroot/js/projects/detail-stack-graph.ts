@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getEpic, getJourneys, getEpicById } from '../epics/api.ts';
 import { getFlow, getMoments, getFlowById } from '../flows/api.ts';
 import { getJourney, getFlows, getJourneyById } from '../journeys/api.ts';
@@ -69,13 +68,23 @@ function getContainer(): HTMLElement | null {
 function renderLoadingSpinner(container: HTMLElement | null): void {
     if (!container) return;
 
-    container.innerHTML = `
-        <div class="d-flex h-100 w-100 align-items-center justify-content-center" aria-live="polite" aria-label="Loading detail stack graph">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading detail stack graph...</span>
-            </div>
-        </div>
-    `;
+     
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex h-100 w-100 align-items-center justify-content-center';
+    wrapper.setAttribute('aria-live', 'polite');
+    wrapper.setAttribute('aria-label', 'Loading detail stack graph');
+
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner-border text-primary';
+    spinner.setAttribute('role', 'status');
+
+    const srText = document.createElement('span');
+    srText.className = 'visually-hidden';
+    srText.textContent = 'Loading detail stack graph...';
+
+    spinner.append(srText);
+    wrapper.append(spinner);
+    container.replaceChildren(wrapper);
 }
 
 /**
@@ -100,7 +109,7 @@ function rerenderDetailStackGraph(): void {
     const container = getContainer();
     if (!container || !detailStackState.tree || !detailStackState.d3) return;
 
-    renderStackGraph(container, detailStackState.d3, detailStackState.tree, {
+    renderStackGraph(container, detailStackState.d3 as Record<string, unknown>, detailStackState.tree!, {
         owner: detailStackState.owner ?? undefined,
         project: detailStackState.project ?? undefined,
         focusNodeId: detailStackState.focusNodeId ?? undefined,
@@ -116,12 +125,12 @@ function rerenderDetailStackGraph(): void {
 }
 
 interface PathEntities {
-    moment: Record<string, unknown> | null;
-    flow: Record<string, unknown> | null;
-    journey: Record<string, unknown> | null;
-    epic: Record<string, unknown> | null;
-    promise: Record<string, unknown> | null;
-    project: Record<string, unknown> | null;
+    moment: Record<string, unknown> | undefined;
+    flow: Record<string, unknown> | undefined;
+    journey: Record<string, unknown> | undefined;
+    epic: Record<string, unknown> | undefined;
+    promise: Record<string, unknown> | undefined;
+    project: Record<string, unknown> | undefined;
 }
 
 /**
@@ -146,33 +155,33 @@ async function fetchPathEntities(nodeType: string, nodeId: string | number, owne
 
     switch (nodeType) {
         case 'moment': {
-            moment = await getMoment(owner, project, numericId);
-            flow = await getFlowById(owner, project, (moment as Record<string, unknown>).flowId as number);
-            journey = await getJourneyById(owner, project, (flow as Record<string, unknown>).journeyId as number);
-            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number);
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number);
+            moment = await getMoment(owner, project, numericId) as Record<string, unknown>;
+            flow = await getFlowById(owner, project, (moment as Record<string, unknown>).flowId as number) as Record<string, unknown>;
+            journey = await getJourneyById(owner, project, (flow as Record<string, unknown>).journeyId as number) as Record<string, unknown>;
+            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number) as Record<string, unknown>;
+            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'flow': {
-            flow = await getFlow(owner, project, numericId);
-            journey = await getJourneyById(owner, project, (flow as Record<string, unknown>).journeyId as number);
-            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number);
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number);
+            flow = await getFlow(owner, project, numericId) as Record<string, unknown>;
+            journey = await getJourneyById(owner, project, (flow as Record<string, unknown>).journeyId as number) as Record<string, unknown>;
+            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number) as Record<string, unknown>;
+            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'journey': {
-            journey = await getJourney(owner, project, numericId);
-            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number);
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number);
+            journey = await getJourney(owner, project, numericId) as Record<string, unknown>;
+            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number) as Record<string, unknown>;
+            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'epic': {
-            epic = await getEpic(owner, project, numericId);
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number);
+            epic = await getEpic(owner, project, numericId) as Record<string, unknown>;
+            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'promise': {
-            promise = await getPromise(owner, project, numericId);
+            promise = await getPromise(owner, project, numericId) as Record<string, unknown>;
             break;
         }
         default: {
@@ -182,7 +191,7 @@ async function fetchPathEntities(nodeType: string, nodeId: string | number, owne
 
     let projectEntity: Record<string, unknown> | undefined;
     try {
-        projectEntity = await getProject(owner, project);
+        projectEntity = await getProject(owner, project) as Record<string, unknown>;
     } catch (error) {
         console.warn('Unable to load project for detail stack graph:', error);
     }
@@ -214,7 +223,7 @@ async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }
     if (promise) {
         fetches.push((async () => {
             try {
-                const items = await getEpicsByPromise(owner, project, (promise as Record<string, unknown>).sequenceNumber as string);
+                const items = await getEpicsByPromise(owner, project, (promise as Record<string, unknown>).sequenceNumber as string) as Record<string, unknown>[];
                 metrics.promise = computeChildMetrics(items);
             } catch {
                 metrics.promise = { childCount: 0, completedChildCount: 0 };
@@ -224,7 +233,7 @@ async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }
     if (epic) {
         fetches.push((async () => {
             try {
-                const items = await getJourneys(owner, project, (epic as Record<string, unknown>).sequenceNumber as string);
+                const items = await getJourneys(owner, project, (epic as Record<string, unknown>).sequenceNumber as string) as Record<string, unknown>[];
                 metrics.epic = computeChildMetrics(items);
             } catch {
                 metrics.epic = { childCount: 0, completedChildCount: 0 };
@@ -234,7 +243,7 @@ async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }
     if (journey) {
         fetches.push((async () => {
             try {
-                const items = await getFlows(owner, project, (journey as Record<string, unknown>).sequenceNumber as string);
+                const items = await getFlows(owner, project, (journey as Record<string, unknown>).sequenceNumber as string) as Record<string, unknown>[];
                 metrics.journey = computeChildMetrics(items);
             } catch {
                 metrics.journey = { childCount: 0, completedChildCount: 0 };
@@ -244,7 +253,7 @@ async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }
     if (flow) {
         fetches.push((async () => {
             try {
-                const items = await getMoments(owner, project, (flow as Record<string, unknown>).sequenceNumber as string);
+                const items = await getMoments(owner, project, (flow as Record<string, unknown>).sequenceNumber as string) as Record<string, unknown>[];
                 metrics.flow = computeChildMetrics(items);
             } catch {
                 metrics.flow = { childCount: 0, completedChildCount: 0 };
@@ -262,7 +271,7 @@ async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }
  * @param {Record<string, unknown> } child - The child node to wrap, or null for no children.
  * @returns {Record<string, unknown>} The wrapped node with children array.
  */
-function wrapWithChild(node: Record<string, unknown>, child: Record<string, unknown> | null): Record<string, unknown> {
+function wrapWithChild(node: Record<string, unknown>, child: Record<string, unknown> | undefined): Record<string, unknown> {
     return {
         ...node,
         children: child ? [child] : [],
@@ -280,18 +289,18 @@ function wrapWithChild(node: Record<string, unknown>, child: Record<string, unkn
 function buildLinearTree(pathEntities: PathEntities, metrics: Record<string, ChildMetrics>, owner: string, project: string): Record<string, unknown> | undefined {
     const { moment, flow, journey, epic, promise } = pathEntities;
 
-    let tip: Record<string, unknown> | undefined = moment ? createNodeWithMetrics('moment', moment) : undefined;
+    let tip: Record<string, unknown> | undefined = moment ? createNodeWithMetrics('moment', moment) as Record<string, unknown> : undefined;
     if (flow) {
-        tip = wrapWithChild(createNodeWithMetrics('flow', flow, metrics.flow), tip);
+        tip = wrapWithChild(createNodeWithMetrics('flow', flow, metrics.flow) as Record<string, unknown>, tip);
     }
     if (journey) {
-        tip = wrapWithChild(createNodeWithMetrics('journey', journey, metrics.journey), tip);
+        tip = wrapWithChild(createNodeWithMetrics('journey', journey, metrics.journey) as Record<string, unknown>, tip);
     }
     if (epic) {
-        tip = wrapWithChild(createNodeWithMetrics('epic', epic, metrics.epic), tip);
+        tip = wrapWithChild(createNodeWithMetrics('epic', epic, metrics.epic) as Record<string, unknown>, tip);
     }
     if (promise) {
-        tip = wrapWithChild(createNodeWithMetrics('promise', promise, metrics.promise), tip);
+        tip = wrapWithChild(createNodeWithMetrics('promise', promise, metrics.promise) as Record<string, unknown>, tip);
     }
 
     if (!tip) return;
@@ -317,7 +326,7 @@ function buildLinearTree(pathEntities: PathEntities, metrics: Record<string, Chi
  * @param {string} project - The project's slug.
  * @returns {Promise<{ tree: Record<string, unknown> | null; focusNodeId: string | null }>} The tree data and the focus node ID for the starting node.
  */
-export async function buildAncestorPathTree(nodeType: string, nodeId: string | number, owner: string, project: string): Promise<{ tree: Record<string, unknown> | null; focusNodeId: string | null }> {
+export async function buildAncestorPathTree(nodeType: string, nodeId: string | number, owner: string, project: string): Promise<{ tree: Record<string, unknown> | undefined; focusNodeId: string }> {
     if (!STACK_NODE_TYPES.has(nodeType)) {
         throw new Error(`Unsupported node type: ${nodeType}`);
     }
@@ -326,7 +335,7 @@ export async function buildAncestorPathTree(nodeType: string, nodeId: string | n
     const metrics = await fetchChildMetricsForPath(pathEntities, owner, project);
 
     const focusEntity = pathEntities[nodeType as keyof PathEntities];
-    const focusSeq = (focusEntity as Record<string, unknown> | null)?.sequenceNumber ?? nodeId;
+    const focusSeq = (focusEntity as Record<string, unknown> | undefined)?.sequenceNumber ?? nodeId;
 
     return {
         tree: buildLinearTree(pathEntities, metrics, owner, project),
@@ -397,11 +406,11 @@ export function patchDetailStackGraphNode(nodeId: string, payloadPatch: Record<s
     if (!node) return;
 
     node.payload = { ...(node.payload as Record<string, unknown>), ...payloadPatch };
-    if (payloadPatch._childCount !== null) {
-        node.childCount = payloadPatch._childCount;
+    if (payloadPatch._childCount !== undefined) {
+        node.childCount = payloadPatch._childCount as number;
     }
-    if (payloadPatch._completedChildCount !== null) {
-        node.completedChildCount = payloadPatch._completedChildCount;
+    if (payloadPatch._completedChildCount !== undefined) {
+        node.completedChildCount = payloadPatch._completedChildCount as number;
     }
     refreshNodeDerivedFields(node);
     rerenderDetailStackGraph();
@@ -413,7 +422,7 @@ export function patchDetailStackGraphNode(nodeId: string, payloadPatch: Record<s
  */
 export async function refreshDetailStackGraph(): Promise<void> {
     const { activeNodeType, activeNodeId, owner, project, d3 } = detailStackState;
-    if (!activeNodeType || activeNodeId === null || !d3) return;
+    if (!activeNodeType || activeNodeId === undefined || !d3) return;
 
     try {
         const pathResult = await buildAncestorPathTree(activeNodeType, activeNodeId, owner!, project!);

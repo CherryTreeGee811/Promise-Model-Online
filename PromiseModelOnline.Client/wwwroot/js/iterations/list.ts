@@ -1,45 +1,101 @@
-// @ts-nocheck
 import { getProject } from '../projects/api.ts';
 import { getStridesByIteration } from '../strides/api.ts';
 import { drawBurndownChart } from '../utils/burndown.ts';
-import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.ts';
 
 import { getIterations, getBurndown } from './api.ts';
 
+interface Iteration {
+    id: number;
+    name: string;
+    createdAt: string;
+}
+
+interface Stride {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    durationDays: number;
+}
+
+interface ProjectData {
+    name?: string;
+}
+
 /**
- * Format a date string into a locale date representation.
- * @param {string} dateString - The date string to format.
- * @returns {string} The formatted date string, or 'N/A' if the input is falsy.
+ * @param {string} dateString - Date string to format
+ * @returns {string} Formatted date string
  */
-function formatDate(dateString) {
+function formatDate(dateString: string): string {
     return dateString ? new Date(dateString).toLocaleDateString('en-CA') : 'N/A';
 }
 
 /**
- * @typedef {{ id: number, name: string, createdAt: string }} Iteration
- * @typedef {{ id: number, name: string, startDate: string, endDate: string, durationDays: number }} Stride
+ * @param {string} message - Loading message text
+ * @returns {HTMLElement} Loading spinner element
  */
+function buildLoadingSpinner(message: string): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex w-100 justify-content-center align-items-center py-5';
+    wrapper.setAttribute('aria-live', 'polite');
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner-border text-primary';
+    spinner.setAttribute('role', 'status');
+    spinner.setAttribute('aria-label', message);
+    const srSpan = document.createElement('span');
+    srSpan.className = 'visually-hidden';
+    srSpan.textContent = message;
+    spinner.append(srSpan);
+    wrapper.append(spinner);
+    return wrapper;
+}
 
 /**
- * Load the iteration history page with burndown charts.
- * @param {string} owner - The owner slug.
- * @param {string} project - The project slug.
- * @param {{ permission?: string }} permission - The user's permission object for this project.
+ * @param {string} icon - Bootstrap icon class
+ * @param {string} title - Title text
+ * @param {string} [description] - Optional description text
+ * @returns {HTMLElement} Empty state element
  */
-export async function loadIterationHistory(owner, project, permission) {
-    const viewDiv = /** @type {HTMLElement} */ (document.querySelector('#iterations-view'));
-    const listDiv = /** @type {HTMLElement} */ (document.querySelector('#iterations-list'));
-    const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#iteration-detail'));
-    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const projectTitle = /** @type {HTMLElement} */ (document.querySelector('#project-title'));
-    const iterationCreateButton = /** @type {HTMLElement} */ (document.querySelector('#create-iteration-btn'));
+function buildEmptyState(icon: string, title: string, description?: string): HTMLElement {
+    const div = document.createElement('div');
+    div.className = 'no-items d-flex flex-column align-items-center gap-3 py-5';
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'empty-table-icon';
+    const iconElement = document.createElement('i');
+    iconElement.className = `bi ${icon}`;
+    iconDiv.append(iconElement);
+    div.append(iconDiv);
+    const titleElement = document.createElement('h5');
+    titleElement.className = 'fw-semibold text-secondary mb-1';
+    titleElement.textContent = title;
+    div.append(titleElement);
+    if (description) {
+        const descElement = document.createElement('p');
+        descElement.className = 'text-muted mb-2';
+        descElement.textContent = description;
+        div.append(descElement);
+    }
+    return div;
+}
+
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {{ permission: string } | undefined} permission - Permission object
+ */
+export async function loadIterationHistory(owner: string, project: string, permission: { permission: string } | undefined): Promise<void> {
+    const viewDiv = document.querySelector('#iterations-view') as HTMLElement;
+    const listDiv = document.querySelector('#iterations-list') as HTMLElement;
+    const detailDiv = document.querySelector('#iteration-detail') as HTMLElement;
+    const errorElement = document.querySelector('#error-text') as HTMLElement;
+    const projectTitle = document.querySelector('#project-title') as HTMLElement;
+    const iterationCreateButton = document.querySelector('#create-iteration-btn') as HTMLElement;
 
     const canEdit = permission?.permission === 'Edit';
 
-    detailDiv.classList.add('d-none');
-    errorElement.textContent = '';
+    if (detailDiv) detailDiv.classList.add('d-none');
+    if (errorElement) errorElement.textContent = '';
 
     if (iterationCreateButton) {
         if (!canEdit) {
@@ -52,7 +108,7 @@ export async function loadIterationHistory(owner, project, permission) {
         }
     }
 
-    listDiv.innerHTML = renderLoadingSpinner('Loading iterations');
+    if (listDiv) listDiv.replaceChildren(buildLoadingSpinner('Loading iterations'));
 
     const LOAD_TIMEOUT_MS = 15_000;
 
@@ -60,9 +116,9 @@ export async function loadIterationHistory(owner, project, permission) {
         setTimeout(() => reject(new Error('Iteration list request timed out')), LOAD_TIMEOUT_MS);
     });
 
-    const projectPromise = (async () => {
+    const projectPromise = (async (): Promise<ProjectData | undefined> => {
         try {
-            return await getProject(owner, project);
+            return await getProject(owner, project) as ProjectData;
         } catch {}
     })();
 
@@ -70,155 +126,205 @@ export async function loadIterationHistory(owner, project, permission) {
         const [projectData, iterations] = await Promise.race([
             Promise.all([
                 projectPromise,
-                getIterations(owner, project),
+                getIterations(owner, project) as Promise<Iteration[]>,
             ]),
             listTimeoutPromise,
-        ]);
+        ]) as [ProjectData | undefined, Iteration[]];
 
         if (projectTitle) {
             projectTitle.textContent = projectData?.name ?? `Project ${owner}/${project}`;
         }
 
         if (!iterations || iterations.length === 0) {
-            listDiv.innerHTML = renderEmptyStateSection({
-                icon: 'bi-arrow-repeat',
-                title: 'No iterations found.',
-                description: 'Create an iteration to start organizing your strides.',
-            });
+            if (listDiv) listDiv.replaceChildren(buildEmptyState(
+                'bi-arrow-repeat',
+                'No iterations found.',
+                'Create an iteration to start organizing your strides.',
+            ));
             return;
         }
 
         iterations.sort((a, b) => b.id - a.id);
 
-        listDiv.innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-sm table-striped table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col">Name</th>
-                            <th scope="col">Created</th>
-                            <th scope="col">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${iterations.map(index => `
-                            <tr>
-                                <td>${escapeHtml(index.name)}</td>
-                                <td>${formatDate(index.createdAt)}</td>
-                                <td>
-                                    <button class="view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" data-iteration-id="${index.id}" type="button">
-                                        <i class="bi bi-eye" aria-hidden="true"></i>
-                                        View
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'table-responsive';
+        const table = document.createElement('table');
+        table.className = 'table table-sm table-striped table-hover align-middle';
+
+        const thead = document.createElement('thead');
+        thead.className = 'table-light';
+        const headerRow = document.createElement('tr');
+        const headers = ['Name', 'Created', 'Actions'];
+        for (const h of headers) {
+            const th = document.createElement('th');
+            th.scope = 'col';
+            th.textContent = h;
+            headerRow.append(th);
+        }
+        thead.append(headerRow);
+        table.append(thead);
+
+        const tbody = document.createElement('tbody');
+        for (const index of iterations) {
+            const tr = document.createElement('tr');
+
+            const tdName = document.createElement('td');
+            tdName.textContent = index.name;
+            tr.append(tdName);
+
+            const tdCreated = document.createElement('td');
+            tdCreated.textContent = formatDate(index.createdAt);
+            tr.append(tdCreated);
+
+            const tdActions = document.createElement('td');
+            const button = document.createElement('button');
+            button.className = 'view-iteration-btn btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2';
+            button.type = 'button';
+            button.dataset.iterationId = String(index.id);
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-eye';
+            icon.setAttribute('aria-hidden', 'true');
+            button.append(icon, ' View');
+            tdActions.append(button);
+            tr.append(tdActions);
+
+            tbody.append(tr);
+        }
+        table.append(tbody);
+        tableWrapper.append(table);
+        if (listDiv) listDiv.replaceChildren(tableWrapper);
 
         for (const button of document.querySelectorAll('.view-iteration-btn')) {
             button.addEventListener('click', () => {
-                const iterationId = parseInt(/** @type {string} */(button.dataset.iterationId), 10);
+                const iterationId = parseInt((button as HTMLElement).dataset.iterationId!, 10);
                 const iteration = iterations.find(index => index.id === iterationId);
-                void showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}` });
+                void showIterationDetail(iteration ?? { id: iterationId, name: `Iteration #${iterationId}`, createdAt: '' });
             });
         }
     } catch (error) {
-        listDiv.innerHTML = '';
-        errorElement.textContent = 'Failed to load iterations.';
+        if (listDiv) listDiv.replaceChildren();
+        if (errorElement) errorElement.textContent = 'Failed to load iterations.';
         console.error(error);
     }
 
     /**
-     * Display the detail view for a specific iteration, including burndown chart and strides.
-     * @param {Iteration} iteration - The iteration object.
+     * @param {Iteration} iteration - The iteration to show
      */
-    async function showIterationDetail(iteration) {
+    async function showIterationDetail(iteration: Iteration): Promise<void> {
         const iterationId = iteration.id;
 
-        viewDiv.classList.add('d-none');
-        detailDiv.classList.remove('d-none');
+        if (viewDiv) viewDiv.classList.add('d-none');
+        if (detailDiv) detailDiv.classList.remove('d-none');
 
-        const titleElement = /** @type {HTMLElement} */ (document.querySelector('#iteration-title'));
-        const burndownCanvas = /** @type {HTMLElement} */ (document.querySelector('#iteration-burndown-canvas'));
-        const strideDetailsDiv = /** @type {HTMLElement} */ (document.querySelector('#stride-details'));
+        const titleElement = document.querySelector('#iteration-title') as HTMLElement;
+        const burndownCanvas = document.querySelector('#iteration-burndown-canvas') as HTMLElement;
+        const strideDetailsDiv = document.querySelector('#stride-details') as HTMLElement;
 
-        titleElement.textContent = iteration.name;
-        burndownCanvas.innerHTML = renderLoadingSpinner('Loading burndown chart');
-        strideDetailsDiv.innerHTML = renderLoadingSpinner('Loading strides');
+        if (titleElement) titleElement.textContent = iteration.name;
+        if (burndownCanvas) burndownCanvas.replaceChildren(buildLoadingSpinner('Loading burndown chart'));
+        if (strideDetailsDiv) strideDetailsDiv.replaceChildren(buildLoadingSpinner('Loading strides'));
 
         const BURNDOWN_TIMEOUT_MS = 10_000;
 
-        const timeoutPromise = new Promise((_, reject) => {
+        const timeoutPromise = new Promise<{ date: string; remainingEffort: number }[]>((_, reject) => {
             setTimeout(() => reject(new Error('Burndown request timed out')), BURNDOWN_TIMEOUT_MS);
         });
 
         try {
-            const points = await Promise.race([getBurndown(owner, project, iterationId), timeoutPromise]);
+            const points = await Promise.race([getBurndown(owner, project, iterationId) as Promise<{ date: string; remainingEffort: number }[]>, timeoutPromise]);
             if (points && points.length > 0) {
-                void drawBurndownChart(burndownCanvas, points);
+                if (burndownCanvas) void drawBurndownChart(burndownCanvas, points);
             } else {
-                burndownCanvas.innerHTML = renderEmptyStateSection({
-                    icon: 'bi-graph-down',
-                    title: 'No burndown data available for this iteration.',
-                    description: 'Burndown data will appear once moments have status updates.',
-                });
+                if (burndownCanvas) burndownCanvas.replaceChildren(buildEmptyState(
+                    'bi-graph-down',
+                    'No burndown data available for this iteration.',
+                    'Burndown data will appear once moments have status updates.',
+                ));
             }
         } catch (error) {
             console.error('Iteration burndown error', error);
-            burndownCanvas.innerHTML = '<p class="error">Failed to load iteration burndown.</p>';
+            if (burndownCanvas) {
+                burndownCanvas.replaceChildren();
+                const p = document.createElement('p');
+                p.className = 'error';
+                p.textContent = 'Failed to load iteration burndown.';
+                burndownCanvas.append(p);
+            }
         }
 
         try {
-            const strides = await getStridesByIteration(owner, project, iterationId);
+            const strides = await getStridesByIteration(owner, project, iterationId) as Stride[];
             if (!strides || strides.length === 0) {
-                strideDetailsDiv.innerHTML = renderEmptyStateSection({
-                    icon: 'bi-kanban',
-                    title: 'No strides in this iteration.',
-                    description: 'Create strides to organize your work within this iteration.',
-                });
+                if (strideDetailsDiv) strideDetailsDiv.replaceChildren(buildEmptyState(
+                    'bi-kanban',
+                    'No strides in this iteration.',
+                    'Create strides to organize your work within this iteration.',
+                ));
                 return;
             }
 
-            strides.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            strides.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-            strideDetailsDiv.innerHTML = `
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">Stride</th>
-                                <th scope="col">Start Date</th>
-                                <th scope="col">End Date</th>
-                                <th scope="col">Duration</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${strides.map(s => `
-                                <tr>
-                                    <td>${escapeHtml(s.name)}</td>
-                                    <td>${formatDate(s.startDate)}</td>
-                                    <td>${formatDate(s.endDate)}</td>
-                                    <td>${s.durationDays} days</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = 'table-responsive';
+            const table = document.createElement('table');
+            table.className = 'table table-sm table-striped table-hover align-middle mb-0';
+
+            const thead = document.createElement('thead');
+            thead.className = 'table-light';
+            const headerRow = document.createElement('tr');
+            const headers = ['Stride', 'Start Date', 'End Date', 'Duration'];
+            for (const h of headers) {
+                const th = document.createElement('th');
+                th.scope = 'col';
+                th.textContent = h;
+                headerRow.append(th);
+            }
+            thead.append(headerRow);
+            table.append(thead);
+
+            const tbody = document.createElement('tbody');
+            for (const s of strides) {
+                const tr = document.createElement('tr');
+
+                const tdName = document.createElement('td');
+                tdName.textContent = s.name;
+                tr.append(tdName);
+
+                const tdStart = document.createElement('td');
+                tdStart.textContent = formatDate(s.startDate);
+                tr.append(tdStart);
+
+                const tdEnd = document.createElement('td');
+                tdEnd.textContent = formatDate(s.endDate);
+                tr.append(tdEnd);
+
+                const tdDuration = document.createElement('td');
+                tdDuration.textContent = `${s.durationDays} days`;
+                tr.append(tdDuration);
+
+                tbody.append(tr);
+            }
+            table.append(tbody);
+            tableWrapper.append(table);
+            if (strideDetailsDiv) strideDetailsDiv.replaceChildren(tableWrapper);
         } catch (error) {
-            strideDetailsDiv.innerHTML = '<p class="error">Failed to load strides.</p>';
+            if (strideDetailsDiv) {
+                strideDetailsDiv.replaceChildren();
+                const p = document.createElement('p');
+                p.className = 'error';
+                p.textContent = 'Failed to load strides.';
+                strideDetailsDiv.append(p);
+            }
             console.error(error);
         }
     }
 
-    const backButton = document.querySelector('#back-to-iterations-btn');
+    const backButton = document.querySelector('#back-to-iterations-btn') as HTMLElement;
     if (backButton) {
         backButton.addEventListener('click', () => {
-            detailDiv.classList.add('d-none');
-            viewDiv.classList.remove('d-none');
+            if (detailDiv) detailDiv.classList.add('d-none');
+            if (viewDiv) viewDiv.classList.remove('d-none');
         });
     }
 }

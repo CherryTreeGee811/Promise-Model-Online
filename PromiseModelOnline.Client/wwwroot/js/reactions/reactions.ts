@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getUsername } from '../auth-state.ts';
 
 import { getReactions, addReaction, updateReaction } from './api.ts';
@@ -19,21 +18,42 @@ const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
 export function loadReactions(container, parentType, parentId, owner, project, permission) {
     const canReact = permission?.permission === 'Comment' || permission?.permission === 'Edit';
 
-    container.innerHTML = `
-        <div class="reactions-bar">
-            <span class="reactions-summary" id="reactions-summary"></span>
-            ${canReact ? `<span class="reactions-picker">
-                ${EMOTE_SET.map(emote => `<button class="btn btn-outline-secondary btn-sm emote-btn" data-emote="${emote}" title="${emote}" aria-label="React with ${emote}">${emote}</button>`).join('')}
-            </span>` : ''}
-        </div>
-    `;
+    container.replaceChildren();
+
+    const barDiv = document.createElement('div');
+    barDiv.className = 'reactions-bar';
+
+    const summarySpan = document.createElement('span');
+    summarySpan.className = 'reactions-summary';
+    summarySpan.id = 'reactions-summary';
+    barDiv.append(summarySpan);
+
+    if (canReact) {
+        const pickerSpan = document.createElement('span');
+        pickerSpan.className = 'reactions-picker';
+        for (const emote of EMOTE_SET) {
+            const button = document.createElement('button');
+            button.className = 'btn btn-outline-secondary btn-sm emote-btn';
+            button.dataset.emote = emote;
+            button.title = emote;
+            button.setAttribute('aria-label', `React with ${emote}`);
+            button.textContent = emote;
+            pickerSpan.append(button);
+        }
+        barDiv.append(pickerSpan);
+    }
+
+    container.append(barDiv);
 
     const summaryElement = /** @type {HTMLElement} */ (container.querySelector('#reactions-summary'));
     const buttons = container.querySelectorAll('.emote-btn');
     const myUsername = getUsername();
 
-    /** @type {ReactionsState} */
-    const state = {
+    const state: {
+        counts: Record<string, number>;
+        myReactionId: number | undefined;
+        myEmote: string | undefined;
+    } = {
         counts: {},
         myReactionId: undefined,
         myEmote: undefined,
@@ -50,17 +70,17 @@ export function loadReactions(container, parentType, parentId, owner, project, p
     /** Fetch the latest reactions from the API and update the summary. */
     async function refresh() {
         try {
-            const reactions = await getReactions(owner, project, parentType, parentId);
+            const reactions = await getReactions(owner, project, parentType, parentId) as Record<string, unknown>[];
             state.counts = {};
             const reactionList = reactions || [];
             for (const reaction of reactionList) {
-                state.counts[reaction.emote] = (state.counts[reaction.emote] || 0) + 1;
+                state.counts[reaction.emote as string] = (state.counts[reaction.emote as string] || 0) + 1;
             }
 
             if (myUsername) {
                 const mine = (reactions || []).find(r => String(r.userName) === String(myUsername));
-                state.myReactionId = mine?.id ?? undefined;
-                state.myEmote = mine?.emote ?? undefined;
+                state.myReactionId = (mine as Record<string, unknown>)?.id as number ?? undefined;
+                state.myEmote = (mine as Record<string, unknown>)?.emote as string ?? undefined;
             }
 
             renderSummary();
@@ -76,12 +96,12 @@ export function loadReactions(container, parentType, parentId, owner, project, p
             const emote = button.dataset.emote;
             try {
                 const y = window.scrollY;
-                const updated = state.myReactionId
+                const updated = (state.myReactionId
                     ? await updateReaction(owner, project, state.myReactionId, emote)
-                    : await addReaction(owner, project, { parentType, parentId, emote });
+                    : await addReaction(owner, project, { parentType, parentId, emote })) as Record<string, unknown> | null;
 
                 const previous = state.myEmote;
-                const next = updated?.emote ?? emote;
+                const next = (updated?.emote as string) ?? emote;
 
                 if (previous && previous !== next) {
                     state.counts[previous] = Math.max(0, (state.counts[previous] || 0) - 1);
@@ -90,7 +110,7 @@ export function loadReactions(container, parentType, parentId, owner, project, p
                     state.counts[next] = (state.counts[next] || 0) + 1;
                 }
 
-                state.myReactionId = updated?.id ?? state.myReactionId;
+                state.myReactionId = (updated?.id as number) ?? state.myReactionId;
                 state.myEmote = next;
                 renderSummary();
                 window.scrollTo(0, y);

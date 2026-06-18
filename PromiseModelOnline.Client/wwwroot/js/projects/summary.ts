@@ -1,6 +1,3 @@
-// @ts-nocheck
-import { escapeHtml } from '../utils/html.ts';
-
 interface SummaryRow {
     label?: string;
     value?: string | number;
@@ -18,20 +15,41 @@ export function renderSummaryTable(container: HTMLElement | null, rows: SummaryR
         return;
     }
 
-    container.innerHTML = `
-        <div class="table-responsive summary-table-wrap">
-            <table class="table table-sm table-striped table-hover align-middle mb-0 detail-table summary-table">
-            <tbody class="table-group-divider">
-                ${rows.map(row => `
-                    ${row.isGap
-                        ? `<tr class="summary-gap"><td colspan="2" class="border-0 py-2"></td></tr>`
-                        : `<tr>
-                            <th scope="row" class="summary-key text-muted fw-semibold">${escapeHtml(row.label)}</th>
-                            <td class="summary-value">${escapeHtml(row.value)}</td>
-                        </tr>`}
-                `).join('')}
-            </tbody>
-            </table>
-        </div>
-    `;
+    container.replaceChildren();
+
+    const wrapDiv = document.createElement('div');
+    wrapDiv.className = 'table-responsive summary-table-wrap';
+
+    const table = document.createElement('table');
+    table.className = 'table table-sm table-striped table-hover align-middle mb-0 detail-table summary-table';
+
+    const tbody = document.createElement('tbody');
+    tbody.className = 'table-group-divider';
+
+    for (const row of rows) {
+        if (row.isGap) {
+            const gapTr = document.createElement('tr');
+            gapTr.className = 'summary-gap';
+            const gapTd = document.createElement('td');
+            gapTd.colSpan = 2;
+            gapTd.className = 'border-0 py-2';
+            gapTr.append(gapTd);
+            tbody.append(gapTr);
+        } else {
+            const tr = document.createElement('tr');
+            const th = document.createElement('th');
+            th.scope = 'row';
+            th.className = 'summary-key text-muted fw-semibold';
+            th.textContent = row.label ?? '';
+            const td = document.createElement('td');
+            td.className = 'summary-value';
+            td.textContent = row.value === undefined ? '' : String(row.value);
+            tr.append(th, td);
+            tbody.append(tr);
+        }
+    }
+
+    table.append(tbody);
+    wrapDiv.append(table);
+    container.append(wrapDiv);
 }

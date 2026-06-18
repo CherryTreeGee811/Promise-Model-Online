@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { apiFetch } from '../api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { updateMomentStatus } from '../moments/api.ts';
@@ -22,7 +21,7 @@ const NODE_CHILD_LABELS: Record<string, string> = {
  * @param {string|number} nodeId - The node's ID.
  * @returns {string} The delete API route, or null if invalid.
  */
-function getDeleteRoute(nodeType: string, nodeId?: string | number): string | null {
+function getDeleteRoute(nodeType: string, nodeId?: string | number): string | undefined {
     const normalizedType = normalizeNodeType(nodeType);
 
     if (normalizedType === 'root') {
@@ -72,8 +71,8 @@ function getNodeLabel(nodeData: any): string {
  * @param {string} nodeType - The parent node type.
  * @returns {string} The child type label, or null if none.
  */
-function getChildLabel(nodeType: string): string | null {
-    return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? undefined;
+function getChildLabel(nodeType: string): string | undefined {
+    return NODE_CHILD_LABELS[normalizeNodeType(nodeType)];
 }
 
 
@@ -83,7 +82,7 @@ function getChildLabel(nodeType: string): string | null {
  * @param {object} nodeData - The parent node data.
  * @returns {{entityLabel: string, endpoint: string, parentField: string}} The create action metadata, or null.
  */
-function getCreateActionMeta(nodeData: any): { entityLabel: string; endpoint: string; parentField: string } | null {
+function getCreateActionMeta(nodeData: any): { entityLabel: string; endpoint: string; parentField: string } | undefined {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
 
     const base = `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}`;
@@ -114,7 +113,7 @@ function getCreateActionMeta(nodeData: any): { entityLabel: string; endpoint: st
  * @param {object} nodeData - The parent node data.
  * @returns {object} Default form values (statement, description, displayOrder), or null.
  */
-function getCreateFormDefaults(nodeData: any): Record<string, any> | null {
+function getCreateFormDefaults(nodeData: any): Record<string, any> | undefined {
     const normalizedType = normalizeNodeType(nodeData.nodeType);
     const childCount = Number.parseInt(nodeData.childCount ?? 0, 10) || 0;
     const nextDisplayOrder = childCount + 1;
@@ -188,7 +187,7 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
     }
 
     if (response.status === 401) {
-        document.querySelector('#login-link')?.click();
+        (document.querySelector('#login-link') as HTMLElement)?.click();
     }
 
     let message = `HTTP error! status: ${response.status}`;
@@ -209,12 +208,12 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
  * @returns {HTMLElement} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalElement = document.querySelector(`#${CSS.escape(modalId)}`);
+    let modalElement = document.querySelector(`#${CSS.escape(modalId)}`) as HTMLElement | null;
     if (modalElement) return modalElement;
 
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = modalMarkup.trim();
-    modalElement = wrapper.firstElementChild as HTMLElement | null;
+    const parser = new DOMParser();
+    const document_ = parser.parseFromString(modalMarkup.trim(), 'text/html');
+    modalElement = document_.body.firstElementChild as HTMLElement | null;
 
     if (modalElement) {
         document.body.append(modalElement);
@@ -251,9 +250,9 @@ function openDeleteConfirmationModal(label: string): Promise<boolean> {
         return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
     }
 
-    const titleElement = modalElement.querySelector('#graph-delete-confirmation-modal-title');
-    const bodyElement = modalElement.querySelector('#graph-delete-confirmation-modal-body');
-    const confirmButton = modalElement.querySelector('#graph-delete-confirmation-confirm');
+    const titleElement = modalElement.querySelector('#graph-delete-confirmation-modal-title') as HTMLElement | null;
+    const bodyElement = modalElement.querySelector('#graph-delete-confirmation-modal-body') as HTMLElement | null;
+    const confirmButton = modalElement.querySelector('#graph-delete-confirmation-confirm') as HTMLButtonElement | null;
 
     if (!titleElement || !bodyElement || !confirmButton) {
         return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
@@ -439,7 +438,7 @@ function buildMomentFormElement(
     getAvailableStrides: (() => Array<{ id: number; name?: string }>) | undefined,
     onGraphMutated: (() => void) | undefined,
     closeMenus: () => void,
-): HTMLFormElement | null {
+): HTMLFormElement | undefined {
     const actionMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!actionMeta || !defaults) {
@@ -549,14 +548,23 @@ function buildMomentFormElement(
 
         const statement = statementField.input.value.trim();
         const description = descriptionField.input.value.trim();
+        const effortValue = estimateField.select.value;
+        let effortEstimate;
+        if (effortValue !== '-') {
+            effortEstimate = effortValue;
+        }
+        let assignedStrideId;
+        if (strideField.select.value) {
+            assignedStrideId = Number.parseInt(strideField.select.value, 10);
+        }
         const payload: Record<string, any> = {
             statement,
-            description: description || undefined,
+            description,
             flowId: nodeData.payload?.id,
             type: typeField.select.value,
             status: statusField.select.value,
-            effortEstimate: estimateField.select.value === '-' ? undefined : estimateField.select.value || undefined,
-            assignedStrideId: strideField.select.value ? Number.parseInt(strideField.select.value, 10) : undefined,
+            effortEstimate,
+            assignedStrideId,
             displayOrder: (Number.parseInt(nodeData.childCount ?? 0, 10) || 0) + 1,
         };
 
@@ -592,7 +600,7 @@ function buildMomentStatusFormElement(
     nodeData: any,
     onGraphMutated: ((...arguments_: any[]) => any) | undefined,
     closeMenus: () => void,
-): HTMLFormElement | null {
+): HTMLFormElement | undefined {
     const momentSeq = nodeData?.payload?.sequenceNumber;
     if (momentSeq === null) {
         return;
@@ -673,7 +681,7 @@ function buildCreateFormElement(
     getAvailableStrides: (() => Array<{ id: number; name?: string }>) | undefined,
     onGraphMutated: (() => void) | undefined,
     closeMenus: () => void,
-): HTMLFormElement | null {
+): HTMLFormElement | undefined {
     const actionMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
     if (!actionMeta || !defaults) {
@@ -900,7 +908,7 @@ function buildMenuActions(
             }
 
             if (normalizeNodeType(nodeData.nodeType) === 'root') {
-                const endpointUrl = getDeleteRoute('root');
+                const endpointUrl = getDeleteRoute('root')!;
                 await requestJson(endpointUrl, { method: 'DELETE' });
                 await onProjectDeleted?.();
                 return;

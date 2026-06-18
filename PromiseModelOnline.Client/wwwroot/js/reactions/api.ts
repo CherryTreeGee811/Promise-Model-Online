@@ -22,9 +22,10 @@ export const addReaction = (_owner, _project, data) => apiPost('/api/reactions',
  * @param {string} _owner - The owner slug (unused).
  * @param {string} _project - The project slug (unused).
  * @param {number} reactionId - The reaction ID to update.
+ * @param {string} [emote] - The new emote value
  * @returns {Promise<object>} The updated reaction object.
  */
-export const updateReaction = (_owner, _project, reactionId) => apiPatch(`/api/reactions/${reactionId}`, {});
+export const updateReaction = (_owner, _project, reactionId, emote?: string) => apiPatch(`/api/reactions/${reactionId}`, emote ? { emote } : {});
 /**
  * Delete a reaction by ID.
  * @param {string} _owner - The owner slug (unused).

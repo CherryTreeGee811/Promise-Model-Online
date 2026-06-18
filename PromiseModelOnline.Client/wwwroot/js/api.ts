@@ -3,12 +3,12 @@ import { authStore } from './stores/auth.ts';
 /**
  * Perform a GET request and parse JSON response.
  * @param {string} url - The API endpoint URL.
- * @returns {Promise<T | null>} The parsed JSON body, or null for 204 No Content.
+ * @returns {Promise<T | undefined>} The parsed JSON body, or null for 204 No Content.
  * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiGet<T = unknown>(url: string): Promise<T | null> {
+export async function apiGet<T = unknown>(url: string): Promise<T | undefined> {
   const response = await apiFetch(url);
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) return;
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
 }
@@ -27,16 +27,16 @@ export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
  * Perform a POST request with a JSON body.
  * @param {string} url - The API endpoint URL.
  * @param {unknown} body - The request payload.
- * @returns {Promise<T | null>} The parsed JSON response, or null for 204.
+ * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
  * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | null> {
+export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | undefined> {
   const response = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) return;
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
 }
@@ -62,16 +62,16 @@ export async function apiPut(url: string, body: unknown): Promise<boolean> {
  * Perform a PATCH request with a JSON body.
  * @param {string} url - The API endpoint URL.
  * @param {unknown} body - The request payload.
- * @returns {Promise<T | null>} The parsed JSON response, or null for 204.
+ * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
  * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiPatch<T = unknown>(url: string, body: unknown): Promise<T | null> {
+export async function apiPatch<T = unknown>(url: string, body: unknown): Promise<T | undefined> {
   const response = await apiFetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) return;
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
 }

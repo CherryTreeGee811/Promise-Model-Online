@@ -1,10 +1,9 @@
-// @ts-nocheck
 import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateMomentOwner, updateMomentType } from '../moments/api.ts';
 import { getProject } from '../projects/api.ts';
 import { buildGraphViewHref } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
+import { renderLoadingSpinner } from '../utils/html.ts';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.ts';
 import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
 import { openStrideCreateModal } from '../utils/stride-create-modal.ts';
@@ -21,8 +20,8 @@ const _state: {
     cachedAllStrides: Record<string, unknown>[];
     cachedIterations: Record<string, unknown>[];
     isCachedCanEdit: boolean;
-    cachedOwner: string | null;
-    cachedProject: string | null;
+    cachedOwner?: string;
+    cachedProject?: string;
     isStrideStickySyncBound: boolean;
 } = {
     cachedMembers: [],
@@ -75,13 +74,13 @@ function getStrideStartDateValue(stride: Record<string, unknown>): number {
  * @param {number|string} currentStrideId - The ID of the current stride.
  * @returns {number|undefined} The next stride ID, or undefined if none found.
  */
-function findNextStrideIdInIteration(currentStrideId: number | string): number | null {
+function findNextStrideIdInIteration(currentStrideId: number | string): number | undefined {
     const strides = Array.isArray(_state.cachedAllStrides) ? [..._state.cachedAllStrides] : [];
     strides.sort((a, b) => getStrideStartDateValue(a) - getStrideStartDateValue(b));
     const index = strides.findIndex(s => String(s?.id) === String(currentStrideId));
     if (index === -1) return;
     const next = strides[index + 1];
-    return next?.id as number;
+    return next?.id as number | undefined;
 }
 
 /**
@@ -117,12 +116,11 @@ function ensureNoItemsPlaceholder(card: HTMLElement): void {
     const rowCount = card.querySelectorAll(':scope table.promisemodel-table tbody tr[data-moment-id]').length;
     if (rowCount > 0) return;
 
-    // If there is a table but no rows, show the empty state.
-    momentsContainer.innerHTML = renderEmptyStateSection({
+    momentsContainer.replaceChildren(renderEmptyStateSection({
         icon: 'bi-clock',
         title: 'No moments assigned.',
         description: 'Move moments from the backlog into this stride.',
-    });
+    }));
 }
 
 /**
@@ -148,13 +146,13 @@ function updateStrideTotalEffortFromDom(card: HTMLElement): void {
  * @returns {{moved: number, targetVisible: boolean}} The number of rows moved and whether the target card was visible.
  */
 function progressStrideDomUpdate(strideId: number | string): { moved: number; targetVisible: boolean } {
-    const currentCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(strideId)}"]`) as HTMLElement | null;
+    const currentCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(String(strideId))}"]`) as HTMLElement | null;
     if (!currentCard) return { moved: 0, targetVisible: false };
 
     const nextStrideId = findNextStrideIdInIteration(strideId);
     let targetCard;
     if (nextStrideId) {
-        targetCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(nextStrideId)}"]`) as HTMLElement;
+        targetCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(String(nextStrideId))}"]`) as HTMLElement;
     }
 
     const unfinishedRows = [...currentCard.querySelectorAll('tr[data-moment-id]')]
@@ -176,7 +174,7 @@ function progressStrideDomUpdate(strideId: number | string): { moved: number; ta
     }
 
     removeNoItemsPlaceholder(targetCard);
-    const targetTbody = ensureStrideTbody(nextStrideId);
+    const targetTbody = ensureStrideTbody(nextStrideId!);
     if (!targetTbody) {
         for (const r of unfinishedRows) r.remove();
         updateStrideTotalEffortFromDom(currentCard);
@@ -198,43 +196,65 @@ function progressStrideDomUpdate(strideId: number | string): { moved: number; ta
  * @param {string} currentEstimate - The current estimate value.
  * @returns {string} The HTML string for the dropdown.
  */
-function estimateDropdownHtml(momentSeq: number | string, currentEstimate: string | null): string {
-    return `<select class="estimate-dropdown" data-moment-id="${momentSeq}" data-current-estimate="${currentEstimate ?? ''}" aria-label="Effort estimate"></select>`;
+function estimateDropdownHtml(momentSeq: number | string, currentEstimate: string | null): HTMLSelectElement {
+    const select = document.createElement('select');
+    select.className = 'estimate-dropdown';
+    select.dataset.momentId = String(momentSeq);
+    select.dataset.currentEstimate = currentEstimate ?? '';
+    select.setAttribute('aria-label', 'Effort estimate');
+    return select;
 }
 
 /**
- * Generate HTML for an owner dropdown select element.
- * @param {number|string} momentSeq - The moment sequence number.
- * @param {number|string} ownerId - The current owner's ID.
- * @returns {string} The HTML string for the dropdown.
+ * @param {number | string} momentSeq - Moment sequence number
+ * @param {number | string | null} ownerId - Owner ID
+ * @returns {HTMLSelectElement} The owner dropdown element
  */
-function ownerDropdownHtml(momentSeq: number | string, ownerId: number | string | null): string {
-    return `<select class="owner-dropdown" data-moment-id="${momentSeq}" data-owner-id="${ownerId ?? ''}" aria-label="Owner"></select>`;
+function ownerDropdownHtml(momentSeq: number | string, ownerId: number | string | null): HTMLSelectElement {
+    const select = document.createElement('select');
+    select.className = 'owner-dropdown';
+    select.dataset.momentId = String(momentSeq);
+    select.dataset.ownerId = String(ownerId ?? '');
+    select.setAttribute('aria-label', 'Owner');
+    return select;
 }
 
 /**
- * Generate HTML for a moment type (Story/Job) dropdown select element.
- * @param {number|string} momentId - The moment ID.
- * @param {string} currentType - The current type value.
- * @returns {string} The HTML string for the dropdown.
+ * @param {number | string} momentId - Moment ID
+ * @param {string} currentType - Current moment type
+ * @returns {HTMLSelectElement} The type dropdown element
  */
-function momentTypeDropdownHtml(momentId: number | string, currentType: string): string {
-    const storySel = currentType === 'Story' ? 'selected' : '';
-    const jobSel = currentType === 'Job' ? 'selected' : '';
-    return `<select class="moment-type-dropdown form-select form-select-sm" data-moment-id="${momentId}" data-current-type="${currentType}" aria-label="Moment type">
-        <option value="Story" ${storySel}>Story</option>
-        <option value="Job" ${jobSel}>Job</option>
-    </select>`;
+function momentTypeDropdownHtml(momentId: number | string, currentType: string): HTMLSelectElement {
+    const select = document.createElement('select');
+    select.className = 'moment-type-dropdown form-select form-select-sm';
+    select.dataset.momentId = String(momentId);
+    select.dataset.currentType = currentType;
+    select.setAttribute('aria-label', 'Moment type');
+    const optStory = document.createElement('option');
+    optStory.value = 'Story';
+    optStory.textContent = 'Story';
+    if (currentType === 'Story') optStory.selected = true;
+    select.append(optStory);
+    const optJob = document.createElement('option');
+    optJob.value = 'Job';
+    optJob.textContent = 'Job';
+    if (currentType === 'Job') optJob.selected = true;
+    select.append(optJob);
+    return select;
 }
 
 /**
- * Generate HTML for a status dropdown select element.
- * @param {number|string} momentSeq - The moment sequence number.
- * @param {string} status - The current status value.
- * @returns {string} The HTML string for the dropdown.
+ * @param {number | string} momentSeq - Moment sequence number
+ * @param {string | null} status - Current status
+ * @returns {HTMLSelectElement} The status dropdown element
  */
-function statusDropdownHtml(momentSeq: number | string, status: string | null): string {
-    return `<select class="status-dropdown" data-moment-id="${momentSeq}" data-current-status="${status ?? ''}" aria-label="Status"></select>`;
+function statusDropdownHtml(momentSeq: number | string, status: string | null): HTMLSelectElement {
+    const select = document.createElement('select');
+    select.className = 'status-dropdown';
+    select.dataset.momentId = String(momentSeq);
+    select.dataset.currentStatus = status ?? '';
+    select.setAttribute('aria-label', 'Status');
+    return select;
 }
 
 /**
@@ -272,34 +292,46 @@ function boardContentElement(board: HTMLElement): HTMLElement | null {
  * @param {boolean} isCollapsed - Whether the board is currently collapsed.
  * @returns {string} The HTML string for the toggle button.
  */
-function boardToggleButtonHtml(isCollapsed: boolean): string {
+function boardToggleButtonHtml(isCollapsed: boolean): HTMLButtonElement {
     const iconClass = isCollapsed ? 'bi-chevron-down' : 'bi-chevron-up';
     const label = isCollapsed ? 'Expand board' : 'Collapse board';
-
-    return `
-        <button class="stride-toggle-btn" type="button" aria-label="${label}" title="${label}" aria-pressed="${String(!isCollapsed)}">
-            <i class="bi ${iconClass}" aria-hidden="true"></i>
-        </button>
-    `;
+    const button = document.createElement('button');
+    button.className = 'stride-toggle-btn';
+    button.type = 'button';
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
+    button.setAttribute('aria-pressed', String(!isCollapsed));
+    const icon = document.createElement('i');
+    icon.className = `bi ${iconClass}`;
+    icon.setAttribute('aria-hidden', 'true');
+    button.append(icon);
+    return button;
 }
 
 /**
- * Generate HTML for a board header with toggle button, title, and optional actions.
+ * Generate DOM for a board header with toggle button, title, and optional actions.
  * @param {string} title - The board title.
  * @param {boolean} isCollapsed - Whether the board is collapsed.
- * @param {string} [extraActionsHtml] - Optional extra action buttons HTML.
- * @returns {string} The HTML string for the header.
+ * @param {HTMLElement|undefined} [extraActionsElement] - Optional extra action buttons element.
+ * @returns {HTMLElement} The header DOM element.
  */
-function boardHeaderHtml(title: string, isCollapsed: boolean, extraActionsHtml: string = ''): string {
-    return `
-        <div class="stride-header">
-            <div class="stride-header-main">
-                ${boardToggleButtonHtml(isCollapsed)}
-                <h3>${escapeHtml(title)}</h3>
-            </div>
-            ${extraActionsHtml ? `<div class="stride-header-actions ms-auto">${extraActionsHtml}</div>` : ''}
-        </div>
-    `;
+function boardHeaderHtml(title: string, isCollapsed: boolean, extraActionsElement?: HTMLElement): HTMLElement {
+    const div = document.createElement('div');
+    div.className = 'stride-header';
+    const mainDiv = document.createElement('div');
+    mainDiv.className = 'stride-header-main';
+    mainDiv.append(boardToggleButtonHtml(isCollapsed));
+    const h3 = document.createElement('h3');
+    h3.textContent = title;
+    mainDiv.append(h3);
+    div.append(mainDiv);
+    if (extraActionsElement) {
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'stride-header-actions ms-auto';
+        actionsDiv.append(extraActionsElement);
+        div.append(actionsDiv);
+    }
+    return div;
 }
 
 /**
@@ -325,7 +357,7 @@ function setBoardCollapsed(board: HTMLElement, isCollapsed: boolean): void {
         icon.className = `bi ${iconClass}`;
         toggleButton.setAttribute('aria-label', label);
         toggleButton.setAttribute('title', label);
-        toggleButton.setAttribute('aria-pressed', String(!collapsed));
+        toggleButton.setAttribute('aria-pressed', String(!isCollapsed));
     }
 }
 
@@ -382,20 +414,25 @@ function renderStrideScrollspy(strides: Record<string, unknown>[]): void {
     if (!nav) return;
 
     if (!Array.isArray(strides) || strides.length <= 1) {
-        nav.innerHTML = '';
+        nav.replaceChildren();
         nav.classList.add('d-none');
         return;
     }
 
     nav.classList.remove('d-none');
-    nav.innerHTML = `
-        <div class="position-sticky top-0 bg-body border rounded p-2 shadow-sm">
-            <div class="small text-uppercase text-secondary mb-2">Current Strides</div>
-            <nav id="stride-scrollspy-links" class="nav nav-pills flex-wrap gap-2"></nav>
-        </div>
-    `;
+    nav.replaceChildren();
 
-    const links = nav.querySelector('#stride-scrollspy-links');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'position-sticky top-0 bg-body border rounded p-2 shadow-sm';
+    const label = document.createElement('div');
+    label.className = 'small text-uppercase text-secondary mb-2';
+    label.textContent = 'Current Strides';
+    wrapper.append(label);
+    const links = document.createElement('nav');
+    links.id = 'stride-scrollspy-links';
+    links.className = 'nav nav-pills flex-wrap gap-2';
+    wrapper.append(links);
+    nav.append(wrapper);
     for (const stride of strides) {
         const link = document.createElement('a');
         link.className = 'nav-link py-1 px-2';
@@ -410,17 +447,17 @@ function renderStrideScrollspy(strides: Record<string, unknown>[]): void {
     backlogLink.textContent = 'Backlog';
     links?.append(backlogLink);
 
-    const spyApi = (globalThis as unknown as Record<string, unknown>).bootstrap?.ScrollSpy as { getOrCreateInstance?: unknown };
+    const spyApi = (globalThis as any).bootstrap?.ScrollSpy as { getOrCreateInstance: (element: Element, options?: Record<string, unknown>) => { refresh?: () => void } } | undefined;
     if (spyApi) {
-        const spy = (spyApi as { getOrCreateInstance: (element: Element, options?: Record<string, unknown>) => { refresh?: () => void } }).getOrCreateInstance(document.body, {
+        const spy = spyApi.getOrCreateInstance(document.body, {
             target: '#stride-scrollspy-links',
             offset: 140,
         });
-        spy?.refresh?.();
+        spy.refresh?.();
     }
 
-    if (nav.dataset.boundScrollspyClick !== '1') {
-        nav.dataset.boundScrollspyClick = '1';
+    if ((nav as HTMLElement).dataset.boundScrollspyClick !== '1') {
+        (nav as HTMLElement).dataset.boundScrollspyClick = '1';
         nav.addEventListener('click', (event) => {
             const link = (event.target as HTMLElement).closest('a.nav-link');
             if (!link) return;
@@ -441,18 +478,24 @@ function renderStrideScrollspy(strides: Record<string, unknown>[]): void {
 /**
  * Generate HTML for a "Graph View" link button for a moment.
  * @param {number|string} seqNumber - The moment sequence number.
- * @returns {string} The HTML string for the link, or empty string if unavailable.
+ * @returns {HTMLElement | undefined} The link element, or undefined if unavailable.
  */
-function momentGraphLinkHtml(seqNumber: number | string): string {
-    const href = buildGraphViewHref(_state.cachedOwner, _state.cachedProject, `moment-${seqNumber}`);
-    if (!href) return '';
+function momentGraphLinkHtml(seqNumber: number | string): HTMLElement | undefined {
+    const href = buildGraphViewHref(_state.cachedOwner!, _state.cachedProject!, `moment-${seqNumber}`);
+    if (!href) return;
 
-    return `
-        <a href="${href}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" aria-label="Open graph view focused on moment ${seqNumber}">
-            <i class="bi bi-diagram-3" aria-hidden="true"></i>
-            <span>Graph View</span>
-        </a>
-    `;
+    const a = document.createElement('a');
+    a.href = href;
+    a.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+    a.setAttribute('aria-label', `Open graph view focused on moment ${seqNumber}`);
+    const index = document.createElement('i');
+    index.className = 'bi bi-diagram-3';
+    index.setAttribute('aria-hidden', 'true');
+    a.append(index);
+    const span = document.createElement('span');
+    span.textContent = 'Graph View';
+    a.append(span);
+    return a;
 }
 
 /**
@@ -464,7 +507,7 @@ function momentGraphLinkHtml(seqNumber: number | string): string {
  * @returns {HTMLElement} The modal DOM element.
  */
 function createConfirmModal(id: string, title: string, confirmText: string, confirmClass: string): HTMLElement {
-    let modalElement = document.querySelector(`#${CSS.escape(id)}`);
+    let modalElement = document.querySelector(`#${CSS.escape(id)}`) as HTMLElement | null;
     if (modalElement) return modalElement;
 
     modalElement = document.createElement('div');
@@ -472,24 +515,53 @@ function createConfirmModal(id: string, title: string, confirmText: string, conf
     modalElement.id = id;
     modalElement.tabIndex = -1;
     modalElement.setAttribute('aria-hidden', 'true');
-    modalElement.innerHTML = `
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">${title}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0" id="${id}-text"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn ${confirmClass}" id="${id}-confirm">${confirmText}</button>
-                </div>
-            </div>
-        </div>
-    `;
 
+    const dialog = document.createElement('div');
+    dialog.className = 'modal-dialog modal-dialog-centered';
+
+    const content = document.createElement('div');
+    content.className = 'modal-content';
+
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    const h5 = document.createElement('h5');
+    h5.className = 'modal-title';
+    h5.textContent = title;
+    header.append(h5);
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.dataset.bsDismiss = 'modal';
+    closeButton.setAttribute('aria-label', 'Close');
+    header.append(closeButton);
+    content.append(header);
+
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    const p = document.createElement('p');
+    p.className = 'mb-0';
+    p.id = `${id}-text`;
+    body.append(p);
+    content.append(body);
+
+    const footer = document.createElement('div');
+    footer.className = 'modal-footer';
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn btn-outline-secondary';
+    cancelButton.dataset.bsDismiss = 'modal';
+    cancelButton.textContent = 'Cancel';
+    footer.append(cancelButton);
+    const confirmButton = document.createElement('button');
+    confirmButton.type = 'button';
+    confirmButton.className = `btn ${confirmClass}`;
+    confirmButton.id = `${id}-confirm`;
+    confirmButton.textContent = confirmText;
+    footer.append(confirmButton);
+    content.append(footer);
+
+    dialog.append(content);
+    modalElement.append(dialog);
     document.body.append(modalElement);
     return modalElement;
 }
@@ -521,7 +593,7 @@ function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise
         (nextButton as HTMLInputElement).disabled = true;
         try {
             await onConfirm();
-            ((globalThis as unknown as Record<string, unknown>).bootstrap as Record<string, unknown>)?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
+            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
         } catch (error) {
             console.error(error);
             alert('Failed to move moment');
@@ -530,7 +602,7 @@ function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise
         }
     }, { once: true });
 
-    ((globalThis as unknown as Record<string, unknown>).bootstrap as Record<string, unknown>)?.Modal?.getOrCreateInstance?.(modalElement)?.show();
+    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.show();
 }
 
 /**
@@ -562,7 +634,7 @@ function promptProgressStride(strideId: number | string): Promise<boolean> {
         return Promise.resolve(confirm('Move all unfinished moments to the next stride?'));
     }
 
-    const strideCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(strideId)}"]`);
+    const strideCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(String(strideId))}"]`);
     const strideName = strideCard?.querySelector(':scope .stride-header h3')?.textContent?.trim();
     modalText.textContent = strideName
         ? `Move all unfinished moments in ${strideName} to the next stride?`
@@ -577,7 +649,7 @@ function promptProgressStride(strideId: number | string): Promise<boolean> {
             resolve(isConfirmed);
         };
 
-        const modalInstance = ((globalThis as unknown as Record<string, unknown>).bootstrap as Record<string, unknown>)?.Modal?.getOrCreateInstance?.(modalElement) as { hide?: () => void } | undefined;
+        const modalInstance = (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement) as { hide?: () => void; show?: () => void } | undefined;
 
         confirmButton.addEventListener('click', () => {
             settle(true);
@@ -609,7 +681,7 @@ function promptMoveToStride(momentId: number | string, strideId: number | string
         (nextButton as HTMLInputElement).disabled = true;
         try {
             await onConfirm();
-            ((globalThis as unknown as Record<string, unknown>).bootstrap as Record<string, unknown>)?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
+            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
         } catch (error) {
             console.error(error);
             alert('Failed to move moment');
@@ -618,7 +690,7 @@ function promptMoveToStride(momentId: number | string, strideId: number | string
         }
     }, { once: true });
 
-    ((globalThis as unknown as Record<string, unknown>).bootstrap as Record<string, unknown>)?.Modal?.getOrCreateInstance?.(modalElement)?.show();
+    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.show();
 }
 
 /**
@@ -640,34 +712,44 @@ function truncateMomentStatement(momentId: number | string): string {
  * @returns {HTMLElement} The table row element, or null.
  */
 function findMomentRow(momentId: number | string): HTMLElement | null {
-    return document.querySelector(`tr[data-moment-id="${CSS.escape(momentId)}"]`);
+    return document.querySelector(`tr[data-moment-id="${CSS.escape(String(momentId))}"]`);
 }
 
 /**
  * Ensure the backlog section has a table tbody element, creating the board structure if needed.
  * @returns {HTMLElement|undefined} The backlog tbody element, or undefined.
  */
-function ensureBacklogTbody(): HTMLElement | null {
+function ensureBacklogTbody(): HTMLElement | undefined {
     const backlogSection = document.querySelector('#backlog-section');
     if (!backlogSection) return;
 
-    const tbody = backlogSection.querySelector(':scope .backlog-content table.promisemodel-table tbody');
-    if (tbody) return tbody as HTMLElement;
+    const tbody = backlogSection.querySelector(':scope .backlog-content table.promisemodel-table tbody') as HTMLElement | null;
+    if (tbody) return tbody;
 
-    backlogSection.innerHTML = `
-        <div class="stride-card backlog-board is-collapsed" data-collapsible-board="1">
-            ${boardHeaderHtml('Backlog', true)}
-            <div class="stride-moments backlog-content hidden">
-                <table class="promisemodel-table">
-                    <thead>
-                        <tr><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    `;
-    return backlogSection.querySelector(':scope .backlog-content table.promisemodel-table tbody') as HTMLElement | null;
+    backlogSection.replaceChildren();
+    const card = document.createElement('div');
+    card.className = 'stride-card backlog-board is-collapsed';
+    card.dataset.collapsibleBoard = '1';
+    card.append(boardHeaderHtml('Backlog', true));
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'stride-moments backlog-content hidden';
+    const table = document.createElement('table');
+    table.className = 'promisemodel-table';
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Actions']) {
+        const th = document.createElement('th');
+        th.textContent = thText;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+    const newTbody = document.createElement('tbody');
+    table.append(newTbody);
+    contentDiv.append(table);
+    card.append(contentDiv);
+    backlogSection.append(card);
+    return backlogSection.querySelector(':scope .backlog-content table.promisemodel-table tbody') as HTMLElement | undefined;
 }
 
 /**
@@ -678,23 +760,51 @@ function ensureBacklogTbody(): HTMLElement | null {
 function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
     const tr = document.createElement('tr');
     tr.dataset.momentId = String(moment.sequenceNumber);
-    tr.innerHTML = `
-        <td>${escapeHtml(moment.statement as string)}</td>
-        <td>${momentTypeDropdownHtml(moment.sequenceNumber as number | string, moment.type as string)}</td>
-        <td><span class="status-badge status-${((moment.status as string) || '').toLowerCase()}">${moment.status as string}</span></td>
-        <td>${moment.effortEstimate ?? '–'}</td>
-        <td>
-            <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${moment.sequenceNumber as string}"></select>
-                <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${moment.sequenceNumber as string}" type="button">Move</button>
-                ${momentGraphLinkHtml(moment.sequenceNumber as number | string)}
-    <a href="/${_state.cachedOwner}/${_state.cachedProject}/moments/${moment.sequenceNumber as string}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
-                </div>
-            </td>
-        `;
 
-    const select = tr.querySelector('.backlog-target-stride') as HTMLSelectElement | null;
-    if (select) populateBacklogStrideSelect(select);
+    const tdStatement = document.createElement('td');
+    tdStatement.textContent = moment.statement as string;
+    tr.append(tdStatement);
+
+    const tdType = document.createElement('td');
+    tdType.append(momentTypeDropdownHtml(moment.sequenceNumber as number | string, moment.type as string));
+    tr.append(tdType);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge status-${((moment.status as string) || '').toLowerCase()}`;
+    statusBadge.textContent = moment.status as string;
+    tdStatus.append(statusBadge);
+    tr.append(tdStatus);
+
+    const tdEffort = document.createElement('td');
+    tdEffort.textContent = (moment.effortEstimate as string) ?? '–';
+    tr.append(tdEffort);
+
+    const tdActions = document.createElement('td');
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'd-inline-flex flex-wrap gap-2 align-items-center';
+    const targetSelect = document.createElement('select');
+    targetSelect.className = 'backlog-target-stride form-select form-select-sm';
+    targetSelect.dataset.momentId = String(moment.sequenceNumber);
+    actionsDiv.append(targetSelect);
+    const moveButton = document.createElement('button');
+    moveButton.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
+    moveButton.dataset.momentId = String(moment.sequenceNumber);
+    moveButton.type = 'button';
+    moveButton.textContent = 'Move';
+    actionsDiv.append(moveButton);
+    const graphLink = momentGraphLinkHtml(moment.sequenceNumber as number | string);
+    if (graphLink) actionsDiv.append(graphLink);
+    const viewLink = document.createElement('a');
+    viewLink.href = `/${_state.cachedOwner}/${_state.cachedProject}/moments/${moment.sequenceNumber as string}`;
+    viewLink.dataset.momentView = 'true';
+    viewLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+    viewLink.textContent = 'View';
+    actionsDiv.append(viewLink);
+    tdActions.append(actionsDiv);
+    tr.append(tdActions);
+
+    if (targetSelect) populateBacklogStrideSelect(targetSelect);
     return tr;
 }
 
@@ -703,32 +813,32 @@ function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
  * @param {number|string} strideId - The stride ID.
  * @returns {HTMLElement|undefined} The tbody element, or undefined.
  */
-function ensureStrideTbody(strideId: number | string): HTMLElement | null {
-    const card = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(strideId)}"]`) as HTMLElement;
+function ensureStrideTbody(strideId: number | string): HTMLElement | undefined {
+    const card = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(String(strideId))}"]`) as HTMLElement;
     if (!card) return;
 
-    const tbody = card.querySelector(':scope table.promisemodel-table tbody');
-    if (tbody) return tbody as HTMLElement;
+    const tbody = card.querySelector(':scope table.promisemodel-table tbody') as HTMLElement | undefined;
+    if (tbody) return tbody;
 
     const container = card.querySelector(':scope .stride-moments');
     if (!container) return;
 
-    container.innerHTML = `
-        <table class="promisemodel-table">
-            <thead>
-                <tr>
-                    <th>Statement</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Effort</th>
-                    <th>Owner</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    `;
-    return card.querySelector(':scope table.promisemodel-table tbody') as HTMLElement | null;
+    container.replaceChildren();
+    const table = document.createElement('table');
+    table.className = 'promisemodel-table';
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Owner', 'Actions']) {
+        const th = document.createElement('th');
+        th.textContent = thText;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+    const newTbody = document.createElement('tbody');
+    table.append(newTbody);
+    container.append(table);
+    return card.querySelector(':scope table.promisemodel-table tbody') as HTMLElement | undefined;
 }
 
 /**
@@ -739,25 +849,61 @@ function ensureStrideTbody(strideId: number | string): HTMLElement | null {
 function createStrideRow(moment: Record<string, unknown>): HTMLElement {
     const tr = document.createElement('tr');
     tr.dataset.momentId = String(moment.sequenceNumber);
-    tr.innerHTML = `
-        <td>${escapeHtml(moment.statement as string)}</td>
-        <td>${momentTypeDropdownHtml(moment.sequenceNumber as number | string, moment.type as string)}</td>
-        <td><span class="status-badge status-${((moment.status as string) || '').toLowerCase()}">${moment.status as string}</span></td>
-        <td>${estimateDropdownHtml(moment.sequenceNumber as number | string, moment.effortEstimate as string | null)}</td>
-        <td>${ownerDropdownHtml(moment.sequenceNumber as number | string, moment.ownerId as number | string | null)}</td>
-        <td>
-            <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                ${statusDropdownHtml(moment.sequenceNumber as number | string, moment.status as string | null)}
-                <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${moment.sequenceNumber as string}" data-current-estimate="${(moment.effortEstimate as string | null) ?? ''}"><option value="">–</option></select>
-                <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${moment.sequenceNumber as string}" type="button">Backlog</button>
-                ${momentGraphLinkHtml(moment.sequenceNumber as number | string)}
-                <a href="/${_state.cachedOwner}/${_state.cachedProject}/moments/${moment.sequenceNumber as string}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
-            </div>
-        </td>
-    `;
-    // Populate the selects using DOM methods to avoid innerHTML option rebuilding.
+
+    const tdStatement = document.createElement('td');
+    tdStatement.textContent = moment.statement as string;
+    tr.append(tdStatement);
+
+    const tdType = document.createElement('td');
+    tdType.append(momentTypeDropdownHtml(moment.sequenceNumber as number | string, moment.type as string));
+    tr.append(tdType);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge status-${((moment.status as string) || '').toLowerCase()}`;
+    statusBadge.textContent = moment.status as string;
+    tdStatus.append(statusBadge);
+    tr.append(tdStatus);
+
+    const tdEstimate = document.createElement('td');
+    tdEstimate.append(estimateDropdownHtml(moment.sequenceNumber as number | string, moment.effortEstimate as string | null));
+    tr.append(tdEstimate);
+
+    const tdOwner = document.createElement('td');
+    tdOwner.append(ownerDropdownHtml(moment.sequenceNumber as number | string, moment.ownerId as number | string | null));
+    tr.append(tdOwner);
+
+    const tdActions = document.createElement('td');
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'd-inline-flex flex-wrap gap-2 align-items-center';
+    actionsDiv.append(statusDropdownHtml(moment.sequenceNumber as number | string, moment.status as string | null));
+    const estimateMobile = document.createElement('select');
+    estimateMobile.className = 'estimate-dropdown-mobile form-select form-select-sm';
+    estimateMobile.dataset.momentId = String(moment.sequenceNumber);
+    estimateMobile.dataset.currentEstimate = (moment.effortEstimate as string | null) ?? '';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = '–';
+    estimateMobile.append(defaultOpt);
+    actionsDiv.append(estimateMobile);
+    const backlogButton = document.createElement('button');
+    backlogButton.className = 'move-to-backlog-btn btn btn-outline-danger btn-sm';
+    backlogButton.dataset.momentId = String(moment.sequenceNumber);
+    backlogButton.type = 'button';
+    backlogButton.textContent = 'Backlog';
+    actionsDiv.append(backlogButton);
+    const graphLink = momentGraphLinkHtml(moment.sequenceNumber as number | string);
+    if (graphLink) actionsDiv.append(graphLink);
+    const viewLink = document.createElement('a');
+    viewLink.href = `/${_state.cachedOwner}/${_state.cachedProject}/moments/${moment.sequenceNumber as string}`;
+    viewLink.dataset.momentView = 'true';
+    viewLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+    viewLink.textContent = 'View';
+    actionsDiv.append(viewLink);
+    tdActions.append(actionsDiv);
+    tr.append(tdActions);
+
     const estimateSelect = tr.querySelector('.estimate-dropdown') as HTMLSelectElement | null;
-    const estimateMobile = tr.querySelector('.estimate-dropdown-mobile') as HTMLSelectElement | null;
     const ownerSelect = tr.querySelector('.owner-dropdown') as HTMLSelectElement | null;
     const statusSelect = tr.querySelector('.status-dropdown') as HTMLSelectElement | null;
 
@@ -765,7 +911,6 @@ function createStrideRow(moment: Record<string, unknown>): HTMLElement {
     if (estimateMobile) populateEstimateSelect(estimateMobile);
     if (statusSelect) populateStatusSelect(statusSelect);
     if (ownerSelect) {
-        // data-owner-id already set in the placeholder markup; populate will pick it up.
         populateOwnerSelect(ownerSelect);
     }
     return tr;
@@ -859,14 +1004,14 @@ function bindInlineMomentControls(root: HTMLElement | null, owner: string, proje
         // Handle View navigation (NO REFRESH)
         const viewLink = (event.target as HTMLElement).closest('a[data-moment-view]');
         if (viewLink) {
-            e.preventDefault();
+            event.preventDefault();
 
-            void navigate(viewLink.getAttribute('href'), navContentDiv, contentDiv);
+            void navigate(viewLink.getAttribute('href')!, navContentDiv, contentDiv);
 
             return;
         }
 
-        const button = (e.target as HTMLElement).closest(
+        const button = (event.target as HTMLElement).closest(
             '.move-to-backlog-btn, .move-to-stride-from-backlog-btn, .progress-stride-btn'
         ) as HTMLElement | null;
 
@@ -911,7 +1056,7 @@ function bindInlineMomentControls(root: HTMLElement | null, owner: string, proje
                     findMomentRow(momentId)?.remove();
 
                     const tbody = ensureStrideTbody(strideId);
-                    const targetCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(strideId)}"]`) as HTMLElement | null;
+                    const targetCard = document.querySelector(`.stride-card[data-stride-id="${CSS.escape(String(strideId))}"]`) as HTMLElement | null;
                     if (tbody) {
                         tbody.append(createStrideRow(updated));
                     }
@@ -956,15 +1101,6 @@ function bindInlineMomentControls(root: HTMLElement | null, owner: string, proje
     });
 }
 
-/**
- * Calculate the total effort estimate for an array of moments.
- * @param {Record<string, unknown>[]} moments - The array of moment objects.
- * @returns {number} The sum of effort estimate values.
- */
-function totalEffort(moments: Record<string, unknown>[]): number {
-    return moments.reduce((sum, m) => sum + (estimateValues[m.effortEstimate as string] || 0), 0);
-}
-
 /* ---------- Main export ---------- */
 /**
  * Load and render the strides listing page for the latest iteration, including stride cards and backlog.
@@ -975,18 +1111,18 @@ function totalEffort(moments: Record<string, unknown>[]): number {
  * @param {Record<string, unknown> } permission - The user's permission object.
  */
 export async function loadStridesList(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
-    const strideBoard = document.querySelector('#stride-board')!;
-    const backlogSection = document.querySelector('#backlog-section');
-    const errorElement = document.querySelector('#error-text')!;
-    const projectTitle = document.querySelector('#project-title');
-    const strideButtonElement = document.querySelector('#create-stride-btn');
-    const strideButtonLabelElement = document.querySelector('#create-stride-btn-label');
+    const strideBoard = document.querySelector('#stride-board') as HTMLElement;
+    const backlogSection = document.querySelector('#backlog-section') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement;
+    const projectTitle = document.querySelector('#project-title') as HTMLElement | null;
+    const strideButtonElement = document.querySelector('#create-stride-btn') as HTMLElement | null;
+    const strideButtonLabelElement = document.querySelector('#create-stride-btn-label') as HTMLElement | null;
 
     _state.cachedOwner = owner;
     _state.cachedProject = project;
-    strideBoard.innerHTML = renderLoadingSpinner('Loading strides');
+    strideBoard.replaceChildren(renderLoadingSpinner('Loading strides'));
     errorElement.textContent = '';
-    if (backlogSection) backlogSection.innerHTML = '';
+    if (backlogSection) backlogSection.replaceChildren();
 
     bindBoardCollapseToggles(strideBoard);
     if (backlogSection) bindBoardCollapseToggles(backlogSection);
@@ -1010,7 +1146,7 @@ export async function loadStridesList(owner: string, project: string, navContent
                 owner,
                 project,
                 iterationId: latestIteration.id as number,
-                iterations: _state.cachedIterations,
+                iterations: _state.cachedIterations as { id: number; name: string }[],
                 existingStrides: _state.cachedAllStrides,
                 onCreated: () => loadStridesList(owner, project, navContentDiv, contentDiv, permission),
             });
@@ -1027,16 +1163,19 @@ export async function loadStridesList(owner: string, project: string, navContent
         }
         const iterations = await getIterations(owner, project);
 
-        _state.cachedIterations = Array.isArray(iterations) ? [...iterations].toSorted((a, b) => (b as Record<string, unknown>).id as number - (a as Record<string, unknown>).id as number) : [];
+        _state.cachedIterations = Array.isArray(iterations) ? ([...iterations] as Record<string, unknown>[]).toSorted((a, b) => (b.id as number) - (a.id as number)) : [];
 
         if (_state.cachedIterations.length === 0) {
-            strideBoard.innerHTML = renderEmptyStateSection({
+            strideBoard.replaceChildren(renderEmptyStateSection({
                 icon: 'bi-repeat',
                 title: 'No iterations found for this project.',
                 description: 'Create the first iteration to start planning your work.',
-            });
+            }));
             if (projectTitle) {
-                projectTitle.innerHTML = `<h2>${escapeHtml((projectData as Record<string, unknown>)?.name as string ?? `Project ${owner}/${project}`)}</h2>`;
+                projectTitle.replaceChildren();
+                const h2 = document.createElement('h2');
+                h2.textContent = (projectData as Record<string, unknown>)?.name as string ?? `Project ${owner}/${project}`;
+                projectTitle.append(h2);
             }
             if (strideButtonLabelElement) {
                 strideButtonLabelElement.textContent = 'Create First Iteration';
@@ -1045,7 +1184,10 @@ export async function loadStridesList(owner: string, project: string, navContent
         }
         const latestIteration = _state.cachedIterations[0];
         const projectName = (projectData as Record<string, unknown>)?.name as string ?? `Project ${owner}/${project}`;
-        projectTitle.innerHTML = `<h2>${escapeHtml(projectName)} – ${escapeHtml(latestIteration.name as string)}</h2>`;
+        projectTitle!.replaceChildren();
+        const h2 = document.createElement('h2');
+        h2.textContent = `${projectName} – ${latestIteration.name as string}`;
+        projectTitle!.append(h2);
         if (strideButtonLabelElement) {
             strideButtonLabelElement.textContent = 'New Stride';
         }
@@ -1062,17 +1204,18 @@ export async function loadStridesList(owner: string, project: string, navContent
             getMomentsByIteration(owner, project, latestIteration.id as number, true)
         ]);
 
-        strideBoard.innerHTML = '';
+         
+        strideBoard.replaceChildren();
 
-        let results: { stride: Record<string, unknown>; moments: Record<string, unknown>[] }[] = [];
+        let results: { stride: Record<string, unknown>; moments: unknown[] }[] = [];
         const allStrides = strides as Record<string, unknown>[];
 
         if (!allStrides || allStrides.length === 0) {
-            strideBoard.innerHTML = renderEmptyStateSection({
+            strideBoard.replaceChildren(renderEmptyStateSection({
                 icon: 'bi-kanban',
                 title: 'No strides found for this iteration.',
                 description: 'Create a stride to organize your moments into sprints.',
-            });
+            }));
         } else {
             renderStrideScrollspy(allStrides);
             const stridePromises = allStrides.map(async stride => {
@@ -1090,6 +1233,7 @@ export async function loadStridesList(owner: string, project: string, navContent
         // Render stride cards
         let cardIndex = 0;
         for (const { stride, moments } of results) {
+            const ms = moments as Record<string, unknown>[];
             const index = cardIndex;
             const isCollapsed = index !== 0;
             const card = document.createElement('div');
@@ -1097,69 +1241,120 @@ export async function loadStridesList(owner: string, project: string, navContent
             card.dataset.strideId = String(stride.id);
             card.id = `stride-card-${stride.id}`;
             card.dataset.collapsibleBoard = '1';
-            const effTotal = totalEffort(moments);
-            card.innerHTML = `
-                <div class="stride-header">
-                    <div class="stride-header-main">
-                        ${boardToggleButtonHtml(isCollapsed)}
-                        <h3>${escapeHtml(stride.name as string)}</h3>
-                        <span class="stride-dates">${formatDate(stride.startDate as string)} – ${formatDate(stride.endDate as string)}</span>
-                        <span class="stride-duration">(${stride.durationDays as string} days)</span>
-                        <span class="stride-countdown" data-end-date="${stride.endDate as string}"></span>
-                        <span class="stride-total-effort">Total Effort: ${effTotal}</span>
-                    </div>
-                    <div class="stride-header-actions ms-auto">
-                        <button class="progress-stride-btn btn btn-outline-success btn-sm hidden" data-stride-id="${stride.id as string}" type="button"><span aria-hidden="true">🧟</span> Progress</button>
-                    </div>
-                </div>
-                <div class="stride-moments${isCollapsed ? ' hidden' : ''}">
-                    ${moments.length === 0
-                        ? renderEmptyStateSection({
-                            icon: 'bi-clock',
-                            title: 'No moments assigned.',
-                            description: 'Move moments from the backlog into this stride.',
-                        })
-                        : `<table class="promisemodel-table">
-                            <thead>
-                                <tr>
-                                    <th>Statement</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Effort</th>
-                                    <th>Owner</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                 ${moments.map(m => `
-                                    <tr data-moment-id="${m.sequenceNumber as string}">
-                                        <td>${escapeHtml(m.statement as string)}</td>
-                                        <td>${momentTypeDropdownHtml(m.sequenceNumber as number | string, m.type as string)}</td>
-                                        <td><span class="status-badge status-${((m.status as string) || '').toLowerCase()}">${m.status as string}</span></td>
-                                        <td>
-                                            <select class="estimate-dropdown" data-moment-id="${m.sequenceNumber as string}" data-current-estimate="${(m.effortEstimate as string | null) ?? ''}" aria-label="Effort estimate"></select>
-                                        </td>
-                                        <td>
-                                            <select class="owner-dropdown" data-moment-id="${m.sequenceNumber as string}" data-owner-id="${(m.ownerId as string | null) ?? ''}" aria-label="Owner"></select>
-                                        </td>
-        <td>
-            <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                <select class="status-dropdown form-select form-select-sm" data-moment-id="${m.sequenceNumber as string}" data-current-status="${(m.status as string | null) ?? ''}" aria-label="Status"></select>
-                <select class="estimate-dropdown-mobile form-select form-select-sm" data-moment-id="${m.sequenceNumber as string}" data-current-estimate="${(m.effortEstimate as string | null) ?? ''}" aria-label="Effort estimate"><option value="">–</option></select>
-                <button class="move-to-backlog-btn btn btn-outline-danger btn-sm" data-moment-id="${m.sequenceNumber as string}" type="button">Backlog</button>
-                ${momentGraphLinkHtml(m.sequenceNumber as number | string)}
-                <a href="/${owner}/${project}/moments/${m.sequenceNumber as string}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
-            </div>
-        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>`
-                    }
-                </div>
-            `;
+            const progressButton = document.createElement('button');
+            progressButton.className = 'progress-stride-btn btn btn-outline-success btn-sm hidden';
+            progressButton.dataset.strideId = String(stride.id);
+            progressButton.type = 'button';
+            const progressIcon = document.createElement('span');
+            progressIcon.setAttribute('aria-hidden', 'true');
+            progressIcon.textContent = '🧟';
+            progressButton.append(progressIcon, ' Progress');
+
+            card.append(boardHeaderHtml(stride.name as string, isCollapsed, progressButton));
+
+            const momentsDiv = document.createElement('div');
+            momentsDiv.className = `stride-moments${isCollapsed ? ' hidden' : ''}`;
+
+            if (ms.length === 0) {
+                momentsDiv.append(renderEmptyStateSection({
+                    icon: 'bi-clock',
+                    title: 'No moments assigned.',
+                    description: 'Move moments from the backlog into this stride.',
+                }));
+            } else {
+                const table = document.createElement('table');
+                table.className = 'promisemodel-table';
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Owner', 'Actions']) {
+                    const th = document.createElement('th');
+                    th.textContent = thText;
+                    headerRow.append(th);
+                }
+                thead.append(headerRow);
+                table.append(thead);
+                const tbody = document.createElement('tbody');
+                for (const m of ms) {
+                    const tr = document.createElement('tr');
+                    tr.dataset.momentId = String(m.sequenceNumber);
+
+                    const tdStatement = document.createElement('td');
+                    tdStatement.textContent = m.statement as string;
+                    tr.append(tdStatement);
+
+                    const tdType = document.createElement('td');
+                    tdType.append(momentTypeDropdownHtml(m.sequenceNumber as number | string, m.type as string));
+                    tr.append(tdType);
+
+                    const tdStatus = document.createElement('td');
+                    const sBadge = document.createElement('span');
+                    sBadge.className = `status-badge status-${((m.status as string) || '').toLowerCase()}`;
+                    sBadge.textContent = m.status as string;
+                    tdStatus.append(sBadge);
+                    tr.append(tdStatus);
+
+                    const tdEstimate = document.createElement('td');
+                    const estSel = document.createElement('select');
+                    estSel.className = 'estimate-dropdown';
+                    estSel.dataset.momentId = String(m.sequenceNumber);
+                    estSel.dataset.currentEstimate = (m.effortEstimate as string | null) ?? '';
+                    estSel.setAttribute('aria-label', 'Effort estimate');
+                    tdEstimate.append(estSel);
+                    tr.append(tdEstimate);
+
+                    const tdOwner = document.createElement('td');
+                    const ownSel = document.createElement('select');
+                    ownSel.className = 'owner-dropdown';
+                    ownSel.dataset.momentId = String(m.sequenceNumber);
+                    ownSel.dataset.ownerId = ((m.ownerId as string | null) ?? '');
+                    ownSel.setAttribute('aria-label', 'Owner');
+                    tdOwner.append(ownSel);
+                    tr.append(tdOwner);
+
+                    const tdActions = document.createElement('td');
+                    const aDiv = document.createElement('div');
+                    aDiv.className = 'd-inline-flex flex-wrap gap-2 align-items-center';
+                    const statusSel = document.createElement('select');
+                    statusSel.className = 'status-dropdown form-select form-select-sm';
+                    statusSel.dataset.momentId = String(m.sequenceNumber);
+                    statusSel.dataset.currentStatus = (m.status as string | null) ?? '';
+                    statusSel.setAttribute('aria-label', 'Status');
+                    aDiv.append(statusSel);
+                    const estMobile = document.createElement('select');
+                    estMobile.className = 'estimate-dropdown-mobile form-select form-select-sm';
+                    estMobile.dataset.momentId = String(m.sequenceNumber);
+                    estMobile.dataset.currentEstimate = (m.effortEstimate as string | null) ?? '';
+                    estMobile.setAttribute('aria-label', 'Effort estimate');
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '–';
+                    estMobile.append(defaultOption);
+                    aDiv.append(estMobile);
+                    const blButton = document.createElement('button');
+                    blButton.className = 'move-to-backlog-btn btn btn-outline-danger btn-sm';
+                    blButton.dataset.momentId = String(m.sequenceNumber);
+                    blButton.type = 'button';
+                    blButton.textContent = 'Backlog';
+                    aDiv.append(blButton);
+                    const graphLink = momentGraphLinkHtml(m.sequenceNumber as number | string);
+                    if (graphLink) aDiv.append(graphLink);
+                    const vLink = document.createElement('a');
+                    vLink.href = `/${owner}/${project}/moments/${m.sequenceNumber as string}`;
+                    vLink.dataset.momentView = 'true';
+                    vLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+                    vLink.textContent = 'View';
+                    aDiv.append(vLink);
+                    tdActions.append(aDiv);
+                    tr.append(tdActions);
+
+                    tbody.append(tr);
+                }
+                table.append(tbody);
+                momentsDiv.append(table);
+            }
+
+            card.append(momentsDiv);
             strideBoard.append(card);
-            // Populate dropdowns inside the newly created card using DOM option creation
             populateSelectsWithin(card);
             cardIndex++;
         }
@@ -1168,47 +1363,93 @@ export async function loadStridesList(owner: string, project: string, navContent
         if (backlogSection) {
             const isBacklogCollapsed = allStrides && allStrides.length > 0;
             if (!backlogMoments || (backlogMoments as Record<string, unknown>[]).length === 0) {
-                backlogSection.innerHTML = `
-                    <div class="stride-card backlog-board${isBacklogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
-                        ${boardHeaderHtml('Backlog', isBacklogCollapsed)}
-                        <div class="stride-moments backlog-content${isBacklogCollapsed ? ' hidden' : ''}">
-                            ${renderEmptyStateSection({
-                                icon: 'bi-inbox',
-                                title: 'No unassigned moments.',
-                                description: 'Create new moments or assign existing ones to this project.',
-                            })}
-                        </div>
-                    </div>
-                `;
+                backlogSection.replaceChildren();
+                const backlogCard = document.createElement('div');
+                backlogCard.className = `stride-card backlog-board${isBacklogCollapsed ? ' is-collapsed' : ''}`;
+                backlogCard.dataset.collapsibleBoard = '1';
+                backlogCard.append(boardHeaderHtml('Backlog', isBacklogCollapsed));
+                const bContent = document.createElement('div');
+                bContent.className = `stride-moments backlog-content${isBacklogCollapsed ? ' hidden' : ''}`;
+                bContent.append(renderEmptyStateSection({
+                    icon: 'bi-inbox',
+                    title: 'No unassigned moments.',
+                    description: 'Create new moments or assign existing ones to this project.',
+                }));
+                backlogCard.append(bContent);
+                backlogSection.append(backlogCard);
             } else {
-                backlogSection.innerHTML = `
-                    <div class="stride-card backlog-board${isBacklogCollapsed ? ' is-collapsed' : ''}" data-collapsible-board="1">
-                        ${boardHeaderHtml('Backlog', isBacklogCollapsed)}
-                        <div class="stride-moments backlog-content${isBacklogCollapsed ? ' hidden' : ''}">
-                            <table class="promisemodel-table">
-                                <thead><tr><th>Statement</th><th>Type</th><th>Status</th><th>Effort</th><th>Actions</th></tr></thead>
-                                <tbody>
-                                    ${(backlogMoments as Record<string, unknown>[]).map(m => `
-                                        <tr data-moment-id="${m.sequenceNumber as string}">
-                                            <td>${escapeHtml(m.statement as string)}</td>
-                                            <td>${momentTypeDropdownHtml(m.sequenceNumber as number | string, m.type as string)}</td>
-                                            <td><span class="status-badge status-${((m.status as string) || '').toLowerCase()}">${m.status as string}</span></td>
-                                            <td>${m.effortEstimate ?? '–'}</td>
-                                            <td>
-                                                <div class="d-inline-flex flex-wrap gap-2 align-items-center">
-                                                    <select class="backlog-target-stride form-select form-select-sm" data-moment-id="${m.sequenceNumber as string}"></select>
-                                                    <button class="move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm" data-moment-id="${m.sequenceNumber as string}" type="button">Move</button>
-                                                    ${momentGraphLinkHtml(m.sequenceNumber as number | string)}
-                                                    <a href="/${owner}/${project}/moments/${m.sequenceNumber as string}" data-moment-view="true" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">View</a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-                // Populate backlog stride selects
+                backlogSection.replaceChildren();
+                const backlogCard = document.createElement('div');
+                backlogCard.className = `stride-card backlog-board${isBacklogCollapsed ? ' is-collapsed' : ''}`;
+                backlogCard.dataset.collapsibleBoard = '1';
+                backlogCard.append(boardHeaderHtml('Backlog', isBacklogCollapsed));
+                const bContent = document.createElement('div');
+                bContent.className = `stride-moments backlog-content${isBacklogCollapsed ? ' hidden' : ''}`;
+                const table = document.createElement('table');
+                table.className = 'promisemodel-table';
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Actions']) {
+                    const th = document.createElement('th');
+                    th.textContent = thText;
+                    headerRow.append(th);
+                }
+                thead.append(headerRow);
+                table.append(thead);
+                const tbody = document.createElement('tbody');
+                for (const m of (backlogMoments as Record<string, unknown>[])) {
+                    const tr = document.createElement('tr');
+                    tr.dataset.momentId = String(m.sequenceNumber);
+
+                    const tdStatement = document.createElement('td');
+                    tdStatement.textContent = m.statement as string;
+                    tr.append(tdStatement);
+
+                    const tdType = document.createElement('td');
+                    tdType.append(momentTypeDropdownHtml(m.sequenceNumber as number | string, m.type as string));
+                    tr.append(tdType);
+
+                    const tdStatus = document.createElement('td');
+                    const sBadge = document.createElement('span');
+                    sBadge.className = `status-badge status-${((m.status as string) || '').toLowerCase()}`;
+                    sBadge.textContent = m.status as string;
+                    tdStatus.append(sBadge);
+                    tr.append(tdStatus);
+
+                    const tdEffort = document.createElement('td');
+                    tdEffort.textContent = (m.effortEstimate as string) ?? '–';
+                    tr.append(tdEffort);
+
+                    const tdActions = document.createElement('td');
+                    const aDiv = document.createElement('div');
+                    aDiv.className = 'd-inline-flex flex-wrap gap-2 align-items-center';
+                    const targetSelect = document.createElement('select');
+                    targetSelect.className = 'backlog-target-stride form-select form-select-sm';
+                    targetSelect.dataset.momentId = String(m.sequenceNumber);
+                    aDiv.append(targetSelect);
+                    const moveButton = document.createElement('button');
+                    moveButton.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
+                    moveButton.dataset.momentId = String(m.sequenceNumber);
+                    moveButton.type = 'button';
+                    moveButton.textContent = 'Move';
+                    aDiv.append(moveButton);
+                    const graphLink = momentGraphLinkHtml(m.sequenceNumber as number | string);
+                    if (graphLink) aDiv.append(graphLink);
+                    const vLink = document.createElement('a');
+                    vLink.href = `/${owner}/${project}/moments/${m.sequenceNumber as string}`;
+                    vLink.dataset.momentView = 'true';
+                    vLink.className = 'btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2';
+                    vLink.textContent = 'View';
+                    aDiv.append(vLink);
+                    tdActions.append(aDiv);
+                    tr.append(tdActions);
+
+                    tbody.append(tr);
+                }
+                table.append(tbody);
+                bContent.append(table);
+                backlogCard.append(bContent);
+                backlogSection.append(backlogCard);
                 populateSelectsWithin(backlogSection);
             }
         }
@@ -1229,7 +1470,7 @@ export async function loadStridesList(owner: string, project: string, navContent
 
         // Fetch permission and update UI
         try {
-            const level = await getMyPermission(owner, project);
+            const level = await getMyPermission(owner, project) as string | undefined;
             _state.isCachedCanEdit = (level && (level.toLowerCase() === 'edit' || level.toLowerCase() === 'owner')) as boolean;
 
             applyPermissionUI(_state.isCachedCanEdit); // ✅ SINGLE source of truth
@@ -1251,7 +1492,7 @@ export async function loadStridesList(owner: string, project: string, navContent
         // Attach planning event listeners (inline updates only; no full reload)
         attachPlanningListeners(owner, project, navContentDiv, contentDiv);
     } catch (error) {
-        strideBoard.innerHTML = '';
+        strideBoard.replaceChildren();
         errorElement.textContent = 'Failed to load data.';
         console.error(error);
     }
@@ -1266,8 +1507,8 @@ export async function loadStridesList(owner: string, project: string, navContent
  * @param {HTMLElement} contentDiv - The main content container.
  */
 function attachPlanningListeners(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const strideBoard = document.querySelector('#stride-board')!;
-    const backlogSection = document.querySelector('#backlog-section');
+    const strideBoard = document.querySelector('#stride-board') as HTMLElement;
+    const backlogSection = document.querySelector('#backlog-section') as HTMLElement | null;
 
     bindInlineMomentControls(strideBoard, owner, project, navContentDiv, contentDiv);
     bindInlineMomentControls(backlogSection, owner, project, navContentDiv, contentDiv);
@@ -1297,51 +1538,47 @@ const estimateOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 function populateEstimateSelect(select: HTMLSelectElement): void {
     if (!select) return;
     const current = select.dataset.currentEstimate || select.value || '';
-    select.innerHTML = '';
+    select.replaceChildren();
     select.append(createOption('', '–', current === ''));
     for (const k of estimateOrder) select.append(createOption(k, k, current === k));
 }
 
 /**
- * Populate a status dropdown with status options based on the current value.
- * @param {HTMLSelectElement} select - The select element to populate.
+ * @param {HTMLSelectElement} select - Status select element
  */
 function populateStatusSelect(select: HTMLSelectElement): void {
     if (!select) return;
     const current = select.dataset.currentStatus || select.value || '';
-    select.innerHTML = '';
+    select.replaceChildren();
     for (const opt of STATUS_OPTIONS) {
         select.append(createOption(opt.value, `${opt.icon} ${opt.label}`, current === opt.value));
     }
 }
 
 /**
- * Populate an owner dropdown with project members based on the current value.
- * @param {HTMLSelectElement} select - The select element to populate.
+ * @param {HTMLSelectElement} select - Owner select element
  */
 function populateOwnerSelect(select: HTMLSelectElement): void {
     if (!select) return;
     const previous = select.value || select.dataset.ownerId || '';
-    select.innerHTML = '';
+    select.replaceChildren();
     select.append(createOption('', 'Unassigned', previous === ''));
     const cachedMembersList = _state.cachedMembers || [];
     for (const member of cachedMembersList) {
         select.append(createOption(String((member as Record<string, unknown>).userId), (member as Record<string, unknown>).userName as string, previous === String((member as Record<string, unknown>).userId)));
     }
-    // If previous isn't valid, ensure default
     if ([...select.options].every(o => o.value !== previous)) {
         select.value = '';
     }
 }
 
 /**
- * Populate a backlog target stride dropdown with cached stride options.
- * @param {HTMLSelectElement} select - The select element to populate.
+ * @param {HTMLSelectElement} select - Backlog stride select element
  */
 function populateBacklogStrideSelect(select: HTMLSelectElement): void {
     if (!select) return;
     const previous = select.value || '';
-    select.innerHTML = '';
+    select.replaceChildren();
     const allCachedStrides = _state.cachedAllStrides || [];
     for (const stride of allCachedStrides) {
         select.append(createOption(String((stride as Record<string, unknown>).id), (stride as Record<string, unknown>).name as string, previous === String((stride as Record<string, unknown>).id)));
@@ -1360,17 +1597,6 @@ function populateSelectsWithin(root: HTMLElement): void {
     for (const element of root.querySelectorAll('.status-dropdown')) { populateStatusSelect(element as HTMLSelectElement); }
     for (const element of root.querySelectorAll('.owner-dropdown')) { populateOwnerSelect(element as HTMLSelectElement); }
     for (const element of root.querySelectorAll('.backlog-target-stride')) { populateBacklogStrideSelect(element as HTMLSelectElement); }
-}
-
-/**
- * Format a date string as a human-readable short date (e.g. "Jan 1, 2023").
- * @param {string} dateString - The date string to format.
- * @returns {string} The formatted date, or "N/A" if invalid.
- */
-function formatDate(dateString: string): string {
-    if (!dateString) return 'N/A';
-    const d = new Date(dateString);
-    return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 /**

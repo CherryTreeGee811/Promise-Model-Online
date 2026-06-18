@@ -1,22 +1,21 @@
-// @ts-nocheck
 /**
  * Initialize the delete-account page with form handlers.
  */
 export function initDeleteAccountPage() {
-    const form = /** @type {HTMLFormElement} */ (document.querySelector('#delete-account-form'));
-    const button = /** @type {HTMLElement} */ (document.querySelector('#delete-account-btn'));
-    const text = /** @type {HTMLElement} */ (document.querySelector('#delete-btn-text'));
-    const spinner = /** @type {HTMLElement} */ (document.querySelector('#delete-spinner'));
-    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#delete-error'));
-    const successElement = /** @type {HTMLElement} */ (document.querySelector('#delete-success'));
-    const passwordInput = /** @type {HTMLInputElement} */ (document.querySelector('#delete-password'));
+    const form = document.querySelector('#delete-account-form') as HTMLFormElement;
+    const button = document.querySelector('#delete-account-btn') as HTMLButtonElement;
+    const text = document.querySelector('#delete-btn-text') as HTMLElement;
+    const spinner = document.querySelector('#delete-spinner') as HTMLElement;
+    const errorElement = document.querySelector('#delete-error') as HTMLElement;
+    const successElement = document.querySelector('#delete-success') as HTMLElement;
+    const passwordInput = document.querySelector('#delete-password') as HTMLInputElement;
 
-    const exportButton = /** @type {HTMLElement} */ (document.querySelector('#export-data-btn'));
-    const exportText = /** @type {HTMLElement} */ (document.querySelector('#export-btn-text'));
-    const exportSpinner = /** @type {HTMLElement} */ (document.querySelector('#export-spinner'));
-    const exportError = /** @type {HTMLElement} */ (document.querySelector('#export-error'));
+    const exportButton = document.querySelector('#export-data-btn') as HTMLButtonElement;
+    const exportText = document.querySelector('#export-btn-text') as HTMLElement;
+    const exportSpinner = document.querySelector('#export-spinner') as HTMLElement;
+    const exportError = document.querySelector('#export-error') as HTMLElement;
 
-    const exportLinkTop = /** @type {HTMLElement} */ (document.querySelector('#export-link-top'));
+    const exportLinkTop = document.querySelector('#export-link-top') as HTMLElement;
 
     if (!exportLinkTop || !exportButton) return;
 
@@ -27,7 +26,7 @@ export function initDeleteAccountPage() {
     });
 
     exportButton.addEventListener('click', async () => {
-        exportError.classList.add('d-none');
+        if (exportError) exportError.classList.add('d-none');
         setExportLoading(true);
 
         try {

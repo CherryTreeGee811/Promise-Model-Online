@@ -1,25 +1,39 @@
-// @ts-nocheck
 /**
- * Build an HTML string for a knowledge base section.
- * @param {string} id - The section element ID.
- * @param {string} title - The section heading text.
- * @param {string} content - The inner HTML content for the section.
- * @returns {string} The complete section HTML string.
+ * @param {string} html - HTML string to parse
+ * @returns {Node[]} Array of child nodes
  */
-function section(id, title, content) {
-  return `
-    <section id="${id}" class="kb-section">
-      <h1>${title}</h1>
-      ${content}
-    </section>
-  `;
+function htmlToNodes(html: string): Node[] {
+    const document_ = new DOMParser().parseFromString(html, 'text/html');
+    const fragment = document.createDocumentFragment();
+    fragment.append(...document_.body.childNodes);
+    return [...fragment.childNodes];
 }
 
-/** Load the knowledge base page content. */
-export function loadKnowledgeBase() {
-    const kbContent = /** @type {HTMLElement} */ (document.querySelector('#kb-content'));
+/**
+ * @param {string} id - Section element ID
+ * @param {string} title - Section title
+ * @param {string} content - Section HTML content
+ * @returns {HTMLElement} The section element
+ */
+function section(id: string, title: string, content: string): HTMLElement {
+  const sectionElement = document.createElement('section');
+  sectionElement.id = id;
+  sectionElement.className = 'kb-section';
+  const h1 = document.createElement('h1');
+  h1.textContent = title;
+  sectionElement.append(h1);
+  sectionElement.append(...htmlToNodes(content));
+  return sectionElement;
+}
 
-    kbContent.innerHTML = [
+/**
+ *
+ */
+export function loadKnowledgeBase() {
+    const kbContent = document.querySelector('#kb-content') as HTMLElement;
+
+    if (!kbContent) return;
+    kbContent.replaceChildren(
       section('overview', 'The Promise Stack Overview', `
         <p class="lead">We ship value, not just features. This knowledge base aligns every technical detail with user value.</p>
         <div class="table-responsive mt-3">
@@ -91,13 +105,15 @@ export function loadKnowledgeBase() {
           <li><strong>Core Value Promise (CVP):</strong> Record the evidence gathered that justifies promoting an idea into a fully committed Product Promise.</li>
         </ul>
       `),
-    ].join('\n');
+    );
 
     initSidebarScroll();
     initScrollSpy();
 }
 
-/** Initialize smooth scrolling for knowledge base sidebar navigation links. */
+/**
+ *
+ */
 function initSidebarScroll() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
     for (const link of navLinks) {
@@ -116,7 +132,9 @@ function initSidebarScroll() {
     }
 }
 
-/** Initialize scroll spy to highlight the active knowledge base section in the sidebar. */
+/**
+ *
+ */
 function initScrollSpy() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
     const sections = document.querySelectorAll('.kb-section[id]');
@@ -132,7 +150,7 @@ function initScrollSpy() {
             const scrollY = window.scrollY + 100;
             let currentId;
             for (const section of sections) {
-                const top = section.offsetTop;
+                const top = (section as HTMLElement).offsetTop;
                 if (scrollY >= top) currentId = section.id;
             }
             for (const link of navLinks) {

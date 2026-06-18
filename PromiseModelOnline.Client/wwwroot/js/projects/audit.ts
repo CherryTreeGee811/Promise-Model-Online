@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
 import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
 
@@ -36,7 +35,7 @@ export function renderAuditTable(items: AuditItem[] | null | undefined, { showEn
             icon: 'bi-activity',
             title: 'No activity recorded yet.',
             description: 'Changes made to this project will appear here.',
-        });
+        }).outerHTML;
     }
 
     const rows = items.map(item => `
@@ -81,7 +80,7 @@ export function renderAuditTable(items: AuditItem[] | null | undefined, { showEn
  * @returns {string} The loading spinner HTML string.
  */
 export function renderAuditLoading(message = 'Loading activity'): string {
-    return renderLoadingSpinner(message);
+    return renderLoadingSpinner(message).outerHTML;
 }
 
 /**
@@ -314,7 +313,8 @@ function isIgnoredField(fieldName: string): boolean {
 function encodeAuditDetails(item: AuditItem): string {
     const json = JSON.stringify(getAuditDetailsPayload(item));
     const bytes = new TextEncoder().encode(json);
-    return bytes.toBase64();
+    // eslint-disable-next-line unicorn/prefer-uint8array-base64
+    return btoa(String.fromCodePoint(...bytes));
 }
 
 /**

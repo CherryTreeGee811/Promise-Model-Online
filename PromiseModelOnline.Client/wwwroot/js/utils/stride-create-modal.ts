@@ -1,7 +1,4 @@
-// @ts-nocheck
 import { createStride } from '../strides/api.ts';
-
-import { escapeHtml } from './html.ts';
 
 /**
  * Ensure a modal element exists in the DOM, creating it from markup if needed.
@@ -10,12 +7,12 @@ import { escapeHtml } from './html.ts';
  * @returns {HTMLElement } The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalElement = document.querySelector('#' + modalId);
+    let modalElement = document.querySelector('#' + modalId) as HTMLElement | null;
     if (modalElement) return modalElement;
 
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = modalMarkup.trim();
-    modalElement = wrapper.firstElementChild as HTMLElement | null;
+    const parser = new DOMParser();
+    const document_ = parser.parseFromString(modalMarkup.trim(), 'text/html');
+    modalElement = document_.body.firstElementChild as HTMLElement | null;
 
     if (modalElement) {
         document.body.append(modalElement);
@@ -161,21 +158,24 @@ export function openStrideCreateModal({
 
     form.replaceWith(form.cloneNode(true));
 
-    const liveForm = modalElement.querySelector('#stride-create-form') as HTMLFormElement;
-    const liveNameInput = modalElement.querySelector('#stride-create-name') as HTMLInputElement;
-    const liveIterationSelect = modalElement.querySelector('#stride-create-iteration') as HTMLSelectElement;
-    const liveDurationInput = modalElement.querySelector('#stride-create-duration') as HTMLInputElement;
-    const liveStartInput = modalElement.querySelector('#stride-create-start') as HTMLInputElement;
-    const liveEndInput = modalElement.querySelector('#stride-create-end') as HTMLInputElement;
-    const liveErrorElement = modalElement.querySelector('#stride-create-error') as HTMLElement;
-    const liveSubmitButton = modalElement.querySelector('#stride-create-submit') as HTMLButtonElement;
+    const liveForm = modalElement!.querySelector('#stride-create-form') as HTMLFormElement;
+    const liveNameInput = modalElement!.querySelector('#stride-create-name') as HTMLInputElement;
+    const liveIterationSelect = modalElement!.querySelector('#stride-create-iteration') as HTMLSelectElement;
+    const liveDurationInput = modalElement!.querySelector('#stride-create-duration') as HTMLInputElement;
+    const liveStartInput = modalElement!.querySelector('#stride-create-start') as HTMLInputElement;
+    const liveEndInput = modalElement!.querySelector('#stride-create-end') as HTMLInputElement;
+    const liveErrorElement = modalElement!.querySelector('#stride-create-error') as HTMLElement;
+    const liveSubmitButton = modalElement!.querySelector('#stride-create-submit') as HTMLButtonElement;
 
     const iterationList = Array.isArray(iterations) ? iterations : [];
-    liveIterationSelect.innerHTML = iterationList.map(iteration => `
-        <option value="${iteration.id}" ${String(iteration.id) === String(iterationId) ? 'selected' : ''}>
-            ${escapeHtml(iteration.name)}
-        </option>
-    `).join('');
+    liveIterationSelect.replaceChildren();
+    for (const iteration of iterationList) {
+        const opt = document.createElement('option');
+        opt.value = String(iteration.id);
+        if (String(iteration.id) === String(iterationId)) opt.selected = true;
+        opt.textContent = iteration.name;
+        liveIterationSelect.append(opt);
+    }
 
     const defaults = getNewStrideDefaults(existingStrides);
     liveNameInput.value = '';

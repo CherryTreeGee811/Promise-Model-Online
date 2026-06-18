@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createIteration } from '../iterations/api.ts';
 
 /**
@@ -8,12 +7,12 @@ import { createIteration } from '../iterations/api.ts';
  * @returns {HTMLElement } The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalElement = document.querySelector('#' + modalId);
+    let modalElement = document.querySelector('#' + modalId) as HTMLElement | null;
     if (modalElement) return modalElement;
 
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = modalMarkup.trim();
-    modalElement = wrapper.firstElementChild as HTMLElement | null;
+    const parser = new DOMParser();
+    const document_ = parser.parseFromString(modalMarkup.trim(), 'text/html');
+    modalElement = document_.body.firstElementChild as HTMLElement | null;
 
     if (modalElement) {
         document.body.append(modalElement);
@@ -62,10 +61,10 @@ export function openIterationCreateModal(owner: string, project: string, onCreat
 
     form.replaceWith(form.cloneNode(true));
 
-    const liveForm = modalElement.querySelector('#iteration-create-form') as HTMLFormElement;
-    const liveNameInput = modalElement.querySelector('#iteration-create-name') as HTMLInputElement;
-    const liveErrorElement = modalElement.querySelector('#iteration-create-error') as HTMLElement;
-    const liveSubmitButton = modalElement.querySelector('#iteration-create-submit') as HTMLButtonElement;
+    const liveForm = modalElement!.querySelector('#iteration-create-form') as HTMLFormElement;
+    const liveNameInput = modalElement!.querySelector('#iteration-create-name') as HTMLInputElement;
+    const liveErrorElement = modalElement!.querySelector('#iteration-create-error') as HTMLElement;
+    const liveSubmitButton = modalElement!.querySelector('#iteration-create-submit') as HTMLButtonElement;
 
     liveNameInput.value = '';
     liveErrorElement.textContent = '';

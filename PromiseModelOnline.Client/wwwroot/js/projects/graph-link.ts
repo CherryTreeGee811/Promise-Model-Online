@@ -1,11 +1,10 @@
-// @ts-nocheck
 import { fetchProjects, getProjectPromises } from './api.ts';
 
 const promiseProjectCache = new Map<number, number>();
 
 interface OwnerProject {
-    owner: string | null;
-    project: string | null;
+    owner: string | undefined;
+    project: string | undefined;
 }
 
 /**
@@ -13,7 +12,7 @@ interface OwnerProject {
  * @param {unknown} value - The value to parse.
  * @returns {number } The parsed project ID, or null if invalid.
  */
-function toProjectId(value: unknown): number | null {
+function toProjectId(value: unknown): number | undefined {
     const parsed = Math.trunc(Number(value ?? ''));
     return Number.isNaN(parsed) ? undefined : parsed;
 }
@@ -22,7 +21,7 @@ function toProjectId(value: unknown): number | null {
  * Read a graphProjectId hint from the URL query parameters.
  * @returns {number } The project ID if present and valid, or null.
  */
-export function getGraphProjectIdHintFromUrl(): number | null {
+export function getGraphProjectIdHintFromUrl(): number | undefined {
     const parameters = new URLSearchParams(location.search);
     return toProjectId(parameters.get('graphProjectId'));
 }
@@ -46,7 +45,7 @@ export function getOwnerProjectFromPath(): OwnerProject {
  * @param {string} focusNodeId - The node ID to focus on in the graph.
  * @returns {string | undefined} The full graph URL with focus parameter, or undefined if any input is missing.
  */
-export function buildGraphViewHref(owner: string, project: string, focusNodeId: string): string | null {
+export function buildGraphViewHref(owner: string, project: string, focusNodeId: string): string | undefined {
     const safeOwner = (owner ?? '').trim();
     const safeProject = (project ?? '').trim();
     const safeFocus = (focusNodeId ?? '').trim();
@@ -68,7 +67,13 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
         button = document.createElement('a');
         button.id = 'graph-view-link';
         button.className = 'btn btn-outline-secondary btn-sm align-items-center gap-2';
-        button.innerHTML = '<i class="bi bi-diagram-3" aria-hidden="true"></i><span> Graph View</span>';
+         
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-diagram-3';
+        icon.setAttribute('aria-hidden', 'true');
+        const span = document.createElement('span');
+        span.textContent = ' Graph View';
+        button.append(icon, span);
 
         const backButton = detailContainer.querySelector<HTMLElement>('#back-link');
         if (backButton?.parentElement) {
@@ -88,7 +93,7 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
  * @param {string | number } [preferredProjectId] - An optional preferred project ID to short-circuit the search.
  * @returns {Promise<number | null>} The resolved project ID, or null if not found.
  */
-export async function resolveProjectIdForPromise(promiseId: string | number, preferredProjectId: string | number | undefined = undefined): Promise<number | null> {
+export async function resolveProjectIdForPromise(promiseId: string | number, preferredProjectId: string | number | undefined): Promise<number | undefined> {
     const numericPromiseId = Math.trunc(Number(promiseId));
     if (Number.isNaN(numericPromiseId)) return;
 
@@ -98,7 +103,7 @@ export async function resolveProjectIdForPromise(promiseId: string | number, pre
     }
 
     const preferred = toProjectId(preferredProjectId);
-    if (preferred !== null) {
+    if (preferred !== undefined) {
         promiseProjectCache.set(numericPromiseId, preferred);
         return preferred;
     }
@@ -111,10 +116,11 @@ export async function resolveProjectIdForPromise(promiseId: string | number, pre
         if (projectId === null) return;
         const promises = await getProjectPromises(project.ownerSlug, project.slug);
         const isMatch = (Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId);
-        return isMatch ? projectId : undefined;
+        if (!isMatch) return;
+        return projectId;
     }));
-    const found = results.find(id => id !== null);
-    if (found !== null) {
+    const found = results.find(id => id !== undefined);
+    if (found !== undefined) {
         promiseProjectCache.set(numericPromiseId, found);
         return found;
     }

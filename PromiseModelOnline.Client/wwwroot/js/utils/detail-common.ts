@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { loadComments } from '../comments/comments.ts';
 import { loadReactions } from '../reactions/reactions.ts';
 
@@ -25,8 +24,8 @@ export function initBackLink(): void {
  * @param {string} project - Project slug.
  * @param {Record<string, unknown> } permission - User's permission object for the project.
  */
-export function loadCommentsAndReactions(detailDiv: HTMLElement, entityType: string, entityId: number, owner: string, project: string, permission: Record<string, unknown> | null): void {
-    const commentsContainer = document.querySelector(`#${entityType.toLowerCase()}-comments`);
+export function loadCommentsAndReactions(detailDiv: HTMLElement, entityType: string, entityId: number, owner: string, project: string, permission?: Record<string, unknown>): void {
+    const commentsContainer = document.querySelector(`#${entityType.toLowerCase()}-comments`) as HTMLElement;
     if (commentsContainer) void loadComments(commentsContainer, entityType, entityId, owner, project, permission);
 
     let reactionsContainer = document.querySelector('#reactions-section');

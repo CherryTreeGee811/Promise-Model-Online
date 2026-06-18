@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { createEpic } from '../epics/api.ts';
 import {
@@ -36,47 +35,154 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
     errorElement!.textContent = '';
 
     try {
-        const promise = await getPromise(owner, project, promiseId);
+        const promise = await getPromise(owner, project, promiseId) as any;
         await loadEntityLookupMap('Promise', promise.id, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;
 
-        detailDiv!.innerHTML = `
-            <div class="detail-card promise-detail-card">
-                <h2>${escapeHtml(promise.statement)}</h2>
-                <table class="table table-sm table-striped align-middle detail-table">
-                    <tr><th scope="row"><label for="description-input">Description</label></th><td>
-                        <div class="inline-edit-wrapper">
-                            <p id="description-view" class="inline-edit-view">${formatCommentText(promise.description || '')}</p>
-                            <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
-                            <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(promise.description || '')}</textarea>
-                        </div>
-                        <div class="field-actions"><button id="cancel-desc" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
-                    </td></tr>
-                    <tr><th scope="row">Status</th><td>${getStatusHtml(promise.statusColor)}</td></tr>
-                    <tr><th scope="row">Created</th><td>${new Date(promise.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                    <tr><th scope="row">Updated</th><td>${promise.updatedAt ? new Date(promise.updatedAt).toLocaleDateString('en-CA') : '&ndash;'}</td></tr>
-                </table>
-                <h3>Epics</h3>
-                <div id="promise-epics-list">
-                    <p>Loading epics&hellip;</p>
-                </div>
-                <div id="promise-comments"></div>
-                <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">&larr;</span> Back</button>
-            </div>
-        `;
+        detailDiv!.replaceChildren();
+
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'detail-card promise-detail-card';
+
+        const cardH2 = document.createElement('h2');
+        cardH2.textContent = promise.statement;
+        cardDiv.append(cardH2);
+
+        const detailTable = document.createElement('table');
+        detailTable.className = 'table table-sm table-striped align-middle detail-table';
+
+        const editWrapper = document.createElement('div');
+        editWrapper.className = 'inline-edit-wrapper';
+
+        const descP = document.createElement('p');
+        descP.id = 'description-view';
+        descP.className = 'inline-edit-view';
+        const descParser = new DOMParser();
+        const descDocument = descParser.parseFromString(formatCommentText(promise.description || ''), 'text/html');
+        descP.append(...descDocument.body.childNodes);
+        editWrapper.append(descP);
+
+        const editButton_ = document.createElement('button');
+        editButton_.id = 'edit-desc-btn';
+        editButton_.className = 'btn btn-success btn-sm inline-edit-btn';
+        editButton_.type = 'button';
+        editButton_.title = 'Edit description';
+        const editIcon = document.createElement('i');
+        editIcon.className = 'bi bi-pencil';
+        editButton_.append(editIcon);
+        editWrapper.append(editButton_);
+
+        const descTextarea = document.createElement('textarea');
+        descTextarea.id = 'description-input';
+        descTextarea.rows = 4;
+        descTextarea.className = 'form-control detail-textarea';
+        descTextarea.setAttribute('aria-label', 'Description');
+        descTextarea.style.display = 'none';
+        descTextarea.value = promise.description || '';
+        editWrapper.append(descTextarea);
+
+        const fieldActions = document.createElement('div');
+        fieldActions.className = 'field-actions';
+        const cancelButton_ = document.createElement('button');
+        cancelButton_.id = 'cancel-desc';
+        cancelButton_.className = 'btn btn-outline-secondary btn-sm';
+        cancelButton_.type = 'button';
+        cancelButton_.style.display = 'none';
+        cancelButton_.textContent = 'Cancel';
+        const saveButton_ = document.createElement('button');
+        saveButton_.id = 'save-desc';
+        saveButton_.className = 'btn btn-primary btn-sm';
+        saveButton_.type = 'button';
+        saveButton_.textContent = 'Save';
+        const saveMessageSpan = document.createElement('span');
+        saveMessageSpan.id = 'desc-save-msg';
+        fieldActions.append(cancelButton_, saveButton_, saveMessageSpan);
+
+        const descTd = document.createElement('div');
+        descTd.append(editWrapper, fieldActions);
+
+        const descTr = document.createElement('tr');
+        const descTh = document.createElement('th');
+        descTh.scope = 'row';
+        const descLabel = document.createElement('label');
+        descLabel.htmlFor = 'description-input';
+        descLabel.textContent = 'Description';
+        descTh.append(descLabel);
+        const descTdCell = document.createElement('td');
+        descTdCell.append(descTd);
+        descTr.append(descTh, descTdCell);
+        detailTable.append(descTr);
+
+        const statusTr = document.createElement('tr');
+        const statusTh = document.createElement('th');
+        statusTh.scope = 'row';
+        statusTh.textContent = 'Status';
+        const statusTd = document.createElement('td');
+        const statusParser = new DOMParser();
+        const statusDocument = statusParser.parseFromString(getStatusHtml(promise.statusColor), 'text/html');
+        statusTd.append(...statusDocument.body.childNodes);
+        statusTr.append(statusTh, statusTd);
+        detailTable.append(statusTr);
+
+        const createdTr = document.createElement('tr');
+        const createdTh = document.createElement('th');
+        createdTh.scope = 'row';
+        createdTh.textContent = 'Created';
+        const createdTd = document.createElement('td');
+        createdTd.textContent = new Date(promise.createdAt).toLocaleDateString('en-CA');
+        createdTr.append(createdTh, createdTd);
+        detailTable.append(createdTr);
+
+        const updatedTr = document.createElement('tr');
+        const updatedTh = document.createElement('th');
+        updatedTh.scope = 'row';
+        updatedTh.textContent = 'Updated';
+        const updatedTd = document.createElement('td');
+        updatedTd.textContent = promise.updatedAt ? new Date(promise.updatedAt).toLocaleDateString('en-CA') : '\u{2013}';
+        updatedTr.append(updatedTh, updatedTd);
+        detailTable.append(updatedTr);
+
+        cardDiv.append(detailTable);
+
+        const epicsH3 = document.createElement('h3');
+        epicsH3.textContent = 'Epics';
+        cardDiv.append(epicsH3);
+
+        const epicsListDiv = document.createElement('div');
+        epicsListDiv.id = 'promise-epics-list';
+        const loadingP = document.createElement('p');
+        loadingP.textContent = 'Loading epics\u{2026}';
+        epicsListDiv.append(loadingP);
+        cardDiv.append(epicsListDiv);
+
+        const commentsDiv = document.createElement('div');
+        commentsDiv.id = 'promise-comments';
+        cardDiv.append(commentsDiv);
+
+        const backButton = document.createElement('button');
+        backButton.id = 'back-link';
+        backButton.className = 'btn btn-outline-secondary btn-sm';
+        backButton.type = 'button';
+        const backSpan = document.createElement('span');
+        backSpan.setAttribute('aria-hidden', 'true');
+        backSpan.textContent = '\u{2190}';
+        backButton.append(backSpan, ' Back');
+        cardDiv.append(backButton);
+
+        detailDiv!.append(cardDiv);
 
         if (loadingElement) loadingElement.hidden = true;
 
         const descInput = document.querySelector('#description-input') as HTMLTextAreaElement | null;
         const descView = document.querySelector('#description-view') as HTMLElement | null;
-        const editButton = document.querySelector('#edit-desc-btn') as HTMLElement | null;
-        const saveButton = document.querySelector('#save-desc') as HTMLElement | null;
-        const cancelButton = document.querySelector('#cancel-desc') as HTMLElement | null;
+        const editButton = document.querySelector('#edit-desc-btn') as HTMLButtonElement | null;
+        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement | null;
+        const cancelButton = document.querySelector('#cancel-desc') as HTMLButtonElement | null;
         let editor: { showView?: (html: string) => void; showSavedPopover?: (html: string) => void } | undefined;
         if (descInput && descView && editButton) {
             createCommentAutocomplete(descInput, 'Promise', promise.id);
-            editor = setupInlineEdit(descInput, descView, editButton, saveButton, cancelButton);
+            editor = setupInlineEdit(descInput, descView, editButton, saveButton!, cancelButton!);
         }
 
         void mountDetailStackGraph({
@@ -88,18 +194,19 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         const epicsList = document.querySelector('#promise-epics-list') as HTMLElement | null;
 
         try {
-            const epics = await getEpicsByPromise(owner, project, promiseId);
+            const epics = await getEpicsByPromise(owner, project, promiseId) as Record<string, unknown>[];
             patchChildMetrics(`promise-${promise.sequenceNumber}`, epics);
-            const tbody = renderTableWithInlineAddRow(epicsList, {
+            const tbody = renderTableWithInlineAddRow(epicsList!, {
                 headers: ['Statement', 'Actions'],
                 items: epics || [],
                 emptyMessage: 'No epics found for this promise.',
-                renderItemRow: (epic: { id: string; sequenceNumber: string; statement: string }) => `
-                    <tr data-epic-id="${epic.id}">
-                        <td>${escapeHtml(epic.statement)}</td>
-                        <td><a href="/${owner}/${project}/epics/${epic.sequenceNumber}" epic-seq="${epic.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                    </tr>
-                `,
+                renderItemRow: (epic: unknown) => {
+                    const epicItem = epic as Record<string, unknown>;
+                    return `<tr data-epic-id="${epicItem.id as string}">
+                        <td>${escapeHtml(epicItem.statement as string)}</td>
+                        <td><a href="/${owner}/${project}/epics/${epicItem.sequenceNumber as string}" epic-seq="${epicItem.sequenceNumber as string}" class="btn btn-sm btn-outline-primary">View</a></td>
+                    </tr>`;
+                },
                 renderAddRow: () => `
                     <tr data-inline-add-row="1">
                         <td>
@@ -138,19 +245,28 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
                             statement,
                             productPromiseId: promiseId,
                             displayOrder: (epics || []).length + 1,
-                        });
+                        }) as Record<string, unknown> | null;
 
                         if (created) {
-                            removeInlineEmptyRow(tbody);
+                            removeInlineEmptyRow(tbody!);
                             const row = document.createElement('tr');
-                            row.dataset.epicId = created.id;
-                            row.innerHTML = `
-                                <td>${escapeHtml(created.statement)}</td>
-                                <td><a href="/${owner}/${project}/epics/${created.sequenceNumber}" epic-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                            `;
-                            insertRowBeforeAddRow(tbody, row);
+                            row.dataset.epicId = created.id as string;
+
+                            const statementTd = document.createElement('td');
+                            statementTd.textContent = created.statement as string;
+
+                            const actionsTd = document.createElement('td');
+                            const viewLink = document.createElement('a');
+                            viewLink.href = `/${owner}/${project}/epics/${created.sequenceNumber}`;
+                            viewLink.dataset.epicSeq = created.sequenceNumber as string;
+                            viewLink.className = 'btn btn-sm btn-outline-primary';
+                            viewLink.textContent = 'View';
+                            actionsTd.append(viewLink);
+
+                            row.append(statementTd, actionsTd);
+                            insertRowBeforeAddRow(tbody!, row);
                             statementInput.value = '';
-                            patchChildMetrics(`promise-${promise.sequenceNumber}`, [...(epics || []), created]);
+                            patchChildMetrics(`promise-${promise.sequenceNumber}`, [...(epics || []), created as Record<string, unknown>]);
                         }
                     } catch (error) {
                         message.textContent = 'Failed to add epic.';
@@ -161,24 +277,40 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
                 });
             }
 
-            epicsList!.innerHTML = `
-                <table class="table table-sm table-striped align-middle promisemodel-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Statement</th>
-                            <th scope="col">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${epics.map((epic: { id: string; sequenceNumber: string; statement: string }) => `
-                            <tr>
-                                <td>${escapeHtml(epic.statement)}</td>
-                                <td><a href="/${owner}/${project}/epics/${epic.sequenceNumber}" epic-id="${epic.id}" epic-seq="${epic.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            epicsList!.replaceChildren();
+            const epicsTable = document.createElement('table');
+            epicsTable.className = 'table table-sm table-striped align-middle promisemodel-table';
+
+            const epicsThead = document.createElement('thead');
+            const epicsHeaderRow = document.createElement('tr');
+            const statementTh = document.createElement('th');
+            statementTh.scope = 'col';
+            statementTh.textContent = 'Statement';
+            const actionsTh = document.createElement('th');
+            actionsTh.scope = 'col';
+            actionsTh.textContent = 'Actions';
+            epicsHeaderRow.append(statementTh, actionsTh);
+            epicsThead.append(epicsHeaderRow);
+            epicsTable.append(epicsThead);
+
+            const epicsTbody = document.createElement('tbody');
+            for (const epic of epics as Array<{ id: string; sequenceNumber: string; statement: string }>) {
+                const epicTr = document.createElement('tr');
+                const epicStmtTd = document.createElement('td');
+                epicStmtTd.textContent = epic.statement;
+                const epicActionsTd = document.createElement('td');
+                const epicViewLink = document.createElement('a');
+                epicViewLink.href = `/${owner}/${project}/epics/${epic.sequenceNumber}`;
+                epicViewLink.dataset.epicId = epic.id;
+                epicViewLink.dataset.epicSeq = epic.sequenceNumber;
+                epicViewLink.className = 'btn btn-sm btn-outline-primary';
+                epicViewLink.textContent = 'View';
+                epicActionsTd.append(epicViewLink);
+                epicTr.append(epicStmtTd, epicActionsTd);
+                epicsTbody.append(epicTr);
+            }
+            epicsTable.append(epicsTbody);
+            epicsList!.append(epicsTable);
 
             for (const link of detailDiv!.querySelectorAll('a[epic-id]')) {
                 link.addEventListener('click', (event) => {
@@ -190,7 +322,13 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
                 });
             };
         } catch {
-            if (epicsList) epicsList.innerHTML = '<p class="error">Failed to load epics.</p>';
+            if (epicsList) {
+                epicsList.replaceChildren();
+                const errorP = document.createElement('p');
+                errorP.className = 'error';
+                errorP.textContent = 'Failed to load epics.';
+                epicsList.append(errorP);
+            }
         }
 
         (function gatePromiseDetailControls() {
@@ -210,12 +348,12 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
             }
         })();
 
-        loadCommentsAndReactions(detailDiv!, 'Promise', promise.id, owner, project, permission);
+        loadCommentsAndReactions(detailDiv!, 'Promise', promise.id, owner, project, permission!);
 
         const { owner: go, project: gp } = getOwnerProjectFromPath();
         if (go && gp) {
             const href = buildGraphViewHref(go, gp, `promise-${promise.sequenceNumber}`);
-            upsertGraphViewButton(detailDiv, href);
+            if (href) upsertGraphViewButton(detailDiv, href);
         }
 
         initBackLink();
@@ -229,7 +367,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
                 const newDesc = (document.querySelector('#description-input') as HTMLTextAreaElement).value;
                 try {
                     const updated = await updatePromiseDescription(owner, project, promiseId, newDesc);
-                    promise.description = updated?.description ?? (newDesc.trim() ? newDesc : undefined);
+                    promise.description = (updated as Record<string, unknown>)?.description ?? (newDesc.trim() ? newDesc : undefined);
                     patchDetailStackGraphNode(`promise-${promise.sequenceNumber}`, {
                         description: promise.description,
                     });

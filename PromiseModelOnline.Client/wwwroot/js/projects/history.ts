@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { navigate } from '../router.ts';
 
 import { getAuditEvents, getProject } from './api.ts';
@@ -40,9 +39,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     async function loadProjectName(): Promise<void> {
         try {
             const projectData = await getProject(owner, project);
-            titleElement.textContent = projectData?.name ? `${projectData.name} activity` : `Project ${owner}/${project} activity`;
+            titleElement!.textContent = projectData?.name ? `${projectData.name} activity` : `Project ${owner}/${project} activity`;
         } catch {
-            titleElement.textContent = `Project ${owner}/${project} activity`;
+            titleElement!.textContent = `Project ${owner}/${project} activity`;
         }
     }
 
@@ -62,21 +61,45 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         const isPreviousDisabled = currentPage <= 1;
         const isNextDisabled = currentPage >= totalPages;
 
-        paginationElement!.innerHTML = `
-            <nav aria-label="Audit history pages">
-                <ul class="pagination justify-content-center mb-0">
-                    <li class="page-item ${isPreviousDisabled ? 'disabled' : ''}">
-                        <button class="page-link" type="button" data-page-action="previous" ${isPreviousDisabled ? 'disabled' : ''}>Previous</button>
-                    </li>
-                    <li class="page-item active" aria-current="page">
-                        <span class="page-link">Page ${currentPage} of ${totalPages}</span>
-                    </li>
-                    <li class="page-item ${isNextDisabled ? 'disabled' : ''}">
-                        <button class="page-link" type="button" data-page-action="next" ${isNextDisabled ? 'disabled' : ''}>Next</button>
-                    </li>
-                </ul>
-            </nav>
-        `;
+        paginationElement!.replaceChildren();
+        const nav = document.createElement('nav');
+        nav.setAttribute('aria-label', 'Audit history pages');
+        const ul = document.createElement('ul');
+        ul.className = 'pagination justify-content-center mb-0';
+
+        const previousLi = document.createElement('li');
+        previousLi.className = `page-item${isPreviousDisabled ? ' disabled' : ''}`;
+        const previousButton = document.createElement('button');
+        previousButton.className = 'page-link';
+        previousButton.type = 'button';
+        previousButton.dataset.pageAction = 'previous';
+        if (isPreviousDisabled) previousButton.disabled = true;
+        previousButton.textContent = 'Previous';
+        previousLi.append(previousButton);
+        ul.append(previousLi);
+
+        const activeLi = document.createElement('li');
+        activeLi.className = 'page-item active';
+        activeLi.setAttribute('aria-current', 'page');
+        const pageSpan = document.createElement('span');
+        pageSpan.className = 'page-link';
+        pageSpan.textContent = `Page ${currentPage} of ${totalPages}`;
+        activeLi.append(pageSpan);
+        ul.append(activeLi);
+
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item${isNextDisabled ? ' disabled' : ''}`;
+        const nextButton = document.createElement('button');
+        nextButton.className = 'page-link';
+        nextButton.type = 'button';
+        nextButton.dataset.pageAction = 'next';
+        if (isNextDisabled) nextButton.disabled = true;
+        nextButton.textContent = 'Next';
+        nextLi.append(nextButton);
+        ul.append(nextLi);
+
+        nav.append(ul);
+        paginationElement!.append(nav);
 
         for (const button of paginationElement!.querySelectorAll('[data-page-action]')) {
             button.addEventListener('click', () => {
@@ -104,7 +127,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
             document.body.append(container);
         }
 
-        container.innerHTML = renderAuditDetailsModal();
+        const parser = new DOMParser();
+        const modalDocument = parser.parseFromString(renderAuditDetailsModal(), 'text/html');
+        container.replaceChildren(...modalDocument.body.childNodes);
     }
 
     /**
@@ -120,7 +145,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         if (!titleElement || !bodyElement || !modalElement) return;
 
         titleElement.textContent = payload.title;
-        bodyElement.innerHTML = payload.html;
+        const detailsParser = new DOMParser();
+        const detailsDocument = detailsParser.parseFromString(payload.html, 'text/html');
+        bodyElement.replaceChildren(...detailsDocument.body.childNodes);
 
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             bootstrap.Modal.getOrCreateInstance(modalElement).show();
@@ -141,7 +168,8 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         if (isReset) {
             currentPage = 1;
             skip = 0;
-            listElement!.innerHTML = '';
+             
+            listElement!.replaceChildren();
         }
 
         loadingElement!.hidden = false;
@@ -151,12 +179,18 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
             skip = (currentPage - 1) * PAGE_SIZE;
             const { items, totalCount: total } = await getAuditEvents(owner, project, PAGE_SIZE, skip);
             totalCount = total;
-            listElement!.innerHTML = renderAuditTable(items, { showEntity: true });
+            const auditParser = new DOMParser();
+            const auditDocument = auditParser.parseFromString(renderAuditTable(items, { showEntity: true }), 'text/html');
+            listElement!.replaceChildren(...auditDocument.body.childNodes);
             bindAuditDetailLinks(items);
             renderPagination();
         } catch (error) {
         if (isReset) {
-                listElement!.innerHTML = '<p class="text-danger mb-0">Failed to load audit history.</p>';
+                listElement!.replaceChildren();
+                const errorP = document.createElement('p');
+                errorP.className = 'text-danger mb-0';
+                errorP.textContent = 'Failed to load audit history.';
+                listElement!.append(errorP);
             } else {
                 errorElement!.textContent = 'Failed to load more audit history.';
             }

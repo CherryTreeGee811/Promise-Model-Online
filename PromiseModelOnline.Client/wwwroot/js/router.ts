@@ -249,7 +249,9 @@ export async function loadTemplate(templateName: string, contentDiv: HTMLElement
     const response = await fetch(`/templates/${templateName}`);
     if (!response.ok) throw new Error('Network response was not ok');
     const html = await response.text();
-    contentDiv.innerHTML = html;
+    const parser = new DOMParser();
+    const document_ = parser.parseFromString(html, 'text/html');
+    contentDiv.replaceChildren(...document_.body.childNodes);
     setPageTitle(location.pathname);
     announceAndFocus();
 }
@@ -308,7 +310,9 @@ export function loadTemplateWithError(contentDiv: HTMLElement, label: string): (
     try {
       const r = await fetch('/templates/error.html');
       const html = await r.text();
-      contentDiv.innerHTML = html;
+      const parser = new DOMParser();
+      const document_ = parser.parseFromString(html, 'text/html');
+      contentDiv.replaceChildren(...document_.body.childNodes);
       setPageTitle(location.pathname);
       const titleElement = document.querySelector('#error-title');
       const messageElement = document.querySelector('#error-message');
@@ -316,7 +320,14 @@ export function loadTemplateWithError(contentDiv: HTMLElement, label: string): (
       if (messageElement) messageElement.textContent = `Failed to load ${label}. Please try again.`;
       announceAndFocus();
     } catch {
-      contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Please try again.</p>';
+       
+      contentDiv.replaceChildren();
+      const h1 = document.createElement('h1');
+      h1.textContent = 'Something went wrong';
+      contentDiv.append(h1);
+      const p = document.createElement('p');
+      p.textContent = 'Please try again.';
+      contentDiv.append(p);
       setPageTitle(location.pathname);
       announceAndFocus();
     }
@@ -365,7 +376,11 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
             try {
                 await loadTemplate('404.html', contentDiv);
             } catch {
-                contentDiv.innerHTML = '<h1>Page not found</h1>';
+                 
+                contentDiv.replaceChildren();
+                const h1 = document.createElement('h1');
+                h1.textContent = 'Page not found';
+                contentDiv.append(h1);
                 setPageTitle(path);
                 announceAndFocus();
             }
@@ -374,7 +389,14 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
                 const { handleProjectScopedRoutes } = await loadProjectRoutes();
                 handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
             } catch {
-                contentDiv.innerHTML = '<h1>Something went wrong</h1><p>Failed to load project. Please try again.</p>';
+                 
+                contentDiv.replaceChildren();
+                const h1_ = document.createElement('h1');
+                h1_.textContent = 'Something went wrong';
+                contentDiv.append(h1_);
+                const p_ = document.createElement('p');
+                p_.textContent = 'Failed to load project. Please try again.';
+                contentDiv.append(p_);
                 setPageTitle(path);
                 announceAndFocus();
             }
@@ -383,7 +405,11 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
         try {
             await loadTemplate('404.html', contentDiv);
         } catch {
-            contentDiv.innerHTML = '<h1>Page not found</h1>';
+             
+            contentDiv.replaceChildren();
+            const h1_2 = document.createElement('h1');
+            h1_2.textContent = 'Page not found';
+            contentDiv.append(h1_2);
             setPageTitle(path);
             announceAndFocus();
         }

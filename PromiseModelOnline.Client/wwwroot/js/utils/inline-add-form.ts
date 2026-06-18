@@ -86,7 +86,16 @@ export function setupAddChildForm(config: AddChildConfig): void {
         removeInlineEmptyRow(tbody);
         const row = document.createElement('tr');
         row.setAttribute(`data-${datasetKey}`, String(created.id));
-        row.innerHTML = getRowHtml(created);
+        const parser = new DOMParser();
+        const document_ = parser.parseFromString(`<table><tbody>${getRowHtml(created)}</tbody></table>`, 'text/html');
+        const parsedRow = document_.querySelector('tr');
+        if (parsedRow) {
+          row.replaceChildren(...parsedRow.children);
+          const attributeNames = parsedRow.getAttributeNames?.() ?? [];
+          for (const attribute of attributeNames) {
+            if (attribute.startsWith('data-')) row.setAttribute(attribute, parsedRow.getAttribute(attribute)!);
+          }
+        }
         insertRowBeforeAddRow(tbody, row);
         statementInput.value = '';
         if (typeSelect) typeSelect.value = 'Story';

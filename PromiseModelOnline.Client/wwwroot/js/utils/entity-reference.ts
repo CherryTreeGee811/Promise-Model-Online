@@ -1,15 +1,10 @@
-// @ts-nocheck
 import { apiGet } from '../api.ts';
 
 import { escapeHtml } from './html.ts';
 
-/**
- * @typedef {{ dbId?: number; statusColor?: string }} EntityMapEntry
- */
+type EntityMapEntry = { dbId?: number; statusColor?: string };
 
-/**
- * @typedef {Record<string, EntityMapEntry | string | null | undefined> & { _owner?: string | null; _project?: string | null }} EntityMap
- */
+type EntityMap = Record<string, EntityMapEntry | string | null | undefined> & { _owner?: string | null; _project?: string | null };
 
 /** @type {EntityMap} */
 export const entityLookupMap: EntityMap = {};

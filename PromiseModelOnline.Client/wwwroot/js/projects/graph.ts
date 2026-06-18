@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { getUserId } from '../auth-state.ts';
 import { getStrides } from '../strides/api.ts';
-import { escapeHtml } from '../utils/html.ts';
 import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
 
 import { getGraphData } from './api.ts';
@@ -60,27 +58,27 @@ interface StrideInfo {
 }
 
 interface GraphState {
-    owner: string | null;
-    project: string | null;
+    owner: string | undefined;
+    project: string | undefined;
     d3: unknown;
-    rawTree: GraphNode | null;
-    filteredTree: GraphNode | null;
+    rawTree: GraphNode | undefined;
+    filteredTree: GraphNode | undefined;
     totalRenderableNodes: number;
     availableStrides: StrideInfo[];
     filters: GraphFilters;
     zoomTransform: unknown;
     userZoomTransform: unknown;
-    focusNodeId: string | null;
+    focusNodeId: string | undefined;
     suppressZoomStateUpdate: boolean;
     zoomBehavior: unknown;
-    filterDebounceId: number | null;
-    applyTimer: number | null;
+    filterDebounceId: number | undefined;
+    applyTimer: number | undefined;
     contextMenu: unknown;
-    pageShowRefreshHandler: ((event: PageTransitionEvent) => void) | null;
+    pageShowRefreshHandler: ((event: PageTransitionEvent) => void) | undefined;
     collapsedNodeIds: Set<string>;
     hasRendered: boolean;
     animationSpeed: number;
-    _onFullscreenChange?: (() => void) | null;
+    _onFullscreenChange?: (() => void) | undefined;
 }
 
 const graphState: GraphState = {
@@ -162,7 +160,7 @@ function reconcileCollapsedNodes(): void {
 
     const reconciled = new Set<string>();
     for (const nodeId of graphState.collapsedNodeIds) {
-        const node = findNodeById(graphState.rawTree, nodeId) as GraphNode | null;
+        const node = findNodeById(graphState.rawTree, nodeId) as GraphNode | undefined;
         if (node && hasNodeChildren(node)) {
             reconciled.add(nodeId);
         }
@@ -195,7 +193,7 @@ function collapseAllBelowPromises(): void {
 function revealNextLevel(nodeData: GraphNode): void {
     if (!graphState.rawTree || !nodeData?.id) return;
 
-    const node = findNodeById(graphState.rawTree, nodeData.id) as GraphNode | null;
+    const node = findNodeById(graphState.rawTree, nodeData.id) as GraphNode | undefined;
     if (!node) return;
 
     setNodeCollapsed(node.id, false);
@@ -270,7 +268,7 @@ function parseTypeList(value: string | null): Set<string> {
     const types = new Set<string>();
     for (const item of value.split(',')) {
         const type = normalizeText(item);
-        if (NODE_TYPES.includes(type)) {
+        if (NODE_TYPES.includes(type as typeof NODE_TYPES[number])) {
             types.add(type);
         }
     }
@@ -285,10 +283,10 @@ function parseTypeList(value: string | null): Set<string> {
  * @returns {Set<string>} The normalized contiguous set of types.
  */
 function normalizeTypeSelection(types: Set<string>): Set<string> {
-    const selected = [...types ?? []].filter(type => NODE_TYPE_INDEX.has(type));
+    const selected = [...types ?? []].filter(type => NODE_TYPE_INDEX.has(type as typeof NODE_TYPES[number]));
     if (selected.length === 0) return new Set();
 
-    const selectedIndexes = selected.map(type => NODE_TYPE_INDEX.get(type) as number);
+    const selectedIndexes = selected.map(type => NODE_TYPE_INDEX.get(type as typeof NODE_TYPES[number]) as number);
     const minIndex = Math.min(...selectedIndexes);
     const maxIndex = Math.max(...selectedIndexes);
 
@@ -374,7 +372,7 @@ function getTypeShortLabel(nodeType: string): string {
  * @returns {object} The graph node.
  */
 function buildMomentNode(moment: Record<string, unknown>): GraphNode {
-    return createNode('moment', moment, []) as GraphNode;
+    return createNode('moment', moment, []) as unknown as GraphNode;
 }
 
 /**
@@ -384,7 +382,7 @@ function buildMomentNode(moment: Record<string, unknown>): GraphNode {
  */
 function buildFlowNode(flow: Record<string, unknown>): GraphNode {
     const moments = ((flow.moments ?? []) as Record<string, unknown>[]).map(x => buildMomentNode(x));
-    return createNode('flow', flow, moments) as GraphNode;
+    return createNode('flow', flow, moments) as unknown as GraphNode;
 }
 
 /**
@@ -394,7 +392,7 @@ function buildFlowNode(flow: Record<string, unknown>): GraphNode {
  */
 function buildJourneyNode(journey: Record<string, unknown>): GraphNode {
     const flows = ((journey.flows ?? []) as Record<string, unknown>[]).map(x => buildFlowNode(x));
-    return createNode('journey', journey, flows) as GraphNode;
+    return createNode('journey', journey, flows) as unknown as GraphNode;
 }
 
 /**
@@ -404,7 +402,7 @@ function buildJourneyNode(journey: Record<string, unknown>): GraphNode {
  */
 function buildEpicNode(epic: Record<string, unknown>): GraphNode {
     const journeys = ((epic.journeys ?? []) as Record<string, unknown>[]).map(x => buildJourneyNode(x));
-    return createNode('epic', epic, journeys) as GraphNode;
+    return createNode('epic', epic, journeys) as unknown as GraphNode;
 }
 
 /**
@@ -414,7 +412,7 @@ function buildEpicNode(epic: Record<string, unknown>): GraphNode {
  */
 function buildPromiseNode(promise: Record<string, unknown>): GraphNode {
     const epics = ((promise.epics ?? []) as Record<string, unknown>[]).map(x => buildEpicNode(x));
-    return createNode('promise', promise, epics) as GraphNode;
+    return createNode('promise', promise, epics) as unknown as GraphNode;
 }
 
 /**
@@ -499,7 +497,7 @@ function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNo
  * @param {boolean} [isRoot] - Whether this is the root node.
  * @returns {object} The filtered subtree, or null if nothing matches.
  */
-function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetrics, isRoot: boolean = false): GraphNode | null {
+function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetrics, isRoot: boolean = false): GraphNode | undefined {
     const isCollapsed = isNodeCollapsed(node.id);
     const hiddenDescendantCount = isCollapsed ? getHiddenDescendantCount(node) : 0;
     const searchMatched = !isRoot && filters.search && (node._searchText ?? getNodeSearchText(node) as string).includes(filters.search);
@@ -581,7 +579,7 @@ function readFiltersFromUrl(): GraphFilters {
  * Read the graph focus node ID from the current URL search parameters.
  * @returns {string} The focus node ID, or null.
  */
-function readGraphFocusFromUrl(): string | null {
+function readGraphFocusFromUrl(): string | undefined {
     const parameters = new URLSearchParams(location.search);
     return (parameters.get('focus') ?? '').trim() || undefined;
 }
@@ -639,104 +637,193 @@ function renderFilterBar(): void {
     const filterBar = document.querySelector('#graph-filter-bar') as HTMLElement | null;
     if (!filterBar) return;
 
-    const strideOptions = [
-        `<option value="all" ${graphState.filters.stride === 'all' ? 'selected' : ''}>All strides</option>`,
-        `<option value="backlog" ${graphState.filters.stride === 'backlog' ? 'selected' : ''}>Backlog</option>`,
-        ...graphState.availableStrides.map(stride => {
-            const label = stride.name ? `Stride #${stride.id} - ${escapeHtml(stride.name)}` : `Stride #${stride.id}`;
-            return `<option value="${String(stride.id)}" ${graphState.filters.stride === String(stride.id) ? 'selected' : ''}>${label}</option>`;
-        }),
-    ].join('');
+    filterBar.replaceChildren();
 
-    const typeChips = NODE_TYPES.map(nodeType => {
-        const checked = graphState.filters.types.has(nodeType) ? 'checked' : '';
-        return `
-            <label class="graph-filter-chip">
-                <input type="checkbox" data-filter-type value="${nodeType}" ${checked} />
-                <span>${getTypeShortLabel(nodeType)}</span>
-            </label>
-        `;
-    }).join('');
+    const filterRow = document.createElement('div');
+    filterRow.className = 'graph-filter-row';
 
-    filterBar.innerHTML = `
-        <div class="graph-filter-row">
-            <div class="graph-filter-search-group">
-                <label class="graph-filter-field">
-                    <span>Search</span>
-                    <input id="graph-filter-search" class="graph-filter-input" type="search" placeholder="Search statements or descriptions" value="${escapeHtml(graphState.filters.search)}" />
-                </label>
+    const searchGroup = document.createElement('div');
+    searchGroup.className = 'graph-filter-search-group';
 
-                <div class="graph-filter-field graph-filter-checkbox-field">
-                    <span>Search options</span>
-                    <div class="form-check form-switch graph-filter-switch">
-                        <input id="graph-filter-include-children" class="form-check-input" type="checkbox" role="switch" ${graphState.filters.includeChildren ? 'checked' : ''} />
-                        <label class="form-check-label graph-filter-switch-label" for="graph-filter-include-children">Include Children</label>
-                    </div>
-                </div>
-            </div>
+    const searchLabel = document.createElement('label');
+    searchLabel.className = 'graph-filter-field';
+    const searchSpan = document.createElement('span');
+    searchSpan.textContent = 'Search';
+    const searchInput = document.createElement('input');
+    searchInput.id = 'graph-filter-search';
+    searchInput.className = 'graph-filter-input';
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Search statements or descriptions';
+    searchInput.value = graphState.filters.search;
+    searchLabel.append(searchSpan, searchInput);
+    searchGroup.append(searchLabel);
 
-            <label class="graph-filter-field">
-                <span>Effort estimate</span>
-                <select id="graph-filter-effort" class="graph-filter-select">
-                    <option value="all" ${graphState.filters.effort === 'all' ? 'selected' : ''}>All efforts</option>
-                    <option value="unestimated" ${graphState.filters.effort === 'unestimated' ? 'selected' : ''}>Unestimated</option>
-                    <option value="XS" ${graphState.filters.effort === 'XS' ? 'selected' : ''}>XS</option>
-                    <option value="S" ${graphState.filters.effort === 'S' ? 'selected' : ''}>S</option>
-                    <option value="M" ${graphState.filters.effort === 'M' ? 'selected' : ''}>M</option>
-                    <option value="L" ${graphState.filters.effort === 'L' ? 'selected' : ''}>L</option>
-                    <option value="XL" ${graphState.filters.effort === 'XL' ? 'selected' : ''}>XL</option>
-                    <option value="XXL" ${graphState.filters.effort === 'XXL' ? 'selected' : ''}>XXL</option>
-                    <option value="XXXL" ${graphState.filters.effort === 'XXXL' ? 'selected' : ''}>XXXL</option>
-                </select>
-            </label>
+    const checkboxField = document.createElement('div');
+    checkboxField.className = 'graph-filter-field graph-filter-checkbox-field';
+    const checkboxSpan = document.createElement('span');
+    checkboxSpan.textContent = 'Search options';
+    const switchDiv = document.createElement('div');
+    switchDiv.className = 'form-check form-switch graph-filter-switch';
+    const switchInput = document.createElement('input');
+    switchInput.id = 'graph-filter-include-children';
+    switchInput.className = 'form-check-input';
+    switchInput.type = 'checkbox';
+    switchInput.role = 'switch';
+    if (graphState.filters.includeChildren) switchInput.checked = true;
+    const switchLabel = document.createElement('label');
+    switchLabel.className = 'form-check-label graph-filter-switch-label';
+    switchLabel.htmlFor = 'graph-filter-include-children';
+    switchLabel.textContent = 'Include Children';
+    switchDiv.append(switchInput, switchLabel);
+    checkboxField.append(checkboxSpan, switchDiv);
+    searchGroup.append(checkboxField);
+    filterRow.append(searchGroup);
 
-            <label class="graph-filter-field">
-                <span>Stride</span>
-                <select id="graph-filter-stride" class="graph-filter-select">
-                    ${strideOptions}
-                </select>
-            </label>
+    /**
+     * @param {string} value - Option value
+     * @param {string} label - Option display label
+     * @param {boolean} isSelected - Whether option is selected
+     * @returns {HTMLOptionElement} The option element
+     */
+    function createOption(value: string, label: string, isSelected: boolean): HTMLOptionElement {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label;
+        if (isSelected) opt.selected = true;
+        return opt;
+    }
 
-            <label class="graph-filter-field">
-                <span>Moment status</span>
-                <select id="graph-filter-status" class="graph-filter-select">
-                    <option value="all" ${graphState.filters.status === 'all' ? 'selected' : ''}>All statuses</option>
-                    ${STATUS_OPTIONS.map(opt => {
-                        const value = opt.value.toLowerCase();
-                        return `<option value="${value}" ${graphState.filters.status === value ? 'selected' : ''}>${opt.icon} ${opt.label}</option>`;
-                    }).join('')}
-                </select>
-            </label>
+    const effortSelect = document.createElement('select');
+    effortSelect.id = 'graph-filter-effort';
+    effortSelect.className = 'graph-filter-select';
+    const effortLabel = document.createElement('label');
+    effortLabel.className = 'graph-filter-field';
+    const effortSpan = document.createElement('span');
+    effortSpan.textContent = 'Effort estimate';
+    effortLabel.append(effortSpan, effortSelect);
+    effortSelect.append(
+        createOption('all', 'All efforts', graphState.filters.effort === 'all'),
+        createOption('unestimated', 'Unestimated', graphState.filters.effort === 'unestimated'),
+        createOption('XS', 'XS', graphState.filters.effort === 'XS'),
+        createOption('S', 'S', graphState.filters.effort === 'S'),
+        createOption('M', 'M', graphState.filters.effort === 'M'),
+        createOption('L', 'L', graphState.filters.effort === 'L'),
+        createOption('XL', 'XL', graphState.filters.effort === 'XL'),
+        createOption('XXL', 'XXL', graphState.filters.effort === 'XXL'),
+        createOption('XXXL', 'XXXL', graphState.filters.effort === 'XXXL'),
+    );
+    filterRow.append(effortLabel);
 
-            <label class="graph-filter-field">
-                <span>Assigned to me</span>
-                <select id="graph-filter-assignment" class="graph-filter-select">
-                    <option value="all" ${graphState.filters.assignment === 'all' ? 'selected' : ''}>All</option>
-                    <option value="assigned-to-me" ${graphState.filters.assignment === 'assigned-to-me' ? 'selected' : ''}>Assigned to me</option>
-                </select>
-            </label>
-        </div>
+    const strideSelect = document.createElement('select');
+    strideSelect.id = 'graph-filter-stride';
+    strideSelect.className = 'graph-filter-select';
+    strideSelect.append(
+        createOption('all', 'All strides', graphState.filters.stride === 'all'),
+        createOption('backlog', 'Backlog', graphState.filters.stride === 'backlog'),
+    );
+    for (const stride of graphState.availableStrides) {
+        const label = stride.name ? `Stride #${stride.id} - ${stride.name}` : `Stride #${stride.id}`;
+        strideSelect.append(createOption(String(stride.id), label, graphState.filters.stride === String(stride.id)));
+    }
+    const strideLabel = document.createElement('label');
+    strideLabel.className = 'graph-filter-field';
+    const strideSpan = document.createElement('span');
+    strideSpan.textContent = 'Stride';
+    strideLabel.append(strideSpan, strideSelect);
+    filterRow.append(strideLabel);
 
-        <div class="graph-filter-bottom">
-            <fieldset class="graph-filter-types">
-                <legend class="graph-filter-group-label">Promise types</legend>
-                <div class="graph-filter-chip-list">
-                    ${typeChips}
-                </div>
-            </fieldset>
+    const statusSelect = document.createElement('select');
+    statusSelect.id = 'graph-filter-status';
+    statusSelect.className = 'graph-filter-select';
+    statusSelect.append(createOption('all', 'All statuses', graphState.filters.status === 'all'));
+    for (const opt of STATUS_OPTIONS) {
+        const value = opt.value.toLowerCase();
+        statusSelect.append(createOption(value, `${opt.icon} ${opt.label}`, graphState.filters.status === value));
+    }
+    const statusLabel = document.createElement('label');
+    statusLabel.className = 'graph-filter-field';
+    const statusSpan = document.createElement('span');
+    statusSpan.textContent = 'Moment status';
+    statusLabel.append(statusSpan, statusSelect);
+    filterRow.append(statusLabel);
 
-            <div class="graph-filter-bottom-row">
-                <div id="graph-filter-summary" class="graph-filter-summary" aria-live="polite"></div>
+    const assignSelect = document.createElement('select');
+    assignSelect.id = 'graph-filter-assignment';
+    assignSelect.className = 'graph-filter-select';
+    assignSelect.append(
+        createOption('all', 'All', graphState.filters.assignment === 'all'),
+        createOption('assigned-to-me', 'Assigned to me', graphState.filters.assignment === 'assigned-to-me'),
+    );
+    const assignLabel = document.createElement('label');
+    assignLabel.className = 'graph-filter-field';
+    const assignSpan = document.createElement('span');
+    assignSpan.textContent = 'Assigned to me';
+    assignLabel.append(assignSpan, assignSelect);
+    filterRow.append(assignLabel);
 
-                <div class="graph-filter-actions">
-                    <button id="graph-filter-reset" type="button" class="btn btn-outline-danger btn-sm">Reset</button>
-                    <button id="graph-filter-hide-all" type="button" class="btn btn-outline-secondary btn-sm">Hide All</button>
-                    <button id="graph-filter-expand-all" type="button" class="btn btn-outline-secondary btn-sm">Expand All</button>
-                    <button id="graph-filter-refresh" type="button" class="btn btn-outline-primary btn-sm">Refresh</button>
-                </div>
-            </div>
-        </div>
-    `;
+    filterBar.append(filterRow);
+
+    const filterBottom = document.createElement('div');
+    filterBottom.className = 'graph-filter-bottom';
+
+    const typeFieldset = document.createElement('fieldset');
+    typeFieldset.className = 'graph-filter-types';
+    const typeLegend = document.createElement('legend');
+    typeLegend.className = 'graph-filter-group-label';
+    typeLegend.textContent = 'Promise types';
+    const chipList = document.createElement('div');
+    chipList.className = 'graph-filter-chip-list';
+    for (const nodeType of NODE_TYPES) {
+        const chipLabel = document.createElement('label');
+        chipLabel.className = 'graph-filter-chip';
+        const chipInput = document.createElement('input');
+        chipInput.type = 'checkbox';
+        chipInput.dataset.filterType = '';
+        chipInput.value = nodeType;
+        if (graphState.filters.types.has(nodeType)) chipInput.checked = true;
+        const chipSpan = document.createElement('span');
+        chipSpan.textContent = getTypeShortLabel(nodeType);
+        chipLabel.append(chipInput, chipSpan);
+        chipList.append(chipLabel);
+    }
+    typeFieldset.append(typeLegend, chipList);
+    filterBottom.append(typeFieldset);
+
+    const bottomRow = document.createElement('div');
+    bottomRow.className = 'graph-filter-bottom-row';
+
+    const summaryDiv = document.createElement('div');
+    summaryDiv.id = 'graph-filter-summary';
+    summaryDiv.className = 'graph-filter-summary';
+    summaryDiv.ariaLive = 'polite';
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'graph-filter-actions';
+    const resetButton = document.createElement('button');
+    resetButton.id = 'graph-filter-reset';
+    resetButton.type = 'button';
+    resetButton.className = 'btn btn-outline-danger btn-sm';
+    resetButton.textContent = 'Reset';
+    const hideAllButton = document.createElement('button');
+    hideAllButton.id = 'graph-filter-hide-all';
+    hideAllButton.type = 'button';
+    hideAllButton.className = 'btn btn-outline-secondary btn-sm';
+    hideAllButton.textContent = 'Hide All';
+    const expandAllButton = document.createElement('button');
+    expandAllButton.id = 'graph-filter-expand-all';
+    expandAllButton.type = 'button';
+    expandAllButton.className = 'btn btn-outline-secondary btn-sm';
+    expandAllButton.textContent = 'Expand All';
+    const refreshButton = document.createElement('button');
+    refreshButton.id = 'graph-filter-refresh';
+    refreshButton.type = 'button';
+    refreshButton.className = 'btn btn-outline-primary btn-sm';
+    refreshButton.textContent = 'Refresh';
+    actionsDiv.append(resetButton, hideAllButton, expandAllButton, refreshButton);
+
+    bottomRow.append(summaryDiv, actionsDiv);
+    filterBottom.append(bottomRow);
+    filterBar.append(filterBottom);
 
     bindFilterControls();
 }
@@ -797,7 +884,7 @@ function bindFilterControls(): void {
             // If the user just unchecked a type and previously all types were selected,
             // deselect this type and every type after it (inverse cascade).
             if (!isChecked && NODE_TYPES.every(t => previousTypes.has(t))) {
-                const index = NODE_TYPES.indexOf(changed.value);
+                const index = NODE_TYPES.indexOf(changed.value as typeof NODE_TYPES[number]);
                 if (index !== -1) {
                     for (let index_ = index; index_ < NODE_TYPES.length; index_++) {
                         const value = NODE_TYPES[index_];
@@ -995,7 +1082,7 @@ function initZoomControls(zoomBehavior: unknown, svgNode: SVGElement, d3Instance
  * @param {object} [focusNodeData] - A specific node to focus on.
  * @param {boolean} [isAnimate] - Whether to animate the transition.
  */
-function renderTree(_contentDiv: HTMLElement, d3: Record<string, unknown>, treeData: GraphNode, restoreTransform: unknown = undefined, focusNodeData: GraphNode | undefined = undefined, isAnimate: boolean = false): void {
+function renderTree(_contentDiv: HTMLElement, d3: Record<string, unknown>, treeData: GraphNode, restoreTransform?: unknown, focusNodeData?: GraphNode, isAnimate: boolean = false): void {
     const graphContent = document.querySelector('#graph-content') as HTMLElement | null;
     if (!graphContent) return;
 
@@ -1055,13 +1142,11 @@ function applyFilters(): void {
 
     const graphContent = document.querySelector('#graph-content') as HTMLElement | null;
     if (graphState.filteredTree) {
-        let focusNode: GraphNode | null;
+        let focusNode: GraphNode | undefined;
         if (graphState.filters.search) {
             focusNode = findFirstSearchMatch(graphState.filteredTree);
-        } else if (graphState.focusNodeId) {
-            focusNode = findNodeById(graphState.filteredTree, graphState.focusNodeId) as GraphNode | null;
-        } else if (graphState.userZoomTransform) {
-            focusNode = undefined;
+        } else         if (graphState.focusNodeId) {
+            focusNode = findNodeById(graphState.filteredTree, graphState.focusNodeId) as GraphNode | undefined;
         } else {
             focusNode = graphState.filteredTree;
         }
@@ -1110,7 +1195,7 @@ async function reloadGraphData(): Promise<void> {
 
         const rootPromises = ((graphData.promises ?? graphData.Promises ?? []) as Record<string, unknown>[]).map(x => buildPromiseNode(x));
 
-        graphState.rawTree = parseGraphData(rootPromises, graphState.owner, graphState.project, project) as GraphNode;
+        graphState.rawTree = parseGraphData(rootPromises, graphState.owner ?? '', graphState.project ?? '', project) as unknown as GraphNode;
         reconcileCollapsedNodes();
         graphState.totalRenderableNodes = countRenderableNodes(graphState.rawTree);
         applyFilters();
@@ -1148,7 +1233,7 @@ async function loadAvailableStrides(owner: string, project: string): Promise<voi
  * @param {Record<string, unknown> } permission - The current user's permission object for the project.
  * @returns {Promise<void>} Resolves when the graph page is fully loaded and rendered.
  */
-export async function loadGraphPage(owner: string, project: string, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
+export async function loadGraphPage(owner: string, project: string, contentDiv: HTMLElement, permission: { permission?: string; isOwner?: boolean } | undefined): Promise<void> {
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const successElement = document.querySelector('#success-text') as HTMLElement | null;
 
@@ -1176,7 +1261,7 @@ export async function loadGraphPage(owner: string, project: string, contentDiv: 
     graphState.contextMenu = createGraphContextMenuController({
         owner,
         project,
-        getAvailableStrides: () => graphState.availableStrides,
+        getAvailableStrides: () => graphState.availableStrides as { id: number; name?: string }[],
         onGraphMutated: reloadGraphData,
         isNodeChildrenHidden: (nodeData: GraphNode) => isNodeCollapsed(nodeData?.id),
         setNodeChildrenHidden: async (nodeData: GraphNode, isHidden: boolean) => {
@@ -1202,7 +1287,9 @@ export async function loadGraphPage(owner: string, project: string, contentDiv: 
     };
     window.addEventListener('pageshow', graphState.pageShowRefreshHandler);
 
-    document.removeEventListener('fullscreenchange', graphState._onFullscreenChange as (() => void) | null);
+    if (graphState._onFullscreenChange) {
+        document.removeEventListener('fullscreenchange', graphState._onFullscreenChange);
+    }
     graphState._onFullscreenChange = () => {
         const button = document.querySelector('#graph-fullscreen-btn') as HTMLElement | null;
         if (!button) return;

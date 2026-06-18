@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { getJourneyById } from '../journeys/api.ts';
 import { createMoment, updateMomentType } from '../moments/api.ts';
@@ -10,7 +9,7 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
@@ -18,28 +17,64 @@ import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRo
 
 import { getFlow, getMoments, updateFlowDescription } from './api.ts';
 
-/** @typedef {{ id: number, sequenceNumber: number, statement: string, description?: string, statusColor?: string, createdAt: string, updatedAt?: string, journeyId: number }} Flow */
+interface Flow {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    description?: string;
+    statusColor?: string;
+    createdAt: string;
+    updatedAt?: string;
+    journeyId: number;
+}
+
+interface Moment {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    description?: string;
+    statusColor?: string;
+    type: string;
+    status: string;
+}
+
+interface Journey {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    statusColor?: string;
+}
 
 /**
- * Load and render the flow detail page with moments, graph, comments, and reactions.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {string} flowId - The flow's sequence number.
- * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
- * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }} permission - The user's permission object.
+ * @param {string} html - HTML string to parse
+ * @returns {Node[]} Array of child nodes
  */
-export async function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv, permission) {
-    const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#flow-detail-content'));
-    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const loadingElement = /** @type {HTMLElement} */ (document.querySelector('#flow-detail-loading'));
+function htmlToNodes(html: string): Node[] {
+    const document_ = new DOMParser().parseFromString(html, 'text/html');
+    const fragment = document.createDocumentFragment();
+    fragment.append(...document_.body.childNodes);
+    return [...fragment.childNodes];
+}
+
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {{ permission: string } | undefined} permission - Permission object
+ */
+export async function loadFlowDetail(owner: string, project: string, flowId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
+    const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement;
+    const errorElement = document.querySelector('#error-text') as HTMLElement;
+    const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement;
 
     destroyDetailStackGraph();
     if (loadingElement) loadingElement.hidden = false;
-    errorElement.textContent = '';
+    if (errorElement) errorElement.textContent = '';
 
     try {
-        const flow = await getFlow(owner, project, flowId);
+        const flow = await getFlow(owner, project, flowId) as Flow;
         await loadEntityLookupMap('Flow', flow.id, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;
@@ -51,73 +86,191 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
             project,
         });
 
-        detailDiv.innerHTML = `
-            <div class="detail-card flow-detail-card">
-                <h2>${escapeHtml(flow.statement)}</h2>
-                <table class="table table-sm table-striped align-middle detail-table">
-                    <tr><th scope="row"><label for="description-input">Description</label></th><td>
-                        <div class="inline-edit-wrapper">
-                            <p id="description-view" class="inline-edit-view">${formatCommentText(flow.description || '')}</p>
-                            <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
-                            <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(flow.description || '')}</textarea>
-                        </div>
-                        <div class="field-actions"><button id="cancel-desc" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
-                    </td></tr>
-                    <tr>
-                        <th>Journey</th>
-                        <td id="flow-journey-cell">
-                            <a href="/${owner}/${project}/journeys/${flow.journeyId}" class="detail-link link-primary text-decoration-none fw-semibold">Journey ${flow.journeyId}</a>
-                        </td>
-                    </tr>
-                    <tr><th scope="row">Status</th><td>${getStatusHtml(flow.statusColor)}</td></tr>
-                    <tr><th scope="row">Created</th><td>${new Date(flow.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                    <tr><th scope="row">Updated</th><td>${flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
-                </table>
-                <h3>Moments</h3>
-                <div id="flow-moments-list">
-                    <p>Loading moments...</p>
-                </div>
-                <div id="flow-comments"></div>
-                <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
-            </div>
-        `;
+        const detailCard = document.createElement('div');
+        detailCard.className = 'detail-card flow-detail-card';
 
-        const descInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#description-input'));
-        const descView = /** @type {HTMLElement} */ (document.querySelector('#description-view'));
-        const editButton = /** @type {HTMLElement} */ (document.querySelector('#edit-desc-btn'));
-        const saveButton = /** @type {HTMLElement} */ (document.querySelector('#save-desc'));
-        const cancelButton = /** @type {HTMLElement} */ (document.querySelector('#cancel-desc'));
-        let editor;
-        if (descInput && descView && editButton) {
+        const heading = document.createElement('h2');
+        heading.textContent = flow.statement;
+        detailCard.append(heading);
+
+        const table = document.createElement('table');
+        table.className = 'table table-sm table-striped align-middle detail-table';
+
+        const descRow = document.createElement('tr');
+        const descTh = document.createElement('th');
+        descTh.scope = 'row';
+        const descLabel = document.createElement('label');
+        descLabel.htmlFor = 'description-input';
+        descLabel.textContent = 'Description';
+        descTh.append(descLabel);
+        descRow.append(descTh);
+        const descTd = document.createElement('td');
+        const inlineEditWrapper = document.createElement('div');
+        inlineEditWrapper.className = 'inline-edit-wrapper';
+        const descView = document.createElement('p');
+        descView.id = 'description-view';
+        descView.className = 'inline-edit-view';
+        descView.append(...htmlToNodes(formatCommentText(flow.description || '')));
+        inlineEditWrapper.append(descView);
+        const editButton_ = document.createElement('button');
+        editButton_.id = 'edit-desc-btn';
+        editButton_.className = 'btn btn-success btn-sm inline-edit-btn';
+        editButton_.type = 'button';
+        editButton_.title = 'Edit description';
+        const pencilIcon = document.createElement('i');
+        pencilIcon.className = 'bi bi-pencil';
+        editButton_.append(pencilIcon);
+        inlineEditWrapper.append(editButton_);
+        const descTextarea = document.createElement('textarea');
+        descTextarea.id = 'description-input';
+        descTextarea.rows = 4;
+        descTextarea.className = 'form-control detail-textarea';
+        descTextarea.setAttribute('aria-label', 'Description');
+        descTextarea.style.display = 'none';
+        descTextarea.textContent = flow.description || '';
+        inlineEditWrapper.append(descTextarea);
+        descTd.append(inlineEditWrapper);
+        const fieldActions = document.createElement('div');
+        fieldActions.className = 'field-actions';
+        const cancelButton_ = document.createElement('button');
+        cancelButton_.id = 'cancel-desc';
+        cancelButton_.className = 'btn btn-outline-secondary btn-sm';
+        cancelButton_.type = 'button';
+        cancelButton_.style.display = 'none';
+        cancelButton_.textContent = 'Cancel';
+        fieldActions.append(cancelButton_);
+        const saveButton_ = document.createElement('button');
+        saveButton_.id = 'save-desc';
+        saveButton_.className = 'btn btn-primary btn-sm';
+        saveButton_.type = 'button';
+        saveButton_.textContent = 'Save';
+        fieldActions.append(saveButton_);
+        const saveMessage = document.createElement('span');
+        saveMessage.id = 'desc-save-msg';
+        fieldActions.append(saveMessage);
+        descTd.append(fieldActions);
+        descRow.append(descTd);
+        table.append(descRow);
+
+        const journeyRow = document.createElement('tr');
+        const journeyTh = document.createElement('th');
+        journeyTh.textContent = 'Journey';
+        journeyRow.append(journeyTh);
+        const journeyTd = document.createElement('td');
+        journeyTd.id = 'flow-journey-cell';
+        const journeyLink = document.createElement('a');
+        journeyLink.href = `/${owner}/${project}/journeys/${flow.journeyId}`;
+        journeyLink.className = 'detail-link link-primary text-decoration-none fw-semibold';
+        journeyLink.setAttribute('journey-id', String(flow.journeyId));
+        journeyLink.setAttribute('journey-seq', String(flow.journeyId));
+        journeyLink.textContent = `Journey ${flow.journeyId}`;
+        journeyTd.append(journeyLink);
+        journeyRow.append(journeyTd);
+        table.append(journeyRow);
+
+        const statusRow = document.createElement('tr');
+        const statusTh = document.createElement('th');
+        statusTh.scope = 'row';
+        statusTh.textContent = 'Status';
+        statusRow.append(statusTh);
+        const statusTd = document.createElement('td');
+        const statusIconSpan = document.createElement('span');
+        statusIconSpan.setAttribute('aria-hidden', 'true');
+        statusIconSpan.textContent = getStatusIcon(flow.statusColor ?? '');
+        statusTd.append(statusIconSpan);
+        const statusSrSpan = document.createElement('span');
+        statusSrSpan.className = 'sr-only';
+        statusSrSpan.textContent = getStatusLabel(flow.statusColor ?? '');
+        statusTd.append(statusSrSpan);
+        statusRow.append(statusTd);
+        table.append(statusRow);
+
+        const createdRow = document.createElement('tr');
+        const createdTh = document.createElement('th');
+        createdTh.scope = 'row';
+        createdTh.textContent = 'Created';
+        createdRow.append(createdTh);
+        const createdTd = document.createElement('td');
+        createdTd.textContent = new Date(flow.createdAt).toLocaleDateString('en-CA');
+        createdRow.append(createdTd);
+        table.append(createdRow);
+
+        const updatedRow = document.createElement('tr');
+        const updatedTh = document.createElement('th');
+        updatedTh.scope = 'row';
+        updatedTh.textContent = 'Updated';
+        updatedRow.append(updatedTh);
+        const updatedTd = document.createElement('td');
+        updatedTd.textContent = flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString('en-CA') : '\u{2013}';
+        updatedRow.append(updatedTd);
+        table.append(updatedRow);
+
+        detailCard.append(table);
+
+        const momentsHeading = document.createElement('h3');
+        momentsHeading.textContent = 'Moments';
+        detailCard.append(momentsHeading);
+
+        const momentsList = document.createElement('div');
+        momentsList.id = 'flow-moments-list';
+        const loadingP = document.createElement('p');
+        loadingP.textContent = 'Loading moments...';
+        momentsList.append(loadingP);
+        detailCard.append(momentsList);
+
+        const commentsDiv = document.createElement('div');
+        commentsDiv.id = 'flow-comments';
+        detailCard.append(commentsDiv);
+
+        const backButton = document.createElement('button');
+        backButton.id = 'back-link';
+        backButton.className = 'btn btn-outline-secondary btn-sm';
+        backButton.type = 'button';
+        const backSpan = document.createElement('span');
+        backSpan.setAttribute('aria-hidden', 'true');
+        backSpan.textContent = '\u{2190}';
+        backButton.append(backSpan, ' Back');
+        detailCard.append(backButton);
+
+        if (detailDiv) detailDiv.replaceChildren(detailCard);
+
+        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
+        const descViewElement = document.querySelector('#description-view') as HTMLElement;
+        const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
+        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
+        const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
+        let editor: { showSavedPopover?: (html: string) => void } | undefined;
+        if (descInput && descViewElement && editButton) {
             createCommentAutocomplete(descInput, 'Flow', flow.id);
-            editor = setupInlineEdit(descInput, descView, editButton, saveButton, cancelButton);
+            editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
         }
 
-        const journeyLink = detailDiv.querySelector('.detail-link[journey-id]');
-        if (journeyLink) {
-            journeyLink.addEventListener('click', (event) => {
-                if (event.ctrlKey || event.metaKey || event.button === 1) return;
+        const journeyLinkElement = detailDiv?.querySelector('.detail-link[journey-id]') as HTMLElement;
+        if (journeyLinkElement) {
+            journeyLinkElement.addEventListener('click', (event) => {
+                const me = event as MouseEvent;
+                if (me.ctrlKey || me.metaKey || me.button === 1) return;
                 event.preventDefault();
-                void navigate(`/${owner}/${project}/journeys/${journeyLink.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
+                void navigate(`/${owner}/${project}/journeys/${journeyLinkElement.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
             });
         }
 
-        const momentsList = /** @type {HTMLElement} */ (document.querySelector('#flow-moments-list'));
         try {
-            const moments = await getMoments(owner, project, flowId);
-            patchChildMetrics(`flow-${flow.sequenceNumber}`, moments);
+            const moments = await getMoments(owner, project, flowId) as Moment[];
+            patchChildMetrics(`flow-${flow.sequenceNumber}`, moments as unknown as Record<string, unknown>[]);
             const tbody = renderTableWithInlineAddRow(momentsList, {
                 headers: ['Statement', 'Type', 'Status', 'Actions'],
                 items: moments || [],
                 emptyMessage: 'No moments found for this flow.',
-                renderItemRow: m => `
-                    <tr data-moment-id="${m.sequenceNumber}">
+                renderItemRow: (item: unknown) => {
+                    const m = item as Moment;
+                    return `<tr data-moment-id="${m.sequenceNumber}">
                         <td>${escapeHtml(m.statement)}</td>
                         <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.sequenceNumber}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
                         <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
                         <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                    </tr>
-                `,
+                    </tr>`;
+                },
                 renderAddRow: () => `
                     <tr data-inline-add-row="1">
                         <td>
@@ -140,11 +293,11 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
                 `,
             });
 
-            const form = momentsList.querySelector('#add-moment-form');
-            const statementInput = momentsList.querySelector('#add-moment-statement');
-            const typeSelect = momentsList.querySelector('#add-moment-type');
-            const message = momentsList.querySelector('#add-moment-msg');
-            const submitButton = momentsList.querySelector('#add-moment-submit');
+            const form = momentsList.querySelector('#add-moment-form') as HTMLFormElement;
+            const statementInput = momentsList.querySelector('#add-moment-statement') as HTMLInputElement;
+            const typeSelect = momentsList.querySelector('#add-moment-type') as HTMLSelectElement;
+            const message = momentsList.querySelector('#add-moment-msg') as HTMLElement;
+            const submitButton = momentsList.querySelector('#add-moment-submit') as HTMLButtonElement;
 
             if (form && statementInput && typeSelect && message && submitButton) {
                 form.addEventListener('submit', async event => {
@@ -166,22 +319,56 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
                             type: typeSelect.value,
                             status: 'Todo',
                             displayOrder: (moments || []).length + 1,
-                        });
+                        }) as Moment;
 
                         if (created) {
-                            removeInlineEmptyRow(tbody);
+                            removeInlineEmptyRow(tbody!);
                             const row = document.createElement('tr');
-                            row.dataset.momentId = created.id;
-                            row.innerHTML = `
-                                <td>${escapeHtml(created.statement)}</td>
-                                <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${created.sequenceNumber}" data-current-type="${created.type}" aria-label="Moment type"><option value="Story" ${created.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${created.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
-                                <td><span class="status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
-                                <td><a href="/${owner}/${project}/moments/${created.sequenceNumber}" moment-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                            `;
-                            insertRowBeforeAddRow(tbody, row);
+                            row.dataset.momentId = String(created.id);
+
+                            const tdStmt = document.createElement('td');
+                            tdStmt.textContent = created.statement;
+                            row.append(tdStmt);
+
+                            const tdType = document.createElement('td');
+                            const typeSel = document.createElement('select');
+                            typeSel.className = 'form-select form-select-sm moment-type-select';
+                            typeSel.dataset.momentId = String(created.sequenceNumber);
+                            typeSel.dataset.currentType = created.type;
+                            typeSel.setAttribute('aria-label', 'Moment type');
+                            const optStory = document.createElement('option');
+                            optStory.value = 'Story';
+                            optStory.textContent = 'Story';
+                            if (created.type === 'Story') optStory.selected = true;
+                            typeSel.append(optStory);
+                            const optJob = document.createElement('option');
+                            optJob.value = 'Job';
+                            optJob.textContent = 'Job';
+                            if (created.type === 'Job') optJob.selected = true;
+                            typeSel.append(optJob);
+                            tdType.append(typeSel);
+                            row.append(tdType);
+
+                            const tdStatus = document.createElement('td');
+                            const statusSpan = document.createElement('span');
+                            statusSpan.className = `status-badge status-${(created.status || '').toLowerCase()}`;
+                            statusSpan.textContent = created.status;
+                            tdStatus.append(statusSpan);
+                            row.append(tdStatus);
+
+                            const tdActions = document.createElement('td');
+                            const viewLink = document.createElement('a');
+                            viewLink.href = `/${owner}/${project}/moments/${created.sequenceNumber}`;
+                            viewLink.setAttribute('moment-seq', String(created.sequenceNumber));
+                            viewLink.className = 'btn btn-sm btn-outline-primary';
+                            viewLink.textContent = 'View';
+                            tdActions.append(viewLink);
+                            row.append(tdActions);
+
+                            insertRowBeforeAddRow(tbody!, row);
                             statementInput.value = '';
                             typeSelect.value = 'Story';
-                            patchChildMetrics(`flow-${flow.sequenceNumber}`, [...(moments || []), created]);
+                            patchChildMetrics(`flow-${flow.sequenceNumber}`, [...(moments || []), created] as unknown as Record<string, unknown>[]);
                         }
                     } catch (error) {
                         message.textContent = 'Failed to add moment.';
@@ -192,40 +379,84 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
                 });
             }
 
-            momentsList.innerHTML = `
-                <table class="table table-sm table-striped align-middle promisemodel-table">
-                    <thead>
-                        <tr>
-                            <th>Statement</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${moments.map(m => `
-                            <tr data-moment-id="${m.sequenceNumber}">
-                                <td>${escapeHtml(m.statement)}</td>
-                                <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.sequenceNumber}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
-                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-id="${m.id}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = 'table-responsive';
+            const momentTable = document.createElement('table');
+            momentTable.className = 'table table-sm table-striped align-middle promisemodel-table';
+
+            const mThead = document.createElement('thead');
+            const mHeaderRow = document.createElement('tr');
+            const mHeaders = ['Statement', 'Type', 'Status', 'Actions'];
+            for (const h of mHeaders) {
+                const th = document.createElement('th');
+                th.textContent = h;
+                mHeaderRow.append(th);
+            }
+            mThead.append(mHeaderRow);
+            momentTable.append(mThead);
+
+            const mTbody = document.createElement('tbody');
+            for (const m of moments) {
+                const tr = document.createElement('tr');
+                tr.dataset.momentId = String(m.sequenceNumber);
+
+                const tdStmt = document.createElement('td');
+                tdStmt.textContent = m.statement;
+                tr.append(tdStmt);
+
+                const tdType = document.createElement('td');
+                const typeSel = document.createElement('select');
+                typeSel.className = 'form-select form-select-sm moment-type-select';
+                typeSel.dataset.momentId = String(m.sequenceNumber);
+                typeSel.dataset.currentType = m.type;
+                typeSel.setAttribute('aria-label', 'Moment type');
+                const optStory = document.createElement('option');
+                optStory.value = 'Story';
+                optStory.textContent = 'Story';
+                if (m.type === 'Story') optStory.selected = true;
+                typeSel.append(optStory);
+                const optJob = document.createElement('option');
+                optJob.value = 'Job';
+                optJob.textContent = 'Job';
+                if (m.type === 'Job') optJob.selected = true;
+                typeSel.append(optJob);
+                tdType.append(typeSel);
+                tr.append(tdType);
+
+                const tdStatus = document.createElement('td');
+                const statusSpan = document.createElement('span');
+                statusSpan.className = `status-badge status-${(m.status || '').toLowerCase()}`;
+                statusSpan.textContent = m.status;
+                tdStatus.append(statusSpan);
+                tr.append(tdStatus);
+
+                const tdActions = document.createElement('td');
+                const viewLink = document.createElement('a');
+                viewLink.href = `/${owner}/${project}/moments/${m.sequenceNumber}`;
+                viewLink.setAttribute('moment-id', String(m.id));
+                viewLink.setAttribute('moment-seq', String(m.sequenceNumber));
+                viewLink.className = 'btn btn-sm btn-outline-primary';
+                viewLink.textContent = 'View';
+                tdActions.append(viewLink);
+                tr.append(tdActions);
+
+                mTbody.append(tr);
+            }
+            momentTable.append(mTbody);
+            tableWrapper.append(momentTable);
+            momentsList.replaceChildren(tableWrapper);
 
             momentsList.addEventListener('change', async (event) => {
-                const target = /** @type {HTMLElement} */(event.target);
+                const target = event.target as HTMLElement;
                 if (target.matches('.moment-type-select')) {
-                    const momentId = parseInt(/** @type {string} */(target.dataset.momentId), 10);
-                    const newType = /** @type {HTMLSelectElement} */(target).value;
+                    const momentId = parseInt(target.dataset.momentId!, 10);
+                    const newType = (target as HTMLSelectElement).value;
                     const previous = target.dataset.currentType || newType;
                     try {
                         await updateMomentType(owner, project, momentId, newType);
                         target.dataset.currentType = newType;
                     } catch (error) {
-                        /** @type {HTMLSelectElement} */(target).value = previous;
+                        (target as HTMLSelectElement).value = previous;
                         console.error('Failed to update moment type:', error);
                     }
                 }
@@ -233,50 +464,69 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
 
             for (const link of momentsList.querySelectorAll('a[moment-id]')) {
                 link.addEventListener('click', (event) => {
-                    if (event.ctrlKey || event.metaKey || event.button === 1) return;
+                    const me = event as MouseEvent;
+                    if (me.ctrlKey || me.metaKey || me.button === 1) return;
                     event.preventDefault();
                     void navigate(`/${owner}/${project}/moments/${link.getAttribute('moment-seq')}`, navContentDiv, contentDiv);
                 });
             }
         } catch {
-            momentsList.innerHTML = '<p class="error">Failed to load moments.</p>';
+            momentsList.replaceChildren();
+            const p = document.createElement('p');
+            p.className = 'error';
+            p.textContent = 'Failed to load moments.';
+            momentsList.append(p);
         }
 
         initBackLink();
 
-        const journeyCell = /** @type {HTMLElement} */ (document.querySelector('#flow-journey-cell'));
+        const journeyCell = document.querySelector('#flow-journey-cell') as HTMLElement;
         try {
-            const journey = await getJourneyById(owner, project, flow.journeyId);
-            const icon = getStatusIcon(journey.statusColor);
-            const label = getStatusLabel(journey.statusColor);
-            journeyCell.innerHTML = `<a href="/${owner}/${project}/journeys/${journey.sequenceNumber}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(journey.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
+            const journey = await getJourneyById(owner, project, flow.journeyId) as Journey;
+            const icon = getStatusIcon(journey.statusColor ?? '');
+            const label = getStatusLabel(journey.statusColor ?? '');
+            if (journeyCell) journeyCell.replaceChildren();
+            const link = document.createElement('a');
+            link.href = `/${owner}/${project}/journeys/${journey.sequenceNumber}`;
+            link.className = 'detail-link link-primary text-decoration-none fw-semibold';
+            link.textContent = journey.statement;
+            if (journeyCell) journeyCell.append(link);
+            const statusSpan = document.createElement('span');
+            statusSpan.setAttribute('aria-hidden', 'true');
+            statusSpan.textContent = icon;
+            if (journeyCell) journeyCell.append(statusSpan);
+            const srSpan = document.createElement('span');
+            srSpan.className = 'sr-only';
+            srSpan.textContent = label;
+            if (journeyCell) journeyCell.append(srSpan);
 
-            const link = journeyCell.querySelector('a.detail-link');
-            if (link) {
-                link.addEventListener('click', (event) => {
-                    if (event.ctrlKey || event.metaKey || event.button === 1) return;
+            const linkElement = journeyCell?.querySelector('a.detail-link') as HTMLElement;
+            if (linkElement) {
+                linkElement.addEventListener('click', (event) => {
+                    const me = event as MouseEvent;
+                    if (me.ctrlKey || me.metaKey || me.button === 1) return;
                     event.preventDefault();
-                    void navigate(link.getAttribute('href'), navContentDiv, contentDiv);
+                    void navigate(linkElement.getAttribute('href')!, navContentDiv, contentDiv);
                 });
             }
         } catch {}
 
-        const descMessage = document.querySelector('#desc-save-msg');
+        const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
         if (saveButton) {
             saveButton.addEventListener('click', async (event) => {
                 event.preventDefault();
-                descMessage.textContent = '';
+                if (descMessage) descMessage.textContent = '';
                 saveButton.disabled = true;
-                const newDesc = /** @type {HTMLTextAreaElement} */(document.querySelector('#description-input')).value;
+                const newDesc = (document.querySelector('#description-input') as HTMLTextAreaElement).value;
                 try {
-                    const updated = await updateFlowDescription(owner, project, flowId, newDesc);
+                    const updated = await updateFlowDescription(owner, project, flowId, newDesc) as { description?: string } | undefined;
                     flow.description = updated?.description ?? (newDesc.trim() ? newDesc : undefined);
                     patchDetailStackGraphNode(`flow-${flow.sequenceNumber}`, {
                         description: flow.description,
                     });
-                    if (editor) editor.showSavedPopover(formatCommentText(flow.description || ''));
+                    if (editor?.showSavedPopover) editor.showSavedPopover(formatCommentText(flow.description || ''));
                 } catch (error) {
-                    descMessage.textContent = 'Save failed';
+                    if (descMessage) descMessage.textContent = 'Save failed';
                     console.error(error);
                 } finally {
                     saveButton.disabled = false;
@@ -287,19 +537,19 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
         (function gateFlowDetailControls() {
             const canEdit = permission?.permission === 'Edit';
             if (!canEdit) {
-                const editButton = document.querySelector('#edit-desc-btn');
-                const saveButton = document.querySelector('#save-desc');
-                const descInput = document.querySelector('#description-input');
-                if (editButton) { editButton.disabled = true; editButton.title = 'Requires Edit permission.'; }
-                if (saveButton) { saveButton.disabled = true; saveButton.title = 'Requires Edit permission.'; }
-                if (descInput) descInput.disabled = true;
+                const editButton__ = document.querySelector('#edit-desc-btn') as HTMLButtonElement;
+                const saveButton__ = document.querySelector('#save-desc') as HTMLButtonElement;
+                const descInp = document.querySelector('#description-input') as HTMLInputElement;
+                if (editButton__) { editButton__.disabled = true; editButton__.title = 'Requires Edit permission.'; }
+                if (saveButton__) { saveButton__.disabled = true; saveButton__.title = 'Requires Edit permission.'; }
+                if (descInp) descInp.disabled = true;
 
-                const momentStatementInput = document.querySelector('#add-moment-statement');
-                const momentSubmitButton = document.querySelector('#add-moment-submit');
+                const momentStatementInput = document.querySelector('#add-moment-statement') as HTMLInputElement;
+                const momentSubmitButton = document.querySelector('#add-moment-submit') as HTMLButtonElement;
                 if (momentStatementInput) momentStatementInput.disabled = true;
                 if (momentSubmitButton) { momentSubmitButton.disabled = true; momentSubmitButton.title = 'Requires Edit permission.'; }
 
-                const momentTypeSelect = document.querySelector('#add-moment-type');
+                const momentTypeSelect = document.querySelector('#add-moment-type') as HTMLSelectElement;
                 if (momentTypeSelect) momentTypeSelect.disabled = true;
             }
         })();
@@ -309,11 +559,11 @@ export async function loadFlowDetail(owner, project, flowId, navContentDiv, cont
         const { owner: go, project: gp } = getOwnerProjectFromPath();
         if (go && gp) {
             const href = buildGraphViewHref(go, gp, `flow-${flow.sequenceNumber}`);
-            upsertGraphViewButton(detailDiv, href);
+            if (href) upsertGraphViewButton(detailDiv, href);
         }
     } catch (error) {
         if (loadingElement) loadingElement.hidden = true;
-        errorElement.textContent = 'Failed to load flow details.';
+        if (errorElement) errorElement.textContent = 'Failed to load flow details.';
         console.error(error);
     }
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 interface StatusOption {
     value: string;
     label: string;

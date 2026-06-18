@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Set up an inline-edit toggle between a display view and a hidden input field.
  * @param {HTMLElement} inputElement - The hidden input element.
@@ -8,7 +7,7 @@
  * @param {HTMLElement } cancelButton - Button to cancel and restore previous value.
  * @returns {object} An object with `showView` and `showSavedPopover` helper methods.
  */
-export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElement, editButton: HTMLElement, saveButton: HTMLElement | null, cancelButton: HTMLElement | null): { showView: (value: string) => void; showSavedPopover: (value: string) => void } {
+export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElement, editButton: HTMLElement, saveButton?: HTMLElement, cancelButton?: HTMLElement): { showView: (value: string) => void; showSavedPopover: (value: string) => void } {
   let cancelValue = '';
   let cancelViewHtml = '';
 
@@ -17,7 +16,7 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
    * @param {string} value - The HTML content to display.
    */
   function showView(value: string): void {
-    viewElement.innerHTML = value || '';
+    viewElement.textContent = value || '';
     viewElement.style.display = '';
     inputElement.style.display = 'none';
     if (saveButton) saveButton.style.display = 'none';
@@ -30,7 +29,7 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
    */
   function showEdit(): void {
     cancelValue = (inputElement as HTMLInputElement).value;
-    cancelViewHtml = viewElement.innerHTML;
+    cancelViewHtml = viewElement.textContent || '';
     viewElement.style.display = 'none';
     inputElement.style.display = '';
     editButton.style.display = 'none';

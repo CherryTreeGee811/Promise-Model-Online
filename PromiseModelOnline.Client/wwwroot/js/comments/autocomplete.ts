@@ -1,9 +1,20 @@
-// @ts-nocheck
 import { searchUsers, searchPromises } from './autocomplete.api.ts';
 
-/**
- * @typedef {{ open: boolean, items: Array<{ name?: string, entityType?: string, sequenceNumber?: number, id?: number|string, statement?: string }>, highlightedIndex: number, trigger: string|null, triggerStart: number }} AutocompleteState
- */
+interface AutocompleteItem {
+  name?: string;
+  entityType?: string;
+  sequenceNumber?: number;
+  id?: number | string;
+  statement?: string;
+}
+
+interface AutocompleteState {
+  open: boolean;
+  items: AutocompleteItem[];
+  highlightedIndex: number;
+  trigger?: string;
+  triggerStart: number;
+}
 
 /**
  * Create an autocomplete dropdown for @-mention and #-reference in a comment textarea.
@@ -19,21 +30,19 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   dropdown.style.display = 'none';
   document.body.append(dropdown);
 
-  /** @type {AutocompleteState} */
-  const state = {
+  const state: AutocompleteState = {
     open: false,
     items: [],
     highlightedIndex: -1,
-    trigger: undefined,
     triggerStart: -1,
   };
   let debounceTimer;
 
   /**
    * Detect an @ or # trigger at the cursor position in the textarea.
-   * @returns {{ trigger: string, query: string, start: number }} The trigger info or null.
+   * @returns {{ trigger: string, query: string, start: number } | null} The trigger info or null.
    */
-  function getTriggerAtCursor() {
+  function getTriggerAtCursor(): void | { trigger: string; query: string; start: number } {
     const pos = textarea.selectionStart;
     const value = textarea.value;
 
@@ -159,7 +168,8 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
   /** Render the dropdown list items and highlight the current selection. */
   function renderDropdown() {
-    dropdown.innerHTML = '';
+     
+    dropdown.replaceChildren();
 
     for (let index = 0; index < state.items.length; index++) {
       const item = state.items[index];
@@ -169,12 +179,12 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       element.role = 'option';
       element.ariaSelected = String(index === state.highlightedIndex);
 
-      element.textContent = state.trigger === '@' ? item.name : '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id) + ' \u{2014} ' + item.statement;
+      element.textContent = state.trigger === '@' ? item.name ?? '' : '#' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '') + ' \u{2014} ' + (item.statement ?? '');
 
-      element.dataset.index = index;
+      element.dataset.index = String(index);
       element.addEventListener('mousedown', function (event) {
         event.preventDefault();
-        selectItem(parseInt(element.dataset.index, 10));
+        selectItem(parseInt(element.dataset.index!, 10));
       });
 
       dropdown.append(element);
@@ -213,7 +223,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       return;
     }
 
-    const insertText = (state.trigger === '@' ? '@' + item.name : '#' + item.entityType + '-' + (item.sequenceNumber ?? item.id)) + ' ';
+    const insertText = (state.trigger === '@' ? '@' + (item.name ?? '') : '#' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '')) + ' ';
 
     const cursorEnd = textarea.selectionStart;
     const before = textarea.value.slice(0, Math.max(0, state.triggerStart));
@@ -265,17 +275,17 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
     switch (event.key) {
       case 'ArrowDown': {
-        e.preventDefault();
+        event.preventDefault();
         highlightNext();
         break;
       }
       case 'ArrowUp': {
-        e.preventDefault();
+        event.preventDefault();
         highlightPrevious();
         break;
       }
       case 'Tab': {
-        e.preventDefault();
+        event.preventDefault();
         if (state.highlightedIndex >= 0) {
           selectHighlighted();
         } else {
@@ -284,14 +294,14 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
         break;
       }
       case 'Enter': {
-        e.preventDefault();
+        event.preventDefault();
         if (state.highlightedIndex >= 0) {
           selectHighlighted();
         }
         break;
       }
       case 'Escape': {
-        e.preventDefault();
+        event.preventDefault();
         close();
         textarea.focus();
         break;

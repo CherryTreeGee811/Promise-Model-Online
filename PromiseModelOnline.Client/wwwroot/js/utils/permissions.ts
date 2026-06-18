@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getMyPermission } from '../projects/api.ts';
 
 const PERMISSION_HIERARCHY: Record<string, number> = { View: 0, Comment: 1, Edit: 2, Owner: 3 };

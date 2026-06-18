@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { fetchUnreadNotifications } from './api.ts';
 import { startSignalR, stopSignalR } from './signalr.ts';
 

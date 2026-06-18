@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { navigate } from '../router.ts';
 import { getProjectMembers } from '../strides/api.ts';
@@ -9,6 +8,8 @@ import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { exportProject, getProject, getGraphData, deleteProject, updateProjectDetails } from './api.ts';
 import { formatTimestamp } from './audit.ts';
 import { renderSummaryTable } from './summary.ts';
+
+declare const bootstrap: any;
 
 
 /**
@@ -50,7 +51,7 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
     if (titleInput && titleView && titleEditButton) {
         titleEditor = setupInlineEdit(titleInput, titleView, titleEditButton);
     }
-    if (descriptionInput && descView && descEditButton) {
+    if (descriptionInput && descView && descEditButton && saveButton) {
         descEditor = setupInlineEdit(descriptionInput, descView, descEditButton, saveButton);
     }
 
@@ -71,41 +72,41 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
      *
      */
     function clearMessages(): void {
-        errorText.textContent = '';
-        successText.textContent = '';
+        errorText!.textContent = '';
+        successText!.textContent = '';
     }
 
     /**
      * @param {boolean} isLoading - Whether loading
      */
     function setSummaryLoading(isLoading: boolean): void {
-        summaryLoading.hidden = !isLoading;
-        summaryPanel.hidden = isLoading;
+        summaryLoading!.hidden = !isLoading;
+        summaryPanel!.hidden = isLoading;
     }
 
     /**
      *
      */
     function showExportPopover(): void {
-        if (typeof bootstrap === 'undefined' || !bootstrap.Popover) {
-            successText.textContent = 'Exported!';
+        if (bootstrap === undefined || !bootstrap.Popover) {
+            successText!.textContent = 'Exported!';
             setTimeout(() => {
-                if (successText.textContent === 'Exported!') {
-                    successText.textContent = '';
+                if (successText!.textContent === 'Exported!') {
+                    successText!.textContent = '';
                 }
             }, 2000);
             return;
         }
 
         if (!exportPopover) {
-            exportPopover = new bootstrap.Popover(exportButton, {
+            exportPopover = new bootstrap.Popover(exportButton!, {
                 trigger: 'manual',
                 placement: 'top',
                 content: 'Exported!',
             });
         }
 
-        exportPopover.show();
+        exportPopover!.show();
 
         if (exportPopoverHideTimer) {
             clearTimeout(exportPopoverHideTimer);
@@ -122,10 +123,10 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
  */
 function refreshDeleteGate(projectName: string): void {
         const phrase = getDeletePhrase(projectName);
-        phrasePromptElement.textContent = phrase;
-        phraseInputElement.value = '';
-        dangerButtonElement.disabled = true;
-        dangerButtonElement.dataset.confirmationPhrase = phrase;
+        phrasePromptElement!.textContent = phrase;
+        phraseInputElement!.value = '';
+        (dangerButtonElement as HTMLButtonElement).disabled = true;
+        dangerButtonElement!.dataset.confirmationPhrase = phrase;
     }
 
 /**
@@ -133,17 +134,17 @@ function refreshDeleteGate(projectName: string): void {
  * @param {boolean} isBusy - Whether the delete operation is in progress.
  */
 function setDeleteButtonState(isBusy: boolean): void {
-        dangerButtonElement.disabled = isBusy;
-        dangerButtonSpinnerElement.classList.toggle('d-none', !isBusy);
-        dangerButtonLabelElement.textContent = isBusy ? 'Deleting Project...' : 'Delete Project';
+        (dangerButtonElement as HTMLButtonElement).disabled = isBusy;
+        dangerButtonSpinnerElement!.classList.toggle('d-none', !isBusy);
+        dangerButtonLabelElement!.textContent = isBusy ? 'Deleting Project...' : 'Delete Project';
     }
 
     /**
      *
      */
     function updateDeleteButtonState(): void {
-        const expected = dangerButtonElement.dataset.confirmationPhrase || '';
-        dangerButtonElement.disabled = phraseInputElement.value !== expected;
+        const expected = dangerButtonElement!.dataset.confirmationPhrase || '';
+        (dangerButtonElement as HTMLButtonElement).disabled = phraseInputElement!.value !== expected;
     }
 
 /**
@@ -155,11 +156,11 @@ function setDeleteButtonState(isBusy: boolean): void {
  * @param {number} counts.journeys - The number of journeys.
  * @param {number} counts.flows - The number of flows.
  * @param {number} counts.moments - The number of moments.
- * @param {number} counts.totalPromises - The total number of entities.
+ * @param {number} counts.totalPromises - The total count across all entity types.
  * @param {number} memberCount - The number of team members.
  */
 function renderSummary(project: Record<string, unknown>, counts: { promises: number; epics: number; journeys: number; flows: number; moments: number; totalPromises: number }, memberCount: number): void {
-        renderSummaryTable(summaryPanel, [
+        renderSummaryTable(summaryPanel!, [
             { label: 'Created', value: formatDate(project.createdAt as string) },
             { label: 'Team Members', value: memberCount },
             { label: 'Promises', value: counts.promises },
@@ -173,9 +174,9 @@ function renderSummary(project: Record<string, unknown>, counts: { promises: num
 
 /**
  * Load and render the project summary data.
- * @param {Record<string, unknown>} projectObjectect - The project object.
+ * @param {Record<string, unknown>} projectObject - The project object.
  */
-async function loadSummary(projectObjectect: Record<string, unknown>): Promise<void> {
+async function loadSummary(projectObject: Record<string, unknown>): Promise<void> {
         setSummaryLoading(true);
 
         try {
@@ -223,18 +224,18 @@ async function loadSummary(projectObjectect: Record<string, unknown>): Promise<v
         try {
             const projectData = await getProject(owner, project);
             currentProject = projectData;
-            titleInput.value = projectData.name ?? '';
-            descriptionInput.value = projectData.description ?? '';
+            titleInput!.value = projectData.name ?? '';
+            descriptionInput!.value = projectData.description ?? '';
             if (titleEditor) titleEditor.showView(escapeHtml(projectData.name ?? ''));
             if (descEditor) descEditor.showView(formatCommentText(projectData.description ?? ''));
             refreshDeleteGate(projectData.name ?? '');
             await loadSummary(projectData);
 
             if (summaryState.firstPromise) {
-                createCommentAutocomplete(descriptionInput, 'Promise', summaryState.firstPromise.id);
+                createCommentAutocomplete(descriptionInput!, 'Promise', summaryState.firstPromise.id);
             }
         } catch (error) {
-            errorText.textContent = 'Failed to load project settings.';
+            errorText!.textContent = 'Failed to load project settings.';
             console.error(error);
         }
     }

@@ -1,6 +1,4 @@
-// @ts-nocheck
 import { renderEmptyTableRow } from './empty-table.ts';
-import { escapeHtml } from './html.ts';
 
 interface TableConfig {
     headers: string[];
@@ -33,29 +31,60 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
     renderAddRow = () => '',
 }: TableConfig): HTMLElement | null {
     const columnCount = headers.length;
-    const rowsHtml = items && items.length > 0
-        ? items.map(item => renderItemRow(item)).join('')
-        : (emptyConfig
-            ? renderEmptyTableRow({ colspan: columnCount, ...emptyConfig })
-            : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`);
+    container.replaceChildren();
 
-    const rowHtmlText = renderAddRow ? renderAddRow() : '';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
 
-    container.innerHTML = `
-        <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover align-middle mb-0 promisemodel-table">
-            <thead class="table-light">
-                <tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
-            </thead>
-            <tbody>
-                ${rowsHtml}
-                ${rowHtmlText}
-            </tbody>
-        </table>
-        </div>
-    `;
+    const table = document.createElement('table');
+    table.className = 'table table-sm table-striped table-hover align-middle mb-0 promisemodel-table';
 
-    return container.querySelector('tbody');
+    const thead = document.createElement('thead');
+    thead.className = 'table-light';
+    const headerRow = document.createElement('tr');
+    for (const header of headers) {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+
+    const tbody = document.createElement('tbody');
+
+    if (items && items.length > 0) {
+        const parser = new DOMParser();
+        for (const item of items) {
+            const document_ = parser.parseFromString(`<table><tbody>${renderItemRow(item)}</tbody></table>`, 'text/html');
+            const row = document_.querySelector('tr');
+            if (row) tbody.append(row);
+        }
+    } else if (emptyConfig) {
+        tbody.append(renderEmptyTableRow({ colspan: columnCount, ...emptyConfig }));
+    } else {
+        const tr = document.createElement('tr');
+        tr.className = 'inline-table-empty-row';
+        const td = document.createElement('td');
+        td.className = 'no-items';
+        td.colSpan = columnCount;
+        td.textContent = emptyMessage ?? '';
+        tr.append(td);
+        tbody.append(tr);
+    }
+
+    const rowHtmlText = renderAddRow();
+    if (rowHtmlText) {
+        const parser = new DOMParser();
+        const document_ = parser.parseFromString(`<table><tbody>${rowHtmlText}</tbody></table>`, 'text/html');
+        const row = document_.querySelector('tr');
+        if (row) tbody.append(row);
+    }
+
+    table.append(tbody);
+    wrapper.append(table);
+    container.append(wrapper);
+
+    return tbody;
 }
 
 /**

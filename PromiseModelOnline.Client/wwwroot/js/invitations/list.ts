@@ -1,57 +1,96 @@
-// @ts-nocheck
-import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { escapeHtml } from '../utils/html.ts';
-
 import { getPendingInvitations, acceptInvitation } from './api.ts';
 
-/**
- * Load the invitations listing page.
- * @param {HTMLElement} contentDiv - The main content container element.
- */
-export function loadInvitationsPage(contentDiv) {
-    const listDiv = /** @type {HTMLElement} */ (document.querySelector('#invitations-list'));
-    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
+interface Invitation {
+  projectName: string;
+  level: string;
+  permissionId: string | number;
+}
 
-    /** Fetch and render pending invitations. */
+/**
+ * @returns {HTMLElement} The empty state element
+ */
+function buildEmptyState(): HTMLElement {
+    const div = document.createElement('div');
+    div.className = 'no-items d-flex flex-column align-items-center gap-3 py-5';
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'empty-table-icon';
+    const icon = document.createElement('i');
+    icon.className = 'bi bi-envelope';
+    iconDiv.append(icon);
+    div.append(iconDiv);
+    const title = document.createElement('h5');
+    title.className = 'fw-semibold text-secondary mb-1';
+    title.textContent = 'No pending invitations.';
+    div.append(title);
+    const desc = document.createElement('p');
+    desc.className = 'text-muted mb-2';
+    desc.textContent = 'When someone invites you to a project, it will appear here.';
+    div.append(desc);
+    return div;
+}
+
+/**
+ * @param {HTMLElement} contentDiv - Content container
+ */
+export function loadInvitationsPage(contentDiv: HTMLElement): void {
+    const listDiv = document.querySelector('#invitations-list') as HTMLElement;
+    const errorElement = document.querySelector('#error-text') as HTMLElement;
+
+    /**
+     *
+     */
     async function refresh() {
         try {
-            const invitations = await getPendingInvitations();
+            const invitations = await getPendingInvitations() as Invitation[];
 
             if (!invitations || invitations.length === 0) {
-                listDiv.innerHTML = renderEmptyStateSection({
-                    icon: 'bi-envelope',
-                    title: 'No pending invitations.',
-                    description: 'When someone invites you to a project, it will appear here.',
-                });
+                listDiv.replaceChildren(buildEmptyState());
                 return;
             }
 
-            listDiv.innerHTML = `
-                <table class="table table-sm table-striped table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th>Permission</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${invitations.map(inv => `
-                            <tr>
-                                <td>${escapeHtml(inv.projectName)}</td>
-                                <td>${inv.level}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary accept-btn" data-permission-id="${inv.permissionId}" type="button">Accept</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            const table = document.createElement('table');
+            table.className = 'table table-sm table-striped table-hover align-middle';
 
-            for (const button of document.querySelectorAll('.accept-btn')) {
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            const headers = ['Project', 'Permission', 'Actions'];
+            for (const h of headers) {
+                const th = document.createElement('th');
+                th.textContent = h;
+                headerRow.append(th);
+            }
+            thead.append(headerRow);
+            table.append(thead);
+
+            const tbody = document.createElement('tbody');
+            for (const inv of invitations) {
+                const tr = document.createElement('tr');
+
+                const tdProject = document.createElement('td');
+                tdProject.textContent = inv.projectName;
+                tr.append(tdProject);
+
+                const tdPerm = document.createElement('td');
+                tdPerm.textContent = inv.level;
+                tr.append(tdPerm);
+
+                const tdActions = document.createElement('td');
+                const button = document.createElement('button');
+                button.className = 'btn btn-sm btn-outline-primary accept-btn';
+                button.type = 'button';
+                button.dataset.permissionId = String(inv.permissionId);
+                button.textContent = 'Accept';
+                tdActions.append(button);
+                tr.append(tdActions);
+
+                tbody.append(tr);
+            }
+            table.append(tbody);
+            listDiv.replaceChildren(table);
+
+            for (const button of listDiv.querySelectorAll('.accept-btn')) {
                 button.addEventListener('click', async () => {
-                    const id = parseInt(/** @type {string} */(button.dataset.permissionId), 10);
+                    const id = parseInt((button as HTMLElement).dataset.permissionId!, 10);
                     try {
                         await acceptInvitation(id);
                         const y = window.scrollY;
@@ -60,11 +99,7 @@ export function loadInvitationsPage(contentDiv) {
 
                         const remaining = listDiv.querySelectorAll(':scope tbody tr').length;
                         if (remaining === 0) {
-                            listDiv.innerHTML = renderEmptyStateSection({
-                                icon: 'bi-envelope',
-                                title: 'No pending invitations.',
-                                description: 'When someone invites you to a project, it will appear here.',
-                            });
+                            listDiv.replaceChildren(buildEmptyState());
                         }
                         window.scrollTo(0, y);
                     } catch (error) {

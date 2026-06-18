@@ -143,7 +143,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
                 const module = await import('../iterations/list.ts');
-                void module.loadIterationHistory(owner, project, perm);
+                void module.loadIterationHistory(owner, project, { permission: perm.permission ?? '' });
             } catch {
                 void loadTemplateWithError(contentDiv, 'iterations')();
             }
@@ -169,7 +169,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
             } catch {
                 void loadTemplateWithError(contentDiv, 'epic')();
             }
@@ -182,7 +182,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
             } catch {
                 void loadTemplateWithError(contentDiv, 'journey')();
             }
@@ -195,7 +195,7 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
                     fetchMyPermission(owner, project),
                 ]);
                 projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+                void loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
             } catch {
                 void loadTemplateWithError(contentDiv, 'flow')();
             }

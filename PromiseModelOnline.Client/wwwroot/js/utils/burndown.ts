@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { loadD3 } from '../projects/detail-stack-graph.ts';
 
 import { renderEmptyStateSection } from './empty-table.ts';
 
-/** @typedef {{ date: string | Date; remainingEffort: number; idealRemaining?: number }} BurndownPoint */
+type BurndownPoint = { date: string | Date; remainingEffort: number; idealRemaining?: number };
 
 /**
  * Draw an SVG burndown chart into the given container using D3.
@@ -18,29 +17,30 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
         return;
     }
 
-    element.innerHTML = '';
+     
+    element.replaceChildren();
 
     if (!points || points.length === 0) {
-        element.innerHTML = renderEmptyStateSection({
+        element.replaceChildren(renderEmptyStateSection({
             icon: 'bi-graph-down',
             title: 'No burndown data available.',
             description: 'Burndown data will appear once moments have status updates.',
-        });
+        }));
         return;
     }
 
-    const d3 = await loadD3();
+    const d3 = await loadD3() as any;
 
     const sorted = points.toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const startDate = new Date(sorted[0].date);
-    const endDate = new Date(sorted.at(-1).date);
+    const endDate = new Date(sorted.at(-1)!.date);
 
     const days = sorted.map((_, index) => index);
     const actualPoints = sorted.map(p => p.remainingEffort);
     const idealPoints = sorted.map(p => p.idealRemaining ?? 0);
 
     const startRemaining = actualPoints[0];
-    const lastDay = days.at(-1);
+    const lastDay = days.at(-1)!;
 
     const finalIdeal = idealPoints.every(v => v === 0) && startRemaining > 0 && lastDay > 0
         ? days.map(day => Math.max(0, startRemaining - (startRemaining / lastDay) * day))
@@ -191,7 +191,7 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
     const behindData = enhancedBehind.map(d => d);
     const aheadData = enhancedAhead.map(d => d);
 
-    const areaGen = d3.area<{ x: number; y0: number; y1: number }>()
+    const areaGen = d3.area()
         .x(d => d.x)
         .y0(d => d.y0)
         .y1(d => d.y1)
@@ -217,7 +217,7 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
             .attr('stroke', 'none');
     }
 
-    const lineGen = d3.line<number>()
+    const lineGen = d3.line()
         .x((d, index) => xScale(days[index]))
         .y(d => yScale(d))
         .curve(d3.curveLinear);

@@ -55,11 +55,18 @@ export async function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HT
         const response = await fetch(`/templates/navigation/${templateName}`);
         if (!response.ok) throw new Error('Network response was not ok');
         const html = await response.text();
-        navContentDiv.innerHTML = html;
+        const parser = new DOMParser();
+        const document_ = parser.parseFromString(html, 'text/html');
+        navContentDiv.replaceChildren(...document_.body.childNodes);
         setActiveNavLink();
         if (isLoggedIn()) void startNotificationPolling();
     } catch (error: any) {
-        navContentDiv.innerHTML = `<h1>Error loading template</h1><p>${(error as Error).message}</p>`;
+        navContentDiv.replaceChildren();
+        const errorH1 = document.createElement('h1');
+        errorH1.textContent = 'Error loading template';
+        const errorP = document.createElement('p');
+        errorP.textContent = (error as Error).message;
+        navContentDiv.append(errorH1, errorP);
         throw error;
     }
 }

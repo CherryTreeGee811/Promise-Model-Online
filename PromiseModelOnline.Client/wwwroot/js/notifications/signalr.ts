@@ -1,11 +1,14 @@
-// @ts-nocheck
 /** @typedef {import("@microsoft/signalr").HubConnection} HubConnection */
 import { showToast } from '../ui/toast.ts';
 
-const state = {
-    /** @type {HubConnection|undefined} */
-    connection: undefined,
-    /** @type {((data?: unknown) => void)|undefined} */
+declare const signalR: any;
+
+const state: {
+    connection: any;
+    onNotificationOrReconnect: ((data?: unknown) => void) | undefined;
+    isStarted: boolean;
+} = {
+    connection: undefined as any,
     onNotificationOrReconnect: undefined,
     isStarted: false,
 };

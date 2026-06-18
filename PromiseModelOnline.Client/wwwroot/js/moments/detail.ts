@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import {
     destroyDetailStackGraph,
@@ -15,32 +14,61 @@ import { escapeHtml } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 import { isAtLeast } from '../utils/permissions.ts';
-import { getStatusOptionHtml } from '../utils/status-utilities.ts';
 
 import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
 
-/** @typedef {{ id: number, sequenceNumber: number, statement: string, description?: string, type: string, status: string, statusColor?: string, effortEstimate?: string, assignedStrideId?: number, createdAt: string, completedAt?: string, tasks?: Array<{ id: number, name: string, description: string, isCompleted: boolean }> }} Moment */
+/**
+ * @param {string} html - HTML string to parse
+ * @returns {Node[]} Array of child nodes
+ */
+function htmlToNodes(html: string): Node[] {
+    const document_ = new DOMParser().parseFromString(html, 'text/html');
+    const fragment = document.createDocumentFragment();
+    fragment.append(...document_.body.childNodes);
+    return [...fragment.childNodes];
+}
+
+interface MomentTask {
+    id: number;
+    name: string;
+    description: string;
+    isCompleted: boolean;
+}
+
+interface Moment {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    description?: string;
+    type: string;
+    status: string;
+    statusColor?: string;
+    effortEstimate?: string;
+    assignedStrideId?: number;
+    createdAt: string;
+    completedAt?: string;
+    tasks?: MomentTask[];
+}
 
 /**
- * Load and render the moment detail page with tasks, comments, and reactions.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {string} momentId - The moment's sequence number.
- * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
- * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }} permission - The user's permission object.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {Record<string, unknown>} permission - Permission object
  */
-export async function loadMomentDetail(owner, project, momentId, navContentDiv, contentDiv, permission) {
-    const detailDiv = /** @type {HTMLElement} */ (document.querySelector('#moment-detail-content'));
-    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
-    const loadingElement = /** @type {HTMLElement} */ (document.querySelector('#moment-detail-loading'));
+export async function loadMomentDetail(owner: string, project: string, momentId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
+    const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement;
+    const errorElement = document.querySelector('#error-text') as HTMLElement;
+    const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement;
 
     destroyDetailStackGraph();
     if (loadingElement) loadingElement.hidden = false;
     errorElement.textContent = '';
 
     try {
-        const moment = await getMoment(owner, project, momentId);
+        const moment = await getMoment(owner, project, momentId) as Moment;
         await loadEntityLookupMap('Moment', moment.id, owner, project);
         if (loadingElement) loadingElement.hidden = true;
 
@@ -51,73 +79,223 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             project,
         });
 
-        detailDiv.innerHTML = `
-            <div class="detail-card moment-detail-card">
-                <h2>${escapeHtml(moment.statement)}</h2>
-                <table class="table table-sm table-striped align-middle detail-table">
-                    <tr>
-                        <th scope="row"><label for="moment-description-input">Description</label></th>
-                        <td>
-                            <div class="inline-edit-wrapper">
-                                <p id="moment-description-view" class="inline-edit-view">${formatCommentText(moment.description || '')}</p>
-                                <button id="edit-moment-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
-                                <textarea id="moment-description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(moment.description || '')}</textarea>
-                            </div>
-                            <div class="field-actions"><button id="moment-description-cancel" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="moment-description-save" class="btn btn-primary btn-sm" type="button">Save</button> <span id="moment-description-msg"></span></div>
-                        </td>
-                    </tr>
-                    <tr><th scope="row"><label for="moment-type-select">Type</label></th><td>
-                        <select id="moment-type-select" class="form-select form-select-sm">
-                            <option value="Story" ${moment.type === 'Story' ? 'selected' : ''}>Story</option>
-                            <option value="Job" ${moment.type === 'Job' ? 'selected' : ''}>Job</option>
-                        </select>
-                    </td></tr>
-                    <tr><th scope="row"><label for="moment-status-select">Status</label></th><td>
-                        <select id="moment-status-select" class="form-select form-select-sm">
-                            ${getStatusOptionHtml('Todo', moment.status)}
-                            ${getStatusOptionHtml('InProgress', moment.status)}
-                            ${getStatusOptionHtml('Blocked', moment.status)}
-                            ${getStatusOptionHtml('Done', moment.status)}
-                        </select>
-                    </td></tr>
-                    <tr>
-                        <th scope="row"><label for="moment-estimate-select">Effort Estimate</label></th>
-                        <td>
-                            <select id="moment-estimate-select" class="form-select form-select-sm">
-                                <option value="-" ${moment.effortEstimate === null ? 'selected' : ''}>-</option>
-                                <option value="XS"  ${moment.effortEstimate === 'XS'  ? 'selected' : ''}>XS</option>
-                                <option value="S"   ${moment.effortEstimate === 'S'   ? 'selected' : ''}>S</option>
-                                <option value="M"   ${moment.effortEstimate === 'M'   ? 'selected' : ''}>M</option>
-                                <option value="L"   ${moment.effortEstimate === 'L'   ? 'selected' : ''}>L</option>
-                                <option value="XL"  ${moment.effortEstimate === 'XL'  ? 'selected' : ''}>XL</option>
-                                <option value="XXL" ${moment.effortEstimate === 'XXL' ? 'selected' : ''}>XXL</option>
-                                <option value="XXXL"${moment.effortEstimate === 'XXXL'? 'selected' : ''}>XXXL</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="moment-stride-select">Assigned Stride</label></th>
-                        <td>
-                            <select id="moment-stride-select" class="form-select form-select-sm">
-                                <option value="">Backlog</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr><th scope="row">Created</th><td>${new Date(moment.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                    <tr><th scope="row">Completed</th><td>${moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
-                </table>
-                <h3>Moment Tasks</h3>
-                <div id="moment-tasks"></div>
-                <div id="moment-comments"></div>
-                <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
-            </div>
-        `;
+        const detailCard = document.createElement('div');
+        detailCard.className = 'detail-card moment-detail-card';
 
-        const momentDescInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#moment-description-input'));
-        const momentDescView = /** @type {HTMLElement} */ (document.querySelector('#moment-description-view'));
-        const momentEditButton = /** @type {HTMLElement} */ (document.querySelector('#edit-moment-desc-btn'));
-        const descriptionSaveButton = /** @type {HTMLElement} */ (document.querySelector('#moment-description-save'));
-        const momentDescriptionCancelButton = /** @type {HTMLElement} */ (document.querySelector('#moment-description-cancel'));
+        const heading = document.createElement('h2');
+        heading.textContent = moment.statement as string;
+        detailCard.append(heading);
+
+        const table = document.createElement('table');
+        table.className = 'table table-sm table-striped align-middle detail-table';
+
+        // Description row
+        const descRow = document.createElement('tr');
+        const descTh = document.createElement('th');
+        descTh.scope = 'row';
+        const descLabel = document.createElement('label');
+        descLabel.htmlFor = 'moment-description-input';
+        descLabel.textContent = 'Description';
+        descTh.append(descLabel);
+        descRow.append(descTh);
+        const descTd = document.createElement('td');
+        const inlineEditWrapper = document.createElement('div');
+        inlineEditWrapper.className = 'inline-edit-wrapper';
+        const descView = document.createElement('p');
+        descView.id = 'moment-description-view';
+        descView.className = 'inline-edit-view';
+        descView.append(...htmlToNodes(formatCommentText(moment.description || '')));
+        inlineEditWrapper.append(descView);
+        const editButton = document.createElement('button');
+        editButton.id = 'edit-moment-desc-btn';
+        editButton.className = 'btn btn-success btn-sm inline-edit-btn';
+        editButton.type = 'button';
+        editButton.title = 'Edit description';
+        const pencilIcon = document.createElement('i');
+        pencilIcon.className = 'bi bi-pencil';
+        editButton.append(pencilIcon);
+        inlineEditWrapper.append(editButton);
+        const descTextarea = document.createElement('textarea');
+        descTextarea.id = 'moment-description-input';
+        descTextarea.rows = 4;
+        descTextarea.className = 'form-control detail-textarea';
+        descTextarea.setAttribute('aria-label', 'Description');
+        descTextarea.style.display = 'none';
+        descTextarea.textContent = moment.description || '';
+        inlineEditWrapper.append(descTextarea);
+        descTd.append(inlineEditWrapper);
+        const fieldActions = document.createElement('div');
+        fieldActions.className = 'field-actions';
+        const cancelButton = document.createElement('button');
+        cancelButton.id = 'moment-description-cancel';
+        cancelButton.className = 'btn btn-outline-secondary btn-sm';
+        cancelButton.type = 'button';
+        cancelButton.style.display = 'none';
+        cancelButton.textContent = 'Cancel';
+        fieldActions.append(cancelButton);
+        const saveButton = document.createElement('button');
+        saveButton.id = 'moment-description-save';
+        saveButton.className = 'btn btn-primary btn-sm';
+        saveButton.type = 'button';
+        saveButton.textContent = 'Save';
+        fieldActions.append(saveButton);
+        const saveMessage = document.createElement('span');
+        saveMessage.id = 'moment-description-msg';
+        fieldActions.append(saveMessage);
+        descTd.append(fieldActions);
+        descRow.append(descTd);
+        table.append(descRow);
+
+        // Type row
+        const typeRow = document.createElement('tr');
+        const typeTh = document.createElement('th');
+        typeTh.scope = 'row';
+        const typeLabel = document.createElement('label');
+        typeLabel.htmlFor = 'moment-type-select';
+        typeLabel.textContent = 'Type';
+        typeTh.append(typeLabel);
+        typeRow.append(typeTh);
+        const typeTd = document.createElement('td');
+        const typeSelect = document.createElement('select');
+        typeSelect.id = 'moment-type-select';
+        typeSelect.className = 'form-select form-select-sm';
+        const typeStoryOpt = document.createElement('option');
+        typeStoryOpt.value = 'Story';
+        typeStoryOpt.textContent = 'Story';
+        if (moment.type === 'Story') typeStoryOpt.selected = true;
+        typeSelect.append(typeStoryOpt);
+        const typeJobOpt = document.createElement('option');
+        typeJobOpt.value = 'Job';
+        typeJobOpt.textContent = 'Job';
+        if (moment.type === 'Job') typeJobOpt.selected = true;
+        typeSelect.append(typeJobOpt);
+        typeTd.append(typeSelect);
+        typeRow.append(typeTd);
+        table.append(typeRow);
+
+        // Status row
+        const statusRow = document.createElement('tr');
+        const statusTh = document.createElement('th');
+        statusTh.scope = 'row';
+        const statusLabel = document.createElement('label');
+        statusLabel.htmlFor = 'moment-status-select';
+        statusLabel.textContent = 'Status';
+        statusTh.append(statusLabel);
+        statusRow.append(statusTh);
+        const statusTd = document.createElement('td');
+        const statusSelect = document.createElement('select');
+        statusSelect.id = 'moment-status-select';
+        statusSelect.className = 'form-select form-select-sm';
+        for (const value of ['Todo', 'InProgress', 'Blocked', 'Done']) {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = value;
+            if (value === moment.status) opt.selected = true;
+            statusSelect.append(opt);
+        }
+        statusTd.append(statusSelect);
+        statusRow.append(statusTd);
+        table.append(statusRow);
+
+        // Effort Estimate row
+        const estRow = document.createElement('tr');
+        const estTh = document.createElement('th');
+        estTh.scope = 'row';
+        const estLabel = document.createElement('label');
+        estLabel.htmlFor = 'moment-estimate-select';
+        estLabel.textContent = 'Effort Estimate';
+        estTh.append(estLabel);
+        estRow.append(estTh);
+        const estTd = document.createElement('td');
+        const estSelect = document.createElement('select');
+        estSelect.id = 'moment-estimate-select';
+        estSelect.className = 'form-select form-select-sm';
+        const estOptions = ['-', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+        for (const value of estOptions) {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = value;
+            if ((value === '-' && moment.effortEstimate === null) || (value !== '-' && moment.effortEstimate === value)) opt.selected = true;
+            estSelect.append(opt);
+        }
+        estTd.append(estSelect);
+        estRow.append(estTd);
+        table.append(estRow);
+
+        // Assigned Stride row
+        const strideRow = document.createElement('tr');
+        const strideTh = document.createElement('th');
+        strideTh.scope = 'row';
+        const strideLabel = document.createElement('label');
+        strideLabel.htmlFor = 'moment-stride-select';
+        strideLabel.textContent = 'Assigned Stride';
+        strideTh.append(strideLabel);
+        strideRow.append(strideTh);
+        const strideTd = document.createElement('td');
+        const strideSelect = document.createElement('select');
+        strideSelect.id = 'moment-stride-select';
+        strideSelect.className = 'form-select form-select-sm';
+        const backlogOpt = document.createElement('option');
+        backlogOpt.value = '';
+        backlogOpt.textContent = 'Backlog';
+        strideSelect.append(backlogOpt);
+        strideTd.append(strideSelect);
+        strideRow.append(strideTd);
+        table.append(strideRow);
+
+        // Created row
+        const createdRow = document.createElement('tr');
+        const createdTh = document.createElement('th');
+        createdTh.scope = 'row';
+        createdTh.textContent = 'Created';
+        createdRow.append(createdTh);
+        const createdTd = document.createElement('td');
+        createdTd.textContent = new Date(moment.createdAt).toLocaleDateString('en-CA');
+        createdRow.append(createdTd);
+        table.append(createdRow);
+
+        // Completed row
+        const completedRow = document.createElement('tr');
+        const completedTh = document.createElement('th');
+        completedTh.scope = 'row';
+        completedTh.textContent = 'Completed';
+        completedRow.append(completedTh);
+        const completedTd = document.createElement('td');
+        completedTd.textContent = moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '\u{2013}';
+        completedRow.append(completedTd);
+        table.append(completedRow);
+
+        detailCard.append(table);
+
+        const tasksHeading = document.createElement('h3');
+        tasksHeading.textContent = 'Moment Tasks';
+        detailCard.append(tasksHeading);
+
+        const tasksContainer = document.createElement('div');
+        tasksContainer.id = 'moment-tasks';
+        detailCard.append(tasksContainer);
+
+        const commentsContainer = document.createElement('div');
+        commentsContainer.id = 'moment-comments';
+        detailCard.append(commentsContainer);
+
+        const backButton = document.createElement('button');
+        backButton.id = 'back-link';
+        backButton.className = 'btn btn-outline-secondary btn-sm';
+        backButton.type = 'button';
+        const backSpan = document.createElement('span');
+        backSpan.setAttribute('aria-hidden', 'true');
+        backSpan.textContent = '\u{2190}';
+        backButton.append(backSpan, ' Back');
+        detailCard.append(backButton);
+
+        detailDiv.replaceChildren(detailCard);
+
+        const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
+        const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
+        const momentEditButton = document.querySelector('#edit-moment-desc-btn') as HTMLElement;
+        const descriptionSaveButton = document.querySelector('#moment-description-save') as HTMLElement;
+        const momentDescriptionCancelButton = document.querySelector('#moment-description-cancel') as HTMLElement;
         let momentEditor;
         if (momentDescInput && momentDescView && momentEditButton) {
             createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
@@ -125,19 +303,19 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
         }
 
         (function gateMomentDetailControls() {
-            const canEdit = isAtLeast(permission?.permission, 'Edit');
+            const canEdit = isAtLeast(permission?.permission as string, 'Edit');
             if (!canEdit) {
-                const editButton = document.querySelector('#edit-moment-desc-btn');
-                const saveButton = document.querySelector('#moment-description-save');
-                const descInput = document.querySelector('#moment-description-input');
+                const editButton = document.querySelector('#edit-moment-desc-btn') as HTMLButtonElement | null;
+                const saveButton = document.querySelector('#moment-description-save') as HTMLButtonElement | null;
+                const descInput = document.querySelector('#moment-description-input') as HTMLInputElement | null;
                 if (editButton) { editButton.disabled = true; editButton.title = 'Requires Edit permission.'; }
                 if (saveButton) { saveButton.disabled = true; saveButton.title = 'Requires Edit permission.'; }
                 if (descInput) descInput.disabled = true;
 
-                const typeSelect = document.querySelector('#moment-type-select');
-                const statusSelect = document.querySelector('#moment-status-select');
-                const estSelect = document.querySelector('#moment-estimate-select');
-                const strideSelect = document.querySelector('#moment-stride-select');
+                const typeSelect = document.querySelector('#moment-type-select') as HTMLSelectElement | null;
+                const statusSelect = document.querySelector('#moment-status-select') as HTMLSelectElement | null;
+                const estSelect = document.querySelector('#moment-estimate-select') as HTMLSelectElement | null;
+                const strideSelect = document.querySelector('#moment-stride-select') as HTMLSelectElement | null;
                 if (typeSelect) { typeSelect.disabled = true; typeSelect.title = 'Requires Edit permission.'; }
                 if (statusSelect) { statusSelect.disabled = true; statusSelect.title = 'Requires Edit permission.'; }
                 if (estSelect) { estSelect.disabled = true; estSelect.title = 'Requires Edit permission.'; }
@@ -145,20 +323,19 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             }
         })();
 
-        const tasksContainer = /** @type {HTMLElement} */ (document.querySelector('#moment-tasks'));
-        renderMomentTasks(tasksContainer, momentId, moment.tasks, moment, permission, owner, project);
+        renderMomentTasks(tasksContainer, momentId, moment.tasks ?? [], moment, permission, owner, project);
 
-        const descriptionInput = /** @type {HTMLTextAreaElement} */ (document.querySelector('#moment-description-input'));
-        const descriptionMessage = /** @type {HTMLElement} */ (document.querySelector('#moment-description-msg'));
+        const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
+        const descriptionMessage = document.querySelector('#moment-description-msg') as HTMLElement;
         if (descriptionSaveButton && descriptionInput && descriptionMessage) {
-            descriptionSaveButton.addEventListener('click', async () => {
+            (descriptionSaveButton as HTMLButtonElement).addEventListener('click', async () => {
                 descriptionMessage.textContent = '';
-                descriptionSaveButton.disabled = true;
+                (descriptionSaveButton as HTMLButtonElement).disabled = true;
 
                 const newDescription = descriptionInput.value;
                 try {
-                    const updated = await updateMomentDescription(owner, project, momentId, newDescription);
-                    moment.description = updated?.description ?? (newDescription.trim() ? newDescription : undefined);
+                    const updated = await updateMomentDescription(owner, project, momentId, newDescription) as Record<string, unknown>;
+                    moment.description = (updated?.description as string) ?? (newDescription.trim() ? newDescription : undefined);
                     patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                         description: moment.description,
                     });
@@ -167,13 +344,13 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
                     descriptionMessage.textContent = 'Save failed';
                     console.error(error);
                 } finally {
-                    descriptionSaveButton.disabled = false;
+                    (descriptionSaveButton as HTMLButtonElement).disabled = false;
                 }
             });
         }
 
-        detailDiv.addEventListener('click', (event) => {
-            const flowLink = event.target.closest('a.detail-link');
+        detailDiv.addEventListener('click', (event: MouseEvent) => {
+            const flowLink = (event.target as HTMLElement).closest('a.detail-link');
             if (!flowLink) return;
 
             if (event.ctrlKey || event.metaKey || event.button === 1) return;
@@ -182,10 +359,10 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             void navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
         });
 
-        const estSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-estimate-select'));
-        if (estSelect) {
-            estSelect.addEventListener('change', async () => {
-                const estimate = estSelect.value === '-' ? undefined : estSelect.value;
+        const estSelectElement = document.querySelector('#moment-estimate-select') as HTMLSelectElement;
+        if (estSelectElement) {
+            estSelectElement.addEventListener('change', async () => {
+                const estimate = estSelectElement.value === '-' ? undefined : estSelectElement.value;
                 try {
                     await updateMomentEstimate(owner, project, momentId, estimate);
                     moment.effortEstimate = estimate;
@@ -199,31 +376,31 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             });
         }
 
-        const strideSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-stride-select'));
-        if (strideSelect) {
+        const strideSelectElement = document.querySelector('#moment-stride-select') as HTMLSelectElement;
+        if (strideSelectElement) {
             try {
-                const strides = await getStrides(owner, project);
+                const strides = await getStrides(owner, project) as Record<string, unknown>[];
                 strides.sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')));
                 for (const stride of strides) {
                     const opt = document.createElement('option');
                     opt.value = String(stride.id);
-                    opt.textContent = stride.name || `Stride ${stride.id}`;
+                    opt.textContent = (stride.name as string) || `Stride ${stride.id}`;
                     if (String(stride.id) === String(moment.assignedStrideId)) opt.selected = true;
-                    strideSelect.append(opt);
+                    strideSelectElement.append(opt);
                 }
                 if (!moment.assignedStrideId) {
-                    strideSelect.value = '';
+                    strideSelectElement.value = '';
                 }
 
-                strideSelect.addEventListener('change', async () => {
-                    const value = strideSelect.value === '' ? undefined : parseInt(strideSelect.value, 10);
+                strideSelectElement.addEventListener('change', async () => {
+                    const value = strideSelectElement.value === '' ? undefined : parseInt(strideSelectElement.value, 10);
                     try {
-                        const updated = await assignMomentToStride(owner, project, momentId, value);
-                        moment.assignedStrideId = updated.assignedStrideId;
+                        const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
+                        moment.assignedStrideId = updated.assignedStrideId as number;
                         patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             assignedStrideId: updated.assignedStrideId,
                         });
-                        strideSelect.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
+                        strideSelectElement.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
                     } catch (error) {
                         alert('Failed to update assigned stride');
                         console.error(error);
@@ -234,47 +411,47 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
             }
         }
 
-        const statusSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-status-select'));
-        const completedCell = /** @type {HTMLElement} */ (detailDiv.querySelector(':scope tr:nth-last-child(1) td'));
-        if (statusSelect) {
-            statusSelect.addEventListener('change', async () => {
-                const previous = statusSelect.value;
+        const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
+        const completedCell = detailDiv.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement;
+        if (statusSelectElement) {
+            statusSelectElement.addEventListener('change', async () => {
+                const previous = statusSelectElement.value;
                 try {
-                    const updated = await updateMomentStatus(owner, project, momentId, statusSelect.value);
-                    moment.status = updated.status;
-                    moment.statusColor = updated.statusColor;
-                    moment.completedAt = updated.completedAt;
-                    statusSelect.value = updated.status;
+                    const updated = await updateMomentStatus(owner, project, momentId, statusSelectElement.value) as Record<string, unknown>;
+                    moment.status = updated.status as string;
+                    moment.statusColor = updated.statusColor as string;
+                    moment.completedAt = updated.completedAt as string;
+                    statusSelectElement.value = updated.status as string;
                     await refreshDetailStackGraph();
                     if (updated.completedAt) {
-                        const d = new Date(updated.completedAt);
+                        const d = new Date(updated.completedAt as string);
                         completedCell.textContent = d.toLocaleDateString('en-CA');
                     } else {
-                        completedCell.textContent = '–';
+                        completedCell.textContent = '\u{2013}';
                     }
                 } catch {
-                    statusSelect.value = previous;
+                    statusSelectElement.value = previous;
                     alert('Failed to update status');
                 }
             });
         }
 
-        const typeSelect = /** @type {HTMLSelectElement} */ (document.querySelector('#moment-type-select'));
-        if (typeSelect) {
-            typeSelect.addEventListener('change', async () => {
-                const newType = typeSelect.value;
+        const typeSelectElement = document.querySelector('#moment-type-select') as HTMLSelectElement;
+        if (typeSelectElement) {
+            typeSelectElement.addEventListener('change', async () => {
+                const newType = typeSelectElement.value;
                 try {
-                    const updated = await updateMomentType(owner, project, momentId, newType);
+                    const updated = await updateMomentType(owner, project, momentId, newType) as Record<string, unknown>;
                     if (updated && updated.type) {
-                        moment.type = updated.type;
-                        typeSelect.value = updated.type;
+                        moment.type = updated.type as string;
+                        typeSelectElement.value = updated.type as string;
                         patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             type: updated.type,
                         });
                     }
                 } catch {
                     alert('Failed to update type');
-                    typeSelect.value = moment.type;
+                    typeSelectElement.value = moment.type;
                 }
             });
         }
@@ -285,7 +462,7 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
         const { owner: go, project: gp } = getOwnerProjectFromPath();
         if (go && gp) {
             const href = buildGraphViewHref(go, gp, `moment-${moment.sequenceNumber}`);
-            upsertGraphViewButton(detailDiv, href);
+            if (href) upsertGraphViewButton(detailDiv, href);
         }
     } catch (error) {
         if (loadingElement) loadingElement.hidden = true;
@@ -295,16 +472,15 @@ export async function loadMomentDetail(owner, project, momentId, navContentDiv, 
 }
 
 /**
- * Render the tasks section for a moment.
- * @param {HTMLElement} container - The container element.
- * @param {number} momentId - The moment ID.
- * @param {Array} tasks - The list of tasks.
- * @param {Moment} moment - The moment data object.
- * @param {{ permission?: string }} permission - The user's permission object.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
+ * @param {HTMLElement} container - The container element
+ * @param {string} momentId - The moment ID
+ * @param {MomentTask[]} tasks - The task list
+ * @param {Moment} moment - The moment object
+ * @param {Record<string, unknown>} permission - Permission object
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
  */
-function renderMomentTasks(container, momentId, tasks, moment, permission, owner, project) {
+function renderMomentTasks(container: HTMLElement, momentId: string, tasks: MomentTask[], moment: Moment, permission: Record<string, unknown>, owner: string, project: string): void {
     if (!container) return;
 
     const taskList = Array.isArray(tasks) ? tasks : [];
@@ -313,7 +489,9 @@ function renderMomentTasks(container, momentId, tasks, moment, permission, owner
         headers: ['Name', 'Description', 'Completion Status'],
         items: taskList,
         emptyMessage: 'No moment tasks found.',
-        renderItemRow: task => `
+        renderItemRow: (item: unknown) => {
+            const task = item as MomentTask;
+            return `
             <tr data-moment-task-id="${task.id}">
                 <td>${escapeHtml(task.name || '')}</td>
                 <td>${formatCommentText(task.description)}</td>
@@ -324,7 +502,8 @@ function renderMomentTasks(container, momentId, tasks, moment, permission, owner
                     </label>
                 </td>
             </tr>
-        `,
+            `;
+        },
         renderAddRow: () => `
             <tr data-inline-add-row="1">
                 <td>
@@ -346,70 +525,85 @@ function renderMomentTasks(container, momentId, tasks, moment, permission, owner
             </tr>
         `,
     });
+    if (!tbody) return;
 
-    const addTaskName = /** @type {HTMLInputElement} */ (container.querySelector('#add-moment-task-name'));
-    const addTaskDescription = /** @type {HTMLInputElement} */ (container.querySelector('#add-moment-task-description'));
-    const addTaskCompleted = /** @type {HTMLInputElement} */ (container.querySelector('#add-moment-task-completed'));
-    const addTaskButton = /** @type {HTMLElement} */ (container.querySelector('#add-moment-task-submit'));
-    const addTaskMessage = /** @type {HTMLElement} */ (container.querySelector('#add-moment-task-msg'));
+    const taskNameInput = container.querySelector('#add-moment-task-name') as HTMLInputElement;
+    const taskDescriptionInput = container.querySelector('#add-moment-task-description') as HTMLInputElement;
+    const taskCompletedInput = container.querySelector('#add-moment-task-completed') as HTMLInputElement;
+    const taskSubmitButton = container.querySelector('#add-moment-task-submit') as HTMLButtonElement;
+    const taskMessageElement = container.querySelector('#add-moment-task-msg') as HTMLElement;
 
-    if (addTaskDescription) createCommentAutocomplete(addTaskDescription, 'Moment', moment.id);
+    if (taskDescriptionInput) createCommentAutocomplete(taskDescriptionInput, 'Moment', moment.id);
 
-    const canEdit = isAtLeast(permission?.permission, 'Edit');
+    const canEdit = isAtLeast(permission?.permission as string, 'Edit');
     if (!canEdit) {
-        if (addTaskName) addTaskName.disabled = true;
-        if (addTaskDescription) addTaskDescription.disabled = true;
-        if (addTaskCompleted) addTaskCompleted.disabled = true;
-        if (addTaskButton) { addTaskButton.disabled = true; addTaskButton.title = 'Requires Edit permission.'; }
+        if (taskNameInput) taskNameInput.disabled = true;
+        if (taskDescriptionInput) taskDescriptionInput.disabled = true;
+        if (taskCompletedInput) taskCompletedInput.disabled = true;
+        if (taskSubmitButton) { taskSubmitButton.disabled = true; taskSubmitButton.title = 'Requires Edit permission.'; }
     }
 
-    if (addTaskButton && addTaskName && addTaskDescription && addTaskCompleted && addTaskMessage) {
-        addTaskButton.addEventListener('click', async () => {
-            addTaskMessage.textContent = '';
+    if (taskSubmitButton && taskNameInput && taskDescriptionInput && taskCompletedInput && taskMessageElement) {
+        taskSubmitButton.addEventListener('click', async () => {
+            taskMessageElement.textContent = '';
 
-            const name = addTaskName.value.trim();
+            const name = taskNameInput.value.trim();
             if (!name) {
-                addTaskMessage.textContent = 'Name is required.';
+                taskMessageElement.textContent = 'Name is required.';
                 return;
             }
 
-            addTaskButton.disabled = true;
+            taskSubmitButton.disabled = true;
 
             try {
                 const created = await createTask(owner, project, momentId, {
                     name,
-                    description: addTaskDescription.value.trim(),
-                    isCompleted: addTaskCompleted.checked,
-                });
+                    description: taskDescriptionInput.value.trim(),
+                    isCompleted: taskCompletedInput.checked,
+                }) as MomentTask;
 
                 if (created) {
                     removeInlineEmptyRow(tbody);
                     const row = document.createElement('tr');
-                    row.dataset.momentTaskId = created.id;
-                    row.innerHTML = `
-                        <td>${escapeHtml(created.name || '')}</td>
-                        <td>${formatCommentText(created.description || '')}</td>
-                        <td>
-                            <label class="moment-task-completion">
-                                <input type="checkbox" class="moment-task-complete-checkbox" data-moment-task-id="${created.id}" ${created.isCompleted ? 'checked' : ''} />
-                                <span>${created.isCompleted ? 'Completed' : 'Open'}</span>
-                            </label>
-                        </td>
-                    `;
+                    row.dataset.momentTaskId = String(created.id);
+
+                    const tdName = document.createElement('td');
+                    tdName.textContent = created.name || '';
+                    row.append(tdName);
+
+                    const tdDesc = document.createElement('td');
+                    tdDesc.append(...htmlToNodes(formatCommentText(created.description || '')));
+                    row.append(tdDesc);
+
+                    const tdCompletion = document.createElement('td');
+                    const label = document.createElement('label');
+                    label.className = 'moment-task-completion';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'moment-task-complete-checkbox';
+                    checkbox.dataset.momentTaskId = String(created.id);
+                    if (created.isCompleted) checkbox.checked = true;
+                    label.append(checkbox);
+                    const statusSpan = document.createElement('span');
+                    statusSpan.textContent = created.isCompleted ? 'Completed' : 'Open';
+                    label.append(statusSpan);
+                    tdCompletion.append(label);
+                    row.append(tdCompletion);
+
                     insertRowBeforeAddRow(tbody, row);
-                    addTaskName.value = '';
-                    addTaskDescription.value = '';
-                    addTaskCompleted.checked = false;
+                    taskNameInput.value = '';
+                    taskDescriptionInput.value = '';
+                    taskCompletedInput.checked = false;
                     if (!Array.isArray(moment.tasks)) moment.tasks = [];
                     moment.tasks.push(created);
                     syncMomentTasksToStackGraph(momentId, moment);
-                    bindMomentTaskCompletionToggle(tbody, momentId, moment, undefined, owner, project);
+                    bindMomentTaskCompletionToggle(tbody, momentId, moment, {}, owner, project);
                 }
             } catch (error) {
-                addTaskMessage.textContent = 'Failed to add task.';
+                taskMessageElement.textContent = 'Failed to add task.';
                 console.error(error);
             } finally {
-                addTaskButton.disabled = false;
+                taskSubmitButton.disabled = false;
             }
         });
     }
@@ -418,31 +612,29 @@ function renderMomentTasks(container, momentId, tasks, moment, permission, owner
 }
 
 /**
- * Sync the current moment's task list into the detail-stack graph node.
- * @param {number} momentId - The moment's sequence number.
- * @param {Moment} moment - The moment data object.
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment object
  */
-function syncMomentTasksToStackGraph(momentId, moment) {
+function syncMomentTasksToStackGraph(momentId: string, moment: Moment): void {
     patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
         tasks: Array.isArray(moment?.tasks) ? [...moment.tasks] : [],
     });
 }
 
 /**
- * Bind change event listeners to task completion checkboxes.
- * @param {HTMLElement} tbody - The table body containing the checkboxes.
- * @param {number} momentId - The moment's sequence number.
- * @param {Moment} moment - The moment data object.
- * @param {{ permission?: string }} permission - The user's permission object.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
+ * @param {HTMLElement} tbody - The table body element
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment object
+ * @param {Record<string, unknown>} permission - Permission object
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
  */
-function bindMomentTaskCompletionToggle(tbody, momentId, moment, permission, owner, project) {
+function bindMomentTaskCompletionToggle(tbody: HTMLElement, momentId: string, moment: Moment, permission: Record<string, unknown>, owner: string, project: string): void {
     if (!tbody) return;
 
-    const canEdit = isAtLeast(permission?.permission, 'Edit');
+    const canEdit = isAtLeast(permission?.permission as string, 'Edit');
 
-    for (const checkbox of tbody.querySelectorAll(':scope .moment-task-complete-checkbox')) {
+    for (const checkbox of tbody.querySelectorAll(':scope .moment-task-complete-checkbox') as NodeListOf<HTMLInputElement>) {
         if (checkbox.dataset.bound === '1') return;
         checkbox.dataset.bound = '1';
 
@@ -454,19 +646,19 @@ function bindMomentTaskCompletionToggle(tbody, momentId, moment, permission, own
 
         checkbox.addEventListener('change', async () => {
             const taskId = Math.trunc(Number(checkbox.dataset.momentTaskId ?? ''));
-            const row = checkbox.closest('tr');
-            const label = row?.querySelector(':scope > .moment-task-completion span');
+            const row = checkbox.closest('tr') as HTMLElement | null;
+            const label = row?.querySelector(':scope > .moment-task-completion span') as HTMLElement | null;
             const isPreviousChecked = !checkbox.checked;
             checkbox.disabled = true;
 
             try {
-                const updated = await updateTaskCompletion(owner, project, momentId, taskId, checkbox.checked);
+                const updated = await updateTaskCompletion(owner, project, momentId, taskId, checkbox.checked) as Record<string, unknown>;
                 if (updated) {
                     checkbox.checked = Boolean(updated.isCompleted);
                     if (label) label.textContent = updated.isCompleted ? 'Completed' : 'Open';
-                    const task = (moment.tasks ?? []).find(item => Number(item.id) === taskId);
+                    const task = (moment.tasks ?? []).find((item: MomentTask) => Number(item.id) === taskId);
                     if (task) {
-                        task.isCompleted = updated.isCompleted;
+                        task.isCompleted = Boolean(updated.isCompleted);
                         syncMomentTasksToStackGraph(momentId, moment);
                     }
                 } else if (label) {

@@ -5,6 +5,7 @@ import importx from 'eslint-plugin-import-x';
 import tseslint from 'typescript-eslint';
 import unicorn from 'eslint-plugin-unicorn';
 import regexp from 'eslint-plugin-regexp';
+import noUnsanitized from 'eslint-plugin-no-unsanitized';
 
 const importRules = {
   'import-x/first': 'warn',
@@ -26,11 +27,13 @@ export default tseslint.config(
         signalR: 'readonly',
       },
     },
-    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
       ...unicorn.configs.recommended.rules,
       ...regexp.configs['flat/recommended'].rules,
+      ...noUnsanitized.configs.recommended.rules,
+      'no-unsanitized/property': 'warn',
       'unicorn/filename-case': 'off',
       'unicorn/prefer-number-coercion': 'off',
       ...importRules,
@@ -73,11 +76,13 @@ export default tseslint.config(
       parser: tseslint.parser,
       parserOptions: { projectService: true },
     },
-    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, '@typescript-eslint': tseslint.plugin },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized, '@typescript-eslint': tseslint.plugin },
     rules: {
       ...jsdoc.configs['flat/recommended'].rules,
       ...unicorn.configs.recommended.rules,
       ...regexp.configs['flat/recommended'].rules,
+      ...noUnsanitized.configs.recommended.rules,
+      'no-unsanitized/property': 'warn',
       'unicorn/filename-case': 'off',
       'unicorn/prefer-number-coercion': 'off',
       ...importRules,

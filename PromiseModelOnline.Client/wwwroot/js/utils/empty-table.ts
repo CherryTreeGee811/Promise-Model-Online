@@ -1,9 +1,4 @@
-// @ts-nocheck
-import { escapeHtml } from './html.ts';
-
-/**
- * @typedef {{ icon?: string; title?: string; description?: string; button?: { id?: string; class?: string; text: string; icon?: string }; colspan: number }} EmptyTableOptions
- */
+type EmptyTableOptions = { icon?: string; title?: string; description?: string; button?: { id?: string; class?: string; text: string; icon?: string }; colspan: number };
 
 /**
  * Render an HTML table row with an empty-state message and optional CTA button.
@@ -15,37 +10,53 @@ import { escapeHtml } from './html.ts';
  * @param {number} options.colspan - Number of columns the row should span.
  * @returns {string} HTML string for the empty table row.
  */
-export function renderEmptyTableRow({ icon, title, description, button, colspan }: EmptyTableOptions): string {
-    const iconHtml = icon
-        ? `<div class="empty-table-icon"><i class="bi ${escapeHtml(icon)}"></i></div>`
-        : '';
-    const titleHtml = title
-        ? `<h5 class="fw-semibold text-secondary mb-1">${escapeHtml(title)}</h5>`
-        : '';
-    const descHtml = description
-        ? `<p class="text-muted mb-2">${escapeHtml(description)}</p>`
-        : '';
-    const buttonHtml = button
-        ? `<button${button.id ? ` id="${escapeHtml(button.id)}"` : ''} class="${escapeHtml(button.class || 'btn btn-outline-primary rounded-pill mt-2')}" type="button">${button.icon ? `<i class="bi ${escapeHtml(button.icon)} me-1"></i> ` : ''}${escapeHtml(button.text)}</button>`
-        : '';
-
-    return `
-        <tr class="inline-table-empty-row">
-            <td colspan="${colspan}" class="text-center py-5">
-                <div class="d-flex flex-column align-items-center gap-3">
-                    ${iconHtml}
-                    ${titleHtml}
-                    ${descHtml}
-                    ${buttonHtml}
-                </div>
-            </td>
-        </tr>
-    `;
+export function renderEmptyTableRow({ icon, title, description, button, colspan }: EmptyTableOptions): HTMLTableRowElement {
+    const tr = document.createElement('tr');
+    tr.className = 'inline-table-empty-row';
+    const td = document.createElement('td');
+    td.colSpan = colspan;
+    td.className = 'text-center py-5';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex flex-column align-items-center gap-3';
+    if (icon) {
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'empty-table-icon';
+        const index = document.createElement('i');
+        index.classList.add('bi', icon);
+        iconDiv.append(index);
+        wrapper.append(iconDiv);
+    }
+    if (title) {
+        const h5 = document.createElement('h5');
+        h5.className = 'fw-semibold text-secondary mb-1';
+        h5.textContent = title;
+        wrapper.append(h5);
+    }
+    if (description) {
+        const p = document.createElement('p');
+        p.className = 'text-muted mb-2';
+        p.textContent = description;
+        wrapper.append(p);
+    }
+    if (button) {
+        const button_ = document.createElement('button');
+        button_.className = button.class || 'btn btn-outline-primary rounded-pill mt-2';
+        button_.type = 'button';
+        if (button.id) button_.id = button.id;
+        if (button.icon) {
+            const buttonIcon = document.createElement('i');
+            buttonIcon.classList.add('bi', button.icon, 'me-1');
+            button_.append(buttonIcon, ' ');
+        }
+        button_.append(button.text);
+        wrapper.append(button_);
+    }
+    td.append(wrapper);
+    tr.append(td);
+    return tr;
 }
 
-/**
- * @typedef {{ icon?: string; title?: string; description?: string; button?: { id?: string; class?: string; text: string; icon?: string } }} EmptySectionOptions
- */
+type EmptySectionOptions = { icon?: string; title?: string; description?: string; button?: { id?: string; class?: string; text: string; icon?: string } };
 
 /**
  * Render an HTML div with an empty-state message and optional CTA button.
@@ -57,26 +68,41 @@ export function renderEmptyTableRow({ icon, title, description, button, colspan 
  * @param {object} [options.button] - Button configuration.
  * @returns {string} HTML string for the empty state section.
  */
-export function renderEmptyStateSection({ icon, title, description, button }: EmptySectionOptions): string {
-    const iconHtml = icon
-        ? `<div class="empty-table-icon"><i class="bi ${escapeHtml(icon)}"></i></div>`
-        : '';
-    const titleHtml = title
-        ? `<h5 class="fw-semibold text-secondary mb-1">${escapeHtml(title)}</h5>`
-        : '';
-    const descHtml = description
-        ? `<p class="text-muted mb-2">${escapeHtml(description)}</p>`
-        : '';
-    const buttonHtml = button
-        ? `<button${button.id ? ` id="${escapeHtml(button.id)}"` : ''} class="${escapeHtml(button.class || 'btn btn-outline-primary rounded-pill mt-2')}" type="button">${button.icon ? `<i class="bi ${escapeHtml(button.icon)} me-1"></i> ` : ''}${escapeHtml(button.text)}</button>`
-        : '';
-
-    return `
-        <div class="no-items d-flex flex-column align-items-center gap-3 py-5">
-            ${iconHtml}
-            ${titleHtml}
-            ${descHtml}
-            ${buttonHtml}
-        </div>
-    `;
+export function renderEmptyStateSection({ icon, title, description, button }: EmptySectionOptions): HTMLElement {
+    const div = document.createElement('div');
+    div.className = 'no-items d-flex flex-column align-items-center gap-3 py-5';
+    if (icon) {
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'empty-table-icon';
+        const index = document.createElement('i');
+        index.classList.add('bi', icon);
+        iconDiv.append(index);
+        div.append(iconDiv);
+    }
+    if (title) {
+        const h5 = document.createElement('h5');
+        h5.className = 'fw-semibold text-secondary mb-1';
+        h5.textContent = title;
+        div.append(h5);
+    }
+    if (description) {
+        const p = document.createElement('p');
+        p.className = 'text-muted mb-2';
+        p.textContent = description;
+        div.append(p);
+    }
+    if (button) {
+        const button_ = document.createElement('button');
+        button_.className = button.class || 'btn btn-outline-primary rounded-pill mt-2';
+        button_.type = 'button';
+        if (button.id) button_.id = button.id;
+        if (button.icon) {
+            const buttonIcon = document.createElement('i');
+            buttonIcon.classList.add('bi', button.icon, 'me-1');
+            button_.append(buttonIcon, ' ');
+        }
+        button_.append(button.text);
+        div.append(button_);
+    }
+    return div;
 }
