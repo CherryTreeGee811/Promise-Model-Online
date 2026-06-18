@@ -411,9 +411,9 @@ function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): A
  * @param {object} nodeData - The parent (flow) node data.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {function} getAvailableStrides - Function returning the list of available strides.
- * @param {function} onGraphMutated - Callback after successful creation.
- * @param {function} closeMenus - Function to close all context menus.
+ * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Function returning the list of available strides.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after successful creation.
+ * @param {() => void} closeMenus - Function to close all context menus.
  * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
  */
 function buildMomentFormElement(
@@ -569,8 +569,8 @@ function buildMomentFormElement(
 /**
  * Build the change-moment-status form element.
  * @param {object} nodeData - The moment node data.
- * @param {function} onGraphMutated - Callback after successful status update.
- * @param {function} closeMenus - Function to close all context menus.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after successful status update.
+ * @param {() => void} closeMenus - Function to close all context menus.
  * @returns {HTMLFormElement|null} The form element, or null if the moment sequence number is missing.
  */
 function buildMomentStatusFormElement(
@@ -646,9 +646,9 @@ function buildMomentStatusFormElement(
  * @param {object} nodeData - The parent node data.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {function} getAvailableStrides - Function returning available strides (for moments).
- * @param {function} onGraphMutated - Callback after successful creation.
- * @param {function} closeMenus - Function to close all context menus.
+ * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Function returning available strides (for moments).
+ * @param {(() => void) | undefined} onGraphMutated - Callback after successful creation.
+ * @param {() => void} closeMenus - Function to close all context menus.
  * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
  */
 function buildCreateFormElement(
@@ -774,16 +774,16 @@ function buildCreateFormElement(
  * @param {object} nodeData - The node data for which to build actions.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {function} onGraphMutated - Callback after any mutation.
- * @param {function} onProjectDeleted - Callback when the project is deleted.
- * @param {function} closeMenus - Function to close all context menus.
- * @param {function} openCreateForm - Function to open the create form.
- * @param {function} openMomentStatusForm - Function to open the moment status form.
- * @param {function} isNodeChildrenHidden - Function to check if a node's children are hidden.
- * @param {function} setNodeChildrenHidden - Function to toggle children visibility.
- * @param {function} revealNextLevel - Function to reveal the next level of children.
- * @param {object} permission - The current user's permission object.
- * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: Function}[]} The action list.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after any mutation.
+ * @param {(() => void) | undefined} onProjectDeleted - Callback when the project is deleted.
+ * @param {() => void} closeMenus - Function to close all context menus.
+ * @param {(nodeData: object, owner: string, project: string, refreshGraph: (() => void) | undefined) => void} openCreateForm - Function to open the create form.
+ * @param {(nodeData: object, refreshGraph: (() => void) | undefined) => void} openMomentStatusForm - Function to open the moment status form.
+ * @param {((nodeData: object) => boolean) | undefined} isNodeChildrenHidden - Function to check if a node's children are hidden.
+ * @param {((nodeData: object, hidden: boolean) => void) | undefined} setNodeChildrenHidden - Function to toggle children visibility.
+ * @param {((nodeData: object) => void) | undefined} revealNextLevel - Function to reveal the next level of children.
+ * @param {{ permission?: string } | null | undefined} permission - The current user's permission object.
+ * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} The action list.
  */
 function buildMenuActions(
     nodeData: any,
@@ -907,7 +907,7 @@ function buildMenuActions(
 
 /**
  * Build the DOM element for the context menu from a list of actions.
- * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: Function}[]} actions - The action definitions.
+ * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} actions - The action definitions.
  * @returns {HTMLDivElement} The menu element.
  */
 function buildMenuElement(actions: Array<{
@@ -949,33 +949,18 @@ function buildMenuElement(actions: Array<{
 }
 
 /**
- * Create a context menu controller for the graph visualization using Tippy.js.
- * @param {{owner: string, project: string, getAvailableStrides: Function, onGraphMutated: Function, onProjectDeleted: Function, isNodeChildrenHidden: Function, setNodeChildrenHidden: Function, revealNextLevel: Function, permission: object}} [options={}] - Configuration options.
- * @returns {{hide: Function, destroy: Function, open: Function}} The context menu controller.
- */
-/**
  * Create a context menu controller for the graph visualization using Tippy.js popups.
- * @param options.owner - The project owner's slug.
- * @param root0
- * @param root0.owner
- * @param options.project - The project's slug.
- * @param root0.project
- * @param options.getAvailableStrides - Function returning available strides (for moment creation).
- * @param root0.getAvailableStrides
- * @param options.onGraphMutated - Callback invoked after any graph mutation.
- * @param root0.onGraphMutated
- * @param options.onProjectDeleted - Callback invoked when the project is deleted.
- * @param root0.onProjectDeleted
- * @param options.isNodeChildrenHidden - Function to check if a node's children are hidden.
- * @param root0.isNodeChildrenHidden
- * @param options.setNodeChildrenHidden - Function to toggle a node's children visibility.
- * @param root0.setNodeChildrenHidden
- * @param options.revealNextLevel - Function to reveal the next level of children beneath a node.
- * @param root0.revealNextLevel
- * @param options.permission - The current user's permission object for gating edit actions.
- * @param root0.permission
- * @param root0.permission.permission
- * @returns An object with hide, destroy, and open methods for the context menu.
+ * @param {object} [root0] - Configuration options.
+ * @param {string} [root0.owner] - The project owner's slug.
+ * @param {string} [root0.project] - The project's slug.
+ * @param {() => Array<{ id: number; name?: string }>} [root0.getAvailableStrides] - Function returning available strides (for moment creation).
+ * @param {() => void} [root0.onGraphMutated] - Callback invoked after any graph mutation.
+ * @param {() => void} [root0.onProjectDeleted] - Callback invoked when the project is deleted.
+ * @param {(nodeData: object) => boolean} [root0.isNodeChildrenHidden] - Function to check if a node's children are hidden.
+ * @param {(nodeData: object, hidden: boolean) => void} [root0.setNodeChildrenHidden] - Function to toggle a node's children visibility.
+ * @param {(nodeData: object) => void} [root0.revealNextLevel] - Function to reveal the next level of children beneath a node.
+ * @param {{ permission?: string }} [root0.permission] - The current user's permission object for gating edit actions.
+ * @returns {{hide: () => void, destroy: () => void, open: (event: MouseEvent, nodeData: object) => void}} An object with hide, destroy, and open methods for the context menu.
  */
 export function createGraphContextMenuController({
     owner,
@@ -1082,7 +1067,7 @@ export function createGraphContextMenuController({
      * @param {object} nodeData - The parent node data.
      * @param {string} sourceOwner - The project owner's slug.
      * @param {string} sourceProject - The project's slug.
-     * @param {function} refreshGraph - Callback to refresh the graph after creation.
+     * @param {(() => void) | undefined} refreshGraph - Callback to refresh the graph after creation.
      */
     function openCreateForm(nodeData: any, sourceOwner: string, sourceProject: string, refreshGraph: (() => void) | undefined) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
@@ -1103,7 +1088,7 @@ export function createGraphContextMenuController({
     /**
      * Open the change-moment-status form tippy popup.
      * @param {object} nodeData - The moment node data.
-     * @param {function} refreshGraph - Callback to refresh the graph after status update.
+     * @param {(() => void) | undefined} refreshGraph - Callback to refresh the graph after status update.
      */
     function openMomentStatusForm(nodeData: any, refreshGraph: (() => void) | undefined) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);

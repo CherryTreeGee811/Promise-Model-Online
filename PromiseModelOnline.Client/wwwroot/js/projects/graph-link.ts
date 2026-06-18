@@ -9,8 +9,9 @@ interface OwnerProject {
 }
 
 /**
- *
- * @param value
+ * Parse a raw value into a project ID number.
+ * @param {unknown} value - The value to parse.
+ * @returns {number | null} The parsed project ID, or null if invalid.
  */
 function toProjectId(value: unknown): number | null {
     const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -19,7 +20,7 @@ function toProjectId(value: unknown): number | null {
 
 /**
  * Read a graphProjectId hint from the URL query parameters.
- * @returns The project ID if present and valid, or null.
+ * @returns {number | null} The project ID if present and valid, or null.
  */
 export function getGraphProjectIdHintFromUrl(): number | null {
     const params = new URLSearchParams(window.location.search);
@@ -28,7 +29,7 @@ export function getGraphProjectIdHintFromUrl(): number | null {
 
 /**
  * Parse the owner and project slugs from the current URL path.
- * @returns An object with owner and project slugs (both may be null).
+ * @returns {OwnerProject} An object with owner and project slugs (both may be null).
  */
 export function getOwnerProjectFromPath(): OwnerProject {
     const match = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\//);
@@ -40,10 +41,10 @@ export function getOwnerProjectFromPath(): OwnerProject {
 
 /**
  * Build a URL to the graph view focusing on a specific node.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param focusNodeId - The node ID to focus on in the graph.
- * @returns The full graph URL with focus parameter, or null if any input is missing.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} focusNodeId - The node ID to focus on in the graph.
+ * @returns {string | null} The full graph URL with focus parameter, or null if any input is missing.
  */
 export function buildGraphViewHref(owner: string, project: string, focusNodeId: string): string | null {
     const safeOwner = String(owner ?? '').trim();
@@ -56,8 +57,8 @@ export function buildGraphViewHref(owner: string, project: string, focusNodeId: 
 
 /**
  * Insert or update a "Graph View" link button in a detail page container.
- * @param detailContainer - The container element to insert the button into.
- * @param href - The graph view URL for the button.
+ * @param {HTMLElement | null} detailContainer - The container element to insert the button into.
+ * @param {string} href - The graph view URL for the button.
  */
 export function upsertGraphViewButton(detailContainer: HTMLElement | null, href: string): void {
     if (!detailContainer || !href) return;
@@ -83,9 +84,9 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
 
 /**
  * Resolve the project ID that contains a given promise, using cache and fallback project searches.
- * @param promiseId - The promise ID to look up.
- * @param preferredProjectId - An optional preferred project ID to short-circuit the search.
- * @returns The resolved project ID, or null if not found.
+ * @param {string | number} promiseId - The promise ID to look up.
+ * @param {string | number | null} [preferredProjectId] - An optional preferred project ID to short-circuit the search.
+ * @returns {Promise<number | null>} The resolved project ID, or null if not found.
  */
 export async function resolveProjectIdForPromise(promiseId: string | number, preferredProjectId: string | number | null = null): Promise<number | null> {
     const numericPromiseId = Number.parseInt(String(promiseId), 10);

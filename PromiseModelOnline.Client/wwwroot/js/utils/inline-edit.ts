@@ -1,20 +1,20 @@
 // @ts-nocheck
 /**
  * Set up an inline-edit toggle between a display view and a hidden input field.
- * @param inputEl - The hidden input element.
- * @param viewEl - The visible display element.
- * @param editBtn - Button to switch from view mode to edit mode.
- * @param saveBtn - Button to save (optional; shows "Saved!" popover if provided).
- * @param cancelBtn - Button to cancel and restore previous value.
- * @returns An object with `showView` and `showSavedPopover` helper methods.
+ * @param {HTMLElement} inputEl - The hidden input element.
+ * @param {HTMLElement} viewEl - The visible display element.
+ * @param {HTMLElement} editBtn - Button to switch from view mode to edit mode.
+ * @param {HTMLElement | null} saveBtn - Button to save (optional; shows "Saved!" popover if provided).
+ * @param {HTMLElement | null} cancelBtn - Button to cancel and restore previous value.
+ * @returns {object} An object with `showView` and `showSavedPopover` helper methods.
  */
 export function setupInlineEdit(inputEl: HTMLElement, viewEl: HTMLElement, editBtn: HTMLElement, saveBtn: HTMLElement | null, cancelBtn: HTMLElement | null): { showView: (value: string) => void; showSavedPopover: (value: string) => void } {
   let cancelValue = '';
   let cancelViewHtml = '';
 
   /**
-   *
-   * @param value
+   * Switch from edit mode back to view mode, displaying the given value.
+   * @param {string} value - The HTML content to display.
    */
   function showView(value: string): void {
     viewEl.innerHTML = value || '';
@@ -26,7 +26,7 @@ export function setupInlineEdit(inputEl: HTMLElement, viewEl: HTMLElement, editB
   }
 
   /**
-   *
+   * Switch from view mode to edit mode, showing the input field.
    */
   function showEdit(): void {
     cancelValue = (inputEl as HTMLInputElement).value;

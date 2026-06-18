@@ -7,13 +7,13 @@ import { escapeHtml } from './html.ts';
 
 /**
  * Render an HTML table row with an empty-state message and optional CTA button.
- * @param options - Configuration for the empty row.
- * @param options.icon
- * @param options.title
- * @param options.description
- * @param options.button
- * @param options.colspan
- * @returns HTML string for the empty table row.
+ * @param {EmptyTableOptions} options - Configuration for the empty row.
+ * @param {string} [options.icon] - Icon class for the empty state.
+ * @param {string} [options.title] - Title text for the empty state.
+ * @param {string} [options.description] - Description text for the empty state.
+ * @param {object} [options.button] - Button configuration.
+ * @param {number} options.colspan - Number of columns the row should span.
+ * @returns {string} HTML string for the empty table row.
  */
 export function renderEmptyTableRow({ icon, title, description, button, colspan }: EmptyTableOptions): string {
     const iconHtml = icon
@@ -50,12 +50,12 @@ export function renderEmptyTableRow({ icon, title, description, button, colspan 
 /**
  * Render an HTML div with an empty-state message and optional CTA button.
  * Used for sections that are not inside a table.
- * @param options - Configuration for the empty state.
- * @param options.icon
- * @param options.title
- * @param options.description
- * @param options.button
- * @returns HTML string for the empty state section.
+ * @param {EmptySectionOptions} options - Configuration for the empty state.
+ * @param {string} [options.icon] - Icon class for the empty state.
+ * @param {string} [options.title] - Title text for the empty state.
+ * @param {string} [options.description] - Description text for the empty state.
+ * @param {object} [options.button] - Button configuration.
+ * @returns {string} HTML string for the empty state section.
  */
 export function renderEmptyStateSection({ icon, title, description, button }: EmptySectionOptions): string {
     const iconHtml = icon

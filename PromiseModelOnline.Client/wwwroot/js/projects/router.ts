@@ -17,9 +17,9 @@ import { loadSharePage } from './share.ts';
 
 /**
  * Handle legacy project routes (non-slug-based) like /projects and /projects/add.
- * @param path - The URL path to match.
- * @param navContentDiv - The navigation content container.
- * @param contentDiv - The main content container.
+ * @param {string} path - The URL path to match.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function handleLegacyProjectRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     switch (path) {
@@ -41,11 +41,11 @@ export function handleLegacyProjectRoutes(path: string, navContentDiv: HTMLEleme
 /**
  * Handle project-scoped routes with owner and project slugs (e.g. /{owner}/{project}/graph).
  * Dispatches to the appropriate page loader based on the sub-path segment.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param subPath - The sub-path after owner/project.
- * @param navContentDiv - The navigation content container.
- * @param contentDiv - The main content container.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} subPath - The sub-path after owner/project.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function handleProjectScopedRoutes(owner: string, project: string, subPath: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     projectStore.set({ owner, project, permission: undefined, isOwner: false });

@@ -23,7 +23,7 @@ const BG_CLASSES = {
 
 /**
  * Get or create the toast container element.
- * @returns {HTMLElement}
+ * @returns {HTMLElement} The toast container element.
  */
 function ensureContainer() {
   let container = document.getElementById(TOAST_CONTAINER_ID);
@@ -42,6 +42,7 @@ function ensureContainer() {
  * @param {string} message - The notification text.
  * @param {ToastType} [type] - Visual style.
  * @param {number} [duration] - Auto-dismiss timeout in ms.
+ * @returns {void}
  */
 export function showToast(message, type = 'info', duration = DEFAULT_DURATION) {
   const container = ensureContainer();

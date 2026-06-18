@@ -25,10 +25,10 @@ interface AuditTableOptions {
 
 /**
  * Render an HTML audit table from a list of audit items.
- * @param items - The audit items to render, or null/undefined for an empty state.
- * @param options - Options including whether to show the entity column.
- * @param options.showEntity
- * @returns The rendered HTML string.
+ * @param {AuditItem[] | null | undefined} items - The audit items to render, or null/undefined for an empty state.
+ * @param {AuditTableOptions} [options] - Options including whether to show the entity column.
+ * @param {boolean} [options.showEntity] - Whether to show the entity column.
+ * @returns {string} The rendered HTML string.
  */
 export function renderAuditTable(items: AuditItem[] | null | undefined, { showEntity = false }: AuditTableOptions = {}): string {
     if (!items || items.length === 0) {
@@ -77,8 +77,8 @@ export function renderAuditTable(items: AuditItem[] | null | undefined, { showEn
 
 /**
  * Render the audit loading spinner HTML.
- * @param message - The loading message to display.
- * @returns The loading spinner HTML string.
+ * @param {string} [message] - The loading message to display.
+ * @returns {string} The loading spinner HTML string.
  */
 export function renderAuditLoading(message = 'Loading activity'): string {
     return renderLoadingSpinner(message);
@@ -86,7 +86,7 @@ export function renderAuditLoading(message = 'Loading activity'): string {
 
 /**
  * Render the audit details modal HTML.
- * @returns The modal HTML string.
+ * @returns {string} The modal HTML string.
  */
 export function renderAuditDetailsModal(): string {
     return `
@@ -109,8 +109,8 @@ export function renderAuditDetailsModal(): string {
 
 /**
  * Format a timestamp value into a human-readable date-time string.
- * @param value - The timestamp as a string, Date, or null.
- * @returns The formatted date-time string, or 'Unknown' if invalid.
+ * @param {string | Date | null | undefined} value - The timestamp as a string, Date, or null.
+ * @returns {string} The formatted date-time string, or 'Unknown' if invalid.
  */
 export function formatTimestamp(value: string | Date | null | undefined): string {
     if (!value) return 'Unknown';
@@ -131,8 +131,8 @@ export function formatTimestamp(value: string | Date | null | undefined): string
 
 /**
  * Format a timestamp as a relative time string (e.g. "3 minutes ago").
- * @param value - The timestamp as a string, Date, or null.
- * @returns The relative time string, or 'Unknown' if invalid.
+ * @param {string | Date | null | undefined} value - The timestamp as a string, Date, or null.
+ * @returns {string} The relative time string, or 'Unknown' if invalid.
  */
 export function formatRelativeTime(value: string | Date | null | undefined): string {
     if (!value) return 'Unknown';
@@ -170,8 +170,8 @@ export function formatRelativeTime(value: string | Date | null | undefined): str
 
 /**
  * Format the title for an audit details modal from the given audit item.
- * @param item - The audit item.
- * @returns The formatted title string.
+ * @param {AuditItem} item - The audit item.
+ * @returns {string} The formatted title string.
  */
 export function formatAuditDetailsTitle(item: AuditItem): string {
     return `${formatEventType(item)} ${formatEntity(item)}`;
@@ -179,8 +179,8 @@ export function formatAuditDetailsTitle(item: AuditItem): string {
 
 /**
  * Format the full audit details as an HTML definition list.
- * @param item - The audit item.
- * @returns The HTML string for the details body.
+ * @param {AuditItem} item - The audit item.
+ * @returns {string} The HTML string for the details body.
  */
 export function formatAuditDetailsHtml(item: AuditItem): string {
     return `
@@ -208,8 +208,8 @@ interface AuditDetailsPayload {
 
 /**
  * Get the title and HTML payload for an audit details modal from an audit item.
- * @param item - The audit item.
- * @returns An object with title and html properties for the modal.
+ * @param {AuditItem} item - The audit item.
+ * @returns {AuditDetailsPayload} An object with title and html properties for the modal.
  */
 export function getAuditDetailsPayload(item: AuditItem): AuditDetailsPayload {
     return {
@@ -219,8 +219,9 @@ export function getAuditDetailsPayload(item: AuditItem): AuditDetailsPayload {
 }
 
 /**
- *
- * @param changes
+ * Render the changes list as HTML list items.
+ * @param {AuditChange[] | undefined} changes - The list of field changes.
+ * @returns {string} The rendered HTML string.
  */
 function renderChanges(changes: AuditChange[] | undefined): string {
     if (!Array.isArray(changes) || changes.length === 0) {
@@ -239,16 +240,18 @@ function renderChanges(changes: AuditChange[] | undefined): string {
 }
 
 /**
- *
- * @param item
+ * Format the actor display string from an audit item.
+ * @param {AuditItem} item - The audit item.
+ * @returns {string} The formatted actor string.
  */
 function formatActor(item: AuditItem): string {
     return item.actorEmail || item.actorSubject || item.actorUserId || 'System';
 }
 
 /**
- *
- * @param item
+ * Format the event type display string from an audit item.
+ * @param {AuditItem} item - The audit item.
+ * @returns {string} The formatted event type string.
  */
 function formatEventType(item: AuditItem): string {
     if (item.actionType === 'StatusChanged') return 'Status Changed';
@@ -258,8 +261,9 @@ function formatEventType(item: AuditItem): string {
 }
 
 /**
- *
- * @param item
+ * Format the change summary string from an audit item.
+ * @param {AuditItem} item - The audit item.
+ * @returns {string} The formatted change summary string.
  */
 function formatChange(item: AuditItem): string {
     const changes = Array.isArray(item.changes) ? item.changes.filter(change => !isIgnoredField(change.fieldName)) : [];
@@ -287,32 +291,36 @@ function formatChange(item: AuditItem): string {
 }
 
 /**
- *
- * @param item
+ * Format the entity display string from an audit item.
+ * @param {AuditItem} item - The audit item.
+ * @returns {string} The formatted entity string.
  */
 function formatEntity(item: AuditItem): string {
     return `${item.entityType} #${item.entityId}`;
 }
 
 /**
- *
- * @param fieldName
+ * Check whether a field name should be ignored in audit display.
+ * @param {string} fieldName - The field name to check.
+ * @returns {boolean} True if the field should be ignored.
  */
 function isIgnoredField(fieldName: string): boolean {
     return String(fieldName).toLowerCase() === 'updatedat';
 }
 
 /**
- *
- * @param item
+ * Encode an audit item's details payload as a base64 string.
+ * @param {AuditItem} item - The audit item.
+ * @returns {string} The base64-encoded details string.
  */
 function encodeAuditDetails(item: AuditItem): string {
     return btoa(unescape(encodeURIComponent(JSON.stringify(getAuditDetailsPayload(item)))));
 }
 
 /**
- *
- * @param value
+ * Format a raw value for display in the audit log.
+ * @param {unknown} value - The value to format.
+ * @returns {string} The formatted display string.
  */
 function formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') {

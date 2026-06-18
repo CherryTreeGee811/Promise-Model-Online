@@ -46,7 +46,7 @@ export interface AddChildConfig {
 /**
  * Set up an inline add-child form on a detail page.
  * Handles form submission, validation, API call, row insertion, metrics update, and error display.
- * @param config - Configuration for the add-child form.
+ * @param {AddChildConfig} config - Configuration for the add-child form.
  */
 export function setupAddChildForm(config: AddChildConfig): void {
   const {
@@ -102,10 +102,10 @@ export function setupAddChildForm(config: AddChildConfig): void {
 
 /**
  * Disable the add-child form controls when the user lacks Edit permission.
- * @param formId - The `id` of the form element.
- * @param inputId - The `id` of the statement input.
- * @param submitBtnId - The `id` of the submit button.
- * @param typeSelectId - Optional `id` of the type select (moments detail).
+ * @param {string} formId - The `id` of the form element.
+ * @param {string} inputId - The `id` of the statement input.
+ * @param {string} submitBtnId - The `id` of the submit button.
+ * @param {string} [typeSelectId] - Optional `id` of the type select (moments detail).
  */
 export function gateAddChildControls(formId: string, inputId: string, submitBtnId: string, typeSelectId?: string): void {
   const addInput = document.getElementById(inputId) as HTMLInputElement | null;

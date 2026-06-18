@@ -2,7 +2,7 @@ import { apiGet, apiPatch } from '../api.ts';
 
 /**
  * Fetch all notifications from the API.
- * @returns {Promise<Array>} Array of notification objects.
+ * @returns {Promise<object[]>} Array of notification objects.
  */
 async function fetchNotifications() {
   try {
@@ -12,9 +12,9 @@ async function fetchNotifications() {
   }
 }
 
-/** Alias for fetchNotifications; retrieves unread notifications. @type {typeof fetchNotifications} */
+/** Alias for fetchNotifications; retrieves unread notifications. \@type {typeof fetchNotifications} */
 export const fetchUnreadNotifications = fetchNotifications;
-/** Alias for fetchNotifications; retrieves all notifications. @type {typeof fetchNotifications} */
+/** Alias for fetchNotifications; retrieves all notifications. \@type {typeof fetchNotifications} */
 export const fetchAllNotifications = fetchNotifications;
 
 /**

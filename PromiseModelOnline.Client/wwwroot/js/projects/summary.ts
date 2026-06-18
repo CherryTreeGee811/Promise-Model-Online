@@ -10,8 +10,8 @@ interface SummaryRow {
 /**
  * Render a summary table with the given rows into a container element.
  * Each row can have a label/value pair or be a gap row (isGap: true).
- * @param container - The container element to render into.
- * @param rows - The summary rows to render.
+ * @param {HTMLElement | null} container - The container element to render into.
+ * @param {SummaryRow[]} rows - The summary rows to render.
  */
 export function renderSummaryTable(container: HTMLElement | null, rows: SummaryRow[]): void {
     if (!container) {

@@ -455,11 +455,11 @@ function matchesNode(node: GraphNode, filters: GraphFilters): boolean {
 
 /**
  * Clone a subtree for rendering, applying collapse state and counting visible/hidden nodes.
- * @param {object} node - The root of the subtree to clone.
- * @param {{visibleNodes: number, hiddenNodes: number}} metrics - Accumulator for node counts.
- * @param metrics.visibleNodes
- * @param metrics.hiddenNodes
- * @returns {object} The cloned subtree with collapse metadata.
+ * @param {GraphNode} node - The root of the subtree to clone.
+ * @param {{visibleNodes: number; hiddenNodes: number}} metrics - Accumulator for node counts.
+ * @param {number} metrics.visibleNodes - The running count of visible nodes.
+ * @param {number} metrics.hiddenNodes - The running count of hidden nodes.
+ * @returns {GraphNode} The cloned subtree with collapse metadata.
  */
 function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNodes: number }): GraphNode {
     if (node.nodeType !== 'root') {
@@ -750,8 +750,8 @@ function setGraphLoading(loading: boolean): void {
  * Bind a single filter control to its change handler and filter apply trigger.
  * @param {string} id - The element ID.
  * @param {string} eventType - The DOM event type to listen for.
- * @param {function} setter - The function to update filter state from the element.
- * @param {boolean} immediate - Whether to apply filters immediately (true) or debounced (false).
+ * @param {(el: HTMLInputElement | HTMLSelectElement, f: GraphFilters) => void} setter - The function to update filter state from the element.
+ * @param {boolean} [immediate] - Whether to apply filters immediately (true) or debounced (false).
  */
 function bindFilter(id: string, eventType: string, setter: (el: HTMLInputElement | HTMLSelectElement, f: GraphFilters) => void, immediate?: boolean): void {
     const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
@@ -1124,19 +1124,12 @@ async function loadAvailableStrides(owner: string, project: string): Promise<voi
 }
 
 /**
- * Load the project hierarchy graph visualization page with filtering and context menus.
+ * Load the project hierarchy graph visualization page with filtering, zoom, and context menus.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
  * @param {HTMLElement} contentDiv - The main content container.
- * @param {object} permission - The current user's permission object for the project.
- */
-/**
- * Load the project hierarchy graph visualization page with filtering, zoom, and context menus.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param contentDiv - The main content container.
- * @param permission - The current user's permission object for the project.
- * @returns Resolves when the graph page is fully loaded and rendered.
+ * @param {Record<string, unknown> | null} permission - The current user's permission object for the project.
+ * @returns {Promise<void>} Resolves when the graph page is fully loaded and rendered.
  */
 export async function loadGraphPage(owner: string, project: string, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
     const errorEl = document.getElementById('error-text') as HTMLElement | null;

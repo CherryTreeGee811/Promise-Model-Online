@@ -15,8 +15,8 @@ export const STATUS_OPTIONS: StatusOption[] = [
 
 /**
  * Map a status or color string to its emoji icon.
- * @param statusOrColor - Status label or color keyword.
- * @returns Emoji character representing the status.
+ * @param {string} statusOrColor - Status label or color keyword.
+ * @returns {string} Emoji character representing the status.
  */
 export function getStatusIcon(statusOrColor: string): string {
     const normalized = String(statusOrColor ?? '').toLowerCase();
@@ -29,8 +29,8 @@ export function getStatusIcon(statusOrColor: string): string {
 
 /**
  * Map a status or color string to its human-readable label.
- * @param statusOrColor - Status label or color keyword.
- * @returns Human-readable status name.
+ * @param {string} statusOrColor - Status label or color keyword.
+ * @returns {string} Human-readable status name.
  */
 export function getStatusLabel(statusOrColor: string): string {
     const normalized = String(statusOrColor ?? '').toLowerCase();
@@ -43,8 +43,8 @@ export function getStatusLabel(statusOrColor: string): string {
 
 /**
  * Return HTML containing the status emoji icon plus a screen-reader label.
- * @param statusOrColor - Status label or color keyword.
- * @returns HTML span string.
+ * @param {string} statusOrColor - Status label or color keyword.
+ * @returns {string} HTML span string.
  */
 export function getStatusHtml(statusOrColor: string): string {
     return `<span aria-hidden="true">${getStatusIcon(statusOrColor)}</span><span class="sr-only">${getStatusLabel(statusOrColor)}</span>`;
@@ -52,8 +52,8 @@ export function getStatusHtml(statusOrColor: string): string {
 
 /**
  * Normalize a status color string into a bucket key for grouping/filtering.
- * @param statusColor - Raw status color string.
- * @returns One of "done", "blocked", "inprogress", "todo", or "other".
+ * @param {string} statusColor - Raw status color string.
+ * @returns {string} One of "done", "blocked", "inprogress", "todo", or "other".
  */
 export function getStatusBucket(statusColor: string): string {
     const normalized = String(statusColor ?? '').trim().toLowerCase();
@@ -69,9 +69,9 @@ export function getStatusBucket(statusColor: string): string {
 
 /**
  * Generate an HTML `<option>` element for a status dropdown.
- * @param value - The status value.
- * @param selectedValue - Currently selected value (for marking `selected`).
- * @returns HTML option string.
+ * @param {string} value - The status value.
+ * @param {string} [selectedValue] - Currently selected value (for marking `selected`).
+ * @returns {string} HTML option string.
  */
 export function getStatusOptionHtml(value: string, selectedValue?: string): string {
     const option = STATUS_OPTIONS.find(o => o.value === value);

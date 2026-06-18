@@ -18,12 +18,12 @@ export function initBackLink(): void {
 
 /**
  * Load the comments list and reactions section for a detail page.
- * @param detailDiv - The main detail container element.
- * @param entityType - Entity type (e.g. "promise", "epic").
- * @param entityId - Numeric entity database ID.
- * @param owner - Project owner slug.
- * @param project - Project slug.
- * @param permission - User's permission object for the project.
+ * @param {HTMLElement} detailDiv - The main detail container element.
+ * @param {string} entityType - Entity type (e.g. "promise", "epic").
+ * @param {number} entityId - Numeric entity database ID.
+ * @param {string} owner - Project owner slug.
+ * @param {string} project - Project slug.
+ * @param {Record<string, unknown> | null} permission - User's permission object for the project.
  */
 export function loadCommentsAndReactions(detailDiv: HTMLElement, entityType: string, entityId: number, owner: string, project: string, permission: Record<string, unknown> | null): void {
     const commentsContainer = document.getElementById(`${entityType.toLowerCase()}-comments`);

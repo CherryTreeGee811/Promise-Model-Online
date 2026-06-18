@@ -18,9 +18,9 @@ import { handleNotificationsRoutes } from './notifications/router.ts';
 
 /**
  * @typedef {object} Route
- * @property {(path: string) => boolean} test
- * @property {() => GuardResult | Promise<GuardResult>} [guard]
- * @property {RouteHandler} handler
+ * @property {(path: string) => boolean} test - Function to test if the path matches this route.
+ * @property {() => GuardResult | Promise<GuardResult>} [guard] - Optional guard to check before handling.
+ * @property {RouteHandler} handler - Function to render the page content.
  */
 
 interface ProjectRoutesModule {
@@ -35,6 +35,7 @@ let _projectRoutes: Promise<ProjectRoutesModule> | undefined;
 /**
  * Lazy-load the project routes module.
  * Uses a cached promise to avoid re-importing on subsequent calls.
+ * @returns {Promise<ProjectRoutesModule>} The project routes module.
  */
 function loadProjectRoutes(): Promise<ProjectRoutesModule> {
   return _projectRoutes || (_projectRoutes = import('./projects/router.ts'));
@@ -164,14 +165,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /**
  * Navigate to a new path, updating the URL and rendering the page.
- * @param path - The target URL path.
- * @param navContentDiv - The navigation container element.
- * @param contentDiv - The main content container element.
+ * @param {string} path - The target URL path.
+ * @param {HTMLElement} navContentDiv - The navigation container element.
+ * @param {HTMLElement} contentDiv - The main content container element.
+ * @returns {void}
  */
 export function navigate(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     window.history.pushState({}, '', path);
     return routeHandler(navContentDiv, contentDiv);
 }
+
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Home',
@@ -193,7 +196,7 @@ function announceAndFocus(): void {
 
 /**
  * Set the browser page title based on the current route.
- * @param path - The current URL path.
+ * @param {string} path - The current URL path.
  */
 function setPageTitle(path: string): void {
   const titleEl = document.getElementById('page-title');
@@ -209,8 +212,9 @@ function setPageTitle(path: string): void {
 
 /**
  * Fetch an HTML template and inject it into the content area.
- * @param templateName - The template path relative to /templates/.
- * @param contentDiv - The container to render into.
+ * @param {string} templateName - The template path relative to /templates/.
+ * @param {HTMLElement} contentDiv - The container to render into.
+ * @returns {Promise<void>} Promise that resolves when the template is loaded.
  */
 export function loadTemplate(templateName: string, contentDiv: HTMLElement): Promise<void> {
     return fetch(`/templates/${templateName}`)
@@ -227,14 +231,14 @@ export function loadTemplate(templateName: string, contentDiv: HTMLElement): Pro
 
 /**
  * Handle a detail route with owner/project path pattern.
- * @param path - The full URL path.
- * @param contentDiv - The main content container.
- * @param routePrefix - The route prefix to match (e.g., "epics").
- * @param templateName - The template to load on match.
- * @param loadFn - The module function to initialize the page.
- * @param navContentDiv - The navigation container.
- * @param label - Human-readable label for error messages.
- * @returns True if the route was handled.
+ * @param {string} path - The full URL path.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} routePrefix - The route prefix to match (e.g., "epics").
+ * @param {string} templateName - The template to load on match.
+ * @param {(...args: unknown[]) => void} loadFn - The module function to initialize the page.
+ * @param {HTMLElement} navContentDiv - The navigation container.
+ * @param {string} label - Human-readable label for error messages.
+ * @returns {boolean} True if the route was handled.
  */
 export function handleDetailRoute(
   path: string,
@@ -257,7 +261,7 @@ export function handleDetailRoute(
 
 /**
  * Show the 404 not-found page.
- * @param contentDiv - The main content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function showNotFound(contentDiv: HTMLElement): void {
   loadTemplate('404.html', contentDiv);
@@ -265,9 +269,9 @@ export function showNotFound(contentDiv: HTMLElement): void {
 
 /**
  * Return an error handler function that shows a template error page.
- * @param contentDiv - The main content container.
- * @param label - Human-readable label for error messages.
- * @returns The error handler.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} label - Human-readable label for error messages.
+ * @returns {() => Promise<void>} The error handler.
  */
 export function loadTemplateWithError(contentDiv: HTMLElement, label: string): () => Promise<void> {
   return () => {
@@ -292,8 +296,8 @@ export function loadTemplateWithError(contentDiv: HTMLElement, label: string): (
 
 /**
  * Main route handler matching URL paths to pages.
- * @param navContentDiv - The navigation container.
- * @param contentDiv - The main content container.
+ * @param {HTMLElement} navContentDiv - The navigation container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     const path = window.location.pathname;

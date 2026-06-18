@@ -19,7 +19,7 @@ import { isLoggedIn } from './auth-state.ts';
 /**
  * Require the user to be authenticated.
  * Redirects to /login if not logged in.
- * @returns {GuardResult}
+ * @returns {GuardResult} Indicates whether navigation is allowed.
  */
 export function requireAuth() {
   return isLoggedIn()

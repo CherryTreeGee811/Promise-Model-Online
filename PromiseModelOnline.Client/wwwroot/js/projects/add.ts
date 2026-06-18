@@ -7,8 +7,8 @@ import { renderSummaryTable } from './summary.ts';
 
 /**
  * Load the add-project form, setting up create-from-scratch and import workflows.
- * @param navContentDiv - The navigation content container.
- * @param contentDiv - The main content container.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     const form = document.getElementById('add-project-form') as HTMLFormElement | null;
@@ -38,7 +38,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     let isBusy = false;
 
     /**
-     *
+     * Clear error and success message elements.
      */
     function clearMessages(): void {
         errorTextElement.textContent = '';
@@ -48,22 +48,24 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
+     * Get the submit button text label based on current mode.
+     * @returns {string} The label for the current mode.
      */
     function getSubmitButtonLabel(): string {
         return currentMode === 'import' ? 'Import Project' : 'Create Project';
     }
 
     /**
-     *
+     * Get the busy-state submit button label based on current mode.
+     * @returns {string} The busy label for the current mode.
      */
     function getBusySubmitButtonLabel(): string {
         return currentMode === 'import' ? 'Importing Project...' : 'Creating Project...';
     }
 
     /**
-     *
-     * @param busy
+     * Update the submit button's disabled state and label.
+     * @param {boolean} busy - Whether the button should be disabled.
      */
     function setSubmitButtonState(busy: boolean): void {
         createButton.disabled = busy;
@@ -72,9 +74,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
-     * @param busy
-     * @param busyLabel
+     * Update the import button's disabled state and label.
+     * @param {boolean} busy - Whether the button should be disabled.
+     * @param {string} [busyLabel] - The label to show while busy.
      */
     function setImportButtonState(busy: boolean, busyLabel = 'Reading Project...'): void {
         importButton.disabled = busy;
@@ -84,9 +86,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
-     * @param busy
-     * @param source
+     * Set the global busy state, disabling/enabling all interactive elements.
+     * @param {boolean} busy - Whether the UI should be in busy state.
+     * @param {'submit' | 'import'} [source] - Which action triggered the busy state.
      */
     function setBusyState(busy: boolean, source: 'submit' | 'import' = 'submit'): void {
         isBusy = busy;
@@ -104,8 +106,8 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
-     * @param mode
+     * Switch between 'scratch' and 'import' mode UI states.
+     * @param {'scratch' | 'import'} mode - The mode to switch to.
      */
     function setMode(mode: 'scratch' | 'import'): void {
         currentMode = mode;
@@ -120,7 +122,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
+     * Reset the import form and switch back to scratch mode.
      */
     function resetImportState(): void {
         importInput.value = '';
@@ -138,7 +140,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     const titleHeading = document.querySelector('h1') as HTMLElement | null;
 
     /**
-     *
+     * Update the page heading with the current project name and action.
      */
     function refreshHeading(): void {
         const val = nameInput.value.trim();
@@ -172,8 +174,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
-     * @param document
+     * Count all promise-stack entities in a project export document.
+     * @param {ProjectExportDocument} document - The parsed export document.
+     * @returns {ProjectExportSummary} The entity counts.
      */
     function summarizeProjectExport(document: ProjectExportDocument): ProjectExportSummary {
         const project = document.project;
@@ -199,9 +202,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
-     * @param document
-     * @param file
+     * Render a preview of the imported project into the summary panel.
+     * @param {ProjectExportDocument} document - The parsed export document.
+     * @param {File} file - The imported file.
      */
     function renderImportedProjectPreview(document: ProjectExportDocument, file: File): void {
         const project = document.project;
@@ -225,8 +228,10 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
-     * @param file
+     * Read and parse a project export JSON file.
+     * @param {File} file - The JSON export file.
+     * @returns {Promise<ProjectExportDocument>} The parsed document.
+     * @throws {Error} If the file is not valid JSON or not a project export.
      */
     async function readImportedProjectFile(file: File): Promise<ProjectExportDocument> {
         let parsed: ProjectExportDocument;
@@ -245,7 +250,8 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
+     * Handle the create-from-scratch project form submission.
+     * @returns {Promise<void>}
      */
     async function manageAddProjectSubmission(): Promise<void> {
         clearMessages();
@@ -286,7 +292,8 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
     }
 
     /**
-     *
+     * Handle the import project form submission.
+     * @returns {Promise<void>}
      */
     async function manageImportSubmission(): Promise<void> {
         clearMessages();

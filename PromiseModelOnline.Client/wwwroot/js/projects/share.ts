@@ -5,9 +5,10 @@ import { escapeHtml } from '../utils/html.ts';
 import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
 
 /**
- *
- * @param modalId
- * @param modalMarkup
+ * Ensure a modal element exists in the DOM, creating and appending it if needed.
+ * @param {string} modalId - The modal element's ID.
+ * @param {string} modalMarkup - The HTML markup for the modal.
+ * @returns {HTMLElement | null} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalEl = document.getElementById(modalId) as HTMLElement | null;
@@ -20,7 +21,8 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
 }
 
 /**
- *
+ * Ensure the revoke confirmation modal exists in the DOM.
+ * @returns {HTMLElement | null} The revoke modal element, or null.
  */
 function ensureRevokeModal(): HTMLElement | null {
     return ensureModal('revoke-modal', `
@@ -46,10 +48,10 @@ function ensureRevokeModal(): HTMLElement | null {
 
 /**
  * Load the share/permissions page for a project, including the permission table and invite modal.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param contentDiv - The main content container.
- * @param permission - The current user's permission object for the project.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {{ isOwner?: boolean } | null} permission - The current user's permission object for the project.
  */
 export function loadSharePage(owner: string, project: string, contentDiv: HTMLElement, permission: { isOwner?: boolean } | null): void {
     const errorEl = document.getElementById('error-text') as HTMLElement | null;
@@ -66,7 +68,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     let acState: AutocompleteState = { items: [], highlightedIndex: -1, open: false };
 
     /**
-     *
+     * Close the autocomplete dropdown and reset state.
      */
     function closeAutocomplete(): void {
         const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
@@ -78,7 +80,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     }
 
     /**
-     *
+     * Render the autocomplete dropdown items from state.
      */
     function renderAutocomplete(): void {
         const dropdown = document.getElementById('invite-autocomplete') as HTMLElement | null;
@@ -105,8 +107,8 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     }
 
     /**
-     *
-     * @param index
+     * Select an autocomplete suggestion and populate the email input.
+     * @param {number} index - The index of the selected item.
      */
     function selectAutocompleteItem(index: number): void {
         const item = acState.items[index];
@@ -120,8 +122,9 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     }
 
     /**
-     *
-     * @param query
+     * Fetch autocomplete suggestions from the API and render the dropdown.
+     * @param {string} query - The search query.
+     * @returns {Promise<void>}
      */
     async function fetchAutocompleteSuggestions(query: string): Promise<void> {
         if (query.length < 1) {
@@ -150,7 +153,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     }
 
     /**
-     *
+     * Set up event handlers for the invite email autocomplete input.
      */
     function setupInviteAutocomplete(): void {
         const input = document.getElementById('invite-email') as HTMLInputElement | null;
@@ -214,11 +217,11 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     }
 
     /**
-     *
-     * @param config
-     * @param config.owner
-     * @param config.project
-     * @param config.onInvited
+     * Open the invite user modal and set up event handlers.
+     * @param {object} config - Configuration for the modal.
+     * @param {string} config.owner - The project owner's slug.
+     * @param {string} config.project - The project's slug.
+     * @param {() => Promise<void>} config.onInvited - Callback after a successful invitation.
      */
     function openInviteModal(config: { owner: string; project: string; onInvited: () => Promise<void> }): void {
         const modalEl = ensureModal('invite-modal', `
@@ -312,7 +315,8 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     }
 
     /**
-     *
+     * Refresh the permissions table from the API.
+     * @returns {Promise<void>}
      */
     async function refreshPermissions(): Promise<void> {
         try {
@@ -376,8 +380,8 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
     }
 
     /**
-     *
-     * @param btn
+     * Bind click handler to a revoke permission button.
+     * @param {HTMLElement} btn - The revoke button element.
      */
     function bindRevokeButton(btn: HTMLElement): void {
         if (!btn || btn.dataset.bound === '1') return;

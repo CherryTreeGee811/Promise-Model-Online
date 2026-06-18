@@ -23,9 +23,9 @@ function setActiveNavLink(): void {
 /**
  * Handle a click event on a navigation link by calling navigate().
  * Prevents default anchor behaviour and delegates to the SPA router.
- * @param e - The click event.
- * @param navContentDiv - The navigation container element.
- * @param contentDiv - The main content container element.
+ * @param {Event} e - The click event.
+ * @param {HTMLElement} navContentDiv - The navigation container element.
+ * @param {HTMLElement} contentDiv - The main content container element.
  */
 function handleNavClick(e: Event, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     const link = (e.target as Element).closest('a[data-nav]');
@@ -43,10 +43,10 @@ function handleNavClick(e: Event, navContentDiv: HTMLElement, contentDiv: HTMLEl
  * Selects the template (authenticated vs anonymous) based on login state,
  * fetches it, and injects it into the nav element. Also activates the
  * current nav link and starts notification polling for authenticated users.
- * @param navContentDiv - The container element for the navigation bar.
- * @param contentDiv - The main content container element.
- * @returns Resolves when the template has been loaded and rendered.
- * @throws If the fetch request fails.
+ * @param {HTMLElement} navContentDiv - The container element for the navigation bar.
+ * @param {HTMLElement} contentDiv - The main content container element.
+ * @returns {Promise<void>} Resolves when the template has been loaded and rendered.
+ * @throws {Error} If the fetch request fails.
  */
 export function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const templateName = isLoggedIn() ? 'authenticated.html' : 'anonymous.html';
@@ -72,8 +72,8 @@ export function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HTMLElem
  * Binds a single click listener on the main-menu element that delegates
  * to handleNavClick. Idempotent — uses a data attribute guard to prevent
  * duplicate listeners.
- * @param navContentDiv - The navigation container element.
- * @param contentDiv - The main content container element.
+ * @param {HTMLElement} navContentDiv - The navigation container element.
+ * @param {HTMLElement} contentDiv - The main content container element.
  */
 export function initNavEventDelegation(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     const menu = document.getElementById('main-menu');

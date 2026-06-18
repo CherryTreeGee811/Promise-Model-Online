@@ -7,7 +7,7 @@ const AUTH_STORAGE_KEY = 'pmo.auth';
  */
 
 /**
- * @returns {AuthState}
+ * @returns {AuthState} The deserialized auth state, or a default unauthenticated state.
  */
 function loadFromStorage() {
   try {
@@ -28,7 +28,7 @@ function loadFromStorage() {
 
 /**
  * Persist auth state to sessionStorage.
- * @param {AuthState} state
+ * @param {AuthState} state - The auth state to persist.
  */
 function saveToStorage(state) {
   try {
@@ -42,6 +42,10 @@ function saveToStorage(state) {
 export const authStore = createStore(loadFromStorage());
 
 const originalSet = authStore.set.bind(authStore);
+/**
+ * Update the auth state and persist it to sessionStorage.
+ * @param {Partial<AuthState>} partial - The partial state update.
+ */
 authStore.set = (partial) => {
   originalSet(partial);
   saveToStorage(authStore.get());
@@ -49,7 +53,7 @@ authStore.set = (partial) => {
 
 /**
  * Check whether the user is currently authenticated.
- * @returns {boolean}
+ * @returns {boolean} Whether the user is logged in.
  */
 export function isLoggedIn() {
   return authStore.get().isAuthenticated;
@@ -57,7 +61,7 @@ export function isLoggedIn() {
 
 /**
  * Get the current user's display name.
- * @returns {string | null}
+ * @returns {string | null} The username, or null if not authenticated.
  */
 export function getUsername() {
   return authStore.get().username;
@@ -65,7 +69,7 @@ export function getUsername() {
 
 /**
  * Get the current user's numeric ID.
- * @returns {number | null}
+ * @returns {number | null} The user ID, or null if not authenticated.
  */
 export function getUserId() {
   return authStore.get().userId;

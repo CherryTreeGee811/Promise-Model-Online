@@ -4,9 +4,10 @@ import { createStride } from '../strides/api.ts';
 import { escapeHtml } from './html.ts';
 
 /**
- *
- * @param modalId
- * @param modalMarkup
+ * Ensure a modal element exists in the DOM, creating it from markup if needed.
+ * @param {string} modalId - The ID of the modal element.
+ * @param {string} modalMarkup - The HTML markup for the modal.
+ * @returns {HTMLElement | null} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalEl = document.getElementById(modalId);
@@ -24,17 +25,19 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
 }
 
 /**
- *
- * @param date
+ * Format a date as a string for use in a date input value (YYYY-MM-DD).
+ * @param {Date | string} date - The date to format.
+ * @returns {string} The formatted date string.
  */
 function formatDateInputValue(date: Date | string): string {
     return new Date(date).toISOString().slice(0, 10);
 }
 
 /**
- *
- * @param date
- * @param days
+ * Add a number of days to a date.
+ * @param {Date} date - The starting date.
+ * @param {number} days - Number of days to add.
+ * @returns {Date} The new date.
  */
 function addDays(date: Date, days: number): Date {
     const next = new Date(date);
@@ -49,8 +52,9 @@ interface StrideDefaults {
 }
 
 /**
- *
- * @param existingStrides
+ * Calculate default start and end dates and duration for a new stride.
+ * @param {Array<{ endDate?: string }>} existingStrides - Existing strides to derive the next start date from.
+ * @returns {StrideDefaults} The stride defaults object.
  */
 function getNewStrideDefaults(existingStrides: Array<{ endDate?: string }> = []): StrideDefaults {
     const now = new Date();
@@ -85,19 +89,13 @@ interface StrideCreateOptions {
 /**
  * Open a Bootstrap modal for creating a new stride.
  * The modal DOM is created on first invocation and reused.
- * @param options.owner - Project owner slug.
- * @param root0
- * @param root0.owner
- * @param options.project - Project slug.
- * @param root0.project
- * @param options.iterationId - Pre-selected iteration ID.
- * @param root0.iterationId
- * @param options.iterations - Available iterations for the select dropdown.
- * @param root0.iterations
- * @param options.existingStrides - Existing strides for auto-calculating date defaults.
- * @param root0.existingStrides
- * @param options.onCreated - Async callback invoked after successful creation.
- * @param root0.onCreated
+ * @param {StrideCreateOptions} root0 - Configuration options.
+ * @param {string} root0.owner - Project owner slug.
+ * @param {string} root0.project - Project slug.
+ * @param {number} root0.iterationId - Pre-selected iteration ID.
+ * @param {Array<{ id: number; name: string }>} root0.iterations - Available iterations for the select dropdown.
+ * @param {Array<{ endDate?: string }>} root0.existingStrides - Existing strides for auto-calculating date defaults.
+ * @param {() => Promise<void> | void} root0.onCreated - Async callback invoked after successful creation.
  */
 export function openStrideCreateModal({
     owner,

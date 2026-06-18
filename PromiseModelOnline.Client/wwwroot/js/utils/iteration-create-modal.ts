@@ -2,9 +2,10 @@
 import { createIteration } from '../iterations/api.ts';
 
 /**
- *
- * @param modalId
- * @param modalMarkup
+ * Ensure a modal element exists in the DOM, creating it from markup if needed.
+ * @param {string} modalId - The ID of the modal element.
+ * @param {string} modalMarkup - The HTML markup for the modal.
+ * @returns {HTMLElement | null} The modal element, or null if creation failed.
  */
 function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
     let modalEl = document.getElementById(modalId);
@@ -24,9 +25,9 @@ function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
 /**
  * Open a Bootstrap modal for creating a new iteration.
  * The modal DOM is created on first invocation and reused.
- * @param owner - Project owner slug.
- * @param project - Project slug.
- * @param onCreated - Async callback invoked after successful creation.
+ * @param {string} owner - Project owner slug.
+ * @param {string} project - Project slug.
+ * @param {() => Promise<void> | void} onCreated - Async callback invoked after successful creation.
  */
 export function openIterationCreateModal(owner: string, project: string, onCreated: () => Promise<void> | void): void {
     const modalEl = ensureModal('iteration-create-modal', `

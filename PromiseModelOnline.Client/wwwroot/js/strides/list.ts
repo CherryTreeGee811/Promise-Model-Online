@@ -47,7 +47,7 @@ function applyPermissionUI(canEdit: boolean): void {
 
 /**
  * Execute an action while preserving the current scroll position.
- * @param {Function} action - The action to execute.
+ * @param {() => unknown} action - The action to execute.
  * @returns {unknown} The return value of the action.
  */
 function preserveScroll(action: () => unknown): unknown {
@@ -59,7 +59,7 @@ function preserveScroll(action: () => unknown): unknown {
 
 /**
  * Get the numeric timestamp of a stride's start date.
- * @param {object} stride - The stride object.
+ * @param {Record<string, unknown>} stride - The stride object.
  * @returns {number} The start date timestamp, or 0 if invalid.
  */
 function getStrideStartDateValue(stride: Record<string, unknown>): number {
@@ -366,7 +366,7 @@ function bindStrideStickyOffsetSync(): void {
 
 /**
  * Render a scrollspy navigation for stride cards and the backlog section.
- * @param {Array} strides - The array of stride objects.
+ * @param {Record<string, unknown>[]} strides - The array of stride objects.
  */
 function renderStrideScrollspy(strides: Record<string, unknown>[]): void {
     const nav = document.getElementById('stride-scrollspy-nav');
@@ -496,7 +496,7 @@ function ensureBacklogMoveModal(): HTMLElement {
 /**
  * Show a confirmation dialog and move a moment to the backlog on confirmation.
  * @param {number|string} momentId - The moment ID to move.
- * @param {Function} onConfirm - The async callback to execute on confirmation.
+ * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
  */
 function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise<unknown>): void {
     const modalEl = ensureBacklogMoveModal();
@@ -584,7 +584,7 @@ function promptProgressStride(strideId: number | string): Promise<boolean> {
  * Show a confirmation dialog for moving a moment to a specific stride.
  * @param {number|string} momentId - The moment ID to move.
  * @param {number|string} strideId - The target stride ID.
- * @param {Function} onConfirm - The async callback to execute on confirmation.
+ * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
  */
 function promptMoveToStride(momentId: number | string, strideId: number | string, onConfirm: () => Promise<unknown>): void {
     const modalEl = ensureMoveToStrideModal();
@@ -663,7 +663,7 @@ function ensureBacklogTbody(): HTMLElement | null {
 
 /**
  * Create a table row element for a backlog moment.
- * @param {object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
+ * @param {Record<string, unknown>} moment - The moment object with fields like sequenceNumber, statement, type, etc.
  * @returns {HTMLElement} The table row element.
  */
 function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
@@ -724,7 +724,7 @@ function ensureStrideTbody(strideId: number | string): HTMLElement | null {
 
 /**
  * Create a table row element for a moment within a stride.
- * @param {object} moment - The moment object with fields like sequenceNumber, statement, type, etc.
+ * @param {Record<string, unknown>} moment - The moment object with fields like sequenceNumber, statement, type, etc.
  * @returns {HTMLElement} The table row element.
  */
 function createStrideRow(moment: Record<string, unknown>): HTMLElement {
@@ -945,7 +945,7 @@ function bindInlineMomentControls(root: HTMLElement | null, owner: string, proje
 
 /**
  * Calculate the total effort estimate for an array of moments.
- * @param {Array} moments - The array of moment objects.
+ * @param {Record<string, unknown>[]} moments - The array of moment objects.
  * @returns {number} The sum of effort estimate values.
  */
 function totalEffort(moments: Record<string, unknown>[]): number {
@@ -959,7 +959,7 @@ function totalEffort(moments: Record<string, unknown>[]): number {
  * @param {string} project - The project slug.
  * @param {HTMLElement} navContentDiv - The navigation content container.
  * @param {HTMLElement} contentDiv - The main content container.
- * @param {object} permission - The user's permission object.
+ * @param {Record<string, unknown> | null} permission - The user's permission object.
  */
 export function loadStridesList(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown> | null): void {
     const strideBoard = document.getElementById('stride-board')!;

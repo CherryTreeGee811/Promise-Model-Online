@@ -19,12 +19,12 @@ import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.t
 
 /**
  * Load and render the promise detail page with epics, graph, comments, and reactions.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param promiseId - The promise's sequence number.
- * @param navContentDiv - Navigation container for client-side routing.
- * @param contentDiv - Content container for client-side routing.
- * @param permission - The user's permission object.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} promiseId - The promise's sequence number.
+ * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
+ * @param {HTMLElement} contentDiv - Content container for client-side routing.
+ * @param {{ permission?: string } | null} permission - The user's permission object.
  */
 export function loadPromiseDetail(owner: string, project: string, promiseId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): void {
     const detailDiv = document.getElementById('promise-detail-content') as HTMLElement | null;

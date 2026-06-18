@@ -40,8 +40,9 @@ export interface FormValidator {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- *
- * @param el
+ * Get the trimmed value of a form element.
+ * @param {HTMLElement} el - The form element.
+ * @returns {string} The element's value.
  */
 function getElementValue(el: HTMLElement): string {
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
@@ -54,10 +55,10 @@ function getElementValue(el: HTMLElement): string {
 }
 
 /**
- *
- * @param el
- * @param valid
- * @param message
+ * Set or clear the validation state on a form element.
+ * @param {HTMLElement} el - The form element.
+ * @param {boolean} valid - Whether the element is valid.
+ * @param {string} message - The error message to display when invalid.
  */
 function setValidity(el: HTMLElement, valid: boolean, message: string): void {
   el.classList.toggle('is-invalid', !valid);
@@ -83,10 +84,11 @@ function setValidity(el: HTMLElement, valid: boolean, message: string): void {
 }
 
 /**
- *
- * @param value
- * @param rule
- * @param allValues
+ * Evaluate a single validation rule against a value.
+ * @param {string} value - The field value to validate.
+ * @param {ValidationRule} rule - The validation rule to apply.
+ * @param {Record<string, string>} allValues - All form field values for cross-field rules.
+ * @returns {string | null} The error message, or null if valid.
  */
 function evaluateRule(value: string, rule: ValidationRule, allValues: Record<string, string>): string | null {
   switch (rule.type) {
@@ -120,9 +122,9 @@ function evaluateRule(value: string, rule: ValidationRule, allValues: Record<str
 /**
  * Create a form validator that applies field-level validation rules, displays
  * inline Bootstrap `invalid-feedback` messages, and clears errors on input.
- * @param formId - The `id` of the form element.
- * @param rules - Map of field IDs to arrays of validation rules.
- * @returns A {@link FormValidator} instance bound to the form.
+ * @param {string} formId - The `id` of the form element.
+ * @param {FieldRules} rules - Map of field IDs to arrays of validation rules.
+ * @returns {FormValidator} A {@link FormValidator} instance bound to the form.
  */
 export function createValidator(formId: string, rules: FieldRules): FormValidator {
   const form = document.getElementById(formId) as HTMLFormElement | null;
@@ -140,7 +142,8 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   }
 
   /**
-   *
+   * Get the current values of all registered form fields.
+   * @returns {Record<string, string>} Map of field IDs to values.
    */
   function getValues(): Record<string, string> {
     const values: Record<string, string> = {};
@@ -151,8 +154,9 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   }
 
   /**
-   *
-   * @param fieldId
+   * Validate a single field and update its UI state.
+   * @param {string} fieldId - The field ID to validate.
+   * @returns {string | null} The error message, or null if valid.
    */
   function validateField(fieldId: string): string | null {
     const el = fields.get(fieldId);
@@ -177,7 +181,8 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   }
 
   /**
-   *
+   * Validate all registered fields.
+   * @returns {ValidationResult} Validation result with overall validity and field errors.
    */
   function validate(): ValidationResult {
     const errors: Record<string, string> = {};
@@ -195,8 +200,8 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   }
 
   /**
-   *
-   * @param fieldId
+   * Clear the validation error on a single field.
+   * @param {string} fieldId - The field ID to clear.
    */
   function clearFieldError(fieldId: string): void {
     const el = fields.get(fieldId);
@@ -206,7 +211,7 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   }
 
   /**
-   *
+   * Clear validation errors on all registered fields.
    */
   function clearErrors(): void {
     for (const fieldId of Object.keys(rules)) {
@@ -217,7 +222,7 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
   const inputHandlers = new Map<string, () => void>();
 
   /**
-   *
+   * Remove all event listeners and error elements.
    */
   function destroy(): void {
     for (const [fieldId, el] of fields) {

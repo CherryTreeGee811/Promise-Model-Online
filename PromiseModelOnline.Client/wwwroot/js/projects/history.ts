@@ -8,10 +8,10 @@ const PAGE_SIZE = 25;
 
 /**
  * Load the project audit history page with paginated audit event table and detail modals.
- * @param navContentDiv - The navigation content container.
- * @param contentDiv - The main content container.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  */
 export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string): void {
     const titleEl = document.getElementById('project-title') as HTMLElement | null;
@@ -34,7 +34,8 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     ensureModal();
 
     /**
-     *
+     * Load the project name from the API and set the page title.
+     * @returns {Promise<void>}
      */
     async function loadProjectName(): Promise<void> {
         try {
@@ -46,14 +47,15 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     }
 
     /**
-     *
+     * Get the total number of pagination pages.
+     * @returns {number} The total page count.
      */
     function getTotalPages(): number {
         return Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
     }
 
     /**
-     *
+     * Render the pagination controls for the audit history table.
      */
     function renderPagination(): void {
         const totalPages = getTotalPages();
@@ -92,7 +94,7 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     }
 
     /**
-     *
+     * Ensure the audit details modal container exists in the DOM.
      */
     function ensureModal(): void {
         let container = document.getElementById(modalContainerId);
@@ -106,8 +108,8 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     }
 
     /**
-     *
-     * @param item
+     * Open the audit details modal for a given audit event.
+     * @param {object} item - The audit event item.
      */
     function openAuditDetails(item: unknown): void {
         const payload = getAuditDetailsPayload(item as Parameters<typeof getAuditDetailsPayload>[0]);
@@ -126,8 +128,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     }
 
     /**
-     *
-     * @param reset
+     * Load a page of audit entries from the API and render them.
+     * @param {boolean} [reset] - Whether to reset to page 1.
+     * @returns {Promise<void>}
      */
     async function loadEntries(reset = false): Promise<void> {
         if (loading) return;
@@ -166,8 +169,8 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
     }
 
     /**
-     *
-     * @param items
+     * Bind click handlers to audit detail view links.
+     * @param {object[]} items - The audit event items.
      */
     function bindAuditDetailLinks(items: unknown[]): void {
         const detailLinks = listEl!.querySelectorAll('.audit-show-details-link');

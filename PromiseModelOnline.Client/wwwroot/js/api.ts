@@ -2,9 +2,9 @@ import { authStore } from './stores/auth.ts';
 
 /**
  * Perform a GET request and parse JSON response.
- * @param url - The API endpoint URL.
- * @returns The parsed JSON body, or null for 204 No Content.
- * @throws Error if the HTTP response is not OK.
+ * @param {string} url - The API endpoint URL.
+ * @returns {Promise<T | null>} The parsed JSON body, or null for 204 No Content.
+ * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiGet<T = unknown>(url: string): Promise<T | null> {
   const res = await apiFetch(url);
@@ -15,8 +15,8 @@ export async function apiGet<T = unknown>(url: string): Promise<T | null> {
 
 /**
  * Perform a GET request and return an empty array on null.
- * @param url - The API endpoint URL.
- * @returns The parsed JSON array, or empty array.
+ * @param {string} url - The API endpoint URL.
+ * @returns {Promise<T[]>} The parsed JSON array, or empty array.
  */
 export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
   const data = await apiGet<T[]>(url);
@@ -25,10 +25,10 @@ export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
 
 /**
  * Perform a POST request with a JSON body.
- * @param url - The API endpoint URL.
- * @param body - The request payload.
- * @returns The parsed JSON response, or null for 204.
- * @throws Error if the HTTP response is not OK.
+ * @param {string} url - The API endpoint URL.
+ * @param {unknown} body - The request payload.
+ * @returns {Promise<T | null>} The parsed JSON response, or null for 204.
+ * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | null> {
   const res = await apiFetch(url, {
@@ -43,10 +43,10 @@ export async function apiPost<T = unknown>(url: string, body: unknown): Promise<
 
 /**
  * Perform a PUT request with a JSON body.
- * @param url - The API endpoint URL.
- * @param body - The request payload.
- * @returns True on success.
- * @throws Error if the HTTP response is not OK.
+ * @param {string} url - The API endpoint URL.
+ * @param {unknown} body - The request payload.
+ * @returns {Promise<boolean>} True on success.
+ * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPut(url: string, body: unknown): Promise<boolean> {
   const res = await apiFetch(url, {
@@ -61,8 +61,8 @@ export async function apiPut(url: string, body: unknown): Promise<boolean> {
 /**
  * Perform a PATCH request with a JSON body.
  * @param {string} url - The API endpoint URL.
- * @param {object} body - The request payload.
- * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
+ * @param {unknown} body - The request payload.
+ * @returns {Promise<T | null>} The parsed JSON response, or null for 204.
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPatch<T = unknown>(url: string, body: unknown): Promise<T | null> {
@@ -90,10 +90,10 @@ export async function apiDelete(url: string): Promise<boolean> {
 
 /**
  * Build a project-scoped API URL from owner slug, project slug, and optional path.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param path - Optional additional path segment.
- * @returns The constructed URL.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} path - Optional additional path segment.
+ * @returns {string} The constructed URL.
  */
 export function projectUrl(owner: string, project: string, path = ''): string {
   return `/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}${path}`;
@@ -102,10 +102,10 @@ export function projectUrl(owner: string, project: string, path = ''): string {
 /**
  * Core fetch wrapper that includes credentials, sets JSON accept headers,
  * and redirects to /login on 401 responses.
- * @param url - The URL to fetch.
- * @param options - Additional fetch options.
- * @returns The fetch Response.
- * @throws Error if the server returns 401 (redirects to login).
+ * @param {string} url - The URL to fetch.
+ * @param {Record<string, unknown>} options - Additional fetch options.
+ * @returns {Promise<Response>} The fetch Response.
+ * @throws {Error} If the server returns 401 (redirects to login).
  */
 export async function apiFetch(url: string, options: Record<string, unknown> = {}): Promise<Response> {
     const response = await fetch(url, {

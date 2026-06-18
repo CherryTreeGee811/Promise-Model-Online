@@ -1,8 +1,8 @@
 // @ts-nocheck
 /**
  * Escape HTML special characters (&, <, >, ", ') in a value.
- * @param value - Value to escape (stringified).
- * @returns Escaped HTML-safe string.
+ * @param {unknown} value - Value to escape (stringified).
+ * @returns {string} Escaped HTML-safe string.
  */
 export function escapeHtml(value: unknown): string {
     return String(value).replace(/[&<>"']/g, match => ({
@@ -16,8 +16,8 @@ export function escapeHtml(value: unknown): string {
 
 /**
  * Render a Bootstrap spinner with a screen-reader accessible message.
- * @param message - Text shown to assistive technology.
- * @returns HTML string for the loading spinner.
+ * @param {string} message - Text shown to assistive technology.
+ * @returns {string} HTML string for the loading spinner.
  */
 export function renderLoadingSpinner(message: string): string {
     return `

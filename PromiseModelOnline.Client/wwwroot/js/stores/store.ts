@@ -16,14 +16,17 @@ export function createStore(initial) {
   const listeners = new Set();
 
   return {
-    /** @returns {T} */
+    /**
+     * Get the current state.
+     * @returns {T} The current state value.
+     */
     get() {
       return state;
     },
 
     /**
      * Merge a partial update into the current state and notify subscribers.
-     * @param {Partial<T>} partial
+     * @param {Partial<T>} partial - The partial state update.
      */
     set(partial) {
       state = { ...state, ...partial };
@@ -32,8 +35,8 @@ export function createStore(initial) {
 
     /**
      * Subscribe to state changes. Returns an unsubscribe function.
-     * @param {() => void} fn
-     * @returns {() => void}
+     * @param {() => void} fn - The listener function.
+     * @returns {() => void} The unsubscribe function.
      */
     subscribe(fn) {
       listeners.add(fn);

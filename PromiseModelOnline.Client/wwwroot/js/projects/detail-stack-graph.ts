@@ -45,7 +45,7 @@ const detailStackState: {
 
 /**
  * Load (or return cached) the D3 module instance from the window.
- * @returns A promise that resolves to the D3 module.
+ * @returns {Promise<unknown>} A promise that resolves to the D3 module.
  */
 export function loadD3(): Promise<unknown> {
     if (!d3Promise) {
@@ -55,15 +55,16 @@ export function loadD3(): Promise<unknown> {
 }
 
 /**
- *
+ * Get the detail stack graph container element.
+ * @returns {HTMLElement | null} The container element, or null if not found.
  */
 function getContainer(): HTMLElement | null {
     return document.getElementById('detail-stack-graph');
 }
 
 /**
- *
- * @param container
+ * Render a loading spinner inside the container element.
+ * @param {HTMLElement | null} container - The container element to render into.
  */
 function renderLoadingSpinner(container: HTMLElement | null): void {
     if (!container) return;
@@ -78,8 +79,8 @@ function renderLoadingSpinner(container: HTMLElement | null): void {
 }
 
 /**
- *
- * @param node
+ * Refresh the derived display fields on a node (label, search text, status/effort/stride buckets).
+ * @param {Record<string, unknown>} node - The node to refresh.
  */
 function refreshNodeDerivedFields(node: Record<string, unknown>): void {
     const payload = (node.payload ?? {}) as Record<string, unknown>;
@@ -124,11 +125,12 @@ interface PathEntities {
 }
 
 /**
- *
- * @param nodeType
- * @param nodeId
- * @param owner
- * @param project
+ * Fetch all ancestor entities along the path from a given node up to the project root.
+ * @param {string} nodeType - The type of the starting node.
+ * @param {string | number} nodeId - The ID of the starting node.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @returns {Promise<PathEntities>} The ancestor entities keyed by type.
  */
 async function fetchPathEntities(nodeType: string, nodeId: string | number, owner: string, project: string): Promise<PathEntities> {
     const numericId = Number.parseInt(String(nodeId), 10);
@@ -193,15 +195,16 @@ interface ChildMetrics {
 }
 
 /**
- *
- * @param root0
- * @param root0.moment
- * @param root0.flow
- * @param root0.journey
- * @param root0.epic
- * @param root0.promise
- * @param owner
- * @param project
+ * Fetch child metrics for each entity in the path.
+ * @param {PathEntities} root0 - The path entities object.
+ * @param {Record<string, unknown> | null} root0.moment - The moment entity.
+ * @param {Record<string, unknown> | null} root0.flow - The flow entity.
+ * @param {Record<string, unknown> | null} root0.journey - The journey entity.
+ * @param {Record<string, unknown> | null} root0.epic - The epic entity.
+ * @param {Record<string, unknown> | null} root0.promise - The promise entity.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @returns {Promise<Record<string, ChildMetrics>>} The child metrics keyed by node type.
  */
 async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }: PathEntities, owner: string, project: string): Promise<Record<string, ChildMetrics>> {
     const metrics: Record<string, ChildMetrics> = {};
@@ -241,9 +244,10 @@ async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }
 }
 
 /**
- *
- * @param node
- * @param child
+ * Wrap a node with a single child node.
+ * @param {Record<string, unknown>} node - The parent node.
+ * @param {Record<string, unknown> | null} child - The child node to wrap, or null for no children.
+ * @returns {Record<string, unknown>} The wrapped node with children array.
  */
 function wrapWithChild(node: Record<string, unknown>, child: Record<string, unknown> | null): Record<string, unknown> {
     return {
@@ -253,11 +257,12 @@ function wrapWithChild(node: Record<string, unknown>, child: Record<string, unkn
 }
 
 /**
- *
- * @param pathEntities
- * @param metrics
- * @param owner
- * @param project
+ * Build a linear ancestor tree from path entities and their child metrics.
+ * @param {PathEntities} pathEntities - The ancestor entities keyed by type.
+ * @param {Record<string, ChildMetrics>} metrics - The child metrics keyed by node type.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @returns {Record<string, unknown> | null} The constructed tree, or null if no entities exist.
  */
 function buildLinearTree(pathEntities: PathEntities, metrics: Record<string, ChildMetrics>, owner: string, project: string): Record<string, unknown> | null {
     const { moment, flow, journey, epic, promise } = pathEntities;
@@ -296,11 +301,11 @@ function buildLinearTree(pathEntities: PathEntities, metrics: Record<string, Chi
 
 /**
  * Fetch and build a linear ancestor-path tree from the given node up to the project root.
- * @param nodeType - The type of the starting node (promise, epic, journey, flow, moment).
- * @param nodeId - The ID of the starting node.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @returns The tree data and the focus node ID for the starting node.
+ * @param {string} nodeType - The type of the starting node (promise, epic, journey, flow, moment).
+ * @param {string | number} nodeId - The ID of the starting node.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @returns {Promise<{ tree: Record<string, unknown> | null; focusNodeId: string | null }>} The tree data and the focus node ID for the starting node.
  */
 export async function buildAncestorPathTree(nodeType: string, nodeId: string | number, owner: string, project: string): Promise<{ tree: Record<string, unknown> | null; focusNodeId: string | null }> {
     if (!STACK_NODE_TYPES.includes(nodeType)) {
@@ -341,8 +346,8 @@ export function destroyDetailStackGraph(): void {
 
 /**
  * Update the child metrics (count and completed count) for a given node in the detail stack graph.
- * @param nodeId - The node ID to patch.
- * @param children - The child entities to compute metrics from.
+ * @param {string} nodeId - The node ID to patch.
+ * @param {Record<string, unknown>[]} children - The child entities to compute metrics from.
  */
 export function patchChildMetrics(nodeId: string, children: Record<string, unknown>[]): void {
     const metrics = computeChildMetrics(children);
@@ -354,8 +359,8 @@ export function patchChildMetrics(nodeId: string, children: Record<string, unkno
 
 /**
  * Map a moment status string to a color name for display.
- * @param status - The status value (Done, InProgress, Blocked, Todo).
- * @returns The corresponding color name (green, orange, black, red).
+ * @param {string} status - The status value (Done, InProgress, Blocked, Todo).
+ * @returns {string} The corresponding color name (green, orange, black, red).
  */
 export function momentStatusToColor(status: string): string {
     switch (String(status ?? '')) {
@@ -369,8 +374,8 @@ export function momentStatusToColor(status: string): string {
 
 /**
  * Apply a partial payload update to a node in the detail stack graph and re-render.
- * @param nodeId - The node ID to patch.
- * @param payloadPatch - The partial payload properties to merge in.
+ * @param {string} nodeId - The node ID to patch.
+ * @param {Record<string, unknown>} [payloadPatch] - The partial payload properties to merge in.
  */
 export function patchDetailStackGraphNode(nodeId: string, payloadPatch: Record<string, unknown> = {}): void {
     if (!detailStackState.tree || !nodeId) return;
@@ -391,7 +396,7 @@ export function patchDetailStackGraphNode(nodeId: string, payloadPatch: Record<s
 
 /**
  * Refresh the detail stack graph by re-fetching the ancestor path tree for the active node.
- * @returns Resolves when the graph is re-rendered.
+ * @returns {Promise<void>} Resolves when the graph is re-rendered.
  */
 export async function refreshDetailStackGraph(): Promise<void> {
     const { activeNodeType, activeNodeId, owner, project, d3 } = detailStackState;
@@ -409,16 +414,12 @@ export async function refreshDetailStackGraph(): Promise<void> {
 
 /**
  * Mount the detail stack graph for a given node, fetching ancestor path and rendering with D3.
- * @param options.nodeType - The node type of the active detail entity.
- * @param root0
- * @param root0.nodeType
- * @param options.nodeId - The node ID of the active detail entity.
- * @param root0.nodeId
- * @param options.owner - The project owner's slug.
- * @param root0.owner
- * @param options.project - The project's slug.
- * @param root0.project
- * @returns Resolves when the graph is mounted and rendered.
+ * @param {{ nodeType: string; nodeId: string | number; owner: string; project: string }} root0 - The mount options.
+ * @param {string} root0.nodeType - The node type of the active detail entity.
+ * @param {string | number} root0.nodeId - The node ID of the active detail entity.
+ * @param {string} root0.owner - The project owner's slug.
+ * @param {string} root0.project - The project's slug.
+ * @returns {Promise<void>} Resolves when the graph is mounted and rendered.
  */
 export async function mountDetailStackGraph({ nodeType, nodeId, owner, project }: { nodeType: string; nodeId: string | number; owner: string; project: string }): Promise<void> {
     const container = getContainer();

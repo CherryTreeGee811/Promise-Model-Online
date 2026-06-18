@@ -14,21 +14,15 @@ interface TableConfig {
 /**
  * Render a full table into the given container with headers, item rows, and
  * an optional inline add-row at the bottom. Handles empty state.
- * @param container - Target DOM element to render into.
- * @param config.headers - Column header labels.
- * @param root0
- * @param root0.headers
- * @param config.items - Array of data items to render.
- * @param root0.items
- * @param config.emptyMessage - Fallback text when items is empty and no emptyConfig.
- * @param root0.emptyMessage
- * @param config.emptyConfig - Empty-table-row options (overrides emptyMessage).
- * @param root0.emptyConfig
- * @param config.renderItemRow - Callback producing HTML for each item row.
- * @param root0.renderItemRow
- * @param config.renderAddRow - Callback producing HTML for the add row.
- * @param root0.renderAddRow
- * @returns The tbody element, or null if container is missing.
+ * @param {HTMLElement} container - Target DOM element to render into.
+ * @param {object} config - Table configuration.
+ * @param {string[]} config.headers - Column header labels.
+ * @param {unknown[]} config.items - Array of data items to render.
+ * @param {string} [config.emptyMessage] - Fallback text when items is empty and no emptyConfig.
+ * @param {Record<string, unknown>} [config.emptyConfig] - Empty-table-row options (overrides emptyMessage).
+ * @param {(item: unknown) => string} config.renderItemRow - Callback producing HTML for each item row.
+ * @param {() => string} [config.renderAddRow] - Callback producing HTML for the add row.
+ * @returns {HTMLElement | null} The tbody element, or null if container is missing.
  */
 export function renderTableWithInlineAddRow(container: HTMLElement, {
     headers,
@@ -67,8 +61,8 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
 /**
  * Insert a row element before the inline add-row in a tbody.
  * Appends to the end if no add-row is found.
- * @param tbody - The table body element.
- * @param rowElement - The new row element to insert.
+ * @param {HTMLElement} tbody - The table body element.
+ * @param {HTMLElement} rowElement - The new row element to insert.
  */
 export function insertRowBeforeAddRow(tbody: HTMLElement, rowElement: HTMLElement): void {
     const addRow = tbody.querySelector('tr[data-inline-add-row="1"]');
@@ -82,7 +76,7 @@ export function insertRowBeforeAddRow(tbody: HTMLElement, rowElement: HTMLElemen
 
 /**
  * Remove the empty-state row from a table body if present.
- * @param tbody - The table body element.
+ * @param {HTMLElement} tbody - The table body element.
  */
 export function removeInlineEmptyRow(tbody: HTMLElement): void {
     tbody.querySelector('.inline-table-empty-row')?.remove();

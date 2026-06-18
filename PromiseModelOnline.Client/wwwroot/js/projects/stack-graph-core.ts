@@ -482,9 +482,9 @@ export function renderEmptyState(contentDiv: HTMLElement | null | undefined, mes
 
 /**
  * Calculate the rendered position of a node in the graph, accounting for content offsets.
- * @param {object} node - The hierarchy node with x/y coordinates.
- * @param node.x
- * @param node.y
+ * @param {{ x: number; y: number }} node - The hierarchy node with x/y coordinates.
+ * @param {number} node.x - The hierarchy x-coordinate.
+ * @param {number} node.y - The hierarchy y-coordinate.
  * @param {number} contentOffsetX - The X content offset.
  * @param {number} contentOffsetY - The Y content offset.
  * @returns {{x: number, y: number}} The rendered position.
@@ -548,7 +548,8 @@ function getCompactLayoutProfile(visibleCount: number, viewportWidth: number, vi
 /**
  * Uniform card scale for the detail-page facsimile: fewer tiers on screen (higher stack
  * detail pages) => larger cards; more tiers (e.g. moment) => smaller cards.
- * @param activeDetailNodeType
+ * @param {string} activeDetailNodeType - The active detail node type.
+ * @returns {number} The uniform node scale factor.
  */
 export function getDetailPageNodeScale(activeDetailNodeType: string): number {
     const index = NODE_TYPES.indexOf(activeDetailNodeType as NodeType);
@@ -568,19 +569,19 @@ export function getDetailPageNodeScale(activeDetailNodeType: string): number {
  * @param {object} layer - The D3 selection of the graph layer.
  * @param {object[]} renderable - The list of hierarchy nodes to render.
  * @param {object[]} links - The list of link objects between nodes.
- * @param {{contentOffsetX: number, contentOffsetY: number, cardClipPathId: string, owner: string, project: string, focusNodeId: string|null, onContextMenu: function|null, enableZoom: boolean, enableLinks: boolean, uniformNodeScale: number|null, animate: boolean, animationSpeed: number}} options - Rendering options.
- * @param options.contentOffsetX
- * @param options.contentOffsetY
- * @param options.cardClipPathId
- * @param options.owner
- * @param options.project
- * @param options.focusNodeId
- * @param options.onContextMenu
- * @param options.enableZoom
- * @param options.enableLinks
- * @param options.uniformNodeScale
- * @param options.animate
- * @param options.animationSpeed
+ * @param {object} options - Rendering options.
+ * @param {number} options.contentOffsetX - The X content offset.
+ * @param {number} options.contentOffsetY - The Y content offset.
+ * @param {string} options.cardClipPathId - The clip path ID for card masking.
+ * @param {string | null} options.owner - The project owner's slug.
+ * @param {string | null} options.project - The project's slug.
+ * @param {string | null} options.focusNodeId - The focused node ID.
+ * @param {((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: Record<string, unknown>) => void) | null} options.onContextMenu - Context menu event handler.
+ * @param {boolean} options.enableZoom - Whether zoom is enabled.
+ * @param {boolean} [options.enableLinks] - Whether links are enabled.
+ * @param {number | null} [options.uniformNodeScale] - Uniform node scale factor.
+ * @param {boolean} [options.animate] - Whether to animate transitions.
+ * @param {number} [options.animationSpeed] - Animation speed multiplier.
  */
 function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unknown>, renderable: Record<string, unknown>[], links: Record<string, unknown>[], options: {
     contentOffsetX: number;
@@ -947,11 +948,31 @@ function appendGraphNodes(d3: Record<string, unknown>, layer: Record<string, unk
 /**
  * Render a promise stack tree into the given content div using D3.
  * Supports both full graph (zoomable) and compact detail-page modes.
- * @param {HTMLElement} contentDiv - The container element to render into.
+ * @param {HTMLElement | null | undefined} contentDiv - The container element to render into.
  * @param {object} d3 - The D3 module instance.
  * @param {object} treeData - The tree data to render.
- * @param {{owner?: string, project?: string, focusNodeId?: string|null, focusNodeData?: object|null, enableZoom?: boolean, compact?: boolean, restoreTransform?: object|null, viewportElement?: HTMLElement|null, clipPathIdPrefix?: string, ariaLabel?: string, emptyMessage?: string, onZoom?: function|null, onContextMenu?: function|null, minGraphWidth?: number|null, minGraphHeight?: number|null, uniformNodeScale?: number|null, renderRootCard?: boolean, enableLinks?: boolean, animate?: boolean, animationSpeed?: number}} [options] - Rendering options.
- * @returns {{node: SVGElement|null, zoom: object|null}} The SVG node and zoom behavior (if enabled).
+ * @param {object} [options] - Rendering options.
+ * @param {string} [options.owner] - The project owner's slug.
+ * @param {string} [options.project] - The project's slug.
+ * @param {string | null} [options.focusNodeId] - The focused node ID.
+ * @param {object | null} [options.focusNodeData] - Specific node data to focus on.
+ * @param {boolean} [options.enableZoom] - Whether zoom is enabled.
+ * @param {boolean} [options.compact] - Whether to use compact detail-page mode.
+ * @param {object | null} [options.restoreTransform] - A D3 zoom transform to restore.
+ * @param {HTMLElement | null} [options.viewportElement] - The viewport element for scroll/clipping.
+ * @param {string} [options.clipPathIdPrefix] - Prefix for the clip path ID.
+ * @param {string} [options.ariaLabel] - The SVG aria-label.
+ * @param {string} [options.emptyMessage] - Message when no cards to display.
+ * @param {((transform: object, meta: { user?: boolean }) => void) | null} [options.onZoom] - Zoom event callback.
+ * @param {((event: Event, nodeData: object) => void) | null} [options.onContextMenu] - Context menu event callback.
+ * @param {number | null} [options.minGraphWidth] - Minimum graph width.
+ * @param {number | null} [options.minGraphHeight] - Minimum graph height.
+ * @param {number | null} [options.uniformNodeScale] - Uniform node scale factor.
+ * @param {boolean} [options.renderRootCard] - Whether to render the root card.
+ * @param {boolean} [options.enableLinks] - Whether links are enabled.
+ * @param {boolean} [options.animate] - Whether to animate transitions.
+ * @param {number} [options.animationSpeed] - Animation speed multiplier.
+ * @returns {{node: SVGElement | null, zoom: object | null} | null} The SVG node and zoom behavior (if enabled).
  */
 export function renderStackGraph(contentDiv: HTMLElement | null | undefined, d3: Record<string, unknown>, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: Record<string, unknown> | null } | null {
     const {

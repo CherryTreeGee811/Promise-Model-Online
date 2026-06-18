@@ -7,8 +7,9 @@ import { renderEmptyStateSection } from './empty-table.ts';
 
 /**
  * Draw an SVG burndown chart into the given container using D3.
- * @param container - DOM element or element ID to render into.
- * @param points - Ordered burndown data points.
+ * @param {HTMLElement | string} container - DOM element or element ID to render into.
+ * @param {BurndownPoint[]} points - Ordered burndown data points.
+ * @returns {Promise<void>} Promise that resolves when the chart is rendered.
  */
 export async function drawBurndownChart(container: HTMLElement | string, points: BurndownPoint[]): Promise<void> {
     const element = typeof container === 'string' ? document.getElementById(container) : container;

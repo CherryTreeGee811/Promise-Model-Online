@@ -13,11 +13,11 @@ import { renderSummaryTable } from './summary.ts';
 
 /**
  * Load the project settings page with inline editing, summary, export, and delete controls.
- * @param navContentDiv - The navigation content container.
- * @param contentDiv - The main content container.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param permission - The current user's permission object, used for gating edit/delete actions.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {{ permission?: string; isOwner?: boolean } | null} permission - The current user's permission object, used for gating edit/delete actions.
  */
 export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string, permission: { permission?: string; isOwner?: boolean } | null): void {
     const form = document.getElementById('project-settings-form') as HTMLFormElement | null;
@@ -106,11 +106,11 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         successText.textContent = '';
     }
 
-    /**
-     *
-     * @param loading
-     */
-    function setSummaryLoading(loading: boolean): void {
+/**
+ * Toggle the summary panel loading state.
+ * @param {boolean} loading - Whether the summary is loading.
+ */
+function setSummaryLoading(loading: boolean): void {
         summaryLoading.hidden = !loading;
         summaryPanel.hidden = loading;
     }
@@ -148,19 +148,20 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         }, 2000);
     }
 
-    /**
-     *
-     * @param projectName
-     */
-    function getDeletePhrase(projectName: string): string {
+/**
+ * Get the confirmation phrase required to delete a project.
+ * @param {string} projectName - The project name.
+ * @returns {string} The confirmation phrase.
+ */
+function getDeletePhrase(projectName: string): string {
         return `delete ${projectName}`;
     }
 
-    /**
-     *
-     * @param projectName
-     */
-    function refreshDeleteGate(projectName: string): void {
+/**
+ * Refresh the delete confirmation UI with the current project name.
+ * @param {string} projectName - The project name.
+ */
+function refreshDeleteGate(projectName: string): void {
         const phrase = getDeletePhrase(projectName);
         deleteConfirmationText.textContent = phrase;
         deleteConfirmationInput.value = '';
@@ -168,11 +169,11 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         deleteButton.dataset.confirmationPhrase = phrase;
     }
 
-    /**
-     *
-     * @param busy
-     */
-    function setDeleteButtonState(busy: boolean): void {
+/**
+ * Set the delete button loading/disabled state.
+ * @param {boolean} busy - Whether the delete operation is in progress.
+ */
+function setDeleteButtonState(busy: boolean): void {
         deleteButton.disabled = busy;
         deleteButtonSpinner.classList.toggle('d-none', !busy);
         deleteButtonLabel.textContent = busy ? 'Deleting Project...' : 'Delete Project';
@@ -186,19 +187,19 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         deleteButton.disabled = deleteConfirmationInput.value !== expected;
     }
 
-    /**
-     *
-     * @param project
-     * @param counts
-     * @param counts.promises
-     * @param counts.epics
-     * @param counts.journeys
-     * @param counts.flows
-     * @param counts.moments
-     * @param counts.totalPromises
-     * @param memberCount
-     */
-    function renderSummary(project: Record<string, unknown>, counts: { promises: number; epics: number; journeys: number; flows: number; moments: number; totalPromises: number }, memberCount: number): void {
+/**
+ * Render the project summary table.
+ * @param {Record<string, unknown>} project - The project object.
+ * @param {{ promises: number; epics: number; journeys: number; flows: number; moments: number; totalPromises: number }} counts - The entity counts.
+ * @param {number} counts.promises - The number of promises.
+ * @param {number} counts.epics - The number of epics.
+ * @param {number} counts.journeys - The number of journeys.
+ * @param {number} counts.flows - The number of flows.
+ * @param {number} counts.moments - The number of moments.
+ * @param {number} counts.totalPromises - The total number of entities.
+ * @param {number} memberCount - The number of team members.
+ */
+function renderSummary(project: Record<string, unknown>, counts: { promises: number; epics: number; journeys: number; flows: number; moments: number; totalPromises: number }, memberCount: number): void {
         renderSummaryTable(summaryPanel, [
             { label: 'Created', value: formatDate(project.createdAt as string) },
             { label: 'Team Members', value: memberCount },
@@ -211,11 +212,11 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         ]);
     }
 
-    /**
-     *
-     * @param projectObj
-     */
-    async function loadSummary(projectObj: Record<string, unknown>): Promise<void> {
+/**
+ * Load and render the project summary data.
+ * @param {Record<string, unknown>} projectObj - The project object.
+ */
+async function loadSummary(projectObj: Record<string, unknown>): Promise<void> {
         setSummaryLoading(true);
 
         try {
@@ -356,8 +357,8 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
 
 /**
  * Trigger a browser download of a blob with the given filename.
- * @param blob
- * @param filename
+ * @param {Blob} blob - The blob data to download.
+ * @param {string} filename - The filename for the download.
  */
 function downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
@@ -372,7 +373,8 @@ function downloadBlob(blob: Blob, filename: string): void {
 
 /**
  * Format a date string for display using the audit timestamp formatter.
- * @param value
+ * @param {string} value - The date string to format.
+ * @returns {string} The formatted date string.
  */
 function formatDate(value: string): string {
     return formatTimestamp(value);

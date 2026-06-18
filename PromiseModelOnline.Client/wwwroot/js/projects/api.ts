@@ -102,7 +102,7 @@ export async function exportProject(owner, project) {
  * @param {string} project - The project's slug.
  * @param {number} [take] - Results per page.
  * @param {number} [skip] - Offset for pagination.
- * @returns {Promise<{items: object[], totalCount: number}>}
+ * @returns {Promise<{items: object[], totalCount: number}>} The paginated audit events and total count.
  */
 export async function getAuditEvents(owner, project, take = 10, skip = 0) {
     const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/audit-events?take=${take}&skip=${skip}`);
@@ -144,8 +144,8 @@ export async function importProject(file) {
 
 /**
  * Fetch permission records for a project.
- * @param owner
- * @param project
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @returns {Promise<object[]>} The permission list.
  */
 export async function getPermissions(owner, project) {
@@ -156,8 +156,8 @@ export async function getPermissions(owner, project) {
 
 /**
  * Invite a user to a project.
- * @param owner
- * @param project
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @param {object} data - The invitation data (email, level).
  * @returns {Promise<object>} The created permission.
  */
@@ -183,9 +183,10 @@ export async function searchUsers(query) {
 
 /**
  * Remove a user's permission from a project.
- * @param owner
- * @param project
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @param {number} permissionId - The permission ID to remove.
+ * @returns {Promise<void>}
  */
 export async function removePermission(owner, project, permissionId) {
     const res = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions/${permissionId}`, {
@@ -196,8 +197,8 @@ export async function removePermission(owner, project, permissionId) {
 
 /**
  * Fetch the top-level promises for a project.
- * @param owner
- * @param project
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @returns {Promise<object[]>} The promise list.
  */
 export async function getProjectPromises(owner, project) {
@@ -208,8 +209,8 @@ export async function getProjectPromises(owner, project) {
 
 /**
  * Fetch the full project hierarchy as graph data.
- * @param owner
- * @param project
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @returns {Promise<object|null>} The graph data.
  */
 export async function getGraphData(owner, project) {
@@ -221,8 +222,8 @@ export async function getGraphData(owner, project) {
 
 /**
  * Fetch the member list for a project.
- * @param owner
- * @param project
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @returns {Promise<object[]>} The member list.
  */
 export async function getProjectMembers(owner, project) {
@@ -233,8 +234,8 @@ export async function getProjectMembers(owner, project) {
 
 /**
  * Fetch the current user's permission level for a project.
- * @param owner
- * @param project
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
  * @returns {Promise<object|null>} The permission data, or null.
  */
 export async function getMyPermission(owner, project) {

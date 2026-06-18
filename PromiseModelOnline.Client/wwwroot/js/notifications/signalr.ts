@@ -4,7 +4,7 @@ import { showToast } from '../ui/toast.ts';
 
 /** @type {HubConnection|null} */
 let connection = null;
-/** @type {Function|null} */
+/** @type {((data?: unknown) => void)|null} */
 let onNotificationOrReconnect = null;
 let isStarted = false;
 
@@ -12,8 +12,9 @@ let isStarted = false;
  * Start the SignalR connection to the notifications hub.
  * Registers a callback for incoming notifications, reconnection, and connection state toasts.
  * The connection uses automatic reconnect with incremental delays.
- * @param {Function|null} onNotification - Callback invoked with notification data on new notifications,
+ * @param {((data?: unknown) => void)|null} onNotification - Callback invoked with notification data on new notifications,
  *                                          or with null after a successful reconnect.
+ * @returns {Promise<void>}
  */
 export async function startSignalR(onNotification) {
     if (isStarted) return;
@@ -57,7 +58,10 @@ export async function startSignalR(onNotification) {
     }
 }
 
-/** Stop the SignalR connection. */
+/**
+ * Stop the SignalR connection.
+ * @returns {Promise<void>}
+ */
 export async function stopSignalR() {
     if (connection) {
         try {

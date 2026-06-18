@@ -16,10 +16,10 @@ export const entityLookupMap: EntityMap = {};
 
 /**
  * Fetch the entity lookup map for a comment parent and populate `entityLookupMap`.
- * @param parentType - Parent entity type (e.g. "promise").
- * @param parentId - Parent entity database ID.
- * @param owner - Project owner slug.
- * @param project - Project slug.
+ * @param {string} parentType - Parent entity type (e.g. "promise").
+ * @param {number} parentId - Parent entity database ID.
+ * @param {string} owner - Project owner slug.
+ * @param {string} project - Project slug.
  */
 export async function loadEntityLookupMap(parentType: string, parentId: number, owner: string, project: string): Promise<void> {
     try {
@@ -41,8 +41,9 @@ export async function loadEntityLookupMap(parentType: string, parentId: number, 
 }
 
 /**
- *
- * @param statusColor
+ * Map a status color string to an emoji icon.
+ * @param {string} statusColor - Status color label.
+ * @returns {string} Emoji character for the status.
  */
 function statusIcon(statusColor: string): string {
     const normalized = String(statusColor ?? '').toLowerCase();
@@ -54,10 +55,10 @@ function statusIcon(statusColor: string): string {
 }
 
 /**
- * Convert entity references (#promise-123) and @mentions in comment text
+ * Convert entity references (#promise-123) and \@mentions in comment text
  * to anchor links using the current entityLookupMap.
- * @param text - Raw comment text.
- * @returns HTML-formatted comment string.
+ * @param {string} text - Raw comment text.
+ * @returns {string} HTML-formatted comment string.
  */
 export function formatCommentText(text: string): string {
     let html = escapeHtml(text);
