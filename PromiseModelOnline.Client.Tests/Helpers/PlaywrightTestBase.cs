@@ -44,17 +44,18 @@ public abstract class PlaywrightTestBase
                 _ => _playwright.Chromium,
             };
 
+            var browserName = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant() ?? "chromium";
+            var launchArgs = browserName switch
+            {
+                "firefox" => new[] { "--no-sandbox" },
+                "webkit" => Array.Empty<string>(),
+                _ => new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage", "--disable-web-security", "--allow-running-insecure-content" },
+            };
+
             _browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = IsHeadless,
-                Args = new[]
-                {
-                    "--ignore-certificate-errors",
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-web-security",
-                    "--allow-running-insecure-content"
-                }
+                Args = launchArgs,
             });
 
             Context = await _browser.NewContextAsync(new BrowserNewContextOptions
