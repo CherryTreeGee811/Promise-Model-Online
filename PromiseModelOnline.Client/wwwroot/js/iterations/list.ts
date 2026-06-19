@@ -82,7 +82,9 @@ function buildEmptyState(icon: string, title: string, description?: string): HTM
 /**
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
- * @param {{ permission: string } | undefined} permission - Permission object
+ * @param {number} iterationId - The iteration ID
+ * @param {HTMLElement | null} burndownCanvas - The burndown chart canvas element
+ * @returns {Promise<void>}
  */
 async function loadBurndownChart(owner: string, project: string, iterationId: number, burndownCanvas: HTMLElement | null): Promise<void> {
     const BURNDOWN_TIMEOUT_MS = 10_000;
@@ -112,6 +114,15 @@ async function loadBurndownChart(owner: string, project: string, iterationId: nu
     }
 }
 
+/**
+ * @param {Iteration} iteration - The iteration to display
+ * @param {HTMLElement | null} viewDiv - The view container
+ * @param {HTMLElement | null} detailDiv - The detail container
+ * @param {HTMLElement | null} burndownCanvas - The burndown chart canvas
+ * @param {HTMLElement | null} strideDetailsDiv - The stride details container
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ */
 function showIterationView(iteration: Iteration, viewDiv: HTMLElement | null, detailDiv: HTMLElement | null, burndownCanvas: HTMLElement | null, strideDetailsDiv: HTMLElement | null, owner: string, project: string): void {
     const iterationId = iteration.id;
     if (viewDiv) viewDiv.classList.add('d-none');
@@ -123,6 +134,13 @@ function showIterationView(iteration: Iteration, viewDiv: HTMLElement | null, de
     void loadBurndownChart(owner, project, iterationId, burndownCanvas);
 }
 
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLElement | null} errorElement - The error display element
+ * @param {HTMLElement | null} listDiv - The list container element
+ * @returns {Promise<{ projectData: ProjectData | undefined; iterations: Iteration[] } | undefined>} The project data and iterations, or undefined on failure
+ */
 async function loadIterationData(owner: string, project: string, errorElement: HTMLElement | null, listDiv: HTMLElement | null): Promise<{ projectData: ProjectData | undefined; iterations: Iteration[] } | undefined> {
     try {
         return await loadIterationsWithTimeout(owner, project);
@@ -133,6 +151,12 @@ async function loadIterationData(owner: string, project: string, errorElement: H
     }
 }
 
+/**
+ * @param {Iteration[]} iterations - The iterations to render
+ * @param {HTMLElement | null} listDiv - The list container element
+ * @param {(d: string) => string} formatDate - Date formatting function
+ * @param {(iteration: Iteration) => Promise<void>} showDetail - Function to show iteration detail
+ */
 function renderIterationList(iterations: Iteration[], listDiv: HTMLElement | null, formatDate: (d: string) => string, showDetail: (iteration: Iteration) => Promise<void>): void {
     try {
         iterations.sort((a, b) => b.id - a.id);
@@ -145,6 +169,13 @@ function renderIterationList(iterations: Iteration[], listDiv: HTMLElement | nul
     }
 }
 
+/**
+ * @param {HTMLElement | null} button - The create button element
+ * @param {boolean} canEdit - Whether the user has edit permission
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {{ permission: string } | undefined} permission - Permission object
+ */
 function setupIterationCreateButton(button: HTMLElement | null, canEdit: boolean, owner: string, project: string, permission: { permission: string } | undefined): void {
     if (!button) return;
     if (!canEdit) {
@@ -157,6 +188,11 @@ function setupIterationCreateButton(button: HTMLElement | null, canEdit: boolean
     }
 }
 
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @returns {Promise<{ projectData: ProjectData | undefined; iterations: Iteration[] }>} The project data and iterations
+ */
 async function loadIterationsWithTimeout(owner: string, project: string): Promise<{ projectData: ProjectData | undefined; iterations: Iteration[] }> {
     const LOAD_TIMEOUT_MS = 15_000;
 
@@ -181,8 +217,11 @@ async function loadIterationsWithTimeout(owner: string, project: string): Promis
     return { projectData, iterations };
 }
 
-/** @param {Iteration[]} iterationList @param {HTMLElement | null} listDiv @returns {boolean} true if empty */
-/** @param {Iteration} iteration @param {(d: string) => string} formatDate */
+/**
+ * @param {Iteration} iteration - The iteration data
+ * @param {(d: string) => string} formatDate - Date formatting function
+ * @returns {HTMLTableRowElement} The table row element
+ */
 function createIterationRow(iteration: Iteration, formatDate: (d: string) => string): HTMLTableRowElement {
     const tr = document.createElement('tr');
     const tdName = document.createElement('td');
@@ -205,6 +244,11 @@ function createIterationRow(iteration: Iteration, formatDate: (d: string) => str
     return tr;
 }
 
+/**
+ * @param {Iteration[]} iterationList - The iterations list
+ * @param {HTMLElement | null} listDiv - The list container element
+ * @returns {boolean} True if no iterations exist
+ */
 function isEmptyIterations(iterationList: Iteration[], listDiv: HTMLElement | null): boolean {
     if (!iterationList || iterationList.length === 0) {
         if (listDiv) listDiv.replaceChildren(buildEmptyState(
@@ -217,7 +261,11 @@ function isEmptyIterations(iterationList: Iteration[], listDiv: HTMLElement | nu
     return false;
 }
 
-/** @param {Iteration[]} iterations */
+/**
+ * @param {Iteration[]} iterations - The iterations to render
+ * @param {(d: string) => string} formatDate - Date formatting function
+ * @returns {HTMLElement} The table wrapper element
+ */
 function buildIterationsTable(iterations: Iteration[], formatDate: (d: string) => string): HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.className = 'table-responsive';
@@ -245,6 +293,10 @@ function buildIterationsTable(iterations: Iteration[], formatDate: (d: string) =
     return wrapper;
 }
 
+/**
+ * @param {Iteration[]} iterations - The iterations list
+ * @param {(iteration: Iteration) => Promise<void>} showDetail - Function to show iteration detail
+ */
 function bindIterationViewButtons(iterations: Iteration[], showDetail: (iteration: Iteration) => Promise<void>): void {
     for (const button of document.querySelectorAll('.view-iteration-btn')) {
         button.addEventListener('click', () => {
@@ -255,6 +307,12 @@ function bindIterationViewButtons(iterations: Iteration[], showDetail: (iteratio
     }
 }
 
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {{ permission: string } | undefined} permission - Permission object
+ * @returns {Promise<void>}
+ */
 export async function loadIterationHistory(owner: string, project: string, permission: { permission: string } | undefined): Promise<void> {
     const viewDiv = document.querySelector('#iterations-view') as HTMLElement;
     const listDiv = document.querySelector('#iterations-list') as HTMLElement;

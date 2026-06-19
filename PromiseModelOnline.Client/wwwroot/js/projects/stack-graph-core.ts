@@ -993,6 +993,21 @@ function appendGraphNodes(d3: any, layer: Record<string, unknown>, renderable: R
  * @returns {{node: SVGElement | null, zoom: object } | undefined} The SVG node and zoom behavior (if enabled).
  */
 
+/**
+ * Compute the graph layout parameters (gaps, forehead, card scale) for full or compact mode.
+ * @param {boolean} isCompact - Whether to use compact detail-page mode.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {{ top: number; right: number; bottom: number; left: number }} margin - The SVG margin.
+ * @param {number} margin.top - The top margin.
+ * @param {number} margin.right - The right margin.
+ * @param {number} margin.bottom - The bottom margin.
+ * @param {number} margin.left - The left margin.
+ * @param {number} maxDepth - The maximum tree depth.
+ * @param {object} treeData - The tree data.
+ * @param {number} [uniformNodeScale] - Uniform node scale factor.
+ * @returns {{ stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number }} The computed layout values.
+ */
 function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportHeight: number, margin: any, maxDepth: number, treeData: any, uniformNodeScale = 1) {
     let sgx = isCompact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
     let sgy = isCompact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
@@ -1008,6 +1023,12 @@ function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportH
     return { stepGapX: sgx, stepGapY: sgy, foreheadGap: fg, cardScale: cs };
 }
 
+/**
+ * Resolve animation options by checking for an existing SVG element and reduced motion preference.
+ * @param {HTMLElement} contentDiv - The container element.
+ * @param {boolean} shouldAnimate - Whether animation is requested.
+ * @returns {{ existingSvgElement: SVGElement | undefined; isAnimating: boolean }} The resolved animation options.
+ */
 function resolveAnimationOptions(contentDiv: HTMLElement, shouldAnimate: boolean): { existingSvgElement: SVGElement | undefined; isAnimating: boolean } {
     const existingSvgElement = shouldAnimate ? contentDiv.querySelector('svg') as SVGElement | undefined : undefined;
     const isPrefersReducedMotion = typeof window !== 'undefined' && globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -1015,6 +1036,24 @@ function resolveAnimationOptions(contentDiv: HTMLElement, shouldAnimate: boolean
     return { existingSvgElement, isAnimating };
 }
 
+/**
+ * Compute the bounding dimensions of the graph based on rendered node positions.
+ * @param {object} d3 - The D3 module instance.
+ * @param {object[]} renderable - The list of hierarchy nodes to render.
+ * @param {number} cardScale - The card scale factor.
+ * @param {object} margin - The SVG margin.
+ * @param {number} margin.top - The top margin.
+ * @param {number} margin.right - The right margin.
+ * @param {number} margin.bottom - The bottom margin.
+ * @param {number} margin.left - The left margin.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {number} foreheadGap - The forehead gap above the root.
+ * @param {boolean} isCompact - Whether compact mode is active.
+ * @param {number | null} minGraphWidth - Minimum graph width.
+ * @param {number | null} minGraphHeight - Minimum graph height.
+ * @returns {{ minX: number; maxX: number; minY: number; maxY: number; graphWidth: number; graphHeight: number }} The computed dimensions.
+ */
 function computeGraphDimensions(
     d3: any,
     renderable: Record<string, unknown>[],
@@ -1040,6 +1079,20 @@ function computeGraphDimensions(
     return { minX, maxX, minY, maxY, graphWidth, graphHeight };
 }
 
+/**
+ * Set up the SVG container, creating a new one or reusing an existing element.
+ * @param {object} d3 - The D3 module instance.
+ * @param {HTMLElement} contentDiv - The container element.
+ * @param {SVGElement | undefined} existingSvgElement - An existing SVG element to reuse.
+ * @param {number} graphWidth - The computed graph width.
+ * @param {number} graphHeight - The computed graph height.
+ * @param {boolean} isCompact - Whether compact mode is active.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {boolean} isZoomEnabled - Whether zoom is enabled.
+ * @param {string} ariaLabel - The SVG aria-label.
+ * @param {string} cardClipPathId - The clip path ID for card masking.
+ * @returns {object} The D3 selection of the SVG element.
+ */
 function setupSvgContainer(
     d3: any,
     contentDiv: HTMLElement,
@@ -1083,6 +1136,13 @@ function setupSvgContainer(
     return svg;
 }
 
+/**
+ * Find the hierarchy node corresponding to the focused node by data identity or ID.
+ * @param {object} root - The D3 hierarchy root.
+ * @param {object | undefined} focusNodeData - The specific node data to match.
+ * @param {string | undefined} resolvedFocusNodeId - The resolved focus node ID.
+ * @returns {object | undefined} The matching hierarchy node, or undefined.
+ */
 function findFocusedHierarchyNode(
     root: Record<string, unknown>,
     focusNodeData: Record<string, unknown> | undefined,
@@ -1097,6 +1157,14 @@ function findFocusedHierarchyNode(
     return (root.descendants as () => Record<string, unknown>[])().find(node => (node.data as Record<string, unknown> | undefined)?.id === resolvedFocusNodeId);
 }
 
+/**
+ * Compute the scale factor to fit the entire graph within the viewport.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {number} graphWidth - The graph width.
+ * @param {number} graphHeight - The graph height.
+ * @returns {number} The fit scale factor (0 to 1).
+ */
 function computeFitScale(viewportWidth: number, viewportHeight: number, graphWidth: number, graphHeight: number): number {
     return Math.min(
         viewportWidth > 0 ? viewportWidth / graphWidth : 1,
@@ -1105,6 +1173,23 @@ function computeFitScale(viewportWidth: number, viewportHeight: number, graphWid
     );
 }
 
+/**
+ * Compute the initial zoom transforms (focus, fit, restore) and determine the mode.
+ * @param {object} d3 - The D3 module instance.
+ * @param {object | undefined} focusedHierarchyNode - The focused hierarchy node.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {number} contentOffsetX - The X content offset.
+ * @param {number} contentOffsetY - The Y content offset.
+ * @param {number} cardScale - The card scale factor.
+ * @param {number} graphWidth - The graph width.
+ * @param {number} graphHeight - The graph height.
+ * @param {number} initialScale - The initial fit scale.
+ * @param {SVGElement | undefined} existingSvgElement - An existing SVG element.
+ * @param {object} svg - The D3 selection of the SVG element.
+ * @param {object | undefined} restoreTransform - A previously saved transform to restore.
+ * @returns {{ focusTransform: object | undefined; fitTransform: object; initialTransform: object; mode: string }} The computed transforms and mode.
+ */
 function computeInitialTransforms(
     d3: any,
     focusedHierarchyNode: Record<string, unknown> | undefined,
@@ -1146,6 +1231,19 @@ function computeInitialTransforms(
     return { focusTransform, fitTransform, initialTransform, mode };
 }
 
+/**
+ * Schedule a focus refinement pass after the first render to adjust zoom for the actual viewport size.
+ * @param {object} d3 - The D3 module instance.
+ * @param {object} svg - The D3 selection of the SVG element.
+ * @param {object} zoom - The D3 zoom behavior.
+ * @param {object | undefined} focusedHierarchyNode - The focused hierarchy node.
+ * @param {HTMLElement} viewportElement - The viewport element.
+ * @param {number} contentOffsetX - The X content offset.
+ * @param {number} contentOffsetY - The Y content offset.
+ * @param {number} cardScale - The card scale factor.
+ * @param {SVGElement | undefined} existingSvgElement - An existing SVG element.
+ * @returns {void}
+ */
 function scheduleFocusRefinement(
     d3: any,
     svg: Record<string, unknown>,
@@ -1184,6 +1282,21 @@ function scheduleFocusRefinement(
     });
 }
 
+/**
+ * Render the graph without zoom interactions (compact/detail mode), centering nodes in the viewport.
+ * @param {object} d3 - The D3 module instance.
+ * @param {object} graphLayer - The D3 selection of the graph layer.
+ * @param {object[]} renderable - The list of hierarchy nodes to render.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {number} graphWidth - The graph width.
+ * @param {number} graphHeight - The graph height.
+ * @param {number} contentOffsetX - The X content offset.
+ * @param {number} contentOffsetY - The Y content offset.
+ * @param {boolean} isCompact - Whether compact mode is active.
+ * @param {number} cardScale - The card scale factor.
+ * @returns {object} The computed fit transform.
+ */
 function renderGraphWithoutZoom(
     d3: any,
     graphLayer: Record<string, unknown>,
@@ -1237,6 +1350,14 @@ function renderGraphWithoutZoom(
     return fitTransform;
 }
 
+/**
+ * Log the status of the focused node resolution for debugging.
+ * @param {object | undefined} focusedHierarchyNode - The resolved hierarchy node.
+ * @param {string | undefined} resolvedFocusNodeId - The resolved focus node ID.
+ * @param {object | undefined} focusNodeData - The original focus node data.
+ * @param {number} renderableCount - The number of renderable nodes.
+ * @returns {void}
+ */
 function logFocusNodeStatus(
     focusedHierarchyNode: Record<string, unknown> | undefined,
     resolvedFocusNodeId: string | undefined,
@@ -1261,6 +1382,15 @@ function logFocusNodeStatus(
     }
 }
 
+/**
+ * Log post-render focus debug information including transform state and bounding rects.
+ * @param {HTMLElement} contentDiv - The container element.
+ * @param {object} svg - The D3 selection of the SVG element.
+ * @param {object} graphLayer - The D3 selection of the graph layer.
+ * @param {string | undefined} resolvedFocusNodeId - The resolved focus node ID.
+ * @param {HTMLElement} viewportElement - The viewport element.
+ * @returns {void}
+ */
 function logPostRenderFocusDebug(
     contentDiv: HTMLElement,
     svg: Record<string, unknown>,
@@ -1315,6 +1445,35 @@ function logPostRenderFocusDebug(
     });
 }
 
+/**
+ * Render a promise stack tree graph into the given content div using D3.
+ * Supports both full zoomable graph and compact detail-page modes.
+ * @param {HTMLElement | undefined} contentDiv - The container element to render into.
+ * @param {object} d3 - The D3 module instance.
+ * @param {object} treeData - The tree data to render.
+ * @param {object} [options] - Rendering options.
+ * @param {string} [options.owner] - The project owner's slug.
+ * @param {string} [options.project] - The project's slug.
+ * @param {string} [options.focusNodeId] - The focused node ID.
+ * @param {object} [options.focusNodeData] - Specific node data to focus on.
+ * @param {boolean} [options.enableZoom] - Whether zoom is enabled.
+ * @param {boolean} [options.compact] - Whether to use compact detail-page mode.
+ * @param {object} [options.restoreTransform] - A D3 zoom transform to restore.
+ * @param {HTMLElement} [options.viewportElement] - The viewport element for scroll/clipping.
+ * @param {string} [options.clipPathIdPrefix] - Prefix for the clip path ID.
+ * @param {string} [options.ariaLabel] - The SVG aria-label.
+ * @param {string} [options.emptyMessage] - Message when no cards to display.
+ * @param {(transform: object, meta: { user?: boolean }) => void} [options.onZoom] - Zoom event callback.
+ * @param {(event: MouseEvent | KeyboardEvent | object, data: object) => void} [options.onContextMenu] - Context menu event callback.
+ * @param {number} [options.minGraphWidth] - Minimum graph width.
+ * @param {number} [options.minGraphHeight] - Minimum graph height.
+ * @param {number} [options.uniformNodeScale] - Uniform node scale factor.
+ * @param {boolean} [options.renderRootCard] - Whether to render the root card.
+ * @param {boolean} [options.enableLinks] - Whether links are enabled.
+ * @param {boolean} [options.animate] - Whether to animate transitions.
+ * @param {number} [options.animationSpeed] - Animation speed multiplier.
+ * @returns {({ node: SVGElement | null; zoom: object | null } | null | void)} The SVG node and zoom behavior (if enabled), or null/undefined.
+ */
 export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: Record<string, unknown> | null } | null {
     const {
         owner,

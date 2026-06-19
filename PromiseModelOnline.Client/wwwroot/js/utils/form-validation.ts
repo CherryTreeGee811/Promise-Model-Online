@@ -94,17 +94,40 @@ const ruleHandlers: Record<string, (value: string, rule: ValidationRule, allValu
   required: (v, r) => v.length === 0 ? r.message : undefined,
   minLength: (v, r) => v.length < (r.value as number) ? r.message : undefined,
   maxLength: (v, r) => v.length > (r.value as number) ? r.message : undefined,
-  pattern: (v, r) => {
-    const regex = r.value instanceof RegExp ? r.value : new RegExp(r.value as string);
-    return regex.test(v) ? undefined : r.message;
-  },
+    pattern: (v, r) => {
+        return (r.value as RegExp).test(v) ? undefined : r.message;
+    },
   email: (v, r) => v.length > 0 && !EMAIL_REGEX.test(v) ? r.message : undefined,
   match: (v, r, all) => v === all[r.matchField ?? ''] ? undefined : r.message,
 };
 
+/**
+ * @param {string} value - The field value to validate
+ * @param {ValidationRule} rule - The validation rule to apply
+ * @param {Record<string, string>} allValues - All form field values for cross-field rules
+ * @returns {string | undefined} The error message, or undefined if valid
+ */
 function evaluateRule(value: string, rule: ValidationRule, allValues: Record<string, string>): string | undefined {
   const handler = ruleHandlers[rule.type];
   return handler ? handler(value, rule, allValues) : undefined;
+}
+
+/**
+ * Safely compile a regex pattern string into a RegExp.
+ * Validates length and wraps in try-catch to prevent crashes from invalid patterns.
+ * @param {string} pattern - The regex pattern string.
+ * @returns {RegExp} The compiled RegExp.
+ */
+function compilePattern(pattern: string): RegExp {
+  const MAX_PATTERN_LENGTH = 256;
+  if (pattern.length > MAX_PATTERN_LENGTH) {
+    throw new Error('Regex pattern exceeds maximum length');
+  }
+  try {
+    return new RegExp(pattern); // eslint-disable-line security/detect-non-literal-regexp
+  } catch {
+    throw new Error(`Invalid regex pattern: ${pattern}`);
+  }
 }
 
 /**
@@ -126,6 +149,15 @@ export function createValidator(formId: string, rules: FieldRules): FormValidato
     const element = document.querySelector('#' + fieldId);
     if (element) {
       fields.set(fieldId, element as HTMLElement);
+    }
+  }
+
+  const ruleEntries = Object.values(rules);
+  for (const fieldRules of ruleEntries) {
+    for (const rule of fieldRules) {
+      if (rule.type === 'pattern' && typeof rule.value === 'string') {
+        rule.value = compilePattern(rule.value);
+      }
     }
   }
 

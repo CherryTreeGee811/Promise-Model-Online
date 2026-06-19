@@ -321,6 +321,11 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
     }
 
+    /**
+     * Build the permission section header with title and optional invite button.
+     * @param {HTMLElement} section - The section container element.
+     * @param {boolean} isOwner - Whether the current user is the project owner.
+     */
     function buildPermissionHeader(section: HTMLElement, isOwner: boolean): void {
         const headerDiv = document.createElement('div');
         headerDiv.className = 'd-flex justify-content-between align-items-center';
@@ -339,6 +344,12 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         section.append(headerDiv);
     }
 
+    /**
+     * Build the permissions table body with rows for each permission or an empty state.
+     * @param {Array<{id: string; userName: string; level: string; status: string}> | null | undefined} permissions - The list of permissions.
+     * @param {boolean} isOwner - Whether the current user is the project owner.
+     * @returns {HTMLTableSectionElement} The table body element.
+     */
     function buildPermissionsTableBody(
         permissions: Array<{ id: string; userName: string; level: string; status: string }> | null | undefined,
         isOwner: boolean

@@ -4,9 +4,10 @@ import { renderEmptyTableRow } from "../utils/empty-table.ts";
 import { fetchProjects } from './api.ts';
 
 /**
- * @param {HTMLElement} tableBody
- * @param {HTMLElement} navContentDiv
- * @param {HTMLElement} contentDiv
+ * Render the empty state when no projects exist and wire up the create button.
+ * @param {HTMLElement} tableBody - The table body element to populate.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 function showEmptyState(tableBody: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     const parser = new DOMParser();

@@ -51,14 +51,14 @@ interface Moment {
 }
 
 /**
+ * @param {Moment} moment - The moment data object
+ * @param {HTMLElement} detailCard - The detail card element
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {HTMLElement} navContentDiv - Navigation content container
+ * @param {HTMLElement} contentDiv - Main content container
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
- * @param {string} momentId - The moment ID
- * @param {HTMLElement} navContentDiv - Navigation container
- * @param {HTMLElement} contentDiv - Content container
- * @param {Record<string, unknown>} permission - Permission object
  */
-
 function buildMomentUI(moment: any, detailCard: HTMLElement, detailDiv: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string): void {
         const heading = document.createElement('h2');
         heading.textContent = moment.statement as string;
@@ -271,6 +271,9 @@ function buildMomentUI(moment: any, detailCard: HTMLElement, detailDiv: HTMLElem
         detailDiv.replaceChildren(detailCard);}
 
 
+/**
+ * @param {Record<string, unknown>} permission - Permission object
+ */
 function gateMomentDetailControls(permission: Record<string, unknown>): void {
     const canEdit = isAtLeast(permission?.permission as string, 'Edit');
     if (!canEdit) {
@@ -292,6 +295,13 @@ function gateMomentDetailControls(permission: Record<string, unknown>): void {
 }
 
 
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment data object
+ * @returns {Promise<void>}
+ */
 async function setupEstimateHandler(owner: string, project: string, momentId: string, moment: any): Promise<void> {
     const estSelectElement = document.querySelector('#moment-estimate-select') as HTMLSelectElement;
     if (estSelectElement) {
@@ -307,6 +317,13 @@ async function setupEstimateHandler(owner: string, project: string, momentId: st
 }
 
 
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment data object
+ * @returns {Promise<void>}
+ */
 async function setupStrideHandler(owner: string, project: string, momentId: string, moment: any): Promise<void> {
     const strideSelectElement = document.querySelector('#moment-stride-select') as HTMLSelectElement;
     if (strideSelectElement) {
@@ -334,6 +351,15 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
     }
 }
 
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {Record<string, unknown>} permission - Permission object
+ * @returns {Promise<void>}
+ */
 export async function loadMomentDetail(owner: string, project: string, momentId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
     const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement;
     const errorElement = document.querySelector('#error-text') as HTMLElement;
@@ -625,12 +651,12 @@ function syncMomentTasksToStackGraph(momentId: string, moment: Moment): void {
 }
 
 /**
- * @param {HTMLElement} tbody - The table body element
- * @param {string} momentId - The moment ID
- * @param {Moment} moment - The moment object
- * @param {Record<string, unknown>} permission - Permission object
+ * @param {HTMLInputElement} checkbox - The checkbox element
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment object
+ * @returns {Promise<void>}
  */
 async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, project: string, momentId: string, moment: Moment): Promise<void> {
     const taskId = Math.trunc(Number(checkbox.dataset.momentTaskId ?? ''));
@@ -648,6 +674,15 @@ async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, proj
     } finally { checkbox.disabled = false; }
 }
 
+/**
+ * @param {HTMLInputElement} checkbox - The checkbox element
+ * @param {HTMLElement | null} label - The status label element
+ * @param {Record<string, unknown>} updated - The updated task data from API
+ * @param {boolean} isPreviousChecked - The previous checked state
+ * @param {Moment} moment - The moment object
+ * @param {string} momentId - The moment ID
+ * @param {number} taskId - The task ID
+ */
 function applyCheckResult(checkbox: HTMLInputElement, label: HTMLElement | null, updated: Record<string, unknown>, isPreviousChecked: boolean, moment: Moment, momentId: string, taskId: number): void {
     if (updated) {
         checkbox.checked = Boolean(updated.isCompleted);
@@ -657,6 +692,14 @@ function applyCheckResult(checkbox: HTMLInputElement, label: HTMLElement | null,
     } else if (label) { label.textContent = checkbox.checked ? 'Completed' : 'Open'; }
 }
 
+/**
+ * @param {HTMLInputElement} checkbox - The checkbox element
+ * @param {boolean} canEdit - Whether the user has edit permission
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment object
+ */
 function bindSingleCheckbox(checkbox: HTMLInputElement, canEdit: boolean, owner: string, project: string, momentId: string, moment: Moment): void {
     if (checkbox.dataset.bound === '1') return;
     checkbox.dataset.bound = '1';
@@ -664,6 +707,14 @@ function bindSingleCheckbox(checkbox: HTMLInputElement, canEdit: boolean, owner:
     checkbox.addEventListener('change', () => { void handleCheckToggle(checkbox, owner, project, momentId, moment); });
 }
 
+/**
+ * @param {HTMLElement} tbody - The table body element
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment object
+ * @param {Record<string, unknown>} permission - Permission object
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ */
 function bindMomentTaskCompletionToggle(tbody: HTMLElement, momentId: string, moment: Moment, permission: Record<string, unknown>, owner: string, project: string): void {
     if (!tbody) return;
     const canEdit = isAtLeast(permission?.permission as string, 'Edit');

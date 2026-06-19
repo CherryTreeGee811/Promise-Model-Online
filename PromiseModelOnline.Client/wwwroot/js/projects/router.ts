@@ -15,6 +15,14 @@ import { loadProjectList } from './list.ts';
 import { loadProjectSettingsPage } from './settings.ts';
 import { loadSharePage } from './share.ts';
 
+/**
+ * Handle the strides (backlog) route for a project.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleStridesRoute(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const perm = await fetchMyPermission(owner, project);
@@ -25,6 +33,14 @@ async function handleStridesRoute(owner: string, project: string, navContentDiv:
     }
 }
 
+/**
+ * Handle the graph view route for a project.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} _navContentDiv - The navigation content container (unused).
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleGraphRoute(owner: string, project: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -38,6 +54,14 @@ async function handleGraphRoute(owner: string, project: string, _navContentDiv: 
     }
 }
 
+/**
+ * Handle the settings route for a project.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleSettingsRoute(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -51,6 +75,14 @@ async function handleSettingsRoute(owner: string, project: string, navContentDiv
     }
 }
 
+/**
+ * Handle the share/permissions route for a project.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} _navContentDiv - The navigation content container (unused).
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleShareRoute(owner: string, project: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -64,6 +96,14 @@ async function handleShareRoute(owner: string, project: string, _navContentDiv: 
     }
 }
 
+/**
+ * Handle the audit history route for a project.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleHistoryRoute(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         await loadTemplate('projects/history.html', contentDiv);
@@ -73,6 +113,14 @@ async function handleHistoryRoute(owner: string, project: string, navContentDiv:
     }
 }
 
+/**
+ * Handle the iterations list route for a project.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {HTMLElement} _navContentDiv - The navigation content container (unused).
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleIterationsRoute(owner: string, project: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -87,6 +135,15 @@ async function handleIterationsRoute(owner: string, project: string, _navContent
     }
 }
 
+/**
+ * Handle the promise detail route.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} seq - The promise sequence number.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handlePromiseDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -100,6 +157,15 @@ async function handlePromiseDetailRoute(owner: string, project: string, seq: str
     }
 }
 
+/**
+ * Handle the epic detail route.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} seq - The epic sequence number.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleEpicDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -113,6 +179,15 @@ async function handleEpicDetailRoute(owner: string, project: string, seq: string
     }
 }
 
+/**
+ * Handle the journey detail route.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} seq - The journey sequence number.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleJourneyDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -126,6 +201,15 @@ async function handleJourneyDetailRoute(owner: string, project: string, seq: str
     }
 }
 
+/**
+ * Handle the flow detail route.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} seq - The flow sequence number.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleFlowDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([
@@ -139,6 +223,15 @@ async function handleFlowDetailRoute(owner: string, project: string, seq: string
     }
 }
 
+/**
+ * Handle the moment detail route.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {string} seq - The moment sequence number.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleMomentDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         const [, perm] = await Promise.all([

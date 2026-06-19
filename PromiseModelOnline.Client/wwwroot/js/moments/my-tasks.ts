@@ -36,7 +36,8 @@ function buildEmptyState(): HTMLElement {
 }
 
 /**
- * @param {MyTaskMoment} m
+ * @param {MyTaskMoment} m - The task moment data
+ * @returns {HTMLTableRowElement} The table row element
  */
 function createTaskRow(m: MyTaskMoment): HTMLTableRowElement {
     const tr = document.createElement('tr');
@@ -95,7 +96,9 @@ function createTaskRow(m: MyTaskMoment): HTMLTableRowElement {
     return tr;
 }
 
-/** @param {HTMLElement} content */
+/**
+ * @param {HTMLElement} content - The content container element
+ */
 function setupTaskEvents(content: HTMLElement): void {
     content.addEventListener('change', async (event) => {
         const target = event.target as HTMLElement;
@@ -121,7 +124,11 @@ function setupTaskEvents(content: HTMLElement): void {
     });
 }
 
-/** @param {HTMLElement} content @param {HTMLElement} navContentDiv @param {HTMLElement} contentDiv */
+/**
+ * @param {HTMLElement} content - The content container element
+ * @param {HTMLElement} navContentDiv - The navigation content container
+ * @param {HTMLElement} contentDiv - The main content container
+ */
 function bindTaskLinks(content: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     for (const link of content.querySelectorAll('a[moment-seq]') as NodeListOf<HTMLAnchorElement>) {
         link.addEventListener('click', (event: MouseEvent) => {

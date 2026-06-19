@@ -336,6 +336,12 @@ export function loadTemplateWithError(contentDiv: HTMLElement, label: string): (
   };
 }
 
+/**
+ * Show a simple error page with a message in the content area.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {string} message - The error message to display.
+ * @returns {void}
+ */
 function showErrorPage(contentDiv: HTMLElement, message: string): void {
     contentDiv.replaceChildren();
     const h1 = document.createElement('h1');
@@ -345,6 +351,14 @@ function showErrorPage(contentDiv: HTMLElement, message: string): void {
     announceAndFocus();
 }
 
+/**
+ * Check whether a route's guard blocks navigation. If redirected, navigate to the redirect path.
+ * @param {{ guard?: () => Record<string, unknown> }} route - The route to check.
+ * @param {() => { allowed: boolean; redirect?: string }} [route.guard] - Optional guard function to check before handling.
+ * @param {HTMLElement} navContentDiv - The navigation container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {boolean} True if the route is blocked by the guard.
+ */
 function isRouteBlocked(route: { guard?: () => Record<string, unknown> }, navContentDiv: HTMLElement, contentDiv: HTMLElement): boolean {
     if (!route.guard) return false;
     const result = route.guard();
@@ -357,6 +371,13 @@ function isRouteBlocked(route: { guard?: () => Record<string, unknown> }, navCon
     return false;
 }
 
+/**
+ * Check if the path matches any static (non-project-scoped) route and handle it.
+ * @param {string} path - The URL path to match.
+ * @param {HTMLElement} navContentDiv - The navigation container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {boolean} True if a matching route was found and handled.
+ */
 function hasMatchingStaticRoute(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): boolean {
     for (const route of ROUTES) {
         if (route.test(path)) {
@@ -368,6 +389,14 @@ function hasMatchingStaticRoute(path: string, navContentDiv: HTMLElement, conten
     return false;
 }
 
+/**
+ * Handle a project-scoped URL path (e.g. /{owner}/{project}/...) by dispatching to the project router.
+ * @param {string} path - The full URL path.
+ * @param {string[]} segments - The path segments.
+ * @param {HTMLElement} navContentDiv - The navigation container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
+ */
 async function handleProjectScopedPath(path: string, segments: string[], navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const owner = segments[0];
     const project = segments[1];

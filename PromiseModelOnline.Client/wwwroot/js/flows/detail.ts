@@ -56,6 +56,11 @@ function htmlToNodes(html: string): Node[] {
     return [...fragment.childNodes];
 }
 
+/**
+ * Disable flow detail controls when user lacks Edit permission.
+ * @param {{ permission: string } | undefined} permission - The user's permission object
+ * @returns {void}
+ */
 function gateFlowDetailControls(permission: { permission: string } | undefined): void {
     const canEdit = permission?.permission === 'Edit';
     if (!canEdit) {
@@ -76,6 +81,14 @@ function gateFlowDetailControls(permission: { permission: string } | undefined):
     }
 }
 
+/**
+ * Bind click handler for the journey link to enable client-side routing.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {void}
+ */
 function bindJourneyLinkClick(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     const journeyLinkElement = document.querySelector('.detail-link[journey-id]') as HTMLElement;
     if (journeyLinkElement) {
@@ -88,6 +101,14 @@ function bindJourneyLinkClick(owner: string, project: string, navContentDiv: HTM
     }
 }
 
+/**
+ * Set up the description inline-edit save handler for a flow.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
+ * @param {Flow} flow - The flow data object (mutated in place)
+ * @returns {void}
+ */
 function setupDescriptionHandler(owner: string, project: string, flowId: string, flow: any): void {
     const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
     const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
@@ -115,6 +136,12 @@ function setupDescriptionHandler(owner: string, project: string, flowId: string,
     }
 }
 
+/**
+ * Set up delegated change handler for moment type <select> elements.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @returns {void}
+ */
 function setupMomentTypeChangeHandler(owner: string, project: string): void {
     const momentsList = document.querySelector('#flow-moments-list') as HTMLElement;
     if (momentsList) {
@@ -136,6 +163,15 @@ function setupMomentTypeChangeHandler(owner: string, project: string): void {
     }
 }
 
+/**
+ * Bind click handlers for moment links to enable client-side routing.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @param {HTMLElement} momentsList - Container element holding moment links
+ * @returns {void}
+ */
 function bindMomentClickHandlers(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, momentsList: HTMLElement): void {
     for (const link of momentsList.querySelectorAll('a[moment-id]')) {
         link.addEventListener('click', (event) => {
@@ -147,6 +183,16 @@ function bindMomentClickHandlers(owner: string, project: string, navContentDiv: 
     }
 }
 
+/**
+ * Set up the add-moment form submission handler.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
+ * @param {Flow} flow - The flow data object (mutated in place)
+ * @param {Moment[]} moments - Current list of moments
+ * @param {HTMLElement | null} tbody - The table body element for inline inserts
+ * @returns {void}
+ */
 function setupMomentFormHandler(owner: string, project: string, flowId: string, flow: any, moments: Moment[], tbody: HTMLElement | null): void {
     const form = document.querySelector('#add-moment-form') as HTMLFormElement;
     const statementInput = document.querySelector('#add-moment-statement') as HTMLInputElement;
@@ -235,6 +281,15 @@ function setupMomentFormHandler(owner: string, project: string, flowId: string, 
     }
 }
 
+/**
+ * Load and render the parent journey name for a flow.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {Flow} flow - The flow whose parent journey to load
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
 async function loadFlowJourneyName(owner: string, project: string, flow: Flow, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const journeyCell = document.querySelector('#flow-journey-cell') as HTMLElement;
     try {
@@ -268,6 +323,16 @@ async function loadFlowJourneyName(owner: string, project: string, flow: Flow, n
     } catch {}
 }
 
+/**
+ * Load and render the moments list for a flow.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
+ * @param {Flow} flow - The flow data object
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
 async function loadFlowMoments(owner: string, project: string, flowId: string, flow: any, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const momentsList = document.querySelector('#flow-moments-list') as HTMLElement;
 
@@ -390,6 +455,12 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
     }
 }
 
+/**
+ * Insert or update the graph view button for a flow.
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {Flow} flow - The flow data
+ * @returns {void}
+ */
 function upsertFlowGraphViewButton(detailDiv: HTMLElement, flow: Flow): void {
     const { owner: go, project: gp } = getOwnerProjectFromPath();
     if (go && gp) {

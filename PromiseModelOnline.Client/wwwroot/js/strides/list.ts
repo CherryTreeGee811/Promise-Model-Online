@@ -720,10 +720,11 @@ function findMomentRow(momentId: number | string): HTMLElement | null {
 }
 
 /**
- *
- * @param select
- * @param owner
- * @param project
+ * Handle a status dropdown change by updating the moment status via the API.
+ * @param {HTMLSelectElement} select - The status dropdown element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function handleStatusChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
@@ -739,10 +740,11 @@ async function handleStatusChange(select: HTMLSelectElement, owner: string, proj
 }
 
 /**
- *
- * @param select
- * @param owner
- * @param project
+ * Handle an estimate dropdown change by updating the moment estimate via the API.
+ * @param {HTMLSelectElement} select - The estimate dropdown element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function handleEstimateChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
@@ -760,10 +762,11 @@ async function handleEstimateChange(select: HTMLSelectElement, owner: string, pr
 }
 
 /**
- *
- * @param select
- * @param owner
- * @param project
+ * Handle an owner dropdown change by updating the moment owner via the API.
+ * @param {HTMLSelectElement} select - The owner dropdown element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function handleOwnerChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
@@ -780,10 +783,11 @@ async function handleOwnerChange(select: HTMLSelectElement, owner: string, proje
 }
 
 /**
- *
- * @param select
- * @param owner
- * @param project
+ * Handle a moment type dropdown change by updating the moment type via the API.
+ * @param {HTMLSelectElement} select - The type dropdown element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function handleTypeChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
@@ -799,10 +803,11 @@ async function handleTypeChange(select: HTMLSelectElement, owner: string, projec
 }
 
 /**
- *
- * @param event
- * @param navContentDiv
- * @param contentDiv
+ * Handle a click on a moment view link and navigate to the moment detail page.
+ * @param {MouseEvent} event - The click event.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<boolean>} Whether a view link was clicked and navigation occurred.
  */
 async function handleViewNav(event: MouseEvent, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<boolean> {
     const viewLink = (event.target as HTMLElement).closest('a[data-moment-view]');
@@ -815,10 +820,11 @@ async function handleViewNav(event: MouseEvent, navContentDiv: HTMLElement, cont
 }
 
 /**
- *
- * @param button
- * @param owner
- * @param project
+ * Handle a click on the "Move to Backlog" button, prompting for confirmation.
+ * @param {HTMLElement} button - The move-to-backlog button element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function handleMoveToBacklog(button: HTMLElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(button.dataset.momentId!, 10);
@@ -839,10 +845,11 @@ async function handleMoveToBacklog(button: HTMLElement, owner: string, project: 
 }
 
 /**
- *
- * @param button
- * @param owner
- * @param project
+ * Handle a click on the "Move to Stride" button, prompting for confirmation.
+ * @param {HTMLElement} button - The move-to-stride-from-backlog button element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function handleMoveToStride(button: HTMLElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(button.dataset.momentId!, 10);
@@ -867,10 +874,11 @@ async function handleMoveToStride(button: HTMLElement, owner: string, project: s
 }
 
 /**
- *
- * @param button
- * @param owner
- * @param project
+ * Handle a click on the "Progress Stride" button, prompting for confirmation.
+ * @param {HTMLElement} button - The progress-stride button element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function handleProgressStride(button: HTMLElement, owner: string, project: string): Promise<void> {
     const strideId = parseInt(button.dataset.strideId!, 10);
@@ -898,12 +906,13 @@ async function handleProgressStride(button: HTMLElement, owner: string, project:
 }
 
 /**
- *
- * @param event
- * @param owner
- * @param project
- * @param navContentDiv
- * @param contentDiv
+ * Handle click events on stride action buttons (move to backlog, move to stride, progress stride).
+ * @param {MouseEvent} event - The click event.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @returns {Promise<void>}
  */
 async function handleStrideActions(event: MouseEvent, owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     if (await handleViewNav(event, navContentDiv, contentDiv)) return;
@@ -1157,8 +1166,9 @@ function bindInlineMomentControls(root: HTMLElement | null, owner: string, proje
 
 /**
  * Try to fetch project data, returning undefined on failure.
- * @param owner
- * @param project
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<Record<string, unknown> | undefined>} The project data, or undefined on failure.
  */
 async function tryFetchProjectData(owner: string, project: string): Promise<Record<string, unknown> | undefined> {
     try {
@@ -1170,13 +1180,13 @@ async function tryFetchProjectData(owner: string, project: string): Promise<Reco
 
 /**
  * Set up the create-stride button: hide it if the user cannot edit, else wire the click handler.
- * @param strideButtonElement
- * @param canEdit
- * @param owner
- * @param project
- * @param navContentDiv
- * @param contentDiv
- * @param permission
+ * @param {HTMLElement | null} strideButtonElement - The create-stride button element.
+ * @param {boolean} canEdit - Whether the user has edit permission.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
+ * @param {Record<string, unknown> | null} permission - The user's permission object.
  */
 function setUpCreateStrideButton(
     strideButtonElement: HTMLElement | null,
@@ -1214,12 +1224,12 @@ function setUpCreateStrideButton(
 
 /**
  * Render the empty state when no iterations exist for the project.
- * @param strideBoard
- * @param projectTitle
- * @param strideButtonLabelElement
- * @param projectData
- * @param owner
- * @param project
+ * @param {HTMLElement} strideBoard - The stride board container element.
+ * @param {HTMLElement | null} projectTitle - The project title heading element.
+ * @param {HTMLElement | null} strideButtonLabelElement - The create-stride button label element.
+ * @param {Record<string, unknown> | undefined} projectData - The project data object.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
  */
 function handleEmptyIterations(
     strideBoard: HTMLElement,
@@ -1247,14 +1257,14 @@ function handleEmptyIterations(
 
 /**
  * Update the page header with the iteration name, wire the history link, and set the stride button label.
- * @param latestIteration
- * @param projectData
- * @param projectTitle
- * @param strideButtonLabelElement
- * @param owner
- * @param project
- * @param navContentDiv
- * @param contentDiv
+ * @param {Record<string, unknown>} latestIteration - The latest iteration object.
+ * @param {Record<string, unknown> | undefined} projectData - The project data object.
+ * @param {HTMLElement} projectTitle - The project title heading element.
+ * @param {HTMLElement | null} strideButtonLabelElement - The create-stride button label element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {HTMLElement} navContentDiv - The navigation content container.
+ * @param {HTMLElement} contentDiv - The main content container.
  */
 function updatePageHeader(
     latestIteration: Record<string, unknown>,
@@ -1285,10 +1295,11 @@ function updatePageHeader(
 
 /**
  * Fetch stride moments and handle the no-strides empty state.
- * @param owner
- * @param project
- * @param allStrides
- * @param strideBoard
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {Record<string, unknown>[] | undefined} allStrides - The array of stride objects.
+ * @param {HTMLElement} strideBoard - The stride board container element.
+ * @returns {Promise<{stride: Record<string, unknown>; moments: unknown[]}[]>} The stride-moment pairs.
  */
 async function loadStrideData(
     owner: string,
@@ -1320,9 +1331,10 @@ async function loadStrideData(
 
 /**
  * Render a single moment table row for a stride card.
- * @param m
- * @param owner
- * @param project
+ * @param {Record<string, unknown>} m - The moment object.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {HTMLElement} The table row element.
  */
 function renderMomentRow(
     m: Record<string, unknown>,
@@ -1406,12 +1418,12 @@ function renderMomentRow(
 
 /**
  * Render a single stride card (header + moments table) and append it to the stride board.
- * @param stride
- * @param moments
- * @param cardIndex
- * @param owner
- * @param project
- * @param strideBoard
+ * @param {Record<string, unknown>} stride - The stride object.
+ * @param {Record<string, unknown>[]} moments - The moments belonging to this stride.
+ * @param {number} cardIndex - The index of the card (0 = first, expanded by default).
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @param {HTMLElement} strideBoard - The stride board container element.
  */
 function renderStrideCard(
     stride: Record<string, unknown>,
@@ -1474,9 +1486,10 @@ function renderStrideCard(
 
 /**
  * Render a single moment table row for the backlog section.
- * @param m
- * @param owner
- * @param project
+ * @param {Record<string, unknown>} m - The moment object.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {HTMLElement} The table row element.
  */
 function renderBacklogRow(
     m: Record<string, unknown>,
@@ -1534,11 +1547,11 @@ function renderBacklogRow(
 
 /**
  * Render the backlog section (collapsible card with moments table or empty state).
- * @param backlogSection
- * @param backlogMoments
- * @param allStrides
- * @param owner
- * @param project
+ * @param {HTMLElement} backlogSection - The backlog section container element.
+ * @param {unknown} backlogMoments - The backlog moments data.
+ * @param {Record<string, unknown>[] | undefined} allStrides - The array of stride objects.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
  */
 function renderBacklogSection(
     backlogSection: HTMLElement,
@@ -1596,8 +1609,9 @@ function renderBacklogSection(
 
 /**
  * Load project members and populate all owner dropdowns.
- * @param owner
- * @param project
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function loadProjectMembers(owner: string, project: string): Promise<void> {
     try {
@@ -1613,8 +1627,9 @@ async function loadProjectMembers(owner: string, project: string): Promise<void>
 
 /**
  * Fetch the current user's permission and apply the corresponding UI state.
- * @param owner
- * @param project
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
  */
 async function checkUserPermission(owner: string, project: string): Promise<void> {
     try {

@@ -98,11 +98,11 @@ export function setupAddChildForm(config: AddChildConfig): void {
 }
 
 /**
- * @param {HTMLTableSectionElement} tbody
- * @param {Record<string, unknown>} created
- * @param {string} datasetKey
- * @param {(created: Record<string, unknown>) => string} getRowHtml
- * @param {HTMLSelectElement | undefined} typeSelect
+ * @param {HTMLTableSectionElement} tbody - The table body to insert into
+ * @param {Record<string, unknown>} created - The created entity
+ * @param {string} datasetKey - The data attribute key prefix
+ * @param {(created: Record<string, unknown>) => string} getRowHtml - Function to get row HTML
+ * @param {HTMLSelectElement | undefined} typeSelect - Optional type select element to reset
  */
 function insertCreatedRow(tbody: HTMLTableSectionElement, created: Record<string, unknown>, datasetKey: string, getRowHtml: (created: Record<string, unknown>) => string, typeSelect: HTMLSelectElement | undefined): void {
   removeInlineEmptyRow(tbody);

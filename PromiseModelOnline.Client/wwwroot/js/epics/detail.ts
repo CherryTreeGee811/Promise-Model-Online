@@ -52,6 +52,11 @@ function htmlToNodes(html: string): Node[] {
     return [...fragment.childNodes];
 }
 
+/**
+ * Disable epic detail controls when user lacks Edit permission.
+ * @param {{ permission: string } | undefined} permission - The user's permission object
+ * @returns {void}
+ */
 function gateEpicDetailControls(permission: { permission: string } | undefined): void {
     const canEdit = permission?.permission === 'Edit';
     if (!canEdit) {
@@ -69,6 +74,14 @@ function gateEpicDetailControls(permission: { permission: string } | undefined):
     }
 }
 
+/**
+ * Set up the description inline-edit save handler for an epic.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} epicId - The epic ID
+ * @param {Epic} epic - The epic data object (mutated in place)
+ * @returns {void}
+ */
 function setupDescriptionHandler(owner: string, project: string, epicId: string, epic: any): void {
     const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
     const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
@@ -96,6 +109,15 @@ function setupDescriptionHandler(owner: string, project: string, epicId: string,
     }
 }
 
+/**
+ * Bind click handlers for journey links to enable client-side routing.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @param {HTMLElement} journeysList - Container element holding journey links
+ * @returns {void}
+ */
 function bindJourneyClickHandlers(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, journeysList: HTMLElement): void {
     for (const link of journeysList.querySelectorAll('a[journey-id]')) {
         link.addEventListener('click', (event) => {
@@ -107,6 +129,15 @@ function bindJourneyClickHandlers(owner: string, project: string, navContentDiv:
     }
 }
 
+/**
+ * Load and render the parent promise link for an epic.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {Epic} epic - The epic whose parent promise to load
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
 async function loadParentPromise(owner: string, project: string, epic: Epic, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const parentCell = document.querySelector('#epic-parent-promise') as HTMLElement;
     try {
@@ -141,6 +172,16 @@ async function loadParentPromise(owner: string, project: string, epic: Epic, nav
     }
 }
 
+/**
+ * Set up the add-journey form submission handler.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} epicId - The epic ID
+ * @param {Epic} epic - The epic data object (mutated in place)
+ * @param {JourneyItem[]} journeys - Current list of journeys
+ * @param {HTMLElement | null} tbody - The table body element for inline inserts
+ * @returns {void}
+ */
 function setupJourneyFormHandler(owner: string, project: string, epicId: string, epic: any, journeys: JourneyItem[], tbody: HTMLElement | null): void {
     const form = document.querySelector('#add-journey-form') as HTMLFormElement;
     const statementInput = document.querySelector('#add-journey-statement') as HTMLInputElement;
@@ -200,6 +241,16 @@ function setupJourneyFormHandler(owner: string, project: string, epicId: string,
     }
 }
 
+/**
+ * Load and render the journeys list for an epic.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} epicId - The epic ID
+ * @param {Epic} epic - The epic data object
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
 async function loadEpicJourneys(owner: string, project: string, epicId: string, epic: any, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const journeysList = document.querySelector('#epic-journeys-list') as HTMLElement;
 
@@ -282,6 +333,12 @@ async function loadEpicJourneys(owner: string, project: string, epicId: string, 
     }
 }
 
+/**
+ * Insert or update the graph view button for an epic.
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {Epic} epic - The epic data
+ * @returns {void}
+ */
 function upsertEpicGraphViewButton(detailDiv: HTMLElement, epic: Epic): void {
     const { owner: go, project: gp } = getOwnerProjectFromPath();
     if (go && gp) {

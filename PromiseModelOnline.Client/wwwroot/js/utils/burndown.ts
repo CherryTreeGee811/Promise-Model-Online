@@ -5,12 +5,10 @@ import { renderEmptyStateSection } from './empty-table.ts';
 type BurndownPoint = { date: string | Date; remainingEffort: number; idealRemaining?: number };
 
 /**
- * Draw an SVG burndown chart into the given container using D3.
- * @param {HTMLElement | string} container - DOM element or element ID to render into.
- * @param {BurndownPoint[]} points - Ordered burndown data points.
- * @returns {Promise<void>} Promise that resolves when the chart is rendered.
+ * @param {HTMLElement} element - The container element
+ * @param {BurndownPoint[]} points - The burndown data points
+ * @returns {boolean} Whether burndown data exists
  */
-/** @returns {boolean} */
 function hasBurndownData(element: HTMLElement, points: BurndownPoint[]): boolean {
     element.replaceChildren();
     if (!points || points.length === 0) {
@@ -24,7 +22,10 @@ function hasBurndownData(element: HTMLElement, points: BurndownPoint[]): boolean
     return true;
 }
 
-/** @returns {{startDate: Date, endDate: Date, days: number[], actualPoints: number[], finalIdeal: number[], lastDay: number}} */
+/**
+ * @param {BurndownPoint[]} points - The burndown data points
+ * @returns {{startDate: Date, endDate: Date, days: number[], actualPoints: number[], finalIdeal: number[], lastDay: number}} Processed burndown data
+ */
 function processBurndownPoints(points: BurndownPoint[]): { startDate: Date; endDate: Date; days: number[]; actualPoints: number[]; finalIdeal: number[]; lastDay: number } {
     const sorted = points.toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const startDate = new Date(sorted[0].date);
@@ -40,6 +41,13 @@ function processBurndownPoints(points: BurndownPoint[]): { startDate: Date; endD
     return { startDate, endDate, days, actualPoints, finalIdeal, lastDay };
 }
 
+/**
+ * @param {object} svg - The D3 SVG selection
+ * @param {object} d3 - The D3 module
+ * @param {object} xScale - The D3 x-scale
+ * @param {number[]} days - The day numbers
+ * @param {BurndownPoint[]} sorted - The sorted burndown points
+ */
 function addBurndownTooltip(svg: any, d3: any, xScale: any, days: number[], sorted: BurndownPoint[]): void {
     const tooltip = d3.select('body').append('div')
         .attr('class', 'burndown-tooltip')
@@ -84,6 +92,15 @@ function addBurndownTooltip(svg: any, d3: any, xScale: any, days: number[], sort
         });
 }
 
+/**
+ * @param {object} svg - The D3 SVG selection
+ * @param {object} data - The data points
+ * @param {object} lineGen - The D3 line generator
+ * @param {string} className - CSS class name
+ * @param {string} stroke - Stroke color
+ * @param {number} width - Stroke width
+ * @param {string} fill - Fill color
+ */
 function drawLine(svg: any, data: any[], lineGen: any, className: string, stroke: string, width: number, fill: string): void {
     svg.append('path')
         .datum(data)
@@ -95,6 +112,14 @@ function drawLine(svg: any, data: any[], lineGen: any, className: string, stroke
         .attr('stroke-linecap', 'round');
 }
 
+/**
+ * @param {object} svg - The D3 SVG selection
+ * @param {object} data - The data points
+ * @param {object} areaGen - The D3 area generator
+ * @param {string} className - CSS class name
+ * @param {string} fill - Fill color
+ * @param {number} opacity - Fill opacity
+ */
 function drawArea(svg: any, data: any[], areaGen: any, className: string, fill: string, opacity: number): void {
     if (data.length < 2) return;
     svg.append('path')
@@ -106,6 +131,17 @@ function drawArea(svg: any, data: any[], areaGen: any, className: string, fill: 
         .attr('stroke', 'none');
 }
 
+/**
+ * @param {number} diffLeft - Difference at the left point
+ * @param {number} diffRight - Difference at the right point
+ * @param {{ x: number; y0: number; y1: number; behind: boolean }} crossPoint - The crossing point
+ * @param {number} crossPoint.x - The x-coordinate
+ * @param {number} crossPoint.y0 - The y0-coordinate (ideal)
+ * @param {number} crossPoint.y1 - The y1-coordinate (actual)
+ * @param {boolean} crossPoint.behind - Whether actual is above ideal
+ * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} behind - Array of behind-points
+ * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} ahead - Array of ahead-points
+ */
 function handleCrossPoint(diffLeft: number, diffRight: number, crossPoint: { x: number; y0: number; y1: number; behind: boolean }, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
     const behindCopy = { ...crossPoint, behind: true };
     const aheadCopy = { ...crossPoint, behind: false };
@@ -115,6 +151,16 @@ function handleCrossPoint(diffLeft: number, diffRight: number, crossPoint: { x: 
     else ahead.push(aheadCopy);
 }
 
+/**
+ * @param {number} index - The segment index
+ * @param {number[]} days - The day numbers
+ * @param {number[]} actualPoints - The actual remaining effort points
+ * @param {number[]} finalIdeal - The ideal remaining effort points
+ * @param {object} xScale - The D3 x-scale
+ * @param {object} yScale - The D3 y-scale
+ * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} behind - Array of behind-points
+ * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} ahead - Array of ahead-points
+ */
 function processSegment(index: number, days: number[], actualPoints: number[], finalIdeal: number[], xScale: any, yScale: any, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
     const leftDay = days[index];
     const rightDay = days[index + 1];
@@ -150,6 +196,14 @@ function processSegment(index: number, days: number[], actualPoints: number[], f
     }
 }
 
+/**
+ * @param {number[]} days - The day numbers
+ * @param {number[]} actualPoints - The actual remaining effort points
+ * @param {number[]} finalIdeal - The ideal remaining effort points
+ * @param {object} xScale - The D3 x-scale
+ * @param {object} yScale - The D3 y-scale
+ * @returns {{ enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> }} Enhanced behind/ahead points
+ */
 function buildEnhancedPoints(days: number[], actualPoints: number[], finalIdeal: number[], xScale: any, yScale: any): { enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> } {
     const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
     const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
@@ -170,6 +224,12 @@ function buildEnhancedPoints(days: number[], actualPoints: number[], finalIdeal:
     return { enhancedBehind: behind, enhancedAhead: ahead };
 }
 
+/**
+ * Draw an SVG burndown chart into the given container using D3.
+ * @param {HTMLElement | string} container - DOM element or element ID to render into
+ * @param {BurndownPoint[]} points - Ordered burndown data points
+ * @returns {Promise<void>} Promise that resolves when the chart is rendered
+ */
 export async function drawBurndownChart(container: HTMLElement | string, points: BurndownPoint[]): Promise<void> {
     const element = typeof container === 'string' ? document.querySelector('#' + container) : container;
     if (!element) {

@@ -17,13 +17,9 @@ import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRo
 import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.ts';
 
 /**
- * Load and render the promise detail page with epics, graph, comments, and reactions.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {string} promiseId - The promise's sequence number.
- * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
- * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string } } permission - The user's permission object.
+ * Disable promise detail controls when user lacks Edit permission.
+ * @param {{ permission?: string } | null} permission - The user's permission object
+ * @returns {void}
  */
 function gatePromiseDetailControls(permission: { permission?: string } | null): void {
     const canEdit = permission?.permission === 'Edit';
@@ -42,6 +38,16 @@ function gatePromiseDetailControls(permission: { permission?: string } | null): 
     }
 }
 
+/**
+ * Set up the add-epic form submission handler.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} promiseId - The promise ID
+ * @param {object} promise - The promise data object (mutated in place)
+ * @param {Record<string, unknown>[]} epics - Current list of epics
+ * @param {HTMLElement | null} tbody - The table body element for inline inserts
+ * @returns {void}
+ */
 function setupEpicFormHandler(owner: string, project: string, promiseId: string, promise: any, epics: Record<string, unknown>[], tbody: HTMLElement | null): void {
     const form = document.querySelector('#add-epic-form') as HTMLFormElement | null;
     const statementInput = document.querySelector('#add-epic-statement') as HTMLInputElement | null;
@@ -99,6 +105,15 @@ function setupEpicFormHandler(owner: string, project: string, promiseId: string,
     }
 }
 
+/**
+ * Bind click handlers for epic links to enable client-side routing.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @param {HTMLElement | null} detailDiv - The detail container element
+ * @returns {void}
+ */
 function bindEpicClickHandlers(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, detailDiv: HTMLElement | null): void {
     for (const link of detailDiv!.querySelectorAll('a[epic-id]')) {
         link.addEventListener('click', (event) => {
@@ -111,6 +126,14 @@ function bindEpicClickHandlers(owner: string, project: string, navContentDiv: HT
     }
 }
 
+/**
+ * Set up the description inline-edit save handler for a promise.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} promiseId - The promise ID
+ * @param {object} promise - The promise data object (mutated in place)
+ * @returns {void}
+ */
 function setupDescriptionHandler(owner: string, project: string, promiseId: string, promise: any): void {
     const descMessage = document.querySelector('#desc-save-msg') as HTMLElement | null;
     const saveButton = document.querySelector('#save-desc') as HTMLButtonElement | null;
@@ -138,6 +161,16 @@ function setupDescriptionHandler(owner: string, project: string, promiseId: stri
     }
 }
 
+/**
+ * Load and render the epics list for a promise.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} promiseId - The promise ID
+ * @param {object} promise - The promise data object
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
 async function loadPromiseEpics(owner: string, project: string, promiseId: string, promise: any, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const epicsList = document.querySelector('#promise-epics-list') as HTMLElement | null;
     const detailDiv = document.querySelector('#promise-detail-content') as HTMLElement | null;
@@ -219,6 +252,12 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
     }
 }
 
+/**
+ * Insert or update the graph view button for a promise.
+ * @param {HTMLElement | null} detailDiv - The detail container element
+ * @param {object} promise - The promise data
+ * @returns {void}
+ */
 function upsertPromiseGraphViewButton(detailDiv: HTMLElement | null, promise: any): void {
     const { owner: go, project: gp } = getOwnerProjectFromPath();
     if (go && gp) {
@@ -227,6 +266,16 @@ function upsertPromiseGraphViewButton(detailDiv: HTMLElement | null, promise: an
     }
 }
 
+/**
+ * Load and render the promise detail page with epics, graph, comments, and reactions.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} promiseId - The promise ID
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @param {{ permission?: string } | null} permission - The user's permission object
+ * @returns {Promise<void>}
+ */
 export async function loadPromiseDetail(owner: string, project: string, promiseId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): Promise<void> {
     const detailDiv = document.querySelector('#promise-detail-content') as HTMLElement | null;
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;

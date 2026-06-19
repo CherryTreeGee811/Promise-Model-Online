@@ -52,6 +52,11 @@ function htmlToNodes(html: string): Node[] {
     return [...fragment.childNodes];
 }
 
+/**
+ * Disable journey detail controls when user lacks Edit permission.
+ * @param {{ permission: string } | undefined} permission - The user's permission object
+ * @returns {void}
+ */
 function gateJourneyDetailControls(permission: { permission: string } | undefined): void {
     const canEdit = permission?.permission === 'Edit';
     if (!canEdit) {
@@ -69,6 +74,17 @@ function gateJourneyDetailControls(permission: { permission: string } | undefine
     }
 }
 
+/**
+ * Set up the description inline-edit save handler for a journey.
+ * @param {Journey} journey - The journey data object (mutated in place)
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} journeyId - The journey ID
+ * @param {HTMLButtonElement} saveButton - The save button element
+ * @param {HTMLElement | null} descMessage - The save message element
+ * @param {{ showSavedPopover?: (html: string) => void } | undefined} editor - The inline edit editor
+ * @returns {Promise<void>}
+ */
 async function setupJourneyDescriptionHandler(journey: Journey, owner: string, project: string, journeyId: string, saveButton: HTMLButtonElement, descMessage: HTMLElement | null, editor: { showSavedPopover?: (html: string) => void } | undefined): Promise<void> {
     if (saveButton) {
         saveButton.addEventListener('click', async (event) => {
@@ -93,6 +109,15 @@ async function setupJourneyDescriptionHandler(journey: Journey, owner: string, p
     }
 }
 
+/**
+ * Bind click handlers for flow links to enable client-side routing.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @param {HTMLElement} flowsList - Container element holding flow links
+ * @returns {void}
+ */
 function bindFlowClickHandlers(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, flowsList: HTMLElement): void {
     for (const link of flowsList.querySelectorAll('a[flow-id]')) {
         link.addEventListener('click', (event) => {
@@ -104,6 +129,15 @@ function bindFlowClickHandlers(owner: string, project: string, navContentDiv: HT
     }
 }
 
+/**
+ * Load and render the parent epic link for a journey.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {Journey} journey - The journey whose parent epic to load
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
 async function loadParentEpic(owner: string, project: string, journey: Journey, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const epicCell = document.querySelector('#journey-epic-cell') as HTMLElement;
     try {
@@ -136,6 +170,12 @@ async function loadParentEpic(owner: string, project: string, journey: Journey, 
     } catch {}
 }
 
+/**
+ * Insert or update the graph view button for a journey.
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {Journey} journey - The journey data
+ * @returns {void}
+ */
 function upsertJourneyGraphViewButton(detailDiv: HTMLElement, journey: Journey): void {
     const { owner: go, project: gp } = getOwnerProjectFromPath();
     if (go && gp) {
@@ -144,6 +184,16 @@ function upsertJourneyGraphViewButton(detailDiv: HTMLElement, journey: Journey):
     }
 }
 
+/**
+ * Set up the add-flow form submission handler.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} journeyId - The journey ID
+ * @param {Journey} journey - The journey data object
+ * @param {FlowItem[]} flows - Current list of flows
+ * @param {HTMLElement | null} tbody - The table body element for inline inserts
+ * @returns {void}
+ */
 function setupFlowFormHandler(owner: string, project: string, journeyId: string, journey: Journey, flows: FlowItem[], tbody: HTMLElement | null): void {
     const form = document.querySelector('#add-flow-form') as HTMLFormElement;
     const statementInput = document.querySelector('#add-flow-statement') as HTMLInputElement;
@@ -203,6 +253,17 @@ function setupFlowFormHandler(owner: string, project: string, journeyId: string,
     }
 }
 
+/**
+ * Load and render the flows list for a journey.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} journeyId - The journey ID
+ * @param {Journey} journey - The journey data object
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @param {HTMLElement} flowsList - Container element for the flows list
+ * @returns {Promise<void>}
+ */
 async function loadJourneyFlows(owner: string, project: string, journeyId: string, journey: Journey, navContentDiv: HTMLElement, contentDiv: HTMLElement, flowsList: HTMLElement): Promise<void> {
     try {
         const flows = await getFlows(owner, project, journeyId) as FlowItem[];
