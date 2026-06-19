@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { getUserId } from '../auth-state.ts';
 import { getStrides } from '../strides/api.ts';
-import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
+import { STATUS_OPTIONS, getStatusBucket } from '../utils/status-utilities.ts';
 
 import { getGraphData } from './api.ts';
 import { createGraphContextMenuController } from './graph-context-menu.ts';
@@ -9,7 +9,6 @@ import {
     NODE_TYPES,
     NODE_TYPE_INDEX,
     normalizeText,
-    getStatusBucket,
     getNodeSearchText,
     getMomentEffortBucket,
     getMomentStrideBucket,
@@ -18,6 +17,8 @@ import {
     countRenderableNodes,
     parseGraphData,
     renderEmptyState,
+    isGraphFocusDebugEnabled,
+    logGraphFocus,
     renderStackGraph,
 } from './stack-graph-core.ts';
 
@@ -212,34 +213,6 @@ function revealNextLevel(nodeData: GraphNode): void {
  */
 function expandAllNodes(): void {
     graphState.collapsedNodeIds.clear();
-}
-
-/**
- * Check whether graph focus debug logging is enabled via URL param or localStorage.
- * @returns {boolean} True if debug logging is enabled.
- */
-function isGraphFocusDebugEnabled(): boolean {
-    try {
-        const parameters = new URLSearchParams(location.search);
-        const parameterValue = normalizeText(parameters.get('debugGraphFocus'));
-        if (['1', 'true', 'yes', 'on'].includes(parameterValue)) {
-            return true;
-        }
-
-        return globalThis.localStorage?.getItem('pmo.debugGraphFocus') === '1';
-    } catch {
-        return false;
-    }
-}
-
-/**
- * Log graph focus debug information if debugging is enabled.
- * @param {string} stage - The debug stage label.
- * @param {object} details - The debug data to log.
- */
-function logGraphFocus(stage: string, details: Record<string, unknown>): void {
-    if (!isGraphFocusDebugEnabled()) return;
-    console.info('[graph-focus]', stage, details);
 }
 
 /**

@@ -9,11 +9,12 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml, htmlToNodes } from '../utils/html.ts';
+import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
-import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
+import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
 import { getJourney, getFlows, updateJourneyDescription } from './api.ts';
 
@@ -39,28 +40,6 @@ interface EpicItem {
     sequenceNumber: number;
     statement: string;
     statusColor?: string;
-}
-
-/**
- * Disable journey detail controls when user lacks Edit permission.
- * @param {{ permission: string } | undefined} permission - The user's permission object
- * @returns {void}
- */
-function gateJourneyDetailControls(permission: { permission: string } | undefined): void {
-    const canEdit = permission?.permission === 'Edit';
-    if (!canEdit) {
-        const editButton__ = document.querySelector('#edit-desc-btn') as HTMLButtonElement;
-        const saveButton__ = document.querySelector('#save-desc') as HTMLButtonElement;
-        const descInp = document.querySelector('#description-input') as HTMLInputElement;
-        if (editButton__) { editButton__.disabled = true; editButton__.title = 'Requires Edit permission.'; }
-        if (saveButton__) { saveButton__.disabled = true; saveButton__.title = 'Requires Edit permission.'; }
-        if (descInp) descInp.disabled = true;
-
-        const flowStatementInput = document.querySelector('#add-flow-statement') as HTMLInputElement;
-        const flowSubmitButton = document.querySelector('#add-flow-submit') as HTMLButtonElement;
-        if (flowStatementInput) flowStatementInput.disabled = true;
-        if (flowSubmitButton) { flowSubmitButton.disabled = true; flowSubmitButton.title = 'Requires Edit permission.'; }
-    }
 }
 
 /**
@@ -94,26 +73,6 @@ async function setupJourneyDescriptionHandler(journey: Journey, owner: string, p
             } finally {
                 saveButton.disabled = false;
             }
-        });
-    }
-}
-
-/**
- * Bind click handlers for flow links to enable client-side routing.
- * @param {string} owner - The project owner
- * @param {string} project - The project slug
- * @param {HTMLElement} navContentDiv - Navigation container for routing
- * @param {HTMLElement} contentDiv - Content container for routing
- * @param {HTMLElement} flowsList - Container element holding flow links
- * @returns {void}
- */
-function bindFlowClickHandlers(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, flowsList: HTMLElement): void {
-    for (const link of flowsList.querySelectorAll('a[flow-id]')) {
-        link.addEventListener('click', (event) => {
-            const me = event as MouseEvent;
-            if (me.ctrlKey || me.metaKey || me.button === 1) return;
-            event.preventDefault();
-            void navigate('/' + owner + '/' + project + '/flows/' + link.getAttribute('flow-seq'), navContentDiv, contentDiv);
         });
     }
 }
@@ -174,75 +133,6 @@ function upsertJourneyGraphViewButton(detailDiv: HTMLElement, journey: Journey):
 }
 
 /**
- * Set up the add-flow form submission handler.
- * @param {string} owner - The project owner
- * @param {string} project - The project slug
- * @param {string} journeyId - The journey ID
- * @param {Journey} journey - The journey data object
- * @param {FlowItem[]} flows - Current list of flows
- * @param {HTMLElement | null} tbody - The table body element for inline inserts
- * @returns {void}
- */
-function setupFlowFormHandler(owner: string, project: string, journeyId: string, journey: Journey, flows: FlowItem[], tbody: HTMLElement | null): void {
-    const form = document.querySelector('#add-flow-form') as HTMLFormElement;
-    const statementInput = document.querySelector('#add-flow-statement') as HTMLInputElement;
-    const message = document.querySelector('#add-flow-msg') as HTMLElement;
-    const submitButton = document.querySelector('#add-flow-submit') as HTMLButtonElement;
-
-    if (form && statementInput && message && submitButton) {
-        form.addEventListener('submit', async event => {
-            event.preventDefault();
-            message.textContent = '';
-
-            const statement = statementInput.value.trim();
-            if (!statement) {
-                message.textContent = 'Statement is required.';
-                return;
-            }
-
-            submitButton.disabled = true;
-
-            try {
-                const created = await createFlow(owner, project, {
-                    statement,
-                    journeyId,
-                    displayOrder: (flows || []).length + 1,
-                }) as FlowItem;
-
-                if (created) {
-                    removeInlineEmptyRow(tbody!);
-                    const row = document.createElement('tr');
-                    row.dataset.flowId = String(created.id);
-
-                    const tdStmt = document.createElement('td');
-                    tdStmt.textContent = created.statement;
-                    row.append(tdStmt);
-
-                    const tdActions = document.createElement('td');
-                    const viewLink = document.createElement('a');
-                    viewLink.href = '/' + owner + '/' + project + '/flows/' + created.sequenceNumber;
-                    viewLink.setAttribute('flow-id', String(created.id));
-                    viewLink.setAttribute('flow-seq', String(created.sequenceNumber));
-                    viewLink.className = 'btn btn-sm btn-outline-primary';
-                    viewLink.textContent = 'View';
-                    tdActions.append(viewLink);
-                    row.append(tdActions);
-
-                    insertRowBeforeAddRow(tbody!, row);
-                    statementInput.value = '';
-                    patchChildMetrics('journey-' + journey.sequenceNumber, [...(flows || []), created] as unknown as Record<string, unknown>[]);
-                }
-            } catch (error) {
-                message.textContent = 'Failed to add flow.';
-                console.error(error);
-            } finally {
-                submitButton.disabled = false;
-            }
-        });
-    }
-}
-
-/**
  * Load and render the flows list for a journey.
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
@@ -282,7 +172,25 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
                 + '</tr>',
         });
 
-        setupFlowFormHandler(owner, project, journeyId, journey, flows || [], tbody);
+        setupAddChildForm({
+            formId: 'add-flow-form',
+            inputId: 'add-flow-statement',
+            submitButtonId: 'add-flow-submit',
+            msgId: 'add-flow-msg',
+            owner,
+            project,
+            tbody,
+            onCreate: async (statement) => createFlow(owner, project, {
+                statement,
+                journeyId,
+                displayOrder: (flows || []).length + 1,
+            }) as Promise<Record<string, unknown> | null>,
+            getRowHtml: (created) => '<tr><td>' + escapeHtml(created.statement as string) + '</td>'
+                + '<td><a href="/' + owner + '/' + project + '/flows/' + created.sequenceNumber + '" flow-id="' + created.id + '" flow-seq="' + created.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td></tr>',
+            datasetKey: 'flow-id',
+            childMetricsKey: 'journey-' + journey.sequenceNumber,
+            items: flows as unknown as Record<string, unknown>[],
+        });
 
         const tableWrapper = document.createElement('div');
         tableWrapper.className = 'table-responsive';
@@ -323,7 +231,7 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
         tableWrapper.append(flowTable);
         flowsList.replaceChildren(tableWrapper);
 
-        bindFlowClickHandlers(owner, project, navContentDiv, contentDiv, flowsList);
+        bindLinkClickHandlers(flowsList, 'a[flow-id]', 'flow-seq', 'flows', owner, project, navContentDiv, contentDiv);
 
     } catch {
         flowsList.replaceChildren();
@@ -382,50 +290,7 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
         descTh.append(descLabel);
         descRow.append(descTh);
         const descTd = document.createElement('td');
-        const inlineEditWrapper = document.createElement('div');
-        inlineEditWrapper.className = 'inline-edit-wrapper';
-        const descView = document.createElement('p');
-        descView.id = 'description-view';
-        descView.className = 'inline-edit-view';
-        descView.append(...htmlToNodes(formatCommentText(journey.description || '')));
-        inlineEditWrapper.append(descView);
-        const editButton_ = document.createElement('button');
-        editButton_.id = 'edit-desc-btn';
-        editButton_.className = 'btn btn-success btn-sm inline-edit-btn';
-        editButton_.type = 'button';
-        editButton_.title = 'Edit description';
-        const pencilIcon = document.createElement('i');
-        pencilIcon.className = 'bi bi-pencil';
-        editButton_.append(pencilIcon);
-        inlineEditWrapper.append(editButton_);
-        const descTextarea = document.createElement('textarea');
-        descTextarea.id = 'description-input';
-        descTextarea.rows = 4;
-        descTextarea.className = 'form-control detail-textarea';
-        descTextarea.setAttribute('aria-label', 'Description');
-        descTextarea.style.display = 'none';
-        descTextarea.textContent = journey.description || '';
-        inlineEditWrapper.append(descTextarea);
-        descTd.append(inlineEditWrapper);
-        const fieldActions = document.createElement('div');
-        fieldActions.className = 'field-actions';
-        const cancelButton_ = document.createElement('button');
-        cancelButton_.id = 'cancel-desc';
-        cancelButton_.className = 'btn btn-outline-secondary btn-sm';
-        cancelButton_.type = 'button';
-        cancelButton_.style.display = 'none';
-        cancelButton_.textContent = 'Cancel';
-        fieldActions.append(cancelButton_);
-        const saveButton_ = document.createElement('button');
-        saveButton_.id = 'save-desc';
-        saveButton_.className = 'btn btn-primary btn-sm';
-        saveButton_.type = 'button';
-        saveButton_.textContent = 'Save';
-        fieldActions.append(saveButton_);
-        const saveMessage = document.createElement('span');
-        saveMessage.id = 'desc-save-msg';
-        fieldActions.append(saveMessage);
-        descTd.append(fieldActions);
+        buildInlineEditUI(descTd, '', journey.description || '');
         descRow.append(descTd);
         table.append(descRow);
 
@@ -445,42 +310,11 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
         epicRow.append(epicTd);
         table.append(epicRow);
 
-        const statusRow = document.createElement('tr');
-        const statusTh = document.createElement('th');
-        statusTh.scope = 'row';
-        statusTh.textContent = 'Status';
-        statusRow.append(statusTh);
-        const statusTd = document.createElement('td');
-        const statusIconSpan = document.createElement('span');
-        statusIconSpan.setAttribute('aria-hidden', 'true');
-        statusIconSpan.textContent = getStatusIcon(journey.statusColor ?? '');
-        statusTd.append(statusIconSpan);
-        const statusSrSpan = document.createElement('span');
-        statusSrSpan.className = 'sr-only';
-        statusSrSpan.textContent = getStatusLabel(journey.statusColor ?? '');
-        statusTd.append(statusSrSpan);
-        statusRow.append(statusTd);
-        table.append(statusRow);
+        table.append(createStatusRow(journey.statusColor));
 
-        const createdRow = document.createElement('tr');
-        const createdTh = document.createElement('th');
-        createdTh.scope = 'row';
-        createdTh.textContent = 'Created';
-        createdRow.append(createdTh);
-        const createdTd = document.createElement('td');
-        createdTd.textContent = new Date(journey.createdAt).toLocaleDateString('en-CA');
-        createdRow.append(createdTd);
-        table.append(createdRow);
+        table.append(createDateRow('Created', journey.createdAt));
 
-        const updatedRow = document.createElement('tr');
-        const updatedTh = document.createElement('th');
-        updatedTh.scope = 'row';
-        updatedTh.textContent = 'Updated';
-        updatedRow.append(updatedTh);
-        const updatedTd = document.createElement('td');
-        updatedTd.textContent = journey.updatedAt ? new Date(journey.updatedAt).toLocaleDateString('en-CA') : '\u{2013}';
-        updatedRow.append(updatedTd);
-        table.append(updatedRow);
+        table.append(createDateRow('Updated', journey.updatedAt));
 
         detailCard.append(table);
 
@@ -541,7 +375,7 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
         const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
         await setupJourneyDescriptionHandler(journey, owner, project, journeyId, saveButton, descMessage, editor);
 
-        gateJourneyDetailControls(permission);
+        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit']);
 
         loadCommentsAndReactions(detailDiv, 'Journey', journey.id, owner, project, permission);
 

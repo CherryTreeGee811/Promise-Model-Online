@@ -51,3 +51,24 @@ export function htmlToNodes(html: string): Node[] {
     fragment.append(...document_.body.childNodes);
     return [...fragment.childNodes];
 }
+
+/**
+ * Ensure a modal element exists in the DOM, creating it from markup if needed.
+ * @param {string} modalId - The modal element ID
+ * @param {string} modalMarkup - HTML string for the modal if not yet created
+ * @returns {HTMLElement | null} The modal element
+ */
+export function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
+    let modalElement = document.querySelector('#' + modalId) as HTMLElement | null;
+    if (modalElement) return modalElement;
+
+    const parser = new DOMParser();
+    const document_ = parser.parseFromString(modalMarkup.trim(), 'text/html');
+    modalElement = document_.body.firstElementChild as HTMLElement | null;
+
+    if (modalElement) {
+        document.body.append(modalElement);
+    }
+
+    return modalElement;
+}

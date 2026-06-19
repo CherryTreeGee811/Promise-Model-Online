@@ -1,25 +1,5 @@
 import { createStride } from '../strides/api.ts';
-
-/**
- * Ensure a modal element exists in the DOM, creating it from markup if needed.
- * @param {string} modalId - The ID of the modal element.
- * @param {string} modalMarkup - The HTML markup for the modal.
- * @returns {HTMLElement } The modal element, or null if creation failed.
- */
-function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalElement = document.querySelector('#' + modalId) as HTMLElement | null;
-    if (modalElement) return modalElement;
-
-    const parser = new DOMParser();
-    const document_ = parser.parseFromString(modalMarkup.trim(), 'text/html');
-    modalElement = document_.body.firstElementChild as HTMLElement | null;
-
-    if (modalElement) {
-        document.body.append(modalElement);
-    }
-
-    return modalElement;
-}
+import { ensureModal } from './html.ts';
 
 /**
  * Format a date as a string for use in a date input value (YYYY-MM-DD).

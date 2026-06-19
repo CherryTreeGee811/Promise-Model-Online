@@ -80,6 +80,25 @@ function buildEmptyState(icon: string, title: string, description?: string): HTM
 }
 
 /**
+ * Create a table header row with the given column headers.
+ * @param {string[]} headers - The column header texts.
+ * @returns {HTMLTableSectionElement} The thead element.
+ */
+function createTableHeader(headers: string[]): HTMLTableSectionElement {
+    const thead = document.createElement('thead');
+    thead.className = 'table-light';
+    const headerRow = document.createElement('tr');
+    for (const header of headers) {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = header;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    return thead;
+}
+
+/**
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
  * @param {number} iterationId - The iteration ID
@@ -272,17 +291,7 @@ function buildIterationsTable(iterations: Iteration[], formatDate: (d: string) =
     const table = document.createElement('table');
     table.className = 'table table-sm table-striped table-hover align-middle';
 
-    const thead = document.createElement('thead');
-    thead.className = 'table-light';
-    const headerRow = document.createElement('tr');
-    for (const header of ['Name', 'Created', 'Actions']) {
-        const th = document.createElement('th');
-        th.scope = 'col';
-        th.textContent = header;
-        headerRow.append(th);
-    }
-    thead.append(headerRow);
-    table.append(thead);
+    table.append(createTableHeader(['Name', 'Created', 'Actions']));
 
     const tbody = document.createElement('tbody');
     for (const iteration of iterations) {
@@ -372,18 +381,7 @@ export async function loadIterationHistory(owner: string, project: string, permi
             const table = document.createElement('table');
             table.className = 'table table-sm table-striped table-hover align-middle mb-0';
 
-            const thead = document.createElement('thead');
-            thead.className = 'table-light';
-            const headerRow = document.createElement('tr');
-            const headers = ['Stride', 'Start Date', 'End Date', 'Duration'];
-            for (const header of headers) {
-                const th = document.createElement('th');
-                th.scope = 'col';
-        th.textContent = header;
-                headerRow.append(th);
-            }
-            thead.append(headerRow);
-            table.append(thead);
+            table.append(createTableHeader(['Stride', 'Start Date', 'End Date', 'Duration']));
 
             const tbody = document.createElement('tbody');
             for (const s of strides) {

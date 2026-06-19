@@ -1,4 +1,5 @@
 import { getPendingInvitations, acceptInvitation } from './api.ts';
+import { renderEmptyStateSection } from '../utils/empty-table.ts';
 
 interface Invitation {
   projectName: string;
@@ -10,23 +11,11 @@ interface Invitation {
  * @returns {HTMLElement} The empty state element
  */
 function buildEmptyState(): HTMLElement {
-    const div = document.createElement('div');
-    div.className = 'no-items d-flex flex-column align-items-center gap-3 py-5';
-    const iconDiv = document.createElement('div');
-    iconDiv.className = 'empty-table-icon';
-    const icon = document.createElement('i');
-    icon.className = 'bi bi-envelope';
-    iconDiv.append(icon);
-    div.append(iconDiv);
-    const title = document.createElement('h5');
-    title.className = 'fw-semibold text-secondary mb-1';
-    title.textContent = 'No pending invitations.';
-    div.append(title);
-    const desc = document.createElement('p');
-    desc.className = 'text-muted mb-2';
-    desc.textContent = 'When someone invites you to a project, it will appear here.';
-    div.append(desc);
-    return div;
+    return renderEmptyStateSection({
+        icon: 'bi-envelope',
+        title: 'No pending invitations.',
+        description: 'When someone invites you to a project, it will appear here.',
+    });
 }
 
 /**

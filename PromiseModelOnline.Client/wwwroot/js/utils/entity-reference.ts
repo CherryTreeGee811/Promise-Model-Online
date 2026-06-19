@@ -1,6 +1,7 @@
 import { apiGet } from '../api.ts';
 
 import { escapeHtml } from './html.ts';
+import { getStatusIcon } from './status-utilities.ts';
 
 type EntityMapEntry = { dbId?: number; statusColor?: string };
 
@@ -38,20 +39,6 @@ export async function loadEntityLookupMap(parentType: string, parentId: number, 
 }
 
 /**
- * Map a status color string to an emoji icon.
- * @param {string} statusColor - Status color label.
- * @returns {string} Emoji character for the status.
- */
-function statusIcon(statusColor: string): string {
-    const normalized = (statusColor ?? '').toLowerCase();
-    if (normalized.includes('green')) return '\u{1F7E2}';
-    if (normalized.includes('black') || normalized.includes('blocked')) return '\u{26AB}\u{FE0F}';
-    if (normalized.includes('orange') || normalized.includes('yellow') || normalized.includes('amber') || normalized.includes('inprogress') || normalized.includes('in-progress')) return '\u{1F7E0}';
-    if (normalized.includes('red') || normalized.includes('todo')) return '\u{1F534}';
-    return '\u{26AA}';
-}
-
-/**
  * Convert entity references (#promise-123) and \@mentions in comment text
  * to anchor links using the current entityLookupMap.
  * @param {string} text - Raw comment text.
@@ -66,7 +53,7 @@ export function formatCommentText(text: string): string {
         const project = entityLookupMap._project as string | undefined;
         const route = `${type}s`;
         if (entry !== undefined) {
-            const emoji = statusIcon(entry.statusColor ?? '');
+            const emoji = getStatusIcon(entry.statusColor ?? '');
             if (owner && project) {
                 return `<a href="/${owner}/${project}/${route}/${number_}" class="promise-ref">${match} ${emoji}</a>`;
             }

@@ -8,7 +8,7 @@ import {
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
 import { getStrides } from '../strides/api.ts';
-import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml, htmlToNodes } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
@@ -66,50 +66,7 @@ function buildMomentUI(moment: any, detailCard: HTMLElement, detailDiv: HTMLElem
         descTh.append(descLabel);
         descRow.append(descTh);
         const descTd = document.createElement('td');
-        const inlineEditWrapper = document.createElement('div');
-        inlineEditWrapper.className = 'inline-edit-wrapper';
-        const descView = document.createElement('p');
-        descView.id = 'moment-description-view';
-        descView.className = 'inline-edit-view';
-        descView.append(...htmlToNodes(formatCommentText(moment.description || '')));
-        inlineEditWrapper.append(descView);
-        const editButton = document.createElement('button');
-        editButton.id = 'edit-moment-desc-btn';
-        editButton.className = 'btn btn-success btn-sm inline-edit-btn';
-        editButton.type = 'button';
-        editButton.title = 'Edit description';
-        const pencilIcon = document.createElement('i');
-        pencilIcon.className = 'bi bi-pencil';
-        editButton.append(pencilIcon);
-        inlineEditWrapper.append(editButton);
-        const descTextarea = document.createElement('textarea');
-        descTextarea.id = 'moment-description-input';
-        descTextarea.rows = 4;
-        descTextarea.className = 'form-control detail-textarea';
-        descTextarea.setAttribute('aria-label', 'Description');
-        descTextarea.style.display = 'none';
-        descTextarea.textContent = moment.description || '';
-        inlineEditWrapper.append(descTextarea);
-        descTd.append(inlineEditWrapper);
-        const fieldActions = document.createElement('div');
-        fieldActions.className = 'field-actions';
-        const cancelButton = document.createElement('button');
-        cancelButton.id = 'moment-description-cancel';
-        cancelButton.className = 'btn btn-outline-secondary btn-sm';
-        cancelButton.type = 'button';
-        cancelButton.style.display = 'none';
-        cancelButton.textContent = 'Cancel';
-        fieldActions.append(cancelButton);
-        const saveButton = document.createElement('button');
-        saveButton.id = 'moment-description-save';
-        saveButton.className = 'btn btn-primary btn-sm';
-        saveButton.type = 'button';
-        saveButton.textContent = 'Save';
-        fieldActions.append(saveButton);
-        const saveMessage = document.createElement('span');
-        saveMessage.id = 'moment-description-msg';
-        fieldActions.append(saveMessage);
-        descTd.append(fieldActions);
+        buildInlineEditUI(descTd, 'moment-', moment.description || '');
         descRow.append(descTd);
         table.append(descRow);
 
@@ -212,26 +169,9 @@ function buildMomentUI(moment: any, detailCard: HTMLElement, detailDiv: HTMLElem
         table.append(strideRow);
 
         // Created row
-        const createdRow = document.createElement('tr');
-        const createdTh = document.createElement('th');
-        createdTh.scope = 'row';
-        createdTh.textContent = 'Created';
-        createdRow.append(createdTh);
-        const createdTd = document.createElement('td');
-        createdTd.textContent = new Date(moment.createdAt).toLocaleDateString('en-CA');
-        createdRow.append(createdTd);
-        table.append(createdRow);
+        table.append(createDateRow('Created', moment.createdAt));
 
-        // Completed row
-        const completedRow = document.createElement('tr');
-        const completedTh = document.createElement('th');
-        completedTh.scope = 'row';
-        completedTh.textContent = 'Completed';
-        completedRow.append(completedTh);
-        const completedTd = document.createElement('td');
-        completedTd.textContent = moment.completedAt ? new Date(moment.completedAt).toLocaleDateString('en-CA') : '\u{2013}';
-        completedRow.append(completedTd);
-        table.append(completedRow);
+        table.append(createDateRow('Completed', moment.completedAt));
 
         detailCard.append(table);
 

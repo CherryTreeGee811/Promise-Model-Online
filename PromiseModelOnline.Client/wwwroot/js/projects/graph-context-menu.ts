@@ -2,6 +2,7 @@ import { apiFetch } from '../api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { updateMomentStatus } from '../moments/api.ts';
 import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
+import { ensureModal } from '../utils/html.ts';
 
 const tippy = (globalThis as any).tippy;
 
@@ -203,24 +204,6 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
 
 /**
  * Ensure a Bootstrap modal element exists in the DOM, creating it if necessary.
- * @param {string} modalId - The ID for the modal element.
- * @param {string} modalMarkup - The HTML markup for the modal.
- * @returns {HTMLElement} The modal element, or null if creation failed.
- */
-function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalElement = document.querySelector(`#${CSS.escape(modalId)}`) as HTMLElement | null;
-    if (modalElement) return modalElement;
-
-    const parser = new DOMParser();
-    const document_ = parser.parseFromString(modalMarkup.trim(), 'text/html');
-    modalElement = document_.body.firstElementChild as HTMLElement | null;
-
-    if (modalElement) {
-        document.body.append(modalElement);
-    }
-
-    return modalElement;
-}
 
 /**
  * Open a Bootstrap modal to confirm deletion of an item.
@@ -431,6 +414,25 @@ function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): A
  * @param {() => void} closeMenus - Function to close all context menus.
  * @returns {HTMLFormElement|undefined} The form element, or undefined if creation metadata is missing.
  */
+
+function createFormActionsBar(closeMenus: () => void, submitText: string): { cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement } {
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--secondary';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', event => {
+        event.preventDefault();
+        closeMenus();
+    });
+
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
+    submitButton.textContent = submitText;
+
+    return { cancelButton, submitButton };
+}
+
 function buildMomentFormElement(
     nodeData: any,
     owner: string,
@@ -502,21 +504,7 @@ function buildMomentFormElement(
 
     const actions = document.createElement('div');
     actions.className = 'graph-context-menu-form__actions';
-
-    const cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--secondary';
-    cancelButton.textContent = 'Cancel';
-    cancelButton.addEventListener('click', event => {
-        event.preventDefault();
-        closeMenus();
-    });
-
-    const submitButton = document.createElement('button');
-    submitButton.type = 'submit';
-    submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
-    submitButton.textContent = 'Create Moment';
-
+    const { cancelButton, submitButton } = createFormActionsBar(closeMenus, 'Submit');
     actions.append(cancelButton, submitButton);
 
     form.append(
@@ -1085,16 +1073,13 @@ export function createGraphContextMenuController({
     }
 
     /**
-     * Open the create-form tippy popup for a given node.
-     * @param {object} nodeData - The parent node data.
-     * @param {string} sourceOwner - The project owner's slug.
-     * @param {string} sourceProject - The project's slug.
-     * @param {(() => void) | undefined} refreshGraph - Callback to refresh the graph after creation.
+     * Open a tippy popup with a form element.
+     * @param {() => HTMLElement | undefined | null} buildForm - Function that builds the form element
      */
-    function openCreateForm(nodeData: any, sourceOwner: string, sourceProject: string, refreshGraph: (() => void) | undefined) {
+    function openForm(buildForm: () => HTMLElement | undefined | null) {
         const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
         const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
-        const form = buildCreateFormElement(nodeData, sourceOwner, sourceProject, getAvailableStrides, refreshGraph, closeMenus);
+        const form = buildForm();
 
         if (!form) {
             return;
@@ -1108,24 +1093,23 @@ export function createGraphContextMenuController({
     }
 
     /**
+     * Open the create-form tippy popup for a given node.
+     * @param {object} nodeData - The parent node data.
+     * @param {string} sourceOwner - The project owner's slug.
+     * @param {string} sourceProject - The project's slug.
+     * @param {(() => void) | undefined} refreshGraph - Callback to refresh the graph after creation.
+     */
+    function openCreateForm(nodeData: any, sourceOwner: string, sourceProject: string, refreshGraph: (() => void) | undefined) {
+        openForm(() => buildCreateFormElement(nodeData, sourceOwner, sourceProject, getAvailableStrides, refreshGraph, closeMenus));
+    }
+
+    /**
      * Open the change-moment-status form tippy popup.
      * @param {object} nodeData - The moment node data.
      * @param {(() => void) | undefined} refreshGraph - Callback to refresh the graph after status update.
      */
     function openMomentStatusForm(nodeData: any, refreshGraph: (() => void) | undefined) {
-        const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
-        const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
-        const form = buildMomentStatusFormElement(nodeData, refreshGraph, closeMenus);
-
-        if (!form) {
-            return;
-        }
-
-        createFormTippy.setProps({
-            getReferenceClientRect: () => anchorRect,
-        });
-        createFormTippy.setContent(form);
-        createFormTippy.show();
+        openForm(() => buildMomentStatusFormElement(nodeData, refreshGraph, closeMenus));
     }
 
     /**

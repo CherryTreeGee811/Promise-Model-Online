@@ -49,11 +49,13 @@ jobs:
             dotnet list "$proj/$proj.csproj" package --vulnerable
           done
 
-      - name: ESLint (client JS)
+      - name: ESLint & Quality (client JS/CSS/HTML)
         shell: bash
         run: |
           npm ci
           npm run lint
+          npm run lint:html
+          npm run lint:css
           npm run typecheck
           npm run lint:dry
           npm run lint:dead

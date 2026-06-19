@@ -571,25 +571,20 @@ function createConfirmModal(id: string, title: string, confirmText: string, conf
 }
 
 /**
- * Ensure the "Move to Backlog" confirmation modal exists, creating it if needed.
- * @returns {HTMLElement} The modal element.
- */
-function ensureBacklogMoveModal(): HTMLElement {
-    return createConfirmModal('move-to-backlog-modal', 'Move to Backlog?', 'Move to Backlog', 'btn-danger');
-}
-
-/**
- * Show a confirmation dialog and move a moment to the backlog on confirmation.
+ * Show a confirmation dialog for moving a moment.
  * @param {number|string} momentId - The moment ID to move.
+ * @param {string} modalPrefix - The modal element ID prefix.
+ * @param {string} message - The confirmation message text.
  * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
  */
-function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise<unknown>): void {
-    const modalElement = ensureBacklogMoveModal();
-    const modalText = modalElement.querySelector('#move-to-backlog-modal-text');
-    const confirmButton = modalElement.querySelector('#move-to-backlog-modal-confirm');
+function promptMoveConfirm(momentId: number | string, modalPrefix: string, message: string, onConfirm: () => Promise<unknown>): void {
+    const modalElement = document.querySelector('#' + modalPrefix) as HTMLElement | null;
+    if (!modalElement) return;
+    const modalText = modalElement.querySelector('#' + modalPrefix + '-text');
+    const confirmButton = modalElement.querySelector('#' + modalPrefix + '-confirm');
     if (!modalText || !confirmButton) return;
 
-    modalText.textContent = `Move ${truncateMomentStatement(momentId)} to the Backlog?`;
+    modalText.textContent = message;
 
     const nextButton = confirmButton.cloneNode(true) as HTMLElement;
     confirmButton.parentElement!.replaceChild(nextButton, confirmButton);
@@ -610,11 +605,21 @@ function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise
 }
 
 /**
- * Ensure the "Move to Stride" confirmation modal exists, creating it if needed.
- * @returns {HTMLElement} The modal element.
+ * Show a confirmation dialog for moving a moment to the backlog.
+ * @param {number|string} momentId - The moment ID to move.
+ * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
  */
-function ensureMoveToStrideModal(): HTMLElement {
-    return createConfirmModal('move-to-stride-modal', 'Move to Stride?', 'Move', 'btn-primary');
+function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise<unknown>): void {
+    promptMoveConfirm(momentId, 'move-to-backlog-modal', 'Move ' + truncateMomentStatement(momentId) + ' to the Backlog?', onConfirm);
+}
+
+/**
+ * Show a confirmation dialog for moving a moment to a specific stride.
+ * @param {number|string} momentId - The moment ID to move.
+ * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
+ */
+function promptMoveToStride(momentId: number | string, onConfirm: () => Promise<unknown>): void {
+    promptMoveConfirm(momentId, 'move-to-stride-modal', 'Move ' + truncateMomentStatement(momentId) + ' to the selected stride?', onConfirm);
 }
 
 /**
@@ -667,36 +672,6 @@ function promptProgressStride(strideId: number | string): Promise<boolean> {
 
 /**
  * Show a confirmation dialog for moving a moment to a specific stride.
- * @param {number|string} momentId - The moment ID to move.
- * @param {number|string} strideId - The target stride ID.
- * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
- */
-function promptMoveToStride(momentId: number | string, strideId: number | string, onConfirm: () => Promise<unknown>): void {
-    const modalElement = ensureMoveToStrideModal();
-    const modalText = modalElement.querySelector('#move-to-stride-modal-text');
-    const confirmButton = modalElement.querySelector('#move-to-stride-modal-confirm');
-    if (!modalText || !confirmButton) return;
-
-    modalText.textContent = `Move ${truncateMomentStatement(momentId)} to the selected stride?`;
-
-    const nextButton = confirmButton.cloneNode(true) as HTMLElement;
-    confirmButton.parentElement!.replaceChild(nextButton, confirmButton);
-    nextButton.addEventListener('click', async () => {
-        (nextButton as HTMLInputElement).disabled = true;
-        try {
-            await onConfirm();
-            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
-        } catch (error) {
-            console.error(error);
-            alert('Failed to move moment');
-        } finally {
-            (nextButton as HTMLInputElement).disabled = false;
-        }
-    }, { once: true });
-
-    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.show();
-}
-
 /**
  * Get a truncated (35 chars) statement text for a moment by its ID.
  * @param {number|string} momentId - The moment ID.
@@ -706,7 +681,7 @@ function truncateMomentStatement(momentId: number | string): string {
     const row = findMomentRow(momentId);
     const statementCell = row?.querySelector('td');
     const statement = (statementCell?.textContent ?? '').trim();
-    if (!statement) return `moment ${momentId}`;
+    if (!statement) return 'moment ' + momentId;
     return statement.slice(0, 35);
 }
 
@@ -858,7 +833,7 @@ async function handleMoveToStride(button: HTMLElement, owner: string, project: s
     let strideId: number | undefined;
     if (select) strideId = parseInt(select.value, 10);
     if (!strideId) return;
-    promptMoveToStride(momentId, strideId, async () => {
+    promptMoveToStride(momentId, async () => {
         const updated = await assignMomentToStride(owner, project, momentId, strideId) as Record<string, unknown>;
         preserveScroll(() => {
             findMomentRow(momentId)?.remove();
@@ -928,6 +903,23 @@ async function handleStrideActions(event: MouseEvent, owner: string, project: st
 }
 
 
+function createHeaderedTable(headers: string[]): HTMLTableElement {
+    const table = document.createElement('table');
+    table.className = 'promisemodel-table';
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    for (const thText of headers) {
+        const th = document.createElement('th');
+        th.textContent = thText;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+    const tbody = document.createElement('tbody');
+    table.append(tbody);
+    return table;
+}
+
 /**
  * Ensure the backlog section has a table tbody element, creating the board structure if needed.
  * @returns {HTMLElement|undefined} The backlog tbody element, or undefined.
@@ -946,19 +938,7 @@ function ensureBacklogTbody(): HTMLElement | undefined {
     card.append(boardHeaderHtml('Backlog', true));
     const contentDiv = document.createElement('div');
     contentDiv.className = 'stride-moments backlog-content hidden';
-    const table = document.createElement('table');
-    table.className = 'promisemodel-table';
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Actions']) {
-        const th = document.createElement('th');
-        th.textContent = thText;
-        headerRow.append(th);
-    }
-    thead.append(headerRow);
-    table.append(thead);
-    const newTbody = document.createElement('tbody');
-    table.append(newTbody);
+    const table = createHeaderedTable(['Statement', 'Type', 'Status', 'Effort', 'Actions']);
     contentDiv.append(table);
     card.append(contentDiv);
     backlogSection.append(card);
@@ -1037,19 +1017,7 @@ function ensureStrideTbody(strideId: number | string): HTMLElement | undefined {
     if (!container) return;
 
     container.replaceChildren();
-    const table = document.createElement('table');
-    table.className = 'promisemodel-table';
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Owner', 'Actions']) {
-        const th = document.createElement('th');
-        th.textContent = thText;
-        headerRow.append(th);
-    }
-    thead.append(headerRow);
-    table.append(thead);
-    const newTbody = document.createElement('tbody');
-    table.append(newTbody);
+    const table = createHeaderedTable(['Statement', 'Type', 'Status', 'Effort', 'Owner', 'Actions']);
     container.append(table);
     return card.querySelector(':scope table.promisemodel-table tbody') as HTMLElement | undefined;
 }

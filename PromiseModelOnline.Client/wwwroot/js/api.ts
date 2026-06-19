@@ -30,15 +30,27 @@ export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
  * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
  * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | undefined> {
-  const response = await apiFetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (response.status === 204) return;
+async function apiMutate<T = unknown>(url: string, body: unknown | undefined, method: string, returnJson: boolean): Promise<T | undefined | boolean> {
+  const options: Record<string, unknown> = { method };
+  if (body !== undefined) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(body);
+  }
+  const response = await apiFetch(url, options);
+  if (returnJson && response.status === 204) return;
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  return returnJson ? response.json() : true;
+}
+
+/**
+ * Perform a POST request with a JSON body.
+ * @param {string} url - The API endpoint URL.
+ * @param {unknown} body - The request payload.
+ * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
+ * @throws {Error} If the HTTP response is not OK.
+ */
+export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | undefined> {
+  return apiMutate<T>(url, body, 'POST', true) as Promise<T | undefined>;
 }
 
 /**
@@ -49,13 +61,7 @@ export async function apiPost<T = unknown>(url: string, body: unknown): Promise<
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPut(url: string, body: unknown): Promise<boolean> {
-  const response = await apiFetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return true;
+  return apiMutate(url, body, 'PUT', false) as Promise<boolean>;
 }
 
 /**
@@ -66,14 +72,7 @@ export async function apiPut(url: string, body: unknown): Promise<boolean> {
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiPatch<T = unknown>(url: string, body: unknown): Promise<T | undefined> {
-  const response = await apiFetch(url, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (response.status === 204) return;
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  return apiMutate<T>(url, body, 'PATCH', true) as Promise<T | undefined>;
 }
 
 /**
@@ -83,9 +82,7 @@ export async function apiPatch<T = unknown>(url: string, body: unknown): Promise
  * @throws {Error} If the HTTP response is not OK.
  */
 export async function apiDelete(url: string): Promise<boolean> {
-  const response = await apiFetch(url, { method: 'DELETE' });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return true;
+  return apiMutate(url, undefined, 'DELETE', false) as Promise<boolean>;
 }
 
 /**

@@ -64,10 +64,10 @@ export function normalizeText(value: unknown): string {
 }
 
 /**
- * Check whether graph focus debug logging is enabled.
+ * Check whether graph focus debug logging is enabled via URL param or localStorage.
  * @returns {boolean} True if debug logging is enabled.
  */
-function isGraphFocusDebugEnabled(): boolean {
+export function isGraphFocusDebugEnabled(): boolean {
     try {
         const parameters = new URLSearchParams(location.search);
         const parameterValue = normalizeText(parameters.get('debugGraphFocus'));
@@ -84,9 +84,9 @@ function isGraphFocusDebugEnabled(): boolean {
 /**
  * Log graph focus debug information if debugging is enabled.
  * @param {string} stage - The debug stage label.
- * @param {object} details - The debug data.
+ * @param {object} details - The debug data to log.
  */
-function logGraphFocus(stage: string, details: Record<string, unknown>): void {
+export function logGraphFocus(stage: string, details: Record<string, unknown>): void {
     if (!isGraphFocusDebugEnabled()) return;
     console.info('[graph-focus]', stage, details);
 }

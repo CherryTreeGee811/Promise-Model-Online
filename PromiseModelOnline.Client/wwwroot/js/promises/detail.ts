@@ -8,158 +8,14 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { getStatusHtml, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
+import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
-import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
+import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
 import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.ts';
-
-/**
- * Disable promise detail controls when user lacks Edit permission.
- * @param {{ permission?: string } | null} permission - The user's permission object
- * @returns {void}
- */
-function gatePromiseDetailControls(permission: { permission?: string } | null): void {
-    const canEdit = permission?.permission === 'Edit';
-    if (!canEdit) {
-        const editButton = document.querySelector('#edit-desc-btn') as HTMLButtonElement | null;
-        const saveButton_ = document.querySelector('#save-desc') as HTMLButtonElement | null;
-        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement | null;
-        if (editButton) { editButton.disabled = true; editButton.title = 'Requires Edit permission.'; }
-        if (saveButton_) { saveButton_.disabled = true; saveButton_.title = 'Requires Edit permission.'; }
-        if (descInput) descInput.disabled = true;
-
-        const epicInputElement = document.querySelector('#add-epic-statement') as HTMLInputElement | null;
-        const epicSubmitElement = document.querySelector('#add-epic-submit') as HTMLButtonElement | null;
-        if (epicInputElement) epicInputElement.disabled = true;
-        if (epicSubmitElement) { epicSubmitElement.disabled = true; epicSubmitElement.title = 'Requires Edit permission.'; }
-    }
-}
-
-/**
- * Set up the add-epic form submission handler.
- * @param {string} owner - The project owner
- * @param {string} project - The project slug
- * @param {string} promiseId - The promise ID
- * @param {object} promise - The promise data object (mutated in place)
- * @param {Record<string, unknown>[]} epics - Current list of epics
- * @param {HTMLElement | null} tbody - The table body element for inline inserts
- * @returns {void}
- */
-function setupEpicFormHandler(owner: string, project: string, promiseId: string, promise: any, epics: Record<string, unknown>[], tbody: HTMLElement | null): void {
-    const form = document.querySelector('#add-epic-form') as HTMLFormElement | null;
-    const statementInput = document.querySelector('#add-epic-statement') as HTMLInputElement | null;
-    const message = document.querySelector('#add-epic-msg') as HTMLElement | null;
-    const submitButton = document.querySelector('#add-epic-submit') as HTMLButtonElement | null;
-
-    if (form && statementInput && message && submitButton) {
-        form.addEventListener('submit', async event => {
-            event.preventDefault();
-            message.textContent = '';
-
-            const statement = statementInput.value.trim();
-            if (!statement) {
-                message.textContent = 'Statement is required.';
-                return;
-            }
-
-            submitButton.disabled = true;
-
-            try {
-                const created = await createEpic(owner, project, {
-                    statement,
-                    productPromiseId: promiseId,
-                    displayOrder: (epics || []).length + 1,
-                }) as Record<string, unknown> | null;
-
-                if (created) {
-                    removeInlineEmptyRow(tbody!);
-                    const row = document.createElement('tr');
-                    row.dataset.epicId = created.id as string;
-
-                    const statementTd = document.createElement('td');
-                    statementTd.textContent = created.statement as string;
-
-                    const actionsTd = document.createElement('td');
-                    const viewLink = document.createElement('a');
-                    viewLink.href = '/' + owner + '/' + project + '/epics/' + created.sequenceNumber;
-                    viewLink.dataset.epicSeq = created.sequenceNumber as string;
-                    viewLink.className = 'btn btn-sm btn-outline-primary';
-                    viewLink.textContent = 'View';
-                    actionsTd.append(viewLink);
-
-                    row.append(statementTd, actionsTd);
-                    insertRowBeforeAddRow(tbody!, row);
-                    statementInput.value = '';
-                    patchChildMetrics('promise-' + promise.sequenceNumber, [...(epics || []), created as Record<string, unknown>]);
-                }
-            } catch (error) {
-                message.textContent = 'Failed to add epic.';
-                console.error(error);
-            } finally {
-                submitButton.disabled = false;
-            }
-        });
-    }
-}
-
-/**
- * Bind click handlers for epic links to enable client-side routing.
- * @param {string} owner - The project owner
- * @param {string} project - The project slug
- * @param {HTMLElement} navContentDiv - Navigation container for routing
- * @param {HTMLElement} contentDiv - Content container for routing
- * @param {HTMLElement | null} detailDiv - The detail container element
- * @returns {void}
- */
-function bindEpicClickHandlers(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, detailDiv: HTMLElement | null): void {
-    for (const link of detailDiv!.querySelectorAll('a[epic-id]')) {
-        link.addEventListener('click', (event) => {
-            if ((event as MouseEvent).ctrlKey || (event as MouseEvent).metaKey || (event as MouseEvent).button === 1) return;
-
-            event.preventDefault();
-
-            void navigate(`/${owner}/${project}/epics/${link.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
-        });
-    }
-}
-
-/**
- * Set up the description inline-edit save handler for a promise.
- * @param {string} owner - The project owner
- * @param {string} project - The project slug
- * @param {string} promiseId - The promise ID
- * @param {object} promise - The promise data object (mutated in place)
- * @returns {void}
- */
-function setupDescriptionHandler(owner: string, project: string, promiseId: string, promise: any): void {
-    const descMessage = document.querySelector('#desc-save-msg') as HTMLElement | null;
-    const saveButton = document.querySelector('#save-desc') as HTMLButtonElement | null;
-    if (saveButton) {
-        saveButton.addEventListener('click', async (event) => {
-            event.preventDefault();
-            if (descMessage) descMessage.textContent = '';
-            saveButton.disabled = true;
-            const newDesc = (document.querySelector('#description-input') as HTMLTextAreaElement).value;
-            try {
-                const updated = await updatePromiseDescription(owner, project, promiseId, newDesc);
-                promise.description = (updated as Record<string, unknown>)?.description ?? (newDesc.trim() ? newDesc : undefined);
-                patchDetailStackGraphNode(`promise-${promise.sequenceNumber}`, {
-                    description: promise.description,
-                });
-                const editor = (promise as any).__editor as { showSavedPopover?: (html: string) => void } | undefined;
-                if (editor && editor.showSavedPopover) editor.showSavedPopover(formatCommentText(promise.description || ''));
-            } catch (error) {
-                if (descMessage) descMessage.textContent = 'Save failed';
-                console.error(error);
-            } finally {
-                saveButton.disabled = false;
-            }
-        });
-    }
-}
 
 /**
  * Load and render the epics list for a promise.
@@ -203,7 +59,25 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
                 + '</tr>',
         }) as HTMLTableSectionElement | null;
 
-        setupEpicFormHandler(owner, project, promiseId, promise, epics || [], tbody);
+        setupAddChildForm({
+            formId: 'add-epic-form',
+            inputId: 'add-epic-statement',
+            submitButtonId: 'add-epic-submit',
+            msgId: 'add-epic-msg',
+            owner,
+            project,
+            tbody,
+            onCreate: async (statement) => createEpic(owner, project, {
+                statement,
+                productPromiseId: promiseId,
+                displayOrder: (epics || []).length + 1,
+            }) as Promise<Record<string, unknown> | null>,
+            getRowHtml: (created) => '<tr><td>' + escapeHtml(created.statement as string) + '</td>'
+                + '<td><a href="/' + owner + '/' + project + '/epics/' + created.sequenceNumber + '" data-epic-seq="' + created.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td></tr>',
+            datasetKey: 'epic-id',
+            childMetricsKey: 'promise-' + promise.sequenceNumber,
+            items: epics as Record<string, unknown>[],
+        });
 
         epicsList!.replaceChildren();
         const epicsTable = document.createElement('table');
@@ -240,7 +114,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
         epicsTable.append(epicsTbody);
         epicsList!.append(epicsTable);
 
-        bindEpicClickHandlers(owner, project, navContentDiv, contentDiv, detailDiv);
+        bindLinkClickHandlers(detailDiv!, 'a[epic-id]', 'epic-seq', 'epics', owner, project, navContentDiv, contentDiv);
     } catch {
         if (epicsList) {
             epicsList.replaceChildren();
@@ -303,56 +177,6 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         const detailTable = document.createElement('table');
         detailTable.className = 'table table-sm table-striped align-middle detail-table';
 
-        const editWrapper = document.createElement('div');
-        editWrapper.className = 'inline-edit-wrapper';
-
-        const descP = document.createElement('p');
-        descP.id = 'description-view';
-        descP.className = 'inline-edit-view';
-        const descParser = new DOMParser();
-        const descDocument = descParser.parseFromString(formatCommentText(promise.description || ''), 'text/html');
-        descP.append(...descDocument.body.childNodes);
-        editWrapper.append(descP);
-
-        const editButton_ = document.createElement('button');
-        editButton_.id = 'edit-desc-btn';
-        editButton_.className = 'btn btn-success btn-sm inline-edit-btn';
-        editButton_.type = 'button';
-        editButton_.title = 'Edit description';
-        const editIcon = document.createElement('i');
-        editIcon.className = 'bi bi-pencil';
-        editButton_.append(editIcon);
-        editWrapper.append(editButton_);
-
-        const descTextarea = document.createElement('textarea');
-        descTextarea.id = 'description-input';
-        descTextarea.rows = 4;
-        descTextarea.className = 'form-control detail-textarea';
-        descTextarea.setAttribute('aria-label', 'Description');
-        descTextarea.style.display = 'none';
-        descTextarea.value = promise.description || '';
-        editWrapper.append(descTextarea);
-
-        const fieldActions = document.createElement('div');
-        fieldActions.className = 'field-actions';
-        const cancelButton_ = document.createElement('button');
-        cancelButton_.id = 'cancel-desc';
-        cancelButton_.className = 'btn btn-outline-secondary btn-sm';
-        cancelButton_.type = 'button';
-        cancelButton_.style.display = 'none';
-        cancelButton_.textContent = 'Cancel';
-        const saveButton_ = document.createElement('button');
-        saveButton_.id = 'save-desc';
-        saveButton_.className = 'btn btn-primary btn-sm';
-        saveButton_.type = 'button';
-        saveButton_.textContent = 'Save';
-        const saveMessageSpan = document.createElement('span');
-        saveMessageSpan.id = 'desc-save-msg';
-        fieldActions.append(cancelButton_, saveButton_, saveMessageSpan);
-
-        const descTd = document.createElement('div');
-        descTd.append(editWrapper, fieldActions);
-
         const descTr = document.createElement('tr');
         const descTh = document.createElement('th');
         descTh.scope = 'row';
@@ -360,9 +184,9 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         descLabel.htmlFor = 'description-input';
         descLabel.textContent = 'Description';
         descTh.append(descLabel);
-        const descTdCell = document.createElement('td');
-        descTdCell.append(descTd);
-        descTr.append(descTh, descTdCell);
+        const descTd = document.createElement('td');
+        buildInlineEditUI(descTd, '', promise.description || '');
+        descTr.append(descTh, descTd);
         detailTable.append(descTr);
 
         const statusTr = document.createElement('tr');
@@ -376,23 +200,8 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         statusTr.append(statusTh, statusTd);
         detailTable.append(statusTr);
 
-        const createdTr = document.createElement('tr');
-        const createdTh = document.createElement('th');
-        createdTh.scope = 'row';
-        createdTh.textContent = 'Created';
-        const createdTd = document.createElement('td');
-        createdTd.textContent = new Date(promise.createdAt).toLocaleDateString('en-CA');
-        createdTr.append(createdTh, createdTd);
-        detailTable.append(createdTr);
-
-        const updatedTr = document.createElement('tr');
-        const updatedTh = document.createElement('th');
-        updatedTh.scope = 'row';
-        updatedTh.textContent = 'Updated';
-        const updatedTd = document.createElement('td');
-        updatedTd.textContent = promise.updatedAt ? new Date(promise.updatedAt).toLocaleDateString('en-CA') : '\u{2013}';
-        updatedTr.append(updatedTh, updatedTd);
-        detailTable.append(updatedTr);
+        detailTable.append(createDateRow('Created', promise.createdAt));
+        detailTable.append(createDateRow('Updated', promise.updatedAt));
 
         cardDiv.append(detailTable);
 
@@ -445,7 +254,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         await loadPromiseEpics(owner, project, promiseId, promise, navContentDiv, contentDiv);
 
 
-        gatePromiseDetailControls(permission);
+        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-epic-statement', '#add-epic-submit']);
 
         loadCommentsAndReactions(detailDiv!, 'Promise', promise.id, owner, project, permission!);
 
@@ -454,7 +263,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         initBackLink();
 
-        setupDescriptionHandler(owner, project, promiseId, promise);
+        setupDescriptionHandler(owner, project, promiseId, 'promise', promise, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
 
         if (loadingElement) loadingElement.hidden = true;
     } catch (error) {
