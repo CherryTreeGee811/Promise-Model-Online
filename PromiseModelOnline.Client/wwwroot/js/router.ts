@@ -145,18 +145,18 @@ async function initServiceWorker(): Promise<void> {
 }
 
 /**
- *
+ * Initialize the SPA: register service worker, check session, bind navigation events, and start routing.
+ * @returns {Promise<true>} A promise that resolves when initialization is complete.
  */
-function initApp(): void {
+async function initApp(): Promise<true> {
   void initServiceWorker();
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    const contentDiv = document.querySelector('#content') as HTMLElement;
-    const navContentDiv = document.querySelector('#main-menu') as HTMLElement;
+  const contentDiv = document.querySelector('#content') as HTMLElement;
+  const navContentDiv = document.querySelector('#main-menu') as HTMLElement;
 
-    await checkSession();
+  await checkSession();
 
-    initNavEventDelegation(navContentDiv, contentDiv);
+  initNavEventDelegation(navContentDiv, contentDiv);
 
     document.addEventListener('click', (event: MouseEvent) => {
       const navLink = (event.target as Element).closest('a[data-nav]');
@@ -186,11 +186,11 @@ function initApp(): void {
     });
 
     void routeHandler(navContentDiv, contentDiv);
-  });
+
+  return true;
 }
 
-/* eslint-disable-next-line unicorn/no-top-level-side-effects -- SPA entry point: app must initialize on module load */
-initApp();
+export const appReady = initApp();
 
 /**
  * Navigate to a new path, updating the URL and rendering the page.
