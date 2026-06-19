@@ -52,6 +52,244 @@ function htmlToNodes(html: string): Node[] {
     return [...fragment.childNodes];
 }
 
+function gateEpicDetailControls(permission: { permission: string } | undefined): void {
+    const canEdit = permission?.permission === 'Edit';
+    if (!canEdit) {
+        const editButton__ = document.querySelector('#edit-desc-btn') as HTMLButtonElement;
+        const saveButton__ = document.querySelector('#save-desc') as HTMLButtonElement;
+        const descInp = document.querySelector('#description-input') as HTMLInputElement;
+        if (editButton__) { editButton__.disabled = true; editButton__.title = 'Requires Edit permission.'; }
+        if (saveButton__) { saveButton__.disabled = true; saveButton__.title = 'Requires Edit permission.'; }
+        if (descInp) descInp.disabled = true;
+
+        const journeyStatementInput = document.querySelector('#add-journey-statement') as HTMLInputElement;
+        const journeySubmitButton = document.querySelector('#add-journey-submit') as HTMLButtonElement;
+        if (journeyStatementInput) journeyStatementInput.disabled = true;
+        if (journeySubmitButton) { journeySubmitButton.disabled = true; journeySubmitButton.title = 'Requires Edit permission.'; }
+    }
+}
+
+function setupDescriptionHandler(owner: string, project: string, epicId: string, epic: any): void {
+    const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
+    const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
+    if (saveButton) {
+        saveButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (descMessage) descMessage.textContent = '';
+            saveButton.disabled = true;
+            const newDesc = (document.querySelector('#description-input') as HTMLTextAreaElement).value;
+            try {
+                const updated = await updateEpicDescription(owner, project, epicId, newDesc) as { description?: string } | undefined;
+                epic.description = updated?.description ?? (newDesc.trim() ? newDesc : undefined);
+                patchDetailStackGraphNode('epic-' + epic.sequenceNumber, {
+                    description: epic.description,
+                });
+                const editor = (epic as any).__editor as { showSavedPopover?: (html: string) => void } | undefined;
+                if (editor?.showSavedPopover) editor.showSavedPopover(formatCommentText(epic.description || ''));
+            } catch (error) {
+                if (descMessage) descMessage.textContent = 'Save failed';
+                console.error(error);
+            } finally {
+                saveButton.disabled = false;
+            }
+        });
+    }
+}
+
+function bindJourneyClickHandlers(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, journeysList: HTMLElement): void {
+    for (const link of journeysList.querySelectorAll('a[journey-id]')) {
+        link.addEventListener('click', (event) => {
+            const me = event as MouseEvent;
+            if (me.ctrlKey || me.metaKey || me.button === 1) return;
+            event.preventDefault();
+            void navigate(link.getAttribute('journey-seq')!, navContentDiv, contentDiv);
+        });
+    }
+}
+
+async function loadParentPromise(owner: string, project: string, epic: Epic, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const parentCell = document.querySelector('#epic-parent-promise') as HTMLElement;
+    try {
+        const promise = await getPromiseById(owner, project, epic.productPromiseId) as PromiseItem;
+        const icon = getStatusIcon(promise.statusColor ?? '');
+        const label = getStatusLabel(promise.statusColor ?? '');
+        if (parentCell) parentCell.replaceChildren();
+        const link = document.createElement('a');
+        link.href = '/' + owner + '/' + project + '/promises/' + promise.sequenceNumber;
+        link.className = 'detail-link link-primary text-decoration-none fw-semibold';
+        link.textContent = promise.statement;
+        if (parentCell) parentCell.append(link);
+        const statusSpan = document.createElement('span');
+        statusSpan.setAttribute('aria-hidden', 'true');
+        statusSpan.textContent = icon;
+        if (parentCell) parentCell.append(statusSpan);
+        const srSpan = document.createElement('span');
+        srSpan.className = 'sr-only';
+        srSpan.textContent = label;
+        if (parentCell) parentCell.append(srSpan);
+
+        if (link) {
+            link.addEventListener('click', (event) => {
+                const me = event as MouseEvent;
+                if (me.ctrlKey || me.metaKey || me.button === 1) return;
+                event.preventDefault();
+                void navigate(link.getAttribute('href')!, navContentDiv, contentDiv);
+            });
+        }
+    } catch {
+        if (parentCell) parentCell.textContent = 'Promise ' + epic.productPromiseId;
+    }
+}
+
+function setupJourneyFormHandler(owner: string, project: string, epicId: string, epic: any, journeys: JourneyItem[], tbody: HTMLTableSectionElement | null): void {
+    const form = document.querySelector('#add-journey-form') as HTMLFormElement;
+    const statementInput = document.querySelector('#add-journey-statement') as HTMLInputElement;
+    const message = document.querySelector('#add-journey-msg') as HTMLElement;
+    const submitButton = document.querySelector('#add-journey-submit') as HTMLButtonElement;
+
+    if (form && statementInput && message && submitButton) {
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            message.textContent = '';
+
+            const statement = statementInput.value.trim();
+            if (!statement) {
+                message.textContent = 'Statement is required.';
+                return;
+            }
+
+            submitButton.disabled = true;
+
+            try {
+                const created = await createJourney(owner, project, {
+                    statement,
+                    epicId,
+                    displayOrder: (journeys || []).length + 1,
+                }) as JourneyItem;
+
+                if (created) {
+                    removeInlineEmptyRow(tbody!);
+                    const row = document.createElement('tr');
+                    row.dataset.journeyId = String(created.id);
+
+                    const tdStmt = document.createElement('td');
+                    tdStmt.textContent = created.statement;
+                    row.append(tdStmt);
+
+                    const tdActions = document.createElement('td');
+                    const viewLink = document.createElement('a');
+                    viewLink.href = '/' + owner + '/' + project + '/journeys/' + created.sequenceNumber;
+                    viewLink.setAttribute('journey-id', String(created.id));
+                    viewLink.setAttribute('journey-seq', String(created.sequenceNumber));
+                    viewLink.className = 'btn btn-sm btn-outline-primary';
+                    viewLink.textContent = 'View';
+                    tdActions.append(viewLink);
+                    row.append(tdActions);
+
+                    insertRowBeforeAddRow(tbody!, row);
+                    statementInput.value = '';
+                    patchChildMetrics('epic-' + epic.sequenceNumber, [...(journeys || []), created] as unknown as Record<string, unknown>[]);
+                }
+            } catch (error) {
+                message.textContent = 'Failed to add journey.';
+                console.error(error);
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+    }
+}
+
+async function loadEpicJourneys(owner: string, project: string, epicId: string, epic: any, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const journeysList = document.querySelector('#epic-journeys-list') as HTMLElement;
+
+    try {
+        const journeys = await getJourneys(owner, project, epicId) as JourneyItem[];
+        patchChildMetrics('epic-' + epic.sequenceNumber, journeys as unknown as Record<string, unknown>[]);
+        const tbody = renderTableWithInlineAddRow(journeysList, {
+            headers: ['Statement', 'Actions'],
+            items: journeys || [],
+            emptyMessage: 'No journeys found for this epic.',
+            renderItemRow: (item: unknown) => {
+                const index = item as JourneyItem;
+                return '<tr data-journey-id="' + index.id + '">'
+                    + '<td>' + escapeHtml(index.statement) + '</td>'
+                    + '<td><a href="/' + owner + '/' + project + '/journeys/' + index.sequenceNumber + '" journey-id="' + index.id + '" journey-seq="' + index.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td>'
+                    + '</tr>';
+            },
+            renderAddRow: () => ''
+                + '<tr data-inline-add-row="1">'
+                + '<td>'
+                + '<form id="add-journey-form" class="inline-add-form">'
+                + '<input id="add-journey-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Journey Statement..." aria-label="New journey statement">'
+                + '</form>'
+                + '</td>'
+                + '<td>'
+                + '<button id="add-journey-submit" type="submit" form="add-journey-form" class="btn btn-sm btn-outline-primary">Add</button>'
+                + '<span id="add-journey-msg"></span>'
+                + '</td>'
+                + '</tr>',
+        });
+
+        setupJourneyFormHandler(owner, project, epicId, epic, journeys || [], tbody);
+
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'table-responsive';
+        const journeyTable = document.createElement('table');
+        journeyTable.className = 'table table-sm table-striped align-middle promisemodel-table';
+
+        const indexThead = document.createElement('thead');
+        const indexHeaderRow = document.createElement('tr');
+        const indexHeaders = ['Statement', 'Actions'];
+        for (const h of indexHeaders) {
+            const th = document.createElement('th');
+            th.textContent = h;
+            indexHeaderRow.append(th);
+        }
+        indexThead.append(indexHeaderRow);
+        journeyTable.append(indexThead);
+
+        const indexTbody = document.createElement('tbody');
+        for (const index of journeys) {
+            const tr = document.createElement('tr');
+            const tdStmt = document.createElement('td');
+            tdStmt.textContent = index.statement;
+            tr.append(tdStmt);
+
+            const tdActions = document.createElement('td');
+            const viewLink = document.createElement('a');
+            viewLink.href = '/' + owner + '/' + project + '/journeys/' + index.sequenceNumber;
+            viewLink.setAttribute('journey-id', String(index.id));
+            viewLink.setAttribute('journey-seq', String(index.sequenceNumber));
+            viewLink.className = 'btn btn-sm btn-outline-primary';
+            viewLink.textContent = 'View';
+            tdActions.append(viewLink);
+            tr.append(tdActions);
+
+            indexTbody.append(tr);
+        }
+        journeyTable.append(indexTbody);
+        tableWrapper.append(journeyTable);
+        journeysList.replaceChildren(tableWrapper);
+
+        bindJourneyClickHandlers(owner, project, navContentDiv, contentDiv, journeysList);
+    } catch {
+        journeysList.replaceChildren();
+        const p = document.createElement('p');
+        p.className = 'error';
+        p.textContent = 'Failed to load journeys.';
+        journeysList.append(p);
+    }
+}
+
+function upsertEpicGraphViewButton(detailDiv: HTMLElement, epic: Epic): void {
+    const { owner: go, project: gp } = getOwnerProjectFromPath();
+    if (go && gp) {
+        const href = buildGraphViewHref(go, gp, 'epic-' + epic.sequenceNumber);
+        if (href) upsertGraphViewButton(detailDiv, href);
+    }
+}
+
 /**
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
@@ -229,233 +467,24 @@ export async function loadEpicDetail(owner: string, project: string, epicId: str
         const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
         const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
         const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
-        let editor: { showSavedPopover?: (html: string) => void } | undefined;
         if (descInput && descViewElement && editButton) {
             createCommentAutocomplete(descInput, 'Epic', epic.id);
-            editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
+            const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
+            (epic as any).__editor = editor;
         }
 
-        const parentCell = document.querySelector('#epic-parent-promise') as HTMLElement;
-        try {
-            const promise = await getPromiseById(owner, project, epic.productPromiseId) as PromiseItem;
-            const icon = getStatusIcon(promise.statusColor ?? '');
-            const label = getStatusLabel(promise.statusColor ?? '');
-            if (parentCell) parentCell.replaceChildren();
-            const link = document.createElement('a');
-            link.href = `/${owner}/${project}/promises/${promise.sequenceNumber}`;
-            link.className = 'detail-link link-primary text-decoration-none fw-semibold';
-            link.textContent = promise.statement;
-            if (parentCell) parentCell.append(link);
-            const statusSpan = document.createElement('span');
-            statusSpan.setAttribute('aria-hidden', 'true');
-            statusSpan.textContent = icon;
-            if (parentCell) parentCell.append(statusSpan);
-            const srSpan = document.createElement('span');
-            srSpan.className = 'sr-only';
-            srSpan.textContent = label;
-            if (parentCell) parentCell.append(srSpan);
+        await loadParentPromise(owner, project, epic, navContentDiv, contentDiv);
 
-            if (link) {
-                link.addEventListener('click', (event) => {
-                    const me = event as MouseEvent;
-                    if (me.ctrlKey || me.metaKey || me.button === 1) return;
-                    event.preventDefault();
-                    void navigate(link.getAttribute('href')!, navContentDiv, contentDiv);
-                });
-            }
-        } catch {
-            if (parentCell) parentCell.textContent = `Promise ${epic.productPromiseId}`;
-        }
-
-        try {
-            const journeys = await getJourneys(owner, project, epicId) as JourneyItem[];
-            patchChildMetrics(`epic-${epic.sequenceNumber}`, journeys as unknown as Record<string, unknown>[]);
-            const tbody = renderTableWithInlineAddRow(journeysList, {
-                headers: ['Statement', 'Actions'],
-                items: journeys || [],
-                emptyMessage: 'No journeys found for this epic.',
-                renderItemRow: (item: unknown) => {
-                    const index = item as JourneyItem;
-                    return `<tr data-journey-id="${index.id}">
-                        <td>${escapeHtml(index.statement)}</td>
-                        <td><a href="/${owner}/${project}/journeys/${index.sequenceNumber}" journey-id="${index.id}" journey-seq="${index.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                    </tr>`;
-                },
-                renderAddRow: () => `
-                    <tr data-inline-add-row="1">
-                        <td>
-                            <form id="add-journey-form" class="inline-add-form">
-                                <input id="add-journey-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Journey Statement..." aria-label="New journey statement">
-                            </form>
-                        </td>
-                        <td>
-                            <button id="add-journey-submit" type="submit" form="add-journey-form" class="btn btn-sm btn-outline-primary">Add</button>
-                            <span id="add-journey-msg"></span>
-                        </td>
-                    </tr>
-                `,
-            });
-
-            const form = journeysList.querySelector('#add-journey-form') as HTMLFormElement;
-            const statementInput = journeysList.querySelector('#add-journey-statement') as HTMLInputElement;
-            const message = journeysList.querySelector('#add-journey-msg') as HTMLElement;
-            const submitButton = journeysList.querySelector('#add-journey-submit') as HTMLButtonElement;
-
-            if (form && statementInput && message && submitButton) {
-                form.addEventListener('submit', async event => {
-                    event.preventDefault();
-                    message.textContent = '';
-
-                    const statement = statementInput.value.trim();
-                    if (!statement) {
-                        message.textContent = 'Statement is required.';
-                        return;
-                    }
-
-                    submitButton.disabled = true;
-
-                    try {
-                        const created = await createJourney(owner, project, {
-                            statement,
-                            epicId,
-                            displayOrder: (journeys || []).length + 1,
-                        }) as JourneyItem;
-
-                        if (created) {
-                            removeInlineEmptyRow(tbody!);
-                            const row = document.createElement('tr');
-                            row.dataset.journeyId = String(created.id);
-
-                            const tdStmt = document.createElement('td');
-                            tdStmt.textContent = created.statement;
-                            row.append(tdStmt);
-
-                            const tdActions = document.createElement('td');
-                            const viewLink = document.createElement('a');
-                            viewLink.href = `/${owner}/${project}/journeys/${created.sequenceNumber}`;
-                            viewLink.setAttribute('journey-id', String(created.id));
-                            viewLink.setAttribute('journey-seq', String(created.sequenceNumber));
-                            viewLink.className = 'btn btn-sm btn-outline-primary';
-                            viewLink.textContent = 'View';
-                            tdActions.append(viewLink);
-                            row.append(tdActions);
-
-                            insertRowBeforeAddRow(tbody!, row);
-                            statementInput.value = '';
-                            patchChildMetrics(`epic-${epic.sequenceNumber}`, [...(journeys || []), created] as unknown as Record<string, unknown>[]);
-                        }
-                    } catch (error) {
-                        message.textContent = 'Failed to add journey.';
-                        console.error(error);
-                    } finally {
-                        submitButton.disabled = false;
-                    }
-                });
-            }
-
-            const tableWrapper = document.createElement('div');
-            tableWrapper.className = 'table-responsive';
-            const journeyTable = document.createElement('table');
-            journeyTable.className = 'table table-sm table-striped align-middle promisemodel-table';
-
-            const indexThead = document.createElement('thead');
-            const indexHeaderRow = document.createElement('tr');
-            const indexHeaders = ['Statement', 'Actions'];
-            for (const h of indexHeaders) {
-                const th = document.createElement('th');
-                th.textContent = h;
-                indexHeaderRow.append(th);
-            }
-            indexThead.append(indexHeaderRow);
-            journeyTable.append(indexThead);
-
-            const indexTbody = document.createElement('tbody');
-            for (const index of journeys) {
-                const tr = document.createElement('tr');
-                const tdStmt = document.createElement('td');
-                tdStmt.textContent = index.statement;
-                tr.append(tdStmt);
-
-                const tdActions = document.createElement('td');
-                const viewLink = document.createElement('a');
-                viewLink.href = `/${owner}/${project}/journeys/${index.sequenceNumber}`;
-                viewLink.setAttribute('journey-id', String(index.id));
-                viewLink.setAttribute('journey-seq', String(index.sequenceNumber));
-                viewLink.className = 'btn btn-sm btn-outline-primary';
-                viewLink.textContent = 'View';
-                tdActions.append(viewLink);
-                tr.append(tdActions);
-
-                indexTbody.append(tr);
-            }
-            journeyTable.append(indexTbody);
-            tableWrapper.append(journeyTable);
-            journeysList.replaceChildren(tableWrapper);
-
-            for (const link of journeysList.querySelectorAll('a[journey-id]')) {
-                link.addEventListener('click', (event) => {
-                    const me = event as MouseEvent;
-                    if (me.ctrlKey || me.metaKey || me.button === 1) return;
-                    event.preventDefault();
-                    void navigate(link.getAttribute('journey-seq')!, navContentDiv, contentDiv);
-                });
-            }
-        } catch {
-            journeysList.replaceChildren();
-            const p = document.createElement('p');
-            p.className = 'error';
-            p.textContent = 'Failed to load journeys.';
-            journeysList.append(p);
-        }
+        await loadEpicJourneys(owner, project, epicId, epic, navContentDiv, contentDiv);
 
         initBackLink();
-        (function gateEpicDetailControls() {
-            const canEdit = permission?.permission === 'Edit';
-            if (!canEdit) {
-                const editButton__ = document.querySelector('#edit-desc-btn') as HTMLButtonElement;
-                const saveButton__ = document.querySelector('#save-desc') as HTMLButtonElement;
-                const descInp = document.querySelector('#description-input') as HTMLInputElement;
-                if (editButton__) { editButton__.disabled = true; editButton__.title = 'Requires Edit permission.'; }
-                if (saveButton__) { saveButton__.disabled = true; saveButton__.title = 'Requires Edit permission.'; }
-                if (descInp) descInp.disabled = true;
-
-                const journeyStatementInput = document.querySelector('#add-journey-statement') as HTMLInputElement;
-                const journeySubmitButton = document.querySelector('#add-journey-submit') as HTMLButtonElement;
-                if (journeyStatementInput) journeyStatementInput.disabled = true;
-                if (journeySubmitButton) { journeySubmitButton.disabled = true; journeySubmitButton.title = 'Requires Edit permission.'; }
-            }
-        })();
+        gateEpicDetailControls(permission);
 
         loadCommentsAndReactions(detailDiv, 'Epic', epic.id, owner, project, permission);
 
-        const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
-        if (saveButton) {
-            saveButton.addEventListener('click', async (event) => {
-                event.preventDefault();
-                if (descMessage) descMessage.textContent = '';
-                saveButton.disabled = true;
-                const newDesc = (document.querySelector('#description-input') as HTMLTextAreaElement).value;
-                try {
-                    const updated = await updateEpicDescription(owner, project, epicId, newDesc) as { description?: string } | undefined;
-                    epic.description = updated?.description ?? (newDesc.trim() ? newDesc : undefined);
-                    patchDetailStackGraphNode(`epic-${epic.sequenceNumber}`, {
-                        description: epic.description,
-                    });
-                    if (editor?.showSavedPopover) editor.showSavedPopover(formatCommentText(epic.description || ''));
-                } catch (error) {
-                    if (descMessage) descMessage.textContent = 'Save failed';
-                    console.error(error);
-                } finally {
-                    saveButton.disabled = false;
-                }
-            });
-        }
+        setupDescriptionHandler(owner, project, epicId, epic);
 
-        const { owner: go, project: gp } = getOwnerProjectFromPath();
-        if (go && gp) {
-            const href = buildGraphViewHref(go, gp, `epic-${epic.sequenceNumber}`);
-            if (href) upsertGraphViewButton(detailDiv, href);
-        }
+        upsertEpicGraphViewButton(detailDiv, epic);
     } catch (error) {
         if (loadingElement) loadingElement.hidden = true;
         if (errorElement) errorElement.textContent = 'Failed to load epic details.';
