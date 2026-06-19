@@ -400,7 +400,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
 
         gateMomentDetailControls(permission);
 
-        renderMomentTasks(tasksContainer, momentId, moment.tasks ?? [], moment, permission, owner, project);
+        renderMomentTasks(document.querySelector('#moment-tasks') as HTMLElement, momentId, moment.tasks ?? [], moment, permission, owner, project);
 
         const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
         const descriptionMessage = document.querySelector('#moment-description-msg') as HTMLElement;

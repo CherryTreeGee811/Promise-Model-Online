@@ -237,7 +237,7 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
         return;
     }
 
-    if (!hasBurndownData(element, points)) return;
+    if (!hasBurndownData(element as HTMLElement, points)) return;
 
     const d3 = await loadD3() as any;
     const { startDate, endDate, days, actualPoints, finalIdeal, lastDay } = processBurndownPoints(points);
@@ -337,14 +337,15 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
     drawLine(svg, finalIdeal, lineGen, 'ideal-line', '#6c757d', 2, 'none');
     drawLine(svg, actualPoints, lineGen, 'actual-line', '#dc3545', 2.5, 'none');
 
-    addBurndownTooltip(svg, d3, xScale, days, sorted);
+    addBurndownTooltip(svg, d3, xScale, days, points);
 
     const observer = new MutationObserver(() => {
         if (document.body.contains(element)) {
         	return;
         }
 
-        tooltip.remove();
+        const tooltipElement = document.querySelector('.burndown-tooltip');
+        if (tooltipElement) tooltipElement.remove();
         observer.disconnect();
     });
     observer.observe(document.body, { childList: true, subtree: true });

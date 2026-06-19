@@ -341,6 +341,9 @@ export async function loadIterationHistory(owner: string, project: string, permi
 
     if (isEmptyIterations(iterations, listDiv)) return;
 
+    const burndownCanvas = document.querySelector('#burndown-canvas') as HTMLElement;
+    const strideDetailsDiv = document.querySelector('#stride-details') as HTMLElement;
+
     renderIterationList(iterations, listDiv, formatDate, showIterationDetail);
 
     /**

@@ -83,7 +83,7 @@ export function setupAddChildForm(config: AddChildConfig): void {
       const created = await onCreate(statement, extra);
 
       if (created && tbody) {
-        insertCreatedRow(tbody, created, datasetKey, getRowHtml, typeSelect);
+        insertCreatedRow(tbody as HTMLTableSectionElement, created, datasetKey, getRowHtml, typeSelect ?? undefined);
         statementInput.value = '';
         if (typeSelect) typeSelect.value = 'Story';
         if (onSuccess) onSuccess();
