@@ -43,8 +43,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
                     + '<td><a href="/' + owner + '/' + project + '/epics/' + (epicItem.sequenceNumber as string) + '" epic-seq="' + (epicItem.sequenceNumber as string) + '" class="btn btn-sm btn-outline-primary">View</a></td>'
                     + '</tr>';
             },
-            renderAddRow: () => ''
-                + '<tr data-inline-add-row="1">'
+            renderAddRow: () => '<tr data-inline-add-row="1">'
                 + '<td>'
                 + '<form id="add-epic-form" class="inline-add-form">'
                 + '<input id="add-epic-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Epic Statement..." aria-label="New epic statement">'
@@ -96,8 +95,8 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
         const epicsTbody = document.createElement('tbody');
         for (const epic of epics as Array<{ id: string; sequenceNumber: string; statement: string }>) {
             const epicTr = document.createElement('tr');
-            const epicStmtTd = document.createElement('td');
-            epicStmtTd.textContent = epic.statement;
+            const epicStatementTd = document.createElement('td');
+            epicStatementTd.textContent = epic.statement;
             const epicActionsTd = document.createElement('td');
             const epicViewLink = document.createElement('a');
             epicViewLink.href = '/' + owner + '/' + project + '/epics/' + epic.sequenceNumber;
@@ -106,7 +105,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
             epicViewLink.className = 'btn btn-sm btn-outline-primary';
             epicViewLink.textContent = 'View';
             epicActionsTd.append(epicViewLink);
-            epicTr.append(epicStmtTd, epicActionsTd);
+            epicTr.append(epicStatementTd, epicActionsTd);
             epicsTbody.append(epicTr);
         }
         epicsTable.append(epicsTbody);

@@ -474,8 +474,7 @@ function isNodeMatching(node: GraphNode, filters: GraphFilters): boolean {
     if (!isNodeStatusMatching(node, filters.status)) return false;
     if (!isNodeAssignmentMatching(node, filters.assignment)) return false;
     if (!isNodeEffortMatching(node, filters.effort)) return false;
-    if (!isNodeStrideMatching(node, filters.stride)) return false;
-    return true;
+    return isNodeStrideMatching(node, filters.stride);
 }
 
 /**
@@ -1097,7 +1096,7 @@ function initZoomControls(zoomBehavior: unknown, svgNode: SVGElement, d3Instance
  * @param {object} [focusNodeData] - A specific node to focus on.
  * @param {boolean} [isAnimate] - Whether to animate the transition.
  */
-function renderTree(_contentDiv: HTMLElement, d3: Record<string, unknown>, treeData: GraphNode, restoreTransform: unknown = undefined, focusNodeData: GraphNode | undefined = undefined, isAnimate: boolean = false): void {
+function renderTree(_contentDiv: HTMLElement, d3: Record<string, unknown>, treeData: GraphNode, restoreTransform?: unknown, focusNodeData?: GraphNode | undefined, isAnimate: boolean = false): void {
     const graphContent = document.querySelector('#graph-content') as HTMLElement | null;
     if (!graphContent) return;
 

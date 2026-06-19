@@ -1515,29 +1515,20 @@ function renderBacklogSection(
     project: string,
 ): void {
     const isBacklogCollapsed = !!(allStrides && allStrides.length > 0);
+    backlogSection.replaceChildren();
+    const backlogCard = document.createElement('div');
+    backlogCard.className = 'stride-card backlog-board' + (isBacklogCollapsed ? ' is-collapsed' : '');
+    backlogCard.dataset.collapsibleBoard = '1';
+    backlogCard.append(boardHeaderHtml('Backlog', isBacklogCollapsed));
+    const bContent = document.createElement('div');
+    bContent.className = 'stride-moments backlog-content' + (isBacklogCollapsed ? ' hidden' : '');
     if (!backlogMoments || (backlogMoments as Record<string, unknown>[]).length === 0) {
-        backlogSection.replaceChildren();
-        const backlogCard = document.createElement('div');
-        backlogCard.className = 'stride-card backlog-board' + (isBacklogCollapsed ? ' is-collapsed' : '');
-        backlogCard.dataset.collapsibleBoard = '1';
-        backlogCard.append(boardHeaderHtml('Backlog', isBacklogCollapsed));
-        const bContent = document.createElement('div');
-        bContent.className = 'stride-moments backlog-content' + (isBacklogCollapsed ? ' hidden' : '');
         bContent.append(renderEmptyStateSection({
             icon: 'bi-inbox',
             title: 'No unassigned moments.',
             description: 'Create new moments or assign existing ones to this project.',
         }));
-        backlogCard.append(bContent);
-        backlogSection.append(backlogCard);
     } else {
-        backlogSection.replaceChildren();
-        const backlogCard = document.createElement('div');
-        backlogCard.className = 'stride-card backlog-board' + (isBacklogCollapsed ? ' is-collapsed' : '');
-        backlogCard.dataset.collapsibleBoard = '1';
-        backlogCard.append(boardHeaderHtml('Backlog', isBacklogCollapsed));
-        const bContent = document.createElement('div');
-        bContent.className = 'stride-moments backlog-content' + (isBacklogCollapsed ? ' hidden' : '');
         const table = document.createElement('table');
         table.className = 'promisemodel-table';
         const thead = document.createElement('thead');
@@ -1555,10 +1546,10 @@ function renderBacklogSection(
         }
         table.append(tbody);
         bContent.append(table);
-        backlogCard.append(bContent);
-        backlogSection.append(backlogCard);
         populateSelectsWithin(backlogSection);
     }
+    backlogCard.append(bContent);
+    backlogSection.append(backlogCard);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { escapeHtml, renderLoadingSpinner } from '../utils/html.ts';
+import { escapeHtml } from '../utils/html.ts';
 
 interface AuditChange {
     fieldName: string;
@@ -150,10 +150,12 @@ function formatRelativeTime(value: string | Date | null | undefined): string {
     ];
 
     for (const [unit, secondsPerUnit] of units) {
-        if (absSeconds >= secondsPerUnit || unit === 'second') {
-            const valueInUnits = Math.round(diffSeconds / secondsPerUnit);
-            return rtf.format(-valueInUnits, unit as Intl.RelativeTimeFormatUnit);
+        if (!(absSeconds >= secondsPerUnit || unit === 'second')) {
+        	continue;
         }
+
+        const valueInUnits = Math.round(diffSeconds / secondsPerUnit);
+        return rtf.format(-valueInUnits, unit as Intl.RelativeTimeFormatUnit);
     }
 
     return rtf.format(0, 'second');

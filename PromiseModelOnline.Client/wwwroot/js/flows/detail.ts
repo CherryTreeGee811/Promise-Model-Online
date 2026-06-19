@@ -143,8 +143,7 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
                     + '<td><a href="/' + owner + '/' + project + '/moments/' + m.sequenceNumber + '" moment-seq="' + m.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td>'
                     + '</tr>';
             },
-            renderAddRow: () => ''
-                + '<tr data-inline-add-row="1">'
+            renderAddRow: () => '<tr data-inline-add-row="1">'
                 + '<td>'
                 + '<form id="add-moment-form" class="inline-add-form">'
                 + '<input id="add-moment-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Moment Statement..." aria-label="New moment statement">'
@@ -213,9 +212,9 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
             const tr = document.createElement('tr');
             tr.dataset.momentId = String(m.sequenceNumber);
 
-            const tdStmt = document.createElement('td');
-            tdStmt.textContent = m.statement;
-            tr.append(tdStmt);
+            const tdStatement = document.createElement('td');
+            tdStatement.textContent = m.statement;
+            tr.append(tdStatement);
 
             const tdType = document.createElement('td');
             const typeSel = document.createElement('select');

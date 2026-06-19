@@ -158,8 +158,7 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
                     + '<td><a href="/' + owner + '/' + project + '/flows/' + f.sequenceNumber + '" flow-id="' + f.id + '" flow-seq="' + f.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td>'
                     + '</tr>';
             },
-            renderAddRow: () => ''
-                + '<tr data-inline-add-row="1">'
+            renderAddRow: () => '<tr data-inline-add-row="1">'
                 + '<td>'
                 + '<form id="add-flow-form" class="inline-add-form">'
                 + '<input id="add-flow-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Flow Statement..." aria-label="New flow statement">'
@@ -211,9 +210,9 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
         const fTbody = document.createElement('tbody');
         for (const f of flows) {
             const tr = document.createElement('tr');
-            const tdStmt = document.createElement('td');
-            tdStmt.textContent = f.statement;
-            tr.append(tdStmt);
+            const tdStatement = document.createElement('td');
+            tdStatement.textContent = f.statement;
+            tr.append(tdStatement);
 
             const tdActions = document.createElement('td');
             const viewLink = document.createElement('a');

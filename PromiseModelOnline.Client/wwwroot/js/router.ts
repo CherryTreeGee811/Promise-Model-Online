@@ -147,7 +147,7 @@ async function initServiceWorker(): Promise<void> {
 /**
  *
  */
-function initApplication(): void {
+function initApp(): void {
   void initServiceWorker();
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -190,7 +190,7 @@ function initApplication(): void {
 }
 
 /* eslint-disable-next-line unicorn/no-top-level-side-effects */
-initApplication();
+initApp();
 
 /**
  * Navigate to a new path, updating the URL and rendering the page.
@@ -380,11 +380,13 @@ function isRouteBlocked(route: { guard?: () => Record<string, unknown> }, navCon
  */
 function hasMatchingStaticRoute(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): boolean {
     for (const route of ROUTES) {
-        if (route.test(path)) {
-            if (isRouteBlocked(route, navContentDiv, contentDiv)) return true;
-            void route.handler(navContentDiv, contentDiv);
-            return true;
+        if (!route.test(path)) {
+        	continue;
         }
+
+        if (isRouteBlocked(route, navContentDiv, contentDiv)) return true;
+        void route.handler(navContentDiv, contentDiv);
+        return true;
     }
     return false;
 }

@@ -1,20 +1,9 @@
 
-const promiseProjectCache = new Map<number, number>();
-
 interface OwnerProject {
     owner: string | undefined;
     project: string | undefined;
 }
 
-/**
- * Parse a raw value into a project ID number.
- * @param {unknown} value - The value to parse.
- * @returns {number } The parsed project ID, or null if invalid.
- */
-function toProjectId(value: unknown): number | undefined {
-    const parsed = Math.trunc(Number(value ?? ''));
-    return Number.isNaN(parsed) ? undefined : parsed;
-}
 
 
 /**

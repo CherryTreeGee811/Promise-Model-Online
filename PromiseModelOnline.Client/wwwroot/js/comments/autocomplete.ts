@@ -114,9 +114,9 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
   function positionDropdown() {
     const textareaRect = textarea.getBoundingClientRect();
     const computed = getComputedStyle(textarea);
-    const borderTop = parseFloat(computed.borderTopWidth) || 0;
-    const borderLeft = parseFloat(computed.borderLeftWidth) || 0;
-    const lineHeight = parseFloat(computed.lineHeight) || (parseFloat(computed.fontSize) * 1.2) || 20;
+    const borderTop = Number.parseFloat(computed.borderTopWidth) || 0;
+    const borderLeft = Number.parseFloat(computed.borderLeftWidth) || 0;
+    const lineHeight = Number.parseFloat(computed.lineHeight) || (Number.parseFloat(computed.fontSize) * 1.2) || 20;
 
     const charRect = getCaretRect(state.triggerStart);
 

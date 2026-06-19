@@ -111,8 +111,7 @@ async function loadEpicJourneys(owner: string, project: string, epicId: string, 
                     + '<td><a href="/' + owner + '/' + project + '/journeys/' + index.sequenceNumber + '" journey-id="' + index.id + '" journey-seq="' + index.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td>'
                     + '</tr>';
             },
-            renderAddRow: () => ''
-                + '<tr data-inline-add-row="1">'
+            renderAddRow: () => '<tr data-inline-add-row="1">'
                 + '<td>'
                 + '<form id="add-journey-form" class="inline-add-form">'
                 + '<input id="add-journey-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Journey Statement..." aria-label="New journey statement">'
@@ -164,9 +163,9 @@ async function loadEpicJourneys(owner: string, project: string, epicId: string, 
         const indexTbody = document.createElement('tbody');
         for (const index of journeys) {
             const tr = document.createElement('tr');
-            const tdStmt = document.createElement('td');
-            tdStmt.textContent = index.statement;
-            tr.append(tdStmt);
+            const tdStatement = document.createElement('td');
+            tdStatement.textContent = index.statement;
+            tr.append(tdStatement);
 
             const tdActions = document.createElement('td');
             const viewLink = document.createElement('a');
