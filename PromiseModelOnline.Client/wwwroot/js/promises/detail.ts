@@ -42,7 +42,7 @@ function gatePromiseDetailControls(permission: { permission?: string } | null): 
     }
 }
 
-function setupEpicFormHandler(owner: string, project: string, promiseId: string, promise: any, epics: Record<string, unknown>[], tbody: HTMLTableSectionElement | null): void {
+function setupEpicFormHandler(owner: string, project: string, promiseId: string, promise: any, epics: Record<string, unknown>[], tbody: HTMLElement | null): void {
     const form = document.querySelector('#add-epic-form') as HTMLFormElement | null;
     const statementInput = document.querySelector('#add-epic-statement') as HTMLInputElement | null;
     const message = document.querySelector('#add-epic-msg') as HTMLElement | null;

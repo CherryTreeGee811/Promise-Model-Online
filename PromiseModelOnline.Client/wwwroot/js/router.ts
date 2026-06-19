@@ -283,7 +283,9 @@ export function isDetailRoute(
         await loadTemplate(templateName, contentDiv);
         loadFunction(segments[1], navContentDiv, contentDiv);
       } catch {
-        loadTemplateWithError(contentDiv, label)().catch(() => {});
+        try {
+          await loadTemplateWithError(contentDiv, label)();
+        } catch {}
       }
     })();
     return true;
@@ -334,6 +336,59 @@ export function loadTemplateWithError(contentDiv: HTMLElement, label: string): (
   };
 }
 
+function showErrorPage(contentDiv: HTMLElement, message: string): void {
+    contentDiv.replaceChildren();
+    const h1 = document.createElement('h1');
+    h1.textContent = message;
+    contentDiv.append(h1);
+    setPageTitle(location.pathname);
+    announceAndFocus();
+}
+
+function isRouteBlocked(route: { guard?: () => Record<string, unknown> }, navContentDiv: HTMLElement, contentDiv: HTMLElement): boolean {
+    if (!route.guard) return false;
+    const result = route.guard();
+    if (result.allowed === false) {
+        if (result.redirect) {
+            void navigate(result.redirect as string, navContentDiv, contentDiv);
+        }
+        return true;
+    }
+    return false;
+}
+
+function hasMatchingStaticRoute(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): boolean {
+    for (const route of ROUTES) {
+        if (route.test(path)) {
+            if (isRouteBlocked(route, navContentDiv, contentDiv)) return true;
+            void route.handler(navContentDiv, contentDiv);
+            return true;
+        }
+    }
+    return false;
+}
+
+async function handleProjectScopedPath(path: string, segments: string[], navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const owner = segments[0];
+    const project = segments[1];
+    const subPath = '/' + segments.slice(2).join('/') + (path.includes('?') ? path.slice(path.indexOf('?')) : '');
+
+    if (['account', 'moments', 'knowledge-base'].includes(owner)) {
+        try {
+            await loadTemplate('404.html', contentDiv);
+        } catch {
+            showErrorPage(contentDiv, 'Page not found');
+        }
+    } else {
+        try {
+            const { handleProjectScopedRoutes } = await loadProjectRoutes();
+            handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
+        } catch {
+            showErrorPage(contentDiv, 'Failed to load project. Please try again.');
+        }
+    }
+}
+
 /**
  * Main route handler matching URL paths to pages.
  * @param {HTMLElement} navContentDiv - The navigation container.
@@ -349,69 +404,16 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
 
     void loadNavTemplate(navContentDiv, contentDiv);
 
-    for (const route of ROUTES) {
-      if (route.test(path)) {
-        if (route.guard) {
-          const result = route.guard();
-          if ('allowed' in result && !result.allowed) {
-            if (result.redirect) {
-              void navigate(result.redirect, navContentDiv, contentDiv);
-            }
-            return;
-          }
-        }
-        void route.handler(navContentDiv, contentDiv);
-        return;
-      }
-    }
+    if (hasMatchingStaticRoute(path, navContentDiv, contentDiv)) return;
 
-    // Default: project-scoped routes or 404
     const segments = path.split('/').filter(Boolean);
     if (segments.length >= 2) {
-        const owner = segments[0];
-        const project = segments[1];
-        const subPath = '/' + segments.slice(2).join('/') + (path.includes('?') ? path.slice(path.indexOf('?')) : '');
-
-        if (['account', 'moments', 'knowledge-base'].includes(owner)) {
-            try {
-                await loadTemplate('404.html', contentDiv);
-            } catch {
-                 
-                contentDiv.replaceChildren();
-                const h1 = document.createElement('h1');
-                h1.textContent = 'Page not found';
-                contentDiv.append(h1);
-                setPageTitle(path);
-                announceAndFocus();
-            }
-        } else {
-            try {
-                const { handleProjectScopedRoutes } = await loadProjectRoutes();
-                handleProjectScopedRoutes(owner, project, subPath, navContentDiv, contentDiv);
-            } catch {
-                 
-                contentDiv.replaceChildren();
-                const h1_ = document.createElement('h1');
-                h1_.textContent = 'Something went wrong';
-                contentDiv.append(h1_);
-                const p_ = document.createElement('p');
-                p_.textContent = 'Failed to load project. Please try again.';
-                contentDiv.append(p_);
-                setPageTitle(path);
-                announceAndFocus();
-            }
-        }
+        await handleProjectScopedPath(path, segments, navContentDiv, contentDiv);
     } else {
         try {
             await loadTemplate('404.html', contentDiv);
         } catch {
-             
-            contentDiv.replaceChildren();
-            const h1_2 = document.createElement('h1');
-            h1_2.textContent = 'Page not found';
-            contentDiv.append(h1_2);
-            setPageTitle(path);
-            announceAndFocus();
+            showErrorPage(contentDiv, 'Page not found');
         }
     }
 }

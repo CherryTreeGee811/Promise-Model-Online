@@ -15,6 +15,143 @@ import { loadProjectList } from './list.ts';
 import { loadProjectSettingsPage } from './settings.ts';
 import { loadSharePage } from './share.ts';
 
+async function handleStridesRoute(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const perm = await fetchMyPermission(owner, project);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        void loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
+    } catch {
+        // fetchMyPermission failure falls through
+    }
+}
+
+async function handleGraphRoute(owner: string, project: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('projects/graph.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        void loadGraphPage(owner, project, contentDiv, perm);
+    } catch {
+        void loadTemplateWithError(contentDiv, 'graph page')();
+    }
+}
+
+async function handleSettingsRoute(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('projects/settings.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, perm);
+    } catch {
+        void loadTemplateWithError(contentDiv, 'project settings')();
+    }
+}
+
+async function handleShareRoute(owner: string, project: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('projects/share.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        loadSharePage(owner, project, contentDiv, perm);
+    } catch {
+        void loadTemplateWithError(contentDiv, 'share page')();
+    }
+}
+
+async function handleHistoryRoute(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        await loadTemplate('projects/history.html', contentDiv);
+        loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, project);
+    } catch {
+        void loadTemplateWithError(contentDiv, 'project activity')();
+    }
+}
+
+async function handleIterationsRoute(owner: string, project: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('iterations/list.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        const module = await import('../iterations/list.ts');
+        void module.loadIterationHistory(owner, project, { permission: perm.permission ?? '' });
+    } catch {
+        void loadTemplateWithError(contentDiv, 'iterations')();
+    }
+}
+
+async function handlePromiseDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('promises/detail.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        void loadPromiseDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+    } catch {
+        void loadTemplateWithError(contentDiv, 'promise')();
+    }
+}
+
+async function handleEpicDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('epics/detail.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        void loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
+    } catch {
+        void loadTemplateWithError(contentDiv, 'epic')();
+    }
+}
+
+async function handleJourneyDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('journeys/detail.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        void loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
+    } catch {
+        void loadTemplateWithError(contentDiv, 'journey')();
+    }
+}
+
+async function handleFlowDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('flows/detail.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        void loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
+    } catch {
+        void loadTemplateWithError(contentDiv, 'flow')();
+    }
+}
+
+async function handleMomentDetailRoute(owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    try {
+        const [, perm] = await Promise.all([
+            loadTemplate('moments/detail.html', contentDiv),
+            fetchMyPermission(owner, project),
+        ]);
+        projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
+        void loadMomentDetail(owner, project, seq, navContentDiv, contentDiv, perm);
+    } catch {
+        void loadTemplateWithError(contentDiv, 'moment')();
+    }
+}
+
 /**
  * Handle legacy project routes (non-slug-based) like /projects and /projects/add.
  * @param {string} path - The URL path to match.
@@ -64,159 +201,43 @@ export async function handleProjectScopedRoutes(owner: string, project: string, 
     const segments = normalizedSub ? normalizedSub.split('/') : [];
 
     if (segments.length === 0) {
-        try {
-            const perm = await fetchMyPermission(owner, project);
-            projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-            void loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
-        } catch {
-            // fetchMyPermission failure falls through
-        }
+        await handleStridesRoute(owner, project, navContentDiv, contentDiv);
         return;
     }
 
     const main = segments[0];
     const seq = segments[1];
 
-    switch (true) {
-        case main === 'strides': {
-            try {
-                const perm = await fetchMyPermission(owner, project);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadStridesPage(owner, project, navContentDiv, contentDiv, perm);
-            } catch {
-                // fetchMyPermission failure falls through
-            }
-            break;
-        }
-        case main === 'graph': {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('projects/graph.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadGraphPage(owner, project, contentDiv, perm);
-            } catch {
-                void loadTemplateWithError(contentDiv, 'graph page')();
-            }
-            break;
-        }
-        case main === 'settings': {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('projects/settings.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadProjectSettingsPage(navContentDiv, contentDiv, owner, project, perm);
-            } catch {
-                void loadTemplateWithError(contentDiv, 'project settings')();
-            }
-            break;
-        }
-        case main === 'share': {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('projects/share.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                loadSharePage(owner, project, contentDiv, perm);
-            } catch {
-                void loadTemplateWithError(contentDiv, 'share page')();
-            }
-            break;
-        }
-        case main === 'history': {
-            try {
-                await loadTemplate('projects/history.html', contentDiv);
-                loadProjectAuditHistoryPage(navContentDiv, contentDiv, owner, project);
-            } catch {
-                void loadTemplateWithError(contentDiv, 'project activity')();
-            }
-            break;
-        }
-        case main === 'iterations': {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('iterations/list.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                const module = await import('../iterations/list.ts');
-                void module.loadIterationHistory(owner, project, { permission: perm.permission ?? '' });
-            } catch {
-                void loadTemplateWithError(contentDiv, 'iterations')();
-            }
-            break;
-        }
-        case main === 'promises' && !!seq: {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('promises/detail.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadPromiseDetail(owner, project, seq, navContentDiv, contentDiv, perm);
-            } catch {
-                void loadTemplateWithError(contentDiv, 'promise')();
-            }
-            break;
-        }
-        case main === 'epics' && !!seq: {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('epics/detail.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadEpicDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
-            } catch {
-                void loadTemplateWithError(contentDiv, 'epic')();
-            }
-            break;
-        }
-        case main === 'journeys' && !!seq: {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('journeys/detail.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadJourneyDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
-            } catch {
-                void loadTemplateWithError(contentDiv, 'journey')();
-            }
-            break;
-        }
-        case main === 'flows' && !!seq: {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('flows/detail.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadFlowDetail(owner, project, seq, navContentDiv, contentDiv, { permission: perm.permission ?? '' });
-            } catch {
-                void loadTemplateWithError(contentDiv, 'flow')();
-            }
-            break;
-        }
-        case main === 'moments' && !!seq: {
-            try {
-                const [, perm] = await Promise.all([
-                    loadTemplate('moments/detail.html', contentDiv),
-                    fetchMyPermission(owner, project),
-                ]);
-                projectStore.set({ permission: perm.permission, isOwner: perm.isOwner });
-                void loadMomentDetail(owner, project, seq, navContentDiv, contentDiv, perm);
-            } catch {
-                void loadTemplateWithError(contentDiv, 'moment')();
-            }
-            break;
-        }
-        default: {
-            showNotFound(contentDiv);
+    const directRoutes: Record<string, (owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement) => Promise<void>> = {
+        strides: handleStridesRoute,
+        graph: handleGraphRoute,
+        settings: handleSettingsRoute,
+        share: handleShareRoute,
+        history: handleHistoryRoute,
+        iterations: handleIterationsRoute,
+    };
+
+    const handler = directRoutes[main];
+    if (handler) {
+        await handler(owner, project, navContentDiv, contentDiv);
+        return;
+    }
+
+    if (seq) {
+        const detailRoutes: Record<string, (owner: string, project: string, seq: string, navContentDiv: HTMLElement, contentDiv: HTMLElement) => Promise<void>> = {
+            promises: handlePromiseDetailRoute,
+            epics: handleEpicDetailRoute,
+            journeys: handleJourneyDetailRoute,
+            flows: handleFlowDetailRoute,
+            moments: handleMomentDetailRoute,
+        };
+
+        const detailHandler = detailRoutes[main];
+        if (detailHandler) {
+            await detailHandler(owner, project, seq, navContentDiv, contentDiv);
+            return;
         }
     }
+
+    showNotFound(contentDiv);
 }

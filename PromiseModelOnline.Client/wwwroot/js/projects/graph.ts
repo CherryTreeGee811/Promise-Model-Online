@@ -426,6 +426,70 @@ function buildPromiseNode(promise: Record<string, unknown>): GraphNode {
 }
 
 /**
+ * Check whether a node's search text includes a search string.
+ * @param {object} node - The graph node to test.
+ * @param {string} search - The search string.
+ * @returns {boolean} True if the node matches the search (or search is empty).
+ */
+function isNodeSearchMatching(node: GraphNode, search: string): boolean {
+    if (!search) return true;
+    const searchText = node._searchText ?? getNodeSearchText(node) as string;
+    return searchText.includes(search);
+}
+
+/**
+ * Check whether a node matches the status filter.
+ * @param {object} node - The graph node to test.
+ * @param {string} status - The status filter value.
+ * @returns {boolean} True if the node matches the status filter.
+ */
+function isNodeStatusMatching(node: GraphNode, status: string): boolean {
+    if (status === 'all') return true;
+    const statusBucket = node._statusBucket ?? getStatusBucket(node.payload?.statusColor as string) as string;
+    return statusBucket === status;
+}
+
+/**
+ * Check whether a node matches the assignment filter.
+ * @param {object} node - The graph node to test.
+ * @param {string} assignment - The assignment filter value.
+ * @returns {boolean} True if the node matches the assignment filter.
+ */
+function isNodeAssignmentMatching(node: GraphNode, assignment: string): boolean {
+    if (assignment !== ASSIGNED_TO_ME) return true;
+    if (node.nodeType !== 'moment') return false;
+    const currentUserId = getUserId();
+    if (currentUserId === null) return false;
+    return node.payload?.ownerId === currentUserId;
+}
+
+/**
+ * Check whether a node matches the effort filter.
+ * @param {object} node - The graph node to test.
+ * @param {string} effort - The effort filter value.
+ * @returns {boolean} True if the node matches the effort filter.
+ */
+function isNodeEffortMatching(node: GraphNode, effort: string): boolean {
+    if (effort === 'all') return true;
+    if (node.nodeType !== 'moment') return false;
+    const effortBucket = node._effortBucket ?? getMomentEffortBucket(node.payload?.effortEstimate) as string;
+    return effort === effortBucket;
+}
+
+/**
+ * Check whether a node matches the stride filter.
+ * @param {object} node - The graph node to test.
+ * @param {string} stride - The stride filter value.
+ * @returns {boolean} True if the node matches the stride filter.
+ */
+function isNodeStrideMatching(node: GraphNode, stride: string): boolean {
+    if (stride === 'all') return true;
+    if (node.nodeType !== 'moment') return false;
+    const strideBucket = node._strideBucket ?? getMomentStrideBucket(node.payload) as string;
+    return stride === strideBucket;
+}
+
+/**
  * Check whether a node matches the current set of active filters.
  * @param {object} node - The graph node to test.
  * @param {object} filters - The active filter criteria.
@@ -433,39 +497,12 @@ function buildPromiseNode(promise: Record<string, unknown>): GraphNode {
  */
 function isNodeMatching(node: GraphNode, filters: GraphFilters): boolean {
     if (node.nodeType === 'root') return false;
-
     if (!filters.types.has(node.nodeType)) return false;
-
-    if (filters.search) {
-        const searchText = node._searchText ?? getNodeSearchText(node) as string;
-        if (!searchText.includes(filters.search)) return false;
-    }
-
-    if (filters.status !== 'all') {
-        const statusBucket = node._statusBucket ?? getStatusBucket(node.payload?.statusColor as string) as string;
-        if (statusBucket !== filters.status) return false;
-    }
-
-    if (filters.assignment === ASSIGNED_TO_ME) {
-        if (node.nodeType !== 'moment') return false;
-
-        const currentUserId = getUserId();
-        if (currentUserId === null) return false;
-        if (node.payload?.ownerId !== currentUserId) return false;
-    }
-
-    if (filters.effort !== 'all') {
-        if (node.nodeType !== 'moment') return false;
-        const effortBucket = node._effortBucket ?? getMomentEffortBucket(node.payload?.effortEstimate) as string;
-        if (filters.effort !== effortBucket) return false;
-    }
-
-    if (filters.stride !== 'all') {
-        if (node.nodeType !== 'moment') return false;
-        const strideBucket = node._strideBucket ?? getMomentStrideBucket(node.payload) as string;
-        if (filters.stride !== strideBucket) return false;
-    }
-
+    if (!isNodeSearchMatching(node, filters.search)) return false;
+    if (!isNodeStatusMatching(node, filters.status)) return false;
+    if (!isNodeAssignmentMatching(node, filters.assignment)) return false;
+    if (!isNodeEffortMatching(node, filters.effort)) return false;
+    if (!isNodeStrideMatching(node, filters.stride)) return false;
     return true;
 }
 

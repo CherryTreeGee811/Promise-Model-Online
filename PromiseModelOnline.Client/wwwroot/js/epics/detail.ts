@@ -141,7 +141,7 @@ async function loadParentPromise(owner: string, project: string, epic: Epic, nav
     }
 }
 
-function setupJourneyFormHandler(owner: string, project: string, epicId: string, epic: any, journeys: JourneyItem[], tbody: HTMLTableSectionElement | null): void {
+function setupJourneyFormHandler(owner: string, project: string, epicId: string, epic: any, journeys: JourneyItem[], tbody: HTMLElement | null): void {
     const form = document.querySelector('#add-journey-form') as HTMLFormElement;
     const statementInput = document.querySelector('#add-journey-statement') as HTMLInputElement;
     const message = document.querySelector('#add-journey-msg') as HTMLElement;

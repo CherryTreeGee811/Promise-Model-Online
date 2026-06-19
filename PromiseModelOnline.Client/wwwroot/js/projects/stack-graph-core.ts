@@ -993,12 +993,12 @@ function appendGraphNodes(d3: any, layer: Record<string, unknown>, renderable: R
  * @returns {{node: SVGElement | null, zoom: object } | undefined} The SVG node and zoom behavior (if enabled).
  */
 
-function computeGraphLayout(compact: boolean, viewportWidth: number, viewportHeight: number, margin: any, maxDepth: number, treeData: any, uniformNodeScale: any) {
-    let sgx = compact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
-    let sgy = compact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
-    let fg = compact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
-    let cs = uniformNodeScale ?? 1;
-    if (compact) {
+function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportHeight: number, margin: any, maxDepth: number, treeData: any, uniformNodeScale = 1) {
+    let sgx = isCompact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
+    let sgy = isCompact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
+    let fg = isCompact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
+    let cs = uniformNodeScale;
+    if (isCompact) {
         const vc = countRenderableNodes(treeData);
         const p = getCompactLayoutProfile(vc, viewportWidth, viewportHeight);
         cs = p.nodeScale ?? cs; sgy = p.minGapY ?? sgy; fg = p.forehead ?? fg;
@@ -1006,6 +1006,313 @@ function computeGraphLayout(compact: boolean, viewportWidth: number, viewportHei
         if (maxDepth > 0 && viewportHeight > 0) sgy = Math.max(Math.floor(Math.max(viewportHeight - margin.top - margin.bottom - CARD_HEIGHT * cs - fg, CARD_HEIGHT) / Math.max(1, maxDepth)), COMPACT_MIN_TIER_GAP_Y);
     }
     return { stepGapX: sgx, stepGapY: sgy, foreheadGap: fg, cardScale: cs };
+}
+
+function resolveAnimationOptions(contentDiv: HTMLElement, shouldAnimate: boolean): { existingSvgElement: SVGElement | undefined; isAnimating: boolean } {
+    const existingSvgElement = shouldAnimate ? contentDiv.querySelector('svg') as SVGElement | undefined : undefined;
+    const isPrefersReducedMotion = typeof window !== 'undefined' && globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const isAnimating = shouldAnimate && !isPrefersReducedMotion;
+    return { existingSvgElement, isAnimating };
+}
+
+function computeGraphDimensions(
+    d3: any,
+    renderable: Record<string, unknown>[],
+    cardScale: number,
+    margin: { top: number; right: number; bottom: number; left: number },
+    viewportWidth: number,
+    viewportHeight: number,
+    foreheadGap: number,
+    isCompact: boolean,
+    minGraphWidth: number | null,
+    minGraphHeight: number | null,
+): { minX: number; maxX: number; minY: number; maxY: number; graphWidth: number; graphHeight: number } {
+    const scaledCardWidth = CARD_WIDTH * cardScale;
+    const scaledCardHeight = CARD_HEIGHT * cardScale;
+    const minX = (d3.min as (array: Record<string, unknown>[], accessor: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.x as number) - (scaledCardHeight / 2)) ?? -(scaledCardHeight / 2);
+    const maxX = (d3.max as (array: Record<string, unknown>[], accessor: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.x as number) + (scaledCardHeight / 2)) ?? (scaledCardHeight / 2);
+    const minY = (d3.min as (array: Record<string, unknown>[], accessor: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.y as number) - (scaledCardWidth / 2)) ?? -(scaledCardWidth / 2);
+    const maxY = (d3.max as (array: Record<string, unknown>[], accessor: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.y as number) + (scaledCardWidth / 2)) ?? (scaledCardWidth / 2);
+    const defaultMinWidth = isCompact ? viewportWidth || 400 : 960;
+    const defaultMinHeight = isCompact ? viewportHeight || 180 : 520;
+    const graphWidth = Math.max((maxY - minY) + margin.left + margin.right, viewportWidth, (minGraphWidth as number) ?? defaultMinWidth);
+    const graphHeight = Math.max((maxX - minX) + margin.top + margin.bottom + foreheadGap, viewportHeight, (minGraphHeight as number) ?? defaultMinHeight);
+    return { minX, maxX, minY, maxY, graphWidth, graphHeight };
+}
+
+function setupSvgContainer(
+    d3: any,
+    contentDiv: HTMLElement,
+    existingSvgElement: SVGElement | undefined,
+    graphWidth: number,
+    graphHeight: number,
+    isCompact: boolean,
+    viewportHeight: number,
+    isZoomEnabled: boolean,
+    ariaLabel: string,
+    cardClipPathId: string,
+): Record<string, unknown> {
+    let svg: Record<string, unknown>;
+    if (existingSvgElement) {
+        svg = (d3.select as (element: Element) => Record<string, unknown>)(existingSvgElement);
+        (svg.attr as (attribute: string, value: unknown) => Record<string, unknown>)('viewBox', [0, 0, graphWidth, graphHeight])
+           .attr('height', isCompact ? '100%' : Math.max(graphHeight, viewportHeight || 0));
+        (svg.select as (sel: string) => Record<string, unknown>)('defs').remove();
+    } else {
+        contentDiv.replaceChildren();
+        svg = (d3.create as (tag: string) => Record<string, unknown>)('svg')
+            .attr('viewBox', [0, 0, graphWidth, graphHeight])
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .attr('width', '100%')
+            .attr('height', isCompact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
+            .attr('role', isZoomEnabled ? 'tree' : undefined)
+            .attr('aria-label', ariaLabel);
+    }
+
+    (svg.append as (tag: string) => Record<string, unknown>)('defs')
+        .append('clipPath')
+        .attr('id', cardClipPathId)
+        .append('rect')
+        .attr('x', -CARD_WIDTH / 2)
+        .attr('y', -CARD_HEIGHT / 2)
+        .attr('width', CARD_WIDTH)
+        .attr('height', CARD_HEIGHT)
+        .attr('rx', CARD_RADIUS)
+        .attr('ry', CARD_RADIUS);
+
+    return svg;
+}
+
+function findFocusedHierarchyNode(
+    root: Record<string, unknown>,
+    focusNodeData: Record<string, unknown> | undefined,
+    resolvedFocusNodeId: string | undefined,
+): Record<string, unknown> | undefined {
+    if (focusNodeData) {
+        const byIdentity = (root.descendants as () => Record<string, unknown>[])().find(node => node.data === focusNodeData);
+        if (byIdentity) return byIdentity;
+    }
+
+    if (!resolvedFocusNodeId) return;
+    return (root.descendants as () => Record<string, unknown>[])().find(node => (node.data as Record<string, unknown> | undefined)?.id === resolvedFocusNodeId);
+}
+
+function computeFitScale(viewportWidth: number, viewportHeight: number, graphWidth: number, graphHeight: number): number {
+    return Math.min(
+        viewportWidth > 0 ? viewportWidth / graphWidth : 1,
+        viewportHeight > 0 ? viewportHeight / graphHeight : 1,
+        1,
+    );
+}
+
+function computeInitialTransforms(
+    d3: any,
+    focusedHierarchyNode: Record<string, unknown> | undefined,
+    viewportWidth: number,
+    viewportHeight: number,
+    contentOffsetX: number,
+    contentOffsetY: number,
+    cardScale: number,
+    graphWidth: number,
+    graphHeight: number,
+    initialScale: number,
+    existingSvgElement: SVGElement | undefined,
+    svg: Record<string, unknown>,
+    restoreTransform: Record<string, unknown> | undefined,
+): { focusTransform: Record<string, unknown> | undefined; fitTransform: Record<string, unknown>; initialTransform: Record<string, unknown>; mode: string } {
+    const focusTransform = focusedHierarchyNode
+        ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode as unknown as { x: number; y: number }, contentOffsetX, contentOffsetY, cardScale)
+        : undefined;
+    const fitTransform = ((d3.zoomIdentity as Record<string, unknown>).translate as (x: number, y: number) => Record<string, unknown>)(
+            viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
+            viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0,
+        )
+        .scale(initialScale);
+    const initialTransform = existingSvgElement
+        ? (d3.zoomTransform as (node: Element) => Record<string, unknown>)(svg.node() as Element)
+        : (focusTransform ?? restoreTransform ?? fitTransform);
+
+    let mode: string;
+    if (existingSvgElement) {
+        mode = 'preserve';
+    } else if (focusTransform) {
+        mode = 'focus';
+    } else if (restoreTransform) {
+        mode = 'restore';
+    } else {
+        mode = 'fit';
+    }
+
+    return { focusTransform, fitTransform, initialTransform, mode };
+}
+
+function scheduleFocusRefinement(
+    d3: any,
+    svg: Record<string, unknown>,
+    zoom: Record<string, unknown>,
+    focusedHierarchyNode: Record<string, unknown> | undefined,
+    viewportElement: HTMLElement,
+    contentOffsetX: number,
+    contentOffsetY: number,
+    cardScale: number,
+    existingSvgElement: SVGElement | undefined,
+): void {
+    if (!focusedHierarchyNode || existingSvgElement) return;
+
+    requestAnimationFrame(() => {
+        const measuredViewport = getInnerViewportSize(viewportElement);
+        const measuredWidth = Number(measuredViewport.width ?? 0);
+        const measuredHeight = Number(measuredViewport.height ?? 0);
+
+        if (measuredWidth <= 1 || measuredHeight <= 1) {
+            return;
+        }
+
+        const refinedTransform = createFocusTransform(
+            d3,
+            Math.max(measuredWidth, 1),
+            Math.max(measuredHeight, 1),
+            focusedHierarchyNode as unknown as { x: number; y: number },
+            contentOffsetX,
+            contentOffsetY,
+            cardScale,
+        );
+
+        if (!refinedTransform) return;
+
+        (svg.call as (behavior: Record<string, unknown>) => void)(zoom.transform as Record<string, unknown>, refinedTransform);
+    });
+}
+
+function renderGraphWithoutZoom(
+    d3: any,
+    graphLayer: Record<string, unknown>,
+    renderable: Record<string, unknown>[],
+    viewportWidth: number,
+    viewportHeight: number,
+    graphWidth: number,
+    graphHeight: number,
+    contentOffsetX: number,
+    contentOffsetY: number,
+    isCompact: boolean,
+    cardScale: number,
+): Record<string, unknown> {
+    const initialScale = Math.min(
+        viewportWidth > 0 ? viewportWidth / graphWidth : 1,
+        viewportHeight > 0 ? viewportHeight / graphHeight : 1,
+        1,
+    );
+
+    let fitTransform = ((d3.zoomIdentity as Record<string, unknown>).translate as (x: number, y: number) => Record<string, unknown>)(
+            viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
+            viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0,
+        )
+        .scale(initialScale);
+
+    if (isCompact) {
+        const ordered = renderable.toSorted((a, b) => ((a.y as number) || 0) - ((b.y as number) || 0));
+        if (ordered.length > 0) {
+            const mid = Math.floor((ordered.length - 1) / 2);
+            const anchors = ordered.length % 2 === 1 ? [ordered[mid]] : [ordered[mid], ordered[mid + 1]];
+
+            const anchorPos = { x: 0, y: 0 };
+            for (const anchor of anchors) {
+                const pos = getRenderedNodePosition(anchor as unknown as { x: number; y: number }, contentOffsetX, contentOffsetY);
+                anchorPos.x += pos.x;
+                anchorPos.y += pos.y;
+            }
+            anchorPos.x /= anchors.length;
+            anchorPos.y /= anchors.length;
+
+            const profile = getCompactLayoutProfile(ordered.length, viewportWidth, viewportHeight) || {};
+            anchorPos.x += profile.anchorOffsetX ?? 0;
+            anchorPos.y += profile.anchorOffsetY ?? 0;
+
+            fitTransform = ((d3.zoomIdentity as Record<string, unknown>).translate as (x: number, y: number) => Record<string, unknown>)(viewportWidth / 2, viewportHeight / 2)
+                .scale(cardScale)
+                .translate(-anchorPos.x, -anchorPos.y);
+        }
+    }
+
+    return fitTransform;
+}
+
+function logFocusNodeStatus(
+    focusedHierarchyNode: Record<string, unknown> | undefined,
+    resolvedFocusNodeId: string | undefined,
+    focusNodeData: Record<string, unknown> | undefined,
+    renderableCount: number,
+): void {
+    if (focusedHierarchyNode) {
+        logGraphFocus('focus-node-resolved', {
+            resolvedFocusNodeId,
+            hierarchyX: focusedHierarchyNode.x,
+            hierarchyY: focusedHierarchyNode.y,
+            dataId: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.id,
+            nodeType: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.nodeType,
+            label: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.label,
+        });
+    } else {
+        logGraphFocus('focus-node-missing', {
+            resolvedFocusNodeId,
+            hasFocusNodeData: Boolean(focusNodeData),
+            renderableCount,
+        });
+    }
+}
+
+function logPostRenderFocusDebug(
+    contentDiv: HTMLElement,
+    svg: Record<string, unknown>,
+    graphLayer: Record<string, unknown>,
+    resolvedFocusNodeId: string | undefined,
+    viewportElement: HTMLElement,
+): void {
+    if (!isGraphFocusDebugEnabled()) return;
+
+    const focusElement = contentDiv.querySelector(':scope .graph-node.is-focused .graph-card');
+    const viewportRect = (viewportElement as HTMLElement)?.getBoundingClientRect?.();
+    const focusRect = (focusElement as Element | null)?.getBoundingClientRect?.();
+    const zoomTransform = (svg.node() as Record<string, unknown> | null)?.__zoom;
+
+    logGraphFocus('post-render-transform-state', {
+        resolvedFocusNodeId,
+        layerTransform: (graphLayer.attr as (attribute: string) => string | null)('transform'),
+        svgZoomTransform: zoomTransform ? {
+            x: (zoomTransform as Record<string, unknown>).x,
+            y: (zoomTransform as Record<string, unknown>).y,
+            k: (zoomTransform as Record<string, unknown>).k,
+        } : undefined,
+        svgViewBox: (svg.attr as (attribute: string) => string | null)('viewBox'),
+        svgSize: {
+            width: (svg.attr as (attribute: string) => string | null)('width'),
+            height: (svg.attr as (attribute: string) => string | null)('height'),
+        },
+    });
+
+    logGraphFocus('post-render-focus-rect', {
+        resolvedFocusNodeId,
+        viewportRect: viewportRect ? {
+            x: viewportRect.x,
+            y: viewportRect.y,
+            width: viewportRect.width,
+            height: viewportRect.height,
+            centerX: viewportRect.x + (viewportRect.width / 2),
+            centerY: viewportRect.y + (viewportRect.height / 2),
+        } : undefined,
+        focusRect: focusRect ? {
+            x: focusRect.x,
+            y: focusRect.y,
+            width: focusRect.width,
+            height: focusRect.height,
+            centerX: focusRect.x + (focusRect.width / 2),
+            centerY: focusRect.y + (focusRect.height / 2),
+        } : undefined,
+        deltaFromViewportCenter: viewportRect && focusRect ? {
+            x: (focusRect.x + (focusRect.width / 2)) - (viewportRect.x + (viewportRect.width / 2)),
+            y: (focusRect.y + (focusRect.height / 2)) - (viewportRect.y + (viewportRect.height / 2)),
+        } : undefined,
+    });
 }
 
 export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: Record<string, unknown> | null } | null {
@@ -1035,9 +1342,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
 
     if (!contentDiv) return;
 
-    const existingSvgElement = animate ? contentDiv.querySelector('svg') : undefined;
-    const isPrefersReducedMotion = typeof window !== 'undefined' && globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const resolvedAnimate = animate && !isPrefersReducedMotion;
+    const { existingSvgElement, isAnimating } = resolveAnimationOptions(contentDiv, animate);
 
     const margin = compact
         ? { top: 12, right: 20, bottom: 12, left: 20 }
@@ -1050,39 +1355,8 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
     const viewportWidth = viewportSize.width || contentDiv.clientWidth || 0;
     const viewportHeight = viewportSize.height || contentDiv.clientHeight || 0;
 
-    // Determine compact layout profile when in compact detail mode. This drives node scale
-    // and both X/Y tier gaps so small containers don't produce overlapping cards.
-    let stepGapX = compact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
-    let stepGapY = compact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
-    let foreheadGap = compact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
-
-    // Default card scale; may be overridden for compact detail pages by the profile
-    let cardScale = uniformNodeScale as number ?? 1;
-    if (compact) {
-        const visibleCount = countRenderableNodes(treeData);
-        const profile = getCompactLayoutProfile(visibleCount, viewportWidth, viewportHeight);
-        cardScale = profile.nodeScale ?? cardScale;
-        stepGapY = profile.minGapY ?? stepGapY;
-        foreheadGap = profile.forehead ?? foreheadGap;
-
-        if (maxDepth > 0 && viewportWidth > 0) {
-            const usableWidth = Math.max(
-                viewportWidth - margin.left - margin.right - (CARD_WIDTH * cardScale),
-                CARD_WIDTH,
-            );
-            stepGapX = Math.max(usableWidth / maxDepth, profile.minGapX ?? COMPACT_MIN_TIER_GAP);
-        }
-
-        // Also compress vertical spacing when the viewport height is small
-        if (maxDepth > 0 && viewportHeight > 0) {
-            const usableHeight = Math.max(
-                viewportHeight - margin.top - margin.bottom - (CARD_HEIGHT * cardScale) - foreheadGap,
-                CARD_HEIGHT,
-            );
-            // distribute usableHeight across tiers, but don't go below a small minimum
-            stepGapY = Math.max(Math.floor(usableHeight / Math.max(1, maxDepth)), COMPACT_MIN_TIER_GAP_Y);
-        }
-    }
+    const layout = computeGraphLayout(compact, viewportWidth, viewportHeight, margin, maxDepth, treeData, uniformNodeScale as number ?? 1);
+    const { stepGapX, stepGapY, foreheadGap, cardScale } = layout;
 
     const treeLayout = (d3.tree as () => Record<string, unknown>)().nodeSize([stepGapY, stepGapX]);
     (treeLayout as (root: Record<string, unknown>) => void)(root);
@@ -1100,16 +1374,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
         return (l.source as Record<string, unknown> | undefined)?.data?.nodeType !== 'root' && (l.target as Record<string, unknown> | undefined)?.data?.nodeType !== 'root';
     });
     const resolvedFocusNodeId = (focusNodeId as string) ?? (focusNodeData as Record<string, unknown> | null)?.id;
-    const scaledCardWidth = CARD_WIDTH * cardScale;
-    const scaledCardHeight = CARD_HEIGHT * cardScale;
-    const minX = (d3.min as (array: Record<string, unknown>[], isFilterMatch: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.x as number) - (scaledCardHeight / 2)) ?? -(scaledCardHeight / 2);
-    const maxX = (d3.max as (array: Record<string, unknown>[], isFilterMatch: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.x as number) + (scaledCardHeight / 2)) ?? (scaledCardHeight / 2);
-    const minY = (d3.min as (array: Record<string, unknown>[], isFilterMatch: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.y as number) - (scaledCardWidth / 2)) ?? -(scaledCardWidth / 2);
-    const maxY = (d3.max as (array: Record<string, unknown>[], isFilterMatch: (d: Record<string, unknown>) => number) => number | undefined)(renderable, (node: Record<string, unknown>) => (node.y as number) + (scaledCardWidth / 2)) ?? (scaledCardWidth / 2);
-    const defaultMinWidth = compact ? viewportWidth || 400 : 960;
-    const defaultMinHeight = compact ? viewportHeight || 180 : 520;
-    const graphWidth = Math.max((maxY - minY) + margin.left + margin.right, viewportWidth, (minGraphWidth as number) ?? defaultMinWidth);
-    const graphHeight = Math.max((maxX - minX) + margin.top + margin.bottom + foreheadGap, viewportHeight, (minGraphHeight as number) ?? defaultMinHeight);
+    const { minX, maxX, minY, maxY, graphWidth, graphHeight } = computeGraphDimensions(d3, renderable, cardScale, margin, viewportWidth, viewportHeight, foreheadGap, compact, minGraphWidth as number | null, minGraphHeight as number | null);
 
     logGraphFocus('render-start', {
         owner,
@@ -1134,33 +1399,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
     const contentOffsetY = margin.top - minX + foreheadGap;
     const cardClipPathId = `${clipPathIdPrefix as string}-${owner ?? 'stack'}-${project ?? 'stack'}`;
 
-    let svg: Record<string, unknown>;
-    if (existingSvgElement) {
-        svg = (d3.select as (element: Element) => Record<string, unknown>)(existingSvgElement);
-        (svg.attr as (attribute: string, value: unknown) => Record<string, unknown>)('viewBox', [0, 0, graphWidth, graphHeight])
-           .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0));
-        (svg.select as (sel: string) => Record<string, unknown>)('defs').remove();
-    } else {
-        contentDiv.replaceChildren();
-        svg = (d3.create as (tag: string) => Record<string, unknown>)('svg')
-            .attr('viewBox', [0, 0, graphWidth, graphHeight])
-            .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('width', '100%')
-            .attr('height', compact ? '100%' : Math.max(graphHeight, viewportHeight || 0))
-            .attr('role', enableZoom ? 'tree' : undefined)
-            .attr('aria-label', ariaLabel);
-    }
-
-    (svg.append as (tag: string) => Record<string, unknown>)('defs')
-        .append('clipPath')
-        .attr('id', cardClipPathId)
-        .append('rect')
-        .attr('x', -CARD_WIDTH / 2)
-        .attr('y', -CARD_HEIGHT / 2)
-        .attr('width', CARD_WIDTH)
-        .attr('height', CARD_HEIGHT)
-        .attr('rx', CARD_RADIUS)
-        .attr('ry', CARD_RADIUS);
+    const svg = setupSvgContainer(d3, contentDiv, existingSvgElement, graphWidth, graphHeight, compact, viewportHeight, enableZoom, ariaLabel as string, cardClipPathId);
 
     const graphLayer: Record<string, unknown> = existingSvgElement ? (svg.select as (sel: string) => Record<string, unknown>)('g') : (svg.append as (tag: string) => Record<string, unknown>)('g');
     let focusedHierarchyNode: Record<string, unknown> | undefined;
@@ -1175,7 +1414,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
         enableZoom,
         enableLinks: (enableLinks as boolean | undefined) ?? enableZoom,
         uniformNodeScale: compact ? cardScale : undefined,
-        animate: resolvedAnimate,
+        animate: isAnimating,
         animationSpeed,
     };
 
@@ -1200,160 +1439,20 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
         (svg.call as (behavior: Record<string, unknown>) => void)(zoom);
         (svg.on as (event: string, handler: unknown) => void)('dblclick.zoom', undefined);
 
-        const initialScale = Math.min(
-            viewportWidth > 0 ? viewportWidth / graphWidth : 1,
-            viewportHeight > 0 ? viewportHeight / graphHeight : 1,
-            1
-        );
-        focusedHierarchyNode = (() => {
-            if (focusNodeData) {
-                const byIdentity = (root.descendants as () => Record<string, unknown>[])().find(node => node.data === focusNodeData);
-                if (byIdentity) return byIdentity;
-            }
+        const initialScale = computeFitScale(viewportWidth, viewportHeight, graphWidth, graphHeight);
+        focusedHierarchyNode = findFocusedHierarchyNode(root, focusNodeData as Record<string, unknown> | undefined, resolvedFocusNodeId);
 
-            if (!resolvedFocusNodeId) return;
-            return (root.descendants as () => Record<string, unknown>[])().find(node => (node.data as Record<string, unknown> | undefined)?.id === resolvedFocusNodeId);
-        })();
+        logFocusNodeStatus(focusedHierarchyNode, resolvedFocusNodeId, focusNodeData as Record<string, unknown> | undefined, renderable.length);
 
-        if (focusedHierarchyNode) {
-            logGraphFocus('focus-node-resolved', {
-                resolvedFocusNodeId,
-                hierarchyX: focusedHierarchyNode.x,
-                hierarchyY: focusedHierarchyNode.y,
-                dataId: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.id,
-                nodeType: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.nodeType,
-                label: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.label,
-            });
-        } else {
-            logGraphFocus('focus-node-missing', {
-                resolvedFocusNodeId,
-                hasFocusNodeData: Boolean(focusNodeData),
-                renderableCount: renderable.length,
-            });
-        }
-
-        const focusTransform = focusedHierarchyNode
-            ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode as unknown as { x: number; y: number }, contentOffsetX, contentOffsetY, cardScale)
-            : undefined;
-        const fitTransform = ((d3.zoomIdentity as Record<string, unknown>).translate as (x: number, y: number) => Record<string, unknown>)(
-                viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
-                viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0
-            )
-            .scale(initialScale);
-        const initialTransform = existingSvgElement
-            ? (d3.zoomTransform as (node: Element) => Record<string, unknown>)(svg.node() as Element)
-            : (focusTransform ?? restoreTransform ?? fitTransform);
-
-        let mode: string;
-        if (existingSvgElement) {
-            mode = 'preserve';
-        } else if (focusTransform) {
-            mode = 'focus';
-        } else if (restoreTransform) {
-            mode = 'restore';
-        } else {
-            mode = 'fit';
-        }
-
-        logGraphFocus('initial-transform', {
-            mode,
-            transform: initialTransform ? {
-                x: (initialTransform as Record<string, unknown>).x,
-                y: (initialTransform as Record<string, unknown>).y,
-                k: (initialTransform as Record<string, unknown>).k,
-            } : undefined,
-            focusTransform: focusTransform ? { x: (focusTransform as Record<string, unknown>).x, y: (focusTransform as Record<string, unknown>).y, k: (focusTransform as Record<string, unknown>).k } : undefined,
-            fitTransform: { x: (fitTransform as Record<string, unknown>).x, y: (fitTransform as Record<string, unknown>).y, k: (fitTransform as Record<string, unknown>).k },
-            restoreTransform: restoreTransform ? { x: (restoreTransform as Record<string, unknown>).x, y: (restoreTransform as Record<string, unknown>).y, k: (restoreTransform as Record<string, unknown>).k } : undefined,
-        });
+        const { initialTransform } = computeInitialTransforms(d3, focusedHierarchyNode, viewportWidth, viewportHeight, contentOffsetX, contentOffsetY, cardScale, graphWidth, graphHeight, initialScale, existingSvgElement, svg, restoreTransform as Record<string, unknown> | undefined);
 
         (svg.call as (behavior: Record<string, unknown>) => void)(zoom.transform as Record<string, unknown>, initialTransform);
 
-        if (focusedHierarchyNode && !existingSvgElement) {
-            requestAnimationFrame(() => {
-                const measuredViewport = getInnerViewportSize(viewportElement_);
-                const measuredWidth = Number(measuredViewport.width ?? 0);
-                const measuredHeight = Number(measuredViewport.height ?? 0);
-
-                // For large graphs, falling back to contentDiv size can use the full SVG height,
-                // which pushes the focus transform far off target. Only refine when we can
-                // measure the real viewport dimensions.
-                if (measuredWidth <= 1 || measuredHeight <= 1) {
-                    logGraphFocus('refine-skip-invalid-viewport', {
-                        measuredWidth,
-                        measuredHeight,
-                    });
-                    return;
-                }
-
-                const refinedTransform = createFocusTransform(
-                    d3,
-                    Math.max(measuredWidth, 1),
-                    Math.max(measuredHeight, 1),
-                    focusedHierarchyNode as unknown as { x: number; y: number },
-                    contentOffsetX,
-                    contentOffsetY,
-                    cardScale
-                );
-
-                if (!refinedTransform) return;
-
-                logGraphFocus('refined-transform', {
-                    measuredWidth,
-                    measuredHeight,
-                    transform: {
-                        x: (refinedTransform as Record<string, unknown>).x,
-                        y: (refinedTransform as Record<string, unknown>).y,
-                        k: (refinedTransform as Record<string, unknown>).k,
-                    },
-                });
-
-                (svg.call as (behavior: Record<string, unknown>) => void)(zoom.transform as Record<string, unknown>, refinedTransform);
-            });
-        }
+        scheduleFocusRefinement(d3, svg, zoom, focusedHierarchyNode, viewportElement_, contentOffsetX, contentOffsetY, cardScale, existingSvgElement);
 
         appendGraphNodes(d3, zoomLayer, renderable, links, nodeOptions);
     } else {
-        const initialScale = Math.min(
-            viewportWidth > 0 ? viewportWidth / graphWidth : 1,
-            viewportHeight > 0 ? viewportHeight / graphHeight : 1,
-            1
-        );
-        // For compact non-zoom mode prefer a deterministic anchor-centered transform
-        // based on visible nodes so detail pages center predictably.
-        let fitTransform = ((d3.zoomIdentity as Record<string, unknown>).translate as (x: number, y: number) => Record<string, unknown>)(
-                viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
-                viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0
-            )
-            .scale(initialScale);
-
-        if (compact) {
-            // Choose anchor: middle card for odd counts, midpoint between middle two for even
-            const ordered = renderable.toSorted((a, b) => ((a.y as number) || 0) - ((b.y as number) || 0));
-            if (ordered.length > 0) {
-                const mid = Math.floor((ordered.length - 1) / 2);
-                let anchors: Record<string, unknown>[] = [];
-                anchors = ordered.length % 2 === 1 ? [ordered[mid]] : [ordered[mid], ordered[mid + 1]];
-
-                const anchorPos = { x: 0, y: 0 };
-                for (const anchor of anchors) {
-                    const pos = getRenderedNodePosition(anchor as unknown as { x: number; y: number }, contentOffsetX, contentOffsetY);
-                    anchorPos.x += pos.x;
-                    anchorPos.y += pos.y;
-                }
-                anchorPos.x /= anchors.length; anchorPos.y /= anchors.length;
-
-                // Apply any profile-specified anchor offsets (helps nudge centering)
-                const profile = getCompactLayoutProfile(ordered.length, viewportWidth, viewportHeight) || {};
-                anchorPos.x += profile.anchorOffsetX ?? 0;
-                anchorPos.y += profile.anchorOffsetY ?? 0;
-
-                fitTransform = ((d3.zoomIdentity as Record<string, unknown>).translate as (x: number, y: number) => Record<string, unknown>)(viewportWidth / 2, viewportHeight / 2)
-                    .scale(cardScale)
-                    .translate(-anchorPos.x, -anchorPos.y);
-            }
-        }
-
+        const fitTransform = renderGraphWithoutZoom(d3, graphLayer, renderable, viewportWidth, viewportHeight, graphWidth, graphHeight, contentOffsetX, contentOffsetY, compact, cardScale);
         (graphLayer.attr as (attribute: string, value: unknown) => Record<string, unknown>)('transform', fitTransform);
         appendGraphNodes(d3, graphLayer, renderable, links, nodeOptions);
     }
@@ -1363,53 +1462,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
     }
 
     if (focusedHierarchyNode) {
-        requestAnimationFrame(() => {
-            if (!isGraphFocusDebugEnabled()) return;
-
-            const focusElement = contentDiv.querySelector(':scope .graph-node.is-focused .graph-card');
-            const viewportRect = (viewportElement_ as HTMLElement)?.getBoundingClientRect?.();
-            const focusRect = (focusElement as Element | null)?.getBoundingClientRect?.();
-            const zoomTransform = (svg.node() as Record<string, unknown> | null)?.__zoom;
-
-            logGraphFocus('post-render-transform-state', {
-                resolvedFocusNodeId,
-                layerTransform: (graphLayer.attr as (attribute: string) => string | null)('transform'),
-                svgZoomTransform: zoomTransform ? {
-                    x: (zoomTransform as Record<string, unknown>).x,
-                    y: (zoomTransform as Record<string, unknown>).y,
-                    k: (zoomTransform as Record<string, unknown>).k,
-                } : undefined,
-                svgViewBox: (svg.attr as (attribute: string) => string | null)('viewBox'),
-                svgSize: {
-                    width: (svg.attr as (attribute: string) => string | null)('width'),
-                    height: (svg.attr as (attribute: string) => string | null)('height'),
-                },
-            });
-
-            logGraphFocus('post-render-focus-rect', {
-                resolvedFocusNodeId,
-                viewportRect: viewportRect ? {
-                    x: viewportRect.x,
-                    y: viewportRect.y,
-                    width: viewportRect.width,
-                    height: viewportRect.height,
-                    centerX: viewportRect.x + (viewportRect.width / 2),
-                    centerY: viewportRect.y + (viewportRect.height / 2),
-                } : undefined,
-                focusRect: focusRect ? {
-                    x: focusRect.x,
-                    y: focusRect.y,
-                    width: focusRect.width,
-                    height: focusRect.height,
-                    centerX: focusRect.x + (focusRect.width / 2),
-                    centerY: focusRect.y + (focusRect.height / 2),
-                } : undefined,
-                deltaFromViewportCenter: viewportRect && focusRect ? {
-                    x: (focusRect.x + (focusRect.width / 2)) - (viewportRect.x + (viewportRect.width / 2)),
-                    y: (focusRect.y + (focusRect.height / 2)) - (viewportRect.y + (viewportRect.height / 2)),
-                } : undefined,
-            });
-        });
+        logPostRenderFocusDebug(contentDiv, svg, graphLayer, resolvedFocusNodeId, viewportElement_);
     }
 
     return {

@@ -321,6 +321,101 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
     }
 
+    function buildPermissionHeader(section: HTMLElement, isOwner: boolean): void {
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'd-flex justify-content-between align-items-center';
+        const h2 = document.createElement('h2');
+        h2.textContent = 'Current Permissions';
+        headerDiv.append(h2);
+        if (isOwner) {
+            const inviteButton = document.createElement('button');
+            inviteButton.id = 'invite-btn-top';
+            inviteButton.className = 'btn btn-primary btn-sm';
+            const inviteIcon = document.createElement('i');
+            inviteIcon.className = 'bi bi-plus-lg';
+            inviteButton.append(inviteIcon, ' Invite');
+            headerDiv.append(inviteButton);
+        }
+        section.append(headerDiv);
+    }
+
+    function buildPermissionsTableBody(
+        permissions: Array<{ id: string; userName: string; level: string; status: string }> | null | undefined,
+        isOwner: boolean
+    ): HTMLTableSectionElement {
+        const tbody = document.createElement('tbody');
+        if (permissions && permissions.length > 0) {
+            for (const p of permissions) {
+                const tr = document.createElement('tr');
+                tr.dataset.permissionId = p.id;
+
+                const userTd = document.createElement('td');
+                userTd.textContent = p.userName;
+                tr.append(userTd);
+
+                const levelTd = document.createElement('td');
+                levelTd.textContent = p.level;
+                tr.append(levelTd);
+
+                const statusTd = document.createElement('td');
+                statusTd.textContent = p.status;
+                tr.append(statusTd);
+
+                const actionsTd = document.createElement('td');
+                if (isOwner) {
+                    const revokeButton = document.createElement('button');
+                    revokeButton.className = 'btn btn-outline-danger btn-sm revoke-btn';
+                    revokeButton.dataset.permissionId = p.id;
+                    revokeButton.textContent = 'Revoke';
+                    actionsTd.append(revokeButton);
+                } else {
+                    actionsTd.textContent = '-';
+                }
+                tr.append(actionsTd);
+                tbody.append(tr);
+            }
+        } else {
+            const emptyTd = document.createElement('td');
+            emptyTd.colSpan = 4;
+            emptyTd.className = 'text-center py-5';
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'd-flex flex-column align-items-center gap-3';
+
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'empty-table-icon';
+            const iconI = document.createElement('i');
+            iconI.className = 'bi bi-share';
+            iconDiv.append(iconI);
+
+            const titleH5 = document.createElement('h5');
+            titleH5.className = 'fw-semibold text-secondary mb-1';
+            titleH5.textContent = 'No permissions configured';
+
+            emptyDiv.append(iconDiv, titleH5);
+
+            if (isOwner) {
+                const descP = document.createElement('p');
+                descP.className = 'text-muted mb-2';
+                descP.textContent = 'Invite a user to get started.';
+                const inviteButton2 = document.createElement('button');
+                inviteButton2.id = 'empty-state-invite-btn';
+                inviteButton2.className = 'btn btn-outline-primary rounded-pill mt-2';
+                inviteButton2.type = 'button';
+                const inviteIcon2 = document.createElement('i');
+                inviteIcon2.className = 'bi bi-plus-circle me-1';
+                inviteButton2.append(inviteIcon2, ' Invite');
+                emptyDiv.append(descP, inviteButton2);
+            }
+
+            emptyTd.append(emptyDiv);
+            const emptyTr = document.createElement('tr');
+            emptyTr.className = 'inline-table-empty-row';
+            emptyTr.append(emptyTd);
+            tbody.append(emptyTr);
+        }
+        return tbody;
+    }
+
     /**
      * Refresh the permissions table from the API.
      * @returns {Promise<void>}
@@ -329,29 +424,13 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         try {
             const isOwner = permission?.isOwner === true;
             const permissions = await getPermissions(owner, project);
-            if (loadingElement) loadingElement.classList.add('d-none');
-            if (errorElement) errorElement.classList.add('d-none');
-            if (successElement) successElement.classList.add('d-none');
+            loadingElement?.classList.add('d-none');
+            errorElement?.classList.add('d-none');
+            successElement?.classList.add('d-none');
 
             if (section) {
                 section.replaceChildren();
-
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'd-flex justify-content-between align-items-center';
-                const h2 = document.createElement('h2');
-                h2.textContent = 'Current Permissions';
-                headerDiv.append(h2);
-                if (isOwner) {
-                    const inviteButton = document.createElement('button');
-                    inviteButton.id = 'invite-btn-top';
-                    inviteButton.className = 'btn btn-primary btn-sm';
-                    const inviteIcon = document.createElement('i');
-                    inviteIcon.className = 'bi bi-plus-lg';
-                    inviteButton.append(inviteIcon, ' Invite');
-                    headerDiv.append(inviteButton);
-                }
-                section.append(headerDiv);
-
+                buildPermissionHeader(section, isOwner);
                 const table = document.createElement('table');
                 table.className = 'table table-striped table-sm promisemodel-table';
                 const thead = document.createElement('thead');
@@ -363,78 +442,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
                 }
                 thead.append(headerRow);
                 table.append(thead);
-
-                const tbody = document.createElement('tbody');
-                if (permissions && permissions.length > 0) {
-                    for (const p of permissions as Array<{ id: string; userName: string; level: string; status: string }>) {
-                        const tr = document.createElement('tr');
-                        tr.dataset.permissionId = p.id;
-
-                        const userTd = document.createElement('td');
-                        userTd.textContent = p.userName;
-                        tr.append(userTd);
-
-                        const levelTd = document.createElement('td');
-                        levelTd.textContent = p.level;
-                        tr.append(levelTd);
-
-                        const statusTd = document.createElement('td');
-                        statusTd.textContent = p.status;
-                        tr.append(statusTd);
-
-                        const actionsTd = document.createElement('td');
-                        if (isOwner) {
-                            const revokeButton = document.createElement('button');
-                            revokeButton.className = 'btn btn-outline-danger btn-sm revoke-btn';
-                            revokeButton.dataset.permissionId = p.id;
-                            revokeButton.textContent = 'Revoke';
-                            actionsTd.append(revokeButton);
-                        } else {
-                            actionsTd.textContent = '-';
-                        }
-                        tr.append(actionsTd);
-                        tbody.append(tr);
-                    }
-                } else {
-                    const emptyTd = document.createElement('td');
-                    emptyTd.colSpan = 4;
-                    emptyTd.className = 'text-center py-5';
-                    const emptyDiv = document.createElement('div');
-                    emptyDiv.className = 'd-flex flex-column align-items-center gap-3';
-
-                    const iconDiv = document.createElement('div');
-                    iconDiv.className = 'empty-table-icon';
-                    const iconI = document.createElement('i');
-                    iconI.className = 'bi bi-share';
-                    iconDiv.append(iconI);
-
-                    const titleH5 = document.createElement('h5');
-                    titleH5.className = 'fw-semibold text-secondary mb-1';
-                    titleH5.textContent = 'No permissions configured';
-
-                    emptyDiv.append(iconDiv, titleH5);
-
-                    if (isOwner) {
-                        const descP = document.createElement('p');
-                        descP.className = 'text-muted mb-2';
-                        descP.textContent = 'Invite a user to get started.';
-                        const inviteButton2 = document.createElement('button');
-                        inviteButton2.id = 'empty-state-invite-btn';
-                        inviteButton2.className = 'btn btn-outline-primary rounded-pill mt-2';
-                        inviteButton2.type = 'button';
-                        const inviteIcon2 = document.createElement('i');
-                        inviteIcon2.className = 'bi bi-plus-circle me-1';
-                        inviteButton2.append(inviteIcon2, ' Invite');
-                        emptyDiv.append(descP, inviteButton2);
-                    }
-
-                    emptyTd.append(emptyDiv);
-                    const emptyTr = document.createElement('tr');
-                    emptyTr.className = 'inline-table-empty-row';
-                    emptyTr.append(emptyTd);
-                    tbody.append(emptyTr);
-                }
-                table.append(tbody);
+                table.append(buildPermissionsTableBody(permissions, isOwner));
                 section.append(table);
 
                 if (!isOwner) {
@@ -458,7 +466,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
                 openInviteModal({ owner, project, onInvited: refreshPermissions });
             });
         } catch {
-            if (loadingElement) loadingElement.classList.add('d-none');
+            loadingElement?.classList.add('d-none');
             if (errorElement) {
                 errorElement.textContent = 'Failed to load permissions.';
                 errorElement.classList.remove('d-none');
