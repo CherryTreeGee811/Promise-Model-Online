@@ -308,7 +308,6 @@ function isIgnoredField(fieldName: string): boolean {
 function encodeAuditDetails(item: AuditItem): string {
     const json = JSON.stringify(getAuditDetailsPayload(item));
     const bytes = new TextEncoder().encode(json);
-    // eslint-disable-next-line unicorn/prefer-uint8array-base64
     return btoa(String.fromCodePoint(...bytes));
 }
 

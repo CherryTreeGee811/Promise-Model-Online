@@ -189,7 +189,7 @@ function initApp(): void {
   });
 }
 
-/* eslint-disable-next-line unicorn/no-top-level-side-effects */
+/* eslint-disable-next-line unicorn/no-top-level-side-effects -- SPA entry point: app must initialize on module load */
 initApp();
 
 /**
