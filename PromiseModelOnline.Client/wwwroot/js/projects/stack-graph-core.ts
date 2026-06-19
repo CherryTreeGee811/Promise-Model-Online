@@ -992,6 +992,22 @@ function appendGraphNodes(d3: any, layer: Record<string, unknown>, renderable: R
  * @param {number} [options.animationSpeed] - Animation speed multiplier.
  * @returns {{node: SVGElement | null, zoom: object } | undefined} The SVG node and zoom behavior (if enabled).
  */
+
+function computeGraphLayout(compact: boolean, viewportWidth: number, viewportHeight: number, margin: any, maxDepth: number, treeData: any, uniformNodeScale: any) {
+    let sgx = compact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
+    let sgy = compact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
+    let fg = compact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
+    let cs = uniformNodeScale ?? 1;
+    if (compact) {
+        const vc = countRenderableNodes(treeData);
+        const p = getCompactLayoutProfile(vc, viewportWidth, viewportHeight);
+        cs = p.nodeScale ?? cs; sgy = p.minGapY ?? sgy; fg = p.forehead ?? fg;
+        if (maxDepth > 0 && viewportWidth > 0) sgx = Math.max(Math.max(viewportWidth - margin.left - margin.right - CARD_WIDTH * cs, CARD_WIDTH) / maxDepth, p.minGapX ?? COMPACT_MIN_TIER_GAP);
+        if (maxDepth > 0 && viewportHeight > 0) sgy = Math.max(Math.floor(Math.max(viewportHeight - margin.top - margin.bottom - CARD_HEIGHT * cs - fg, CARD_HEIGHT) / Math.max(1, maxDepth)), COMPACT_MIN_TIER_GAP_Y);
+    }
+    return { stepGapX: sgx, stepGapY: sgy, foreheadGap: fg, cardScale: cs };
+}
+
 export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: Record<string, unknown> | null } | null {
     const {
         owner,
