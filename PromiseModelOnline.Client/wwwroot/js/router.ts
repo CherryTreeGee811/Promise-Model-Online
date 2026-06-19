@@ -283,7 +283,7 @@ export function isDetailRoute(
         await loadTemplate(templateName, contentDiv);
         loadFunction(segments[1], navContentDiv, contentDiv);
       } catch {
-        loadTemplateWithError(contentDiv, label)();
+        loadTemplateWithError(contentDiv, label)().catch(() => {});
       }
     })();
     return true;

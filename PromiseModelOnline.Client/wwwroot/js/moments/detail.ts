@@ -291,6 +291,49 @@ function gateMomentDetailControls(permission: Record<string, unknown>): void {
     }
 }
 
+
+async function setupEstimateHandler(owner: string, project: string, momentId: string, moment: any): Promise<void> {
+    const estSelectElement = document.querySelector('#moment-estimate-select') as HTMLSelectElement;
+    if (estSelectElement) {
+        estSelectElement.addEventListener('change', async () => {
+            const estimate = estSelectElement.value === '-' ? undefined : estSelectElement.value;
+            try {
+                await updateMomentEstimate(owner, project, momentId, estimate);
+                moment.effortEstimate = estimate;
+                patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { effortEstimate: estimate });
+            } catch (error) { alert('Failed to update estimate'); console.error(error); }
+        });
+    }
+}
+
+
+async function setupStrideHandler(owner: string, project: string, momentId: string, moment: any): Promise<void> {
+    const strideSelectElement = document.querySelector('#moment-stride-select') as HTMLSelectElement;
+    if (strideSelectElement) {
+        try {
+            const strides = await getStrides(owner, project) as Record<string, unknown>[];
+            strides.sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')));
+            for (const stride of strides) {
+                const opt = document.createElement('option');
+                opt.value = String(stride.id);
+                opt.textContent = (stride.name as string) || 'Stride ' + stride.id;
+                if (String(stride.id) === String(moment.assignedStrideId)) opt.selected = true;
+                strideSelectElement.append(opt);
+            }
+            if (!moment.assignedStrideId) strideSelectElement.value = '';
+            strideSelectElement.addEventListener('change', async () => {
+                const value = strideSelectElement.value === '' ? undefined : parseInt(strideSelectElement.value, 10);
+                try {
+                    const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
+                    moment.assignedStrideId = updated.assignedStrideId as number;
+                    patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { assignedStrideId: updated.assignedStrideId });
+                    strideSelectElement.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
+                } catch (error) { alert('Failed to update assigned stride'); console.error(error); }
+            });
+        } catch (error) { console.error('Failed to load strides', error); }
+    }
+}
+
 export async function loadMomentDetail(owner: string, project: string, momentId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
     const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement;
     const errorElement = document.querySelector('#error-text') as HTMLElement;
@@ -367,57 +410,9 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
             void navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
         });
 
-        const estSelectElement = document.querySelector('#moment-estimate-select') as HTMLSelectElement;
-        if (estSelectElement) {
-            estSelectElement.addEventListener('change', async () => {
-                const estimate = estSelectElement.value === '-' ? undefined : estSelectElement.value;
-                try {
-                    await updateMomentEstimate(owner, project, momentId, estimate);
-                    moment.effortEstimate = estimate;
-                    patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
-                        effortEstimate: estimate,
-                    });
-                } catch (error) {
-                    alert('Failed to update estimate');
-                    console.error(error);
-                }
-            });
-        }
+        void setupEstimateHandler(owner, project, momentId, moment);
 
-        const strideSelectElement = document.querySelector('#moment-stride-select') as HTMLSelectElement;
-        if (strideSelectElement) {
-            try {
-                const strides = await getStrides(owner, project) as Record<string, unknown>[];
-                strides.sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')));
-                for (const stride of strides) {
-                    const opt = document.createElement('option');
-                    opt.value = String(stride.id);
-                    opt.textContent = (stride.name as string) || `Stride ${stride.id}`;
-                    if (String(stride.id) === String(moment.assignedStrideId)) opt.selected = true;
-                    strideSelectElement.append(opt);
-                }
-                if (!moment.assignedStrideId) {
-                    strideSelectElement.value = '';
-                }
-
-                strideSelectElement.addEventListener('change', async () => {
-                    const value = strideSelectElement.value === '' ? undefined : parseInt(strideSelectElement.value, 10);
-                    try {
-                        const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
-                        moment.assignedStrideId = updated.assignedStrideId as number;
-                        patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
-                            assignedStrideId: updated.assignedStrideId,
-                        });
-                        strideSelectElement.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
-                    } catch (error) {
-                        alert('Failed to update assigned stride');
-                        console.error(error);
-                    }
-                });
-            } catch (error) {
-                console.error('Failed to load strides', error);
-            }
-        }
+        await setupStrideHandler(owner, project, momentId, moment);
 
         const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
         const completedCell = detailDiv.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement;
