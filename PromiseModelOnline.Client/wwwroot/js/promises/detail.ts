@@ -4,12 +4,10 @@ import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
     patchChildMetrics,
-    patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
-import { navigate } from '../router.ts';
 import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
-import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
+import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';

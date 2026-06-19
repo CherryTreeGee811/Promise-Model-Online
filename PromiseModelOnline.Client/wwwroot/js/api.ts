@@ -30,16 +30,16 @@ export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
  * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
  * @throws {Error} If the HTTP response is not OK.
  */
-async function apiMutate<T = unknown>(url: string, body: unknown | undefined, method: string, returnJson: boolean): Promise<T | undefined | boolean> {
+async function apiMutate<T = unknown>(url: string, body: unknown | undefined, method: string, isReturnJson: boolean): Promise<T | undefined | boolean> {
   const options: Record<string, unknown> = { method };
   if (body !== undefined) {
     options.headers = { 'Content-Type': 'application/json' };
     options.body = JSON.stringify(body);
   }
   const response = await apiFetch(url, options);
-  if (returnJson && response.status === 204) return;
+  if (isReturnJson && response.status === 204) return;
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return returnJson ? response.json() : true;
+  return isReturnJson ? response.json() : true;
 }
 
 /**

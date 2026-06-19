@@ -74,6 +74,15 @@ interface StrideCreateOptions {
  * @param {Array<{ endDate?: string }>} root0.existingStrides - Existing strides for auto-calculating date defaults.
  * @param {() => Promise<void> | void} root0.onCreated - Async callback invoked after successful creation.
  */
+function computeEndDate(durationInput: HTMLInputElement, startInput: HTMLInputElement, endInput: HTMLInputElement): void {
+    const duration = Math.max(1, Number.parseInt(durationInput.value, 10) || 1);
+    const startDate = new Date(startInput.value);
+    if (!Number.isFinite(startDate.getTime())) return;
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + duration - 1);
+    endInput.value = endDate.toISOString().slice(0, 10);
+}
+
 export function openStrideCreateModal({
     owner,
     project,
@@ -167,23 +176,8 @@ export function openStrideCreateModal({
     liveSubmitButton.disabled = false;
     liveSubmitButton.textContent = 'Create Stride';
 
-    liveDurationInput.addEventListener('input', () => {
-        const duration = Math.max(1, Number.parseInt(liveDurationInput.value, 10) || 1);
-        const startDate = new Date(liveStartInput.value);
-        if (!Number.isFinite(startDate.getTime())) return;
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + duration - 1);
-        liveEndInput.value = endDate.toISOString().slice(0, 10);
-    });
-
-    liveStartInput.addEventListener('change', () => {
-        const duration = Math.max(1, Number.parseInt(liveDurationInput.value, 10) || 1);
-        const startDate = new Date(liveStartInput.value);
-        if (!Number.isFinite(startDate.getTime())) return;
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + duration - 1);
-        liveEndInput.value = endDate.toISOString().slice(0, 10);
-    });
+    liveDurationInput.addEventListener('input', () => computeEndDate(liveDurationInput, liveStartInput, liveEndInput));
+    liveStartInput.addEventListener('change', () => computeEndDate(liveDurationInput, liveStartInput, liveEndInput));
 
     liveForm.addEventListener('submit', async event => {
         event.preventDefault();

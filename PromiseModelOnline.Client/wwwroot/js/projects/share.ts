@@ -1,23 +1,8 @@
 
 import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
+import { ensureModal } from '../utils/html.ts';
 
 declare let bootstrap: any;
-
-/**
- * Ensure a modal element exists in the DOM, creating and appending it if needed.
- * @param {string} modalId - The modal element's ID.
- * @param {string} modalMarkup - The HTML markup for the modal.
- * @returns {HTMLElement } The modal element, or null if creation failed.
- */
-function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalElement = document.querySelector(`#${CSS.escape(modalId)}`) as HTMLElement | null;
-    if (modalElement) return modalElement;
-    const parser = new DOMParser();
-    const document_ = parser.parseFromString(modalMarkup.trim(), 'text/html');
-    modalElement = document_.body.firstElementChild as HTMLElement | null;
-    if (modalElement) document.body.append(modalElement);
-    return modalElement;
-}
 
 /**
  * Ensure the revoke confirmation modal exists in the DOM.

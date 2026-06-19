@@ -11,7 +11,7 @@ import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } fr
 import { navigate } from '../router.ts';
 import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
-import { escapeHtml, htmlToNodes } from '../utils/html.ts';
+import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';

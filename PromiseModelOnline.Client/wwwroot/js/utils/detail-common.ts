@@ -29,7 +29,7 @@ export function gateDetailControls(permission: { permission?: string } | undefin
  * Bind click handlers for child-entity links to enable client-side routing.
  * @param {HTMLElement} container - The container element to query for links
  * @param {string} linkSelector - CSS selector for links (e.g. 'a[journey-id]')
- * @param {string} seqAttr - Attribute name holding the sequence number (e.g. 'journey-seq')
+ * @param {string} seqAttribute - Attribute name holding the sequence number (e.g. 'journey-seq')
  * @param {string} pathPrefix - URL path segment (e.g. 'journeys')
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
@@ -37,13 +37,13 @@ export function gateDetailControls(permission: { permission?: string } | undefin
  * @param {HTMLElement} contentDiv - Content container for routing
  * @returns {void}
  */
-export function bindLinkClickHandlers(container: HTMLElement, linkSelector: string, seqAttr: string, pathPrefix: string, owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
+export function bindLinkClickHandlers(container: HTMLElement, linkSelector: string, seqAttribute: string, pathPrefix: string, owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
     for (const link of container.querySelectorAll(linkSelector)) {
         link.addEventListener('click', (event) => {
             const me = event as MouseEvent;
             if (me.ctrlKey || me.metaKey || me.button === 1) return;
             event.preventDefault();
-            void navigate('/' + owner + '/' + project + '/' + pathPrefix + '/' + link.getAttribute(seqAttr), navContentDiv, contentDiv);
+            void navigate('/' + owner + '/' + project + '/' + pathPrefix + '/' + link.getAttribute(seqAttribute), navContentDiv, contentDiv);
         });
     }
 }
@@ -84,12 +84,12 @@ export function loadCommentsAndReactions(detailDiv: HTMLElement, entityType: str
 
 /**
  * Build the description inline-edit UI elements and append them to a description cell.
- * @param {HTMLTableDataCellElement} descTd - The `<td>` element to append the editor to
+ * @param {HTMLTableCellElement} descTd - The `<td>` element to append the editor to
  * @param {string} idPrefix - ID prefix (e.g. '' for standard, 'moment-' for moments)
  * @param {string} description - The current description text
  * @returns {{ descTextarea: HTMLTextAreaElement; cancelButton: HTMLButtonElement; saveButton: HTMLButtonElement; saveMessage: HTMLSpanElement }}
  */
-export function buildInlineEditUI(descTd: HTMLTableDataCellElement, idPrefix: string, description: string): {
+export function buildInlineEditUI(descTd: HTMLTableCellElement, idPrefix: string, description: string): {
     descTextarea: HTMLTextAreaElement;
     cancelButton: HTMLButtonElement;
     saveButton: HTMLButtonElement;
@@ -157,13 +157,13 @@ export function buildInlineEditUI(descTd: HTMLTableDataCellElement, idPrefix: st
  * @param {string} entityId - The entity ID
  * @param {string} entityType - The entity type slug (e.g. 'epic', 'flow')
  * @param {Record<string, unknown>} entity - The entity data object (mutated in place), with __editor and sequenceNumber
- * @param {(owner: string, project: string, id: string, desc: string) => Promise<{ description?: string } | undefined>} updateFn - The API function to update description
+ * @param {(owner: string, project: string, id: string, desc: string) => Promise<{ description?: string } | undefined>} updateFunction - The API function to update description
  * @returns {void}
  */
 export function setupDescriptionHandler(
     owner: string, project: string, entityId: string, entityType: string,
     entity: { sequenceNumber: number; description?: string },
-    updateFn: (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>,
+    updateFunction: (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>,
 ): void {
     const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
     const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
@@ -174,7 +174,7 @@ export function setupDescriptionHandler(
             saveButton.disabled = true;
             const newDesc = (document.querySelector('#description-input') as HTMLTextAreaElement).value;
             try {
-                const updated = await updateFn(owner, project, entityId, newDesc);
+                const updated = await updateFunction(owner, project, entityId, newDesc);
                 entity.description = (updated as Record<string, unknown>)?.description as string | undefined ?? (newDesc.trim() ? newDesc : undefined);
                 patchDetailStackGraphNode(entityType + '-' + entity.sequenceNumber, {
                     description: entity.description,

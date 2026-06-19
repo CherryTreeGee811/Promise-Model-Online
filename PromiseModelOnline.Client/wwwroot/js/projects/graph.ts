@@ -17,7 +17,6 @@ import {
     countRenderableNodes,
     parseGraphData,
     renderEmptyState,
-    isGraphFocusDebugEnabled,
     logGraphFocus,
     renderStackGraph,
 } from './stack-graph-core.ts';
