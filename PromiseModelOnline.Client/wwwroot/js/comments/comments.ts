@@ -1,10 +1,9 @@
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.ts';
+import { htmlToNodes } from '../utils/html.ts';
 import { isAtLeast } from '../utils/permissions.ts';
 
 import { getComments, addComment } from './api.ts';
 import { createCommentAutocomplete } from './autocomplete.ts';
-
-import { htmlToNodes } from '../utils/html.ts';
 
 /**
  * @param {HTMLElement} container - The container element

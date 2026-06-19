@@ -3,9 +3,9 @@ import { getFlow, getMoments, getFlowById } from '../flows/api.ts';
 import { getJourney, getFlows, getJourneyById } from '../journeys/api.ts';
 import { getMoment } from '../moments/api.ts';
 import { getPromise, getEpicsByPromise, getPromiseById } from '../promises/api.ts';
+import { getStatusBucket } from '../utils/status-utilities.ts';
 
 import { getProject } from './api.ts';
-import { getStatusBucket } from '../utils/status-utilities.ts';
 import {
     computeChildMetrics,
     createNodeWithMetrics,
