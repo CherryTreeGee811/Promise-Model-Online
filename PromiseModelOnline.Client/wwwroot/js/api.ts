@@ -24,11 +24,12 @@ export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
 }
 
 /**
- * Perform a POST request with a JSON body.
+ * Perform a mutation request (POST, PUT, PATCH, DELETE) with optional JSON body.
  * @param {string} url - The API endpoint URL.
- * @param {unknown} body - The request payload.
- * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
- * @throws {Error} If the HTTP response is not OK.
+ * @param {unknown | undefined} body - The request payload, or undefined for DELETE.
+ * @param {string} method - The HTTP method.
+ * @param {boolean} isReturnJson - Whether to return parsed JSON or boolean.
+ * @returns {Promise<T | undefined | boolean>} Response data or success flag.
  */
 async function apiMutate<T = unknown>(url: string, body: unknown | undefined, method: string, isReturnJson: boolean): Promise<T | undefined | boolean> {
   const options: Record<string, unknown> = { method };

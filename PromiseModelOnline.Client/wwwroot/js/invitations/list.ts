@@ -1,5 +1,6 @@
-import { getPendingInvitations, acceptInvitation } from './api.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
+
+import { getPendingInvitations, acceptInvitation } from './api.ts';
 
 interface Invitation {
   projectName: string;

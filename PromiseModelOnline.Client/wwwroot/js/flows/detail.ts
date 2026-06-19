@@ -46,11 +46,9 @@ interface Journey {
 }
 
 /**
- * Set up the description inline-edit save handler for a flow.
+ * Handle moment type <select> changes by updating via the API.
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
- * @param {string} flowId - The flow ID
- * @param {Flow} flow - The flow data object (mutated in place)
  * @returns {void}
  */
 function setupMomentTypeChangeHandler(owner: string, project: string): void {

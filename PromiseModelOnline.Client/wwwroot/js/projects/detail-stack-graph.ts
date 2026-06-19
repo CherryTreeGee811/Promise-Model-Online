@@ -157,36 +157,35 @@ async function fetchPathEntities(nodeType: string, nodeId: string | number, owne
         case 'moment': {
             moment = await getMoment(owner, project, numericId) as Record<string, unknown>;
             flow = await getFlowById(owner, project, (moment as Record<string, unknown>).flowId as number) as Record<string, unknown>;
-            journey = await getJourneyById(owner, project, (flow as Record<string, unknown>).journeyId as number) as Record<string, unknown>;
-            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number) as Record<string, unknown>;
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'flow': {
             flow = await getFlow(owner, project, numericId) as Record<string, unknown>;
-            journey = await getJourneyById(owner, project, (flow as Record<string, unknown>).journeyId as number) as Record<string, unknown>;
-            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number) as Record<string, unknown>;
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'journey': {
             journey = await getJourney(owner, project, numericId) as Record<string, unknown>;
-            epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number) as Record<string, unknown>;
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'epic': {
             epic = await getEpic(owner, project, numericId) as Record<string, unknown>;
-            promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
             break;
         }
         case 'promise': {
             promise = await getPromise(owner, project, numericId) as Record<string, unknown>;
             break;
         }
-        default: {
-            throw new Error(`Unsupported node type: ${nodeType}`);
-        }
+    }
+
+    // Traverse up the hierarchy from the fetched entity
+    if (flow) {
+        journey = await getJourneyById(owner, project, (flow as Record<string, unknown>).journeyId as number) as Record<string, unknown>;
+    }
+    if (journey) {
+        epic = await getEpicById(owner, project, (journey as Record<string, unknown>).epicId as number) as Record<string, unknown>;
+    }
+    if (epic) {
+        promise = await getPromiseById(owner, project, (epic as Record<string, unknown>).productPromiseId as number) as Record<string, unknown>;
     }
 
     let projectEntity: Record<string, unknown> | undefined;

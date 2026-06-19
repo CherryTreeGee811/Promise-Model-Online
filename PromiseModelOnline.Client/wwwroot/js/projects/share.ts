@@ -1,6 +1,7 @@
 
-import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
 import { ensureModal } from '../utils/html.ts';
+
+import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
 
 declare let bootstrap: any;
 

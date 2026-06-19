@@ -72,3 +72,32 @@ export function ensureModal(modalId: string, modalMarkup: string): HTMLElement |
 
     return modalElement;
 }
+
+/**
+ * Create a confirmation promise tied to a Bootstrap modal.
+ * Resolves `true` if the confirm button is clicked, `false` if the modal is dismissed.
+ * @param {HTMLElement} modalElement - The Bootstrap modal element.
+ * @param {HTMLElement} confirmButton - The confirm button inside the modal.
+ * @returns {Promise<boolean>} A promise that resolves with the user's choice.
+ */
+export function createConfirmationPromise(modalElement: HTMLElement, confirmButton: HTMLElement): Promise<boolean> {
+    return new Promise(resolve => {
+        let isSettled = false;
+
+        const settle = (isConfirmed: boolean) => {
+            if (isSettled) return;
+            isSettled = true;
+            resolve(isConfirmed);
+        };
+
+        const modalInstance = (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement);
+
+        confirmButton.addEventListener('click', () => {
+            settle(true);
+            modalInstance?.hide?.();
+        }, { once: true });
+
+        modalElement.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
+        modalInstance?.show?.();
+    });
+}

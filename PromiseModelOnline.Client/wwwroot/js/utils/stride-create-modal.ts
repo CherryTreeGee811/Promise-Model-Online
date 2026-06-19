@@ -1,4 +1,5 @@
 import { createStride } from '../strides/api.ts';
+
 import { ensureModal } from './html.ts';
 
 /**
@@ -64,15 +65,11 @@ interface StrideCreateOptions {
 }
 
 /**
- * Open a Bootstrap modal for creating a new stride.
- * The modal DOM is created on first invocation and reused.
- * @param {StrideCreateOptions} root0 - Configuration options.
- * @param {string} root0.owner - Project owner slug.
- * @param {string} root0.project - Project slug.
- * @param {number} root0.iterationId - Pre-selected iteration ID.
- * @param {Array<{ id: number; name: string }>} root0.iterations - Available iterations for the select dropdown.
- * @param {Array<{ endDate?: string }>} root0.existingStrides - Existing strides for auto-calculating date defaults.
- * @param {() => Promise<void> | void} root0.onCreated - Async callback invoked after successful creation.
+ * Calculate and set the end date based on the start date and duration.
+ * @param {HTMLInputElement} durationInput - The duration input element.
+ * @param {HTMLInputElement} startInput - The start date input element.
+ * @param {HTMLInputElement} endInput - The end date input element (value is set by this function).
+ * @returns {void}
  */
 function computeEndDate(durationInput: HTMLInputElement, startInput: HTMLInputElement, endInput: HTMLInputElement): void {
     const duration = Math.max(1, Number.parseInt(durationInput.value, 10) || 1);
@@ -83,6 +80,17 @@ function computeEndDate(durationInput: HTMLInputElement, startInput: HTMLInputEl
     endInput.value = endDate.toISOString().slice(0, 10);
 }
 
+/**
+ * Open a Bootstrap modal for creating a new stride.
+ * The modal DOM is created on first invocation and reused.
+ * @param {object} options - Configuration options.
+ * @param {string} options.owner - Project owner slug.
+ * @param {string} options.project - Project slug.
+ * @param {number} options.iterationId - Pre-selected iteration ID.
+ * @param {Array<{ id: number; name: string }>} options.iterations - Available iterations for the select dropdown.
+ * @param {Array<{ endDate?: string }>} options.existingStrides - Existing strides for auto-calculating date defaults.
+ * @param {() => Promise<void> | void} options.onCreated - Async callback invoked after successful creation.
+ */
 export function openStrideCreateModal({
     owner,
     project,

@@ -3,7 +3,7 @@ import { getProject } from '../projects/api.ts';
 import { buildGraphViewHref } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { renderLoadingSpinner } from '../utils/html.ts';
+import { renderLoadingSpinner, createConfirmationPromise } from '../utils/html.ts';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.ts';
 import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
 import { openStrideCreateModal } from '../utils/stride-create-modal.ts';
@@ -649,25 +649,7 @@ function promptProgressStride(strideId: number | string): Promise<boolean> {
         ? `Move all unfinished moments in ${strideName} to the next stride?`
         : 'Move all unfinished moments to the next stride?';
 
-    return new Promise(resolve => {
-        let isSettled = false;
-
-        const settle = (isConfirmed: boolean) => {
-            if (isSettled) return;
-            isSettled = true;
-            resolve(isConfirmed);
-        };
-
-        const modalInstance = (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement) as { hide?: () => void; show?: () => void } | undefined;
-
-        confirmButton.addEventListener('click', () => {
-            settle(true);
-            modalInstance?.hide?.();
-        }, { once: true });
-
-        modalElement.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
-        modalInstance?.show?.();
-    });
+    return createConfirmationPromise(modalElement, confirmButton as HTMLElement);
 }
 
 /**
@@ -902,7 +884,11 @@ async function handleStrideActions(event: MouseEvent, owner: string, project: st
     }
 }
 
-
+/**
+ * Create a table element with a header row from an array of column names.
+ * @param {string[]} headers - The column header texts.
+ * @returns {HTMLTableElement} The new table element with thead and an empty tbody.
+ */
 function createHeaderedTable(headers: string[]): HTMLTableElement {
     const table = document.createElement('table');
     table.className = 'promisemodel-table';

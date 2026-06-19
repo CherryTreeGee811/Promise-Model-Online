@@ -1,7 +1,8 @@
 import { loadComments } from '../comments/comments.ts';
+import { patchDetailStackGraphNode } from '../projects/detail-stack-graph.ts';
 import { loadReactions } from '../reactions/reactions.ts';
 import { navigate } from '../router.ts';
-import { patchDetailStackGraphNode } from '../projects/detail-stack-graph.ts';
+
 import { formatCommentText } from './entity-reference.ts';
 import { htmlToNodes } from './html.ts';
 import { getStatusIcon, getStatusLabel } from './status-utilities.ts';
@@ -87,7 +88,7 @@ export function loadCommentsAndReactions(detailDiv: HTMLElement, entityType: str
  * @param {HTMLTableCellElement} descTd - The `<td>` element to append the editor to
  * @param {string} idPrefix - ID prefix (e.g. '' for standard, 'moment-' for moments)
  * @param {string} description - The current description text
- * @returns {{ descTextarea: HTMLTextAreaElement; cancelButton: HTMLButtonElement; saveButton: HTMLButtonElement; saveMessage: HTMLSpanElement }}
+ * @returns {object} The created editor elements (descTextarea, cancelButton, saveButton, saveMessage).
  */
 export function buildInlineEditUI(descTd: HTMLTableCellElement, idPrefix: string, description: string): {
     descTextarea: HTMLTextAreaElement;
@@ -156,8 +157,10 @@ export function buildInlineEditUI(descTd: HTMLTableCellElement, idPrefix: string
  * @param {string} project - The project slug
  * @param {string} entityId - The entity ID
  * @param {string} entityType - The entity type slug (e.g. 'epic', 'flow')
- * @param {Record<string, unknown>} entity - The entity data object (mutated in place), with __editor and sequenceNumber
- * @param {(owner: string, project: string, id: string, desc: string) => Promise<{ description?: string } | undefined>} updateFunction - The API function to update description
+ * @param {object} entity - The entity data object (mutated in place)
+ * @param {number} entity.sequenceNumber - The entity's sequence number for stack graph patching
+ * @param {string} [entity.description] - The current description text
+ * @param {(owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>} updateFunction - Async API function to persist the description.
  * @returns {void}
  */
 export function setupDescriptionHandler(

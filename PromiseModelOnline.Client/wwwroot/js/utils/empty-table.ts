@@ -1,5 +1,18 @@
 type EmptyTableOptions = { icon?: string; title?: string; description?: string; button?: { id?: string; class?: string; text: string; icon?: string }; colspan: number };
 
+/**
+ * Build common empty-state content (icon, title, description, button) inside a wrapper element.
+ * @param {HTMLElement} wrapper - The container element to append content to.
+ * @param {string} [icon] - Bootstrap icon class name.
+ * @param {string} [title] - Heading text.
+ * @param {string} [description] - Description text.
+ * @param {{id?: string; class?: string; text: string; icon?: string}} [button] - Optional button configuration.
+ * @param {string} [button.id] - The button element ID.
+ * @param {string} [button.class] - CSS class for the button.
+ * @param {string} button.text - The button text content.
+ * @param {string} [button.icon] - Optional Bootstrap icon class for the button.
+ * @returns {void}
+ */
 function buildEmptyContent(wrapper: HTMLElement, icon?: string, title?: string, description?: string, button?: { id?: string; class?: string; text: string; icon?: string }): void {
     if (icon) {
         const iconDiv = document.createElement('div');

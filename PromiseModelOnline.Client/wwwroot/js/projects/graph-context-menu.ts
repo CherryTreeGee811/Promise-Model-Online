@@ -1,8 +1,8 @@
 import { apiFetch } from '../api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { updateMomentStatus } from '../moments/api.ts';
+import { ensureModal, createConfirmationPromise } from '../utils/html.ts';
 import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
-import { ensureModal } from '../utils/html.ts';
 
 const tippy = (globalThis as any).tippy;
 
@@ -203,9 +203,6 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
 }
 
 /**
- * Ensure a Bootstrap modal element exists in the DOM, creating it if necessary.
-
-/**
  * Open a Bootstrap modal to confirm deletion of an item.
  * @param {string} label - The label of the item to delete.
  * @returns {Promise<boolean>} Resolves to true if confirmed, false otherwise.
@@ -244,25 +241,7 @@ function openDeleteConfirmationModal(label: string): Promise<boolean> {
     titleElement.textContent = `Delete ${label}`;
     bodyElement.textContent = `Delete ${label}? This cannot be undone.`;
 
-    return new Promise<boolean>(resolve => {
-        let isSettled = false;
-
-        const settle = (isConfirmed: boolean) => {
-            if (isSettled) return;
-            isSettled = true;
-            resolve(isConfirmed);
-        };
-
-        const modalInstance = (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement);
-
-        confirmButton.addEventListener('click', () => {
-            settle(true);
-            modalInstance?.hide();
-        }, { once: true });
-
-        modalElement.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
-        modalInstance?.show();
-    });
+    return createConfirmationPromise(modalElement, confirmButton);
 }
 
 /**
@@ -415,6 +394,12 @@ function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): A
  * @returns {HTMLFormElement|undefined} The form element, or undefined if creation metadata is missing.
  */
 
+/**
+ * Create the cancel and submit buttons for a graph context menu form.
+ * @param {() => void} closeMenus - Function to close all menus on cancel.
+ * @param {string} submitText - The text for the submit button.
+ * @returns {{ cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement }} The created button elements.
+ */
 function createFormActionsBar(closeMenus: () => void, submitText: string): { cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement } {
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
@@ -433,6 +418,16 @@ function createFormActionsBar(closeMenus: () => void, submitText: string): { can
     return { cancelButton, submitButton };
 }
 
+/**
+ * Build the create-moment form element with moment-specific fields.
+ * @param {object} nodeData - The parent (flow) node data.
+ * @param {string} owner - The project owner.
+ * @param {string} project - The project slug.
+ * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Optional stride list.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after creation.
+ * @param {() => void} closeMenus - Function to close all menus.
+ * @returns {HTMLFormElement|undefined} The form element or undefined.
+ */
 function buildMomentFormElement(
     nodeData: any,
     owner: string,
