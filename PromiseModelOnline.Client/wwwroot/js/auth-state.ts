@@ -4,6 +4,4 @@
  * directly from `stores/auth.ts` for subscription support.
  */
 
-import { authStore } from './stores/auth.ts';
-
 export { authStore, isLoggedIn, getUsername, getUserId } from './stores/auth.ts';

@@ -294,6 +294,32 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~RateLimitingTests"
 
+      - name: Security — TLS/SSL scan (testssl.sh)
+        if: always()
+        shell: bash
+        run: |
+          docker run --rm \
+            --network host \
+            drwetter/testssl.sh:stable \
+            --quiet \
+            --htmlfile /tmp/testssl-report.html \
+            https://localhost:9000
+        continue-on-error: true
+
+      - name: Security — OWASP ZAP DAST scan
+        if: always()
+        shell: bash
+        run: |
+          docker run --rm \
+            --network host \
+            -v /tmp:/zap/wrk:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-full-scan.py \
+            -t https://localhost:9000 \
+            -r /zap/wrk/zap-report.html \
+            -z "-config globalexeurl.url="
+        continue-on-error: true
+
       - name: Tear Down E2E Stack
         if: always()
         shell: bash
@@ -531,6 +557,8 @@ jobs:
             sbom-client.cdx.json
             sbom-auth.cdx.json
             sbom-bff.cdx.json
+            /tmp/testssl-report.html
+            /tmp/zap-report.html
 
       # ─── 9. Push Docker Images to DockerHub ───
 
