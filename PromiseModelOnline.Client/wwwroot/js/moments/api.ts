@@ -15,7 +15,6 @@ export const getMoment = (owner, project, momentSeq) => apiGet(`/api/projects/${
  * @param {number|string} id - The moment's internal ID.
  * @returns {Promise<object>} The moment data.
  */
-export const getMomentById = (owner, project, id) => apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/by-id/${id}`);
 /**
  * Create a new moment.
  * @param {string} owner - The project owner's slug.

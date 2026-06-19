@@ -74,14 +74,6 @@ export function renderAuditTable(items: AuditItem[] | null | undefined, { showEn
     `;
 }
 
-/**
- * Render the audit loading spinner HTML.
- * @param {string} [message] - The loading message to display.
- * @returns {string} The loading spinner HTML string.
- */
-export function renderAuditLoading(message = 'Loading activity'): string {
-    return renderLoadingSpinner(message).outerHTML;
-}
 
 /**
  * Render the audit details modal HTML.
@@ -133,7 +125,7 @@ export function formatTimestamp(value: string | Date | null | undefined): string
  * @param {string | Date | null | undefined} value - The timestamp as a string, Date, or null.
  * @returns {string} The relative time string, or 'Unknown' if invalid.
  */
-export function formatRelativeTime(value: string | Date | null | undefined): string {
+function formatRelativeTime(value: string | Date | null | undefined): string {
     if (!value) return 'Unknown';
 
     const date = new Date(value);
@@ -172,7 +164,7 @@ export function formatRelativeTime(value: string | Date | null | undefined): str
  * @param {AuditItem} item - The audit item.
  * @returns {string} The formatted title string.
  */
-export function formatAuditDetailsTitle(item: AuditItem): string {
+function formatAuditDetailsTitle(item: AuditItem): string {
     return `${formatEventType(item)} ${formatEntity(item)}`;
 }
 
@@ -181,7 +173,7 @@ export function formatAuditDetailsTitle(item: AuditItem): string {
  * @param {AuditItem} item - The audit item.
  * @returns {string} The HTML string for the details body.
  */
-export function formatAuditDetailsHtml(item: AuditItem): string {
+function formatAuditDetailsHtml(item: AuditItem): string {
     return `
         <dl class="row mb-0">
             <dt class="col-sm-3">Time</dt>

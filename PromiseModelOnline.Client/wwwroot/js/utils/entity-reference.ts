@@ -8,7 +8,7 @@ type EntityMapEntry = { dbId?: number; statusColor?: string };
 type EntityMap = Record<string, EntityMapEntry | string | null | undefined> & { _owner?: string | null; _project?: string | null };
 
 /** @type {EntityMap} */
-export const entityLookupMap: EntityMap = {};
+const entityLookupMap: EntityMap = {};
 
 /**
  * Fetch the entity lookup map for a comment parent and populate `entityLookupMap`.

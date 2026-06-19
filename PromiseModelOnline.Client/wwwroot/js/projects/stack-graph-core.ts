@@ -4,47 +4,47 @@ import { getStatusIcon, getStatusBucket } from '../utils/status-utilities.ts';
 
 
 /** Horizontal gap between graph tiers in full mode. */
-export const STEP_GAP_X = 360;
+const STEP_GAP_X = 360;
 /** Vertical gap between graph tiers in full mode. */
-export const STEP_GAP_Y = 190;
+const STEP_GAP_Y = 190;
 /** Width of a graph card in pixels. */
-export const CARD_WIDTH = 300;
+const CARD_WIDTH = 300;
 /** Height of a graph card in pixels. */
-export const CARD_HEIGHT = 144;
+const CARD_HEIGHT = 144;
 /** Corner radius of graph cards. */
-export const CARD_RADIUS = 18;
+const CARD_RADIUS = 18;
 /** Horizontal padding inside graph cards. */
-export const CARD_PADDING_X = 16;
+const CARD_PADDING_X = 16;
 /** Top padding inside graph cards. */
-export const CARD_PADDING_TOP = 16;
+const CARD_PADDING_TOP = 16;
 /** Y-offset for the first detail line on moment cards. */
-export const DETAIL_START_Y = 62;
+const DETAIL_START_Y = 62;
 /** Vertical gap between detail lines on moment cards. */
-export const DETAIL_LINE_GAP = 22;
+const DETAIL_LINE_GAP = 22;
 /** Vertical forehead gap above the root card in full mode. */
-export const FOREHEAD_GAP = 88;
+const FOREHEAD_GAP = 88;
 
 /** Horizontal gap between graph tiers in compact (detail-page) mode. */
-export const COMPACT_STEP_GAP_X = 400;
+const COMPACT_STEP_GAP_X = 400;
 /** Vertical gap between graph tiers in compact mode. */
-export const COMPACT_STEP_GAP_Y = 180;
+const COMPACT_STEP_GAP_Y = 180;
 /** Minimum vertical tier gap in compact mode. */
-export const COMPACT_MIN_TIER_GAP_Y = 72;
+const COMPACT_MIN_TIER_GAP_Y = 72;
 /** Forehead gap above the root card in compact mode. */
-export const COMPACT_FOREHEAD_GAP = 40;
+const COMPACT_FOREHEAD_GAP = 40;
 /** Minimum tier gap used for spacing calculations in compact mode. */
-export const COMPACT_MIN_TIER_GAP = 140;
+const COMPACT_MIN_TIER_GAP = 140;
 /** Largest cards when the detail page shows the fewest tiers (promise). */
-export const COMPACT_DETAIL_SCALE_MAX = 1.32;
+const COMPACT_DETAIL_SCALE_MAX = 1.32;
 /** Smallest cards when the detail page shows the most tiers (moment). */
-export const COMPACT_DETAIL_SCALE_MIN = 0.84;
+const COMPACT_DETAIL_SCALE_MIN = 0.84;
 
 /** Ordered list of all node types in the promise stack, from broadest to most granular. */
 export const NODE_TYPES = ['promise', 'epic', 'journey', 'flow', 'moment'] as const;
 /** Union type of all valid node type strings. */
-export type NodeType = typeof NODE_TYPES[number];
+type NodeType = typeof NODE_TYPES[number];
 /** Map from node type to its URL route segment. */
-export const NODE_ROUTE_SEGMENTS: Record<string, string> = {
+const NODE_ROUTE_SEGMENTS: Record<string, string> = {
     promise: 'promises',
     epic: 'epics',
     journey: 'journeys',
@@ -67,7 +67,7 @@ export function normalizeText(value: unknown): string {
  * Check whether graph focus debug logging is enabled via URL param or localStorage.
  * @returns {boolean} True if debug logging is enabled.
  */
-export function isGraphFocusDebugEnabled(): boolean {
+function isGraphFocusDebugEnabled(): boolean {
     try {
         const parameters = new URLSearchParams(location.search);
         const parameterValue = normalizeText(parameters.get('debugGraphFocus'));
@@ -96,7 +96,7 @@ export function logGraphFocus(stage: string, details: Record<string, unknown>): 
  * @param {HTMLElement} element - The element to measure.
  * @returns {{width: number, height: number}} The inner dimensions.
  */
-export function getInnerViewportSize(element: HTMLElement): { width: number; height: number } {
+function getInnerViewportSize(element: HTMLElement): { width: number; height: number } {
     if (!element) return { width: 0, height: 0 };
 
     const styles = getComputedStyle(element);
@@ -117,7 +117,7 @@ export function getInnerViewportSize(element: HTMLElement): { width: number; hei
  * @param {number} [maxLength] - The maximum length before truncation.
  * @returns {string} The truncated text.
  */
-export function truncateText(text: unknown, maxLength = 40): string {
+function truncateText(text: unknown, maxLength = 40): string {
     const value = String(text ?? '').trim();
     if (value.length <= maxLength) return value;
     if (maxLength <= 3) return '.'.repeat(maxLength);
@@ -129,7 +129,7 @@ export function truncateText(text: unknown, maxLength = 40): string {
  * @param {unknown} value - The effort estimate value.
  * @returns {string} The formatted estimate string.
  */
-export function formatEstimate(value: unknown): string {
+function formatEstimate(value: unknown): string {
     return value === null ? 'Unestimated' : String(value);
 }
 
@@ -138,7 +138,7 @@ export function formatEstimate(value: unknown): string {
  * @param {string} nodeType - The parent node type.
  * @returns {string} The child type label, or null for unknown types.
  */
-export function getChildTypeLabel(nodeType: string): string | undefined {
+function getChildTypeLabel(nodeType: string): string | undefined {
     switch (nodeType) {
         case 'promise': { return 'Epic';
         }
@@ -158,7 +158,7 @@ export function getChildTypeLabel(nodeType: string): string | undefined {
  * @param {object} nodeData - The node data containing childCount and completedChildCount.
  * @returns {string|undefined} The progress summary string, or undefined if no child type exists.
  */
-export function getChildProgressSummary(nodeData: Record<string, unknown>): string | undefined {
+function getChildProgressSummary(nodeData: Record<string, unknown>): string | undefined {
     const childLabel = getChildTypeLabel(nodeData.nodeType as string);
     if (!childLabel) return;
 
@@ -173,7 +173,7 @@ export function getChildProgressSummary(nodeData: Record<string, unknown>): stri
  * @param {object} payload - The node payload containing a type field.
  * @returns {string|undefined} The type label, or undefined if not set.
  */
-export function getNodeTypeLabel(payload: Record<string, unknown> | undefined): string | undefined {
+function getNodeTypeLabel(payload: Record<string, unknown> | undefined): string | undefined {
     const value = String(payload?.type ?? payload?.Type ?? '').trim();
     if (!value) return;
 
@@ -189,7 +189,7 @@ export function getNodeTypeLabel(payload: Record<string, unknown> | undefined): 
  * @param {object} payload - The moment payload containing a tasks array.
  * @returns {string|undefined} The task summary string, or undefined if no tasks exist.
  */
-export function getMomentTaskSummary(payload: Record<string, unknown> | undefined): string | undefined {
+function getMomentTaskSummary(payload: Record<string, unknown> | undefined): string | undefined {
     const tasks = Array.isArray(payload?.tasks) ? payload.tasks as Record<string, unknown>[] : [];
     if (tasks.length === 0) return;
 
@@ -203,7 +203,7 @@ export function getMomentTaskSummary(payload: Record<string, unknown> | undefine
  * @param {number} [maxLength] - The maximum description length.
  * @returns {string} The truncated description, or 'Description: None' if empty.
  */
-export function getCardDescription(payload: Record<string, unknown> | undefined, maxLength = 52): string {
+function getCardDescription(payload: Record<string, unknown> | undefined, maxLength = 52): string {
     const description = String(payload?.description ?? payload?.Description ?? '').trim();
     if (!description) return 'Description: None';
 
@@ -215,7 +215,7 @@ export function getCardDescription(payload: Record<string, unknown> | undefined,
  * @param {object} payload - The node payload containing an assignedStrideId.
  * @returns {string} The stride label (e.g. 'Stride: Backlog' or 'Stride # N').
  */
-export function getStrideLabel(payload: Record<string, unknown> | undefined): string {
+function getStrideLabel(payload: Record<string, unknown> | undefined): string {
     const id = payload?.assignedStrideId as string | undefined;
     if ([undefined, 'unassigned', ''].includes(id)) return 'Stride: Backlog';
     return `Stride # ${id}`;
@@ -226,7 +226,7 @@ export function getStrideLabel(payload: Record<string, unknown> | undefined): st
  * @param {object} nodeData - The node data.
  * @returns {string} The multi-line title string.
  */
-export function getNodeTitle(nodeData: Record<string, unknown>): string {
+function getNodeTitle(nodeData: Record<string, unknown>): string {
     const payload = (nodeData.payload ?? {}) as Record<string, unknown>;
     const lines = [String(payload.statement ?? payload.name ?? `#${payload.id}`)];
 
@@ -241,18 +241,6 @@ export function getNodeTitle(nodeData: Record<string, unknown>): string {
     return lines.join('\n');
 }
 
-/**
- * Sort items by their displayOrder property, with statement as secondary sort.
- * @param {object[]} items - The items to sort.
- * @returns {object[]} A new sorted array.
- */
-export function sortByDisplayOrder(items: Record<string, unknown>[]): Record<string, unknown>[] {
-    return items.toSorted((left, right) => {
-        const orderDelta = ((left.displayOrder as number) ?? 0) - ((right.displayOrder as number) ?? 0);
-        if (orderDelta !== 0) return orderDelta;
-        return String(left.statement ?? '').localeCompare(String(right.statement ?? ''));
-    });
-}
 
 /**
  * Categorize an effort estimate into a bucket for graph filtering.
@@ -347,7 +335,7 @@ export function createNodeWithMetrics(nodeType: string, payload: Record<string, 
  * @param {string} nodeType - The node type.
  * @returns {string} The hex color string.
  */
-export function getNodeColor(nodeType: string): string {
+function getNodeColor(nodeType: string): string {
     switch (nodeType) {
         case 'project': { return '#1d3557';
         }
@@ -370,7 +358,7 @@ export function getNodeColor(nodeType: string): string {
  * Get the application base URL path by examining the current URL segments.
  * @returns {string} The base path (empty string or /owner/project).
  */
-export function getAppBasePath(): string {
+function getAppBasePath(): string {
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const routeRootIndex = pathSegments.findIndex(segment => Object.prototype.hasOwnProperty.call(NODE_ROUTE_SEGMENTS, segment));
 
@@ -393,7 +381,7 @@ export function getAppBasePath(): string {
  * @param {string} project - The project's slug.
  * @returns {string|undefined} The detail page URL, or undefined if node type has no route.
  */
-export function getNodeHref(node: Record<string, unknown>, owner: string, project: string): string | undefined {
+function getNodeHref(node: Record<string, unknown>, owner: string, project: string): string | undefined {
     const routeSegment = (NODE_ROUTE_SEGMENTS as Record<string, string>)[node.nodeType as string];
     if (!routeSegment) return;
 

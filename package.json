@@ -9,7 +9,7 @@
     "lint:css": "stylelint 'PromiseModelOnline.Client/wwwroot/css/*.css'",
     "typecheck": "tsc --noEmit",
     "lint:dry": "jscpd",
-    "lint:dead": "ts-prune -p tsconfig.json -e '/(node_modules|bin|\\.d\\.ts)/'",
+    "lint:dead": "knip --no-progress",
     "lint:all": "npm run lint && npm run lint:html && npm run lint:css && npm run lint:dry && npm run lint:dead && npm run typecheck",
     "pwa:check": "node pwa-check.mjs https://localhost:9000",
     "pwa:check:url": "node pwa-check.mjs"
@@ -38,9 +38,9 @@
     "globals": "^17.6.0",
     "htmlhint": "^1.9.2",
     "jscpd": "^5.0.10",
+    "knip": "^6.17.1",
     "stylelint": "^17.13.0",
     "stylelint-config-standard": "^40.0.0",
-    "ts-prune": "^0.10.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
     "vite": "^8.0.16"

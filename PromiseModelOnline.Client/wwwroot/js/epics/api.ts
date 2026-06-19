@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiPatch } from '../api.ts';
+import { apiGet, apiPost, apiPatch } from '../api.ts';
 
 /**
  * Fetch an epic by its sequence number.
@@ -40,7 +40,7 @@ export const createEpic = (owner, project, data) => apiPost(`/api/projects/${enc
  * @param {object} data - The updated epic data.
  * @returns {Promise<object>} The updated epic.
  */
-export const updateEpic = (owner, project, epicSeq, data) => apiPut(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/epics/${epicSeq}`, data);
+
 /**
  * Update the description of an epic.
  * @param {string} owner - The project owner's slug.

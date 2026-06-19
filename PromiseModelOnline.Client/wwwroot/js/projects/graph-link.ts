@@ -1,4 +1,3 @@
-import { fetchProjects, getProjectPromises } from './api.ts';
 
 const promiseProjectCache = new Map<number, number>();
 
@@ -17,14 +16,6 @@ function toProjectId(value: unknown): number | undefined {
     return Number.isNaN(parsed) ? undefined : parsed;
 }
 
-/**
- * Read a graphProjectId hint from the URL query parameters.
- * @returns {number } The project ID if present and valid, or null.
- */
-export function getGraphProjectIdHintFromUrl(): number | undefined {
-    const parameters = new URLSearchParams(location.search);
-    return toProjectId(parameters.get('graphProjectId'));
-}
 
 /**
  * Parse the owner and project slugs from the current URL path.
@@ -92,36 +83,3 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
  * @param {string | number } [preferredProjectId] - An optional preferred project ID to short-circuit the search.
  * @returns {Promise<number | null>} The resolved project ID, or null if not found.
  */
-export async function resolveProjectIdForPromise(promiseId: string | number, preferredProjectId: string | number | undefined): Promise<number | undefined> {
-    const numericPromiseId = Math.trunc(Number(promiseId));
-    if (Number.isNaN(numericPromiseId)) return;
-
-    const cached = promiseProjectCache.get(numericPromiseId);
-    if (cached !== undefined) {
-        return cached;
-    }
-
-    const preferred = toProjectId(preferredProjectId);
-    if (preferred !== undefined) {
-        promiseProjectCache.set(numericPromiseId, preferred);
-        return preferred;
-    }
-
-    const projects = await fetchProjects();
-    const projectList = Array.isArray(projects) ? projects : [];
-
-    const results = await Promise.all(projectList.map(async (project) => {
-        const projectId = toProjectId(project?.id);
-        if (projectId === undefined) return;
-        const promises = await getProjectPromises(project.ownerSlug, project.slug);
-        const isMatch = (Array.isArray(promises) ? promises : []).some(item => Number(item?.id) === numericPromiseId);
-        if (!isMatch) return;
-        return projectId;
-    }));
-    const found = results.find(id => id !== undefined);
-    if (found !== undefined) {
-        promiseProjectCache.set(numericPromiseId, found);
-        return found;
-    }
-
-}

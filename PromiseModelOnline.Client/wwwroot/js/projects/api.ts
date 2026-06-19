@@ -194,17 +194,6 @@ export async function removePermission(owner, project, permissionId) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 }
 
-/**
- * Fetch the top-level promises for a project.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<object[]>} The promise list.
- */
-export async function getProjectPromises(owner, project) {
-    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/promises`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
-}
 
 /**
  * Fetch the full project hierarchy as graph data.
@@ -219,17 +208,6 @@ export async function getGraphData(owner, project) {
     return response.json();
 }
 
-/**
- * Fetch the member list for a project.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<object[]>} The member list.
- */
-export async function getProjectMembers(owner, project) {
-    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response ?? [];
-}
 
 /**
  * Fetch the current user's permission level for a project.

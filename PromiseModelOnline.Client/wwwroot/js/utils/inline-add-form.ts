@@ -121,20 +121,4 @@ function insertCreatedRow(tbody: HTMLTableSectionElement, created: Record<string
   insertRowBeforeAddRow(tbody, row);
 }
 
-/**
- * Disable the add-child form controls when the user lacks Edit permission.
- * @param {string} formId - The `id` of the form element.
- * @param {string} inputId - The `id` of the statement input.
- * @param {string} submitButtonId - The `id` of the submit button.
- * @param {string} [typeSelectId] - Optional `id` of the type select (moments detail).
- */
-export function gateAddChildControls(formId: string, inputId: string, submitButtonId: string, typeSelectId?: string): void {
-  const inputElement = document.querySelector('#' + inputId) as HTMLInputElement | null;
-  const submitElement = document.querySelector('#' + submitButtonId) as HTMLButtonElement | null;
-  if (inputElement) inputElement.disabled = true;
-  if (submitElement) { submitElement.disabled = true; submitElement.title = 'Requires Edit permission.'; }
-  if (typeSelectId) {
-    const typeElement = document.querySelector('#' + typeSelectId) as HTMLSelectElement | null;
-    if (typeElement) typeElement.disabled = true;
-  }
-}
+

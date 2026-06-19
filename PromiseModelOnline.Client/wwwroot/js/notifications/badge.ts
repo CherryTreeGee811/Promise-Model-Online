@@ -1,5 +1,5 @@
 import { fetchUnreadNotifications } from './api.ts';
-import { startSignalR, stopSignalR } from './signalr.ts';
+import { startSignalR } from './signalr.ts';
 
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
 const _state = { isStarted: false };
@@ -49,14 +49,8 @@ export async function updateNotificationBadge() {
 /**
  * Stop the notification polling loop.
  * Disconnects the SignalR hub and resets the started flag so that
- * startNotificationPolling may be called again later.
+/** Start polling for unread notification updates.
  */
-export function stopNotificationPolling() {
-    _state.isStarted = false;
-    void stopSignalR();
-}
-
-/** Start polling for unread notification updates. */
 export async function startNotificationPolling() {
     await handleNotificationUpdate();
 

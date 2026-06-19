@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, apiDelete } from '../api.ts';
+import { apiGet, apiPost, apiPatch,  } from '../api.ts';
 
 /**
  * Fetch reactions for a given parent entity.
@@ -33,4 +33,3 @@ export const updateReaction = (_owner, _project, reactionId, emote?: string) => 
  * @param {number} reactionId - The reaction ID to delete.
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
-export const deleteReaction = (_owner, _project, reactionId) => apiDelete(`/api/reactions/${reactionId}`);

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiPatch } from '../api.ts';
+import { apiGet, apiPost, apiPatch } from '../api.ts';
 
 /**
  * Fetch a journey by its sequence number.
@@ -40,7 +40,7 @@ export const createJourney = (owner, project, data) => apiPost(`/api/projects/${
  * @param {object} data - The updated journey data.
  * @returns {Promise<object>} The updated journey.
  */
-export const updateJourney = (owner, project, journeySeq, data) => apiPut(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/journeys/${journeySeq}`, data);
+
 /**
  * Update the description of a journey.
  * @param {string} owner - The project owner's slug.

@@ -1,4 +1,4 @@
-import { apiGet, apiGetList, apiPost, apiPatch } from '../api.ts';
+import { apiGet, apiGetList, apiPost,  } from '../api.ts';
 
 /**
  * Fetch all strides for a given iteration.
@@ -29,7 +29,6 @@ export const getMomentsByStride = (owner, project, strideId) => apiGetList(`/api
  * @param {string} project - The project slug.
  * @returns {Promise<Array>} The list of unassigned moments.
  */
-export const getUnassignedMoments = (owner, project) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?unassigned=true`);
 /**
  * Fetch moments for a given iteration, optionally filtering to unassigned only.
  * @param {string} owner - The owner (username or organization).
@@ -87,7 +86,6 @@ export async function getMyPermission(owner, project) {
  * @param {object} data - The fields to update.
  * @returns {Promise<object>} The updated stride.
  */
-export const updateStride = (owner, project, strideId, data) => apiPatch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}`, data);
 /**
  * Progress a stride to its next status.
  * @param {string} owner - The owner (username or organization).
@@ -100,4 +98,3 @@ export const progressStride = (owner, project, strideId) => apiPost(`/api/projec
  * Trigger a batch run of deadline notifications.
  * @returns {Promise<object>} The API response.
  */
-export const triggerDeadlineNotificationRuns = () => apiPost('/api/deadline-notification-runs', {});

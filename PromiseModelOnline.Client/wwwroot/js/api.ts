@@ -54,16 +54,6 @@ export async function apiPost<T = unknown>(url: string, body: unknown): Promise<
   return apiMutate<T>(url, body, 'POST', true) as Promise<T | undefined>;
 }
 
-/**
- * Perform a PUT request with a JSON body.
- * @param {string} url - The API endpoint URL.
- * @param {unknown} body - The request payload.
- * @returns {Promise<boolean>} True on success.
- * @throws {Error} If the HTTP response is not OK.
- */
-export async function apiPut(url: string, body: unknown): Promise<boolean> {
-  return apiMutate(url, body, 'PUT', false) as Promise<boolean>;
-}
 
 /**
  * Perform a PATCH request with a JSON body.
@@ -76,15 +66,6 @@ export async function apiPatch<T = unknown>(url: string, body: unknown): Promise
   return apiMutate<T>(url, body, 'PATCH', true) as Promise<T | undefined>;
 }
 
-/**
- * Perform a DELETE request.
- * @param {string} url - The API endpoint URL.
- * @returns {Promise<boolean>} True on success.
- * @throws {Error} If the HTTP response is not OK.
- */
-export async function apiDelete(url: string): Promise<boolean> {
-  return apiMutate(url, undefined, 'DELETE', false) as Promise<boolean>;
-}
 
 /**
  * Core fetch wrapper that includes credentials, sets JSON accept headers,

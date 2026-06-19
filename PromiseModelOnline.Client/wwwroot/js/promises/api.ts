@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiPatch } from '../api.ts';
+import { apiGet, apiPost, apiPatch } from '../api.ts';
 
 /**
  * Fetch a promise by its sequence number.
@@ -40,7 +40,7 @@ export const createPromise = (owner, project, data) => apiPost(`/api/projects/${
  * @param {object} data - The updated promise data.
  * @returns {Promise<object>} The updated promise.
  */
-export const updatePromise = (owner, project, promiseSeq, data) => apiPut(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/promises/${promiseSeq}`, data);
+
 /**
  * Update the description of a promise.
  * @param {string} owner - The project owner's slug.

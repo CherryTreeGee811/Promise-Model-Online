@@ -325,7 +325,7 @@ function buildLinearTree(pathEntities: PathEntities, metrics: Record<string, Chi
  * @param {string} project - The project's slug.
  * @returns {Promise<{ tree: Record<string, unknown> | null; focusNodeId: string | null }>} The tree data and the focus node ID for the starting node.
  */
-export async function buildAncestorPathTree(nodeType: string, nodeId: string | number, owner: string, project: string): Promise<{ tree: Record<string, unknown> | undefined; focusNodeId: string }> {
+async function buildAncestorPathTree(nodeType: string, nodeId: string | number, owner: string, project: string): Promise<{ tree: Record<string, unknown> | undefined; focusNodeId: string }> {
     if (!STACK_NODE_TYPES.has(nodeType)) {
         throw new Error(`Unsupported node type: ${nodeType}`);
     }
@@ -375,23 +375,6 @@ export function patchChildMetrics(nodeId: string, children: Record<string, unkno
     });
 }
 
-/**
- * Map a moment status string to a color name for display.
- * @param {string} status - The status value (Done, InProgress, Blocked, or not started).
- * @returns {string} The corresponding color name (green, orange, black, red).
- */
-export function momentStatusToColor(status: string): string {
-    switch ((status ?? '')) {
-        case 'Done': { return 'green';
-        }
-        case 'InProgress': { return 'orange';
-        }
-        case 'Blocked': { return 'black';
-        }
-        default: { return 'red';
-        }
-    }
-}
 
 /**
  * Apply a partial payload update to a node in the detail stack graph and re-render.

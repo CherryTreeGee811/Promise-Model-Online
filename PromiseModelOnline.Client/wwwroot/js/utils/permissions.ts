@@ -7,19 +7,11 @@ const PERMISSION_HIERARCHY: Record<string, number> = { View: 0, Comment: 1, Edit
  * @param {string} permissionLevel - The user's permission level string.
  * @returns {boolean} True if the user can comment.
  */
-export function canComment(permissionLevel: string): boolean {
-    return (PERMISSION_HIERARCHY[permissionLevel] ?? 0) >= PERMISSION_HIERARCHY.Comment;
-}
-
 /**
  * Check whether a permission level is at least "Edit".
  * @param {string} permissionLevel - The user's permission level string.
  * @returns {boolean} True if the user can edit.
  */
-export function canEdit(permissionLevel: string): boolean {
-    return (PERMISSION_HIERARCHY[permissionLevel] ?? 0) >= PERMISSION_HIERARCHY.Edit;
-}
-
 /**
  * Check whether a permission level meets or exceeds a required minimum.
  * @param {string} permissionLevel - The user's permission level string.

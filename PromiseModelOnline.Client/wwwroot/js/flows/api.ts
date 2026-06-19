@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiPatch } from '../api.ts';
+import { apiGet, apiPost, apiPatch } from '../api.ts';
 
 /**
  * Fetch a flow by its sequence number.
@@ -40,7 +40,7 @@ export const createFlow = (owner, project, data) => apiPost(`/api/projects/${enc
  * @param {object} data - The updated flow data.
  * @returns {Promise<object>} The updated flow.
  */
-export const updateFlow = (owner, project, flowSeq, data) => apiPut(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/flows/${flowSeq}`, data);
+
 /**
  * Update the description of a flow.
  * @param {string} owner - The project owner's slug.

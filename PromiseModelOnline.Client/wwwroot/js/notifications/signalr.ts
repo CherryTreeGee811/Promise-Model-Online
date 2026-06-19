@@ -63,25 +63,3 @@ export async function startSignalR(onNotification) {
     }
 }
 
-/**
- * Stop the SignalR connection.
- * @returns {Promise<void>}
- */
-export async function stopSignalR() {
-    if (state.connection) {
-        try {
-            await state.connection.stop();
-        } catch {}
-        delete state.connection;
-    }
-    state.isStarted = false;
-    delete state.onNotificationOrReconnect;
-}
-
-/**
- * Check if the SignalR connection is currently active.
- * @returns {boolean} True if the SignalR connection state is Connected.
- */
-export function isSignalRConnected() {
-    return state.connection && state.connection.state === signalR.HubConnectionState.Connected;
-}
