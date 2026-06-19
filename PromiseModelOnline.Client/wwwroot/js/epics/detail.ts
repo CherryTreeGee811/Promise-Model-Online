@@ -11,7 +11,7 @@ import { getPromiseById } from '../promises/api.ts';
 import { navigate } from '../router.ts';
 import { getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
-import { escapeHtml } from '../utils/html.ts';
+import { escapeHtml, htmlToNodes } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
 
@@ -39,17 +39,6 @@ interface PromiseItem {
     sequenceNumber: number;
     statement: string;
     statusColor?: string;
-}
-
-/**
- * @param {string} html - HTML string to parse
- * @returns {Node[]} Array of child nodes
- */
-function htmlToNodes(html: string): Node[] {
-    const document_ = new DOMParser().parseFromString(html, 'text/html');
-    const fragment = document.createDocumentFragment();
-    fragment.append(...document_.body.childNodes);
-    return [...fragment.childNodes];
 }
 
 /**

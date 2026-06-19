@@ -1,0 +1,15 @@
+{
+  "threshold": 0,
+  "minLines": 5,
+  "minTokens": 50,
+  "gitignore": true,
+  "ignore": [
+    "**/bin/**",
+    "**/node_modules/**",
+    "**/*.d.ts",
+    "**/.playwright/**"
+  ],
+  "pattern": "PromiseModelOnline.Client/wwwroot/js/**/*.ts",
+  "reporters": ["console"],
+  "mode": "mild"
+}

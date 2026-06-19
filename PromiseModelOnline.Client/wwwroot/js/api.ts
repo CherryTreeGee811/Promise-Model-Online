@@ -89,17 +89,6 @@ export async function apiDelete(url: string): Promise<boolean> {
 }
 
 /**
- * Build a project-scoped API URL from owner slug, project slug, and optional path.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {string} path - Optional additional path segment.
- * @returns {string} The constructed URL.
- */
-export function projectUrl(owner: string, project: string, path = ''): string {
-  return `/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}${path}`;
-}
-
-/**
  * Core fetch wrapper that includes credentials, sets JSON accept headers,
  * and redirects to /login on 401 responses.
  * @param {string} url - The URL to fetch.

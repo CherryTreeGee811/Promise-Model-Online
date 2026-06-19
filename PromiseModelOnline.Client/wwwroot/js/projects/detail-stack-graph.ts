@@ -5,13 +5,13 @@ import { getMoment } from '../moments/api.ts';
 import { getPromise, getEpicsByPromise, getPromiseById } from '../promises/api.ts';
 
 import { getProject } from './api.ts';
+import { getStatusBucket } from '../utils/status-utilities.ts';
 import {
     computeChildMetrics,
     createNodeWithMetrics,
     findNodeById,
     getMomentEffortBucket,
     getMomentStrideBucket,
-    getStatusBucket,
     normalizeText,
     parseGraphData,
     getDetailPageNodeScale,

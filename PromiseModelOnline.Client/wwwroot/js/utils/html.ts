@@ -39,3 +39,15 @@ export function renderLoadingSpinner(message: string): HTMLElement {
     div.append(spinner);
     return div;
 }
+
+/**
+ * Parse an HTML string into an array of child nodes.
+ * @param {string} html - HTML string to parse
+ * @returns {Node[]} Array of child nodes
+ */
+export function htmlToNodes(html: string): Node[] {
+    const document_ = new DOMParser().parseFromString(html, 'text/html');
+    const fragment = document.createDocumentFragment();
+    fragment.append(...document_.body.childNodes);
+    return [...fragment.childNodes];
+}

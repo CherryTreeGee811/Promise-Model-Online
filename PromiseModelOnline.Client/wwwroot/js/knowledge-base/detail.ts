@@ -1,13 +1,4 @@
-/**
- * @param {string} html - HTML string to parse
- * @returns {Node[]} Array of child nodes
- */
-function htmlToNodes(html: string): Node[] {
-    const document_ = new DOMParser().parseFromString(html, 'text/html');
-    const fragment = document.createDocumentFragment();
-    fragment.append(...document_.body.childNodes);
-    return [...fragment.childNodes];
-}
+import { htmlToNodes } from '../utils/html.ts';
 
 /**
  * @param {string} id - Section element ID

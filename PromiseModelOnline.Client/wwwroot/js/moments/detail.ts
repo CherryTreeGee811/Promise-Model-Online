@@ -10,23 +10,12 @@ import { navigate } from '../router.ts';
 import { getStrides } from '../strides/api.ts';
 import { initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
-import { escapeHtml } from '../utils/html.ts';
+import { escapeHtml, htmlToNodes } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 import { isAtLeast } from '../utils/permissions.ts';
 
 import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
-
-/**
- * @param {string} html - HTML string to parse
- * @returns {Node[]} Array of child nodes
- */
-function htmlToNodes(html: string): Node[] {
-    const document_ = new DOMParser().parseFromString(html, 'text/html');
-    const fragment = document.createDocumentFragment();
-    fragment.append(...document_.body.childNodes);
-    return [...fragment.childNodes];
-}
 
 interface MomentTask {
     id: number;

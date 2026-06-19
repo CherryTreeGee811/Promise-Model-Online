@@ -55,6 +55,8 @@ jobs:
           npm ci
           npm run lint
           npm run typecheck
+          npm run lint:dry
+          npm run lint:dead
           npm audit --audit-level=high
           npm run build
 

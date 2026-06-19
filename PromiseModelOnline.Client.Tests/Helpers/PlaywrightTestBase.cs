@@ -74,6 +74,7 @@ public abstract class PlaywrightTestBase
                     || e.Text.Contains("None of the transports", StringComparison.OrdinalIgnoreCase)
                     || e.Text.Contains("transports supported", StringComparison.OrdinalIgnoreCase)
                     || e.Text.Contains("negotiation with the server", StringComparison.OrdinalIgnoreCase)
+                    || e.Text.Contains("/umami/", StringComparison.OrdinalIgnoreCase)
                     || (e.Text.Contains("Failed to load resource", StringComparison.OrdinalIgnoreCase)
                         && (e.Text.Contains("404", StringComparison.OrdinalIgnoreCase)
                             || e.Text.Contains("401", StringComparison.OrdinalIgnoreCase))))

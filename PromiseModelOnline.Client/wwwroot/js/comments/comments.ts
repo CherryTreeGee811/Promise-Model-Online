@@ -3,17 +3,7 @@ import { isAtLeast } from '../utils/permissions.ts';
 
 import { getComments, addComment } from './api.ts';
 import { createCommentAutocomplete } from './autocomplete.ts';
-
-/**
- * @param {string} html - HTML string to parse
- * @returns {Node[]} Array of child nodes
- */
-function htmlToNodes(html) {
-    const document_ = new DOMParser().parseFromString(html, 'text/html');
-    const fragment = document.createDocumentFragment();
-    fragment.append(...document_.body.childNodes);
-    return [...fragment.childNodes];
-}
+import { htmlToNodes } from '../utils/html.ts';
 
 /**
  * @param {HTMLElement} container - The container element

@@ -6,6 +6,9 @@
     "build": "vite build",
     "lint": "eslint 'PromiseModelOnline.Client/wwwroot/js/**/*.{mjs,ts}'",
     "typecheck": "tsc --noEmit",
+    "lint:dry": "jscpd",
+    "lint:dead": "ts-prune -p tsconfig.json -e '/(node_modules|bin|\\.d\\.ts)/'",
+    "lint:all": "npm run lint && npm run lint:dry && npm run lint:dead && npm run typecheck",
     "pwa:check": "node pwa-check.mjs https://localhost:9000",
     "pwa:check:url": "node pwa-check.mjs"
   },
@@ -31,6 +34,8 @@
     "eslint-plugin-sonarjs": "^4.1.0",
     "eslint-plugin-unicorn": "^67.0.0",
     "globals": "^17.6.0",
+    "jscpd": "^5.0.10",
+    "ts-prune": "^0.10.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
     "vite": "^8.0.16"

@@ -66,15 +66,3 @@ export function getStatusBucket(statusColor: string): string {
     return 'other';
 }
 
-/**
- * Generate an HTML `<option>` element for a status dropdown.
- * @param {string} value - The status value.
- * @param {string} [selectedValue] - Currently selected value (for marking `selected`).
- * @returns {string} HTML option string.
- */
-export function getStatusOptionHtml(value: string, selectedValue?: string): string {
-    const option = STATUS_OPTIONS.find(o => o.value === value);
-    if (!option) return `<option value="${value}">${value}</option>`;
-    const selected = value === selectedValue ? ' selected' : '';
-    return `<option value="${value}"${selected}>${option.icon} ${option.label}</option>`;
-}

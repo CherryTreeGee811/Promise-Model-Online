@@ -1629,5 +1629,3 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
         zoom: svg.node() && enableZoom ? zoom : undefined,
     };
 }
-
-export {getStatusIcon, getStatusBucket} from '../utils/status-utilities.ts';
