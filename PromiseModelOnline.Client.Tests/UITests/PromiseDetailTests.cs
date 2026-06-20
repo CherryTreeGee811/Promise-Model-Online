@@ -14,10 +14,10 @@ public class PromiseDetailTests : PlaywrightTestBase
         // Act
         var header = await WaitForSelectorAsync(".promise-detail-card h2");
         var headerText = await header.TextContentAsync();
-        var epicLink = await WaitForSelectorAsync("#promise-epics-list a[epic-id]");
-        var linkText = await epicLink.TextContentAsync();
+        var epicRow = await WaitForSelectorAsync("#promise-epics-list tr[data-epic-seq]");
+        var epicText = await epicRow.TextContentAsync();
         // Assert
         Assert.That(headerText, Does.Contain("Project Promise One"));
-        Assert.That(linkText, Is.EqualTo("View"));
+        Assert.That(epicText, Does.Contain("Epic One"));
     }
 }

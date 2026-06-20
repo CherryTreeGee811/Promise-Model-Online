@@ -261,6 +261,12 @@ public static partial class MockApiHandler
             ("GET", "/api/journeys/by-epic/1") => Json(200, """[{"id":1,"name":"Journey One","epicId":1,"displayOrder":1}]"""),
             ("GET", "/api/journeys/by-epic/10") => Json(200, "[]"),
             ("GET", "/api/flows/1") => Json(200, """{"id":1,"name":"Flow One","journeyId":1,"displayOrder":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/flows/1") when isOwner => Json(200, """{"id":1,"name":"Flow One","journeyId":1,"displayOrder":1,"statement":"Flow One","sequenceNumber":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/journeys/1") when isOwner => Json(200, """{"id":1,"name":"Journey One","epicId":1,"displayOrder":1,"statement":"Journey One","sequenceNumber":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/promises/1") when isOwner => Json(200, """{"id":1,"statement":"Project Promise One","projectId":1,"displayOrder":1,"sequenceNumber":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/epics") => Json(200, """[{"id":1,"statement":"Epic One","promiseId":1,"displayOrder":1,"sequenceNumber":1}]"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/flows") => Json(200, """[{"id":1,"name":"Flow One","journeyId":1,"displayOrder":1,"statement":"Flow One","sequenceNumber":1}]"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/moments") => Json(200, """[{"id":100,"sequenceNumber":100,"statement":"Moment 100","flowId":1,"displayOrder":1,"statusColor":"red","effortEstimate":"S","assignedStrideId":10},{"id":101,"sequenceNumber":101,"statement":"Moment 101","flowId":1,"displayOrder":2,"statusColor":"green","effortEstimate":"M","assignedStrideId":10}]"""),
 
             ("GET", "/api/iterations") => Json(200, """[{"id":1,"name":"Sprint 1","projectId":1,"displayOrder":1,"startDate":"2026-06-01","endDate":"2026-06-14"}]"""),
             ("GET", "/api/audit-events") => Json(200, """[{"id":1,"action":"Project created","userId":1,"userName":"Test Owner","timestamp":"2026-05-01T00:00:00Z"}]"""),

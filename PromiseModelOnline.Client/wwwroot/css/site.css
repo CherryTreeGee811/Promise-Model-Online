@@ -940,14 +940,14 @@ button {
 }
 
 .btn-primary {
-  --bs-btn-bg: #0952bd;
-  --bs-btn-border-color: #0952bd;
-  --bs-btn-hover-bg: #07429a;
-  --bs-btn-hover-border-color: #063883;
-  --bs-btn-active-bg: #063272;
-  --bs-btn-active-border-color: #052b61;
-  --bs-btn-disabled-bg: #0952bd;
-  --bs-btn-disabled-border-color: #0952bd;
+  --bs-btn-bg: #07429a;
+  --bs-btn-border-color: #07429a;
+  --bs-btn-hover-bg: #063272;
+  --bs-btn-hover-border-color: #052b61;
+  --bs-btn-active-bg: #04254f;
+  --bs-btn-active-border-color: #031e42;
+  --bs-btn-disabled-bg: #07429a;
+  --bs-btn-disabled-border-color: #07429a;
 }
 
 .btn-primary:hover,
@@ -2154,7 +2154,7 @@ input, button, a, label, select, textarea {
 }
 
 .privacy-date {
-  color: #535a60;
+  color: #3d4348;
   margin-bottom: 1.5rem;
 }
 
@@ -2178,7 +2178,7 @@ input, button, a, label, select, textarea {
 
 .privacy-jurisdiction {
   margin-top: 2rem;
-  color: #535a60;
+  color: #3d4348;
   font-size: var(--font-size-sm);
 }
 

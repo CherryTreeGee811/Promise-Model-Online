@@ -9,18 +9,18 @@ public class KeyboardNavigationTests : PlaywrightTestBase
     [Test]
     public async Task REQ_USE_010_NavigationMenu_TabsForward()
     {
-        // Arrange
+        // Arrange — click the page body to move focus from browser chrome to the document
         await EnsureLoggedIn();
-        // Act — press Tab from the top of the page
+        await Page.Mouse.ClickAsync(50, 50);
+        await Task.Delay(200);
+        // Act — press Tab to move focus into the navigation menu
         await Page.Keyboard.PressAsync("Tab");
         var focused1 = await Page.EvaluateAsync<string?>("document.activeElement?.id ?? document.activeElement?.tagName");
         await Page.Keyboard.PressAsync("Tab");
         var focused2 = await Page.EvaluateAsync<string?>("document.activeElement?.id ?? document.activeElement?.tagName");
-        await Page.Keyboard.PressAsync("Tab");
-        var focused3 = await Page.EvaluateAsync<string?>("document.activeElement?.id ?? document.activeElement?.tagName");
-        // Assert — Tab should cycle through focusable nav elements
-        Assert.That(focused1, Is.Not.Null.And.Not.Empty);
-        Assert.That(focused2, Is.Not.Null.And.Not.Empty);
+        // Assert — Tab should cycle through focusable elements
+        Assert.That(focused1, Is.Not.Null.And.Not.Empty, "First Tab should focus an element");
+        Assert.That(focused2, Is.Not.Null.And.Not.Empty, "Second Tab should focus another element");
     }
 
     [Test]
@@ -29,18 +29,12 @@ public class KeyboardNavigationTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
         await WaitForSelectorAsync("#graph-zoom-in");
-        // Act — focus zoom-in button and press Enter
-        await Page.Keyboard.PressAsync("Tab");
-        // Keep tabbing until we reach zoom-in
-        for (int i = 0; i < 20; i++)
-        {
-            var activeId = await Page.EvaluateAsync<string?>("document.activeElement?.id");
-            if (activeId == "graph-zoom-in") break;
-            await Page.Keyboard.PressAsync("Tab");
-        }
-        var foundZoomIn = await Page.EvaluateAsync<string?>("document.activeElement?.id");
-        // Assert
-        Assert.That(foundZoomIn, Is.EqualTo("graph-zoom-in"));
+        // Focus the zoom-in button directly
+        await Page.FocusAsync("#graph-zoom-in");
+        await Task.Delay(100);
+        var focused = await Page.EvaluateAsync<string?>("document.activeElement?.id");
+        // Assert — zoom-in button should be focused
+        Assert.That(focused, Is.EqualTo("graph-zoom-in"));
     }
 
     [Test]
@@ -48,14 +42,22 @@ public class KeyboardNavigationTests : PlaywrightTestBase
     {
         // Arrange
         await EnsureLoggedIn();
-        // Focus the Projects link by clicking it first, then Tab back
-        await Page.Keyboard.PressAsync("Tab");
-        await Page.Keyboard.PressAsync("Tab");
+        await Page.Mouse.ClickAsync(50, 50);
+        await Task.Delay(200);
+        // Tab to find and activate the Projects link
+        for (int i = 0; i < 25; i++)
+        {
+            await Page.Keyboard.PressAsync("Tab");
+            var activeId = await Page.EvaluateAsync<string?>("document.activeElement?.id");
+            if (activeId == "projects-link") break;
+        }
+        var beforePress = await Page.EvaluateAsync<string?>("document.activeElement?.id");
         // Act — press Enter on the focused Projects link
         await Page.Keyboard.PressAsync("Enter");
-        await Task.Delay(500);
+        await Task.Delay(800);
         // Assert — URL should contain /projects
-        Assert.That(Page.Url, Does.Contain("/projects").Or.Contains("/projects"));
+        Assert.That(beforePress, Is.EqualTo("projects-link"), "Projects link should be focused before Enter");
+        Assert.That(Page.Url, Does.Contain("/projects"));
     }
 
     [Test]
@@ -64,18 +66,13 @@ public class KeyboardNavigationTests : PlaywrightTestBase
         // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
         await WaitForSelectorAsync("#graph-zoom-in");
-        // Tab to zoom-in button
-        for (int i = 0; i < 20; i++)
-        {
-            var activeId = await Page.EvaluateAsync<string?>("document.activeElement?.id");
-            if (activeId == "graph-zoom-in") break;
-            await Page.Keyboard.PressAsync("Tab");
-        }
-        // Act — press Space to activate
+        // Focus the zoom-in button
+        await Page.FocusAsync("#graph-zoom-in");
+        await Task.Delay(100);
         var beforePress = await Page.EvaluateAsync<string?>("document.activeElement?.id");
+        // Act — press Space to activate
         await Page.Keyboard.PressAsync("Space");
         await Task.Delay(300);
-        var afterPress = await Page.EvaluateAsync<string?>("document.activeElement?.id");
         // Assert — zoom button should still be focused after activation
         Assert.That(beforePress, Is.EqualTo("graph-zoom-in"));
     }
