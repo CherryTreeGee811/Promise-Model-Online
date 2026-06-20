@@ -1539,6 +1539,15 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
     const viewportWidth = viewportSize.width || contentDiv.clientWidth || 0;
     const viewportHeight = viewportSize.height || contentDiv.clientHeight || 0;
 
+    // Defer render until viewport has non-zero dimensions.
+    // D3 tree layout produces NaN SVG coordinates when viewport is 0-sized
+    // (e.g. headless browser before layout resolves). Deferring by one
+    // animation frame allows the DOM to settle.
+    if (!viewportWidth || !viewportHeight) {
+        requestAnimationFrame(() => renderStackGraph(contentDiv, d3, treeData, options));
+        return;
+    }
+
     const layout = computeGraphLayout(compact as boolean, viewportWidth, viewportHeight, margin as unknown as { top: number; right: number; bottom: number; left: number }, maxDepth, treeData, (uniformNodeScale as number) ?? 1);
     const { stepGapX, stepGapY, foreheadGap, cardScale } = layout;
 
