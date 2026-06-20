@@ -1,5 +1,0 @@
-[
-  { "id": 100, "sequenceNumber": 100, "statement": "Moment 100", "assignedStrideId": 10, "ownerId": 1, "effortEstimate": "S" },
-  { "id": 101, "sequenceNumber": 101, "statement": "Moment 101", "assignedStrideId": 10, "ownerId": 1, "effortEstimate": "M" },
-  { "id": 102, "sequenceNumber": 102, "statement": "Moment 102", "assignedStrideId": null, "ownerId": null, "effortEstimate": null }
-]

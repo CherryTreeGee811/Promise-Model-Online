@@ -12,6 +12,9 @@
     "scripts/**/*.cjs",
     "*.mjs"
   ],
+  "ignore": [
+    "PromiseModelOnline.Client.Tests/UnitTests/"
+  ],
   "ignoreDependencies": [
     "@popperjs/core",
     "@types/d3",
@@ -21,6 +24,7 @@
     "bootstrap",
     "bootstrap-icons",
     "d3",
+    "jsdom",
     "puppeteer",
     "tippy.js"
   ]

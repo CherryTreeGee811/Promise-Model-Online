@@ -546,6 +546,21 @@ function getRenderedNodePosition(node: { x: number; y: number }, contentOffsetX:
 }
 
 /**
+ * Sanitize D3 tree layout positions, replacing NaN with 0 to prevent
+ * invalid SVG attribute values (translate(NaN), path d="MNaN").
+ * NaN coordinates can occur in edge cases such as viewport settling races,
+ * zero-depth trees, or D3 internal division-by-zero.
+ * @param {object} root - The D3 hierarchy root.
+ * @param {() => Array<{ x: number; y: number }>} root.descendants - The descendants accessor returning {x,y} nodes.
+ */
+function sanitizeTreePositions(root: { descendants: () => Array<{ x: number; y: number }> }): void {
+    for (const node of root.descendants()) {
+        if (!Number.isFinite(node.x)) node.x = 0;
+        if (!Number.isFinite(node.y)) node.y = 0;
+    }
+}
+
+/**
  * Create a D3 zoom transform that centers the viewport on a given node.
  * @param {object} d3 - The D3 module instance.
  * @param {number} viewportWidth - The viewport width.
@@ -1563,6 +1578,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
 
     const treeLayout = d3.tree().nodeSize([stepGapY, stepGapX]);
     treeLayout(root);
+    sanitizeTreePositions(root);
 
     const descendants = root.descendants();
     const renderable = descendants.filter(node => (renderRootCard as boolean) || (node.data as Record<string, unknown> | undefined)?.nodeType !== 'root');

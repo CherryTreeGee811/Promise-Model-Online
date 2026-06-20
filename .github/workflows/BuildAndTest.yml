@@ -80,6 +80,7 @@ jobs:
           npm run typecheck
           npm run lint:dry
           npm run lint:dead
+          npm run test
           npm run build
 
       - name: Source code import boundary (Layer 2)

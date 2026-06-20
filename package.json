@@ -8,6 +8,7 @@
     "lint:html": "htmlhint 'PromiseModelOnline.Client/wwwroot/**/*.html'",
     "lint:css": "stylelint 'PromiseModelOnline.Client/wwwroot/css/*.css'",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint:dry": "jscpd",
     "lint:dead": "knip --no-progress",
     "lint:all": "npm run lint && npm run lint:html && npm run lint:css && npm run lint:dry && npm run lint:dead && npm run typecheck",
@@ -48,13 +49,15 @@
     "globals": "^17.6.0",
     "htmlhint": "^1.9.2",
     "jscpd": "^5.0.10",
+    "jsdom": "^29.1.1",
     "knip": "^6.17.1",
     "memlab": "^2.0.3",
     "stylelint": "^17.13.0",
     "stylelint-config-standard": "^40.0.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9"
   },
   "overrides": {
     "tmp": "0.2.7",
