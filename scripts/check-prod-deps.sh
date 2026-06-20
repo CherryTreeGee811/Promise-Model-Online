@@ -25,9 +25,11 @@ ACTUAL=$(npm ls --omit=dev --depth=0 --json 2>/dev/null \
   | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
-deps = list(data.get('dependencies', {}).keys())
-deps.sort()
-for d in deps:
+deps = data.get('dependencies', {})
+# Filter out extraneous packages (postinstall artifacts not in package.json)
+filtered = [k for k, v in deps.items() if not v.get('extraneous')]
+filtered.sort()
+for d in filtered:
     print(d)
 ")
 
