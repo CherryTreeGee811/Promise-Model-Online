@@ -54,10 +54,36 @@ for pair in "${CONFIG_PAIRS[@]}"; do
     cp "$SERVER" "$TMPDIR/conf.d/default.conf"
   fi
 
-  DOCKER_OUTPUT=$(docker run --rm \
-    -v "$TMPDIR/nginx.conf:/etc/nginx/nginx.conf:ro" \
-    -v "$TMPDIR/conf.d:/etc/nginx/conf.d:ro" \
-    nginx:alpine nginx -t 2>&1 || true)
+  # Generate self-signed TLS cert for server blocks that require one
+  if [ -n "$SERVER" ] && grep -q 'listen.*ssl' "$SERVER" 2>/dev/null; then
+    openssl req -x509 -newkey rsa:2048 \
+      -keyout "$TMPDIR/key.pem" \
+      -out "$TMPDIR/cert.pem" \
+      -days 1 -nodes \
+      -subj '/CN=localhost' 2>/dev/null
+  fi
+
+  # Add companion upstream definition for e2e configs that proxy to bff_upstream
+  if [ "$LABEL" = "e2e-test" ]; then
+    cat > "$TMPDIR/conf.d/upstream-bff.conf" << 'CONF'
+upstream bff_upstream {
+    server 127.0.0.1:1 down;
+}
+CONF
+  fi
+
+  DOCKER_ARGS=(
+    -v "$TMPDIR/nginx.conf:/etc/nginx/nginx.conf:ro"
+    -v "$TMPDIR/conf.d:/etc/nginx/conf.d:ro"
+  )
+  if [ -f "$TMPDIR/cert.pem" ]; then
+    DOCKER_ARGS+=(
+      -v "$TMPDIR/cert.pem:/etc/nginx/cert.pem:ro"
+      -v "$TMPDIR/key.pem:/etc/nginx/key.pem:ro"
+    )
+  fi
+
+  DOCKER_OUTPUT=$(docker run --rm "${DOCKER_ARGS[@]}" nginx:alpine nginx -t 2>&1 || true)
   if echo "$DOCKER_OUTPUT" | grep -q 'syntax is ok\|test is successful\|configuration file.*test is successful'; then
     echo "    ✅ Syntax OK"
   elif echo "$DOCKER_OUTPUT" | grep -q '\[emerg\]'; then
