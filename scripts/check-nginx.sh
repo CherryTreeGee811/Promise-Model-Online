@@ -54,7 +54,10 @@ for pair in "${CONFIG_PAIRS[@]}"; do
     cp "$SERVER" "$TMPDIR/conf.d/default.conf"
   fi
 
-  DOCKER_OUTPUT=$(docker run --rm -v "$TMPDIR:/etc/nginx:ro" nginx:alpine nginx -t 2>&1 || true)
+  DOCKER_OUTPUT=$(docker run --rm \
+    -v "$TMPDIR/nginx.conf:/etc/nginx/nginx.conf:ro" \
+    -v "$TMPDIR/conf.d:/etc/nginx/conf.d:ro" \
+    nginx:alpine nginx -t 2>&1 || true)
   if echo "$DOCKER_OUTPUT" | grep -q 'syntax is ok\|test is successful\|configuration file.*test is successful'; then
     echo "    ✅ Syntax OK"
   elif echo "$DOCKER_OUTPUT" | grep -q '\[emerg\]'; then
