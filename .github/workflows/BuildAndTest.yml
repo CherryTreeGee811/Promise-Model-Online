@@ -62,9 +62,9 @@ jobs:
           echo "=== Production dependency vulnerability scan ==="
           npm audit --omit=dev --audit-level=low
 
-      - name: Dev & test dependency audit
+      - name: Full dependency audit (production + dev)
         shell: bash
-        run: npm audit --omit=prod --audit-level=high
+        run: npm audit --audit-level=high
 
       - name: Production dependency boundary check (Layer 1)
         shell: bash
