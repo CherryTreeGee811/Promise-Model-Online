@@ -44,7 +44,7 @@ function handleNavClick(event: Event, navContentDiv: HTMLElement, contentDiv: HT
  * fetches it, and injects it into the nav element. Also activates the
  * current nav link and starts notification polling for authenticated users.
  * @param {HTMLElement} navContentDiv - The container element for the navigation bar.
- * @param {HTMLElement} contentDiv - The main content container element.
+ * @param {HTMLElement} _contentDiv - The main content container element.
  * @returns {Promise<void>} Resolves when the template has been loaded and rendered.
  * @throws {Error} If the fetch request fails.
  */

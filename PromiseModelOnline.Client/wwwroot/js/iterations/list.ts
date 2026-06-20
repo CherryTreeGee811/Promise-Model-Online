@@ -309,7 +309,7 @@ function buildIterationsTable(iterations: Iteration[], formatDate: (d: string) =
 function bindIterationViewButtons(iterations: Iteration[], showDetail: (iteration: Iteration) => Promise<void>): void {
     for (const button of document.querySelectorAll('.view-iteration-btn')) {
         button.addEventListener('click', () => {
-            const id = parseInt((button as HTMLElement).dataset.iterationId!, 10);
+            const id = Number((button as HTMLElement).dataset.iterationId!);
             const iteration = iterations.find(item => item.id === id);
             void showDetail(iteration ?? { id, name: 'Iteration #' + id, createdAt: '' });
         });

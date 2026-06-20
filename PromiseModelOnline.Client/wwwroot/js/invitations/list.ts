@@ -20,7 +20,7 @@ function buildEmptyState(): HTMLElement {
 }
 
 /**
- * @param {HTMLElement} contentDiv - Content container
+ * @param {HTMLElement} _contentDiv - Content container
  */
 export function loadInvitationsPage(_contentDiv: HTMLElement): void {
     const listDiv = document.querySelector('#invitations-list') as HTMLElement;
@@ -80,7 +80,7 @@ export function loadInvitationsPage(_contentDiv: HTMLElement): void {
 
             for (const button of listDiv.querySelectorAll('.accept-btn')) {
                 button.addEventListener('click', async () => {
-                    const id = parseInt((button as HTMLElement).dataset.permissionId!, 10);
+                    const id = Number((button as HTMLElement).dataset.permissionId!);
                     try {
                         await acceptInvitation(id);
                         const y = window.scrollY;

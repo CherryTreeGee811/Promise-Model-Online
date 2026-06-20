@@ -4,8 +4,8 @@ import { loadKnowledgeBase } from './detail.ts';
 
 /**
  * Handle knowledge-base-related routes.
- * @param {string} path - The URL path to match.
- * @param {HTMLElement} navContentDiv - The navigation content container element.
+ * @param {string} _path - The URL path to match.
+ * @param {HTMLElement} _navContentDiv - The navigation content container element.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
 export async function handleKnowledgeBaseRoutes(_path: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {

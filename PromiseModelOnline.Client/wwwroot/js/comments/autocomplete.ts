@@ -114,9 +114,9 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
   function positionDropdown() {
     const textareaRect = textarea.getBoundingClientRect();
     const computed = getComputedStyle(textarea);
-    const borderTop = Number.parseFloat(computed.borderTopWidth) || 0;
-    const borderLeft = Number.parseFloat(computed.borderLeftWidth) || 0;
-    const lineHeight = Number.parseFloat(computed.lineHeight) || (Number.parseFloat(computed.fontSize) * 1.2) || 20;
+    const borderTop = Number(computed.borderTopWidth) || 0;
+    const borderLeft = Number(computed.borderLeftWidth) || 0;
+    const lineHeight = Number(computed.lineHeight) || (Number(computed.fontSize) * 1.2) || 20;
 
     const charRect = getCaretRect(state.triggerStart);
 
@@ -131,6 +131,9 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
   /**
    * Fetch autocomplete suggestions from the API based on the trigger info.
    * @param {{ trigger: string, query: string, start: number }} triggerInfo - The trigger info.
+   * @param {string} triggerInfo.trigger - The trigger character (@ or #).
+   * @param {string} triggerInfo.query - The search query to match against.
+   * @param {number} triggerInfo.start - The cursor position where the trigger was detected.
    */
   async function fetchSuggestions(triggerInfo: { trigger: string; query: string; start: number }) {
     let results;
@@ -152,6 +155,9 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
    * Show the autocomplete dropdown with the given items.
    * @param {Array} items - The items to display in the dropdown.
    * @param {{ trigger: string, query: string, start: number }} triggerInfo - The trigger info for positioning.
+   * @param {string} triggerInfo.trigger - The trigger character (@ or #).
+   * @param {string} triggerInfo.query - The search query that was matched.
+   * @param {number} triggerInfo.start - The cursor position where the trigger was detected.
    */
   function showDropdown(items: AutocompleteItem[], triggerInfo: { trigger: string; query: string; start: number }) {
     state.items = items;
@@ -183,7 +189,7 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
       element.dataset.index = String(index);
       element.addEventListener('mousedown', function (event) {
         event.preventDefault();
-        selectItem(parseInt(element.dataset.index!, 10));
+        selectItem(Number(element.dataset.index!));
       });
 
       dropdown.append(element);

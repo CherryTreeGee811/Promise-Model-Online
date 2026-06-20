@@ -1106,7 +1106,7 @@ function renderTree(_contentDiv: HTMLElement, d3: Record<string, unknown>, treeD
     (graphState.contextMenu as { hide?: () => void } | null)?.hide?.();
 
     const speedElement = document.querySelector('#graph-animation-speed') as HTMLInputElement | null;
-    graphState.animationSpeed = speedElement ? Number.parseFloat(speedElement.value) || 1 : 1;
+    graphState.animationSpeed = speedElement ? Number(speedElement.value) || 1 : 1;
 
     const result = renderStackGraph(graphContent, d3 as unknown as D3Module, treeData, {
         owner: graphState.owner,
@@ -1246,7 +1246,7 @@ async function loadAvailableStrides(owner: string, project: string): Promise<voi
  * Load the project hierarchy graph visualization page with filtering, zoom, and context menus.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {HTMLElement} contentDiv - The main content container.
+ * @param {HTMLElement} _contentDiv - The main content container.
  * @param {Record<string, unknown> } permission - The current user's permission object for the project.
  * @returns {Promise<void>} Resolves when the graph page is fully loaded and rendered.
  */

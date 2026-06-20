@@ -383,16 +383,11 @@ function isRouteBlocked(route: { guard?: () => Record<string, unknown> }, navCon
  * @returns {boolean} True if a matching route was found and handled.
  */
 async function hasMatchingStaticRoute(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<boolean> {
-    for (const route of ROUTES) {
-        if (!route.test(path)) {
-        	continue;
-        }
-
-        if (isRouteBlocked(route, navContentDiv, contentDiv)) return true;
-        await route.handler(navContentDiv, contentDiv);
-        return true;
-    }
-    return false;
+    const route = ROUTES.find(r => r.test(path));
+    if (!route) return false;
+    if (isRouteBlocked(route, navContentDiv, contentDiv)) return true;
+    await route.handler(navContentDiv, contentDiv);
+    return true;
 }
 
 /**

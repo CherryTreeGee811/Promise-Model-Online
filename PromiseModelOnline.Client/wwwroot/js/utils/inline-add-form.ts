@@ -86,6 +86,9 @@ export function setupAddChildForm(config: AddChildConfig): void {
         insertCreatedRow(tbody as HTMLTableSectionElement, created, datasetKey, getRowHtml, typeSelect ?? undefined);
         clearFormInputs();
 
+        /**
+         * Resets the form inputs (statement, type select) after a successful inline add.
+         */
         function clearFormInputs(): void {
           statementInput!.value = '';
           if (typeSelect) typeSelect.value = 'Story';
@@ -106,7 +109,7 @@ export function setupAddChildForm(config: AddChildConfig): void {
  * @param {Record<string, unknown>} created - The created entity
  * @param {string} datasetKey - The data attribute key prefix
  * @param {(created: Record<string, unknown>) => string} getRowHtml - Function to get row HTML
- * @param {HTMLSelectElement | undefined} typeSelect - Optional type select element to reset
+ * @param {HTMLSelectElement | undefined} _typeSelect - Optional type select element to reset
  */
 function insertCreatedRow(tbody: HTMLTableSectionElement, created: Record<string, unknown>, datasetKey: string, getRowHtml: (created: Record<string, unknown>) => string, _typeSelect: HTMLSelectElement | undefined): void {
   removeInlineEmptyRow(tbody);

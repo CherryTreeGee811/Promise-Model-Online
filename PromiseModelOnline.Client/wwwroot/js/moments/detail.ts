@@ -43,10 +43,10 @@ interface Moment {
  * @param {Moment} moment - The moment data object
  * @param {HTMLElement} detailCard - The detail card element
  * @param {HTMLElement} detailDiv - The detail container element
- * @param {HTMLElement} navContentDiv - Navigation content container
- * @param {HTMLElement} contentDiv - Main content container
- * @param {string} owner - The project owner
- * @param {string} project - The project slug
+ * @param {HTMLElement} _navContentDiv - Navigation content container
+ * @param {HTMLElement} _contentDiv - Main content container
+ * @param {string} _owner - The project owner
+ * @param {string} _project - The project slug
  */
 function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement, detailDiv: HTMLElement, _navContentDiv: HTMLElement, _contentDiv: HTMLElement, _owner: string, _project: string): void {
         const heading = document.createElement('h2');
@@ -268,16 +268,25 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
             }
             applyStrideDefault(moment, strideSelectElement);
             strideSelectElement.addEventListener('change', async () => {
-                const value = strideSelectElement.value === '' ? undefined : parseInt(strideSelectElement.value, 10);
+                const value = strideSelectElement.value === '' ? undefined : Number(strideSelectElement.value);
                 try {
                     const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
                     assignStrideResult(updated);
                 } catch (error) { alert('Failed to update assigned stride'); console.error(error); }
             });
 
+            /**
+             * Sets the stride select element to empty if no stride is assigned to the moment.
+             * @param {Record<string, unknown>} moment - The moment data object.
+             * @param {HTMLSelectElement} select - The stride select element.
+             */
             function applyStrideDefault(moment: Record<string, unknown>, select: HTMLSelectElement): void {
                 if (!moment.assignedStrideId) select.value = '';
             }
+            /**
+             * Applies the result of a stride assignment API call to the moment state and DOM.
+             * @param {Record<string, unknown>} updated - The updated moment data from the API response.
+             */
             function assignStrideResult(updated: Record<string, unknown>): void {
                 moment.assignedStrideId = updated.assignedStrideId as number;
                 patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { assignedStrideId: updated.assignedStrideId });
@@ -560,6 +569,9 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
                     insertRowBeforeAddRow(tbody, row);
                     resetTaskForm();
 
+                    /**
+                     * Resets the new-task form inputs to their default state after a successful task creation.
+                     */
                     function resetTaskForm(): void {
                         taskNameInput.value = '';
                         taskDescriptionInput.value = '';
@@ -583,7 +595,7 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
 }
 
 /**
- * @param {string} momentId - The moment ID
+ * @param {string} _momentId - The moment ID
  * @param {Moment} moment - The moment object
  */
 function syncMomentTasksToStackGraph(_momentId: string, moment: Moment): void {
@@ -620,7 +632,7 @@ async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, proj
  * @param {HTMLInputElement} checkbox - The checkbox element
  * @param {HTMLElement | null} label - The status label element
  * @param {Record<string, unknown>} updated - The updated task data from API
- * @param {boolean} isPreviousChecked - The previous checked state
+ * @param {boolean} _isPreviousChecked - The previous checked state
  * @param {Moment} moment - The moment object
  * @param {string} momentId - The moment ID
  * @param {number} taskId - The task ID

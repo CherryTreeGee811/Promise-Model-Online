@@ -17,7 +17,7 @@ import { renderSummaryTable } from './summary.ts';
  * @param {HTMLElement} contentDiv - The main content container.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {{ permission?: string; isOwner?: boolean } } permission - The current user's permission object, used for gating edit/delete actions.
+ * @param {{ permission?: string; isOwner?: boolean } } _permission - The current user's permission object, used for gating edit/delete actions.
  */
 export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string, _permission: { permission?: string; isOwner?: boolean } | null): void {
     const form = document.querySelector('#project-settings-form') as HTMLFormElement | null;
@@ -261,6 +261,10 @@ async function loadSummary(projectObject: Record<string, unknown>): Promise<void
             currentProject = updatedProject;
             applyProjectResponse(updatedProject);
 
+            /**
+             * Applies the result of a project settings update to form inputs and summary display.
+             * @param {Record<string, unknown>} updated - The updated project object from the server.
+             */
             function applyProjectResponse(updated: Record<string, unknown>): void {
                 titleInput!.value = (updated.name as string) ?? '';
                 descriptionInput!.value = (updated.description as string) ?? '';

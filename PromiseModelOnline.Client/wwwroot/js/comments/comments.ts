@@ -80,6 +80,12 @@ export async function loadComments(container: HTMLElement, parentType: string, p
         }
 
         if (form && textarea) {
+            /**
+             * Handles the comment form submission: validates text, calls the API,
+             * and appends the new comment to the DOM.
+             * @param {Event} event - The form submit event.
+             * @returns {Promise<void>}
+             */
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const text = textarea.value.trim();
@@ -90,6 +96,11 @@ export async function loadComments(container: HTMLElement, parentType: string, p
                     appendComment(commentsList, created as Record<string, unknown>);
                     clearEditor(textarea, y);
 
+                    /**
+                     * Clears the textarea and restores the scroll position after a comment is posted.
+                     * @param {HTMLTextAreaElement} textarea - The textarea element to clear.
+                     * @param {number} y - The previous scroll Y position to restore.
+                     */
                     function clearEditor(textarea: HTMLTextAreaElement, y: number): void {
                         textarea.value = '';
                         window.scrollTo(0, y);

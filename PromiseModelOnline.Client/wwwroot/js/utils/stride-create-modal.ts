@@ -72,7 +72,7 @@ interface StrideCreateOptions {
  * @returns {void}
  */
 function computeEndDate(durationInput: HTMLInputElement, startInput: HTMLInputElement, endInput: HTMLInputElement): void {
-    const duration = Math.max(1, Number.parseInt(durationInput.value, 10) || 1);
+    const duration = Math.max(1, Number(durationInput.value) || 1);
     const startDate = new Date(startInput.value);
     if (!Number.isFinite(startDate.getTime())) return;
     const endDate = new Date(startDate);
@@ -199,7 +199,7 @@ export function openStrideCreateModal({
             return;
         }
 
-        const selectedIterationId = Number.parseInt(liveIterationSelect.value, 10);
+        const selectedIterationId = Number(liveIterationSelect.value);
 
         if (!selectedIterationId) {
             liveErrorElement.textContent = 'Select an iteration for this stride.';
@@ -208,7 +208,7 @@ export function openStrideCreateModal({
             return;
         }
 
-        const durationDays = Math.max(1, Number.parseInt(liveDurationInput.value, 10) || 1);
+        const durationDays = Math.max(1, Number(liveDurationInput.value) || 1);
         const startDate = liveStartInput.value;
         const endDate = liveEndInput.value;
         liveSubmitButton.disabled = true;

@@ -572,7 +572,7 @@ function createConfirmModal(id: string, title: string, confirmText: string, conf
 
 /**
  * Show a confirmation dialog for moving a moment.
- * @param {number|string} momentId - The moment ID to move.
+ * @param {number|string} _momentId - The moment ID to move.
  * @param {string} modalPrefix - The modal element ID prefix.
  * @param {string} message - The confirmation message text.
  * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
@@ -684,7 +684,7 @@ function findMomentRow(momentId: number | string): HTMLElement | null {
  * @returns {Promise<void>}
  */
 async function handleStatusChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
-    const momentId = parseInt(select.dataset.momentId!, 10);
+    const momentId = Number(select.dataset.momentId!);
     const previous = select.value;
     const restoreSelect = select;
     try {
@@ -705,7 +705,7 @@ async function handleStatusChange(select: HTMLSelectElement, owner: string, proj
  * @returns {Promise<void>}
  */
 async function handleEstimateChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
-    const momentId = parseInt(select.dataset.momentId!, 10);
+    const momentId = Number(select.dataset.momentId!);
     const previous = select.value;
     const restoreSelect = select;
     try {
@@ -728,12 +728,12 @@ async function handleEstimateChange(select: HTMLSelectElement, owner: string, pr
  * @returns {Promise<void>}
  */
 async function handleOwnerChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
-    const momentId = parseInt(select.dataset.momentId!, 10);
+    const momentId = Number(select.dataset.momentId!);
     const previous = select.value;
     const restoreSelect = select;
     try {
         let newOwnerId: number | undefined;
-        if (select.value) newOwnerId = parseInt(select.value, 10);
+        if (select.value) newOwnerId = Number(select.value);
         const updated = await updateMomentOwner(owner, project, momentId, newOwnerId ?? 0) as Record<string, unknown>;
         restoreSelect.value = String(updated.ownerId ?? '');
     } catch {
@@ -750,7 +750,7 @@ async function handleOwnerChange(select: HTMLSelectElement, owner: string, proje
  * @returns {Promise<void>}
  */
 async function handleTypeChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
-    const momentId = parseInt(select.dataset.momentId!, 10);
+    const momentId = Number(select.dataset.momentId!);
     const newType = select.value;
     const writeTo = select;
     const previous = select.dataset.currentType || newType;
@@ -788,7 +788,7 @@ async function handleViewNav(event: MouseEvent, navContentDiv: HTMLElement, cont
  * @returns {Promise<void>}
  */
 async function handleMoveToBacklog(button: HTMLElement, owner: string, project: string): Promise<void> {
-    const momentId = parseInt(button.dataset.momentId!, 10);
+    const momentId = Number(button.dataset.momentId!);
     promptMoveToBacklog(momentId, async () => {
         const updated = await assignMomentToStride(owner, project, momentId, undefined) as Record<string, unknown>;
         preserveScroll(() => {
@@ -813,11 +813,11 @@ async function handleMoveToBacklog(button: HTMLElement, owner: string, project: 
  * @returns {Promise<void>}
  */
 async function handleMoveToStride(button: HTMLElement, owner: string, project: string): Promise<void> {
-    const momentId = parseInt(button.dataset.momentId!, 10);
+    const momentId = Number(button.dataset.momentId!);
     const row = button.closest('tr') as HTMLElement | null;
     const select = row?.querySelector('.backlog-target-stride') as HTMLSelectElement | null;
     let strideId: number | undefined;
-    if (select) strideId = parseInt(select.value, 10);
+    if (select) strideId = Number(select.value);
     if (!strideId) return;
     promptMoveToStride(momentId, async () => {
         const updated = await assignMomentToStride(owner, project, momentId, strideId) as Record<string, unknown>;
@@ -842,7 +842,7 @@ async function handleMoveToStride(button: HTMLElement, owner: string, project: s
  * @returns {Promise<void>}
  */
 async function handleProgressStride(button: HTMLElement, owner: string, project: string): Promise<void> {
-    const strideId = parseInt(button.dataset.strideId!, 10);
+    const strideId = Number(button.dataset.strideId!);
     if (!(await promptProgressStride(strideId))) return;
     try {
         await progressStride(owner, project, strideId);

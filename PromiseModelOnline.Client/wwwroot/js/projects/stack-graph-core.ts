@@ -142,10 +142,10 @@ function getInnerViewportSize(element: HTMLElement): { width: number; height: nu
     if (!element) return { width: 0, height: 0 };
 
     const styles = getComputedStyle(element);
-    const paddingLeft = Number.parseFloat(styles.paddingLeft || '0');
-    const paddingRight = Number.parseFloat(styles.paddingRight || '0');
-    const paddingTop = Number.parseFloat(styles.paddingTop || '0');
-    const paddingBottom = Number.parseFloat(styles.paddingBottom || '0');
+    const paddingLeft = Number(styles.paddingLeft || '0');
+    const paddingRight = Number(styles.paddingRight || '0');
+    const paddingTop = Number(styles.paddingTop || '0');
+    const paddingBottom = Number(styles.paddingBottom || '0');
 
     return {
         width: Math.max(0, element.clientWidth - paddingLeft - paddingRight),
@@ -419,8 +419,8 @@ function getAppBasePath(): string {
 /**
  * Get the navigation URL for a graph node (links to its detail page with graph focus).
  * @param {object} node - The graph node.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
+ * @param {string} _owner - The project owner's slug.
+ * @param {string} _project - The project's slug.
  * @returns {string|undefined} The detail page URL, or undefined if node type has no route.
  */
 function getNodeHref(node: Record<string, unknown>, _owner: string, _project: string): string | undefined {
@@ -566,8 +566,8 @@ function createFocusTransform(d3: D3Module, viewportWidth: number, viewportHeigh
 /**
  * Get the layout profile for compact (detail-page) graph rendering based on visible node count.
  * @param {number} visibleCount - The number of visible nodes.
- * @param {number} viewportWidth - The viewport width.
- * @param {number} viewportHeight - The viewport height.
+ * @param {number} _viewportWidth - The viewport width.
+ * @param {number} _viewportHeight - The viewport height.
  * @returns {{nodeScale: number, minGapX: number, minGapY: number, forehead: number, anchorOffsetX: number, anchorOffsetY: number}} The layout profile.
  */
 function getCompactLayoutProfile(visibleCount: number, _viewportWidth: number, _viewportHeight: number): { nodeScale: number; minGapX: number; minGapY: number; forehead: number; anchorOffsetX: number; anchorOffsetY: number } {
@@ -809,7 +809,7 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
         .text((current: Record<string, unknown>) => getStatusIcon((current.data as Record<string, unknown>).payload!['statusColor' as keyof object] as string));
 
     nodeEnter.filter((current: Record<string, unknown>) => {
-            const hiddenCount = Number.parseInt((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0', 10) || 0;
+            const hiddenCount = Number((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0') || 0;
             return hiddenCount > 0 && Boolean((current.data as Record<string, unknown>)._isCollapsed);
         })
         .append('text')
@@ -818,7 +818,7 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
         .attr('y', CARD_HEIGHT / 2 - 12)
         .attr('text-anchor', 'end')
         .text((current: Record<string, unknown>) => {
-            const hiddenCount = Number.parseInt((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0', 10) || 0;
+            const hiddenCount = Number((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0') || 0;
             return `${hiddenCount} hidden`;
         });
 
@@ -907,7 +907,7 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
     (node.each as (isFilterMatch: (d: Record<string, unknown>, index: number, nodes: unknown[]) => void) => void)(function (current: Record<string, unknown>, _index: number, nodes: unknown[]) {
         const currentNode = nodes[_index] as Element;
         const badge = (d3.select(currentNode) as unknown as D3Sel).select('text.graph-card-collapsed-badge');
-        const hiddenCount = Number.parseInt((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0', 10) || 0;
+        const hiddenCount = Number((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0') || 0;
         const shouldShowBadge = hiddenCount > 0 && Boolean((current.data as Record<string, unknown>)._isCollapsed);
 
         if (shouldShowBadge) {
@@ -1260,6 +1260,7 @@ function computeInitialTransforms(
  * @param {object} d3 - The D3 module instance.
  * @param {object} svg - The D3 selection of the SVG element.
  * @param {object} zoom - The D3 zoom behavior.
+ * @param {(...args: unknown[]) => unknown} zoom.transform - The zoom transform function.
  * @param {object | undefined} focusedHierarchyNode - The focused hierarchy node.
  * @param {HTMLElement} viewportElement - The viewport element.
  * @param {number} contentOffsetX - The X content offset.
@@ -1309,7 +1310,7 @@ function scheduleFocusRefinement(
 /**
  * Render the graph without zoom interactions (compact/detail mode), centering nodes in the viewport.
  * @param {object} d3 - The D3 module instance.
- * @param {object} graphLayer - The D3 selection of the graph layer.
+ * @param {object} _graphLayer - The D3 selection of the graph layer.
  * @param {object[]} renderable - The list of hierarchy nodes to render.
  * @param {number} viewportWidth - The viewport width.
  * @param {number} viewportHeight - The viewport height.

@@ -14,6 +14,7 @@ const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
  * @param {string} owner - The owner slug.
  * @param {string} project - The project slug.
  * @param {{ permission?: string }} permission - The user's permission object.
+ * @param {string} [permission.permission] - The user's permission level (Comment, Edit, Owner).
  */
 export function loadReactions(container: HTMLElement, parentType: string, parentId: string, owner: string, project: string, permission: { permission?: string }): void {
     const canReact = permission?.permission === 'Comment' || permission?.permission === 'Edit';

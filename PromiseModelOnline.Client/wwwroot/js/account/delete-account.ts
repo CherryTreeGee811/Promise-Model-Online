@@ -70,7 +70,7 @@ export function initDeleteAccountPage() {
 
     /**
      * Toggle the loading state of the export button.
-     * @param {boolean} loading - Whether the export operation is in progress.
+     * @param {boolean} isLoading - Whether the export operation is in progress.
      */
     function setExportLoading(isLoading: boolean) {
         if (!exportButton || !exportText || !exportSpinner) return;
@@ -116,6 +116,7 @@ export function initDeleteAccountPage() {
                 if (authResponse.status === 204) {
                     showDeleteSuccess();
 
+                    /** Shows a permanent success message after account deletion. */
                     function showDeleteSuccess(): void {
                         successElement.textContent = 'Your account and all associated data have been permanently deleted. You will be redirected shortly.';
                         successElement.classList.remove('d-none');
@@ -145,7 +146,7 @@ export function initDeleteAccountPage() {
 
     /**
      * Toggle the loading state of the delete-account button.
-     * @param {boolean} loading - Whether the delete operation is in progress.
+     * @param {boolean} isLoading - Whether the delete operation is in progress.
      */
     function setLoading(isLoading: boolean) {
         button.disabled = isLoading;

@@ -3,82 +3,97 @@ set -euo pipefail
 
 # Validate nginx configuration files for syntax and security best practices.
 #
-# Syntax check uses Docker-based nginx -t.
-# Security check validates required headers and TLS settings.
+# Tests three config pairs that match the actual deployment layout:
+#   1. Production  : PromiseModelOnline.Client/nginx.conf (no server block in repo)
+#   2. UI tests    : nginx-test.conf + default-test.conf (server block)
+#   3. E2E tests   : nginx-test.conf + default-e2e.conf (server block)
+#
+# Syntax check uses Docker-based nginx -t (skipped if Docker isn't running).
+# Security check validates required headers on server block files.
 
 ERRORS=0
 
 echo "=== Nginx Configuration Validation ==="
 
-# Find all nginx config files
-NGINX_FILES=()
+# ─── Config pairs ───
+# Each pair: (label|main_config|server_block)
+# server_block can be empty string if none
 
-# Production config
+CONFIG_PAIRS=()
+
 if [ -f "PromiseModelOnline.Client/nginx.conf" ]; then
-  NGINX_FILES+=("PromiseModelOnline.Client/nginx.conf")
+  CONFIG_PAIRS+=("production|PromiseModelOnline.Client/nginx.conf|")
 fi
 
-# Infrastructure test configs
-for f in infrastructure/tests/default-test.conf infrastructure/tests/default-e2e.conf infrastructure/tests/nginx-test.conf; do
-  if [ -f "$f" ]; then
-    NGINX_FILES+=("$f")
-  fi
-done
+if [ -f "infrastructure/tests/nginx-test.conf" ] && [ -f "infrastructure/tests/default-test.conf" ]; then
+  CONFIG_PAIRS+=("ui-test|infrastructure/tests/nginx-test.conf|infrastructure/tests/default-test.conf")
+fi
 
-echo "  Found ${#NGINX_FILES[@]} nginx config(s)"
+if [ -f "infrastructure/tests/nginx-test.conf" ] && [ -f "infrastructure/tests/default-e2e.conf" ]; then
+  CONFIG_PAIRS+=("e2e-test|infrastructure/tests/nginx-test.conf|infrastructure/tests/default-e2e.conf")
+fi
 
-for config in "${NGINX_FILES[@]}"; do
+echo "  Found ${#CONFIG_PAIRS[@]} config pair(s)"
+
+for pair in "${CONFIG_PAIRS[@]}"; do
+  LABEL=$(echo "$pair" | cut -d'|' -f1)
+  MAIN=$(echo "$pair" | cut -d'|' -f2)
+  SERVER=$(echo "$pair" | cut -d'|' -f3)
+
   echo ""
-  echo "  Checking: $config"
-
-  # === Syntax validation ===
-  if command -v docker &>/dev/null; then
-    # Create a temp directory with the config so nginx -t can resolve includes
-    TMPDIR=$(mktemp -d)
-    CONFD="$TMPDIR/conf.d"
-    mkdir -p "$CONFD"
-
-    cp "$config" "$TMPDIR/nginx.conf"
-
-    # Copy conf.d files alongside
-    if [ -d "$(dirname "$config")/conf.d" ]; then
-      cp "$(dirname "$config")/conf.d/"* "$CONFD/" 2>/dev/null || true
-    fi
-
-    if docker run --rm -v "$TMPDIR:/etc/nginx:ro" nginx:alpine nginx -t -c /etc/nginx/nginx.conf 2>/dev/null; then
-      echo "    ✅ Syntax OK"
-    else
-      echo "    ❌ Syntax error"
-      docker run --rm -v "$TMPDIR:/etc/nginx:ro" nginx:alpine nginx -t -c /etc/nginx/nginx.conf 2>&1 || true
-      ERRORS=$((ERRORS + 1))
-    fi
-
-    rm -rf "$TMPDIR"
-  else
-    echo "    ⚠️  Docker not available — skipping syntax check"
+  echo "  [$LABEL] Main: $MAIN"
+  if [ -n "$SERVER" ]; then
+    echo "           Server block: $SERVER"
   fi
 
-  # === Security header checks (for server blocks) ===
-  if grep -q 'add_header Strict-Transport-Security' "$config" 2>/dev/null; then
+  # ─── Syntax validation (Docker only) ───
+  TMPDIR=$(mktemp -d)
+  mkdir -p "$TMPDIR/conf.d"
+  cp "$MAIN" "$TMPDIR/nginx.conf"
+  if [ -n "$SERVER" ]; then
+    cp "$SERVER" "$TMPDIR/conf.d/default.conf"
+  fi
+
+  DOCKER_OUTPUT=$(docker run --rm -v "$TMPDIR:/etc/nginx:ro" nginx:alpine nginx -t 2>&1 || true)
+  if echo "$DOCKER_OUTPUT" | grep -q 'syntax is ok\|test is successful\|configuration file.*test is successful'; then
+    echo "    ✅ Syntax OK"
+  elif echo "$DOCKER_OUTPUT" | grep -q '\[emerg\]'; then
+    echo "    ❌ Syntax error"
+    echo "$DOCKER_OUTPUT" | grep -E '\[emerg\]' || true
+    ERRORS=$((ERRORS + 1))
+  else
+    echo "    ⚠️  Docker volume mount unavailable — skipping syntax validation"
+  fi
+
+  rm -rf "$TMPDIR"
+
+  # ─── Security header checks (server block files only) ───
+  if [ -z "$SERVER" ]; then
+    echo "    ⚠️  Main config only — headers checked in server block"
+    continue
+  fi
+
+  if grep -q 'add_header Strict-Transport-Security' "$SERVER"; then
     echo "    ✅ HSTS header found"
   else
-    echo "    ❌ Missing HSTS header (Strict-Transport-Security)"
+    echo "    ❌ Missing HSTS header"
     ERRORS=$((ERRORS + 1))
   fi
 
-  if grep -q 'add_header X-Frame-Options' "$config" 2>/dev/null; then
+  if grep -q 'add_header X-Frame-Options' "$SERVER"; then
     echo "    ✅ X-Frame-Options header found"
   else
-    echo "    ⚠️  Missing X-Frame-Options header (not required for API-only blocks)"
+    echo "    ⚠️  Missing X-Frame-Options header"
   fi
 
-  if grep -q 'add_header Content-Security-Policy' "$config" 2>/dev/null; then
+  if grep -q 'add_header Content-Security-Policy' "$SERVER"; then
     echo "    ✅ CSP header found"
   else
-    echo "    ⚠️  Missing Content-Security-Policy (verify parent config or upstream sets it)"
+    echo "    ❌ Missing CSP header"
+    ERRORS=$((ERRORS + 1))
   fi
 
-  if grep -q 'ssl_protocols\|ssl_ciphers' "$config" 2>/dev/null; then
+  if grep -q 'ssl_protocols\|ssl_ciphers' "$SERVER"; then
     echo "    ✅ TLS settings found"
   else
     echo "    ⚠️  No explicit TLS settings — verify deployment handles this"

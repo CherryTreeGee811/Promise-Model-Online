@@ -110,7 +110,7 @@ function setupTaskEvents(content: HTMLElement): void {
             console.error('Cannot determine project for moment type update');
             return;
         }
-        const momentId = parseInt(target.dataset.momentId ?? '', 10);
+        const momentId = Number(target.dataset.momentId ?? '');
         const selectElement = target as HTMLSelectElement;
         const newType = selectElement.value;
         const previous = target.dataset.currentType || newType;

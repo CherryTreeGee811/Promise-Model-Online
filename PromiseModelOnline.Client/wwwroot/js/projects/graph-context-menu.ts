@@ -423,8 +423,8 @@ function createFormActionsBar(closeMenus: () => void, submitText: string): { can
 /**
  * Build the create-moment form element with moment-specific fields.
  * @param {object} nodeData - The parent (flow) node data.
- * @param {string} owner - The project owner.
- * @param {string} project - The project slug.
+ * @param {string} _owner - The project owner.
+ * @param {string} _project - The project slug.
  * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Optional stride list.
  * @param {(() => void) | undefined} onGraphMutated - Callback after creation.
  * @param {() => void} closeMenus - Function to close all menus.
@@ -540,7 +540,7 @@ function buildMomentFormElement(
         }
         let assignedStrideId;
         if (strideField.select.value) {
-            assignedStrideId = Number.parseInt(strideField.select.value, 10);
+            assignedStrideId = Number(strideField.select.value);
         }
         const payload: Record<string, unknown> = {
             statement,

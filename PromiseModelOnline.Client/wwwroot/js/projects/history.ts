@@ -202,6 +202,9 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         }
     }
 
+    /**
+     * Sets the loading flag to false after an audit history load completes.
+     */
     function markLoadComplete(): void {
         isLoading = false;
     }

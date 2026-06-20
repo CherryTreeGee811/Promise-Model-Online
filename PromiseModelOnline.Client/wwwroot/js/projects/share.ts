@@ -39,7 +39,7 @@ function ensureRevokeModal(): HTMLElement | null {
  * Load the share/permissions page for a project, including the permission table and invite modal.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {HTMLElement} contentDiv - The main content container.
+ * @param {HTMLElement} _contentDiv - The main content container.
  * @param {{ isOwner?: boolean } } permission - The current user's permission object for the project.
  */
 export function loadSharePage(owner: string, project: string, _contentDiv: HTMLElement, permission: { isOwner?: boolean } | null): void {
@@ -87,7 +87,7 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
             element.dataset.index = String(index);
             element.addEventListener('mousedown', (event) => {
                 event.preventDefault();
-                selectAutocompleteItem(parseInt(element.dataset.index!, 10));
+                selectAutocompleteItem(Number(element.dataset.index!));
             });
             dropdown.append(element);
         }
@@ -278,6 +278,10 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
         liveSubmitButton.textContent = 'Send Invitation';
         closeAutocomplete();
 
+        /**
+         * Displays an error message in the invite modal.
+         * @param {Error} error_ - The error object whose message will be shown.
+         */
         function showInviteError(error_: Error): void {
             liveErrorElement.textContent = error_?.message || 'Failed to invite user.';
             liveErrorElement.classList.remove('d-none');
@@ -487,7 +491,7 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
         if (!button || button.dataset.bound === '1') return;
         button.dataset.bound = '1';
         button.addEventListener('click', async () => {
-            const id = parseInt(button.dataset.permissionId!, 10);
+            const id = Number(button.dataset.permissionId!);
             if (!Number.isFinite(id)) return;
 
             const modalElement = ensureRevokeModal()!;

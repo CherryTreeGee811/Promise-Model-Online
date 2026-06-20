@@ -57,7 +57,7 @@ function setupMomentTypeChangeHandler(owner: string, project: string): void {
         momentsList.addEventListener('change', async (event) => {
             const target = event.target as HTMLElement;
             if (target.matches('.moment-type-select')) {
-                const momentId = parseInt(target.dataset.momentId!, 10);
+                const momentId = Number(target.dataset.momentId!);
                 const newType = (target as HTMLSelectElement).value;
                 const previous = target.dataset.currentType || newType;
                 try {

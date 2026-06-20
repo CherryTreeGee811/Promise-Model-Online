@@ -28,7 +28,7 @@ function decrementBadgeIfVisible() {
     const badge = document.querySelector('#notification-badge') as HTMLElement | null;
     if (!badge || badge.style.display === 'none') return;
 
-    const current = parseInt(badge.textContent || '0', 10);
+    const current = Number(badge.textContent || '0');
 
     if (!Number.isFinite(current) || current <= 0) {
         setBadgeCount(0);
@@ -164,7 +164,7 @@ function renderNotificationsInto(listDiv: HTMLElement, notifications: { id: numb
 
     for (const button of listDiv.querySelectorAll('.mark-read-btn')) {
         button.addEventListener('click', async () => {
-            const id = parseInt((button as HTMLElement).dataset.id!, 10);
+            const id = Number((button as HTMLElement).dataset.id!);
 
             try {
                 await markNotificationAsRead(id);
@@ -207,7 +207,7 @@ async function refreshNotificationsPage() {
 
 /**
  * Load the notifications listing page.
- * @param {HTMLElement} contentDiv - The main content container element.
+ * @param {HTMLElement} _contentDiv - The main content container element.
  */
 export function loadNotificationsPage(_contentDiv: HTMLElement) {
     if (!_listState.isLiveListenerRegistered) {
