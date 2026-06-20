@@ -206,7 +206,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
      * @param {ProjectExportDocument} document - The parsed export document.
      * @param {File} file - The imported file.
      */
-    function renderImportedProjectPreview(document: ProjectExportDocument, file: File): void {
+    function renderImportedProjectPreview(document: ProjectExportDocument, _file: File): void {
         const project = document.project;
         const summary = summarizeProjectExport(document);
 

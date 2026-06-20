@@ -69,10 +69,10 @@ export function openIterationCreateModal(owner: string, project: string, onCreat
 
         try {
             await createIteration(owner, project, { name });
-            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.hide();
+            bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.hide();
             await onCreated?.();
-        } catch (error: any) {
-            liveErrorElement.textContent = error?.message || 'Failed to create iteration.';
+        } catch (error: unknown) {
+            liveErrorElement.textContent = (error as Record<string, unknown> | undefined)?.message as string || 'Failed to create iteration.';
             liveErrorElement.classList.remove('d-none');
         } finally {
             liveSubmitButton.disabled = false;
@@ -80,5 +80,5 @@ export function openIterationCreateModal(owner: string, project: string, onCreat
         }
     });
 
-    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.show();
+    bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
 }

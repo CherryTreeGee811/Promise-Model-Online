@@ -9,6 +9,7 @@
   ],
   "ignoreDependencies": [
     "@popperjs/core",
+    "@types/d3",
     "@typescript-eslint/eslint-plugin",
     "@typescript-eslint/parser",
     "axe-core",

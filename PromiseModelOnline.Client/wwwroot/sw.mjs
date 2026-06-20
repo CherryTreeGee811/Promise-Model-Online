@@ -1,6 +1,8 @@
 /** @type {string} */
 const CACHE = 'pmo-v4';
 
+const swSelf = /** @type {{ addEventListener: Function, skipWaiting: Function, clients: { claim: Function }, location: { origin: string } }} */ (/** @type {unknown} */ (self));
+
 /** @type {string[]} */
 const PRECACHE = [
   '/dist/js/main.js',
@@ -38,20 +40,20 @@ const BFF_PATHS = [
   '/signin-google'
 ];
 
-self.addEventListener('install', /** @param {ExtendableEvent} event */ event => {
+swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
   event.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(PRECACHE))
   );
-  self.skipWaiting();
+  swSelf.skipWaiting();
 });
 
-self.addEventListener('activate', /** @param {ExtendableEvent} event */ event => {
+swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  swSelf.clients.claim();
 });
 
 /**
@@ -125,11 +127,11 @@ async function cacheFirst(request) {
   }
 }
 
-self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
+swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r: Response | Promise<Response>) => void }} event */ event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  if (url.origin !== self.location.origin) {
+  if (url.origin !== swSelf.location.origin) {
     return;
   }
 

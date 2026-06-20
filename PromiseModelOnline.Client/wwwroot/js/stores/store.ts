@@ -9,7 +9,7 @@
  * @param {T} initial - Initial state value.
  * @returns {Store<T>} The store instance.
  */
-export function createStore(initial) {
+export function createStore<T>(initial: T) {
   /** @type {T} */
   let state = { ...initial };
   /** @type {Set<() => void>} */
@@ -26,7 +26,7 @@ export function createStore(initial) {
      * Merge a partial update into the current state and notify subscribers.
      * @param {Partial<T>} partial - The partial state update.
      */
-    set(partial) {
+    set(partial: Partial<T>) {
       state = { ...state, ...partial };
       for (const function_ of listeners) { if (typeof function_ === 'function') function_(); }
     },
@@ -36,7 +36,7 @@ export function createStore(initial) {
      * @param {() => void} function_ - The listener function.
      * @returns {() => void} The unsubscribe function.
      */
-    subscribe(function_) {
+    subscribe(function_: () => void) {
       listeners.add(function_);
       return () => { listeners.delete(function_); };
     },

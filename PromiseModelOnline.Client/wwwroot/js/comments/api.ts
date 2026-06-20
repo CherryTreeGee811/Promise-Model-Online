@@ -8,7 +8,7 @@ import { apiGet, apiPost } from '../api.ts';
  * @param {number} parentId - The parent entity ID.
  * @returns {Promise<Array>} The list of comments.
  */
-export const getComments = (_owner, _project, parentType, parentId) => apiGet(`/api/comments?type=${parentType}&parentId=${parentId}`);
+export const getComments = (_owner: string, _project: string, parentType: string, parentId: string | number) => apiGet(`/api/comments?type=${parentType}&parentId=${parentId}`);
 /**
  * Add a comment to a parent entity.
  * @param {string} _owner - The owner slug (unused).
@@ -16,4 +16,4 @@ export const getComments = (_owner, _project, parentType, parentId) => apiGet(`/
  * @param {object} data - The comment payload.
  * @returns {Promise<object>} The created comment.
  */
-export const addComment = (_owner, _project, data) => apiPost('/api/comments', data);
+export const addComment = (_owner: string, _project: string, data: Record<string, unknown>) => apiPost('/api/comments', data);

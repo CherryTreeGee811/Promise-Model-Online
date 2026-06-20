@@ -62,7 +62,7 @@ export function initDeleteAccountPage() {
      * Display an export error message in the export error element.
      * @param {string} message - The error message to display.
      */
-    function showExportError(message) {
+    function showExportError(message: string) {
         if (!exportError) return;
         exportError.textContent = message;
         exportError.classList.remove('d-none');
@@ -72,11 +72,11 @@ export function initDeleteAccountPage() {
      * Toggle the loading state of the export button.
      * @param {boolean} loading - Whether the export operation is in progress.
      */
-    function setExportLoading(loading) {
+    function setExportLoading(isLoading: boolean) {
         if (!exportButton || !exportText || !exportSpinner) return;
-        exportButton.disabled = loading;
-        exportText.classList.toggle('d-none', loading);
-        exportSpinner.classList.toggle('d-none', !loading);
+        exportButton.disabled = isLoading;
+        exportText.classList.toggle('d-none', isLoading);
+        exportSpinner.classList.toggle('d-none', !isLoading);
     }
 
     if (!form || !errorElement || !successElement || !passwordInput || !button || !text || !spinner) return;
@@ -113,11 +113,15 @@ export function initDeleteAccountPage() {
                 credentials: 'include',
             });
 
-            if (authResponse.status === 204) {
-                successElement.textContent = 'Your account and all associated data have been permanently deleted. You will be redirected shortly.';
-                successElement.classList.remove('d-none');
-                form.style.display = 'none';
-                setTimeout(() => { location.assign('/'); }, 3000);
+                if (authResponse.status === 204) {
+                    showDeleteSuccess();
+
+                    function showDeleteSuccess(): void {
+                        successElement.textContent = 'Your account and all associated data have been permanently deleted. You will be redirected shortly.';
+                        successElement.classList.remove('d-none');
+                        form.style.display = 'none';
+                        setTimeout(() => { location.assign('/'); }, 3000);
+                    }
             } else if (authResponse.status === 401) {
                 showError('Incorrect password. Please try again.');
             } else {
@@ -134,7 +138,7 @@ export function initDeleteAccountPage() {
      * Display a form error message in the delete-error element.
      * @param {string} message - The error message to display.
      */
-    function showError(message) {
+    function showError(message: string) {
         errorElement.textContent = message;
         errorElement.classList.remove('d-none');
     }
@@ -143,9 +147,9 @@ export function initDeleteAccountPage() {
      * Toggle the loading state of the delete-account button.
      * @param {boolean} loading - Whether the delete operation is in progress.
      */
-    function setLoading(loading) {
-        button.disabled = loading;
-        text.classList.toggle('d-none', loading);
-        spinner.classList.toggle('d-none', !loading);
+    function setLoading(isLoading: boolean) {
+        button.disabled = isLoading;
+        text.classList.toggle('d-none', isLoading);
+        spinner.classList.toggle('d-none', !isLoading);
     }
 }

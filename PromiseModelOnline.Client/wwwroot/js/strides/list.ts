@@ -451,7 +451,7 @@ function renderStrideScrollspy(strides: Record<string, unknown>[]): void {
     backlogLink.textContent = 'Backlog';
     links?.append(backlogLink);
 
-    const spyApi = (globalThis as any).bootstrap?.ScrollSpy as { getOrCreateInstance: (element: Element, options?: Record<string, unknown>) => { refresh?: () => void } } | undefined;
+    const spyApi = bootstrap?.ScrollSpy as { getOrCreateInstance: (element: Element, options?: Record<string, unknown>) => { refresh?: () => void } } | undefined;
     if (spyApi) {
         const spy = spyApi.getOrCreateInstance(document.body, {
             target: '#stride-scrollspy-links',
@@ -577,7 +577,7 @@ function createConfirmModal(id: string, title: string, confirmText: string, conf
  * @param {string} message - The confirmation message text.
  * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
  */
-function promptMoveConfirm(momentId: number | string, modalPrefix: string, message: string, onConfirm: () => Promise<unknown>): void {
+function promptMoveConfirm(_momentId: number | string, modalPrefix: string, message: string, onConfirm: () => Promise<unknown>): void {
     const modalElement = document.querySelector('#' + modalPrefix) as HTMLElement | null;
     if (!modalElement) return;
     const modalText = modalElement.querySelector('#' + modalPrefix + '-text');
@@ -592,7 +592,7 @@ function promptMoveConfirm(momentId: number | string, modalPrefix: string, messa
         (nextButton as HTMLInputElement).disabled = true;
         try {
             await onConfirm();
-            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
+            bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
         } catch (error) {
             console.error(error);
             alert('Failed to move moment');
@@ -601,7 +601,7 @@ function promptMoveConfirm(momentId: number | string, modalPrefix: string, messa
         }
     }, { once: true });
 
-    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.show();
+    bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.show();
 }
 
 /**
@@ -686,12 +686,13 @@ function findMomentRow(momentId: number | string): HTMLElement | null {
 async function handleStatusChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
     const previous = select.value;
+    const restoreSelect = select;
     try {
         const updated = await updateMomentStatus(owner, project, momentId, select.value) as Record<string, unknown>;
         const row = findMomentRow(momentId);
         if (row) updateStatusBadge(row, updated.status as string);
     } catch {
-        select.value = previous;
+        restoreSelect.value = previous;
         alert('Failed to update status');
     }
 }
@@ -706,6 +707,7 @@ async function handleStatusChange(select: HTMLSelectElement, owner: string, proj
 async function handleEstimateChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
     const previous = select.value;
+    const restoreSelect = select;
     try {
         const estimate = select.value === '' ? undefined : select.value;
         await updateMomentEstimate(owner, project, momentId, estimate);
@@ -713,7 +715,7 @@ async function handleEstimateChange(select: HTMLSelectElement, owner: string, pr
         const card = row?.closest('.stride-card') as HTMLElement | null;
         if (card) updateStrideTotalEffortFromDom(card);
     } catch {
-        select.value = previous;
+        restoreSelect.value = previous;
         alert('Failed to update estimate');
     }
 }
@@ -728,13 +730,14 @@ async function handleEstimateChange(select: HTMLSelectElement, owner: string, pr
 async function handleOwnerChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
     const previous = select.value;
+    const restoreSelect = select;
     try {
         let newOwnerId: number | undefined;
         if (select.value) newOwnerId = parseInt(select.value, 10);
-        const updated = await updateMomentOwner(owner, project, momentId, newOwnerId) as Record<string, unknown>;
-        select.value = String(updated.ownerId ?? '');
+        const updated = await updateMomentOwner(owner, project, momentId, newOwnerId ?? 0) as Record<string, unknown>;
+        restoreSelect.value = String(updated.ownerId ?? '');
     } catch {
-        select.value = previous;
+        restoreSelect.value = previous;
         alert('Failed to update owner');
     }
 }
@@ -749,12 +752,13 @@ async function handleOwnerChange(select: HTMLSelectElement, owner: string, proje
 async function handleTypeChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = parseInt(select.dataset.momentId!, 10);
     const newType = select.value;
+    const writeTo = select;
     const previous = select.dataset.currentType || newType;
     try {
         await updateMomentType(owner, project, momentId, newType);
-        select.dataset.currentType = newType;
+        writeTo.dataset.currentType = newType;
     } catch {
-        select.value = previous;
+        writeTo.value = previous;
         alert('Failed to update type');
     }
 }
@@ -1671,8 +1675,9 @@ export async function loadStridesList(owner: string, project: string, navContent
         updateCountdowns();
 
         // Cache stride list for backlog move dropdowns (no refetch needed for later DOM inserts)
-        _state.cachedAllStrides = Array.isArray(allStrides) ? allStrides : [];
-        renderStrideScrollspy(_state.cachedAllStrides);
+        const state = _state;
+        state.cachedAllStrides = Array.isArray(allStrides) ? allStrides : [];
+        renderStrideScrollspy(state.cachedAllStrides);
         // Ensure any backlog selects reflect the cached strides
         populateBacklogStrideSelects();
 

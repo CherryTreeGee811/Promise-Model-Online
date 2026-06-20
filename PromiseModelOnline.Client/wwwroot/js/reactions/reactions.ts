@@ -15,7 +15,7 @@ const EMOTE_SET = ['👍', '👎', '❤️', '😀', '🎉', '🚀', '👀'];
  * @param {string} project - The project slug.
  * @param {{ permission?: string }} permission - The user's permission object.
  */
-export function loadReactions(container, parentType, parentId, owner, project, permission) {
+export function loadReactions(container: HTMLElement, parentType: string, parentId: string, owner: string, project: string, permission: { permission?: string }): void {
     const canReact = permission?.permission === 'Comment' || permission?.permission === 'Edit';
 
     container.replaceChildren();
@@ -45,7 +45,7 @@ export function loadReactions(container, parentType, parentId, owner, project, p
 
     container.append(barDiv);
 
-    const summaryElement = /** @type {HTMLElement} */ (container.querySelector('#reactions-summary'));
+    const summaryElement = container.querySelector('#reactions-summary') as HTMLElement | null;
     const buttons = container.querySelectorAll('.emote-btn');
     const myUsername = getUsername();
 
@@ -64,7 +64,7 @@ export function loadReactions(container, parentType, parentId, owner, project, p
         const items = EMOTE_SET
             .filter(emote => state.counts[emote])
             .map(emote => `${emote} ${state.counts[emote]}`);
-        summaryElement.textContent = items.join(' ') || 'No reactions yet.';
+        if (summaryElement) summaryElement.textContent = items.join(' ') || 'No reactions yet.';
     }
 
     /** Fetch the latest reactions from the API and update the summary. */
@@ -85,7 +85,7 @@ export function loadReactions(container, parentType, parentId, owner, project, p
 
             renderSummary();
         } catch {
-            summaryElement.textContent = 'Failed to load reactions.';
+            if (summaryElement) summaryElement.textContent = 'Failed to load reactions.';
         }
     }
 
@@ -93,7 +93,7 @@ export function loadReactions(container, parentType, parentId, owner, project, p
 
     for (const button of buttons) {
         button.addEventListener('click', async () => {
-            const emote = button.dataset.emote;
+            const emote = (button as HTMLElement).dataset.emote;
             try {
                 const y = window.scrollY;
                 const updated = (state.myReactionId

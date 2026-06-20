@@ -9,7 +9,7 @@ const _state = { isStarted: false };
  * Shows the badge when count > 0, hides it otherwise.
  * @param {number} count - The number of unread notifications.
  */
-function setBadgeCount(count) {
+function setBadgeCount(count: number) {
     const badge = /** @type {HTMLElement} */ (document.querySelector('#notification-badge'));
     if (!badge) return;
 

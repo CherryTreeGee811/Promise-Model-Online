@@ -9,7 +9,7 @@ const _listState = { isLiveListenerRegistered: false };
  * Update the notification badge count in the UI.
  * @param {number} count - The new badge count.
  */
-function setBadgeCount(count) {
+function setBadgeCount(count: number) {
     const badge = document.querySelector('#notification-badge') as HTMLElement | null;
     if (!badge) return;
 
@@ -42,7 +42,7 @@ function decrementBadgeIfVisible() {
  * Mark a notification table row as read by removing the unread class and updating the actions cell.
  * @param {HTMLElement} row - The table row element to mark as read.
  */
-function markRowRead(row) {
+function markRowRead(row: HTMLElement) {
     if (!row) return;
 
     const wasUnread = row.classList.contains('unread');
@@ -67,7 +67,7 @@ function markRowRead(row) {
  * @param {HTMLElement} listDiv - The container element to render into.
  * @param {Notification[]} notifications - Array of notification objects.
  */
-function renderNotificationsInto(listDiv, notifications) {
+function renderNotificationsInto(listDiv: HTMLElement, notifications: { id: number; message: string; type: string; createdAt: string; isRead: boolean }[]) {
     if (!listDiv) return;
 
     if (!notifications || notifications.length === 0) {
@@ -164,7 +164,7 @@ function renderNotificationsInto(listDiv, notifications) {
 
     for (const button of listDiv.querySelectorAll('.mark-read-btn')) {
         button.addEventListener('click', async () => {
-            const id = parseInt(/** @type {string} */(button.dataset.id), 10);
+            const id = parseInt((button as HTMLElement).dataset.id!, 10);
 
             try {
                 await markNotificationAsRead(id);
@@ -172,7 +172,7 @@ function renderNotificationsInto(listDiv, notifications) {
                 const y = window.scrollY;
 
                 const row = listDiv.querySelector(`tr[data-notification-id="${CSS.escape(String(id))}"]`);
-                markRowRead(row);
+                if (row) markRowRead(row as HTMLElement);
 
                 window.scrollTo(0, y);
 
@@ -186,8 +186,8 @@ function renderNotificationsInto(listDiv, notifications) {
 
 /** Refresh the notifications page by fetching all notifications and re-rendering. */
 async function refreshNotificationsPage() {
-    const listDiv = /** @type {HTMLElement} */ (document.querySelector('#notifications-list'));
-    const errorElement = /** @type {HTMLElement} */ (document.querySelector('#error-text'));
+    const listDiv = document.querySelector('#notifications-list') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
 
     if (!listDiv || !errorElement) return;
 
@@ -196,7 +196,7 @@ async function refreshNotificationsPage() {
     try {
         const notifications = await fetchAllNotifications();
 
-        renderNotificationsInto(listDiv, notifications);
+        renderNotificationsInto(listDiv!, notifications as { id: number; message: string; type: string; createdAt: string; isRead: boolean }[]);
 
         void updateNotificationBadge();
 
@@ -209,7 +209,7 @@ async function refreshNotificationsPage() {
  * Load the notifications listing page.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
-export function loadNotificationsPage(contentDiv) {
+export function loadNotificationsPage(_contentDiv: HTMLElement) {
     if (!_listState.isLiveListenerRegistered) {
         _listState.isLiveListenerRegistered = true;
 

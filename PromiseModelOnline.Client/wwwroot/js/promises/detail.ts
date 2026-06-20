@@ -25,7 +25,7 @@ import { getPromise, getEpicsByPromise, updatePromiseDescription } from './api.t
  * @param {HTMLElement} contentDiv - Content container for routing
  * @returns {Promise<void>}
  */
-async function loadPromiseEpics(owner: string, project: string, promiseId: string, promise: any, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+async function loadPromiseEpics(owner: string, project: string, promiseId: string, promise: Record<string, unknown>, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const epicsList = document.querySelector('#promise-epics-list') as HTMLElement | null;
     const detailDiv = document.querySelector('#promise-detail-content') as HTMLElement | null;
 
@@ -129,7 +129,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
  * @param {object} promise - The promise data
  * @returns {void}
  */
-function upsertPromiseGraphViewButton(detailDiv: HTMLElement | null, promise: any): void {
+function upsertPromiseGraphViewButton(detailDiv: HTMLElement | null, promise: Record<string, unknown>): void {
     const { owner: go, project: gp } = getOwnerProjectFromPath();
     if (go && gp) {
         const href = buildGraphViewHref(go, gp, 'promise-' + promise.sequenceNumber);
@@ -157,8 +157,8 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
     errorElement!.textContent = '';
 
     try {
-        const promise = await getPromise(owner, project, promiseId) as any;
-        await loadEntityLookupMap('Promise', promise.id, owner, project);
+        const promise = await getPromise(owner, project, promiseId) as Record<string, unknown>;
+        await loadEntityLookupMap('Promise', promise.id as number, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;
 
@@ -168,7 +168,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         cardDiv.className = 'detail-card promise-detail-card';
 
         const cardH2 = document.createElement('h2');
-        cardH2.textContent = promise.statement;
+        cardH2.textContent = promise.statement as string | null;
         cardDiv.append(cardH2);
 
         const detailTable = document.createElement('table');
@@ -182,7 +182,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         descLabel.textContent = 'Description';
         descTh.append(descLabel);
         const descTd = document.createElement('td');
-        buildInlineEditUI(descTd, '', promise.description || '');
+        buildInlineEditUI(descTd, '', (promise.description as string) || '');
         descTr.append(descTh, descTd);
         detailTable.append(descTr);
 
@@ -192,13 +192,13 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         statusTh.textContent = 'Status';
         const statusTd = document.createElement('td');
         const statusParser = new DOMParser();
-        const statusDocument = statusParser.parseFromString(getStatusHtml(promise.statusColor), 'text/html');
+        const statusDocument = statusParser.parseFromString(getStatusHtml(promise.statusColor as string), 'text/html');
         statusTd.append(...statusDocument.body.childNodes);
         statusTr.append(statusTh, statusTd);
         detailTable.append(statusTr);
 
-        detailTable.append(createDateRow('Created', promise.createdAt));
-        detailTable.append(createDateRow('Updated', promise.updatedAt));
+        detailTable.append(createDateRow('Created', promise.createdAt as string | undefined));
+        detailTable.append(createDateRow('Updated', promise.updatedAt as string | undefined));
 
         cardDiv.append(detailTable);
 
@@ -237,9 +237,9 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         const saveButton = document.querySelector('#save-desc') as HTMLButtonElement | null;
         const cancelButton = document.querySelector('#cancel-desc') as HTMLButtonElement | null;
         if (descInput && descView && editButton) {
-            createCommentAutocomplete(descInput, 'Promise', promise.id);
+            createCommentAutocomplete(descInput, 'Promise', promise.id as number);
             const editor = setupInlineEdit(descInput, descView, editButton, saveButton!, cancelButton!);
-            (promise as any).__editor = editor;
+            (promise as Record<string, unknown>).__editor = editor;
         }
 
         void mountDetailStackGraph({
@@ -253,14 +253,14 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-epic-statement', '#add-epic-submit']);
 
-        loadCommentsAndReactions(detailDiv!, 'Promise', promise.id, owner, project, permission!);
+        loadCommentsAndReactions(detailDiv!, 'Promise', promise.id as number, owner, project, permission!);
 
         upsertPromiseGraphViewButton(detailDiv, promise);
 
 
         initBackLink();
 
-        setupDescriptionHandler(owner, project, promiseId, 'promise', promise, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
+        setupDescriptionHandler(owner, project, promiseId, 'promise', promise as unknown as { sequenceNumber: number; description?: string }, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
 
         if (loadingElement) loadingElement.hidden = true;
     } catch (error) {

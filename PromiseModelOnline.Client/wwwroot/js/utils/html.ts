@@ -90,7 +90,7 @@ export function createConfirmationPromise(modalElement: HTMLElement, confirmButt
             resolve(isConfirmed);
         };
 
-        const modalInstance = (globalThis as any).bootstrap?.Modal?.getOrCreateInstance?.(modalElement);
+        const modalInstance = bootstrap?.Modal?.getOrCreateInstance?.(modalElement);
 
         confirmButton.addEventListener('click', () => {
             settle(true);

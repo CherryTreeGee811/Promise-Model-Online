@@ -50,17 +50,21 @@ function loadProjectRoutes(): Promise<ProjectRoutesModule> {
  * Routes are evaluated in order; the first match is used.
  * @type {Route[]}
  */
-const ROUTES = [
+const ROUTES: {
+  test: (path: string) => boolean;
+  guard?: () => Record<string, unknown>;
+  handler: (navContentDiv: HTMLElement, contentDiv: HTMLElement) => Promise<void>;
+}[] = [
   {
-    test: (p) => p === '/',
-    handler: async (_nav, contentDiv) => {
+    test: (p: string) => p === '/',
+    handler: async (_nav: HTMLElement, contentDiv: HTMLElement) => {
       await loadTemplate('home.html', contentDiv);
       loadHomePage();
     },
   },
   {
-    test: (p) => p.startsWith('/projects'),
-    handler: async (navContentDiv, contentDiv) => {
+    test: (p: string) => p.startsWith('/projects'),
+    handler: async (navContentDiv: HTMLElement, contentDiv: HTMLElement) => {
       const path = location.pathname;
       try {
         const { handleLegacyProjectRoutes } = await loadProjectRoutes();
@@ -71,9 +75,9 @@ const ROUTES = [
     },
   },
   {
-    test: (p) => p === '/moments/my-tasks',
+    test: (p: string) => p === '/moments/my-tasks',
     guard: requireAuth,
-    handler: async (navContentDiv, contentDiv) => {
+    handler: async (navContentDiv: HTMLElement, contentDiv: HTMLElement) => {
       try {
         await loadTemplate('moments/my-tasks.html', contentDiv);
         void loadMyTasksPage(navContentDiv, contentDiv);
@@ -83,48 +87,48 @@ const ROUTES = [
     },
   },
   {
-    test: (p) => p.startsWith('/notifications'),
+    test: (p: string) => p.startsWith('/notifications'),
     guard: requireAuth,
-    handler: (navContentDiv, contentDiv) => {
-      void handleNotificationsRoutes(location.pathname, navContentDiv, contentDiv);
+    handler: async (navContentDiv: HTMLElement, contentDiv: HTMLElement) => {
+      await handleNotificationsRoutes(location.pathname, navContentDiv, contentDiv);
     },
   },
   {
-    test: (p) => p.startsWith('/invitations'),
+    test: (p: string) => p.startsWith('/invitations'),
     guard: requireAuth,
-    handler: (_nav, contentDiv) => {
-      void handleInvitationsRoute(location.pathname, contentDiv);
+    handler: async (_nav: HTMLElement, contentDiv: HTMLElement) => {
+      await handleInvitationsRoute(location.pathname, contentDiv);
     },
   },
   {
-    test: (p) => p === '/change-password',
+    test: (p: string) => p === '/change-password',
     guard: requireAuth,
-    handler: () => {
+    handler: async () => {
       location.assign('/account/change-password');
     },
   },
   {
-    test: (p) => p === '/knowledge-base',
-    handler: (navContentDiv, contentDiv) => {
-      void handleKnowledgeBaseRoutes(location.pathname, navContentDiv, contentDiv);
+    test: (p: string) => p === '/knowledge-base',
+    handler: async (navContentDiv: HTMLElement, contentDiv: HTMLElement) => {
+      await handleKnowledgeBaseRoutes(location.pathname, navContentDiv, contentDiv);
     },
   },
   {
-    test: (p) => p === '/privacy',
-    handler: (_nav, contentDiv) => {
-      void loadTemplate('privacy.html', contentDiv);
+    test: (p: string) => p === '/privacy',
+    handler: async (_nav: HTMLElement, contentDiv: HTMLElement) => {
+      await loadTemplate('privacy.html', contentDiv);
     },
   },
   {
-    test: (p) => p === '/tos',
-    handler: (_nav, contentDiv) => {
-      void loadTemplate('tos.html', contentDiv);
+    test: (p: string) => p === '/tos',
+    handler: async (_nav: HTMLElement, contentDiv: HTMLElement) => {
+      await loadTemplate('tos.html', contentDiv);
     },
   },
   {
-    test: (p) => p === '/account/delete',
+    test: (p: string) => p === '/account/delete',
     guard: requireAuth,
-    handler: async (_nav, contentDiv) => {
+    handler: async (_nav: HTMLElement, contentDiv: HTMLElement) => {
       await loadTemplate('account/delete.html', contentDiv);
       initDeleteAccountPage();
     },
@@ -272,7 +276,7 @@ export function isDetailRoute(
   contentDiv: HTMLElement,
   routePrefix: string,
   templateName: string,
-  loadFunction: (...arguments_: any[]) => void,
+  loadFunction: (...arguments_: unknown[]) => void,
   navContentDiv: HTMLElement,
   label: string
 ): boolean {
@@ -378,14 +382,14 @@ function isRouteBlocked(route: { guard?: () => Record<string, unknown> }, navCon
  * @param {HTMLElement} contentDiv - The main content container.
  * @returns {boolean} True if a matching route was found and handled.
  */
-function hasMatchingStaticRoute(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): boolean {
+async function hasMatchingStaticRoute(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<boolean> {
     for (const route of ROUTES) {
         if (!route.test(path)) {
         	continue;
         }
 
         if (isRouteBlocked(route, navContentDiv, contentDiv)) return true;
-        void route.handler(navContentDiv, contentDiv);
+        await route.handler(navContentDiv, contentDiv);
         return true;
     }
     return false;
@@ -435,7 +439,7 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
 
     void loadNavTemplate(navContentDiv, contentDiv);
 
-    if (hasMatchingStaticRoute(path, navContentDiv, contentDiv)) return;
+    if (await hasMatchingStaticRoute(path, navContentDiv, contentDiv)) return;
 
     const segments = path.split('/').filter(Boolean);
     if (segments.length >= 2) {

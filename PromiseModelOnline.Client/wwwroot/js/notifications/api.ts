@@ -4,9 +4,9 @@ import { apiGet, apiPatch } from '../api.ts';
  * Fetch all notifications from the API.
  * @returns {Promise<object[]>} Array of notification objects.
  */
-async function fetchNotifications() {
+async function fetchNotifications(): Promise<Record<string, unknown>[]> {
   try {
-    return await apiGet('/api/notifications') ?? [];
+    return (await apiGet('/api/notifications') ?? []) as Record<string, unknown>[];
   } catch {
     return [];
   }
@@ -22,7 +22,7 @@ export const fetchAllNotifications = fetchNotifications;
  * @param {number} id - The notification ID.
  * @returns {Promise<object>} The API response.
  */
-export const markNotificationAsRead = id => apiPatch(`/api/notifications/${id}`, { isRead: true });
+export const markNotificationAsRead = (id: string | number) => apiPatch(`/api/notifications/${id}`, { isRead: true });
 /**
  * Mark all notifications as read.
  * @returns {Promise<object>} The API response.

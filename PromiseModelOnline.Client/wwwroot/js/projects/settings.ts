@@ -9,7 +9,6 @@ import { exportProject, getProject, getGraphData, deleteProject, updateProjectDe
 import { formatTimestamp } from './audit.ts';
 import { renderSummaryTable } from './summary.ts';
 
-declare const bootstrap: any;
 
 
 /**
@@ -20,7 +19,7 @@ declare const bootstrap: any;
  * @param {string} project - The project's slug.
  * @param {{ permission?: string; isOwner?: boolean } } permission - The current user's permission object, used for gating edit/delete actions.
  */
-export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string, permission: { permission?: string; isOwner?: boolean } | null): void {
+export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string, _permission: { permission?: string; isOwner?: boolean } | null): void {
     const form = document.querySelector('#project-settings-form') as HTMLFormElement | null;
     const titleInput = document.querySelector('#project-title-input') as HTMLInputElement | null;
     const descriptionInput = document.querySelector('#project-description-input') as HTMLTextAreaElement | null;
@@ -88,7 +87,7 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
      *
      */
     function showExportPopover(): void {
-        if (bootstrap === undefined || !bootstrap.Popover) {
+        if (!bootstrap.Popover) {
             successText!.textContent = 'Exported!';
             setTimeout(() => {
                 if (successText!.textContent === 'Exported!') {
@@ -99,7 +98,7 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
         }
 
         if (!exportPopover) {
-            exportPopover = new bootstrap.Popover(exportButton!, {
+            exportPopover = new (bootstrap.Popover as unknown as new (element: HTMLElement, options: Record<string, unknown>) => { show: () => void; hide: () => void })(exportButton!, {
                 trigger: 'manual',
                 placement: 'top',
                 content: 'Exported!',
@@ -181,8 +180,8 @@ async function loadSummary(projectObject: Record<string, unknown>): Promise<void
 
         try {
     const graphData = await getGraphData(owner, project);
-    let members;
-    try { members = await getProjectMembers(owner, project); } catch { members = []; }
+    let members: Record<string, unknown>[] = [];
+    try { members = await getProjectMembers(owner, project) as Record<string, unknown>[]; } catch { members = []; }
 
     const epics = (graphData.promises ?? []).flatMap((p: Record<string, unknown>) => (p.epics ?? []) as unknown[]);
             const journeys = epics.flatMap((epic: Record<string, unknown>) => (epic.journeys ?? []) as unknown[]);
@@ -232,7 +231,7 @@ async function loadSummary(projectObject: Record<string, unknown>): Promise<void
             await loadSummary(projectData);
 
             if (summaryState.firstPromise) {
-                createCommentAutocomplete(descriptionInput!, 'Promise', summaryState.firstPromise.id);
+                createCommentAutocomplete(descriptionInput!, 'Promise', (summaryState.firstPromise as Record<string, unknown>).id as string);
             }
         } catch (error) {
             errorText!.textContent = 'Failed to load project settings.';
@@ -260,13 +259,17 @@ async function loadSummary(projectObject: Record<string, unknown>): Promise<void
             });
 
             currentProject = updatedProject;
-            titleInput.value = updatedProject.name ?? '';
-            descriptionInput.value = updatedProject.description ?? '';
-            if (titleEditor) titleEditor.showView(escapeHtml(updatedProject.name ?? ''));
-            if (descEditor) descEditor.showSavedPopover(formatCommentText(updatedProject.description ?? ''));
-            refreshDeleteGate(updatedProject.name ?? '');
-            renderSummary(updatedProject, summaryState.counts, summaryState.memberCount);
-            successText.textContent = 'Project settings saved.';
+            applyProjectResponse(updatedProject);
+
+            function applyProjectResponse(updated: Record<string, unknown>): void {
+                titleInput!.value = (updated.name as string) ?? '';
+                descriptionInput!.value = (updated.description as string) ?? '';
+                if (titleEditor) titleEditor.showView(escapeHtml((updated.name as string) ?? ''));
+                if (descEditor) descEditor.showSavedPopover(formatCommentText((updated.description as string) ?? ''));
+                refreshDeleteGate((updated.name as string) ?? '');
+                renderSummary(updated, summaryState.counts, summaryState.memberCount);
+                successText!.textContent = 'Project settings saved.';
+            }
         } catch (error) {
             errorText.textContent = (error as Error).message || 'Failed to save project settings.';
         }

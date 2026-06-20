@@ -1,25 +1,5 @@
 import { apiGet, apiGetList, apiPost } from '../api.ts';
 
-/**
- * Fetch all iterations for a project.
- * @param {string} owner - The owner slug.
- * @param {string} project - The project slug.
- * @returns {Promise<Array>} Array of iteration objects.
- */
-export const getIterations = (owner, project) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`);
-/**
- * Create a new iteration for a project.
- * @param {string} owner - The owner slug.
- * @param {string} project - The project slug.
- * @param {object} data - The iteration creation data.
- * @returns {Promise<object>} The created iteration object.
- */
-export const createIteration = (owner, project, data) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`, data);
-/**
- * Fetch burndown data for a specific iteration.
- * @param {string} owner - The owner slug.
- * @param {string} project - The project slug.
- * @param {number} iterationId - The iteration ID.
- * @returns {Promise<Array>} Array of burndown data points.
- */
-export const getBurndown = (owner, project, iterationId) => apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations/${iterationId}/burndown`);
+export const getIterations = (owner: string, project: string) => apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`);
+export const createIteration = (owner: string, project: string, data: Record<string, unknown>) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`, data);
+export const getBurndown = (owner: string, project: string, iterationId: string | number) => apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations/${iterationId}/burndown`);

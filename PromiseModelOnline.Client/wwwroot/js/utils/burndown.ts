@@ -4,6 +4,40 @@ import { renderEmptyStateSection } from './empty-table.ts';
 
 type BurndownPoint = { date: string | Date; remainingEffort: number; idealRemaining?: number };
 
+interface D3Sel {
+    append: (s: string) => D3Sel;
+    attr: (a: string, b?: unknown) => D3Sel;
+    style: (a: string, b?: unknown) => D3Sel;
+    text: (v?: unknown) => D3Sel;
+    call: (function_: unknown, ...arguments_: unknown[]) => D3Sel;
+    selectAll: (s: string) => D3Sel;
+    select: (s: string) => D3Sel;
+    data: (d: unknown[]) => D3Sel;
+    datum: (d: unknown) => D3Sel;
+    enter: () => D3Sel;
+    html: (v: string) => D3Sel;
+    transition: () => { duration: (ms: number) => D3Sel };
+    on: (event: string, handler: (...eventData: unknown[]) => void) => D3Sel;
+}
+
+interface D3Scale {
+    domain: (d: number[]) => D3Scale;
+    range: (d: number[]) => D3Scale;
+    nice: () => D3Scale & ((v: number) => number);
+    ticks: (n: number) => number[];
+    (v: number): number;
+}
+
+interface D3Chart {
+    select: (s: string | HTMLElement | EventTarget) => D3Sel;
+    scaleLinear: () => D3Scale;
+    axisBottom: (s: unknown) => { tickValues: (v: number[]) => { tickFormat: (f: (d: number, index: number) => string) => unknown } };
+    axisLeft: (s: unknown) => unknown;
+    line: () => { x: (f: (d: unknown, index: number) => number) => { y: (f: (d: unknown) => number) => { curve: (c: unknown) => (d: unknown[]) => string } } };
+    area: () => { x: (f: (d: unknown) => number) => { y0: (f: (d: unknown) => number) => { y1: (f: (d: unknown) => number) => { curve: (c: unknown) => (d: unknown[]) => string } } } };
+    curveLinear: unknown;
+}
+
 /**
  * @param {HTMLElement} element - The container element
  * @param {BurndownPoint[]} points - The burndown data points
@@ -48,7 +82,7 @@ function processBurndownPoints(points: BurndownPoint[]): { startDate: Date; endD
  * @param {number[]} days - The day numbers
  * @param {BurndownPoint[]} sorted - The sorted burndown points
  */
-function addBurndownTooltip(svg: any, d3: any, xScale: any, days: number[], sorted: BurndownPoint[]): void {
+function addBurndownTooltip(svg: D3Sel, d3: D3Chart, xScale: (v: number) => number, days: number[], sorted: BurndownPoint[]): void {
     const tooltip = d3.select('body').append('div')
         .attr('class', 'burndown-tooltip')
         .style('position', 'absolute')
@@ -67,29 +101,29 @@ function addBurndownTooltip(svg: any, d3: any, xScale: any, days: number[], sort
         .data(sorted)
         .enter()
         .append('circle')
-        .attr('cx', (d: BurndownPoint, index: number) => xScale(days[index]))
+        .attr('cx', (_d: BurndownPoint, index: number) => xScale(days[index]))
         .attr('cy', (d: BurndownPoint) => xScale(d.remainingEffort))
         .attr('r', 5)
         .attr('fill', '#dc3545')
         .attr('stroke', 'white')
         .attr('stroke-width', 1.5)
         .attr('cursor', 'pointer')
-        .on('mouseover', function(event: MouseEvent, d: BurndownPoint) {
+        .on('mouseover', ((event: unknown, d: BurndownPoint) => {
             const formattedDate = new Date(d.date).toLocaleDateString();
-            d3.select(event.currentTarget as SVGCircleElement).attr('r', 8);
+            d3.select((event as MouseEvent).currentTarget as SVGCircleElement).attr('r', 8);
             tooltip.transition().duration(150).style('opacity', 0.9);
             tooltip.html('<strong>' + formattedDate + '</strong><br/>Remaining: ' + d.remainingEffort + ' pts')
-                .style('left', (event.pageX + 12) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
-        })
-        .on('mousemove', function(event: MouseEvent) {
-            tooltip.style('left', (event.pageX + 12) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
-        })
-        .on('mouseout', function(event: MouseEvent) {
-            d3.select(event.currentTarget as SVGCircleElement).attr('r', 5);
+                .style('left', ((event as MouseEvent).pageX + 12) + 'px')
+                .style('top', ((event as MouseEvent).pageY - 28) + 'px');
+        }) as (...eventData: unknown[]) => void)
+        .on('mousemove', ((event: unknown) => {
+            tooltip.style('left', ((event as MouseEvent).pageX + 12) + 'px')
+                .style('top', ((event as MouseEvent).pageY - 28) + 'px');
+        }) as (...eventData: unknown[]) => void)
+        .on('mouseout', ((event: unknown) => {
+            d3.select((event as MouseEvent).currentTarget as SVGCircleElement).attr('r', 5);
             tooltip.transition().duration(200).style('opacity', 0);
-        });
+        }) as (...eventData: unknown[]) => void);
 }
 
 /**
@@ -101,11 +135,11 @@ function addBurndownTooltip(svg: any, d3: any, xScale: any, days: number[], sort
  * @param {number} width - Stroke width
  * @param {string} fill - Fill color
  */
-function drawLine(svg: any, data: any[], lineGen: any, className: string, stroke: string, width: number, fill: string): void {
+function drawLine(svg: D3Sel, data: number[], lineGen: (d: unknown[]) => string, className: string, stroke: string, width: number, fill: string): void {
     svg.append('path')
         .datum(data)
         .attr('class', className)
-        .attr('d', (d: any) => lineGen(d))
+        .attr('d', (_d: Record<string, unknown>) => lineGen(data))
         .attr('fill', fill)
         .attr('stroke', stroke)
         .attr('stroke-width', width)
@@ -120,12 +154,12 @@ function drawLine(svg: any, data: any[], lineGen: any, className: string, stroke
  * @param {string} fill - Fill color
  * @param {number} opacity - Fill opacity
  */
-function drawArea(svg: any, data: any[], areaGen: any, className: string, fill: string, opacity: number): void {
+function drawArea(svg: D3Sel, data: Array<{ x: number; y0: number; y1: number; behind: boolean }>, areaGen: (d: unknown[]) => string, className: string, fill: string, opacity: number): void {
     if (data.length < 2) return;
     svg.append('path')
         .datum(data)
         .attr('class', className)
-        .attr('d', areaGen)
+        .attr('d', areaGen(data))
         .attr('fill', fill)
         .attr('fill-opacity', opacity)
         .attr('stroke', 'none');
@@ -161,7 +195,7 @@ function handleCrossPoint(diffLeft: number, diffRight: number, crossPoint: { x: 
  * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} behind - Array of behind-points
  * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} ahead - Array of ahead-points
  */
-function processSegment(index: number, days: number[], actualPoints: number[], finalIdeal: number[], xScale: any, yScale: any, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
+function processSegment(index: number, days: number[], actualPoints: number[], finalIdeal: number[], xScale: (v: number) => number, yScale: (v: number) => number, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
     const leftDay = days[index];
     const rightDay = days[index + 1];
     const actualLeft = actualPoints[index];
@@ -204,7 +238,7 @@ function processSegment(index: number, days: number[], actualPoints: number[], f
  * @param {object} yScale - The D3 y-scale
  * @returns {{ enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> }} Enhanced behind/ahead points
  */
-function buildEnhancedPoints(days: number[], actualPoints: number[], finalIdeal: number[], xScale: any, yScale: any): { enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> } {
+function buildEnhancedPoints(days: number[], actualPoints: number[], finalIdeal: number[], xScale: (v: number) => number, yScale: (v: number) => number): { enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> } {
     const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
     const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
 
@@ -239,7 +273,7 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
 
     if (!hasBurndownData(element as HTMLElement, points)) return;
 
-    const d3 = await loadD3() as any;
+    const d3 = await loadD3() as D3Chart;
     const { startDate, endDate, days, actualPoints, finalIdeal, lastDay } = processBurndownPoints(points);
 
     const width = element.clientWidth || 800;
@@ -292,7 +326,7 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
 
     const xAxisCustom = d3.axisBottom(xScale)
         .tickValues(tickValues)
-        .tickFormat((d, index) => tickLabels[index]);
+        .tickFormat((_d: number, index: number) => tickLabels[index]);
 
     xAxisGroup.call(xAxisCustom)
         .style('font-size', '11px')
@@ -319,8 +353,8 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
         .append('line')
         .attr('x1', 0)
         .attr('x2', innerWidth)
-        .attr('y1', d => yScale(d))
-        .attr('y2', d => yScale(d))
+        .attr('y1', (d: number) => yScale(d))
+        .attr('y2', (d: number) => yScale(d))
         .attr('stroke', '#e9ecef')
         .attr('stroke-dasharray', '4 4');
 
@@ -329,11 +363,11 @@ export async function drawBurndownChart(container: HTMLElement | string, points:
     const behindData = enhancedBehind.map(d => d);
     const aheadData = enhancedAhead.map(d => d);
 
-    const areaGen = d3.area().x(d => d.x).y0(d => d.y0).y1(d => d.y1).curve(d3.curveLinear);
+    const areaGen = d3.area().x((d: unknown) => (d as { x: number }).x).y0((d: unknown) => (d as { y0: number }).y0).y1((d: unknown) => (d as { y1: number }).y1).curve(d3.curveLinear) as (d: unknown[]) => string;
     drawArea(svg, behindData, areaGen, 'area-behind', '#dc3545', 0.18);
     drawArea(svg, aheadData, areaGen, 'area-ahead', '#28a745', 0.2);
 
-    const lineGen = d3.line().x((d, index) => xScale(days[index])).y(d => yScale(d)).curve(d3.curveLinear);
+    const lineGen = d3.line().x((_d: unknown, _index: number) => xScale(days[_index])).y((d: unknown) => yScale(d as number)).curve(d3.curveLinear) as (d: unknown[]) => string;
     drawLine(svg, finalIdeal, lineGen, 'ideal-line', '#6c757d', 2, 'none');
     drawLine(svg, actualPoints, lineGen, 'actual-line', '#dc3545', 2.5, 'none');
 

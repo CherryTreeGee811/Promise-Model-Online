@@ -29,7 +29,7 @@ interface AuditTableOptions {
  * @param {boolean} [options.showEntity] - Whether to show the entity column.
  * @returns {string} The rendered HTML string.
  */
-export function renderAuditTable(items: AuditItem[] | null | undefined, { showEntity = false }: AuditTableOptions = {}): string {
+export function renderAuditTable(items: AuditItem[] | null | undefined, { showEntity: _showEntity = false }: AuditTableOptions = {}): string {
     if (!items || items.length === 0) {
         return renderEmptyStateSection({
             icon: 'bi-activity',
@@ -307,8 +307,7 @@ function isIgnoredField(fieldName: string): boolean {
  */
 function encodeAuditDetails(item: AuditItem): string {
     const json = JSON.stringify(getAuditDetailsPayload(item));
-    const bytes = new TextEncoder().encode(json);
-    return btoa(String.fromCodePoint(...bytes));
+    return new TextEncoder().encode(json).toBase64();
 }
 
 /**

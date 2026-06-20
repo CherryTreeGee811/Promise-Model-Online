@@ -224,10 +224,10 @@ export function openStrideCreateModal({
                 isActive: true,
             });
 
-            (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.hide();
+            bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.hide();
             await onCreated?.();
-        } catch (error: any) {
-            liveErrorElement.textContent = error?.message || 'Failed to create stride.';
+        } catch (error: unknown) {
+            liveErrorElement.textContent = (error as Record<string, unknown> | undefined)?.message as string || 'Failed to create stride.';
             liveErrorElement.classList.remove('d-none');
         } finally {
             liveSubmitButton.disabled = false;
@@ -235,5 +235,5 @@ export function openStrideCreateModal({
         }
     });
 
-    (globalThis as any).bootstrap?.Modal?.getOrCreateInstance(modalElement)?.show();
+    bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
 }

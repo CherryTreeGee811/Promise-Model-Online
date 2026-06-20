@@ -196,10 +196,14 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
             }
             console.warn('Failed to load project audit history page:', error);
         } finally {
-            isLoading = false;
+            markLoadComplete();
             loadingElement!.hidden = true;
             listElement!.hidden = false;
         }
+    }
+
+    function markLoadComplete(): void {
+        isLoading = false;
     }
 
     /**

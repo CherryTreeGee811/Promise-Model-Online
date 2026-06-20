@@ -8,7 +8,7 @@ import { loadKnowledgeBase } from './detail.ts';
  * @param {HTMLElement} navContentDiv - The navigation content container element.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
-export async function handleKnowledgeBaseRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+export async function handleKnowledgeBaseRoutes(_path: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     try {
         await loadTemplate("knowledge-base.html", contentDiv);
         await loadKnowledgeBase();

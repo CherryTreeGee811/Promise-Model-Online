@@ -44,7 +44,7 @@ function ensureContainer() {
  * @param {number} [duration] - Auto-dismiss timeout in ms.
  * @returns {void}
  */
-export function showToast(message, type = 'info', duration = DEFAULT_DURATION) {
+export function showToast(message: string, type: keyof typeof BG_CLASSES = 'info', duration = DEFAULT_DURATION) {
   const container = ensureContainer();
   const toast = document.createElement('div');
   toast.className = `toast align-items-center border-0 ${BG_CLASSES[type]}`;
@@ -60,7 +60,7 @@ export function showToast(message, type = 'info', duration = DEFAULT_DURATION) {
       const body = document.createElement('div');
       body.className = 'toast-body d-flex align-items-center gap-2';
       const icon = document.createElement('i');
-      icon.className = `bi ${ICONS[type]}`;
+      icon.className = `bi ${ICONS[type as keyof typeof ICONS]}`;
       body.append(icon);
       const span = document.createElement('span');
       span.textContent = message;

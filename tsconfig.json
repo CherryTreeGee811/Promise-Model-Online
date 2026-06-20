@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2025",
-    "lib": ["ES2025", "DOM"],
+    "lib": ["ES2025", "ESNext", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
-    "noImplicitAny": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": true,
     "noEmit": true,
     "declaration": false,
     "sourceMap": false

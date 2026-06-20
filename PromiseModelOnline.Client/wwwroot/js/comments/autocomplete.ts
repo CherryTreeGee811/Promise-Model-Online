@@ -23,7 +23,7 @@ interface AutocompleteState {
  * @param {number|string} parentId - The parent entity ID.
  * @returns {{ destroy: () => void }} An object with a destroy method to clean up event listeners.
  */
-export function createCommentAutocomplete(textarea, parentType, parentId) {
+export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentType: string, parentId: string | number) {
   const dropdown = document.createElement('div');
   dropdown.className = 'comment-autocomplete';
   dropdown.role = 'listbox';
@@ -36,7 +36,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
     highlightedIndex: -1,
     triggerStart: -1,
   };
-  let debounceTimer;
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   /**
    * Detect an @ or # trigger at the cursor position in the textarea.
@@ -53,8 +53,8 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
     const word = value.slice(wordStart, pos);
 
-    if (word.length > 0 && (word[0] === '@' || word[0] === '#')) {
-      const trigger = word[0];
+    if (word.length > 0 && (word.at(0) === '@' || word.at(0) === '#')) {
+      const trigger = word.at(0);
       const query = word.slice(1);
       if (trigger === '@' && /^\w*$/.test(query)) {
         return { trigger, query, start: wordStart };
@@ -71,7 +71,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    * @param {number} charIndex - The character index.
    * @returns {DOMRect} The bounding rectangle of the character.
    */
-  function getCaretRect(charIndex) {
+  function getCaretRect(charIndex: number) {
     const mirror = document.createElement('div');
     const computed = getComputedStyle(textarea);
 
@@ -85,7 +85,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
 
     const style = mirror.style;
     for (const property of cssProperties) {
-      (style)[property] = computed[property];
+      (style as unknown as Record<string, string>)[property] = (computed as unknown as Record<string, string>)[property];
     }
     style.position = 'fixed';
     style.top = '0';
@@ -132,7 +132,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    * Fetch autocomplete suggestions from the API based on the trigger info.
    * @param {{ trigger: string, query: string, start: number }} triggerInfo - The trigger info.
    */
-  async function fetchSuggestions(triggerInfo) {
+  async function fetchSuggestions(triggerInfo: { trigger: string; query: string; start: number }) {
     let results;
     try {
       results = triggerInfo.trigger === '@' ? (await searchUsers(parentType, parentId, triggerInfo.query)) : (await searchPromises(parentType, parentId, triggerInfo.query));
@@ -141,8 +141,8 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
       return;
     }
 
-    if (results && results.length > 0) {
-      showDropdown(results, triggerInfo);
+    if (results && (results as unknown[]).length > 0) {
+      showDropdown(results as AutocompleteItem[], triggerInfo);
     } else {
       close();
     }
@@ -153,7 +153,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    * @param {Array} items - The items to display in the dropdown.
    * @param {{ trigger: string, query: string, start: number }} triggerInfo - The trigger info for positioning.
    */
-  function showDropdown(items, triggerInfo) {
+  function showDropdown(items: AutocompleteItem[], triggerInfo: { trigger: string; query: string; start: number }) {
     state.items = items;
     state.trigger = triggerInfo.trigger;
     state.triggerStart = triggerInfo.start;
@@ -213,7 +213,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    * Select an item from the dropdown by index and insert it into the textarea.
    * @param {number} index - The index of the item to select.
    */
-  function selectItem(index) {
+  function selectItem(index: number) {
     const item = state.items[index];
     if (!item) return;
 
@@ -269,7 +269,7 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    * Handle keyboard events for navigating and selecting from the dropdown.
    * @param {KeyboardEvent} event - The keyboard event.
    */
-  function onKeydown(event) {
+  function onKeydown(event: KeyboardEvent) {
     if (!state.open) return;
 
     switch (event.key) {
@@ -321,8 +321,8 @@ export function createCommentAutocomplete(textarea, parentType, parentId) {
    * Handle clicks outside the textarea and dropdown to close the dropdown.
    * @param {MouseEvent} event - The mouse event.
    */
-  function onClickOutside(event) {
-    if (textarea.contains(/** @type {Node} */(event.target)) || dropdown.contains(/** @type {Node} */(event.target))) return;
+  function onClickOutside(event: MouseEvent) {
+    if (textarea.contains(event.target as Node) || dropdown.contains(event.target as Node)) return;
     close();
   }
 

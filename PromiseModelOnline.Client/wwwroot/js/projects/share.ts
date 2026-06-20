@@ -3,7 +3,11 @@ import { ensureModal } from '../utils/html.ts';
 
 import { getPermissions, inviteUser, removePermission, searchUsers } from './api.ts';
 
-declare let bootstrap: any;
+declare const bootstrap: {
+    Modal: {
+        getOrCreateInstance(element: HTMLElement): { hide(): void; show(): void };
+    };
+};
 
 /**
  * Ensure the revoke confirmation modal exists in the DOM.
@@ -38,7 +42,7 @@ function ensureRevokeModal(): HTMLElement | null {
  * @param {HTMLElement} contentDiv - The main content container.
  * @param {{ isOwner?: boolean } } permission - The current user's permission object for the project.
  */
-export function loadSharePage(owner: string, project: string, contentDiv: HTMLElement, permission: { isOwner?: boolean } | null): void {
+export function loadSharePage(owner: string, project: string, _contentDiv: HTMLElement, permission: { isOwner?: boolean } | null): void {
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#loading-text') as HTMLElement | null;
     const successElement = document.querySelector('#success-text') as HTMLElement | null;
@@ -274,6 +278,11 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
         liveSubmitButton.textContent = 'Send Invitation';
         closeAutocomplete();
 
+        function showInviteError(error_: Error): void {
+            liveErrorElement.textContent = error_?.message || 'Failed to invite user.';
+            liveErrorElement.classList.remove('d-none');
+        }
+
         setupInviteAutocomplete();
 
         liveForm.addEventListener('submit', async (event) => {
@@ -296,8 +305,7 @@ export function loadSharePage(owner: string, project: string, contentDiv: HTMLEl
                 }
                 await config.onInvited?.();
             } catch (error) {
-                liveErrorElement.textContent = (error as Error)?.message || 'Failed to invite user.';
-                liveErrorElement.classList.remove('d-none');
+                showInviteError(error as Error);
             } finally {
                 liveSubmitButton.disabled = false;
                 liveSubmitButton.textContent = 'Send Invitation';

@@ -124,7 +124,7 @@ async function loadFlowJourneyName(owner: string, project: string, flow: Flow, n
  * @param {HTMLElement} contentDiv - Content container for routing
  * @returns {Promise<void>}
  */
-async function loadFlowMoments(owner: string, project: string, flowId: string, flow: any, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+async function loadFlowMoments(owner: string, project: string, flowId: string, flow: Record<string, unknown>, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const momentsList = document.querySelector('#flow-moments-list') as HTMLElement;
 
     try {
@@ -410,12 +410,12 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
         if (descInput && descViewElement && editButton) {
             createCommentAutocomplete(descInput, 'Flow', flow.id);
             const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
-            (flow as any).__editor = editor;
+            (flow as unknown as Record<string, unknown>).__editor = editor;
         }
 
         bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
 
-        await loadFlowMoments(owner, project, flowId, flow, navContentDiv, contentDiv);
+        await loadFlowMoments(owner, project, flowId, flow as unknown as Record<string, unknown>, navContentDiv, contentDiv);
 
         initBackLink();
 

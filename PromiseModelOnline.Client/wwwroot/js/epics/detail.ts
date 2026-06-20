@@ -94,7 +94,7 @@ async function loadParentPromise(owner: string, project: string, epic: Epic, nav
  * @param {HTMLElement} contentDiv - Content container for routing
  * @returns {Promise<void>}
  */
-async function loadEpicJourneys(owner: string, project: string, epicId: string, epic: any, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+async function loadEpicJourneys(owner: string, project: string, epicId: string, epic: Record<string, unknown>, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     const journeysList = document.querySelector('#epic-journeys-list') as HTMLElement;
 
     try {
@@ -313,12 +313,12 @@ export async function loadEpicDetail(owner: string, project: string, epicId: str
         if (descInput && descViewElement && editButton) {
             createCommentAutocomplete(descInput, 'Epic', epic.id);
             const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
-            (epic as any).__editor = editor;
+            (epic as unknown as Record<string, unknown>).__editor = editor;
         }
 
         await loadParentPromise(owner, project, epic, navContentDiv, contentDiv);
 
-        await loadEpicJourneys(owner, project, epicId, epic, navContentDiv, contentDiv);
+        await loadEpicJourneys(owner, project, epicId, epic as unknown as Record<string, unknown>, navContentDiv, contentDiv);
 
         initBackLink();
         gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-journey-statement', '#add-journey-submit']);

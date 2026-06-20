@@ -48,7 +48,7 @@ function handleNavClick(event: Event, navContentDiv: HTMLElement, contentDiv: HT
  * @returns {Promise<void>} Resolves when the template has been loaded and rendered.
  * @throws {Error} If the fetch request fails.
  */
-export async function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+export async function loadNavTemplate(navContentDiv: HTMLElement, _contentDiv: HTMLElement): Promise<void> {
     const templateName = isLoggedIn() ? 'authenticated.html' : 'anonymous.html';
 
     try {
@@ -60,7 +60,7 @@ export async function loadNavTemplate(navContentDiv: HTMLElement, contentDiv: HT
         navContentDiv.replaceChildren(...document_.body.childNodes);
         setActiveNavLink();
         if (isLoggedIn()) void startNotificationPolling();
-    } catch (error: any) {
+    } catch (error: unknown) {
         navContentDiv.replaceChildren();
         const errorH1 = document.createElement('h1');
         errorH1.textContent = 'Error loading template';

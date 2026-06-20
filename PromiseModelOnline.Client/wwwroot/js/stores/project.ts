@@ -1,11 +1,13 @@
 import { createStore } from './store.ts';
 
-/**
- * @typedef {{ owner: string; project: string; permission: string | undefined; isOwner: boolean }} ProjectContext
- */
+interface ProjectContext {
+    owner: string;
+    project: string;
+    permission: string | undefined;
+    isOwner: boolean;
+}
 
-/** @type {ProjectContext} */
-const initial = { owner: '', project: '', permission: undefined, isOwner: false };
+const initial: ProjectContext = { owner: '', project: '', permission: undefined, isOwner: false };
 
 /**
  * Reactive store for the current project context (owner, project slug, permission).

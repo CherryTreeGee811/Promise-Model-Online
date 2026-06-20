@@ -62,7 +62,7 @@ export async function loadComments(container: HTMLElement, parentType: string, p
             getComments(owner, project, parentType, parentId),
             mapPromise,
         ]);
-        renderComments(commentsList, comments as any[], canComment);
+        renderComments(commentsList, comments as Record<string, unknown>[], canComment);
     } catch {
         commentsList.replaceChildren();
         const p = document.createElement('p');
@@ -88,8 +88,12 @@ export async function loadComments(container: HTMLElement, parentType: string, p
                     const y = window.scrollY;
                     const created = await addComment(owner, project, { parentType, parentId, text });
                     appendComment(commentsList, created as Record<string, unknown>);
-                    textarea.value = '';
-                    window.scrollTo(0, y);
+                    clearEditor(textarea, y);
+
+                    function clearEditor(textarea: HTMLTextAreaElement, y: number): void {
+                        textarea.value = '';
+                        window.scrollTo(0, y);
+                    }
                 } catch (error) {
                     alert('Failed to post comment.');
                     console.error(error);

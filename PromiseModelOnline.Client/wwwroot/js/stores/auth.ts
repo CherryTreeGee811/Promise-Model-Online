@@ -30,7 +30,7 @@ function loadFromStorage() {
  * Persist auth state to sessionStorage.
  * @param {AuthState} state - The auth state to persist.
  */
-function saveToStorage(state) {
+function saveToStorage(state: Record<string, unknown>) {
   try {
     sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
   } catch {

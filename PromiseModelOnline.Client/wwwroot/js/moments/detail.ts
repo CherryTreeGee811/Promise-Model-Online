@@ -48,7 +48,7 @@ interface Moment {
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
  */
-function buildMomentUI(moment: any, detailCard: HTMLElement, detailDiv: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement, owner: string, project: string): void {
+function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement, detailDiv: HTMLElement, _navContentDiv: HTMLElement, _contentDiv: HTMLElement, _owner: string, _project: string): void {
         const heading = document.createElement('h2');
         heading.textContent = moment.statement as string;
         detailCard.append(heading);
@@ -66,7 +66,7 @@ function buildMomentUI(moment: any, detailCard: HTMLElement, detailDiv: HTMLElem
         descTh.append(descLabel);
         descRow.append(descTh);
         const descTd = document.createElement('td');
-        buildInlineEditUI(descTd, 'moment-', moment.description || '');
+        buildInlineEditUI(descTd, 'moment-', (moment.description as string) || '');
         descRow.append(descTd);
         table.append(descRow);
 
@@ -169,9 +169,9 @@ function buildMomentUI(moment: any, detailCard: HTMLElement, detailDiv: HTMLElem
         table.append(strideRow);
 
         // Created row
-        table.append(createDateRow('Created', moment.createdAt));
+        table.append(createDateRow('Created', moment.createdAt as string | undefined));
 
-        table.append(createDateRow('Completed', moment.completedAt));
+        table.append(createDateRow('Completed', moment.completedAt as string | undefined));
 
         detailCard.append(table);
 
@@ -231,7 +231,7 @@ function gateMomentDetailControls(permission: Record<string, unknown>): void {
  * @param {Moment} moment - The moment data object
  * @returns {Promise<void>}
  */
-async function setupEstimateHandler(owner: string, project: string, momentId: string, moment: any): Promise<void> {
+async function setupEstimateHandler(owner: string, project: string, momentId: string, moment: Record<string, unknown>): Promise<void> {
     const estSelectElement = document.querySelector('#moment-estimate-select') as HTMLSelectElement;
     if (estSelectElement) {
         estSelectElement.addEventListener('change', async () => {
@@ -253,7 +253,7 @@ async function setupEstimateHandler(owner: string, project: string, momentId: st
  * @param {Moment} moment - The moment data object
  * @returns {Promise<void>}
  */
-async function setupStrideHandler(owner: string, project: string, momentId: string, moment: any): Promise<void> {
+async function setupStrideHandler(owner: string, project: string, momentId: string, moment: Record<string, unknown>): Promise<void> {
     const strideSelectElement = document.querySelector('#moment-stride-select') as HTMLSelectElement;
     if (strideSelectElement) {
         try {
@@ -266,16 +266,23 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
                 if (String(stride.id) === String(moment.assignedStrideId)) opt.selected = true;
                 strideSelectElement.append(opt);
             }
-            if (!moment.assignedStrideId) strideSelectElement.value = '';
+            applyStrideDefault(moment, strideSelectElement);
             strideSelectElement.addEventListener('change', async () => {
                 const value = strideSelectElement.value === '' ? undefined : parseInt(strideSelectElement.value, 10);
                 try {
                     const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
-                    moment.assignedStrideId = updated.assignedStrideId as number;
-                    patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { assignedStrideId: updated.assignedStrideId });
-                    strideSelectElement.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
+                    assignStrideResult(updated);
                 } catch (error) { alert('Failed to update assigned stride'); console.error(error); }
             });
+
+            function applyStrideDefault(moment: Record<string, unknown>, select: HTMLSelectElement): void {
+                if (!moment.assignedStrideId) select.value = '';
+            }
+            function assignStrideResult(updated: Record<string, unknown>): void {
+                moment.assignedStrideId = updated.assignedStrideId as number;
+                patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { assignedStrideId: updated.assignedStrideId });
+                strideSelectElement.value = updated.assignedStrideId ? String(updated.assignedStrideId) : '';
+            }
         } catch (error) { console.error('Failed to load strides', error); }
     }
 }
@@ -313,7 +320,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         const detailCard = document.createElement('div');
         detailCard.className = 'detail-card moment-detail-card';
 
-        buildMomentUI(moment, detailCard, detailDiv, navContentDiv, contentDiv, owner, project);
+        buildMomentUI(moment as unknown as Record<string, unknown>, detailCard, detailDiv, navContentDiv, contentDiv, owner, project);
 
 
         const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
@@ -321,7 +328,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         const momentEditButton = document.querySelector('#edit-moment-desc-btn') as HTMLElement;
         const descriptionSaveButton = document.querySelector('#moment-description-save') as HTMLElement;
         const momentDescriptionCancelButton = document.querySelector('#moment-description-cancel') as HTMLElement;
-        let momentEditor;
+        let momentEditor: ReturnType<typeof setupInlineEdit> | undefined;
         if (momentDescInput && momentDescView && momentEditButton) {
             createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
             momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditButton, descriptionSaveButton, momentDescriptionCancelButton);
@@ -365,21 +372,22 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
             void navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
         });
 
-        void setupEstimateHandler(owner, project, momentId, moment);
+        void setupEstimateHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
 
-        await setupStrideHandler(owner, project, momentId, moment);
+        await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
 
         const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
         const completedCell = detailDiv.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement;
         if (statusSelectElement) {
             statusSelectElement.addEventListener('change', async () => {
                 const previous = statusSelectElement.value;
+                const writeTo = statusSelectElement;
                 try {
                     const updated = await updateMomentStatus(owner, project, momentId, statusSelectElement.value) as Record<string, unknown>;
                     moment.status = updated.status as string;
                     moment.statusColor = updated.statusColor as string;
                     moment.completedAt = updated.completedAt as string;
-                    statusSelectElement.value = updated.status as string;
+                    writeTo.value = updated.status as string;
                     await refreshDetailStackGraph();
                     if (updated.completedAt) {
                         const d = new Date(updated.completedAt as string);
@@ -388,7 +396,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
                         completedCell.textContent = '\u{2013}';
                     }
                 } catch {
-                    statusSelectElement.value = previous;
+                    writeTo.value = previous;
                     alert('Failed to update status');
                 }
             });
@@ -398,20 +406,21 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         if (typeSelectElement) {
             typeSelectElement.addEventListener('change', async () => {
                 const newType = typeSelectElement.value;
+                const writeTo = typeSelectElement;
                 try {
                     const updated = await updateMomentType(owner, project, momentId, newType) as Record<string, unknown>;
                     if (updated && updated.type) {
                         moment.type = updated.type as string;
-                        typeSelectElement.value = updated.type as string;
+                        writeTo.value = updated.type as string;
                         patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                             type: updated.type,
                         });
                     }
                 } catch {
+                    writeTo.value = moment.type;
                     alert('Failed to update type');
-                    typeSelectElement.value = moment.type;
                 }
-            });
+            })
         }
 
         initBackLink();
@@ -491,7 +500,7 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
     const taskSubmitButton = container.querySelector('#add-moment-task-submit') as HTMLButtonElement;
     const taskMessageElement = container.querySelector('#add-moment-task-msg') as HTMLElement;
 
-    if (taskDescriptionInput) createCommentAutocomplete(taskDescriptionInput, 'Moment', moment.id);
+    if (taskDescriptionInput) createCommentAutocomplete(taskDescriptionInput as unknown as HTMLTextAreaElement, 'Moment', moment.id);
 
     const canEdit = isAtLeast(permission?.permission as string, 'Edit');
     if (!canEdit) {
@@ -549,9 +558,13 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
                     row.append(tdCompletion);
 
                     insertRowBeforeAddRow(tbody, row);
-                    taskNameInput.value = '';
-                    taskDescriptionInput.value = '';
-                    taskCompletedInput.checked = false;
+                    resetTaskForm();
+
+                    function resetTaskForm(): void {
+                        taskNameInput.value = '';
+                        taskDescriptionInput.value = '';
+                        taskCompletedInput.checked = false;
+                    }
                     if (!Array.isArray(moment.tasks)) moment.tasks = [];
                     moment.tasks.push(created);
                     syncMomentTasksToStackGraph(momentId, moment);
@@ -573,7 +586,7 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
  * @param {string} momentId - The moment ID
  * @param {Moment} moment - The moment object
  */
-function syncMomentTasksToStackGraph(momentId: string, moment: Moment): void {
+function syncMomentTasksToStackGraph(_momentId: string, moment: Moment): void {
     patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
         tasks: Array.isArray(moment?.tasks) ? [...moment.tasks] : [],
     });
@@ -612,7 +625,7 @@ async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, proj
  * @param {string} momentId - The moment ID
  * @param {number} taskId - The task ID
  */
-function applyCheckResult(checkbox: HTMLInputElement, label: HTMLElement | null, updated: Record<string, unknown>, isPreviousChecked: boolean, moment: Moment, momentId: string, taskId: number): void {
+function applyCheckResult(checkbox: HTMLInputElement, label: HTMLElement | null, updated: Record<string, unknown>, _isPreviousChecked: boolean, moment: Moment, momentId: string, taskId: number): void {
     if (updated) {
         checkbox.checked = Boolean(updated.isCompleted);
         if (label) label.textContent = updated.isCompleted ? 'Completed' : 'Open';

@@ -84,8 +84,12 @@ export function setupAddChildForm(config: AddChildConfig): void {
 
       if (created && tbody) {
         insertCreatedRow(tbody as HTMLTableSectionElement, created, datasetKey, getRowHtml, typeSelect ?? undefined);
-        statementInput.value = '';
-        if (typeSelect) typeSelect.value = 'Story';
+        clearFormInputs();
+
+        function clearFormInputs(): void {
+          statementInput!.value = '';
+          if (typeSelect) typeSelect.value = 'Story';
+        }
         if (onSuccess) onSuccess();
         patchChildMetrics(childMetricsKey, [...(items || []), created]);
       }
@@ -104,7 +108,7 @@ export function setupAddChildForm(config: AddChildConfig): void {
  * @param {(created: Record<string, unknown>) => string} getRowHtml - Function to get row HTML
  * @param {HTMLSelectElement | undefined} typeSelect - Optional type select element to reset
  */
-function insertCreatedRow(tbody: HTMLTableSectionElement, created: Record<string, unknown>, datasetKey: string, getRowHtml: (created: Record<string, unknown>) => string, typeSelect: HTMLSelectElement | undefined): void {
+function insertCreatedRow(tbody: HTMLTableSectionElement, created: Record<string, unknown>, datasetKey: string, getRowHtml: (created: Record<string, unknown>) => string, _typeSelect: HTMLSelectElement | undefined): void {
   removeInlineEmptyRow(tbody);
   const row = document.createElement('tr');
   row.setAttribute('data-' + datasetKey, String(created.id));

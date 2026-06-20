@@ -22,7 +22,7 @@ function buildEmptyState(): HTMLElement {
 /**
  * @param {HTMLElement} contentDiv - Content container
  */
-export function loadInvitationsPage(contentDiv: HTMLElement): void {
+export function loadInvitationsPage(_contentDiv: HTMLElement): void {
     const listDiv = document.querySelector('#invitations-list') as HTMLElement;
     const errorElement = document.querySelector('#error-text') as HTMLElement;
 

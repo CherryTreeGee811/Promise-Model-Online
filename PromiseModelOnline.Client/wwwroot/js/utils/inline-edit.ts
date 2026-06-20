@@ -60,8 +60,9 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
         showView(value);
         return;
       }
-      if (typeof bootstrap !== 'undefined' && (bootstrap as any).Popover) {
-        const popover = new (bootstrap as any).Popover(saveButton, {
+      if (typeof bootstrap !== 'undefined' && bootstrap.Popover) {
+        const PopoverClass = bootstrap.Popover as unknown as new (element: HTMLElement, options: Record<string, unknown>) => { show: () => void; dispose: () => void };
+        const popover = new PopoverClass(saveButton, {
           trigger: 'manual',
           placement: 'top',
           content: 'Saved!',

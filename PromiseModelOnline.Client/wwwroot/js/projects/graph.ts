@@ -1,4 +1,3 @@
-declare const d3: any;
 
 import { getUserId } from '../auth-state.ts';
 import { getStrides } from '../strides/api.ts';
@@ -20,6 +19,7 @@ import {
     renderEmptyState,
     logGraphFocus,
     renderStackGraph,
+    D3Module,
 } from './stack-graph-core.ts';
 
 interface GraphFilters {
@@ -430,7 +430,7 @@ function isNodeStatusMatching(node: GraphNode, status: string): boolean {
  */
 function isNodeAssignmentMatching(node: GraphNode, assignment: string): boolean {
     if (assignment !== ASSIGNED_TO_ME) return true;
-    if (node.nodeType as any !== 'moment') return false;
+    if (node.nodeType !== 'moment') return false;
     const currentUserId = getUserId();
     if (currentUserId === null) return false;
     return node.payload?.ownerId === currentUserId;
@@ -444,7 +444,7 @@ function isNodeAssignmentMatching(node: GraphNode, assignment: string): boolean 
  */
 function isNodeEffortMatching(node: GraphNode, effort: string): boolean {
     if (effort === 'all') return true;
-    if (node.nodeType as any !== 'moment') return false;
+    if (node.nodeType !== 'moment') return false;
     const effortBucket = node._effortBucket ?? getMomentEffortBucket(node.payload?.effortEstimate) as string;
     return effort === effortBucket;
 }
@@ -457,7 +457,7 @@ function isNodeEffortMatching(node: GraphNode, effort: string): boolean {
  */
 function isNodeStrideMatching(node: GraphNode, stride: string): boolean {
     if (stride === 'all') return true;
-    if (node.nodeType as any !== 'moment') return false;
+    if (node.nodeType !== 'moment') return false;
     const strideBucket = node._strideBucket ?? getMomentStrideBucket(node.payload) as string;
     return stride === strideBucket;
 }
@@ -469,8 +469,8 @@ function isNodeStrideMatching(node: GraphNode, stride: string): boolean {
  * @returns {boolean} True if the node passes all active filters.
  */
 function isNodeMatching(node: GraphNode, filters: GraphFilters): boolean {
-    if (node.nodeType as any === 'root') return false;
-    if (!filters.types.has(node.nodeType as any)) return false;
+    if (node.nodeType === 'root') return false;
+    if (!filters.types.has(node.nodeType as string)) return false;
     if (!isNodeSearchMatching(node, filters.search)) return false;
     if (!isNodeStatusMatching(node, filters.status)) return false;
     if (!isNodeAssignmentMatching(node, filters.assignment)) return false;
@@ -487,7 +487,7 @@ function isNodeMatching(node: GraphNode, filters: GraphFilters): boolean {
  * @returns {GraphNode} The cloned subtree with collapse metadata.
  */
 function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNodes: number }): GraphNode {
-    if (node.nodeType as any !== 'root') {
+    if (node.nodeType !== 'root') {
         metrics.visibleNodes += 1;
     }
 
@@ -1108,7 +1108,7 @@ function renderTree(_contentDiv: HTMLElement, d3: Record<string, unknown>, treeD
     const speedElement = document.querySelector('#graph-animation-speed') as HTMLInputElement | null;
     graphState.animationSpeed = speedElement ? Number.parseFloat(speedElement.value) || 1 : 1;
 
-    const result = renderStackGraph(graphContent, d3, treeData, {
+    const result = renderStackGraph(graphContent, d3 as unknown as D3Module, treeData, {
         owner: graphState.owner,
         project: graphState.project,
         focusNodeId: focusNodeData?.id ?? undefined,
@@ -1181,7 +1181,7 @@ function applyFilters(): void {
         } as Record<string, unknown>);
 
         const restoreTransform = focusNode ? undefined : (graphState.userZoomTransform ?? graphState.zoomTransform);
-        renderTree(graphContent!, graphState.d3 as any, graphState.filteredTree ?? undefined, restoreTransform, focusNode ?? undefined, isAnimate);
+        renderTree(graphContent!, graphState.d3 as Record<string, unknown>, graphState.filteredTree ?? undefined, restoreTransform, focusNode ?? undefined, isAnimate);
     } else {
         renderEmptyState(graphContent!, 'No cards match the current filters.');
     }
@@ -1202,7 +1202,7 @@ async function reloadGraphData(): Promise<void> {
     if (successElement) successElement.textContent = '';
 
     try {
-        const graphData = await getGraphData(graphState.owner, graphState.project) as Record<string, unknown>;
+        const graphData = await getGraphData(graphState.owner ?? '', graphState.project ?? '') as Record<string, unknown>;
 
         const project = {
             id: graphData.id ?? graphData.Id,
@@ -1250,7 +1250,7 @@ async function loadAvailableStrides(owner: string, project: string): Promise<voi
  * @param {Record<string, unknown> } permission - The current user's permission object for the project.
  * @returns {Promise<void>} Resolves when the graph page is fully loaded and rendered.
  */
-export async function loadGraphPage(owner: string, project: string, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
+export async function loadGraphPage(owner: string, project: string, _contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
     const errorElement = document.querySelector('#error-text') as HTMLElement | undefined | null;
     const successElement = document.querySelector('#success-text') as HTMLElement | undefined | null;
 
@@ -1280,16 +1280,16 @@ export async function loadGraphPage(owner: string, project: string, contentDiv: 
         project,
         getAvailableStrides: () => graphState.availableStrides as unknown as { id: number; name?: string }[],
         onGraphMutated: reloadGraphData,
-        isNodeChildrenHidden: (nodeData: GraphNode) => isNodeCollapsed(nodeData?.id),
-        setNodeChildrenHidden: async (nodeData: GraphNode, isHidden: boolean) => {
-            const nodeId = nodeData?.id;
+        isNodeChildrenHidden: (nodeData: Record<string, unknown>) => isNodeCollapsed((nodeData as GraphNode)?.id),
+        setNodeChildrenHidden: async (nodeData: Record<string, unknown>, isHidden: boolean) => {
+            const nodeId = (nodeData as GraphNode)?.id;
             if (!nodeId) return;
 
             setNodeCollapsed(nodeId, isHidden);
             requestApplyFilters(0);
         },
-        revealNextLevel: async (nodeData: GraphNode) => {
-            revealNextLevel(nodeData);
+        revealNextLevel: async (nodeData: Record<string, unknown>) => {
+            revealNextLevel(nodeData as GraphNode);
             requestApplyFilters(0);
         },
         onProjectDeleted: () => {

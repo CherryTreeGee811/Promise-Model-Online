@@ -8,7 +8,7 @@ import { loadNotificationsPage } from './list.ts';
  * @param {HTMLElement} navContentDiv - The navigation content container element.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
-export async function handleNotificationsRoutes(path: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+export async function handleNotificationsRoutes(path: string, _navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     if (path === '/notifications') {
         try {
             await loadTemplate('notifications/list.html', contentDiv);

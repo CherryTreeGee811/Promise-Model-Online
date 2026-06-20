@@ -17,6 +17,7 @@ import {
     getDetailPageNodeScale,
     renderEmptyState,
     renderStackGraph,
+    D3Module,
 } from './stack-graph-core.ts';
 
 const STACK_NODE_TYPES = new Set(['promise', 'epic', 'journey', 'flow', 'moment']);
@@ -29,7 +30,7 @@ const detailStackState: {
     focusNodeId: string | undefined;
     activeNodeType: string | undefined;
     activeNodeId: string | number | undefined;
-    d3: unknown | undefined;
+    d3: D3Module | undefined;
     mountToken: number;
 } = {
     tree: undefined,
@@ -109,7 +110,7 @@ function rerenderDetailStackGraph(): void {
     const container = getContainer();
     if (!container || !detailStackState.tree || !detailStackState.d3) return;
 
-    renderStackGraph(container, detailStackState.d3 as Record<string, unknown>, detailStackState.tree!, {
+    renderStackGraph(container, detailStackState.d3!, detailStackState.tree!, {
         owner: detailStackState.owner ?? undefined,
         project: detailStackState.project ?? undefined,
         focusNodeId: detailStackState.focusNodeId ?? undefined,
@@ -215,7 +216,7 @@ interface ChildMetrics {
  * @param {string} project - The project's slug.
  * @returns {Promise<Record<string, ChildMetrics>>} The child metrics keyed by node type.
  */
-async function fetchChildMetricsForPath({ moment, flow, journey, epic, promise }: PathEntities, owner: string, project: string): Promise<Record<string, ChildMetrics>> {
+async function fetchChildMetricsForPath({ moment: _moment, flow, journey, epic, promise }: PathEntities, owner: string, project: string): Promise<Record<string, ChildMetrics>> {
     const metrics: Record<string, ChildMetrics> = {};
 
     const fetches: Promise<void>[] = [];
@@ -408,8 +409,9 @@ export async function refreshDetailStackGraph(): Promise<void> {
 
     try {
         const pathResult = await buildAncestorPathTree(activeNodeType, activeNodeId, owner!, project!);
-        detailStackState.tree = pathResult.tree;
-        detailStackState.focusNodeId = pathResult.focusNodeId;
+        const state = detailStackState;
+        state.tree = pathResult.tree;
+        state.focusNodeId = pathResult.focusNodeId;
         rerenderDetailStackGraph();
     } catch (error) {
         console.error('Unable to refresh detail stack graph:', error);
@@ -441,7 +443,7 @@ export async function mountDetailStackGraph({ nodeType, nodeId, owner, project }
 
         if (mountToken !== detailStackState.mountToken) return;
 
-        detailStackState.d3 = d3;
+        detailStackState.d3 = d3 as D3Module;
         detailStackState.tree = pathResult.tree;
         detailStackState.focusNodeId = pathResult.focusNodeId;
         detailStackState.activeNodeType = nodeType;

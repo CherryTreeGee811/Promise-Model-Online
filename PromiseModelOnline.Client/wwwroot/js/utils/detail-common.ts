@@ -72,14 +72,14 @@ export function loadCommentsAndReactions(detailDiv: HTMLElement, entityType: str
     const commentsContainer = document.querySelector(`#${entityType.toLowerCase()}-comments`) as HTMLElement;
     if (commentsContainer) void loadComments(commentsContainer, entityType, entityId, owner, project, permission);
 
-    let reactionsContainer = document.querySelector('#reactions-section');
+    let reactionsContainer = document.querySelector('#reactions-section') as HTMLElement;
     if (!reactionsContainer) {
         reactionsContainer = document.createElement('div');
         reactionsContainer.id = 'reactions-section';
     }
     if (detailDiv) {
         if (!reactionsContainer.parentNode) detailDiv.append(reactionsContainer);
-        loadReactions(reactionsContainer, entityType, entityId, owner, project, permission);
+        loadReactions(reactionsContainer, entityType, String(entityId), owner, project, (permission ?? {}) as { permission?: string });
     }
 }
 
@@ -182,7 +182,7 @@ export function setupDescriptionHandler(
                 patchDetailStackGraphNode(entityType + '-' + entity.sequenceNumber, {
                     description: entity.description,
                 });
-                const editor = (entity as any).__editor as { showSavedPopover?: (html: string) => void } | undefined;
+                const editor = (entity as { __editor?: { showSavedPopover?: (html: string) => void } }).__editor;
                 if (editor?.showSavedPopover) editor.showSavedPopover(formatCommentText(entity.description || ''));
             } catch (error) {
                 if (descMessage) descMessage.textContent = 'Save failed';

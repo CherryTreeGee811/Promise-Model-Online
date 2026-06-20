@@ -1,19 +1,10 @@
 import { authFetch, apiGet } from '../api.ts';
 
-/**
- * Fetch all projects accessible to the current user.
- * @returns {Promise<object[]|null>} The list of projects, or null if none.
- */
 export async function fetchProjects() {
     return handleJsonOrNull(await authFetch(`/api/projects`));
 }
 
-/**
- * Create a new project.
- * @param {object} data - The project creation data.
- * @returns {Promise<object|null>} The created project, or null.
- */
-export async function createProject(data) {
+export async function createProject(data: Record<string, unknown>) {
     const response = await authFetch(`/api/projects/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,14 +20,7 @@ export async function createProject(data) {
     return response.json();
 }
 
-/**
- * Update a project's name and description.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {object} data - The update data.
- * @returns {Promise<object>} The updated project.
- */
-export async function updateProjectDetails(owner, project, data) {
+export async function updateProjectDetails(owner: string, project: string, data: Record<string, unknown>) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/details`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -51,25 +35,13 @@ export async function updateProjectDetails(owner, project, data) {
     return response.json();
 }
 
-/**
- * Delete a project by owner and project slug.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<object|null>} The deletion result, or null.
- */
-export async function deleteProject(owner, project) {
+export async function deleteProject(owner: string, project: string) {
     return handleJsonOrNull(await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`, {
         method: 'DELETE'
     }));
 }
 
-/**
- * Fetch a project's details.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<object|null>} The project data, or null.
- */
-export async function getProject(owner, project) {
+export async function getProject(owner: string, project: string) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`);
 
     if (response.status === 204) return;
@@ -78,13 +50,7 @@ export async function getProject(owner, project) {
     return response.json();
 }
 
-/**
- * Export a project as a downloadable blob.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<Blob>} The export file blob.
- */
-export async function exportProject(owner, project) {
+export async function exportProject(owner: string, project: string) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/export`);
 
     if (!response.ok) {
@@ -95,15 +61,7 @@ export async function exportProject(owner, project) {
     return response.blob();
 }
 
-/**
- * Fetch paginated audit events for a project.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {number} [take] - Results per page.
- * @param {number} [skip] - Offset for pagination.
- * @returns {Promise<{items: object[], totalCount: number}>} The paginated audit events and total count.
- */
-export async function getAuditEvents(owner, project, take = 10, skip = 0) {
+export async function getAuditEvents(owner: string, project: string, take: number = 10, skip: number = 0) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/audit-events?take=${take}&skip=${skip}`);
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -114,12 +72,7 @@ export async function getAuditEvents(owner, project, take = 10, skip = 0) {
     return { items, totalCount: Number.isNaN(totalCount) ? items.length : totalCount };
 }
 
-/**
- * Import a project from a JSON file.
- * @param {File} file - The JSON export file.
- * @returns {Promise<object>} The import result.
- */
-export async function importProject(file) {
+export async function importProject(file: File) {
     const formData = new FormData();
     formData.append('file', file, file.name);
 
@@ -141,26 +94,13 @@ export async function importProject(file) {
     return response.json();
 }
 
-/**
- * Fetch permission records for a project.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<object[]>} The permission list.
- */
-export async function getPermissions(owner, project) {
+export async function getPermissions(owner: string, project: string) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
 }
 
-/**
- * Invite a user to a project.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {object} data - The invitation data (email, level).
- * @returns {Promise<object>} The created permission.
- */
-export async function inviteUser(owner, project, data) {
+export async function inviteUser(owner: string, project: string, data: Record<string, unknown>) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -170,24 +110,12 @@ export async function inviteUser(owner, project, data) {
     return response.json();
 }
 
-/**
- * Search for users by name or email.
- * @param {string} query - The search term.
- * @returns {Promise<object[]>} Matching users.
- */
-export async function searchUsers(query) {
-    const parameters = new URLSearchParams({ q: String(query), max: '10' });
+export async function searchUsers(query: string) {
+    const parameters = new URLSearchParams({ q: query, max: '10' });
     return apiGet(`/api/users/search?${parameters}`);
 }
 
-/**
- * Remove a user's permission from a project.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {number} permissionId - The permission ID to remove.
- * @returns {Promise<void>}
- */
-export async function removePermission(owner, project, permissionId) {
+export async function removePermission(owner: string, project: string, permissionId: string | number) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/permissions/${permissionId}`, {
         method: 'DELETE'
     });
@@ -195,13 +123,7 @@ export async function removePermission(owner, project, permissionId) {
 }
 
 
-/**
- * Fetch the full project hierarchy as graph data.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<object|null>} The graph data.
- */
-export async function getGraphData(owner, project) {
+export async function getGraphData(owner: string, project: string) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/graph`);
     if (response.status === 204) return;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -209,36 +131,20 @@ export async function getGraphData(owner, project) {
 }
 
 
-/**
- * Fetch the current user's permission level for a project.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @returns {Promise<object|null>} The permission data, or null.
- */
-export async function getMyPermission(owner, project) {
+export async function getMyPermission(owner: string, project: string) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
     if (response.status === 204) return;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
 }
 
-/**
- * Handle a fetch response, returning parsed JSON or undefined for 204.
- * @param {Response} response - The fetch response object.
- * @returns {Promise<object|undefined>} Parsed JSON body, or undefined for 204 responses.
- */
-function handleJsonOrNull(response) {
+function handleJsonOrNull(response: Response) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     if (response.status === 204) return Promise.resolve();
     return response.json();
 }
 
-/**
- * Safely parse a JSON response, returning null on failure.
- * @param {Response} response - The fetch response object.
- * @returns {Promise<object|null>} The parsed JSON object, or null if parsing fails.
- */
-async function safeParse(response) {
+async function safeParse(response: Response) {
     try {
         return await response.json();
     } catch {

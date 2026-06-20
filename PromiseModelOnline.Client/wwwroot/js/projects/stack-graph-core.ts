@@ -1,5 +1,47 @@
-declare const d3: any;
 import { getStatusIcon, getStatusBucket } from '../utils/status-utilities.ts';
+
+/** Minimal D3 selection interface for chaining. */
+type D3Sel = Record<string, (argument: unknown) => unknown> & {
+    select: (s: string) => D3Sel;
+    selectAll: (s: string) => D3Sel;
+    append: (s: string) => D3Sel;
+    attr: (a: string, b?: unknown) => D3Sel;
+    style: (a: string, b?: unknown) => D3Sel;
+    text: (v?: unknown) => D3Sel;
+    classed: (a: string, b?: unknown) => D3Sel;
+    call: (function_: unknown, ...arguments_: unknown[]) => D3Sel;
+    node: () => SVGElement;
+    on: (event: string, handler: (...eventData: unknown[]) => void) => D3Sel;
+    size: () => number;
+    datum: (d?: unknown) => D3Sel;
+    data: (d: unknown[], key?: unknown) => D3Sel;
+    enter: () => D3Sel;
+    exit: () => D3Sel;
+    merge: (o: unknown) => D3Sel;
+    transition: (n?: unknown) => D3Sel;
+    duration: (ms: number) => D3Sel;
+    remove: () => D3Sel;
+    filter: (p: unknown) => D3Sel;
+    each: (f: unknown) => D3Sel;
+    html: (v?: unknown) => D3Sel;
+    lower: () => D3Sel;
+    empty: () => boolean;
+};
+
+/** Minimal D3 module interface for graph visualization. */
+export interface D3Module {
+    select: (selector: string | Element) => unknown;
+    transition: (name?: string) => { duration: (ms: number) => unknown };
+    linkHorizontal: () => unknown;
+    min: <T>(data: T[], accessor: (d: T) => number) => number | undefined;
+    max: <T>(data: T[], accessor: (d: T) => number) => number | undefined;
+    zoomIdentity: unknown;
+    hierarchy: <T>(data: T) => { descendants: () => { data: T; x: number; y: number; depth?: number; parent?: unknown; children?: unknown[] }[]; links: () => { source: unknown; target: unknown }[]; height: number };
+    zoomTransform: (node: SVGElement) => unknown;
+    create: (ns: string) => unknown;
+    tree: () => { nodeSize: (size: [number, number]) => { (root: Record<string, unknown>): void }; (root: Record<string, unknown>): void };
+    zoom: () => { scaleExtent: (s: [number, number]) => unknown; extent: (s: [[number, number], [number, number]]) => unknown; translateExtent: (s: [[number, number], [number, number]]) => unknown; on: (event: string, handler: (event: Record<string, unknown>) => void) => unknown; transform: unknown };
+}
 
 
 
@@ -86,7 +128,7 @@ function isGraphFocusDebugEnabled(): boolean {
  * @param {string} stage - The debug stage label.
  * @param {object} details - The debug data to log.
  */
-export function logGraphFocus(stage: string, details: any): void {
+export function logGraphFocus(stage: string, details: Record<string, unknown>): void {
     if (!isGraphFocusDebugEnabled()) return;
     console.info('[graph-focus]', stage, details);
 }
@@ -158,7 +200,7 @@ function getChildTypeLabel(nodeType: string): string | undefined {
  * @param {object} nodeData - The node data containing childCount and completedChildCount.
  * @returns {string|undefined} The progress summary string, or undefined if no child type exists.
  */
-function getChildProgressSummary(nodeData: any): string | undefined {
+function getChildProgressSummary(nodeData: Record<string, unknown>): string | undefined {
     const childLabel = getChildTypeLabel(nodeData.nodeType as string);
     if (!childLabel) return;
 
@@ -173,7 +215,7 @@ function getChildProgressSummary(nodeData: any): string | undefined {
  * @param {object} payload - The node payload containing a type field.
  * @returns {string|undefined} The type label, or undefined if not set.
  */
-function getNodeTypeLabel(payload: any | undefined): string | undefined {
+function getNodeTypeLabel(payload: Record<string, unknown> | undefined): string | undefined {
     const value = String(payload?.type ?? payload?.Type ?? '').trim();
     if (!value) return;
 
@@ -189,8 +231,8 @@ function getNodeTypeLabel(payload: any | undefined): string | undefined {
  * @param {object} payload - The moment payload containing a tasks array.
  * @returns {string|undefined} The task summary string, or undefined if no tasks exist.
  */
-function getMomentTaskSummary(payload: any | undefined): string | undefined {
-    const tasks = Array.isArray(payload?.tasks) ? payload.tasks as any[] : [];
+function getMomentTaskSummary(payload: Record<string, unknown> | undefined): string | undefined {
+    const tasks = Array.isArray(payload?.tasks) ? payload.tasks as Record<string, unknown>[] : [];
     if (tasks.length === 0) return;
 
     const completedCount = tasks.filter(task => task?.isCompleted ?? task?.IsCompleted).length;
@@ -203,7 +245,7 @@ function getMomentTaskSummary(payload: any | undefined): string | undefined {
  * @param {number} [maxLength] - The maximum description length.
  * @returns {string} The truncated description, or 'Description: None' if empty.
  */
-function getCardDescription(payload: any | undefined, maxLength = 52): string {
+function getCardDescription(payload: Record<string, unknown> | undefined, maxLength = 52): string {
     const description = String(payload?.description ?? payload?.Description ?? '').trim();
     if (!description) return 'Description: None';
 
@@ -215,7 +257,7 @@ function getCardDescription(payload: any | undefined, maxLength = 52): string {
  * @param {object} payload - The node payload containing an assignedStrideId.
  * @returns {string} The stride label (e.g. 'Stride: Backlog' or 'Stride # N').
  */
-function getStrideLabel(payload: any | undefined): string {
+function getStrideLabel(payload: Record<string, unknown> | undefined): string {
     const id = payload?.assignedStrideId as string | undefined;
     if ([undefined, 'unassigned', ''].includes(id)) return 'Stride: Backlog';
     return `Stride # ${id}`;
@@ -226,8 +268,8 @@ function getStrideLabel(payload: any | undefined): string {
  * @param {object} nodeData - The node data.
  * @returns {string} The multi-line title string.
  */
-function getNodeTitle(nodeData: any): string {
-    const payload = (nodeData.payload ?? {}) as any;
+function getNodeTitle(nodeData: Record<string, unknown>): string {
+    const payload = (nodeData.payload ?? {}) as Record<string, unknown>;
     const lines = [String(payload.statement ?? payload.name ?? `#${payload.id}`)];
 
     if (nodeData.nodeType === 'moment') {
@@ -260,7 +302,7 @@ export function getMomentEffortBucket(effortEstimate: unknown): string {
  * @param {object} payload - The moment payload containing assignedStrideId.
  * @returns {string} The stride bucket ('backlog' or the stride ID as string).
  */
-export function getMomentStrideBucket(payload: any | undefined): string {
+export function getMomentStrideBucket(payload: Record<string, unknown> | undefined): string {
     const id = payload?.assignedStrideId as string | undefined;
     if ([undefined, 'unassigned', ''].includes(id)) return 'backlog';
     return String(id);
@@ -271,7 +313,7 @@ export function getMomentStrideBucket(payload: any | undefined): string {
  * @param {object[]} children - The list of child entities.
  * @returns {{childCount: number, completedChildCount: number}} The computed metrics.
  */
-export function computeChildMetrics(children: any[]): { childCount: number; completedChildCount: number } {
+export function computeChildMetrics(children: Record<string, unknown>[]): { childCount: number; completedChildCount: number } {
     const list = Array.isArray(children) ? children : [];
     const childCount = list.length;
     const completedChildCount = list.filter(child => getStatusBucket(child?.statusColor as string) === 'done').length;
@@ -285,9 +327,9 @@ export function computeChildMetrics(children: any[]): { childCount: number; comp
  * @param {object[]} [children] - The node's child nodes.
  * @returns {object} The created graph node with derived fields.
  */
-export function createNode(nodeType: string, payload: any, children: any[] = []) {
+export function createNode(nodeType: string, payload: Record<string, unknown>, children: Record<string, unknown>[] = []) {
     const childCount = children.length;
-    const completedChildCount = children.filter(child => getStatusBucket((child.payload as any | undefined)?.statusColor as string ?? child.statusColor as string) === 'done').length;
+    const completedChildCount = children.filter(child => getStatusBucket((child.payload as Record<string, unknown> | undefined)?.statusColor as string ?? child.statusColor as string) === 'done').length;
 
     const label = String(payload.statement ?? payload.name ?? `#${payload.id}`);
     const searchText = normalizeText([
@@ -321,8 +363,8 @@ export function createNode(nodeType: string, payload: any, children: any[] = [])
  * @param {object} [childMetrics] - Optional pre-computed child metrics.
  * @returns {object} The created graph node.
  */
-export function createNodeWithMetrics(nodeType: string, payload: any, childMetrics?: { childCount: number; completedChildCount: number } | null) {
-    const enrichedPayload = { ...payload } as any;
+export function createNodeWithMetrics(nodeType: string, payload: Record<string, unknown>, childMetrics?: { childCount: number; completedChildCount: number } | null) {
+    const enrichedPayload = { ...payload } as Record<string, unknown>;
     if (childMetrics) {
         enrichedPayload._childCount = childMetrics.childCount;
         enrichedPayload._completedChildCount = childMetrics.completedChildCount;
@@ -381,14 +423,14 @@ function getAppBasePath(): string {
  * @param {string} project - The project's slug.
  * @returns {string|undefined} The detail page URL, or undefined if node type has no route.
  */
-function getNodeHref(node: any, owner: string, project: string): string | undefined {
+function getNodeHref(node: Record<string, unknown>, _owner: string, _project: string): string | undefined {
     const routeSegment = (NODE_ROUTE_SEGMENTS as Record<string, string>)[node.nodeType as string];
     if (!routeSegment) return;
 
     const parameters = new URLSearchParams();
     parameters.set('graphFocus', node.id as string);
 
-    const seq = (node.payload as any | undefined)?.sequenceNumber ?? (node.payload as any | undefined)?.id;
+    const seq = (node.payload as Record<string, unknown> | undefined)?.sequenceNumber ?? (node.payload as Record<string, unknown> | undefined)?.id;
     return `${getAppBasePath()}/${routeSegment}/${seq}?${parameters.toString()}`;
 }
 
@@ -397,10 +439,10 @@ function getNodeHref(node: any, owner: string, project: string): string | undefi
  * @param {object} node - The graph node.
  * @returns {string} The normalized search text.
  */
-export function getNodeSearchText(node: any): string {
+export function getNodeSearchText(node: Record<string, unknown>): string {
     return (node._searchText as string) ?? normalizeText([
         node.label as string,
-        (node.payload as any | undefined)?.description as string,
+        (node.payload as Record<string, unknown> | undefined)?.description as string,
     ].join(' '));
 }
 
@@ -410,14 +452,14 @@ export function getNodeSearchText(node: any): string {
  * @param {string} nodeId - The node ID to find.
  * @returns {object|undefined} The matching node, or undefined if not found.
  */
-export function findNodeById(treeData: any | undefined, nodeId: string | undefined): any | undefined {
+export function findNodeById(treeData: Record<string, unknown> | undefined, nodeId: string | undefined): Record<string, unknown> | undefined {
     if (!treeData || !nodeId) return;
 
     if (treeData.id === nodeId) {
         return treeData;
     }
 
-    const treeChildren = (treeData.children as any[]) ?? [];
+    const treeChildren = (treeData.children as Record<string, unknown>[]) ?? [];
     for (const child of treeChildren) {
         const match = findNodeById(child, nodeId);
         if (match) {
@@ -432,12 +474,12 @@ export function findNodeById(treeData: any | undefined, nodeId: string | undefin
  * @param {object} node - The tree root node.
  * @returns {number} The count of renderable nodes.
  */
-export function countRenderableNodes(node: any | undefined): number {
+export function countRenderableNodes(node: Record<string, unknown> | undefined): number {
     if (!node) return 0;
 
     const selfCount = node.nodeType === 'root' ? 0 : 1;
     let sum = selfCount;
-    const children = (node.children as any[]) ?? [];
+    const children = (node.children as Record<string, unknown>[]) ?? [];
     for (const child of children) {
         sum += countRenderableNodes(child);
     }
@@ -452,7 +494,7 @@ export function countRenderableNodes(node: any | undefined): number {
  * @param {object} [projectEntity] - Optional project entity for the root label.
  * @returns {object} The parsed tree with a root node.
  */
-export function parseGraphData(rootPromises: any[], owner: string, project: string, projectEntity?: Record<string, unknown> | null) {
+export function parseGraphData(rootPromises: Record<string, unknown>[], owner: string, project: string, projectEntity?: Record<string, unknown> | null) {
     const rawName = projectEntity?.name ?? projectEntity?.Name ?? '';
     const normalizedName = String(rawName).trim();
     const projectLabel = normalizedName || `Project ${owner}/${project}`;
@@ -462,9 +504,9 @@ export function parseGraphData(rootPromises: any[], owner: string, project: stri
         nodeType: 'root',
         label: projectLabel,
         payload: {
-            id: (projectEntity as any | undefined)?.id,
+            id: (projectEntity as Record<string, unknown> | undefined)?.id,
             name: projectLabel,
-            description: (projectEntity as any | undefined)?.description ?? (projectEntity as any | undefined)?.Description,
+            description: (projectEntity as Record<string, unknown> | undefined)?.description ?? (projectEntity as Record<string, unknown> | undefined)?.Description,
         },
         children: rootPromises,
     };
@@ -512,15 +554,13 @@ function getRenderedNodePosition(node: { x: number; y: number }, contentOffsetX:
  * @param {number} [scale] - The zoom scale.
  * @returns {object|undefined} The zoom transform, or undefined if no node provided.
  */
-function createFocusTransform(d3: any, viewportWidth: number, viewportHeight: number, node: { x: number; y: number } | undefined, contentOffsetX: number, contentOffsetY: number, scale = 1.5): any | undefined {
+function createFocusTransform(d3: D3Module, viewportWidth: number, viewportHeight: number, node: { x: number; y: number } | undefined, contentOffsetX: number, contentOffsetY: number, scale = 1.5): Record<string, unknown> | undefined {
     if (!node) return;
     const targetScale = Math.max(0.5, Math.min(2.5, scale));
     const position = getRenderedNodePosition(node, contentOffsetX, contentOffsetY);
 
-    return (d3.zoomIdentity as any)
-        .translate(viewportWidth / 2, viewportHeight / 2)
-        .scale(targetScale)
-        .translate(-position.x, -position.y) as unknown as any;
+    const zi = d3.zoomIdentity as { translate: (x: number, y: number) => { scale: (s: number) => { translate: (x: number, y: number) => Record<string, unknown> } } };
+    return zi.translate(viewportWidth / 2, viewportHeight / 2).scale(targetScale).translate(-position.x, -position.y);
 }
 
 /**
@@ -530,7 +570,7 @@ function createFocusTransform(d3: any, viewportWidth: number, viewportHeight: nu
  * @param {number} viewportHeight - The viewport height.
  * @returns {{nodeScale: number, minGapX: number, minGapY: number, forehead: number, anchorOffsetX: number, anchorOffsetY: number}} The layout profile.
  */
-function getCompactLayoutProfile(visibleCount: number, viewportWidth: number, viewportHeight: number): { nodeScale: number; minGapX: number; minGapY: number; forehead: number; anchorOffsetX: number; anchorOffsetY: number } {
+function getCompactLayoutProfile(visibleCount: number, _viewportWidth: number, _viewportHeight: number): { nodeScale: number; minGapX: number; minGapY: number; forehead: number; anchorOffsetX: number; anchorOffsetY: number } {
     // Explicit presets tuned for the detail pages (1..5 visible cards)
     // Provide nodeScale and suggested min gaps; fall back to defaults if out of range.
     const presets: Record<number, { nodeScale: number; minGapX: number; minGapY: number; forehead: number; anchorOffsetX: number; anchorOffsetY: number }> = {
@@ -581,24 +621,24 @@ export function getDetailPageNodeScale(activeDetailNodeType: string): number {
  * @param {string } options.owner - The project owner's slug.
  * @param {string } options.project - The project's slug.
  * @param {string } options.focusNodeId - The focused node ID.
- * @param {((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: any) => void) } options.onContextMenu - Context menu event handler.
+ * @param {((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: Record<string, unknown>) => void) } options.onContextMenu - Context menu event handler.
  * @param {boolean} options.enableZoom - Whether zoom is enabled.
  * @param {boolean} [options.enableLinks] - Whether links are enabled.
  * @param {number } [options.uniformNodeScale] - Uniform node scale factor.
  * @param {boolean} [options.animate] - Whether to animate transitions.
  * @param {number} [options.animationSpeed] - Animation speed multiplier.
  */
-function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], options: {
+function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string, unknown>[], links: Record<string, unknown>[], options: {
     contentOffsetX: number;
     contentOffsetY: number;
     cardClipPathId: string;
-    owner: string | null;
-    project: string | null;
-    focusNodeId: string | null;
-    onContextMenu: ((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: any) => void) | null;
+    owner: string | undefined;
+    project: string | undefined;
+    focusNodeId: string | undefined;
+    onContextMenu: ((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: Record<string, unknown>) => void) | undefined;
     enableZoom: boolean;
     enableLinks?: boolean;
-    uniformNodeScale?: number | null;
+    uniformNodeScale?: number;
     animate?: boolean;
     animationSpeed?: number;
 }): void {
@@ -627,7 +667,7 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
      * @param {object} d - The D3 node data.
      * @returns {string} A CSS translate() string with the target position and scale.
      */
-    function getFinalTransform(d: any): string {
+    function getFinalTransform(d: Record<string, unknown>): string {
         return `translate(${(d.y as number) + contentOffsetX}, ${(d.x as number) + contentOffsetY}) scale(${nodeScale})`;
     }
 
@@ -636,8 +676,8 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
      * @param {object} d - The D3 node data.
      * @returns {string} A CSS translate() string with the parent position and scale.
      */
-    function getParentTransform(d: any): string {
-        const parent = d.parent as any | undefined;
+    function getParentTransform(d: Record<string, unknown>): string {
+        const parent = d.parent as Record<string, unknown> | undefined;
         const px = parent ? (parent.y as number) : 0;
         const py = parent ? (parent.x as number) : 0;
         return `translate(${px + contentOffsetX}, ${py + contentOffsetY}) scale(${nodeScale})`;
@@ -648,15 +688,15 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
      * @param {object} d - The D3 link data with source and target nodes.
      * @returns {string} An SVG path data string.
      */
-    function getFinalLinkPath(d: any): string {
-        return d3.linkHorizontal({
+    function getFinalLinkPath(d: Record<string, unknown>): string {
+        return (d3.linkHorizontal() as (link: { source: { x: number; y: number }; target: { x: number; y: number } }) => string)({
                 source: {
-                    x: (d.source as any).x as number + contentOffsetY,
-                    y: (d.source as any).y as number + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale),
+                    x: (d.source as Record<string, unknown>).x as number + contentOffsetY,
+                    y: (d.source as Record<string, unknown>).y as number + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale),
                 },
                 target: {
-                    x: (d.target as any).x as number + contentOffsetY,
-                    y: (d.target as any).y as number + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale),
+                    x: (d.target as Record<string, unknown>).x as number + contentOffsetY,
+                    y: (d.target as Record<string, unknown>).y as number + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale),
                 },
             });
     }
@@ -672,19 +712,19 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
             .attr('stroke-width', 1.5);
 
     const linkBound = linkGroup.selectAll('path')
-        .data(links, (l: any) => `${(l.source as any).data!.id}->${(l.target as any).data!.id}` as unknown as string);
+        .data(links, (l: Record<string, unknown>) => `${((l.source as Record<string, unknown>).data as Record<string, unknown>).id}->${((l.target as Record<string, unknown>).data as Record<string, unknown>).id}` as string);
 
     linkBound.exit().transition(t)
         .attr('opacity', 0)
         .remove();
 
     linkBound.attr('opacity', 1)
-        .attr('d', (d: any) => getFinalLinkPath(d));
+        .attr('d', (d: Record<string, unknown>) => getFinalLinkPath(d));
 
     const linkEnter = linkBound.enter()
         .append('path')
         .attr('opacity', 0)
-        .attr('d', (d: any) => getFinalLinkPath(d));
+        .attr('d', (d: Record<string, unknown>) => getFinalLinkPath(d));
 
     if (isAnimate) {
         linkEnter.transition(t).attr('opacity', 1);
@@ -698,22 +738,22 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         : layer.append('g').attr('class', 'nodes');
 
     const nodeBound = nodeGroup.selectAll(containerTag)
-        .data(renderable, (d: any) => (d.data as any).id as string);
+        .data(renderable, (d: Record<string, unknown>) => (d.data as Record<string, unknown>).id as string);
 
     nodeBound.exit()
         .transition(t)
         .attr('opacity', 0)
-        .attr('transform', (d: any) => getParentTransform(d))
+        .attr('transform', (d: Record<string, unknown>) => getParentTransform(d))
         .remove();
 
     const nodeEnter = nodeBound.enter()
         .append(containerTag)
         .attr('opacity', 0)
-        .attr('transform', (d: any) => getParentTransform(d))
+        .attr('transform', (d: Record<string, unknown>) => getParentTransform(d))
         .style('text-decoration', 'none');
 
     nodeEnter.append('title')
-        .text((current: any) => getNodeTitle(current.data as any));
+        .text((current: Record<string, unknown>) => getNodeTitle(current.data as Record<string, unknown>));
 
     nodeEnter.append('rect')
         .attr('class', 'graph-card')
@@ -738,16 +778,16 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         .attr('ry', CARD_RADIUS)
         .attr('clip-path', `url(#${cardClipPathId})`)
         .attr('focusable', 'false')
-        .attr('fill', (current: any) => getNodeColor(current.data!.nodeType as string));
+        .attr('fill', (current: Record<string, unknown>) => getNodeColor((current.data as Record<string, unknown>).nodeType as string));
 
     nodeEnter.append('text')
         .attr('class', 'graph-card-statement')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + CARD_PADDING_TOP)
         .attr('focusable', 'false')
-        .text((current: any) => truncateText(current.data!.label as string, 36));
+        .text((current: Record<string, unknown>) => truncateText((current.data as Record<string, unknown>).label as string, 36));
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType !== 'moment' && (current.data as any).nodeType !== 'root')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType !== 'moment' && (current.data as Record<string, unknown>).nodeType !== 'root')
         .append('text')
         .attr('class', 'graph-card-line graph-card-line--node-type')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
@@ -756,9 +796,9 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         .attr('font-size', 12)
         .attr('font-weight', 600)
         .attr('focusable', 'false')
-        .text((current: any) => getNodeTypeLabel(current.data!.payload as any) ?? '');
+        .text((current: Record<string, unknown>) => getNodeTypeLabel((current.data as Record<string, unknown>).payload as Record<string, unknown>) ?? '');
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType !== 'root')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType !== 'root')
         .append('text')
         .attr('class', 'graph-card-status')
         .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
@@ -766,23 +806,23 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'hanging')
         .attr('focusable', 'false')
-        .text((current: any) => getStatusIcon((current.data as any).payload!['statusColor' as keyof object] as string));
+        .text((current: Record<string, unknown>) => getStatusIcon((current.data as Record<string, unknown>).payload!['statusColor' as keyof object] as string));
 
-    nodeEnter.filter((current: any) => {
-            const hiddenCount = Number.parseInt((current.data as any)._hiddenDescendantCount as string ?? '0', 10) || 0;
-            return hiddenCount > 0 && Boolean((current.data as any)._isCollapsed);
+    nodeEnter.filter((current: Record<string, unknown>) => {
+            const hiddenCount = Number.parseInt((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0', 10) || 0;
+            return hiddenCount > 0 && Boolean((current.data as Record<string, unknown>)._isCollapsed);
         })
         .append('text')
         .attr('class', 'graph-card-collapsed-badge')
         .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
         .attr('y', CARD_HEIGHT / 2 - 12)
         .attr('text-anchor', 'end')
-        .text((current: any) => {
-            const hiddenCount = Number.parseInt((current.data as any)._hiddenDescendantCount as string ?? '0', 10) || 0;
+        .text((current: Record<string, unknown>) => {
+            const hiddenCount = Number.parseInt((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0', 10) || 0;
             return `${hiddenCount} hidden`;
         });
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType === 'moment')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'moment')
         .append('text')
         .attr('class', 'graph-card-line graph-card-line--moment-type')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
@@ -790,7 +830,7 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .attr('font-weight', 600)
-        .text((current: any) => getNodeTypeLabel((current.data as any).payload as any) ?? '');
+        .text((current: Record<string, unknown>) => getNodeTypeLabel((current.data as Record<string, unknown>).payload as Record<string, unknown>) ?? '');
 
     nodeEnter.append('line')
         .attr('class', 'graph-card-divider')
@@ -801,34 +841,34 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         .attr('stroke', '#cbd5e1')
         .attr('stroke-width', 1);
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType === 'moment')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'moment')
         .append('text')
         .attr('class', 'graph-card-line')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y)
         .attr('fill', '#334155')
         .attr('font-size', 12)
-        .text((current: any) => getStrideLabel((current.data as any).payload as any));
+        .text((current: Record<string, unknown>) => getStrideLabel((current.data as Record<string, unknown>).payload as Record<string, unknown>));
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType === 'moment')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'moment')
         .append('text')
         .attr('class', 'graph-card-line')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + DETAIL_LINE_GAP)
         .attr('fill', '#334155')
         .attr('font-size', 12)
-        .text((current: any) => getCardDescription((current.data as any).payload as any, 52));
+        .text((current: Record<string, unknown>) => getCardDescription((current.data as Record<string, unknown>).payload as Record<string, unknown>, 52));
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType === 'moment')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'moment')
         .append('text')
         .attr('class', 'graph-card-line')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + DETAIL_START_Y + (DETAIL_LINE_GAP * 2))
         .attr('fill', '#334155')
         .attr('font-size', 12)
-        .text((current: any) => `Effort: ${formatEstimate((current.data as any).payload!['effortEstimate' as keyof object])}`);
+        .text((current: Record<string, unknown>) => `Effort: ${formatEstimate((current.data as Record<string, unknown>).payload!['effortEstimate' as keyof object])}`);
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType === 'moment' && getMomentTaskSummary((current.data as any).payload as any))
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'moment' && getMomentTaskSummary((current.data as Record<string, unknown>).payload as Record<string, unknown>))
         .append('text')
         .attr('class', 'graph-card-line graph-card-line--moment-tasks')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
@@ -836,18 +876,18 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         .attr('fill', '#0f766e')
         .attr('font-size', 12)
         .attr('font-weight', 600)
-        .text((current: any) => getMomentTaskSummary((current.data as any).payload as any));
+        .text((current: Record<string, unknown>) => getMomentTaskSummary((current.data as Record<string, unknown>).payload as Record<string, unknown>));
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType !== 'moment' && (current.data as any).nodeType !== 'root')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType !== 'moment' && (current.data as Record<string, unknown>).nodeType !== 'root')
         .append('text')
         .attr('class', 'graph-card-line')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
         .attr('y', -CARD_HEIGHT / 2 + 62)
         .attr('fill', '#334155')
         .attr('font-size', 12)
-        .text((current: any) => getCardDescription((current.data as any).payload as any));
+        .text((current: Record<string, unknown>) => getCardDescription((current.data as Record<string, unknown>).payload as Record<string, unknown>));
 
-    nodeEnter.filter((current: any) => (current.data as any).nodeType !== 'moment' && (current.data as any).nodeType !== 'root')
+    nodeEnter.filter((current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType !== 'moment' && (current.data as Record<string, unknown>).nodeType !== 'root')
         .append('text')
         .attr('class', 'graph-card-line')
         .attr('x', -CARD_WIDTH / 2 + CARD_PADDING_X)
@@ -855,24 +895,24 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
         .attr('fill', '#334155')
         .attr('font-size', 12)
         .attr('dominant-baseline', 'middle')
-        .text((current: any) => getChildProgressSummary(current.data as any) ?? 'No child cards');
+        .text((current: Record<string, unknown>) => getChildProgressSummary(current.data as Record<string, unknown>) ?? 'No child cards');
 
     const node = nodeEnter.merge(nodeBound);
 
-    node.select('title').text((current: any) => getNodeTitle(current.data as any));
-    node.select('text.graph-card-statement').text((current: any) => truncateText((current.data as any).label as string, 36));
-    node.select('rect.graph-card-accent').attr('fill', (current: any) => getNodeColor((current.data as any).nodeType as string));
-    node.select('text.graph-card-status').text((current: any) => getStatusIcon(((current.data as any).payload as any)?.statusColor as string));
+    node.select('title').text((current: Record<string, unknown>) => getNodeTitle(current.data as Record<string, unknown>));
+    node.select('text.graph-card-statement').text((current: Record<string, unknown>) => truncateText((current.data as Record<string, unknown>).label as string, 36));
+    node.select('rect.graph-card-accent').attr('fill', (current: Record<string, unknown>) => getNodeColor((current.data as Record<string, unknown>).nodeType as string));
+    node.select('text.graph-card-status').text((current: Record<string, unknown>) => getStatusIcon(((current.data as Record<string, unknown>).payload as Record<string, unknown>)?.statusColor as string));
 
-    (node.each as (isFilterMatch: (d: any, index: number, nodes: unknown[]) => void) => void)(function (current: any, _index: number, nodes: unknown[]) {
+    (node.each as (isFilterMatch: (d: Record<string, unknown>, index: number, nodes: unknown[]) => void) => void)(function (current: Record<string, unknown>, _index: number, nodes: unknown[]) {
         const currentNode = nodes[_index] as Element;
-        const badge = d3.select(currentNode).select('text.graph-card-collapsed-badge');
-        const hiddenCount = Number.parseInt((current.data as any)._hiddenDescendantCount as string ?? '0', 10) || 0;
-        const shouldShowBadge = hiddenCount > 0 && Boolean((current.data as any)._isCollapsed);
+        const badge = (d3.select(currentNode) as unknown as D3Sel).select('text.graph-card-collapsed-badge');
+        const hiddenCount = Number.parseInt((current.data as Record<string, unknown>)._hiddenDescendantCount as string ?? '0', 10) || 0;
+        const shouldShowBadge = hiddenCount > 0 && Boolean((current.data as Record<string, unknown>)._isCollapsed);
 
         if (shouldShowBadge) {
             if (badge.empty()) {
-                d3.select(currentNode).append('text')
+                (d3.select(currentNode) as unknown as D3Sel).append('text')
                     .attr('class', 'graph-card-collapsed-badge')
                     .attr('x', CARD_WIDTH / 2 - CARD_PADDING_X)
                     .attr('y', CARD_HEIGHT / 2 - 12)
@@ -887,61 +927,62 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
     });
 
     if (isEnableLinks) {
-        node.attr('href', (current: any) => getNodeHref(current.data as any, owner as string, project as string))
-            .attr('xlink:href', (current: any) => getNodeHref(current.data as any, owner as string, project as string))
+        node.attr('href', (current: Record<string, unknown>) => getNodeHref(current.data as Record<string, unknown>, owner as string, project as string))
+            .attr('xlink:href', (current: Record<string, unknown>) => getNodeHref(current.data as Record<string, unknown>, owner as string, project as string))
             .attr('data-nav', '');
     }
 
     node.style('text-decoration', 'none')
         .style('--graph-card-bg', '#ffffff')
-        .style('--graph-accent', (current: any) => getNodeColor((current.data as any).nodeType as string))
-        .style('--graph-stroke', (current: any) => {
-            const isFocused = focusNodeId !== null && (current.data as any).id === focusNodeId;
-            const isAllowFocusHighlight = (current.data as any).nodeType !== 'root';
-            if ((current.data as any)._searchMatched || (isFocused && isAllowFocusHighlight)) return '#d4af37';
-            return (current as any).depth === 0 ? getNodeColor((current.data as any).nodeType as string) : '#cbd5e1';
+        .style('--graph-accent', (current: Record<string, unknown>) => getNodeColor((current.data as Record<string, unknown>).nodeType as string))
+        .style('--graph-stroke', (current: Record<string, unknown>) => {
+            const isFocused = focusNodeId !== undefined && (current.data as Record<string, unknown>).id === focusNodeId;
+            const isAllowFocusHighlight = (current.data as Record<string, unknown>).nodeType !== 'root';
+            if ((current.data as Record<string, unknown>)._searchMatched || (isFocused && isAllowFocusHighlight)) return '#d4af37';
+            return (current as Record<string, unknown>).depth === 0 ? getNodeColor((current.data as Record<string, unknown>).nodeType as string) : '#cbd5e1';
         })
-        .style('--graph-stroke-width', (current: any) => {
-            const isFocused = focusNodeId !== null && (current.data as any).id === focusNodeId;
-            const isAllowFocusHighlight = (current.data as any).nodeType !== 'root';
-            if ((current.data as any)._searchMatched || (isFocused && isAllowFocusHighlight)) return 3;
-            return (current as any).depth === 0 ? 2.5 : 1.5;
+        .style('--graph-stroke-width', (current: Record<string, unknown>) => {
+            const isFocused = focusNodeId !== undefined && (current.data as Record<string, unknown>).id === focusNodeId;
+            const isAllowFocusHighlight = (current.data as Record<string, unknown>).nodeType !== 'root';
+            if ((current.data as Record<string, unknown>)._searchMatched || (isFocused && isAllowFocusHighlight)) return 3;
+            return (current as Record<string, unknown>).depth === 0 ? 2.5 : 1.5;
         })
         .classed('graph-node', true)
-        .classed('is-root', (current: any) => (current.data as any).nodeType === 'root')
-        .classed('is-moment', (current: any) => (current.data as any).nodeType === 'moment')
-        .classed('is-collapsed', (current: any) => Boolean((current.data as any)._isCollapsed))
-        .classed('is-search-matched', (current: any) => Boolean((current.data as any)._searchMatched))
-        .classed('is-focused', (current: any) => (focusNodeId !== null && (current.data as any).id === focusNodeId))
-        .attr('tabindex', (current: any) => {
-            if ((current.data as any).nodeType === 'root') return;
+        .classed('is-root', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'root')
+        .classed('is-moment', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'moment')
+        .classed('is-collapsed', (current: Record<string, unknown>) => Boolean((current.data as Record<string, unknown>)._isCollapsed))
+        .classed('is-search-matched', (current: Record<string, unknown>) => Boolean((current.data as Record<string, unknown>)._searchMatched))
+        .classed('is-focused', (current: Record<string, unknown>) => (focusNodeId !== undefined && (current.data as Record<string, unknown>).id === focusNodeId))
+        .attr('tabindex', (current: Record<string, unknown>) => {
+            if ((current.data as Record<string, unknown>).nodeType === 'root') return;
             return isEnableZoom ? 0 : -1;
         })
-        .attr('role', (current: any) => (isEnableZoom && (current.data as any).nodeType !== 'root') ? 'treeitem' : undefined)
-        .attr('aria-label', (current: any) => (isEnableZoom && (current.data as any).nodeType !== 'root') ? (getNodeTitle(current.data as any) || 'Graph node') : undefined);
+        .attr('role', (current: Record<string, unknown>) => (isEnableZoom && (current.data as Record<string, unknown>).nodeType !== 'root') ? 'treeitem' : undefined)
+        .attr('aria-label', (current: Record<string, unknown>) => (isEnableZoom && (current.data as Record<string, unknown>).nodeType !== 'root') ? (getNodeTitle(current.data as Record<string, unknown>) || 'Graph node') : undefined);
 
     if (onContextMenu) {
-        (node.on as any)('contextmenu', (event: MouseEvent, current: any) => {
-            event.preventDefault();
-            onContextMenu        });
+        (node.on as (event: string, handler: (...eventData: unknown[]) => void) => unknown)('contextmenu', ((_event: unknown, _current: Record<string, unknown>) => {
+            (_event as MouseEvent).preventDefault();
+            (onContextMenu as (...eventData: unknown[]) => void)(_event, _current);
+        }) as (...eventData: unknown[]) => void);
 
-        (node.on as any)('keydown', (event: KeyboardEvent, current: any) => {
-            if (!['Enter', ' ', 'Space'].includes(event.key)) return;
-
-            event.preventDefault();
-            onContextMenu        });
+        (node.on as (event: string, handler: (...eventData: unknown[]) => void) => unknown)('keydown', ((_event: unknown, _current: Record<string, unknown>) => {
+            if (!['Enter', ' ', 'Space'].includes((_event as KeyboardEvent).key)) return;
+            (_event as KeyboardEvent).preventDefault();
+            (onContextMenu as (...eventData: unknown[]) => void)(_event, _current);
+        }) as (...eventData: unknown[]) => void);
     }
 
     nodeBound.attr('opacity', 1)
-        .attr('transform', (d: any) => getFinalTransform(d));
+        .attr('transform', (d: Record<string, unknown>) => getFinalTransform(d));
 
     if (isAnimate) {
         nodeEnter.transition(t)
             .attr('opacity', 1)
-            .attr('transform', (d: any) => getFinalTransform(d));
+            .attr('transform', (d: Record<string, unknown>) => getFinalTransform(d));
     } else {
         nodeEnter.attr('opacity', 1)
-            .attr('transform', (d: any) => getFinalTransform(d));
+            .attr('transform', (d: Record<string, unknown>) => getFinalTransform(d));
     }
 }
 
@@ -990,7 +1031,7 @@ function appendGraphNodes(d3: any, layer: any, renderable: any[], links: any[], 
  * @param {number} [uniformNodeScale] - Uniform node scale factor.
  * @returns {{ stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number }} The computed layout values.
  */
-function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportHeight: number, margin: any, maxDepth: number, treeData: any, uniformNodeScale = 1) {
+function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportHeight: number, margin: { top: number; right: number; bottom: number; left: number }, maxDepth: number, treeData: Record<string, unknown>, uniformNodeScale = 1) {
     let sgx = isCompact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
     let sgy = isCompact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
     let fg = isCompact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
@@ -1037,23 +1078,23 @@ function resolveAnimationOptions(contentDiv: HTMLElement, shouldAnimate: boolean
  * @returns {{ minX: number; maxX: number; minY: number; maxY: number; graphWidth: number; graphHeight: number }} The computed dimensions.
  */
 function computeGraphDimensions(
-    d3: any,
-    renderable: any[],
+    d3: D3Module,
+    renderable: Record<string, unknown>[],
     cardScale: number,
     margin: { top: number; right: number; bottom: number; left: number },
     viewportWidth: number,
     viewportHeight: number,
     foreheadGap: number,
     isCompact: boolean,
-    minGraphWidth: number | null,
-    minGraphHeight: number | null,
+    minGraphWidth: number | undefined,
+    minGraphHeight: number | undefined,
 ): { minX: number; maxX: number; minY: number; maxY: number; graphWidth: number; graphHeight: number } {
     const scaledCardWidth = CARD_WIDTH * cardScale;
     const scaledCardHeight = CARD_HEIGHT * cardScale;
-    const minX = d3.min(renderable, (node: any) => (node.x as number) - (scaledCardHeight / 2)) ?? -(scaledCardHeight / 2);
-    const maxX = d3.max(renderable, (node: any) => (node.x as number) + (scaledCardHeight / 2)) ?? (scaledCardHeight / 2);
-    const minY = d3.min(renderable, (node: any) => (node.y as number) - (scaledCardWidth / 2)) ?? -(scaledCardWidth / 2);
-    const maxY = d3.max(renderable, (node: any) => (node.y as number) + (scaledCardWidth / 2)) ?? (scaledCardWidth / 2);
+    const minX = d3.min(renderable, (node: Record<string, unknown>) => (node.x as number) - (scaledCardHeight / 2)) ?? -(scaledCardHeight / 2);
+    const maxX = d3.max(renderable, (node: Record<string, unknown>) => (node.x as number) + (scaledCardHeight / 2)) ?? (scaledCardHeight / 2);
+    const minY = d3.min(renderable, (node: Record<string, unknown>) => (node.y as number) - (scaledCardWidth / 2)) ?? -(scaledCardWidth / 2);
+    const maxY = d3.max(renderable, (node: Record<string, unknown>) => (node.y as number) + (scaledCardWidth / 2)) ?? (scaledCardWidth / 2);
     const defaultMinWidth = isCompact ? viewportWidth || 400 : 960;
     const defaultMinHeight = isCompact ? viewportHeight || 180 : 520;
     const graphWidth = Math.max((maxY - minY) + margin.left + margin.right, viewportWidth, (minGraphWidth as number) ?? defaultMinWidth);
@@ -1076,7 +1117,7 @@ function computeGraphDimensions(
  * @returns {object} The D3 selection of the SVG element.
  */
 function setupSvgContainer(
-    d3: any,
+    d3: D3Module,
     contentDiv: HTMLElement,
     existingSvgElement: SVGElement | undefined,
     graphWidth: number,
@@ -1086,16 +1127,17 @@ function setupSvgContainer(
     isZoomEnabled: boolean,
     ariaLabel: string,
     cardClipPathId: string,
-): any {
-    let svg: any;
+): D3Sel {
+    let svg: D3Sel;
     if (existingSvgElement) {
-        svg = d3.select(existingSvgElement);
+        svg = d3.select(existingSvgElement) as unknown as D3Sel;
         svg.attr('viewBox', [0, 0, graphWidth, graphHeight])
            .attr('height', isCompact ? '100%' : Math.max(graphHeight, viewportHeight || 0));
         svg.select('defs').remove();
     } else {
         contentDiv.replaceChildren();
-        svg = d3.create('svg')
+        svg = d3.create('svg') as unknown as D3Sel;
+        svg
             .attr('viewBox', [0, 0, graphWidth, graphHeight])
             .attr('preserveAspectRatio', 'xMinYMin meet')
             .attr('width', '100%')
@@ -1126,17 +1168,18 @@ function setupSvgContainer(
  * @returns {object | undefined} The matching hierarchy node, or undefined.
  */
 function findFocusedHierarchyNode(
-    root: any,
-    focusNodeData: any | undefined,
+    root: Record<string, unknown>,
+    focusNodeData: Record<string, unknown> | undefined,
     resolvedFocusNodeId: string | undefined,
-): any | undefined {
+): Record<string, unknown> | undefined {
+    const desc = (root as unknown as { descendants: () => { data: Record<string, unknown>; x: number; y: number }[] }).descendants();
     if (focusNodeData) {
-        const byIdentity = root.descendants().find(node => node.data === focusNodeData);
+        const byIdentity = desc.find(node => node.data === focusNodeData);
         if (byIdentity) return byIdentity;
     }
 
     if (!resolvedFocusNodeId) return;
-    return root.descendants().find(node => (node.data as any | undefined)?.id === resolvedFocusNodeId);
+    return desc.find(node => node.data?.id === resolvedFocusNodeId);
 }
 
 /**
@@ -1173,8 +1216,8 @@ function computeFitScale(viewportWidth: number, viewportHeight: number, graphWid
  * @returns {{ focusTransform: object | undefined; fitTransform: object; initialTransform: object; mode: string }} The computed transforms and mode.
  */
 function computeInitialTransforms(
-    d3: any,
-    focusedHierarchyNode: any | undefined,
+    d3: D3Module,
+    focusedHierarchyNode: Record<string, unknown> | undefined,
     viewportWidth: number,
     viewportHeight: number,
     contentOffsetX: number,
@@ -1184,19 +1227,18 @@ function computeInitialTransforms(
     graphHeight: number,
     initialScale: number,
     existingSvgElement: SVGElement | undefined,
-    svg: any,
-    restoreTransform: any | undefined,
-): { focusTransform: any | undefined; fitTransform: any; initialTransform: any; mode: string } {
+    svg: D3Sel,
+    restoreTransform: Record<string, unknown> | undefined,
+): { focusTransform: Record<string, unknown> | undefined; fitTransform: Record<string, unknown>; initialTransform: Record<string, unknown>; mode: string } {
     const focusTransform = focusedHierarchyNode
         ? createFocusTransform(d3, viewportWidth, viewportHeight, focusedHierarchyNode as unknown as { x: number; y: number }, contentOffsetX, contentOffsetY, cardScale)
         : undefined;
-    const fitTransform = ((d3.zoomIdentity as any).translate as (x: number, y: number) => any)(
-            viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
-            viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0,
-        )
+    const zi = d3.zoomIdentity as { translate: (x: number, y: number) => { scale: (s: number) => Record<string, unknown> } };
+    const fitTransform = zi
+        .translate(viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0, viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0)
         .scale(initialScale);
     const initialTransform = existingSvgElement
-        ? d3.zoomTransform(svg.node() as Element)
+        ? d3.zoomTransform(svg.node() as SVGElement) as Record<string, unknown>
         : (focusTransform ?? restoreTransform ?? fitTransform);
 
     let mode: string;
@@ -1227,10 +1269,10 @@ function computeInitialTransforms(
  * @returns {void}
  */
 function scheduleFocusRefinement(
-    d3: any,
-    svg: any,
-    zoom: any,
-    focusedHierarchyNode: any | undefined,
+    d3: D3Module,
+    svg: D3Sel,
+    zoom: { transform: unknown },
+    focusedHierarchyNode: Record<string, unknown> | undefined,
     viewportElement: HTMLElement,
     contentOffsetX: number,
     contentOffsetY: number,
@@ -1260,7 +1302,7 @@ function scheduleFocusRefinement(
 
         if (!refinedTransform) return;
 
-        svg.call(zoom.transform as any, refinedTransform);
+        svg.call(zoom.transform, refinedTransform);
     });
 }
 
@@ -1280,9 +1322,9 @@ function scheduleFocusRefinement(
  * @returns {object} The computed fit transform.
  */
 function renderGraphWithoutZoom(
-    d3: any,
-    graphLayer: any,
-    renderable: any[],
+    d3: D3Module,
+    _graphLayer: Record<string, unknown>,
+    renderable: Record<string, unknown>[],
     viewportWidth: number,
     viewportHeight: number,
     graphWidth: number,
@@ -1291,14 +1333,15 @@ function renderGraphWithoutZoom(
     contentOffsetY: number,
     isCompact: boolean,
     cardScale: number,
-): any {
+): unknown {
     const initialScale = Math.min(
         viewportWidth > 0 ? viewportWidth / graphWidth : 1,
         viewportHeight > 0 ? viewportHeight / graphHeight : 1,
         1,
     );
 
-    let fitTransform = ((d3.zoomIdentity as any).translate as (x: number, y: number) => any)(
+    const zi = d3.zoomIdentity as { translate: (x: number, y: number) => { scale: (s: number) => Record<string, unknown> } };
+    let fitTransform = zi.translate(
             viewportWidth > 0 ? (viewportWidth - (graphWidth * initialScale)) / 2 : 0,
             viewportHeight > 0 ? (viewportHeight - (graphHeight * initialScale)) / 2 : 0,
         )
@@ -1309,7 +1352,6 @@ function renderGraphWithoutZoom(
         if (ordered.length > 0) {
             const mid = Math.floor((ordered.length - 1) / 2);
             const anchors = ordered.length % 2 === 1 ? [ordered[mid]] : [ordered[mid], ordered[mid + 1]];
-
             const anchorPos = { x: 0, y: 0 };
             for (const anchor of anchors) {
                 const pos = getRenderedNodePosition(anchor as unknown as { x: number; y: number }, contentOffsetX, contentOffsetY);
@@ -1323,7 +1365,8 @@ function renderGraphWithoutZoom(
             anchorPos.x += profile.anchorOffsetX ?? 0;
             anchorPos.y += profile.anchorOffsetY ?? 0;
 
-            fitTransform = ((d3.zoomIdentity as any).translate as (x: number, y: number) => any)(viewportWidth / 2, viewportHeight / 2)
+            const zi2 = d3.zoomIdentity as { translate: (x: number, y: number) => { scale: (s: number) => { translate: (x: number, y: number) => Record<string, unknown> } } };
+            fitTransform = zi2.translate(viewportWidth / 2, viewportHeight / 2)
                 .scale(cardScale)
                 .translate(-anchorPos.x, -anchorPos.y);
         }
@@ -1341,9 +1384,9 @@ function renderGraphWithoutZoom(
  * @returns {void}
  */
 function logFocusNodeStatus(
-    focusedHierarchyNode: any | undefined,
+    focusedHierarchyNode: Record<string, unknown> | undefined,
     resolvedFocusNodeId: string | undefined,
-    focusNodeData: any | undefined,
+    focusNodeData: Record<string, unknown> | undefined,
     renderableCount: number,
 ): void {
     if (focusedHierarchyNode) {
@@ -1351,9 +1394,9 @@ function logFocusNodeStatus(
             resolvedFocusNodeId,
             hierarchyX: focusedHierarchyNode.x,
             hierarchyY: focusedHierarchyNode.y,
-            dataId: (focusedHierarchyNode.data as any | undefined)?.id,
-            nodeType: (focusedHierarchyNode.data as any | undefined)?.nodeType,
-            label: (focusedHierarchyNode.data as any | undefined)?.label,
+            dataId: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.id,
+            nodeType: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.nodeType,
+            label: (focusedHierarchyNode.data as Record<string, unknown> | undefined)?.label,
         });
     } else {
         logGraphFocus('focus-node-missing', {
@@ -1375,8 +1418,8 @@ function logFocusNodeStatus(
  */
 function logPostRenderFocusDebug(
     contentDiv: HTMLElement,
-    svg: any,
-    graphLayer: any,
+    svg: D3Sel,
+    graphLayer: D3Sel,
     resolvedFocusNodeId: string | undefined,
     viewportElement: HTMLElement,
 ): void {
@@ -1385,20 +1428,20 @@ function logPostRenderFocusDebug(
     const focusElement = contentDiv.querySelector(':scope .graph-node.is-focused .graph-card');
     const viewportRect = (viewportElement as HTMLElement)?.getBoundingClientRect?.();
     const focusRect = (focusElement as Element | null)?.getBoundingClientRect?.();
-    const zoomTransform = (svg.node() as any | null)?.__zoom;
+    const zoomTransform = (svg.node() as unknown as Record<string, unknown> | null)?.__zoom;
 
     logGraphFocus('post-render-transform-state', {
         resolvedFocusNodeId,
-        layerTransform: graphLayer.attr('transform'),
+        layerTransform: graphLayer.attr('transform') as unknown,
         svgZoomTransform: zoomTransform ? {
-            x: (zoomTransform as any).x,
-            y: (zoomTransform as any).y,
-            k: (zoomTransform as any).k,
+            x: (zoomTransform as Record<string, unknown>).x,
+            y: (zoomTransform as Record<string, unknown>).y,
+            k: (zoomTransform as Record<string, unknown>).k,
         } : undefined,
-        svgViewBox: svg.attr('viewBox'),
+        svgViewBox: svg.attr('viewBox') as unknown,
         svgSize: {
-            width: svg.attr('width'),
-            height: svg.attr('height'),
+            width: svg.attr('width') as unknown,
+            height: svg.attr('height') as unknown,
         },
     });
 
@@ -1456,7 +1499,7 @@ function logPostRenderFocusDebug(
  * @param {number} [options.animationSpeed] - Animation speed multiplier.
  * @returns {({ node: SVGElement | null; zoom: object | null } | null | void)} The SVG node and zoom behavior (if enabled), or null/undefined.
  */
-export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, treeData: any, options: any = {}): { node: SVGElement | null; zoom: any | null } | null | undefined {
+export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Module, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: unknown | null } | null | undefined {
     const {
         owner,
         project,
@@ -1482,27 +1525,27 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
     } = options;
 
     if (!contentDiv) return;
-    const { existingSvgElement, isAnimating } = resolveAnimationOptions(contentDiv, animate);
+    const { existingSvgElement, isAnimating } = resolveAnimationOptions(contentDiv, animate as boolean);
 
-    const margin = compact
+    const margin = (compact as boolean)
         ? { top: 12, right: 20, bottom: 12, left: 20 }
         : { top: 32, right: 48, bottom: 32, left: 48 };
 
     const root = d3.hierarchy(treeData);
-    const maxDepth = (root.height as number) ?? 0;
+    const maxDepth = root.height ?? 0;
     const viewportElement_ = (viewportElement as HTMLElement) || contentDiv;
     const viewportSize = getInnerViewportSize(viewportElement_);
     const viewportWidth = viewportSize.width || contentDiv.clientWidth || 0;
     const viewportHeight = viewportSize.height || contentDiv.clientHeight || 0;
 
-    const layout = computeGraphLayout(compact, viewportWidth, viewportHeight, margin, maxDepth, treeData, uniformNodeScale as number ?? 1);
+    const layout = computeGraphLayout(compact as boolean, viewportWidth, viewportHeight, margin as unknown as { top: number; right: number; bottom: number; left: number }, maxDepth, treeData, (uniformNodeScale as number) ?? 1);
     const { stepGapX, stepGapY, foreheadGap, cardScale } = layout;
 
     const treeLayout = d3.tree().nodeSize([stepGapY, stepGapX]);
-    (treeLayout as (root: any) => void)(root);
+    treeLayout(root);
 
     const descendants = root.descendants();
-    const renderable = descendants.filter(node => renderRootCard || (node.data as any | undefined)?.nodeType !== 'root');
+    const renderable = descendants.filter(node => (renderRootCard as boolean) || (node.data as Record<string, unknown> | undefined)?.nodeType !== 'root');
 
     if (renderable.length === 0) {
         renderEmptyState(contentDiv, emptyMessage as string);
@@ -1510,11 +1553,11 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
     }
 
     const links = root.links().filter(l => {
-        if (renderRootCard) return true;
-        return (l.source as any | undefined)?.data?.nodeType !== 'root' && (l.target as any | undefined)?.data?.nodeType !== 'root';
+        if (renderRootCard as boolean) return true;
+        return ((l.source as Record<string, unknown> | undefined)?.data as Record<string, unknown> | undefined)?.nodeType !== 'root' && ((l.target as Record<string, unknown> | undefined)?.data as Record<string, unknown> | undefined)?.nodeType !== 'root';
     });
-    const resolvedFocusNodeId = (focusNodeId as string) ?? (focusNodeData as any | null)?.id;
-    const { minX, maxX, minY, maxY, graphWidth, graphHeight } = computeGraphDimensions(d3, renderable, cardScale, margin, viewportWidth, viewportHeight, foreheadGap, compact, minGraphWidth as number | null, minGraphHeight as number | null);
+    const resolvedFocusNodeId = (focusNodeId as string) ?? (focusNodeData as Record<string, unknown> | null)?.id;
+    const { minX, maxX, minY, maxY, graphWidth, graphHeight } = computeGraphDimensions(d3, renderable, cardScale, margin as unknown as { top: number; right: number; bottom: number; left: number }, viewportWidth, viewportHeight, foreheadGap, compact as boolean, minGraphWidth as number | undefined, minGraphHeight as number | undefined);
 
     logGraphFocus('render-start', {
         owner,
@@ -1531,69 +1574,77 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
         maxX,
         minY,
         maxY,
-        contentOffsetPreviewX: margin.left - minY,
-        contentOffsetPreviewY: margin.top - minX + foreheadGap,
+        contentOffsetPreviewX: (margin as unknown as { left: number }).left - minY,
+        contentOffsetPreviewY: (margin as unknown as { top: number }).top - minX + foreheadGap,
     });
 
-    const contentOffsetX = margin.left - minY;
-    const contentOffsetY = margin.top - minX + foreheadGap;
-    const cardClipPathId = `${clipPathIdPrefix as string}-${owner ?? 'stack'}-${project ?? 'stack'}`;
+    const contentOffsetX = (margin as unknown as { left: number }).left - minY;
+    const contentOffsetY = (margin as unknown as { top: number }).top - minX + foreheadGap;
+    const cardClipPathId = `${clipPathIdPrefix as string}-${(owner as string | undefined) ?? 'stack'}-${(project as string | undefined) ?? 'stack'}`;
 
-    const svg = setupSvgContainer(d3, contentDiv, existingSvgElement, graphWidth, graphHeight, compact, viewportHeight, enableZoom, ariaLabel as string, cardClipPathId);
+    const svg = setupSvgContainer(d3, contentDiv, existingSvgElement, graphWidth, graphHeight, compact as boolean, viewportHeight, enableZoom as boolean, ariaLabel as string, cardClipPathId);
 
-    const graphLayer: any = existingSvgElement ? svg.select('g') : svg.append('g');
-    let focusedHierarchyNode: any | undefined;
+    const graphLayer: D3Sel = existingSvgElement ? svg.select('g') : svg.append('g');
+    let focusedHierarchyNode: Record<string, unknown> | undefined;
     const nodeOptions = {
         contentOffsetX,
         contentOffsetY,
         cardClipPathId,
-        owner,
-        project,
-        focusNodeId: resolvedFocusNodeId,
-        onContextMenu,
-        enableZoom,
-        enableLinks: (enableLinks as boolean | undefined) ?? enableZoom,
-        uniformNodeScale: compact ? cardScale : undefined,
+        owner: owner as string | undefined,
+        project: project as string | undefined,
+        focusNodeId: resolvedFocusNodeId ?? undefined,
+        onContextMenu: onContextMenu as ((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: Record<string, unknown>) => void) | undefined,
+        enableZoom: enableZoom as boolean,
+        enableLinks: (enableLinks as boolean | undefined) ?? (enableZoom as boolean),
+        uniformNodeScale: (compact as boolean) ? cardScale : undefined,
         animate: isAnimating,
-        animationSpeed,
+        animationSpeed: animationSpeed as number,
     };
 
-    let zoom: any | undefined;
-    if (enableZoom) {
-        const zoomLayer = graphLayer;
+    let zoom: { transform: unknown } | undefined;
+    if (enableZoom as boolean) {
+        const zoomLayer: D3Sel = graphLayer;
         const safeViewportWidth = Math.max(viewportWidth, 1);
         const safeViewportHeight = Math.max(viewportHeight, 1);
 
-        zoom = d3.zoom()
+        const zoomBehavior = d3.zoom() as unknown as {
+            scaleExtent: (s: [number, number]) => typeof zoomBehavior;
+            extent: (s: [[number, number], [number, number]]) => typeof zoomBehavior;
+            translateExtent: (s: [[number, number], [number, number]]) => typeof zoomBehavior;
+            on: (event: string, handler: (event: Record<string, unknown>) => void) => typeof zoomBehavior;
+            transform: unknown;
+        };
+        zoomBehavior
             .scaleExtent([0.5, 2.5])
             .extent([[0, 0], [safeViewportWidth, safeViewportHeight]])
             .translateExtent([
                 [-safeViewportWidth, -safeViewportHeight],
                 [graphWidth + safeViewportWidth, graphHeight + safeViewportHeight],
             ])
-            .on('zoom', (event: any) => {
-                zoomLayer.attr('transform', (event as any).transform);
-                (onZoom as ((transform: any, meta: any) => void) | null)?.(event.transform as any, { user: Boolean((event as any).sourceEvent) });
+            .on('zoom', (event: Record<string, unknown>) => {
+                zoomLayer.attr('transform', event.transform);
+                (onZoom as ((transform: Record<string, unknown>, meta: Record<string, unknown>) => void) | null | undefined)?.(event.transform as Record<string, unknown>, { user: Boolean(event.sourceEvent) });
             });
+        zoom = zoomBehavior;
 
         svg.call(zoom);
-        svg.on('dblclick.zoom', undefined);
+        svg.on('dblclick.zoom', undefined as unknown as (...eventData: unknown[]) => void);
 
         const initialScale = computeFitScale(viewportWidth, viewportHeight, graphWidth, graphHeight);
-        focusedHierarchyNode = findFocusedHierarchyNode(root, focusNodeData as any | undefined, resolvedFocusNodeId);
+        focusedHierarchyNode = findFocusedHierarchyNode(root, focusNodeData as Record<string, unknown> | undefined, resolvedFocusNodeId);
 
-        logFocusNodeStatus(focusedHierarchyNode, resolvedFocusNodeId, focusNodeData as any | undefined, renderable.length);
+        logFocusNodeStatus(focusedHierarchyNode, resolvedFocusNodeId, focusNodeData as Record<string, unknown> | undefined, renderable.length);
 
-        const { initialTransform } = computeInitialTransforms(d3, focusedHierarchyNode, viewportWidth, viewportHeight, contentOffsetX, contentOffsetY, cardScale, graphWidth, graphHeight, initialScale, existingSvgElement, svg, restoreTransform as any | undefined);
+        const { initialTransform } = computeInitialTransforms(d3, focusedHierarchyNode, viewportWidth, viewportHeight, contentOffsetX, contentOffsetY, cardScale, graphWidth, graphHeight, initialScale, existingSvgElement, svg, restoreTransform as Record<string, unknown> | undefined);
 
-        svg.call(zoom.transform as any, initialTransform);
+        svg.call(zoom.transform, initialTransform);
 
         scheduleFocusRefinement(d3, svg, zoom, focusedHierarchyNode, viewportElement_, contentOffsetX, contentOffsetY, cardScale, existingSvgElement);
 
         appendGraphNodes(d3, zoomLayer, renderable, links, nodeOptions);
     } else {
-        const fitTransform = renderGraphWithoutZoom(d3, graphLayer, renderable, viewportWidth, viewportHeight, graphWidth, graphHeight, contentOffsetX, contentOffsetY, compact, cardScale);
-        graphLayer.attr('transform', fitTransform);
+        const fitTransform = renderGraphWithoutZoom(d3, graphLayer, renderable, viewportWidth, viewportHeight, graphWidth, graphHeight, contentOffsetX, contentOffsetY, compact as boolean, cardScale);
+        graphLayer.attr('transform', fitTransform as string);
         appendGraphNodes(d3, graphLayer, renderable, links, nodeOptions);
     }
 
@@ -1607,6 +1658,6 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: any, t
 
     return {
         node: svg.node() as SVGElement,
-        zoom: svg.node() && enableZoom ? zoom : undefined,
+        zoom: svg.node() && (enableZoom as boolean) ? zoom : undefined,
     };
 }
