@@ -21,8 +21,8 @@ echo "=== Nginx Configuration Validation ==="
 
 CONFIG_PAIRS=()
 
-if [ -f "PromiseModelOnline.Client/nginx.conf" ]; then
-  CONFIG_PAIRS+=("production|PromiseModelOnline.Client/nginx.conf|")
+if [ -f "PromiseModelOnline.Client/nginx.conf" ] && [ -f "PromiseModelOnline.Client/default.conf" ]; then
+  CONFIG_PAIRS+=("production|PromiseModelOnline.Client/nginx.conf|PromiseModelOnline.Client/default.conf")
 fi
 
 if [ -f "infrastructure/tests/nginx-test.conf" ] && [ -f "infrastructure/tests/default-test.conf" ]; then
@@ -63,19 +63,6 @@ for pair in "${CONFIG_PAIRS[@]}"; do
       -subj '/CN=localhost' 2>/dev/null
   fi
 
-  # Add companion upstream definition for e2e configs that proxy to bff_upstream
-  if [ "$LABEL" = "e2e-test" ]; then
-    cat > "$TMPDIR/conf.d/upstream-bff.conf" << 'CONF'
-upstream bff_upstream {
-    server 127.0.0.1:1 down;
-}
-CONF
-  fi
-
-  DOCKER_ARGS=(
-    -v "$TMPDIR/nginx.conf:/etc/nginx/nginx.conf:ro"
-    -v "$TMPDIR/conf.d:/etc/nginx/conf.d:ro"
-  )
   if [ -f "$TMPDIR/cert.pem" ]; then
     DOCKER_ARGS+=(
       -v "$TMPDIR/cert.pem:/etc/nginx/cert.pem:ro"
