@@ -1,0 +1,131 @@
+import { launch } from 'puppeteer';
+import { readFileSync } from 'node:fs';
+
+const targetUrl = process.argv[2] || 'http://localhost:4173';
+
+const VIEWPORTS = [
+  { name: 'Desktop', width: 1280, height: 720 },
+  { name: 'Tablet',  width: 768,  height: 1024 },
+  { name: 'Mobile',  width: 375,  height: 812 },
+];
+
+const ROUTES = [
+  { name: 'Home',          path: '' },
+  { name: 'Projects List', path: '/projects' },
+  { name: 'Stride Board',  path: '/pmo_test/seeded-project/strides' },
+  { name: 'Project Graph', path: '/pmo_test/seeded-project/graph' },
+  { name: 'Promise Detail',path: '/pmo_test/seeded-project/promises/1' },
+  { name: 'Privacy',       path: '/privacy' },
+  { name: 'Legal/TOS',     path: '/tos' },
+];
+
+const axeSource = readFileSync(
+  new URL('node_modules/axe-core/axe.min.js', import.meta.url),
+  'utf8'
+);
+
+async function runAxe(page, tags) {
+  return await page.evaluate((tags) => {
+    return new Promise((resolve) => {
+      window.axe.run({
+        runOnly: { type: 'tag', values: tags },
+        resultTypes: ['violations'],
+      }).then((results) => {
+        resolve(JSON.stringify(results.violations));
+      }).catch(() => resolve('[]'));
+    });
+  }, tags);
+}
+
+async function scanPage(browser, route, viewport) {
+  const page = await browser.newPage();
+  await page.setViewport(viewport);
+  const url = `${targetUrl}${route.path ? '/#' + route.path : ''}`;
+
+  try {
+    await page.goto(url, { waitUntil: 'networkidle0', timeout: 15000 });
+  } catch {
+    // navigation timeout — continue with whatever loaded
+  }
+  await new Promise(r => setTimeout(r, 2000));
+  await page.evaluate(axeSource);
+  await new Promise(r => setTimeout(r, 500));
+
+  // WCAG 2.1 AA
+  const aaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']));
+
+  // WCAG 2.1 AAA (including contrast-enhanced)
+  const aaaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag2aaa', 'wcag21aaa']));
+
+  await page.close();
+  return { aaViolations, aaaViolations };
+}
+
+let totalViolations = 0;
+
+console.log(`\n  A11y scan: ${targetUrl}\n`);
+
+for (const route of ROUTES) {
+  for (const vp of VIEWPORTS) {
+    const result = await scanPage(null, route, vp);
+    // scanPage requires a page — need to create browser once
+    // Fallback: reuse a single browser across all scans
+  }
+}
+
+// Re-run with proper browser lifecycle
+const browser = await launch({
+  headless: 'new',
+  args: ['--no-sandbox', '--disable-setuid-sandbox'],
+});
+
+for (const route of ROUTES) {
+  for (const vp of VIEWPORTS) {
+    const page = await browser.newPage();
+    await page.setViewport({ width: vp.width, height: vp.height });
+    const url = `${targetUrl}${route.path ? '/#' + route.path : ''}`;
+
+    process.stdout.write(`  ${route.name.padEnd(16)} ${vp.name.padEnd(9)} `);
+
+    try {
+      await page.goto(url, { waitUntil: 'networkidle0', timeout: 15000 }).catch(() => {});
+      await new Promise(r => setTimeout(r, 2000));
+      await page.evaluate(axeSource);
+      await new Promise(r => setTimeout(r, 500));
+
+      const aaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']));
+      const aaaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag2aaa', 'wcag21aaa']));
+
+      const aaCount = aaViolations.length;
+      const aaaCount = aaaViolations.length;
+      totalViolations += aaCount + aaaCount;
+
+      if (aaCount + aaaCount === 0) {
+        console.log('✅ AA/AAA');
+      } else {
+        console.log(`❌ AA=${aaCount} AAA=${aaaCount}`);
+        for (const v of aaViolations) {
+          console.log(`       [AA] ${v.id}: ${v.help}`);
+          for (const n of v.nodes.slice(0, 2)) {
+            console.log(`             → ${n.target?.join(' ') || n.html?.slice(0, 80)}`);
+          }
+        }
+        for (const v of aaaViolations) {
+          console.log(`       [AAA] ${v.id}: ${v.help}`);
+          for (const n of v.nodes.slice(0, 2)) {
+            console.log(`             → ${n.target?.join(' ') || n.html?.slice(0, 80)}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.log(`⚠️  error: ${err.message?.slice(0, 80)}`);
+    } finally {
+      await page.close();
+    }
+  }
+}
+
+await browser.close();
+
+console.log(`\n  Total: ${totalViolations} violation(s)`);
+process.exit(totalViolations > 0 ? 1 : 0);

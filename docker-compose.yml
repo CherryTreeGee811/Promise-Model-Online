@@ -146,11 +146,11 @@ services:
       PMO_API_DB_USER: ${PMO_API_DB_USER:-pmo_api}
       PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER:-pmo_auth}
     volumes:
-      - ./db/init/run-init.sh:/init/run-init.sh:ro
+      - ./scripts/init-db.sh:/init/init-db.sh:ro
     entrypoint:
       - /bin/sh
       - -c
-      - set -e; tr -d '\r' < /init/run-init.sh > /tmp/run-init.lf && /bin/sh /tmp/run-init.lf
+      - set -e; tr -d '\r' < /init/init-db.sh > /tmp/init-db.lf && /bin/sh /tmp/init-db.lf
     restart: "no"
 
   umami:

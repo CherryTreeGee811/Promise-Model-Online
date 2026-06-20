@@ -11,6 +11,12 @@
     "lint:dry": "jscpd",
     "lint:dead": "knip --no-progress",
     "lint:all": "npm run lint && npm run lint:html && npm run lint:css && npm run lint:dry && npm run lint:dead && npm run typecheck",
+    "lint:a11y": "node a11y-check.mjs",
+    "lint:leaks": "memlab run --scenario scripts/memlab-scenarios/leak-check.js",
+    "lint:lighthouse": "lhci autorun",
+    "lint:ci": "npm run lint && npm run lint:html && npm run lint:css && npm run lint:dry && npm run lint:dead && npm run lint:nginx && npm run lint:responsive && npm run typecheck && npm run lint:a11y",
+    "lint:nginx": "bash scripts/check-nginx.sh",
+    "lint:responsive": "node scripts/check-responsive.cjs",
     "pwa:check": "node pwa-check.mjs https://localhost:9000",
     "pwa:check:url": "node pwa-check.mjs"
   },
@@ -23,6 +29,7 @@
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.15.1",
     "@types/d3": "^7.4.3",
     "@typescript-eslint/eslint-plugin": "^8.61.1",
     "@typescript-eslint/parser": "^8.61.1",
@@ -40,6 +47,7 @@
     "htmlhint": "^1.9.2",
     "jscpd": "^5.0.10",
     "knip": "^6.17.1",
+    "memlab": "^2.0.3",
     "stylelint": "^17.13.0",
     "stylelint-config-standard": "^40.0.0",
     "typescript": "^6.0.3",

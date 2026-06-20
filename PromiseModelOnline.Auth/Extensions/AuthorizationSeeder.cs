@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using OpenIddict.Abstractions;
 
 namespace PromiseModelOnline.Auth.Extensions
@@ -16,6 +17,9 @@ namespace PromiseModelOnline.Auth.Extensions
         /// <param name="services">The service provider to resolve managers.</param>
         public static async Task SeedAsync(IServiceProvider services)
         {
+            var env = services.GetRequiredService<IWebHostEnvironment>();
+            if (!env.IsDevelopment()) return;
+
             using var scope = services.CreateScope();
 
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();

@@ -56,6 +56,7 @@ jobs:
           npm run lint
           npm run lint:html
           npm run lint:css
+          npm run lint:nginx
           npm run typecheck
           npm run lint:dry
           npm run lint:dead
@@ -238,6 +239,13 @@ jobs:
             --results-directory ./ClientTestResults \
             --logger "console;verbosity=normal"
 
+      - name: A11y + Responsive + Lighthouse Audit
+        shell: bash
+        run: |
+          npm run lint:a11y https://localhost:9000
+          npm run lint:responsive https://localhost:9000
+          npm run lint:lighthouse
+
       - name: Teardown Client UI Test Environment
         if: always()
         shell: bash
@@ -295,6 +303,13 @@ jobs:
             --results-directory ./E2eTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~RateLimitingTests"
+
+      - name: Memory Leak & Lighthouse Performance Audit
+        shell: bash
+        run: |
+          URL=https://localhost:9000 npx memlab run \
+            --scenario scripts/memlab-scenarios/leak-check-authenticated.js
+          npx lhci autorun --config=.lighthouserc.e2e.json
 
       - name: Security — TLS/SSL scan (testssl.sh)
         if: always()
