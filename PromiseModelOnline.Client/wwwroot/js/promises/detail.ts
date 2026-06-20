@@ -95,6 +95,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
         const epicsTbody = document.createElement('tbody');
         for (const epic of epics as Array<{ id: string; sequenceNumber: string; statement: string }>) {
             const epicTr = document.createElement('tr');
+            epicTr.dataset.epicSeq = String(epic.sequenceNumber);
             const epicStatementTd = document.createElement('td');
             epicStatementTd.textContent = epic.statement;
             const epicActionsTd = document.createElement('td');

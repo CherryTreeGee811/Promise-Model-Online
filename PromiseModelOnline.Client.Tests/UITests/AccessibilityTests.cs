@@ -16,12 +16,21 @@ public class AccessibilityTests : PlaywrightTestBase
         if (violations == null || violations.Length == 0)
             return;
 
-        var messages = violations.Select(v =>
+        var messages = violations.SelectMany(v =>
         {
             var id = v.TryGetProperty("id", out var idProp) ? idProp.GetString() : "?";
             var help = v.TryGetProperty("help", out var helpProp) ? helpProp.GetString() : "?";
-            var nodes = v.TryGetProperty("nodes", out var nodesProp) ? nodesProp.GetArrayLength() : 0;
-            return $"{id}: {help} ({nodes} nodes)";
+            var nodes = v.TryGetProperty("nodes", out var nodesProp) ? nodesProp.EnumerateArray() : [];
+            var nodeDetails = nodes.Select(n =>
+            {
+                var html = n.TryGetProperty("html", out var h) ? h.GetString() : "?";
+                var target = n.TryGetProperty("target", out var t) ? string.Join(", ", t.EnumerateArray().Select(x => x.GetString())) : "?";
+                var fg = n.TryGetProperty("foregroundColors", out var fgc) ? string.Join(", ", fgc.EnumerateArray().Select(x => x.GetString())) : "?";
+                var bg = n.TryGetProperty("backgroundColors", out var bgc) ? string.Join(", ", bgc.EnumerateArray().Select(x => x.GetString())) : "?";
+                return $"  [{target}] fg={fg} bg={bg} html={html}";
+            });
+            var header = $"{id}: {help} ({nodes.Count()} nodes)";
+            return new[] { header }.Concat(nodeDetails);
         });
 
         Assert.Fail($"{pageLabel} has {violations.Length} axe-core violation(s):\n{string.Join("\n", messages)}");

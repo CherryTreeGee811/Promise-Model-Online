@@ -14,11 +14,10 @@ public class FlowDetailTests : PlaywrightTestBase
         // Act
         var header = await WaitForSelectorAsync(".flow-detail-card h2");
         var headerText = await header.TextContentAsync();
-        var momentRow = await WaitForSelectorAsync("#flow-moments-list tr[data-moment-id]");
-        var momentText = await momentRow.TextContentAsync();
+        var allMomentTexts = await Page.Locator("#flow-moments-list tr[data-moment-id]").AllTextContentsAsync();
         // Assert
         Assert.That(headerText, Does.Contain("Flow One"));
-        Assert.That(momentText, Does.Contain("Moment 100"));
-        Assert.That(momentText, Does.Contain("Moment 101"));
+        Assert.That(allMomentTexts, Has.One.Contain("Moment 100"));
+        Assert.That(allMomentTexts, Has.One.Contain("Moment 101"));
     }
 }

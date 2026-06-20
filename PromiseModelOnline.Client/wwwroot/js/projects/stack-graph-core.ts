@@ -1614,8 +1614,10 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
         contentOffsetPreviewY: (margin as unknown as { top: number }).top - minX + foreheadGap,
     });
 
-    const contentOffsetX = (margin as unknown as { left: number }).left - minY;
-    const contentOffsetY = (margin as unknown as { top: number }).top - minX + foreheadGap;
+    const _rawContentOffsetX = (margin as unknown as { left: number }).left - minY;
+    const _rawContentOffsetY = (margin as unknown as { top: number }).top - minX + foreheadGap;
+    const contentOffsetX = Number.isFinite(_rawContentOffsetX) ? _rawContentOffsetX : 0;
+    const contentOffsetY = Number.isFinite(_rawContentOffsetY) ? _rawContentOffsetY : 0;
     const cardClipPathId = `${clipPathIdPrefix as string}-${(owner as string | undefined) ?? 'stack'}-${(project as string | undefined) ?? 'stack'}`;
 
     const svg = setupSvgContainer(d3, contentDiv, existingSvgElement, graphWidth, graphHeight, compact as boolean, viewportHeight, enableZoom as boolean, ariaLabel as string, cardClipPathId);

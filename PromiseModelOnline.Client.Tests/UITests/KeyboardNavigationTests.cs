@@ -9,14 +9,20 @@ public class KeyboardNavigationTests : PlaywrightTestBase
     [Test]
     public async Task REQ_USE_010_NavigationMenu_TabsForward()
     {
-        // Arrange — click the page body to move focus from browser chrome to the document
+        // Arrange — focus the first navigation link to start the Tab cycle from page content
         await EnsureLoggedIn();
-        await Page.Mouse.ClickAsync(50, 50);
+        await Page.WaitForSelectorAsync("#projects-link");
+        await Page.EvaluateAsync(@"() => {
+            const el = document.getElementById('projects-link');
+            if (el) el.focus();
+        }");
         await Task.Delay(200);
         // Act — press Tab to move focus into the navigation menu
         await Page.Keyboard.PressAsync("Tab");
+        await Task.Delay(100);
         var focused1 = await Page.EvaluateAsync<string?>("document.activeElement?.id ?? document.activeElement?.tagName");
         await Page.Keyboard.PressAsync("Tab");
+        await Task.Delay(100);
         var focused2 = await Page.EvaluateAsync<string?>("document.activeElement?.id ?? document.activeElement?.tagName");
         // Assert — Tab should cycle through focusable elements
         Assert.That(focused1, Is.Not.Null.And.Not.Empty, "First Tab should focus an element");

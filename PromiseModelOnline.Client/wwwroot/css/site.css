@@ -1006,8 +1006,8 @@ button {
 }
 
 .btn-outline-primary {
-  color: #003d94;
-  border-color: #003d94;
+  color: #002059;
+  border-color: #002059;
 }
 
 .btn-outline-primary:hover,
@@ -1815,12 +1815,17 @@ input, button, a, label, select, textarea {
 }
 
 .mark-read-btn {
-  background: #27ae60;
+  background: #1a7342;
   color: white;
   border: none;
   padding: 4px 10px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+code {
+  --bs-code-color: #a52768;
+  color: #a52768;
 }
 
 .reactions-bar {
@@ -2154,7 +2159,7 @@ input, button, a, label, select, textarea {
 }
 
 .privacy-date {
-  color: #3d4348;
+  color: #1a1a1a;
   margin-bottom: 1.5rem;
 }
 
@@ -2178,7 +2183,7 @@ input, button, a, label, select, textarea {
 
 .privacy-jurisdiction {
   margin-top: 2rem;
-  color: #3d4348;
+  color: #1a1a1a;
   font-size: var(--font-size-sm);
 }
 

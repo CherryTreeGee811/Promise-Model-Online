@@ -128,18 +128,21 @@ public class PwaTests : PlaywrightTestBase
     [Description("REQ_PWA_002: Service worker cache-first serves static assets")]
     public async Task REQ_INT_007_CacheFirst_ServesStaticAssets()
     {
-        // Arrange — page loaded by Setup() at /
-        await Page.WaitForFunctionAsync(
-            "navigator.serviceWorker.getRegistrations().then(r => r.length > 0 && r[0].active !== null)",
-            new PageWaitForFunctionOptions { Timeout = 2000 });
+        // Arrange — reload the page so the SW can register from scratch
+        await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 5000 });
 
-        // Act
-        var servedBySw = await Page.EvaluateAsync<bool>(@"
-            navigator.serviceWorker.getRegistration().then(r => {
-                return r && r.active && r.active.state === 'activated';
-            })");
+        // Wait for the SW to be registered and fully activated (up to 8s for cold install)
+        await Page.WaitForFunctionAsync(
+            "navigator.serviceWorker.getRegistrations().then(r => r.length > 0 && r[0].active?.state === 'activated')",
+            new PageWaitForFunctionOptions { Timeout = 8000 });
+
+        // Act — verify the SW is active
+        var activated = await Page.EvaluateAsync<bool>(@"
+            navigator.serviceWorker.getRegistration().then(r =>
+                r && r.active && r.active.state === 'activated'
+            )");
         // Assert
-        Assert.That(servedBySw, Is.True, "SW should be active and controlling the page");
+        Assert.That(activated, Is.True, "SW should be active and controlling the page");
     }
 
     [Test]
