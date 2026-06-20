@@ -21,6 +21,7 @@
     "bootstrap",
     "bootstrap-icons",
     "d3",
+    "depcheck",
     "puppeteer",
     "tippy.js"
   ]

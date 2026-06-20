@@ -17,6 +17,8 @@
     "lint:ci": "npm run lint && npm run lint:html && npm run lint:css && npm run lint:dry && npm run lint:dead && npm run lint:nginx && npm run lint:responsive && npm run typecheck && npm run lint:a11y",
     "lint:nginx": "bash scripts/check-nginx.sh",
     "lint:responsive": "node scripts/check-responsive.cjs",
+    "lint:boundary": "bash scripts/check-prod-deps.sh && bash scripts/check-source-imports.sh && bash scripts/check-bundle.sh",
+    "lint:docker-deps": "bash scripts/check-docker-deps.sh",
     "pwa:check": "node pwa-check.mjs https://localhost:9000",
     "pwa:check:url": "node pwa-check.mjs"
   },
@@ -34,6 +36,7 @@
     "@typescript-eslint/eslint-plugin": "^8.61.1",
     "@typescript-eslint/parser": "^8.61.1",
     "axe-core": "^4.12.1",
+    "depcheck": "^1.4.7",
     "eslint": "^10.5.0",
     "eslint-plugin-import-x": "^4.16.2",
     "eslint-plugin-jsdoc": "^63.0.6",

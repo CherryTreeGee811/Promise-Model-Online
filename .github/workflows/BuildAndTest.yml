@@ -49,10 +49,30 @@ jobs:
             dotnet list "$proj/$proj.csproj" package --vulnerable
           done
 
+      - name: Install dependencies
+        shell: bash
+        run: npm ci
+
+      - name: Production dependency audit
+        shell: bash
+        run: |
+          echo "=== Production dependency tree ==="
+          npm ls --omit=dev --depth=0
+          echo ""
+          echo "=== Production dependency vulnerability scan ==="
+          npm audit --omit=dev --audit-level=low
+
+      - name: Dev & test dependency audit
+        shell: bash
+        run: npm audit --omit=prod --audit-level=high
+
+      - name: Production dependency boundary check (Layer 1)
+        shell: bash
+        run: bash scripts/check-prod-deps.sh
+
       - name: ESLint & Quality (client JS/CSS/HTML)
         shell: bash
         run: |
-          npm ci
           npm run lint
           npm run lint:html
           npm run lint:css
@@ -60,8 +80,15 @@ jobs:
           npm run typecheck
           npm run lint:dry
           npm run lint:dead
-          npm audit --audit-level=high
           npm run build
+
+      - name: Source code import boundary (Layer 2)
+        shell: bash
+        run: bash scripts/check-source-imports.sh
+
+      - name: Bundle boundary audit (Layer 3)
+        shell: bash
+        run: bash scripts/check-bundle.sh
 
       - name: Add Client CI TLS/SSL CERT & KEY
         shell: bash
