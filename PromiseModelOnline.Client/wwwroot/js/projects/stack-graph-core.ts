@@ -537,9 +537,11 @@ export function renderEmptyState(contentDiv: HTMLElement | undefined, message: s
  * @returns {{x: number, y: number}} The rendered position.
  */
 function getRenderedNodePosition(node: { x: number; y: number }, contentOffsetX: number, contentOffsetY: number): { x: number; y: number } {
+    const nx = Number.isFinite(node.x) ? node.x : 0;
+    const ny = Number.isFinite(node.y) ? node.y : 0;
     return {
-        x: node.y + contentOffsetX,
-        y: node.x + contentOffsetY,
+        x: ny + contentOffsetX,
+        y: nx + contentOffsetY,
     };
 }
 
@@ -668,7 +670,9 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
      * @returns {string} A CSS translate() string with the target position and scale.
      */
     function getFinalTransform(d: Record<string, unknown>): string {
-        return `translate(${(d.y as number) + contentOffsetX}, ${(d.x as number) + contentOffsetY}) scale(${nodeScale})`;
+        const dx = Number.isFinite(d.x as number) ? (d.x as number) : 0;
+        const dy = Number.isFinite(d.y as number) ? (d.y as number) : 0;
+        return `translate(${dy + contentOffsetX}, ${dx + contentOffsetY}) scale(${nodeScale})`;
     }
 
     /**
@@ -678,8 +682,10 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
      */
     function getParentTransform(d: Record<string, unknown>): string {
         const parent = d.parent as Record<string, unknown> | undefined;
-        const px = parent ? (parent.y as number) : 0;
-        const py = parent ? (parent.x as number) : 0;
+        const rawPx = parent ? (parent.y as number) : 0;
+        const rawPy = parent ? (parent.x as number) : 0;
+        const px = Number.isFinite(rawPx) ? rawPx : 0;
+        const py = Number.isFinite(rawPy) ? rawPy : 0;
         return `translate(${px + contentOffsetX}, ${py + contentOffsetY}) scale(${nodeScale})`;
     }
 
@@ -689,14 +695,18 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
      * @returns {string} An SVG path data string.
      */
     function getFinalLinkPath(d: Record<string, unknown>): string {
+        const sx = Number.isFinite((d.source as Record<string, unknown>).x as number) ? (d.source as Record<string, unknown>).x as number : 0;
+        const sy = Number.isFinite((d.source as Record<string, unknown>).y as number) ? (d.source as Record<string, unknown>).y as number : 0;
+        const tx = Number.isFinite((d.target as Record<string, unknown>).x as number) ? (d.target as Record<string, unknown>).x as number : 0;
+        const ty = Number.isFinite((d.target as Record<string, unknown>).y as number) ? (d.target as Record<string, unknown>).y as number : 0;
         return (d3.linkHorizontal() as (link: { source: { x: number; y: number }; target: { x: number; y: number } }) => string)({
                 source: {
-                    x: (d.source as Record<string, unknown>).x as number + contentOffsetY,
-                    y: (d.source as Record<string, unknown>).y as number + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale),
+                    x: sx + contentOffsetY,
+                    y: sy + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale),
                 },
                 target: {
-                    x: (d.target as Record<string, unknown>).x as number + contentOffsetY,
-                    y: (d.target as Record<string, unknown>).y as number + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale),
+                    x: tx + contentOffsetY,
+                    y: ty + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale),
                 },
             });
     }
