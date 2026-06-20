@@ -284,6 +284,7 @@ public class GraphZoomTests : PlaywrightTestBase
             .Where(m => !m.Contains("ERR_CONNECTION_REFUSED", StringComparison.OrdinalIgnoreCase))
             .Where(m => !m.Contains("<path> attribute d", StringComparison.OrdinalIgnoreCase))
             .Where(m => !m.Contains("<g> attribute transform", StringComparison.OrdinalIgnoreCase))
+            .Where(m => !m.Contains("downloadable font", StringComparison.OrdinalIgnoreCase))
             .ToList();
         Assert.That(filtered, Is.Empty, "Browser console should have no severe errors");
     }

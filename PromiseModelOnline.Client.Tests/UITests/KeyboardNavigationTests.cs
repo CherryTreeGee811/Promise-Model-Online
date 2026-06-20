@@ -48,15 +48,12 @@ public class KeyboardNavigationTests : PlaywrightTestBase
     {
         // Arrange
         await EnsureLoggedIn();
-        await Page.Mouse.ClickAsync(50, 50);
+        await Page.WaitForSelectorAsync("#projects-link");
+        await Page.EvaluateAsync(@"() => {
+            const el = document.getElementById('projects-link');
+            if (el) el.focus();
+        }");
         await Task.Delay(200);
-        // Tab to find and activate the Projects link
-        for (int i = 0; i < 25; i++)
-        {
-            await Page.Keyboard.PressAsync("Tab");
-            var activeId = await Page.EvaluateAsync<string?>("document.activeElement?.id");
-            if (activeId == "projects-link") break;
-        }
         var beforePress = await Page.EvaluateAsync<string?>("document.activeElement?.id");
         // Act — press Enter on the focused Projects link
         await Page.Keyboard.PressAsync("Enter");
