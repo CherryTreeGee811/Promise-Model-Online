@@ -9,6 +9,8 @@ const PRECACHE = [
   '/css/site.css',
   '/lib/css/bootstrap.min.css',
   '/lib/css/bootstrap-icons.min.css',
+  '/lib/css/fonts/bootstrap-icons.woff2',
+  '/lib/css/fonts/bootstrap-icons.woff',
   '/lib/js/bootstrap.bundle.min.js',
   '/lib/js/signalr.min.js',
   '/lib/js/d3.min.js',
@@ -23,7 +25,9 @@ const PRECACHE = [
   '/manifest.json',
   '/templates/404.html',
   '/templates/error.html',
-  '/templates/home.html'
+  '/templates/home.html',
+  '/templates/navigation/anonymous.html',
+  '/templates/navigation/authenticated.html'
 ];
 
 /** @type {string[]} */
@@ -97,11 +101,14 @@ async function networkFirst(request) {
     }
     return response;
   } catch {
-    const cached = await caches.match(request);
+    const cached = await caches.match(request, { ignoreSearch: true });
     if (cached) return cached;
     const offline = await caches.match('/templates/error.html');
     if (offline) return offline;
-    throw new Error('Network unavailable');
+    return new Response('', {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' }
+    });
   }
 }
 
@@ -121,8 +128,6 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
-    const offline = await caches.match('/templates/error.html');
-    if (offline) return offline;
     return new Response('Offline', { status: 503 });
   }
 }
@@ -148,24 +153,21 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
 
   if (isTemplate(path)) {
     event.respondWith(
-      networkFirst(request).catch(() => caches.match('/templates/error.html')
-        .then(offline => offline || new Response('Offline', { status: 503 })))
+      networkFirst(request).catch(() => caches.match('/templates/error.html'))
     );
     return;
   }
 
   if (path === '/' || path === '/index.html' || path === '/manifest.json') {
     event.respondWith(
-      networkFirst(request).catch(() => caches.match('/templates/error.html')
-        .then(offline => offline || new Response('Offline', { status: 503 })))
+      networkFirst(request).catch(() => caches.match('/templates/error.html'))
     );
     return;
   }
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      networkFirst(request).catch(() => caches.match('/templates/error.html')
-        .then(offline => offline || new Response('Offline', { status: 503 })))
+      networkFirst(request).catch(() => caches.match('/templates/error.html'))
     );
   }
 });
