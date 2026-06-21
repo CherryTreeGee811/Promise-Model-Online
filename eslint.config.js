@@ -24,7 +24,7 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.es2021,
+        ...globals.es2025,
         bootstrap: 'readonly',
         signalR: 'readonly',
       },
@@ -76,7 +76,7 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.es2021,
+        ...globals.es2025,
         bootstrap: 'readonly',
         signalR: 'readonly',
       },

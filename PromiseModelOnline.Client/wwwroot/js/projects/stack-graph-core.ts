@@ -676,7 +676,7 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
         animationSpeed = 1,
     } = options;
 
-    const nodeScale = Number.isFinite(uniformNodeScale) ? uniformNodeScale : 1;
+    const nodeScale: number = uniformNodeScale !== undefined && Number.isFinite(uniformNodeScale) ? uniformNodeScale : 1;
     const containerTag = isEnableLinks ? 'a' : 'g';
     const duration = Math.max(0, Math.round(200 / Math.max(0.1, animationSpeed)));
     const t = d3.transition().duration(duration);
@@ -1075,26 +1075,26 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
  * @param {number} margin.bottom - The bottom margin.
  * @param {number} maxDepth - The maximum tree depth.
  * @param {object} defaults - The default layout values.
- * @param {number} defaults.sgx - Default step gap X.
- * @param {number} defaults.sgy - Default step gap Y.
- * @param {number} defaults.fg - Default forehead gap.
- * @param {number} defaults.cs - Default card scale.
- * @returns {{ sgx: number; sgy: number; fg: number; cs: number }} The adjusted layout values.
+ * @param {number} defaults.stepGapX - Default step gap X.
+ * @param {number} defaults.stepGapY - Default step gap Y.
+ * @param {number} defaults.foreheadGap - Default forehead gap.
+ * @param {number} defaults.cardScale - Default card scale.
+ * @returns {{ stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number }} The adjusted layout values.
  */
-function applyCompactLayout(treeData: Record<string, unknown>, viewportWidth: number, viewportHeight: number, margin: { top: number; right: number; bottom: number; left: number }, maxDepth: number, defaults: { sgx: number; sgy: number; fg: number; cs: number }): { sgx: number; sgy: number; fg: number; cs: number } {
+function applyCompactLayout(treeData: Record<string, unknown>, viewportWidth: number, viewportHeight: number, margin: { top: number; right: number; bottom: number; left: number }, maxDepth: number, defaults: { stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number }): { stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number } {
     const vc = countRenderableNodes(treeData);
     const p = getCompactLayoutProfile(vc, viewportWidth, viewportHeight);
-    const cs = Number.isFinite(p.nodeScale) ? p.nodeScale : defaults.cs;
-    const sgy1 = Number.isFinite(p.minGapY) ? p.minGapY : defaults.sgy;
-    const fg = Number.isFinite(p.forehead) ? p.forehead : defaults.fg;
+    const cs = Number.isFinite(p.nodeScale) ? p.nodeScale : defaults.cardScale;
+    const sgy1 = Number.isFinite(p.minGapY) ? p.minGapY : defaults.stepGapY;
+    const fg = Number.isFinite(p.forehead) ? p.forehead : defaults.foreheadGap;
     const minGapX = Number.isFinite(p.minGapX) ? p.minGapX : COMPACT_MIN_TIER_GAP;
     const sgx = maxDepth > 0 && viewportWidth > 0
         ? Math.max(Math.max(viewportWidth - margin.left - margin.right - CARD_WIDTH * cs, CARD_WIDTH) / maxDepth, minGapX)
-        : defaults.sgx;
+        : defaults.stepGapX;
     const sgy = maxDepth > 0 && viewportHeight > 0
         ? Math.max(Math.floor(Math.max(viewportHeight - margin.top - margin.bottom - CARD_HEIGHT * cs - fg, CARD_HEIGHT) / Math.max(1, maxDepth)), COMPACT_MIN_TIER_GAP_Y)
         : sgy1;
-    return { sgx, sgy, fg, cs };
+    return { stepGapX: sgx, stepGapY: sgy, foreheadGap: fg, cardScale: cs };
 }
 /**
  * Sanitize layout values, replacing NaN/Infinity with safe defaults.
@@ -1133,7 +1133,7 @@ function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportH
     const cs = Number.isFinite(uniformNodeScale) ? uniformNodeScale : 1;
     if (isCompact) {
         return applyCompactLayout(treeData, viewportWidth, viewportHeight, margin, maxDepth, {
-            sgx: COMPACT_STEP_GAP_X, sgy: COMPACT_STEP_GAP_Y, fg: COMPACT_FOREHEAD_GAP, cs,
+            stepGapX: COMPACT_STEP_GAP_X, stepGapY: COMPACT_STEP_GAP_Y, foreheadGap: COMPACT_FOREHEAD_GAP, cardScale: cs,
         });
     }
     return { stepGapX: STEP_GAP_X, stepGapY: STEP_GAP_Y, foreheadGap: FOREHEAD_GAP, cardScale: cs };
@@ -1615,14 +1615,19 @@ function setupZoomBehavior(d3: D3Module, svg: D3Sel, zoomLayer: D3Sel, viewportW
         zoomLayer.attr('transform', event.transform);
         onZoom?.(event.transform as Record<string, unknown>, { user: Boolean(event.sourceEvent) });
     };
-    const zoomBehavior = d3.zoom()
+    const zoomBehavior = d3.zoom() as unknown as {
+        scaleExtent: (s: [number, number]) => { extent: (s: [[number, number], [number, number]]) => { translateExtent: (s: [[number, number], [number, number]]) => { on: (event: string, handler: (..._: never[]) => void) => { transform: unknown; call: (..._: never[]) => void } } } };
+        call: (..._: never[]) => void;
+        transform: unknown;
+    };
+    zoomBehavior
         .scaleExtent([0.5, 2.5])
         .extent(extent)
         .translateExtent(translateExtent)
         .on('zoom', zoomHandler);
     svg.call(zoomBehavior);
     svg.on('dblclick.zoom', undefined as unknown as (...eventData: unknown[]) => void);
-    return { zoom: zoomBehavior, initialScale: computeFitScale(viewportWidth, viewportHeight, graphWidth, graphHeight) };
+    return { zoom: zoomBehavior as { transform: unknown }, initialScale: computeFitScale(viewportWidth, viewportHeight, graphWidth, graphHeight) };
 }
 
 /**
@@ -1837,8 +1842,8 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
     let zoom: { transform: unknown } | undefined;
     if (enableZoom as boolean) {
         const zoomLayer: D3Sel = graphLayer;
-        const { zoom: zoomBehavior, initialScale } = setupZoomBehavior(d3, svg, zoomLayer, vw, vh, graphWidth, graphHeight, onZoom);
-        zoom = zoomBehavior;
+        const { zoom: zoomBehavior, initialScale } = setupZoomBehavior(d3, svg, zoomLayer, vw, vh, graphWidth, graphHeight, onZoom as ((transform: Record<string, unknown>, meta: Record<string, unknown>) => void) | null | undefined);
+        zoom = zoomBehavior as { transform: unknown };
 
         focusedHierarchyNode = findFocusedHierarchyNode(root, focusNodeData as Record<string, unknown> | undefined, resolvedFocusNodeId);
 
@@ -1846,15 +1851,15 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
 
         const { initialTransform } = computeInitialTransforms(d3, focusedHierarchyNode, vw, vh, contentOffsetX, contentOffsetY, cardScale, graphWidth, graphHeight, initialScale, existingSvgElement, svg, restoreTransform as Record<string, unknown> | undefined);
 
-        svg.call(zoom.transform, initialTransform);
+        svg.call(zoom!.transform, initialTransform);
 
-        scheduleFocusRefinement(d3, svg, zoom, focusedHierarchyNode, viewportElement_, contentOffsetX, contentOffsetY, cardScale, existingSvgElement);
+        scheduleFocusRefinement(d3, svg, zoom!, focusedHierarchyNode, viewportElement_, contentOffsetX, contentOffsetY, cardScale, existingSvgElement);
 
-        appendGraphNodes(d3, zoomLayer, renderable, links, nodeOptions);
+        appendGraphNodes(d3, zoomLayer, renderable, links, nodeOptions as never);
     } else {
         const fitTransform = renderGraphWithoutZoom(d3, graphLayer, renderable, vw, vh, graphWidth, graphHeight, contentOffsetX, contentOffsetY, compact as boolean, cardScale);
         graphLayer.attr('transform', fitTransform as string);
-        appendGraphNodes(d3, graphLayer, renderable, links, nodeOptions);
+        appendGraphNodes(d3, graphLayer, renderable, links, nodeOptions as never);
     }
 
     if (!existingSvgElement) contentDiv.append(svg.node() as Node);
