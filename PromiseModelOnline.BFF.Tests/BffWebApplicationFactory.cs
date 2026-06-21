@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -82,11 +82,8 @@ public class BffWebApplicationFactory : WebApplicationFactory<Program>
 
     /// <summary>Create an HTTP client with optional redirect following.</summary>
     /// <param name="allowAutoRedirect">Whether to follow redirect responses.</param>
-    public HttpClient CreateClient(bool allowAutoRedirect)
+    public HttpClient CreateClient(bool allowAutoRedirect) => CreateClient(new WebApplicationFactoryClientOptions
     {
-        return CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = allowAutoRedirect
-        });
-    }
+        AllowAutoRedirect = allowAutoRedirect
+    });
 }

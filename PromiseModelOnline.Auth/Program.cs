@@ -17,7 +17,7 @@ using PromiseModelOnline.Auth.Services;
 // Google OAuth, CORS, Kestrel HTTPS, data protection, and middleware pipeline.
 // Seeds OpenIddict applications and development users on startup in development mode.
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -150,7 +150,7 @@ builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.ConfigureHttps();
 builder.Services.AddControllersWithViews();
 
-WebApplication app = builder.Build();
+var app = builder.Build();
 
 // Apply pending EF Core migrations at startup.
 app.ApplyMigrations();
@@ -158,7 +158,7 @@ app.ApplyMigrations();
 // Seed OpenIddict applications and development users in development mode only.
 if (app.Environment.IsDevelopment())
 {
-    using IServiceScope scope = app.Services.CreateScope();
+    using var scope = app.Services.CreateScope();
 
     await OpenIddictSeeder.SeedAsync(scope.ServiceProvider);
     await AuthorizationSeeder.SeedAsync(scope.ServiceProvider);

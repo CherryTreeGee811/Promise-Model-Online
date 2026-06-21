@@ -17,13 +17,13 @@ public static class AuthorizationSeeder
     /// <param name="services">The service provider to resolve managers.</param>
     public static async Task SeedAsync(IServiceProvider services)
     {
-        IWebHostEnvironment env = services.GetRequiredService<IWebHostEnvironment>();
+        var env = services.GetRequiredService<IWebHostEnvironment>();
         if (!env.IsDevelopment()) return;
 
-        using IServiceScope scope = services.CreateScope();
+        using var scope = services.CreateScope();
 
-        UserManager<IdentityUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-        IOpenIddictScopeManager scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
 
         await SeedUsersAsync(userManager);
         await SeedScopesAsync(scopeManager);

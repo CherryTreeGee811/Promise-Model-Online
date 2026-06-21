@@ -42,7 +42,7 @@ public class DeleteAccountController(UserManager<IdentityUser> userManager,
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        IdentityUser? user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
             _logger.LogWarning("DeleteAccount: user not found for Subject {UserId}", userId);
@@ -59,7 +59,7 @@ public class DeleteAccountController(UserManager<IdentityUser> userManager,
         await foreach (var token in _tokenManager.FindBySubjectAsync(user.Id))
             await _tokenManager.TryRevokeAsync(token);
 
-        IdentityResult result = await _userManager.DeleteAsync(user);
+        var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)
         {
             var errors = string.Join(';', result.Errors.Select(e => e.Description));

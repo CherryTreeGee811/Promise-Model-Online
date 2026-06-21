@@ -17,7 +17,7 @@ public static class OpenIddictSeeder
     /// <param name="services">The service provider to resolve the application manager.</param>
     public static async Task SeedAsync(IServiceProvider services)
     {
-        IOpenIddictApplicationManager manager = services.GetRequiredService<IOpenIddictApplicationManager>();
+        var manager = services.GetRequiredService<IOpenIddictApplicationManager>();
 
         var descriptor = new OpenIddictApplicationDescriptor
         {

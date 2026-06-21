@@ -16,7 +16,7 @@ public class SecurityHeadersMiddleware(RequestDelegate next)
     /// <param name="context">The HTTP context for the current request.</param>
     public async Task Invoke(HttpContext context)
     {
-        IHeaderDictionary headers = context.Response.Headers;
+        var headers = context.Response.Headers;
 
         headers["X-Content-Type-Options"] = "nosniff";
         headers["X-Frame-Options"] = "DENY";

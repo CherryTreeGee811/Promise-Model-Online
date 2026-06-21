@@ -12,7 +12,7 @@ public static class ConnectionStringExtensions
         if (!connectionString.Contains("Password_FILE="))
             return connectionString;
 
-        List<string> parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
+        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
 
         for (var i = 0; i < parts.Count; i++)
         {

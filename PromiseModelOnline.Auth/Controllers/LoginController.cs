@@ -75,7 +75,7 @@ public class LoginController(
             return View(model);
         }
 
-        IdentityUser? user = await _userManager.FindByNameAsync(model.Username)
+        var user = await _userManager.FindByNameAsync(model.Username)
                    ?? await _userManager.FindByEmailAsync(model.Username);
 
         if (user == null)
@@ -99,7 +99,7 @@ public class LoginController(
             return View(model);
         }
 
-        Microsoft.AspNetCore.Identity.SignInResult signInResult = await _signInManager.PasswordSignInAsync(
+        var signInResult = await _signInManager.PasswordSignInAsync(
             user, model.Password, isPersistent: true, lockoutOnFailure: true);
 
         if (signInResult.Succeeded)

@@ -50,7 +50,7 @@ public class ChangePasswordController(UserManager<IdentityUser> userManager,
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        IdentityUser? user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             return Unauthorized();
 
@@ -61,15 +61,15 @@ public class ChangePasswordController(UserManager<IdentityUser> userManager,
             return BadRequest("Current password is incorrect.");
         }
 
-        IdentityResult result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded)
         {
-            foreach (IdentityError e in result.Errors)
+            foreach (var e in result.Errors)
                 _logger.LogWarning("ChangePassword failed for user {UserId}: {Error}", userId, e.Description);
             return BadRequest(result.Errors.FirstOrDefault()?.Description ?? "Password change failed.");
         }
 
-        IAsyncEnumerable<object> tokens = _tokenManager.FindAsync(
+        var tokens = _tokenManager.FindAsync(
             subject: user.Id,
             client: null,
             status: null,

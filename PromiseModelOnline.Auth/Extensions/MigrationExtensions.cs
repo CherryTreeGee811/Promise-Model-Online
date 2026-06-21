@@ -12,8 +12,8 @@ public static class MigrationExtensions
     /// <param name="app">The application builder for creating the service scope.</param>
     public static void ApplyMigrations(this IApplicationBuilder app)
     {
-        using IServiceScope scope = app.ApplicationServices.CreateScope();
-        using AuthorizationDbContext dbContext =
+        using var scope = app.ApplicationServices.CreateScope();
+        using var dbContext =
             scope.ServiceProvider.GetRequiredService<AuthorizationDbContext>();
 
         dbContext.Database.Migrate();

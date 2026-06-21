@@ -35,13 +35,13 @@ public class AuthorizationController(ILogger<AuthorizationController> logger) : 
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Authorize()
     {
-        OpenIddictServerAspNetCoreFeature feature = HttpContext.Features.Get<OpenIddictServerAspNetCoreFeature>()
+        var feature = HttpContext.Features.Get<OpenIddictServerAspNetCoreFeature>()
             ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-        OpenIddictRequest request = feature.Transaction?.Request
+        var request = feature.Transaction?.Request
             ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-        AuthenticateResult result = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+        var result = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
 
         if (result == null || !result.Succeeded)
         {
@@ -69,7 +69,7 @@ public class AuthorizationController(ILogger<AuthorizationController> logger) : 
 
         var principal = new ClaimsPrincipal(identity);
 
-        ImmutableArray<string> scopes = request.GetScopes();
+        var scopes = request.GetScopes();
 
         if (!scopes.Contains(OpenIddictConstants.Scopes.OpenId))
         {
@@ -125,7 +125,7 @@ public class AuthorizationController(ILogger<AuthorizationController> logger) : 
             identity.AddClaim(emailClaim);
         }
 
-        foreach (Claim role in User.FindAll(ClaimTypes.Role))
+        foreach (var role in User.FindAll(ClaimTypes.Role))
         {
             var roleClaim = new Claim(OpenIddictConstants.Claims.Role, role.Value);
             roleClaim.SetDestinations(

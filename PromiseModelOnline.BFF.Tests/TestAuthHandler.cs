@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
@@ -13,22 +13,17 @@ namespace PromiseModelOnline.BFF.Tests;
 ///   returns <see cref="AuthenticateResult.NoResult"/> to simulate an unauthenticated
 ///   request. Also supports sign-out by returning a 302 redirect.
 /// </remarks>
-public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>, IAuthenticationSignOutHandler
+/// <remarks>Initializes the handler with standard authentication dependencies.</remarks>
+public class TestAuthHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory logger,
+    UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder), IAuthenticationSignOutHandler
 {
     /// <summary>The scheme name used by this handler (<c>"cookie"</c>).</summary>
     public const string SchemeName = "cookie";
 
     /// <summary>Header that triggers authentication when present.</summary>
     public const string AuthenticateHeader = "X-Test-Authenticate";
-
-    /// <summary>Initializes the handler with standard authentication dependencies.</summary>
-    public TestAuthHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
-        ILoggerFactory logger,
-        UrlEncoder encoder)
-        : base(options, logger, encoder)
-    {
-    }
 
     /// <summary>Authenticate the request if the test header is present.</summary>
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 
 namespace PromiseModelOnline.BFF.Tests.IntegrationTests;
 
@@ -6,13 +6,10 @@ namespace PromiseModelOnline.BFF.Tests.IntegrationTests;
 // Requirements: REQ_INT_002 REQ_INT_016
 public class ProxyAuthTests
 {
-    private static HttpClient CreateClient(BffWebApplicationFactory factory)
+    private static HttpClient CreateClient(BffWebApplicationFactory factory) => factory.CreateClient(new WebApplicationFactoryClientOptions
     {
-        return factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
-    }
+        AllowAutoRedirect = false
+    });
 
     [Test]
     [Description("REQ_INT_002 + REQ-SEC-LOG-001: Unauthenticated AJAX request to API returns 401 and logs warning")]

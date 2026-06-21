@@ -76,7 +76,7 @@ public class AccountController(
             EmailConfirmed = false
         };
 
-        IdentityResult result = await _userManager.CreateAsync(user, model.Password);
+        var result = await _userManager.CreateAsync(user, model.Password);
 
         if (result.Succeeded)
         {
@@ -141,7 +141,7 @@ public class AccountController(
             return View(model);
         }
 
-        IdentityUser? user = await _userManager.FindByIdAsync(model.UserId);
+        var user = await _userManager.FindByIdAsync(model.UserId);
         if (user == null)
         {
             return RedirectToAction("Register");
@@ -172,7 +172,7 @@ public class AccountController(
         var cacheKey = $"{VerificationCodePrefix}{userId}";
         _cache.Set(cacheKey, code, TimeSpan.FromHours(24));
 
-        IdentityUser? user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         var username = user?.UserName ?? "User";
 
         await _emailService.SendVerificationEmailAsync(email, username, code);

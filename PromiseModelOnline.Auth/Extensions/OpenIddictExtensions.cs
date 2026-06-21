@@ -57,7 +57,7 @@ public static class OpenIddictExtensions
 
                 options.DisableAccessTokenEncryption();
 
-                OpenIddictServerAspNetCoreBuilder aspNetCoreBuilder = options.UseAspNetCore()
+                var aspNetCoreBuilder = options.UseAspNetCore()
                     .EnableAuthorizationEndpointPassthrough()
                     .EnableEndSessionEndpointPassthrough()
                     .EnableStatusCodePagesIntegration();
@@ -95,7 +95,7 @@ public static class OpenIddictExtensions
 
         if (File.Exists(certPath))
         {
-            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(
+            var cert = X509CertificateLoader.LoadPkcs12(
                 File.ReadAllBytes(certPath),
                 certPassword,
                 X509KeyStorageFlags.MachineKeySet |

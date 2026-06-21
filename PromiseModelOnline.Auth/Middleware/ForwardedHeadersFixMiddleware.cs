@@ -16,12 +16,12 @@ public class ForwardedHeadersFixMiddleware(RequestDelegate next)
     /// <summary>Override the request Host and Scheme from forwarded headers if present.</summary>
     public async Task Invoke(HttpContext context)
     {
-        if (context.Request.Headers.TryGetValue("X-Forwarded-Host", out StringValues host))
+        if (context.Request.Headers.TryGetValue("X-Forwarded-Host", out var host))
         {
             context.Request.Host = HostString.FromUriComponent(host.ToString());
         }
 
-        if (context.Request.Headers.TryGetValue("X-Forwarded-Proto", out StringValues proto))
+        if (context.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto))
         {
             context.Request.Scheme = proto.ToString();
         }

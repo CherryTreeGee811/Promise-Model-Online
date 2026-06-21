@@ -49,7 +49,7 @@ public class EmailVerificationController(
         if (string.IsNullOrWhiteSpace(userId))
             return Redirect("/account/login");
 
-        IdentityUser? user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             return Redirect("/account/login");
 
@@ -77,13 +77,13 @@ public class EmailVerificationController(
 
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.UserId))
         {
-            IdentityUser? user = await _userManager.FindByIdAsync(model.UserId);
+            var user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null) return Redirect("/account/login");
             model.Email = user.Email ?? "";
             return View("Index", model);
         }
 
-        IdentityUser? user2 = await _userManager.FindByIdAsync(model.UserId);
+        var user2 = await _userManager.FindByIdAsync(model.UserId);
         if (user2 == null) return Redirect("/account/login");
 
         if (await _userManager.IsEmailConfirmedAsync(user2))
@@ -100,7 +100,7 @@ public class EmailVerificationController(
         _cache.Remove(cacheKey);
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user2);
-        IdentityResult result = await _userManager.ConfirmEmailAsync(user2, token);
+        var result = await _userManager.ConfirmEmailAsync(user2, token);
 
         if (result.Succeeded)
         {
@@ -129,7 +129,7 @@ public class EmailVerificationController(
         if (string.IsNullOrWhiteSpace(userId))
             return Redirect("/account/login");
 
-        IdentityUser? user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             return Redirect("/account/login");
 

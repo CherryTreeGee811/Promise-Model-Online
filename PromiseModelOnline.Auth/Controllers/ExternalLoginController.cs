@@ -34,7 +34,7 @@ public class ExternalLoginController(
             return BadRequest();
 
         var redirectUrl = Url.Action("Callback", "ExternalLogin", new { returnUrl });
-        AuthenticationProperties properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+        var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
         return Challenge(properties, provider);
     }
 
@@ -56,7 +56,7 @@ public class ExternalLoginController(
                 new { returnUrl, error = "Authentication failed. Please try again." });
         }
 
-        ExternalLoginInfo? info = await _signInManager.GetExternalLoginInfoAsync();
+        var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info == null)
         {
             _logger.LogWarning("External login info is null — possible cookie or state timeout");
@@ -64,7 +64,7 @@ public class ExternalLoginController(
                 new { returnUrl, error = "An error occurred while processing the external login." });
         }
 
-        Microsoft.AspNetCore.Identity.SignInResult result = await _signInManager.ExternalLoginSignInAsync(
+        var result = await _signInManager.ExternalLoginSignInAsync(
             info.LoginProvider, info.ProviderKey, isPersistent: false);
 
         if (result.Succeeded)
@@ -81,7 +81,7 @@ public class ExternalLoginController(
                 new { returnUrl, error = "We could not retrieve your email from the external provider." });
         }
 
-        IdentityUser? user = await _userManager.FindByEmailAsync(email);
+        var user = await _userManager.FindByEmailAsync(email);
 
         if (user == null)
         {
@@ -92,7 +92,7 @@ public class ExternalLoginController(
                 EmailConfirmed = true
             };
 
-            IdentityResult createResult = await _userManager.CreateAsync(user);
+            var createResult = await _userManager.CreateAsync(user);
             if (!createResult.Succeeded)
             {
                 _logger.LogError("Failed to create user from external login: {Errors}",
@@ -105,7 +105,7 @@ public class ExternalLoginController(
                 user.Id, info.LoginProvider);
         }
 
-        IdentityResult addLoginResult = await _userManager.AddLoginAsync(user, info);
+        var addLoginResult = await _userManager.AddLoginAsync(user, info);
         if (!addLoginResult.Succeeded)
         {
             _logger.LogError("Failed to link external login to user {UserId}: {Errors}",

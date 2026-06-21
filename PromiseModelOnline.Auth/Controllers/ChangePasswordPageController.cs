@@ -63,7 +63,7 @@ public class ChangePasswordPageController(
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        IdentityUser? user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
             _logger.LogWarning("ChangePasswordPage: user not found for Subject {UserId}", userId);
@@ -78,7 +78,7 @@ public class ChangePasswordPageController(
             return View("~/Views/ChangePassword/Index.cshtml");
         }
 
-        IdentityResult result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors.Select(e => e.Description))
@@ -89,7 +89,7 @@ public class ChangePasswordPageController(
             return View("~/Views/ChangePassword/Index.cshtml");
         }
 
-        IAsyncEnumerable<object> tokens = _tokenManager.FindAsync(
+        var tokens = _tokenManager.FindAsync(
             subject: user.Id,
             client: null,
             status: null,

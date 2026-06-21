@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 
 namespace PromiseModelOnline.BFF.Tests.IntegrationTests;
 
@@ -6,13 +6,10 @@ namespace PromiseModelOnline.BFF.Tests.IntegrationTests;
 // Requirements: REQ_NF_008 REQ_NF_009
 public class BffMisuseTests
 {
-    private static HttpClient CreateClient(BffWebApplicationFactory factory)
+    private static HttpClient CreateClient(BffWebApplicationFactory factory) => factory.CreateClient(new WebApplicationFactoryClientOptions
     {
-        return factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
-    }
+        AllowAutoRedirect = false
+    });
 
     [Test]
     public async Task REQ_NF_008_Login_MissingReturnUrl_SafeDefault()

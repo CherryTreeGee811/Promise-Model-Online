@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 
@@ -46,11 +46,11 @@ public abstract class E2ETestBase
     {
         _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
 
-            _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-            {
-                Headless = true,
-                Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage", "--host-resolver-rules=MAP localhost 127.0.0.1" },
-            });
+        _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        {
+            Headless = true,
+            Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage", "--host-resolver-rules=MAP localhost 127.0.0.1" },
+        });
 
         _context = await _browser.NewContextAsync(new BrowserNewContextOptions
         {
@@ -171,16 +171,10 @@ public abstract class E2ETestBase
     }
 
     /// <summary>Log in as the primary test user via the Auth server login page.</summary>
-    protected async Task LoginAsync()
-    {
-        await LoginAsUser(TestUsername, TestPassword);
-    }
+    protected async Task LoginAsync() => await LoginAsUser(TestUsername, TestPassword);
 
     /// <summary>Log in as the secondary test user via the Auth server login page.</summary>
-    protected async Task LoginAsSecondUserAsync()
-    {
-        await LoginAsUser(SecondUsername, SecondPassword);
-    }
+    protected async Task LoginAsSecondUserAsync() => await LoginAsUser(SecondUsername, SecondPassword);
 
     /// <summary>Complete the login flow for a specific user through the browser.</summary>
     private async Task LoginAsUser(string username, string password)
@@ -273,10 +267,7 @@ public abstract class E2ETestBase
     }
 
     /// <summary>Perform an unauthenticated POST request with form data.</summary>
-    protected async Task<HttpResponseMessage> PostFormAsync(string path, Dictionary<string, string> form)
-    {
-        return await Client.PostAsync(path, new FormUrlEncodedContent(form));
-    }
+    protected async Task<HttpResponseMessage> PostFormAsync(string path, Dictionary<string, string> form) => await Client.PostAsync(path, new FormUrlEncodedContent(form));
 
     /// <summary>Perform an unauthenticated POST request with JSON body.</summary>
     protected async Task<HttpResponseMessage> PostJsonAsync(string path, string json, bool ajax = false)

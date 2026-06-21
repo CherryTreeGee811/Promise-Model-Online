@@ -110,7 +110,7 @@ public class EmailService : IEmailService
         msg.SetGoogleAnalytics(false);
         msg.SetSubscriptionTracking(false);
 
-        Response response = await client.SendEmailAsync(msg);
+        var response = await client.SendEmailAsync(msg);
 
         if (!response.IsSuccessStatusCode)
         {

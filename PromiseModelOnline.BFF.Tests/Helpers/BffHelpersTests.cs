@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 
 namespace PromiseModelOnline.BFF.Tests.Helpers;
 
@@ -10,64 +10,34 @@ public class BffHelpersTests
     // ============================
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_Null_ReturnsFalse()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl(null), Is.False);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_Null_ReturnsFalse() => Assert.That(BffHelpers.IsSafeLocalReturnUrl(null), Is.False);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_Empty_ReturnsFalse()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl(""), Is.False);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_Empty_ReturnsFalse() => Assert.That(BffHelpers.IsSafeLocalReturnUrl(""), Is.False);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_Whitespace_ReturnsFalse()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("   "), Is.False);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_Whitespace_ReturnsFalse() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("   "), Is.False);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_AbsoluteHttp_ReturnsFalse()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("http://evil.com"), Is.False);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_AbsoluteHttp_ReturnsFalse() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("http://evil.com"), Is.False);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_AbsoluteHttps_ReturnsFalse()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("https://evil.com"), Is.False);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_AbsoluteHttps_ReturnsFalse() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("https://evil.com"), Is.False);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_DoubleSlash_ReturnsFalse()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("//evil.com"), Is.False);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_DoubleSlash_ReturnsFalse() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("//evil.com"), Is.False);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_BackslashPrefix_ReturnsFalse()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("/\\evil.com"), Is.False);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_BackslashPrefix_ReturnsFalse() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("/\\evil.com"), Is.False);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_Root_ReturnsTrue()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("/"), Is.True);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_Root_ReturnsTrue() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("/"), Is.True);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_RelativePath_ReturnsTrue()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("/projects/1"), Is.True);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_RelativePath_ReturnsTrue() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("/projects/1"), Is.True);
 
     [Test]
-    public void REQ_SYS_021_IsSafeLocalReturnUrl_PathWithQuery_ReturnsTrue()
-    {
-        Assert.That(BffHelpers.IsSafeLocalReturnUrl("/?returnUrl=test"), Is.True);
-    }
+    public void REQ_SYS_021_IsSafeLocalReturnUrl_PathWithQuery_ReturnsTrue() => Assert.That(BffHelpers.IsSafeLocalReturnUrl("/?returnUrl=test"), Is.True);
 
     // ============================
     // IsAjax
