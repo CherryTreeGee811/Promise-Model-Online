@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PMO.Core.Models;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
@@ -18,46 +18,31 @@ namespace PromiseModelOnline.Api.BusinessLogic;
 ///   promises, epics, journeys, flows, moments, tasks, iterations, strides) in the database.
 ///   Uses the context's atomic sequence allocator to assign sequence numbers. Scoped lifetime.
 /// </remarks>
-public sealed class ProjectImportService : IProjectImportService
+/// <remarks>Initializes the import service with all required repositories.</remarks>
+public sealed class ProjectImportService(
+    IPromiseModelOnlineContext context,
+    IProjectRepository projectRepository,
+    IGenericRepository<Promise> promiseRepository,
+    IEpicRepository epicRepository,
+    IJourneyRepository journeyRepository,
+    IFlowRepository flowRepository,
+    IMomentRepository momentRepository,
+    IMomentTaskRepository momentTaskRepository,
+    IIterationRepository iterationRepository,
+    IStrideRepository strideRepository,
+    IUserRepository userRepository) : IProjectImportService
 {
-    private readonly IPromiseModelOnlineContext _context;
-    private readonly IProjectRepository _projectRepository;
-    private readonly IGenericRepository<Promise> _promiseRepository;
-    private readonly IEpicRepository _epicRepository;
-    private readonly IJourneyRepository _journeyRepository;
-    private readonly IFlowRepository _flowRepository;
-    private readonly IMomentRepository _momentRepository;
-    private readonly IMomentTaskRepository _momentTaskRepository;
-    private readonly IIterationRepository _iterationRepository;
-    private readonly IStrideRepository _strideRepository;
-    private readonly IUserRepository _userRepository;
-
-    /// <summary>Initializes the import service with all required repositories.</summary>
-    public ProjectImportService(
-        IPromiseModelOnlineContext context,
-        IProjectRepository projectRepository,
-        IGenericRepository<Promise> promiseRepository,
-        IEpicRepository epicRepository,
-        IJourneyRepository journeyRepository,
-        IFlowRepository flowRepository,
-        IMomentRepository momentRepository,
-        IMomentTaskRepository momentTaskRepository,
-        IIterationRepository iterationRepository,
-        IStrideRepository strideRepository,
-        IUserRepository userRepository)
-    {
-        _context = context;
-        _projectRepository = projectRepository;
-        _promiseRepository = promiseRepository;
-        _epicRepository = epicRepository;
-        _journeyRepository = journeyRepository;
-        _flowRepository = flowRepository;
-        _momentRepository = momentRepository;
-        _momentTaskRepository = momentTaskRepository;
-        _iterationRepository = iterationRepository;
-        _strideRepository = strideRepository;
-        _userRepository = userRepository;
-    }
+    private readonly IPromiseModelOnlineContext _context = context;
+    private readonly IProjectRepository _projectRepository = projectRepository;
+    private readonly IGenericRepository<Promise> _promiseRepository = promiseRepository;
+    private readonly IEpicRepository _epicRepository = epicRepository;
+    private readonly IJourneyRepository _journeyRepository = journeyRepository;
+    private readonly IFlowRepository _flowRepository = flowRepository;
+    private readonly IMomentRepository _momentRepository = momentRepository;
+    private readonly IMomentTaskRepository _momentTaskRepository = momentTaskRepository;
+    private readonly IIterationRepository _iterationRepository = iterationRepository;
+    private readonly IStrideRepository _strideRepository = strideRepository;
+    private readonly IUserRepository _userRepository = userRepository;
 
     /// <summary>Import a project from an export document, recreating the full hierarchy in the database.</summary>
     /// <param name="document">The export document containing the project data.</param>
@@ -176,24 +161,15 @@ public sealed class ProjectImportService : IProjectImportService
     /// <summary>Order export items by <c>DisplayOrder</c> then <c>Id</c> for consistent import order.</summary>
     /// <param name="items">The items to order.</param>
     /// <returns>The ordered items.</returns>
-    private static IOrderedEnumerable<T> OrderByDisplayOrder<T>(IEnumerable<T> items) where T : class
-    {
-        return items.OrderBy(GetDisplayOrder).ThenBy(GetId);
-    }
+    private static IOrderedEnumerable<T> OrderByDisplayOrder<T>(IEnumerable<T> items) where T : class => items.OrderBy(GetDisplayOrder).ThenBy(GetId);
 
     /// <summary>Order export iterations by ID then name.</summary>
     /// <param name="items">The iterations to order.</param>
-    private static IOrderedEnumerable<ProjectExportIteration> OrderByIteration(IEnumerable<ProjectExportIteration> items)
-    {
-        return items.OrderBy(item => item.Id).ThenBy(item => item.Name);
-    }
+    private static IOrderedEnumerable<ProjectExportIteration> OrderByIteration(IEnumerable<ProjectExportIteration> items) => items.OrderBy(item => item.Id).ThenBy(item => item.Name);
 
     /// <summary>Order export strides by start date then ID.</summary>
     /// <param name="items">The strides to order.</param>
-    private static IOrderedEnumerable<ProjectExportStride> OrderByStride(IEnumerable<ProjectExportStride> items)
-    {
-        return items.OrderBy(item => item.StartDate).ThenBy(item => item.Id);
-    }
+    private static IOrderedEnumerable<ProjectExportStride> OrderByStride(IEnumerable<ProjectExportStride> items) => items.OrderBy(item => item.StartDate).ThenBy(item => item.Id);
 
     /// <summary>Get <c>DisplayOrder</c> property via reflection.</summary>
     /// <param name="item">The item to inspect.</param>

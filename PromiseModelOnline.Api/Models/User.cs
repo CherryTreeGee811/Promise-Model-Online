@@ -1,5 +1,5 @@
-#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
-﻿using System.ComponentModel.DataAnnotations;
+﻿#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
+using System.ComponentModel.DataAnnotations;
 using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.Models;
@@ -16,13 +16,13 @@ public class User
     [Key]
     [Required]
     public int Id { get; set; }
-    
+
     /// <summary>Email address. Required, validated format, max 256 characters.</summary>
     [Required]
     [EmailAddress]
     [MaxLength(256)]
     public string Email { get; set; } = string.Empty;
-    
+
     /// <summary>Display name. Required, max 100 characters.</summary>
     [Required]
     [MaxLength(100)]
@@ -36,25 +36,25 @@ public class User
     /// <summary>System role. Defaults to <see cref="UserRole.Student"/>.</summary>
     [Required]
     public UserRole Role { get; set; } = UserRole.Student;
-    
+
     /// <summary>UTC timestamp of account creation.</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     /// <summary>UTC timestamp of last login, or <c>null</c>.</summary>
     public DateTime? LastLoginAt { get; set; }
-    
+
     /// <summary>Projects where this user is the owner.</summary>
     public ICollection<Project> OwnedProjects { get; set; } = new List<Project>();
-    
+
     /// <summary>Permission records granting access to projects.</summary>
     public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
-    
+
     /// <summary>Comments authored by this user.</summary>
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
-    
+
     /// <summary>Notifications addressed to this user.</summary>
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-    
+
     /// <summary>Moment assignments for this user.</summary>
     public ICollection<MomentAssignment> MomentAssignments { get; set; } = new List<MomentAssignment>();
 }

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Enums;
@@ -80,21 +80,21 @@ public static class PromiseHierarchySeeder
         var currentStrideId = await SeedStridesAsync(db, pmoPmDir);
 
         var productRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Products.csv"));
-        var epicRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Epics.csv"));
+        var epicRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Epics.csv"));
         var journeyRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Journeys.csv"));
-        var flowRows    = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Flows.csv"));
-        var momentRows  = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Moments.csv"));
+        var flowRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Flows.csv"));
+        var momentRows = ReadCsvRows(Path.Combine(pmoPmDir, "LinuxMarksmen-Promise_Model_Tracker-Moments.csv"));
 
         var productSeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Promises.Where(p => p.ProjectId == project.Id).Select(p => (int?)p.SequenceNumber)) + 1 };
-        var epicSeq    = new SeqCounter { Value = await GetMaxSequenceAsync(db.Epics.Where(e => e.ProductPromise.ProjectId == project.Id).Select(e => (int?)e.SequenceNumber)) + 1 };
+        var epicSeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Epics.Where(e => e.ProductPromise.ProjectId == project.Id).Select(e => (int?)e.SequenceNumber)) + 1 };
         var journeySeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Journeys.Where(j => j.Epic.ProductPromise.ProjectId == project.Id).Select(j => (int?)j.SequenceNumber)) + 1 };
-        var flowSeq    = new SeqCounter { Value = await GetMaxSequenceAsync(db.Flows.Where(f => f.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(f => (int?)f.SequenceNumber)) + 1 };
-        var momentSeq  = new SeqCounter { Value = await GetMaxSequenceAsync(db.Moments.Where(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(m => (int?)m.SequenceNumber)) + 1 };
+        var flowSeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Flows.Where(f => f.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(f => (int?)f.SequenceNumber)) + 1 };
+        var momentSeq = new SeqCounter { Value = await GetMaxSequenceAsync(db.Moments.Where(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == project.Id).Select(m => (int?)m.SequenceNumber)) + 1 };
 
-        var productLookup  = await SeedProductsAsync(db, project.Id, productRows, productSeq);
-        var epicLookup     = await SeedEpicsAsync(db, epicRows, productLookup, epicSeq);
-        var journeyLookup  = await SeedJourneysAsync(db, journeyRows, epicLookup, journeySeq);
-        var flowLookup     = await SeedFlowsAsync(db, flowRows, journeyLookup, flowSeq);
+        var productLookup = await SeedProductsAsync(db, project.Id, productRows, productSeq);
+        var epicLookup = await SeedEpicsAsync(db, epicRows, productLookup, epicSeq);
+        var journeyLookup = await SeedJourneysAsync(db, journeyRows, epicLookup, journeySeq);
+        var flowLookup = await SeedFlowsAsync(db, flowRows, journeyLookup, flowSeq);
         var (inserted, total) = await SeedMomentsWithIdsAsync(db, momentRows, flowLookup, momentSeq);
 
         var strideIds = await db.Strides.OrderBy(s => s.Id).Select(s => s.Id).ToListAsync();
@@ -117,8 +117,8 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Seed iterations from CSV into the database.</summary>
-        private static async Task SeedIterationsAsync(PromiseModelOnlineContext db, string pmoPmDir,
-        Dictionary<string, int> projectIdBySourceId)
+    private static async Task SeedIterationsAsync(PromiseModelOnlineContext db, string pmoPmDir,
+    Dictionary<string, int> projectIdBySourceId)
     {
         var path = Path.Combine(pmoPmDir, "Iterations.csv");
         if (!File.Exists(path)) return;
@@ -148,7 +148,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Seed strides from CSV into the database, returning the current stride ID.</summary>
-        private static async Task<int> SeedStridesAsync(PromiseModelOnlineContext db, string pmoPmDir)
+    private static async Task<int> SeedStridesAsync(PromiseModelOnlineContext db, string pmoPmDir)
     {
         var path = Path.Combine(pmoPmDir, "Strides.csv");
         if (!File.Exists(path)) return 0;
@@ -207,15 +207,15 @@ public static class PromiseHierarchySeeder
                 VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});
                 SET IDENTITY_INSERT Strides OFF;";
 
-                await db.Database.ExecuteSqlRawAsync(sql,
-                cfg.Id,
-                cfg.Name,
-                cfg.IterationId,
-                startDate,
-                endDate,
-                cfg.DurationDays,
-                isActive,
-                DateTime.UtcNow);
+            await db.Database.ExecuteSqlRawAsync(sql,
+            cfg.Id,
+            cfg.Name,
+            cfg.IterationId,
+            startDate,
+            endDate,
+            cfg.DurationDays,
+            isActive,
+            DateTime.UtcNow);
         }
         return currentStrideId;
     }
@@ -289,7 +289,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Seed product promises from CSV data.</summary>
-        private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows, SeqCounter seq)
+    private static async Task<SeedLookup> SeedProductsAsync(PromiseModelOnlineContext db, int projectId, IReadOnlyList<Dictionary<string, string>> rows, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise ID")) && !string.IsNullOrWhiteSpace(GetValue(r, "Product Promise Statement")))
@@ -338,7 +338,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Seed epics from CSV data.</summary>
-        private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products, SeqCounter seq)
+    private static async Task<SeedLookup> SeedEpicsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup products, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Epic Promise ID"))
@@ -398,7 +398,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Seed journeys from CSV data.</summary>
-        private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics, SeqCounter seq)
+    private static async Task<SeedLookup> SeedJourneysAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup epics, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Journey Promise ID"))
@@ -458,7 +458,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Seed flows from CSV data.</summary>
-        private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys, SeqCounter seq)
+    private static async Task<SeedLookup> SeedFlowsAsync(PromiseModelOnlineContext db, IReadOnlyList<Dictionary<string, string>> rows, SeedLookup journeys, SeqCounter seq)
     {
         var seededRows = rows
             .Where(r => !string.IsNullOrWhiteSpace(GetValue(r, "Flow Promise ID"))
@@ -518,8 +518,8 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Distribute seeded moments across strides and mark older strides as completed.</summary>
-        private static async Task ReassignMomentsAndCompleteAsync(
-        PromiseModelOnlineContext db, int[] ownerIds, List<int> strideIds, int currentStrideId)
+    private static async Task ReassignMomentsAndCompleteAsync(
+    PromiseModelOnlineContext db, int[] ownerIds, List<int> strideIds, int currentStrideId)
     {
         var moments = await db.Moments.OrderBy(m => m.Id).ToListAsync();
         if (moments.Count == 0) return;
@@ -566,7 +566,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Create a test user if one does not already exist.</summary>
-        private static async Task<User> EnsureTestUserAsync(PromiseModelOnlineContext db, string? email = null, string? name = null)
+    private static async Task<User> EnsureTestUserAsync(PromiseModelOnlineContext db, string? email = null, string? name = null)
     {
         email ??= TestUserEmail;
         name ??= TestUserName;
@@ -595,7 +595,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Create the default test project if it does not already exist.</summary>
-        private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
+    private static async Task<Project> EnsureProjectAsync(PromiseModelOnlineContext db, int ownerId)
     {
         var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == "Promise Model Online");
         if (existing != null)
@@ -627,7 +627,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Create a project by name if it does not already exist.</summary>
-        private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
+    private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
     {
         var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == name);
         if (existing != null)
@@ -660,7 +660,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Generate a URL-safe slug from a text string.</summary>
-        private static string Slugify(string text)
+    private static string Slugify(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return "project";
 
@@ -673,11 +673,11 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Get the maximum sequence number from a queryable.</summary>
-        private static async Task<int> GetMaxSequenceAsync(IQueryable<int?> query)
-        => await query.MaxAsync() ?? 0;
+    private static async Task<int> GetMaxSequenceAsync(IQueryable<int?> query)
+    => await query.MaxAsync() ?? 0;
 
     /// <summary>Locate the pmo_pm directory containing CSV files.</summary>
-        private static string ResolvePmoPmDirectory(string contentRootPath)
+    private static string ResolvePmoPmDirectory(string contentRootPath)
     {
         var direct = Path.Combine(contentRootPath, "pmo_pm");
         if (Directory.Exists(direct)) return direct;
@@ -697,7 +697,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Read a CSV file into a list of row dictionaries.</summary>
-        private static List<Dictionary<string, string>> ReadCsvRows(string path)
+    private static List<Dictionary<string, string>> ReadCsvRows(string path)
     {
         var lines = File.ReadAllLines(path);
         if (lines.Length == 0) return new();
@@ -718,7 +718,7 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Parse a single CSV line into fields, handling quoted values.</summary>
-        private static List<string> ParseCsvLine(string line)
+    private static List<string> ParseCsvLine(string line)
     {
         var values = new List<string>();
         var sb = new StringBuilder();
@@ -755,23 +755,20 @@ public static class PromiseHierarchySeeder
     }
 
     /// <summary>Get a value from a CSV row dictionary by key.</summary>
-        private static string GetValue(IReadOnlyDictionary<string, string> row, string key)
-        => row.TryGetValue(key, out var value) ? value : string.Empty;
+    private static string GetValue(IReadOnlyDictionary<string, string> row, string key)
+    => row.TryGetValue(key, out var value) ? value : string.Empty;
 
     /// <summary>Determine the effort estimate for a moment based on its ID modulo pattern.</summary>
-        private static int GetEstimateForMoment(int momentId)
+    private static int GetEstimateForMoment(int momentId) => (momentId % 17) switch
     {
-        return (momentId % 17) switch
-        {
-            0 or 1 or 2 => (int)Estimate.XS,
-            3 or 4 or 5 => (int)Estimate.S,
-            6 or 7 or 8 or 9 => (int)Estimate.M,
-            10 or 11 or 12 => (int)Estimate.L,
-            13 or 14 => (int)Estimate.XL,
-            15 => (int)Estimate.XXL,
-            _ => (int)Estimate.XXXL
-        };
-    }
+        0 or 1 or 2 => (int)Estimate.XS,
+        3 or 4 or 5 => (int)Estimate.S,
+        6 or 7 or 8 or 9 => (int)Estimate.M,
+        10 or 11 or 12 => (int)Estimate.L,
+        13 or 14 => (int)Estimate.XL,
+        15 => (int)Estimate.XXL,
+        _ => (int)Estimate.XXXL
+    };
 
     private readonly record struct StatementOrder(string Statement, int DisplayOrder);
     private readonly record struct ParentStatement(int ParentId, string Statement, int DisplayOrder);

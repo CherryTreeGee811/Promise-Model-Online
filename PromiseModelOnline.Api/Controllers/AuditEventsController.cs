@@ -16,22 +16,17 @@ namespace PromiseModelOnline.Api.Controllers;
 ///   generation, and <c>X-Total-Count</c> response headers for client-side pagination.
 ///   Requires the <c>projects.read</c> authorization policy.
 /// </remarks>
+/// <remarks>Initializes the controller with the database context.</remarks>
+/// <param name="context">The database context.</param>
 [Route("api/audit-events")]
 [Authorize(Policy = "projects.read")]
-public class AuditEventsController : ControllerBase
+public class AuditEventsController(IPromiseModelOnlineContext context) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
-    private readonly IPromiseModelOnlineContext _context;
-
-    /// <summary>Initializes the controller with the database context.</summary>
-    /// <param name="context">The database context.</param>
-    public AuditEventsController(IPromiseModelOnlineContext context)
-    {
-        _context = context;
-    }
+    private readonly IPromiseModelOnlineContext _context = context;
 
     /// <summary>Retrieve paginated audit history for a project.</summary>
     /// <param name="projectId">The project ID to query.</param>
@@ -174,20 +169,17 @@ public class AuditEventsController : ControllerBase
         return $"Updated {auditEvent.EntityType}: {fields}";
     }
     /// <summary>Format a value for display in the audit summary.</summary>
-    private static string FormatValue(object? value)
+    private static string FormatValue(object? value) => value switch
     {
-        return value switch
-        {
-            null => "blank",
-            JsonElement element when element.ValueKind == JsonValueKind.Null => "blank",
-            JsonElement element when element.ValueKind == JsonValueKind.String => element.GetString() ?? "blank",
-            JsonElement element when element.ValueKind == JsonValueKind.Number => element.ToString(),
-            JsonElement element when element.ValueKind == JsonValueKind.True => "true",
-            JsonElement element when element.ValueKind == JsonValueKind.False => "false",
-            JsonElement element => element.ToString(),
-            _ => value.ToString() ?? "blank"
-        };
-    }
+        null => "blank",
+        JsonElement element when element.ValueKind == JsonValueKind.Null => "blank",
+        JsonElement element when element.ValueKind == JsonValueKind.String => element.GetString() ?? "blank",
+        JsonElement element when element.ValueKind == JsonValueKind.Number => element.ToString(),
+        JsonElement element when element.ValueKind == JsonValueKind.True => "true",
+        JsonElement element when element.ValueKind == JsonValueKind.False => "false",
+        JsonElement element => element.ToString(),
+        _ => value.ToString() ?? "blank"
+    };
 
     /// <summary>Internal DTO for deserializing individual field changes from JSON.</summary>
 #pragma warning disable S1144 // setters used by System.Text.Json deserialization

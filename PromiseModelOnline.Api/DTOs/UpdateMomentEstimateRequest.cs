@@ -1,4 +1,4 @@
-using PromiseModelOnline.Api.Enums;
+﻿using PromiseModelOnline.Api.Enums;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 

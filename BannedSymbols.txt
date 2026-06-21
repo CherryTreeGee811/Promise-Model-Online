@@ -1,0 +1,18 @@
+# Block sync-over-async patterns that cause thread pool starvation and deadlocks
+T:System.Threading.Tasks.Task`1.get_Result;Use await instead of .Result
+M:System.Threading.Tasks.Task.Wait();Use await instead of .Wait()
+M:System.Threading.Tasks.Task`1.GetAwaiter().GetResult();Use await instead of .GetAwaiter().GetResult()
+P:System.Threading.Tasks.Task`1.Result;Use await instead of .Result
+
+# Block Console output — use ILogger instead
+M:System.Console.WriteLine;Use ILogger<T> instead of Console.WriteLine
+M:System.Console.Write;Use ILogger<T> instead of Console.Write
+
+# Block blocking calls that freeze ASP.NET threads
+M:System.Threading.Thread.Sleep;Use Task.Delay instead of Thread.Sleep
+M:System.Threading.Thread.SpinWait;Use proper synchronization instead of SpinWait
+
+# Block dangerous legacy APIs
+T:System.Data.DataTable;Use strongly-typed models instead of DataTable
+T:System.Data.DataSet;Use strongly-typed models instead of DataSet
+M:System.Runtime.CompilerServices.FormatterServices.GetUninitializedObject;Security risk — do not use

@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>Request DTO for accepting a project invitation.</summary>
 public class AcceptInvitationRequestDto

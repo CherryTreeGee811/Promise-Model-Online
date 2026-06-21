@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.Extensions;
+﻿namespace PromiseModelOnline.Api.Extensions;
 
 /// <summary>Resolves Docker secrets in connection strings by replacing <c>Password_FILE=</c> with the file contents.</summary>
 /// <remarks>
@@ -19,7 +19,7 @@ public static class ConnectionStringExtensions
 
         var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
 
-        for (int i = 0; i < parts.Count; i++)
+        for (var i = 0; i < parts.Count; i++)
         {
             if (parts[i].StartsWith("Password_FILE="))
             {

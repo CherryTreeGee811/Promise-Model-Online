@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,229 +20,212 @@ using Microsoft.Extensions.Logging;
 
 
 
-namespace PromiseModelOnline.Api.Controllers
+namespace PromiseModelOnline.Api.Controllers;
+
+
+/// <summary>REST controller for emoji-style reactions on stack items.</summary>
+
+/// <remarks>
+///   Provides CRUD for reactions with user ownership validation.
+///   Requires <c>projects.read</c> for reads and <c>projects.write</c> for mutations.
+/// </remarks>
+/// <param name="logger">The logger for audit and error events.</param>
+/// <param name="reactionService">The service for reaction operations.</param>
+/// <param name="userRepository">The repository for user data access.</param>
+
+[Route("api/reactions")]
+[IgnoreAntiforgeryToken]
+public class ReactionsController(IReactionService reactionService,
+
+                           IUserRepository userRepository,
+
+                           ILogger<ReactionsController> logger) : ControllerBase
 
 {
 
-    /// <summary>REST controller for emoji-style reactions on stack items.</summary>
+    private readonly IReactionService _reactionService = reactionService;
 
-    /// <remarks>
-    ///   Provides CRUD for reactions with user ownership validation.
-    ///   Requires <c>projects.read</c> for reads and <c>projects.write</c> for mutations.
-    /// </remarks>
+    private readonly IUserRepository _userRepository = userRepository;
 
-    [Route("api/reactions")]
-    [IgnoreAntiforgeryToken]
-    public class ReactionsController : ControllerBase
+    private readonly ILogger<ReactionsController> _logger = logger;
+
+
+
+    /// <summary>Get all reactions for a stack item.</summary>
+    /// <param name="type">The entity type discriminator.</param>
+    /// <param name="itemId">The item ID.</param>
+    /// <returns>A list of reaction DTOs.</returns>
+
+    [Authorize(Policy = "projects.read")]
+
+    [HttpGet]
+
+    public async Task<ActionResult<IEnumerable<ReactionDto>>> GetReactions(
+
+        [FromQuery] string type, [FromQuery] int itemId)
 
     {
 
-        private readonly IReactionService _reactionService;
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        var reactions = await _reactionService.GetReactionsAsync(type, itemId);
 
-        private readonly IUserRepository _userRepository;
+        return Ok(reactions);
 
-        private readonly ILogger<ReactionsController> _logger;
-
-
-
-        /// <param name="logger">The logger for audit and error events.</param>
-        /// <param name="reactionService">The service for reaction operations.</param>
-        /// <param name="userRepository">The repository for user data access.</param>
-        public ReactionsController(IReactionService reactionService,
-
-                                   IUserRepository userRepository,
-
-                                   ILogger<ReactionsController> logger)
-
-        {
-
-            _reactionService = reactionService;
-
-            _userRepository = userRepository;
-
-            _logger = logger;
-
-        }
+    }
 
 
 
-        /// <summary>Get all reactions for a stack item.</summary>
-        /// <param name="type">The entity type discriminator.</param>
-        /// <param name="itemId">The item ID.</param>
-        /// <returns>A list of reaction DTOs.</returns>
+    /// <summary>Add a reaction to a stack item.</summary>
 
-        [Authorize(Policy = "projects.read")]
+    /// <param name="request">The reaction creation data.</param>
+    /// <returns>The created reaction DTO.</returns>
+    [Authorize(Policy = "projects.write")]
 
-        [HttpGet]
+    [HttpPost]
 
-        public async Task<ActionResult<IEnumerable<ReactionDto>>> GetReactions(
+    public async Task<ActionResult<ReactionDto>> CreateReaction([FromBody] CreateReactionRequest request)
 
-            [FromQuery] string type, [FromQuery] int itemId)
+    {
+
+        if (request is null) return BadRequest("Request body is required.");
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        var userId = await GetCurrentUserIdAsync();
+
+        if (userId is null) return Unauthorized();
+
+
+
+        try
 
         {
 
-            if (!ModelState.IsValid) return ValidationProblem(ModelState);
-            var reactions = await _reactionService.GetReactionsAsync(type, itemId);
+            var result = await _reactionService.CreateReactionAsync(request, userId.Value);
 
-            return Ok(reactions);
+            _logger.LogInformation("User {UserId} created reaction {ReactionId}", userId.Value, result.Id);
+
+            return CreatedAtAction(nameof(GetReactions), new { type = request.StackItemType, itemId = request.StackItemId }, result);
 
         }
 
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "CreateReaction failed for user {UserId}", userId);
+            return BadRequest("The reaction could not be created.");
+        }
+
+    }
 
 
-        /// <summary>Add a reaction to a stack item.</summary>
 
-        /// <param name="request">The reaction creation data.</param>
-        /// <returns>The created reaction DTO.</returns>
-        [Authorize(Policy = "projects.write")]
+    /// <summary>Update an existing reaction's emote.</summary>
 
-        [HttpPost]
+    /// <param name="id">The reaction ID.</param>
+    /// <param name="request">The update request data.</param>
+    /// <returns>The updated reaction DTO.</returns>
+    [Authorize(Policy = "projects.write")]
 
-        public async Task<ActionResult<ReactionDto>> CreateReaction([FromBody] CreateReactionRequest request)
+    [HttpPatch("{id}")]
+
+    public async Task<ActionResult<ReactionDto>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDto request)
+
+    {
+
+        var userId = await GetCurrentUserIdAsync();
+
+        if (userId is null) return Unauthorized();
+
+
+
+        if (request is null) return BadRequest("Request body is required.");
+
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+
+
+        try
 
         {
 
-            if (request is null) return BadRequest("Request body is required.");
-            if (!ModelState.IsValid) return ValidationProblem(ModelState);
-            var userId = await GetCurrentUserIdAsync();
+            var result = await _reactionService.UpdateReactionAsync(id, request, userId.Value);
 
-            if (userId is null) return Unauthorized();
+            _logger.LogInformation("User {UserId} updated reaction {ReactionId}", userId.Value, id);
 
-
-
-            try
-
-            {
-
-                var result = await _reactionService.CreateReactionAsync(request, userId.Value);
-
-                _logger.LogInformation("User {UserId} created reaction {ReactionId}", userId.Value, result.Id);
-
-                return CreatedAtAction(nameof(GetReactions), new { type = request.StackItemType, itemId = request.StackItemId }, result);
-
-            }
-
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "CreateReaction failed for user {UserId}", userId);
-                return BadRequest("The reaction could not be created.");
-            }
+            return Ok(result);
 
         }
 
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "UpdateReaction {ReactionId} failed for user {UserId}", id, userId);
+            if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                return NotFound("Reaction not found.");
+            return BadRequest("The reaction could not be updated.");
+        }
+
+    }
 
 
-        /// <summary>Update an existing reaction's emote.</summary>
 
-        /// <param name="id">The reaction ID.</param>
-        /// <param name="request">The update request data.</param>
-        /// <returns>The updated reaction DTO.</returns>
-        [Authorize(Policy = "projects.write")]
+    /// <summary>Remove a reaction.</summary>
+    /// <param name="id">The entity ID.</param>
+    /// <returns>NoContent on success.</returns>
 
-        [HttpPatch("{id}")]
+    [Authorize(Policy = "projects.write")]
 
-        public async Task<ActionResult<ReactionDto>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDto request)
+    [HttpDelete("{id}")]
+
+    public async Task<ActionResult> DeleteReaction(int id)
+
+    {
+
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        var userId = await GetCurrentUserIdAsync();
+
+        if (userId == null) return Unauthorized();
+
+
+
+        try
 
         {
 
-            var userId = await GetCurrentUserIdAsync();
+            await _reactionService.RemoveReactionAsync(id, userId.Value);
 
-            if (userId is null) return Unauthorized();
+            _logger.LogInformation("User {UserId} deleted reaction {ReactionId}", userId.Value, id);
 
-
-
-            if (request is null) return BadRequest("Request body is required.");
-
-            if (!ModelState.IsValid) return ValidationProblem(ModelState);
-
-
-
-            try
-
-            {
-
-                var result = await _reactionService.UpdateReactionAsync(id, request, userId.Value);
-
-                _logger.LogInformation("User {UserId} updated reaction {ReactionId}", userId.Value, id);
-
-                return Ok(result);
-
-            }
-
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "UpdateReaction {ReactionId} failed for user {UserId}", id, userId);
-                if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
-                    return NotFound("Reaction not found.");
-                return BadRequest("The reaction could not be updated.");
-            }
+            return NoContent();
 
         }
 
-
-
-        /// <summary>Remove a reaction.</summary>
-        /// <param name="id">The entity ID.</param>
-        /// <returns>NoContent on success.</returns>
-
-        [Authorize(Policy = "projects.write")]
-
-        [HttpDelete("{id}")]
-
-        public async Task<ActionResult> DeleteReaction(int id)
+        catch (Exception ex)
 
         {
 
-            if (!ModelState.IsValid) return ValidationProblem(ModelState);
-            var userId = await GetCurrentUserIdAsync();
+            _logger.LogWarning(ex, "Failed to delete reaction {ReactionId} by user {UserId}", id, userId.Value);
 
-            if (userId == null) return Unauthorized();
-
-
-
-            try
-
-            {
-
-                await _reactionService.RemoveReactionAsync(id, userId.Value);
-
-                _logger.LogInformation("User {UserId} deleted reaction {ReactionId}", userId.Value, id);
-
-                return NoContent();
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                _logger.LogWarning(ex, "Failed to delete reaction {ReactionId} by user {UserId}", id, userId.Value);
-
-                return BadRequest("Cannot remove reaction.");
-
-            }
+            return BadRequest("Cannot remove reaction.");
 
         }
 
+    }
 
 
-        /// <summary>Resolve the current user ID from JWT claims.</summary>
 
-        private async Task<int?> GetCurrentUserIdAsync()
+    /// <summary>Resolve the current user ID from JWT claims.</summary>
 
-        {
+    private async Task<int?> GetCurrentUserIdAsync()
 
-            var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
+    {
 
-            if (string.IsNullOrEmpty(email)) return null;
+        var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
 
-            var username = User.FindFirst("nameid")?.Value;
+        if (string.IsNullOrEmpty(email)) return null;
 
-            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        var username = User.FindFirst("nameid")?.Value;
 
-            return user.Id;
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
 
-        }
+        return user.Id;
 
     }
 

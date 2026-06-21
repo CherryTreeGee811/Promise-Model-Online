@@ -9,8 +9,7 @@ using PromiseModelOnline.Api.DAL;
 
 #nullable disable
 
-namespace PromiseModelOnline.Api.Migrations
-{
+namespace PromiseModelOnline.Api.Migrations;
     [DbContext(typeof(PromiseModelOnlineContext))]
     [Migration("20260607235304_UseEntitySequence")]
     partial class UseEntitySequence
@@ -1199,4 +1198,3 @@ namespace PromiseModelOnline.Api.Migrations
 #pragma warning restore 612, 618
         }
     }
-}

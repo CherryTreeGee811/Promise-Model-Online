@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,322 +23,291 @@ using System;
 using System.Threading.Tasks;
 
 
-namespace PromiseModelOnline.Api.Controllers
+namespace PromiseModelOnline.Api.Controllers;
 
+
+/// <summary>REST controller for moment sub-task CRUD within a project scope.</summary>
+/// <param name="context">The database context for data access.</param>
+/// <param name="logger">The logger for audit and error events.</param>
+/// <param name="momentService">The service for moment operations.</param>
+/// <param name="momentTaskService">The service for moment task operations.</param>
+/// <param name="permissionService">The service for permission validation.</param>
+/// <param name="projectService">The service for project operations.</param>
+/// <param name="userRepository">The repository for user data access.</param>
+[Route("api/projects/{owner}/{project}/moments/{momentSeq}/tasks")]
+public class ProjectMomentTasksController(
+
+    IMomentService momentService,
+
+    IMomentTaskService momentTaskService,
+
+    IUserRepository userRepository,
+
+    IPermissionService permissionService,
+
+    ILogger<ProjectMomentTasksController> logger,
+
+    IPromiseModelOnlineContext context,
+
+    IProjectService projectService) : ProjectScopedControllerBase(projectService)
 {
+    private readonly IMomentService _momentService = momentService;
 
-    /// <summary>REST controller for moment sub-task CRUD within a project scope.</summary>
-    [Route("api/projects/{owner}/{project}/moments/{momentSeq}/tasks")]
-    public class ProjectMomentTasksController : ProjectScopedControllerBase
+    private readonly IMomentTaskService _momentTaskService = momentTaskService;
+
+    private readonly IUserRepository _userRepository = userRepository;
+
+    private readonly IPermissionService _permissionService = permissionService;
+
+    private readonly ILogger<ProjectMomentTasksController> _logger = logger;
+
+    private readonly IPromiseModelOnlineContext _context = context;
+
+
+
+    /// <summary>Create a sub-task for a moment within the project scope.</summary>
+    /// <param name="momentSeq">The moment's sequence number.</param>
+    /// <param name="request">The task creation data.</param>
+    /// <param name="owner">The project owner's URL-safe slug.</param>
+    /// <param name="project">The project's URL-safe slug.</param>
+    /// <returns>The created task DTO.</returns>
+    [Authorize(Policy = "projects.write")]
+    [HttpPost]
+    public async Task<ActionResult<MomentTaskDto>> Create(int momentSeq, [FromBody] CreateMomentTaskRequestDto request, string owner, string project)
     {
-        private readonly IMomentService _momentService;
+        var projectEntity = await ResolveProjectAsync(owner, project);
+        if (projectEntity is null)
+            return NotFound();
 
-        private readonly IMomentTaskService _momentTaskService;
+        var moment = await _context.Moments
 
-        private readonly IUserRepository _userRepository;
-
-        private readonly IPermissionService _permissionService;
-
-        private readonly ILogger<ProjectMomentTasksController> _logger;
-
-        private readonly IPromiseModelOnlineContext _context;
+            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq);
 
 
 
-        /// <param name="context">The database context for data access.</param>
-        /// <param name="logger">The logger for audit and error events.</param>
-        /// <param name="momentService">The service for moment operations.</param>
-        /// <param name="momentTaskService">The service for moment task operations.</param>
-        /// <param name="permissionService">The service for permission validation.</param>
-        /// <param name="projectService">The service for project operations.</param>
-        /// <param name="userRepository">The repository for user data access.</param>
-        public ProjectMomentTasksController(
+        if (moment is null)
 
-            IMomentService momentService,
+            return NotFound($"Moment with sequence {momentSeq} not found.");
 
-            IMomentTaskService momentTaskService,
 
-            IUserRepository userRepository,
 
-            IPermissionService permissionService,
+        if (!await UserCanEditMomentAsync(moment.Id))
 
-            ILogger<ProjectMomentTasksController> logger,
+            return Forbid();
 
-            IPromiseModelOnlineContext context,
 
-            IProjectService projectService)
 
-            : base(projectService)
+        if (request is null)
+
+            return BadRequest("Request body is required.");
+
+
+
+        if (!ModelState.IsValid)
+
+            return ValidationProblem(ModelState);
+
+
+
+        var task = new MomentTask
 
         {
 
-            _momentService = momentService;
+            MomentId = moment.Id,
 
-            _momentTaskService = momentTaskService;
+            Name = request.Name.Trim(),
 
-            _userRepository = userRepository;
+            Description = string.IsNullOrWhiteSpace(request.Description) ? string.Empty : request.Description.Trim(),
 
-            _permissionService = permissionService;
+            IsCompleted = request.IsCompleted,
 
-            _logger = logger;
+            CreatedAt = DateTime.UtcNow,
 
-            _context = context;
+            CompletedAt = request.IsCompleted ? DateTime.UtcNow : null,
 
-        }
+        };
 
 
 
-        /// <summary>Create a sub-task for a moment within the project scope.</summary>
-        /// <param name="momentSeq">The moment's sequence number.</param>
-        /// <param name="request">The task creation data.</param>
-        /// <param name="owner">The project owner's URL-safe slug.</param>
-        /// <param name="project">The project's URL-safe slug.</param>
-        /// <returns>The created task DTO.</returns>
-        [Authorize(Policy = "projects.write")]
-        [HttpPost]
-        public async Task<ActionResult<MomentTaskDto>> Create(int momentSeq, [FromBody] CreateMomentTaskRequestDto request, string owner, string project)
-        {
-            var projectEntity = await ResolveProjectAsync(owner, project);
-            if (projectEntity is null)
-                return NotFound();
+        await _momentTaskService.CreateAsync(task);
 
-            var moment = await _context.Moments
 
-                .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq);
 
+        _logger.LogInformation(
 
+            "Created MomentTask {MomentTaskId} for Moment {MomentId} at {UtcTimestamp}",
 
-            if (moment is null)
+            task.Id,
 
-                return NotFound($"Moment with sequence {momentSeq} not found.");
+            moment.Id,
 
+            DateTime.UtcNow);
 
 
-            if (!await UserCanEditMomentAsync(moment.Id))
 
-                return Forbid();
+        return Ok(Map(task));
 
+    }
 
 
-            if (request is null)
 
-                return BadRequest("Request body is required.");
+    /// <summary>Toggle completion state of a moment sub-task.</summary>
+    /// <param name="momentSeq">The moment's sequence number.</param>
+    /// <param name="taskId">The task ID to update.</param>
+    /// <param name="request">The completion update data.</param>
+    /// <param name="owner">The project owner's URL-safe slug.</param>
+    /// <param name="project">The project's URL-safe slug.</param>
+    /// <returns>The updated task DTO.</returns>
+    [Authorize(Policy = "projects.write")]
+    [HttpPatch("{taskId:int}/completion")]
+    public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentSeq, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request, string owner, string project)
+    {
+        var projectEntity = await ResolveProjectAsync(owner, project);
+        if (projectEntity is null)
+            return NotFound();
 
 
 
-            if (!ModelState.IsValid)
+        var moment = await _context.Moments
 
-                return ValidationProblem(ModelState);
+            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq);
 
 
 
-            var task = new MomentTask
+        if (moment is null)
 
-            {
+            return NotFound($"Moment with sequence {momentSeq} not found.");
 
-                MomentId = moment.Id,
 
-                Name = request.Name.Trim(),
 
-                Description = string.IsNullOrWhiteSpace(request.Description) ? string.Empty : request.Description.Trim(),
+        if (request is null)
 
-                IsCompleted = request.IsCompleted,
+            return BadRequest("Request body is required.");
 
-                CreatedAt = DateTime.UtcNow,
 
-                CompletedAt = request.IsCompleted ? DateTime.UtcNow : null,
 
-            };
+        if (!ModelState.IsValid)
 
+            return ValidationProblem(ModelState);
 
 
-            await _momentTaskService.CreateAsync(task);
 
+        var task = await _momentTaskService.GetByIdAsync(taskId);
 
+        if (task is null || task.MomentId != moment.Id)
 
-            _logger.LogInformation(
+            return NotFound($"Moment task with ID {taskId} not found.");
 
-                "Created MomentTask {MomentTaskId} for Moment {MomentId} at {UtcTimestamp}",
 
-                task.Id,
 
-                moment.Id,
+        if (!await UserCanEditMomentAsync(moment.Id))
 
-                DateTime.UtcNow);
+            return Forbid();
 
 
 
-            return Ok(Map(task));
+        task.IsCompleted = request.IsCompleted;
 
-        }
+        task.CompletedAt = request.IsCompleted ? DateTime.UtcNow : null;
 
+        await _momentTaskService.UpdateAsync(task);
 
 
-        /// <summary>Toggle completion state of a moment sub-task.</summary>
-        /// <param name="momentSeq">The moment's sequence number.</param>
-        /// <param name="taskId">The task ID to update.</param>
-        /// <param name="request">The completion update data.</param>
-        /// <param name="owner">The project owner's URL-safe slug.</param>
-        /// <param name="project">The project's URL-safe slug.</param>
-        /// <returns>The updated task DTO.</returns>
-        [Authorize(Policy = "projects.write")]
-        [HttpPatch("{taskId:int}/completion")]
-        public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentSeq, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request, string owner, string project)
-        {
-            var projectEntity = await ResolveProjectAsync(owner, project);
-            if (projectEntity is null)
-                return NotFound();
 
+        _logger.LogInformation(
 
+            "Updated MomentTask {MomentTaskId} completion for Moment {MomentId} at {UtcTimestamp}: {Changes}",
 
-            var moment = await _context.Moments
+            taskId,
 
-                .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq);
+            moment.Id,
 
+            DateTime.UtcNow,
 
+            new { request.IsCompleted });
 
-            if (moment is null)
 
-                return NotFound($"Moment with sequence {momentSeq} not found.");
 
+        return Ok(Map(task));
 
+    }
 
-            if (request is null)
 
-                return BadRequest("Request body is required.");
 
+    /// <summary>Map a MomentTask entity to its DTO.</summary>
 
+    /// <param name="task">The task entity.</param>
+    /// <returns>The mapped task DTO.</returns>
 
-            if (!ModelState.IsValid)
+    private static MomentTaskDto Map(MomentTask task) => new MomentTaskDto
 
-                return ValidationProblem(ModelState);
+    {
 
+        Id = task.Id,
 
+        Name = task.Name,
 
-            var task = await _momentTaskService.GetByIdAsync(taskId);
+        Description = task.Description,
 
-            if (task is null || task.MomentId != moment.Id)
+        MomentId = task.MomentId,
 
-                return NotFound($"Moment task with ID {taskId} not found.");
+        OwnerId = task.OwnerId,
 
+        IsCompleted = task.IsCompleted,
 
+        CreatedAt = task.CreatedAt,
 
-            if (!await UserCanEditMomentAsync(moment.Id))
+        CompletedAt = task.CompletedAt,
 
-                return Forbid();
+    };
 
 
 
-            task.IsCompleted = request.IsCompleted;
+    /// <summary>Resolve the current user from JWT claims.</summary>
 
-            task.CompletedAt = request.IsCompleted ? DateTime.UtcNow : null;
+    private async Task<User?> GetCurrentUserAsync()
 
-            await _momentTaskService.UpdateAsync(task);
+    {
 
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
 
+                 ?? User.FindFirst("email")?.Value;
 
-            _logger.LogInformation(
+        if (string.IsNullOrEmpty(email)) return null;
 
-                "Updated MomentTask {MomentTaskId} completion for Moment {MomentId} at {UtcTimestamp}: {Changes}",
 
-                taskId,
 
-                moment.Id,
+        var username = User.FindFirst("nameid")?.Value;
 
-                DateTime.UtcNow,
+        return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
 
-                new { request.IsCompleted });
+    }
 
 
 
-            return Ok(Map(task));
+    /// <summary>Check if the current user has Edit permission.</summary>
 
-        }
+    /// <param name="momentId">The moment ID.</param>
 
+    private async Task<bool> UserCanEditMomentAsync(int momentId)
 
+    {
 
-        /// <summary>Map a MomentTask entity to its DTO.</summary>
+        var user = await GetCurrentUserAsync();
 
-        /// <param name="task">The task entity.</param>
-        /// <returns>The mapped task DTO.</returns>
+        if (user is null) return false;
 
-        private static MomentTaskDto Map(MomentTask task)
 
-        {
 
-            return new MomentTaskDto
+        var projectId = await _momentService.GetProjectIdForMomentAsync(momentId);
 
-            {
+        if (projectId is null) return false;
 
-                Id = task.Id,
 
-                Name = task.Name,
 
-                Description = task.Description,
+        var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value);
 
-                MomentId = task.MomentId,
-
-                OwnerId = task.OwnerId,
-
-                IsCompleted = task.IsCompleted,
-
-                CreatedAt = task.CreatedAt,
-
-                CompletedAt = task.CompletedAt,
-
-            };
-
-        }
-
-
-
-        /// <summary>Resolve the current user from JWT claims.</summary>
-
-        private async Task<User?> GetCurrentUserAsync()
-
-        {
-
-            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-
-                     ?? User.FindFirst("email")?.Value;
-
-            if (string.IsNullOrEmpty(email)) return null;
-
-
-
-            var username = User.FindFirst("nameid")?.Value;
-
-            return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
-
-        }
-
-
-
-        /// <summary>Check if the current user has Edit permission.</summary>
-
-        /// <param name="momentId">The moment ID.</param>
-
-        private async Task<bool> UserCanEditMomentAsync(int momentId)
-
-        {
-
-            var user = await GetCurrentUserAsync();
-
-            if (user is null) return false;
-
-
-
-            var projectId = await _momentService.GetProjectIdForMomentAsync(momentId);
-
-            if (projectId is null) return false;
-
-
-
-            var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value);
-
-            return level == PermissionLevel.Edit;
-
-        }
+        return level == PermissionLevel.Edit;
 
     }
 

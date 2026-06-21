@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
@@ -13,27 +13,20 @@ namespace PromiseModelOnline.Api.Controllers;
 ///   All endpoints require <c>projects.read</c> authorization. Provides the current user's
 ///   profile info, global user search, personal data export, and account deletion.
 /// </remarks>
+/// <remarks>Initializes the controller with required services and repositories.</remarks>
+/// <param name="userRepository">The user repository.</param>
+/// <param name="projectRepository">The project repository.</param>
+/// <param name="context">The database context.</param>
 [ApiController]
 [Route("api/users")]
-public class UsersController : ControllerBase
+public class UsersController(
+    IUserRepository userRepository,
+    IProjectRepository projectRepository,
+    PromiseModelOnlineContext context) : ControllerBase
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IProjectRepository _projectRepository;
-    private readonly PromiseModelOnlineContext _context;
-
-    /// <summary>Initializes the controller with required services and repositories.</summary>
-    /// <param name="userRepository">The user repository.</param>
-    /// <param name="projectRepository">The project repository.</param>
-    /// <param name="context">The database context.</param>
-    public UsersController(
-        IUserRepository userRepository,
-        IProjectRepository projectRepository,
-        PromiseModelOnlineContext context)
-    {
-        _userRepository = userRepository;
-        _projectRepository = projectRepository;
-        _context = context;
-    }
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly IProjectRepository _projectRepository = projectRepository;
+    private readonly PromiseModelOnlineContext _context = context;
 
     /// <summary>Return the current user's profile information.</summary>
     [Authorize(Policy = "projects.read")]

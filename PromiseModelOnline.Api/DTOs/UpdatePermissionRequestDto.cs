@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace PromiseModelOnline.Api.DTOs;
@@ -8,7 +8,7 @@ public class UpdatePermissionRequestDto : IValidatableObject
 {
     /// <summary>New status value (only <c>"Active"</c> is supported).</summary>
     public string? Status { get; set; }
-    
+
     /// <summary>Access level (cannot be updated via this endpoint).</summary>
     public string? Level { get; set; }
 

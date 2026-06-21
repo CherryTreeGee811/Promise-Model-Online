@@ -13,17 +13,17 @@ public class CommentMention
     /// <summary>Primary key.</summary>
     [Key]
     public int Id { get; set; }
-        
+
     /// <summary>Foreign key to the <see cref="Models.Comment"/> containing the mention.</summary>
     public int CommentId { get; set; }
-        
+
     /// <summary>Foreign key to the mentioned <see cref="Models.User"/>.</summary>
     public int MentionedUserId { get; set; }
-        
+
     /// <summary>The comment containing the mention.</summary>
     [ForeignKey("CommentId")]
     public Comment Comment { get; set; } = null!;
-        
+
     /// <summary>The mentioned user.</summary>
     [ForeignKey("MentionedUserId")]
     public User MentionedUser { get; set; } = null!;

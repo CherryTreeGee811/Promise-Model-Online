@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>A single changed field within an audit timeline entry.</summary>
 public class AuditFieldChangeDto

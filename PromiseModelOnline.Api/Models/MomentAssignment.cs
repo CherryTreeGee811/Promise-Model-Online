@@ -13,21 +13,21 @@ public class MomentAssignment
     /// <summary>Primary key.</summary>
     [Key]
     public int Id { get; set; }
-        
+
     /// <summary>Foreign key to the <see cref="Models.Moment"/>.</summary>
     public int MomentId { get; set; }
-        
+
     /// <summary>Foreign key to the <see cref="Models.User"/>.</summary>
     public int UserId { get; set; }
-        
+
     /// <summary>Optional role descriptor (e.g., <c>"Reviewer"</c>, <c>"Contributor"</c>). Max 50 characters.</summary>
     [MaxLength(50)]
     public string? Role { get; set; }
-        
+
     /// <summary>The assigned moment.</summary>
     [ForeignKey("MomentId")]
     public Moment Moment { get; set; } = null!;
-        
+
     /// <summary>The assigned user.</summary>
     [ForeignKey("UserId")]
     public User User { get; set; } = null!;
