@@ -224,7 +224,12 @@ const PAGE_TITLES: Record<string, string> = {
  */
 function announceAndFocus(): void {
   const mainElement = document.querySelector('#main-content');
-  if (mainElement) { requestAnimationFrame(() => (mainElement as HTMLElement).focus()); }
+  if (!mainElement) return;
+  requestAnimationFrame(() => {
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== mainElement) return;
+    (mainElement as HTMLElement).focus();
+  });
 }
 
 /**
