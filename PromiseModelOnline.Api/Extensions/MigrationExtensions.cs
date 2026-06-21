@@ -15,9 +15,9 @@ public static class MigrationExtensions
     /// <param name="app">The application builder for accessing the service scope.</param>
     public static void ApplyMigrations(this IApplicationBuilder app)
     {
-        using IServiceScope scope = app.ApplicationServices.CreateScope();
+        using var scope = app.ApplicationServices.CreateScope();
 
-        using PromiseModelOnlineContext dbContext =
+        using var dbContext =
             scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
 
         dbContext.Database.Migrate();

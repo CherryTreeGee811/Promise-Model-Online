@@ -29,7 +29,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
     /// <exception cref="ArgumentException"><paramref name="parentType"/> is not a valid entity type.</exception>
     public async Task<IEnumerable<Comment>> GetCommentsForEntityAsync(string parentType, int parentId)
     {
-        IQueryable<Comment> query = _context.Set<Comment>()
+        var query = _context.Set<Comment>()
             .Include(c => c.User)
             .Include(c => c.Mentions)
                 .ThenInclude(m => m.MentionedUser)
