@@ -43,7 +43,8 @@ console.log(`\n  A11y scan: ${targetUrl}\n`);
 
 const browser = await launch({
   headless: 'new',
-  args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  executablePath: '/home/JacobSeed/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome',
+  args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors'],
 });
 
 for (const route of ROUTES) {
