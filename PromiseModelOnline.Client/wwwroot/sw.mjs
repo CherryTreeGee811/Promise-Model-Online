@@ -101,10 +101,14 @@ async function networkFirst(request) {
     }
     return response;
   } catch {
-    const cached = await caches.match(request, { ignoreSearch: true });
-    if (cached) return cached;
-    const offline = await caches.match('/templates/error.html');
-    if (offline) return offline;
+    try {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+    } catch {}
+    try {
+      const offline = await caches.match('/templates/error.html');
+      if (offline) return offline;
+    } catch {}
     return new Response('', {
       status: 200,
       headers: { 'Content-Type': 'text/html' }
@@ -153,21 +157,27 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
 
   if (isTemplate(path)) {
     event.respondWith(
-      networkFirst(request).catch(() => caches.match('/templates/error.html'))
+      networkFirst(request)
+        .catch(() => caches.match('/templates/error.html'))
+        .then(r => r || new Response('', { status: 204 }))
     );
     return;
   }
 
   if (path === '/' || path === '/index.html' || path === '/manifest.json') {
     event.respondWith(
-      networkFirst(request).catch(() => caches.match('/templates/error.html'))
+      networkFirst(request)
+        .catch(() => caches.match('/templates/error.html'))
+        .then(r => r || new Response('', { status: 204 }))
     );
     return;
   }
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      networkFirst(request).catch(() => caches.match('/templates/error.html'))
+      networkFirst(request)
+        .catch(() => caches.match('/templates/error.html'))
+        .then(r => r || new Response('', { status: 204 }))
     );
   }
 });
