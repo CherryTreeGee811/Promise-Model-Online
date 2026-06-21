@@ -9,8 +9,7 @@ using PromiseModelOnline.Auth.DAL;
 
 #nullable disable
 
-namespace PromiseModelOnline.Auth.Migrations
-{
+namespace PromiseModelOnline.Auth.Migrations;
     [DbContext(typeof(AuthorizationDbContext))]
     [Migration("20260523040640_AddOpenIddict")]
     partial class AddOpenIddict
@@ -487,4 +486,3 @@ namespace PromiseModelOnline.Auth.Migrations
 #pragma warning restore 612, 618
         }
     }
-}

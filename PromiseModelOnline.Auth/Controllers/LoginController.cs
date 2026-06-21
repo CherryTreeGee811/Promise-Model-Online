@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -13,30 +13,22 @@ using OpenIddict.Server.AspNetCore;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>Handles local login (username/password) with lockout and email-verified enforcement.</summary>
+/// <remarks>Initializes the controller with sign-in, user, configuration, and logging dependencies.</remarks>
+/// <param name="signInManager">The Identity sign-in manager for password authentication.</param>
+/// <param name="userManager">The Identity user manager for user lookups and lockout checks.</param>
+/// <param name="configuration">The application configuration for external provider settings.</param>
+/// <param name="logger">The logger for login audit events.</param>
 [Route("account/login")]
-public class LoginController : Controller
+public class LoginController(
+    SignInManager<IdentityUser> signInManager,
+    UserManager<IdentityUser> userManager,
+    IConfiguration configuration,
+    ILogger<LoginController> logger) : Controller
 {
-    private readonly SignInManager<IdentityUser> _signInManager;
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<LoginController> _logger;
-
-    /// <summary>Initializes the controller with sign-in, user, configuration, and logging dependencies.</summary>
-    /// <param name="signInManager">The Identity sign-in manager for password authentication.</param>
-    /// <param name="userManager">The Identity user manager for user lookups and lockout checks.</param>
-    /// <param name="configuration">The application configuration for external provider settings.</param>
-    /// <param name="logger">The logger for login audit events.</param>
-    public LoginController(
-        SignInManager<IdentityUser> signInManager,
-        UserManager<IdentityUser> userManager,
-        IConfiguration configuration,
-        ILogger<LoginController> logger)
-    {
-        _signInManager = signInManager;
-        _userManager = userManager;
-        _configuration = configuration;
-        _logger = logger;
-    }
+    private readonly SignInManager<IdentityUser> _signInManager = signInManager;
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IConfiguration _configuration = configuration;
+    private readonly ILogger<LoginController> _logger = logger;
 
     /// <summary>Display the login form with optional status messages.</summary>
     /// <param name="returnUrl">Optional URL to redirect to after successful login.</param>
@@ -83,7 +75,7 @@ public class LoginController : Controller
             return View(model);
         }
 
-        var user = await _userManager.FindByNameAsync(model.Username)
+        IdentityUser? user = await _userManager.FindByNameAsync(model.Username)
                    ?? await _userManager.FindByEmailAsync(model.Username);
 
         if (user == null)
@@ -107,16 +99,16 @@ public class LoginController : Controller
             return View(model);
         }
 
-        var signInResult = await _signInManager.PasswordSignInAsync(
+        Microsoft.AspNetCore.Identity.SignInResult signInResult = await _signInManager.PasswordSignInAsync(
             user, model.Password, isPersistent: true, lockoutOnFailure: true);
 
-            if (signInResult.Succeeded)
-            {
-                _logger.LogInformation("Login: user {Username} authenticated successfully", model.Username);
-                if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
-                    return Redirect(model.ReturnUrl);
-                return Redirect($"{AppUrls.BaseUrl}/projects");
-            }
+        if (signInResult.Succeeded)
+        {
+            _logger.LogInformation("Login: user {Username} authenticated successfully", model.Username);
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                return Redirect(model.ReturnUrl);
+            return Redirect($"{AppUrls.BaseUrl}/projects");
+        }
 
         if (signInResult.IsLockedOut)
         {

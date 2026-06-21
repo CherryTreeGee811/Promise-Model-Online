@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,36 +13,27 @@ using PromiseModelOnline.Auth.ViewModels;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>Handles user registration (GET form display, POST account creation with email verification).</summary>
+/// <remarks>Initializes the controller with Identity, email, configuration, logging, and caching dependencies.</remarks>
+/// <param name="userManager">The Identity user manager for account creation and lookups.</param>
+/// <param name="emailService">The email service for sending verification codes.</param>
+/// <param name="configuration">The application configuration for external provider settings.</param>
+/// <param name="logger">The logger for registration and verification events.</param>
+/// <param name="cache">The memory cache for storing verification codes.</param>
 [Route("account/register")]
-public class AccountController : Controller
+public class AccountController(
+    UserManager<IdentityUser> userManager,
+    IEmailService emailService,
+    IConfiguration configuration,
+    ILogger<AccountController> logger,
+    IMemoryCache cache) : Controller
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IEmailService _emailService;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<AccountController> _logger;
-    private readonly IMemoryCache _cache;
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IEmailService _emailService = emailService;
+    private readonly IConfiguration _configuration = configuration;
+    private readonly ILogger<AccountController> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
 
     private const string VerificationCodePrefix = "verify_code:";
-
-        /// <summary>Initializes the controller with Identity, email, configuration, logging, and caching dependencies.</summary>
-        /// <param name="userManager">The Identity user manager for account creation and lookups.</param>
-        /// <param name="emailService">The email service for sending verification codes.</param>
-        /// <param name="configuration">The application configuration for external provider settings.</param>
-        /// <param name="logger">The logger for registration and verification events.</param>
-        /// <param name="cache">The memory cache for storing verification codes.</param>
-    public AccountController(
-        UserManager<IdentityUser> userManager,
-        IEmailService emailService,
-        IConfiguration configuration,
-        ILogger<AccountController> logger,
-        IMemoryCache cache)
-    {
-        _userManager = userManager;
-        _emailService = emailService;
-        _configuration = configuration;
-        _logger = logger;
-        _cache = cache;
-    }
 
     /// <summary>Generate a cryptographically random 6-digit verification code.</summary>
     private static string GenerateVerificationCode()
@@ -63,14 +54,14 @@ public class AccountController : Controller
         return View(new RegisterViewModel());
     }
 
-        /// <summary>Process registration: validate, create user, send verification email, redirect to verify page.</summary>
-        /// <param name="model">The registration form data.</param>
-        /// <returns>A redirect or the registration view with errors.</returns>
-        [AllowAnonymous]
-        [HttpPost("")]
-        [EnableRateLimiting("Email")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterViewModel model)
+    /// <summary>Process registration: validate, create user, send verification email, redirect to verify page.</summary>
+    /// <param name="model">The registration form data.</param>
+    /// <returns>A redirect or the registration view with errors.</returns>
+    [AllowAnonymous]
+    [HttpPost("")]
+    [EnableRateLimiting("Email")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(RegisterViewModel model)
     {
         ViewBag.HasGoogle = !string.IsNullOrWhiteSpace(
             _configuration["Authentication:Google:ClientId"]);
@@ -85,7 +76,7 @@ public class AccountController : Controller
             EmailConfirmed = false
         };
 
-        var result = await _userManager.CreateAsync(user, model.Password);
+        IdentityResult result = await _userManager.CreateAsync(user, model.Password);
 
         if (result.Succeeded)
         {
@@ -109,13 +100,13 @@ public class AccountController : Controller
         return View(model);
     }
 
-        /// <summary>Display the email verification form.</summary>
-        /// <param name="email">The email address to verify.</param>
-        /// <param name="userId">The user ID for the verification.</param>
-        /// <returns>A redirect to login or the verification view with errors.</returns>
-        [AllowAnonymous]
-        [HttpGet("verify-email")]
-        public IActionResult VerifyEmail(string email, string userId)
+    /// <summary>Display the email verification form.</summary>
+    /// <param name="email">The email address to verify.</param>
+    /// <param name="userId">The user ID for the verification.</param>
+    /// <returns>A redirect to login or the verification view with errors.</returns>
+    [AllowAnonymous]
+    [HttpGet("verify-email")]
+    public IActionResult VerifyEmail(string email, string userId)
     {
         ViewBag.Email = email;
         ViewBag.UserId = userId;
@@ -126,13 +117,13 @@ public class AccountController : Controller
         });
     }
 
-        /// <summary>Process email verification: validate code against cached value and confirm the user.</summary>
-        /// <param name="model">The verification form data.</param>
-        /// <returns>A redirect to login or the verification view with errors.</returns>
-        [AllowAnonymous]
-        [HttpPost("verify-email")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VerifyEmail(VerifyEmailViewModel model)
+    /// <summary>Process email verification: validate code against cached value and confirm the user.</summary>
+    /// <param name="model">The verification form data.</param>
+    /// <returns>A redirect to login or the verification view with errors.</returns>
+    [AllowAnonymous]
+    [HttpPost("verify-email")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> VerifyEmail(VerifyEmailViewModel model)
     {
         if (!ModelState.IsValid)
         {
@@ -150,7 +141,7 @@ public class AccountController : Controller
             return View(model);
         }
 
-        var user = await _userManager.FindByIdAsync(model.UserId);
+        IdentityUser? user = await _userManager.FindByIdAsync(model.UserId);
         if (user == null)
         {
             return RedirectToAction("Register");
@@ -164,15 +155,15 @@ public class AccountController : Controller
         return Redirect($"/account/login?registered=true&verified=true");
     }
 
-        /// <summary>Resend the verification code to the user's email.</summary>
-        /// <param name="email">The email address to resend the code to.</param>
-        /// <param name="userId">The user ID for the verification.</param>
-        /// <returns>A redirect back to the verification page.</returns>
-        [AllowAnonymous]
-        [HttpPost("resend-code")]
-        [EnableRateLimiting("Email")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResendCode(string email, string userId)
+    /// <summary>Resend the verification code to the user's email.</summary>
+    /// <param name="email">The email address to resend the code to.</param>
+    /// <param name="userId">The user ID for the verification.</param>
+    /// <returns>A redirect back to the verification page.</returns>
+    [AllowAnonymous]
+    [HttpPost("resend-code")]
+    [EnableRateLimiting("Email")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResendCode(string email, string userId)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(userId))
             return BadRequest();
@@ -181,7 +172,7 @@ public class AccountController : Controller
         var cacheKey = $"{VerificationCodePrefix}{userId}";
         _cache.Set(cacheKey, code, TimeSpan.FromHours(24));
 
-        var user = await _userManager.FindByIdAsync(userId);
+        IdentityUser? user = await _userManager.FindByIdAsync(userId);
         var username = user?.UserName ?? "User";
 
         await _emailService.SendVerificationEmailAsync(email, username, code);

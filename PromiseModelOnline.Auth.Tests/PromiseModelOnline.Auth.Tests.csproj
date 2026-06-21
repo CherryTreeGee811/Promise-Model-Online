@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- SQLitePCLRaw.lib.e_sqlite3 has a known vulnerability (NU1903) with no patched version.
+         The Auth test project depends on it transitively via Microsoft.EntityFrameworkCore.Sqlite.
+         This is a test-only dependency with no production impact. -->
+    <NoWarn>NU1903</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

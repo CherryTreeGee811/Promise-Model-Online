@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -263,16 +263,16 @@ app.MapReverseProxy(proxyPipeline =>
         var authenticateResult = await context.AuthenticateAsync("cookie");
 
         if (!authenticateResult.Succeeded)
+        {
+            if (BffHelpers.IsAjax(context.Request))
             {
-                if (BffHelpers.IsAjax(context.Request))
-                {
-                    var log = context.RequestServices.GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("BFFProxy");
-                    log.LogWarning("Proxy: unauthenticated AJAX request to {Method} {Path} returned 401",
-                        context.Request.Method, context.Request.Path);
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return;
-                }
+                var log = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("BFFProxy");
+                log.LogWarning("Proxy: unauthenticated AJAX request to {Method} {Path} returned 401",
+                    context.Request.Method, context.Request.Path);
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
 
             var returnUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
 

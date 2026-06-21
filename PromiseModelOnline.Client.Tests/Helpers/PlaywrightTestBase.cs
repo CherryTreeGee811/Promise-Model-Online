@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Client.Tests.Helpers;
+﻿namespace PromiseModelOnline.Client.Tests.Helpers;
 
 /// <summary>Base class for Playwright-based client UI tests.</summary>
 /// <remarks>
@@ -152,10 +152,7 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Ensure a valid session exists by navigating as a user.</summary>
-    protected async Task EnsureLoggedIn(string targetPath = "/")
-    {
-        await NavigateAsUser(targetPath);
-    }
+    protected async Task EnsureLoggedIn(string targetPath = "/") => await NavigateAsUser(targetPath);
 
     /// <summary>Set the BFF session cookie to simulate authentication.</summary>
     /// <param name="sessionValue">The session cookie value (e.g., "owner-session", "nonowner-session").</param>
@@ -249,16 +246,10 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Check if an element is visible on the page.</summary>
-    protected async Task<bool> IsVisibleAsync(string selector)
-    {
-        return await Page.Locator(selector).IsVisibleAsync();
-    }
+    protected async Task<bool> IsVisibleAsync(string selector) => await Page.Locator(selector).IsVisibleAsync();
 
     /// <summary>Count elements matching a CSS selector.</summary>
-    protected async Task<int> CountElementsAsync(string selector)
-    {
-        return await Page.Locator(selector).CountAsync();
-    }
+    protected async Task<int> CountElementsAsync(string selector) => await Page.Locator(selector).CountAsync();
 
     /// <summary>Fill an input field with a value.</summary>
     protected async Task FillAsync(string selector, string value, int timeoutSeconds = 2)
@@ -299,23 +290,14 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Trigger an SPA navigation via pushState and popstate event.</summary>
-    protected async Task NavigateSpaAsync(string path)
-    {
-        await Page.EvaluateAsync("p => { window.history.pushState({}, '', p); window.dispatchEvent(new PopStateEvent('popstate')); }", path);
-    }
+    protected async Task NavigateSpaAsync(string path) => await Page.EvaluateAsync("p => { window.history.pushState({}, '', p); window.dispatchEvent(new PopStateEvent('popstate')); }", path);
 
     /// <summary>Wait for the page URL to contain a specific string.</summary>
-    protected async Task<bool> WaitForUrlContainsAsync(string expected, int timeoutSeconds = 2)
-    {
-        return await WaitUntilAsync(() =>
-            Task.FromResult(Page.Url.Contains(expected)), timeoutSeconds);
-    }
+    protected async Task<bool> WaitForUrlContainsAsync(string expected, int timeoutSeconds = 2) => await WaitUntilAsync(() =>
+                                                                                                            Task.FromResult(Page.Url.Contains(expected)), timeoutSeconds);
 
     /// <summary>Click a navigation link by its element ID.</summary>
-    protected async Task ClickNavLinkAsync(string linkId)
-    {
-        await ClickAsync($"#{linkId}");
-    }
+    protected async Task ClickNavLinkAsync(string linkId) => await ClickAsync($"#{linkId}");
 
     /// <summary>Capture a screenshot and page HTML for debugging test failures.</summary>
     private async Task DumpDebugInfoAsync()

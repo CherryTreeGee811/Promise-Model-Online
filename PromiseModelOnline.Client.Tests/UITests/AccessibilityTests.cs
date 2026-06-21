@@ -1,4 +1,4 @@
-using PromiseModelOnline.Client.Tests.Helpers;
+﻿using PromiseModelOnline.Client.Tests.Helpers;
 
 namespace PromiseModelOnline.Client.Tests.UITests;
 

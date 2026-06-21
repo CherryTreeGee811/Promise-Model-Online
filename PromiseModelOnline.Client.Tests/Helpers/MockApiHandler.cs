@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Web;
 
 namespace PromiseModelOnline.Client.Tests.Helpers;
@@ -187,9 +187,7 @@ public static partial class MockApiHandler
         string method, string path,
         System.Collections.Specialized.NameValueCollection query,
         bool isOwner, bool isNonOwner, bool ownerSession,
-        IRequest request)
-    {
-        return (method, path) switch
+        IRequest request) => (method, path) switch
         {
             ("GET", "/health") => Json(200, """{"status":"healthy"}"""),
             ("GET", "/manifest.json") => GetStaticFileResponse(path) ?? Html(200, s_html),
@@ -303,7 +301,6 @@ public static partial class MockApiHandler
 
             _ => null
         };
-    }
 
     private static MockResponse HandleChangePassword(IRequest request)
     {

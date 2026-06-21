@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,32 +10,24 @@ using PromiseModelOnline.Auth.ViewModels;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>Handles email verification flow: confirm code, resend code, verification page.</summary>
+/// <remarks>Initializes the controller with user manager, email service, logger, and cache.</remarks>
+/// <param name="userManager">The Identity user manager for user lookups.</param>
+/// <param name="emailService">The email service for sending verification codes.</param>
+/// <param name="logger">The logger for verification audit events.</param>
+/// <param name="cache">The memory cache for storing verification codes.</param>
 [Route("account/verify-email")]
-public class EmailVerificationController : Controller
+public class EmailVerificationController(
+    UserManager<IdentityUser> userManager,
+    IEmailService emailService,
+    ILogger<EmailVerificationController> logger,
+    IMemoryCache cache) : Controller
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IEmailService _emailService;
-    private readonly ILogger<EmailVerificationController> _logger;
-    private readonly IMemoryCache _cache;
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IEmailService _emailService = emailService;
+    private readonly ILogger<EmailVerificationController> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
 
     private const string VerificationCodePrefix = "verify_code:";
-
-    /// <summary>Initializes the controller with user manager, email service, logger, and cache.</summary>
-    /// <param name="userManager">The Identity user manager for user lookups.</param>
-    /// <param name="emailService">The email service for sending verification codes.</param>
-    /// <param name="logger">The logger for verification audit events.</param>
-    /// <param name="cache">The memory cache for storing verification codes.</param>
-    public EmailVerificationController(
-        UserManager<IdentityUser> userManager,
-        IEmailService emailService,
-        ILogger<EmailVerificationController> logger,
-        IMemoryCache cache)
-    {
-        _userManager = userManager;
-        _emailService = emailService;
-        _logger = logger;
-        _cache = cache;
-    }
 
     /// <summary>Generate a cryptographically random 6-digit verification code.</summary>
     private static string GenerateVerificationCode()
@@ -57,7 +49,7 @@ public class EmailVerificationController : Controller
         if (string.IsNullOrWhiteSpace(userId))
             return Redirect("/account/login");
 
-        var user = await _userManager.FindByIdAsync(userId);
+        IdentityUser? user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             return Redirect("/account/login");
 
@@ -85,13 +77,13 @@ public class EmailVerificationController : Controller
 
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.UserId))
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
+            IdentityUser? user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null) return Redirect("/account/login");
             model.Email = user.Email ?? "";
             return View("Index", model);
         }
 
-        var user2 = await _userManager.FindByIdAsync(model.UserId);
+        IdentityUser? user2 = await _userManager.FindByIdAsync(model.UserId);
         if (user2 == null) return Redirect("/account/login");
 
         if (await _userManager.IsEmailConfirmedAsync(user2))
@@ -108,7 +100,7 @@ public class EmailVerificationController : Controller
         _cache.Remove(cacheKey);
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user2);
-        var result = await _userManager.ConfirmEmailAsync(user2, token);
+        IdentityResult result = await _userManager.ConfirmEmailAsync(user2, token);
 
         if (result.Succeeded)
         {
@@ -126,8 +118,8 @@ public class EmailVerificationController : Controller
     }
 
     /// <summary>Generate and send a new verification code via email.</summary>
-        /// <param name="userId">The user ID.</param>
-        /// <returns>A redirect to the verification page or login.</returns>
+    /// <param name="userId">The user ID.</param>
+    /// <returns>A redirect to the verification page or login.</returns>
     [AllowAnonymous]
     [HttpPost("resend")]
     [ValidateAntiForgeryToken]
@@ -137,7 +129,7 @@ public class EmailVerificationController : Controller
         if (string.IsNullOrWhiteSpace(userId))
             return Redirect("/account/login");
 
-        var user = await _userManager.FindByIdAsync(userId);
+        IdentityUser? user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             return Redirect("/account/login");
 

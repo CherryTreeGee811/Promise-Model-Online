@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Auth.Services;
+﻿namespace PromiseModelOnline.Auth.Services;
 
 /// <summary>Contract for sending transactional email notifications.</summary>
 public interface IEmailService

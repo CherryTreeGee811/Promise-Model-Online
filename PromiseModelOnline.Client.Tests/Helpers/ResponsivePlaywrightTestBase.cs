@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Client.Tests.Helpers;
+﻿namespace PromiseModelOnline.Client.Tests.Helpers;
 
 /// <summary>Viewport sizes used for responsive design testing.</summary>
 public enum Viewport

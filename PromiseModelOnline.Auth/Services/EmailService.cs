@@ -1,4 +1,4 @@
-using SendGrid;
+﻿using SendGrid;
 using SendGrid.Helpers.Mail;
 
 namespace PromiseModelOnline.Auth.Services;
@@ -110,7 +110,7 @@ public class EmailService : IEmailService
         msg.SetGoogleAnalytics(false);
         msg.SetSubscriptionTracking(false);
 
-        var response = await client.SendEmailAsync(msg);
+        Response response = await client.SendEmailAsync(msg);
 
         if (!response.IsSuccessStatusCode)
         {

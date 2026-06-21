@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -6,26 +7,19 @@ using System.Security.Claims;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>Handles external (Google) login: challenge, callback, and account linking.</summary>
+/// <remarks>Initializes the controller with sign-in, user management, and logging dependencies.</remarks>
+/// <param name="signInManager">The Identity sign-in manager for external authentication flows.</param>
+/// <param name="userManager">The Identity user manager for user lookups and creation.</param>
+/// <param name="logger">The logger for external authentication audit events.</param>
 [Route("account/external")]
-public class ExternalLoginController : Controller
+public class ExternalLoginController(
+    SignInManager<IdentityUser> signInManager,
+    UserManager<IdentityUser> userManager,
+    ILogger<ExternalLoginController> logger) : Controller
 {
-    private readonly SignInManager<IdentityUser> _signInManager;
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly ILogger<ExternalLoginController> _logger;
-
-    /// <summary>Initializes the controller with sign-in, user management, and logging dependencies.</summary>
-    /// <param name="signInManager">The Identity sign-in manager for external authentication flows.</param>
-    /// <param name="userManager">The Identity user manager for user lookups and creation.</param>
-    /// <param name="logger">The logger for external authentication audit events.</param>
-    public ExternalLoginController(
-        SignInManager<IdentityUser> signInManager,
-        UserManager<IdentityUser> userManager,
-        ILogger<ExternalLoginController> logger)
-    {
-        _signInManager = signInManager;
-        _userManager = userManager;
-        _logger = logger;
-    }
+    private readonly SignInManager<IdentityUser> _signInManager = signInManager;
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly ILogger<ExternalLoginController> _logger = logger;
 
     /// <summary>Initiate an external authentication challenge (e.g., Google OAuth).</summary>
     /// <param name="provider">The external authentication provider name (e.g., <c>"Google"</c>).</param>
@@ -40,7 +34,7 @@ public class ExternalLoginController : Controller
             return BadRequest();
 
         var redirectUrl = Url.Action("Callback", "ExternalLogin", new { returnUrl });
-        var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+        AuthenticationProperties properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
         return Challenge(properties, provider);
     }
 
@@ -62,7 +56,7 @@ public class ExternalLoginController : Controller
                 new { returnUrl, error = "Authentication failed. Please try again." });
         }
 
-        var info = await _signInManager.GetExternalLoginInfoAsync();
+        ExternalLoginInfo? info = await _signInManager.GetExternalLoginInfoAsync();
         if (info == null)
         {
             _logger.LogWarning("External login info is null — possible cookie or state timeout");
@@ -70,7 +64,7 @@ public class ExternalLoginController : Controller
                 new { returnUrl, error = "An error occurred while processing the external login." });
         }
 
-        var result = await _signInManager.ExternalLoginSignInAsync(
+        Microsoft.AspNetCore.Identity.SignInResult result = await _signInManager.ExternalLoginSignInAsync(
             info.LoginProvider, info.ProviderKey, isPersistent: false);
 
         if (result.Succeeded)
@@ -87,7 +81,7 @@ public class ExternalLoginController : Controller
                 new { returnUrl, error = "We could not retrieve your email from the external provider." });
         }
 
-        var user = await _userManager.FindByEmailAsync(email);
+        IdentityUser? user = await _userManager.FindByEmailAsync(email);
 
         if (user == null)
         {
@@ -98,7 +92,7 @@ public class ExternalLoginController : Controller
                 EmailConfirmed = true
             };
 
-            var createResult = await _userManager.CreateAsync(user);
+            IdentityResult createResult = await _userManager.CreateAsync(user);
             if (!createResult.Succeeded)
             {
                 _logger.LogError("Failed to create user from external login: {Errors}",
@@ -111,7 +105,7 @@ public class ExternalLoginController : Controller
                 user.Id, info.LoginProvider);
         }
 
-        var addLoginResult = await _userManager.AddLoginAsync(user, info);
+        IdentityResult addLoginResult = await _userManager.AddLoginAsync(user, info);
         if (!addLoginResult.Succeeded)
         {
             _logger.LogError("Failed to link external login to user {UserId}: {Errors}",

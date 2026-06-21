@@ -1,4 +1,4 @@
-using Microsoft.Playwright;
+﻿using Microsoft.Playwright;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PromiseModelOnline.Client.Tests.Helpers;
@@ -323,12 +323,9 @@ public class PwaTests : PlaywrightTestBase
             "PRECACHE entries missing from runtime cache: " + string.Join(", ", uncached));
     }
 
-    private static string GetWwwRoot()
-    {
-        return Path.GetFullPath(Path.Combine(
+    private static string GetWwwRoot() => Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory, "..", "..", "..", "..",
             "PromiseModelOnline.Client", "wwwroot"));
-    }
 
     private static string[] ParsePrecacheEntries()
     {
