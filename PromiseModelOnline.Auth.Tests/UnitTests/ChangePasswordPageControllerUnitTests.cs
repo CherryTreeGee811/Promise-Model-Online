@@ -50,10 +50,7 @@ public class ChangePasswordPageControllerUnitTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        _controller.Dispose();
-    }
+    public void TearDown() => _controller.Dispose();
 
     /// <summary>Set the HttpContext user with a Subject claim for the given user ID.</summary>
     /// <param name="userId">The user ID to set as the Subject claim.</param>

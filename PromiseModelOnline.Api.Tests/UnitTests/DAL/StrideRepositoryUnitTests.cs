@@ -18,10 +18,7 @@ public class StrideRepositoryUnitTests : RepositoryTestBase
     private StrideRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new StrideRepository(Context);
-    }
+    public void SetUp() => _repo = new StrideRepository(Context);
 
     [Test]
     public async Task REQ_FUN_024_GetStridesByIterationAsync_ReturnsMatchingStrides()

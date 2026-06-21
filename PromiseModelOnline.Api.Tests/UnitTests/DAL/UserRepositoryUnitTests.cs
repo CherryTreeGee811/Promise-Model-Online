@@ -19,10 +19,7 @@ public class UserRepositoryUnitTests : RepositoryTestBase
     private UserRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new UserRepository(Context);
-    }
+    public void SetUp() => _repo = new UserRepository(Context);
 
     [Test]
     public async Task REQ_FUN_001_GetUsersByNameAsync_ReturnsMatchingUsers()
@@ -331,7 +328,7 @@ public class UserRepositoryUnitTests : RepositoryTestBase
     {
         var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
         project.Permissions = new List<Permission>();
-        for (int i = 2; i <= 10; i++)
+        for (var i = 2; i <= 10; i++)
         {
             project.Permissions.Add(new Permission
             {
@@ -343,7 +340,7 @@ public class UserRepositoryUnitTests : RepositoryTestBase
         Context.Projects.Add(project);
 
         var users = new List<User>();
-        for (int i = 2; i <= 10; i++)
+        for (var i = 2; i <= 10; i++)
         {
             users.Add(new User { Id = i, Name = "User" + i, Email = "user" + i + "@example.com" });
         }
@@ -427,7 +424,7 @@ public class UserRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_001_SearchUsersAsync_RespectsMaxResults()
     {
-        for (int i = 1; i <= 10; i++)
+        for (var i = 1; i <= 10; i++)
         {
             Context.Users.Add(new User { Id = i, Name = "User" + i, Email = "user" + i + "@example.com" });
         }

@@ -63,16 +63,10 @@ public class ProjectDetailControllerTests
             _mockLogger.Object);
     }
 
-    private void SetUpProjectResolve(Project? project)
-    {
-        _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(OwnerSlug, ProjectSlug))
+    private void SetUpProjectResolve(Project? project) => _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(OwnerSlug, ProjectSlug))
             .ReturnsAsync(project);
-    }
 
-    private void SetControllerUser(string? email, string? nameid = null)
-    {
-        ControllerTestHelpers.SetControllerUser(_controller, email, nameid);
-    }
+    private void SetControllerUser(string? email, string? nameid = null) => ControllerTestHelpers.SetControllerUser(_controller, email, nameid);
 
     [Test]
     public async Task REQ_FUN_003_GetBySlug_WhenExists_ReturnsOkDto()

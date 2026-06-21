@@ -18,10 +18,7 @@ public class ReactionRepositoryUnitTests : RepositoryTestBase
     private ReactionRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new ReactionRepository(Context);
-    }
+    public void SetUp() => _repo = new ReactionRepository(Context);
 
     private async Task SeedAsync()
     {

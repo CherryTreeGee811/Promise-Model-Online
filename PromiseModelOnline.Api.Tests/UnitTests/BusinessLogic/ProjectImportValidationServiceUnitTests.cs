@@ -18,10 +18,7 @@ public class ProjectImportValidationServiceUnitTests
     private ProjectImportValidationService _service = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _service = new ProjectImportValidationService();
-    }
+    public void SetUp() => _service = new ProjectImportValidationService();
 
     [Test]
     public async Task REQ_FUN_039_ValidateAsync_WithValidDocument_ReturnsDocument()

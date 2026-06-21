@@ -33,10 +33,7 @@ public class HierarchyStatusServiceUnitTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        _context.Dispose();
-    }
+    public void TearDown() => _context.Dispose();
 
     [Test]
     public async Task REQ_FUN_009_RecalculateFromFlowAsync_RollsStatusesUpThroughHierarchy()
@@ -91,11 +88,9 @@ public class HierarchyStatusServiceUnitTests
     }
 
     [Test]
-    public void REQ_FUN_009_RecalculateFromFlowAsync_InvalidFlowId_ThrowsKeyNotFound()
-    {
+    public void REQ_FUN_009_RecalculateFromFlowAsync_InvalidFlowId_ThrowsKeyNotFound() =>
         // Act & Assert
         Assert.ThrowsAsync<KeyNotFoundException>(() => _service.RecalculateFromFlowAsync(999));
-    }
 
     [Test]
     public async Task REQ_FUN_009_RecalculateFromFlowAsync_AllBlockedChildren_RollsUpBlocked()

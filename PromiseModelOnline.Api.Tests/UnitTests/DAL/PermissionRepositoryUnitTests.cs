@@ -19,10 +19,7 @@ public class PermissionRepositoryUnitTests : RepositoryTestBase
     private PermissionRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new PermissionRepository(Context);
-    }
+    public void SetUp() => _repo = new PermissionRepository(Context);
 
     private async Task SeedAsync()
     {

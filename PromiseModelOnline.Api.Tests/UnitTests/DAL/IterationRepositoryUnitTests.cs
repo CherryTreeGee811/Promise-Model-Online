@@ -18,10 +18,7 @@ public class IterationRepositoryUnitTests : RepositoryTestBase
     private IterationRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new IterationRepository(Context);
-    }
+    public void SetUp() => _repo = new IterationRepository(Context);
 
     [Test]
     public async Task REQ_FUN_023_GetIterationsByProjectAsync_ReturnsMatchingIterations()

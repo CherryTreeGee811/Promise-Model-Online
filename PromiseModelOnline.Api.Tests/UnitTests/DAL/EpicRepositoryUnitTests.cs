@@ -18,10 +18,7 @@ public class EpicRepositoryUnitTests : RepositoryTestBase
     private EpicRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new EpicRepository(Context);
-    }
+    public void SetUp() => _repo = new EpicRepository(Context);
 
     [Test]
     public async Task REQ_FUN_005_GetEpicsByPromiseAsync_ReturnsMatchingEpics()

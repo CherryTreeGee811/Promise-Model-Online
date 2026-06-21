@@ -65,10 +65,7 @@ public class LoginControllerUnitTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        _controller.Dispose();
-    }
+    public void TearDown() => _controller.Dispose();
 
     [Test]
     [Description("REQ_FUN_002: Login form returns view with LoginViewModel")]

@@ -18,10 +18,7 @@ public class CommentRepositoryUnitTests : RepositoryTestBase
     private CommentRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new CommentRepository(Context);
-    }
+    public void SetUp() => _repo = new CommentRepository(Context);
 
     [Test]
     public async Task REQ_FUN_017_AddCommentAsync_PersistsComment()
@@ -159,11 +156,9 @@ public class CommentRepositoryUnitTests : RepositoryTestBase
     }
 
     [Test]
-    public void REQ_FUN_017_GetCommentsForEntityAsync_InvalidParentType_ThrowsArgumentException()
-    {
+    public void REQ_FUN_017_GetCommentsForEntityAsync_InvalidParentType_ThrowsArgumentException() =>
         // Act & Assert
         Assert.ThrowsAsync<ArgumentException>(() => _repo.GetCommentsForEntityAsync("invalid", 1));
-    }
 
     [Test]
     public async Task REQ_FUN_017_GetCommentsForEntityAsync_NoComments_ReturnsEmptyList()
@@ -257,7 +252,7 @@ public class CommentRepositoryUnitTests : RepositoryTestBase
         var project = new Project { Id = 1, Name = "Test", OwnerId = 1 };
         Context.Projects.Add(project);
 
-        for (int i = 1; i <= 10; i++)
+        for (var i = 1; i <= 10; i++)
         {
             Context.Promises.Add(new Promise { Id = i, ProjectId = 1, Statement = "Same statement" });
         }
@@ -444,18 +439,14 @@ public class CommentRepositoryUnitTests : RepositoryTestBase
     }
 
     [Test]
-    public void REQ_FUN_017_ResolveProjectIdAsync_InvalidType_ThrowsArgumentException()
-    {
+    public void REQ_FUN_017_ResolveProjectIdAsync_InvalidType_ThrowsArgumentException() =>
         // Act & Assert
         Assert.ThrowsAsync<ArgumentException>(() => _repo.ResolveProjectIdAsync("invalid", 1));
-    }
 
     [Test]
-    public void REQ_FUN_017_ResolveProjectIdAsync_NonExistentEntity_ThrowsArgumentException()
-    {
+    public void REQ_FUN_017_ResolveProjectIdAsync_NonExistentEntity_ThrowsArgumentException() =>
         // Act & Assert
         Assert.ThrowsAsync<ArgumentException>(() => _repo.ResolveProjectIdAsync("promise", 999));
-    }
 
     #endregion
 }

@@ -43,10 +43,7 @@ public class UsersControllerUnitTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        _context.Dispose();
-    }
+    public void TearDown() => _context.Dispose();
 
     [Test]
     public async Task REQ_SYS_014_Me_ReturnsUserInfo_WhenAuthenticated()

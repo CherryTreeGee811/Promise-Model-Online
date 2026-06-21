@@ -60,11 +60,8 @@ public class ProjectStridesControllerUnitTests
         };
     }
 
-    private void SetUpProjectResolve(Project? project)
-    {
-        _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(OwnerSlug, ProjectSlug))
+    private void SetUpProjectResolve(Project? project) => _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(OwnerSlug, ProjectSlug))
             .ReturnsAsync(project);
-    }
 
     private Mock<DbSet<T>> CreateMockDbSet<T>(IList<T> data) where T : class
     {
@@ -309,16 +306,10 @@ public class ProjectStridesControllerUnitTests
 
     #region Async query helpers for EF Core mocking
 
-    private class TestAsyncQueryProvider<T> : IAsyncQueryProvider
+    private class TestAsyncQueryProvider<T>(IQueryProvider inner, IQueryable<T> source) : IAsyncQueryProvider
     {
-        private readonly IQueryProvider _inner;
-        private readonly IQueryable<T> _source;
-
-        public TestAsyncQueryProvider(IQueryProvider inner, IQueryable<T> source)
-        {
-            _inner = inner;
-            _source = source;
-        }
+        private readonly IQueryProvider _inner = inner;
+        private readonly IQueryable<T> _source = source;
 
         public IQueryable CreateQuery(Expression expression)
             => new TestAsyncQueryable<T>(this, expression);
@@ -350,16 +341,10 @@ public class ProjectStridesControllerUnitTests
         }
     }
 
-    private class TestAsyncQueryable<T> : IQueryable<T>, IAsyncEnumerable<T>
+    private class TestAsyncQueryable<T>(IQueryProvider provider, Expression expression) : IQueryable<T>, IAsyncEnumerable<T>
     {
-        private readonly Expression _expression;
-        private readonly IQueryProvider _provider;
-
-        public TestAsyncQueryable(IQueryProvider provider, Expression expression)
-        {
-            _provider = provider;
-            _expression = expression;
-        }
+        private readonly Expression _expression = expression;
+        private readonly IQueryProvider _provider = provider;
 
         public Type ElementType => typeof(T);
         public Expression Expression => _expression;
@@ -371,11 +356,9 @@ public class ProjectStridesControllerUnitTests
             => new TestAsyncEnumerator<T>(GetEnumerator());
     }
 
-    private class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
+    private class TestAsyncEnumerator<T>(IEnumerator<T> inner) : IAsyncEnumerator<T>
     {
-        private readonly IEnumerator<T> _inner;
-
-        public TestAsyncEnumerator(IEnumerator<T> inner) => _inner = inner;
+        private readonly IEnumerator<T> _inner = inner;
 
         public ValueTask DisposeAsync()
         {

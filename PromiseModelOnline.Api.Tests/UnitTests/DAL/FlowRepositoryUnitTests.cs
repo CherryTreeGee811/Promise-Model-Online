@@ -19,10 +19,7 @@ public class FlowRepositoryUnitTests : RepositoryTestBase
     private FlowRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new FlowRepository(Context);
-    }
+    public void SetUp() => _repo = new FlowRepository(Context);
 
     [Test]
     public async Task REQ_FUN_007_GetFlowsByJourneyAsync_ReturnsMatchingFlows()

@@ -19,10 +19,7 @@ public class MomentRepositoryUnitTests : RepositoryTestBase
     private MomentRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new MomentRepository(Context);
-    }
+    public void SetUp() => _repo = new MomentRepository(Context);
 
     private async Task SeedAsync()
     {

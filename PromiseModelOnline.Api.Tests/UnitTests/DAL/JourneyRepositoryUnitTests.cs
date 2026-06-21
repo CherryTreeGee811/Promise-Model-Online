@@ -18,10 +18,7 @@ public class JourneyRepositoryUnitTests : RepositoryTestBase
     private JourneyRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new JourneyRepository(Context);
-    }
+    public void SetUp() => _repo = new JourneyRepository(Context);
 
     [Test]
     public async Task REQ_FUN_006_GetJourneysByEpicAsync_ReturnsMatchingJourneys()

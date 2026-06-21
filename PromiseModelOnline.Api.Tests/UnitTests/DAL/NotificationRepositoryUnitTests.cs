@@ -18,10 +18,7 @@ public class NotificationRepositoryUnitTests : RepositoryTestBase
     private NotificationRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new NotificationRepository(Context);
-    }
+    public void SetUp() => _repo = new NotificationRepository(Context);
 
     private async Task SeedAsync()
     {

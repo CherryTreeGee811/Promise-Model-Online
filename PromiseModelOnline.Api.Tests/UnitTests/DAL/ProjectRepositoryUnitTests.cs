@@ -18,10 +18,7 @@ public class ProjectRepositoryUnitTests : RepositoryTestBase
     private ProjectRepository _repo = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        _repo = new ProjectRepository(Context);
-    }
+    public void SetUp() => _repo = new ProjectRepository(Context);
 
     [Test]
     public async Task REQ_FUN_003_GetProjectsOwnedByUserAsync_ReturnsMatchingProjects()
