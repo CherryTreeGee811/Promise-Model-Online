@@ -4,7 +4,8 @@
       "url": ["https://localhost:9000/"],
       "numberOfRuns": 1,
       "settings": {
-        "onlyCategories": ["performance", "best-practices", "accessibility", "seo"]
+        "onlyCategories": ["performance", "best-practices", "accessibility", "seo"],
+        "chromeFlags": "--ignore-certificate-errors"
       }
     },
     "assert": {
