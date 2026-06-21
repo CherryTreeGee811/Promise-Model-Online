@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,197 +12,198 @@ using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests;
-    [TestFixture]
-    // Requirements: REQ_FUN_023 REQ_FUN_024 REQ_FUN_025 REQ_FUN_026
-    /// <summary>Unit tests for <see cref="StrideService"/> covering stride queries and deadline notifications.</summary>
-    public class StrideServiceUnitTests
+
+[TestFixture]
+// Requirements: REQ_FUN_023 REQ_FUN_024 REQ_FUN_025 REQ_FUN_026
+/// <summary>Unit tests for <see cref="StrideService"/> covering stride queries and deadline notifications.</summary>
+public class StrideServiceUnitTests
+{
+    private Mock<IStrideRepository> _strideRepoMock = null!;
+    private Mock<IGenericRepository<Iteration>> _iterationRepoMock = null!;
+    private Mock<IProjectService> _projectServiceMock = null!;
+    private Mock<INotificationService> _notificationServiceMock = null!;
+    private StrideService _service = null!;
+
+    [SetUp]
+    public void SetUp()
     {
-        private Mock<IStrideRepository> _strideRepoMock = null!;
-        private Mock<IGenericRepository<Iteration>> _iterationRepoMock = null!;
-        private Mock<IProjectService> _projectServiceMock = null!;
-        private Mock<INotificationService> _notificationServiceMock = null!;
-        private StrideService _service = null!;
+        _strideRepoMock = new Mock<IStrideRepository>();
+        _iterationRepoMock = new Mock<IGenericRepository<Iteration>>();
+        _projectServiceMock = new Mock<IProjectService>();
+        _notificationServiceMock = new Mock<INotificationService>();
 
-        [SetUp]
-        public void SetUp()
-        {
-            _strideRepoMock = new Mock<IStrideRepository>();
-            _iterationRepoMock = new Mock<IGenericRepository<Iteration>>();
-            _projectServiceMock = new Mock<IProjectService>();
-            _notificationServiceMock = new Mock<INotificationService>();
+        _service = new StrideService(
+            _strideRepoMock.Object,
+            _iterationRepoMock.Object,
+            _projectServiceMock.Object,
+            _notificationServiceMock.Object);
+    }
 
-            _service = new StrideService(
-                _strideRepoMock.Object,
-                _iterationRepoMock.Object,
-                _projectServiceMock.Object,
-                _notificationServiceMock.Object);
-        }
+    #region GetStridesByIterationAsync
 
-        #region GetStridesByIterationAsync
-
-        [Test]
-        public async Task REQ_FUN_023_GetStridesByIterationAsync_DelegatesToRepository()
-        {
-            // Arrange
-            var strides = new List<Stride>
+    [Test]
+    public async Task REQ_FUN_023_GetStridesByIterationAsync_DelegatesToRepository()
+    {
+        // Arrange
+        var strides = new List<Stride>
             {
                 new Stride { Id = 1, IterationId = 10 },
                 new Stride { Id = 2, IterationId = 10 }
             };
-            _strideRepoMock.Setup(r => r.GetStridesByIterationAsync(10)).ReturnsAsync(strides);
+        _strideRepoMock.Setup(r => r.GetStridesByIterationAsync(10)).ReturnsAsync(strides);
 
-            // Act
-            var result = await _service.GetStridesByIterationAsync(10);
+        // Act
+        var result = await _service.GetStridesByIterationAsync(10);
 
-            // Assert
-            Assert.That(result.Count(), Is.EqualTo(2));
-            Assert.That(result.All(s => s.IterationId == 10), Is.True);
-            _strideRepoMock.Verify(r => r.GetStridesByIterationAsync(10), Times.Once);
-        }
+        // Assert
+        Assert.That(result.Count(), Is.EqualTo(2));
+        Assert.That(result.All(s => s.IterationId == 10), Is.True);
+        _strideRepoMock.Verify(r => r.GetStridesByIterationAsync(10), Times.Once);
+    }
 
-        [Test]
-        public async Task REQ_FUN_023_GetStridesByIterationAsync_NoStrides_ReturnsEmpty()
-        {
-            // Arrange
-            _strideRepoMock.Setup(r => r.GetStridesByIterationAsync(99)).ReturnsAsync(new List<Stride>());
+    [Test]
+    public async Task REQ_FUN_023_GetStridesByIterationAsync_NoStrides_ReturnsEmpty()
+    {
+        // Arrange
+        _strideRepoMock.Setup(r => r.GetStridesByIterationAsync(99)).ReturnsAsync(new List<Stride>());
 
-            // Act
-            var result = await _service.GetStridesByIterationAsync(99);
+        // Act
+        var result = await _service.GetStridesByIterationAsync(99);
 
-            // Assert
-            Assert.That(result, Is.Empty);
-        }
+        // Assert
+        Assert.That(result, Is.Empty);
+    }
 
-        #endregion
+    #endregion
 
-        #region SendDeadlineNotificationsAsync
+    #region SendDeadlineNotificationsAsync
 
-        [Test]
-        public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_NoStridesEnding_DoesNothing()
-        {
-            // Arrange
-            _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
-                           .ReturnsAsync(new List<Stride>());
+    [Test]
+    public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_NoStridesEnding_DoesNothing()
+    {
+        // Arrange
+        _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
+                       .ReturnsAsync(new List<Stride>());
 
-            // Act
-            await _service.SendDeadlineNotificationsAsync();
+        // Act
+        await _service.SendDeadlineNotificationsAsync();
 
-            // Assert
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
-                It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
-                Times.Never);
-        }
+        // Assert
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
+            It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
 
-        [Test]
-        public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_StrideWithoutIteration_Skips()
-        {
-            // Arrange
-            var stride = new Stride { Id = 1, Name = "NoIter", IterationId = null };
-            _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
-                           .ReturnsAsync(new List<Stride> { stride });
+    [Test]
+    public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_StrideWithoutIteration_Skips()
+    {
+        // Arrange
+        var stride = new Stride { Id = 1, Name = "NoIter", IterationId = null };
+        _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
+                       .ReturnsAsync(new List<Stride> { stride });
 
-            // Act
-            await _service.SendDeadlineNotificationsAsync();
+        // Act
+        await _service.SendDeadlineNotificationsAsync();
 
-            // Assert
-            _iterationRepoMock.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
-                It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
-                Times.Never);
-        }
+        // Assert
+        _iterationRepoMock.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
+            It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
 
-        [Test]
-        public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_IterationNotFound_Skips()
-        {
-            // Arrange
-            var stride = new Stride { Id = 2, Name = "Stride2", IterationId = 50 };
-            _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
-                           .ReturnsAsync(new List<Stride> { stride });
-            _iterationRepoMock.Setup(r => r.GetByIdAsync(50)).ReturnsAsync((Iteration?)null);
+    [Test]
+    public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_IterationNotFound_Skips()
+    {
+        // Arrange
+        var stride = new Stride { Id = 2, Name = "Stride2", IterationId = 50 };
+        _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
+                       .ReturnsAsync(new List<Stride> { stride });
+        _iterationRepoMock.Setup(r => r.GetByIdAsync(50)).ReturnsAsync((Iteration?)null);
 
-            // Act
-            await _service.SendDeadlineNotificationsAsync();
+        // Act
+        await _service.SendDeadlineNotificationsAsync();
 
-            // Assert
-            _projectServiceMock.Verify(p => p.GetProjectMembersAsync(It.IsAny<int>()), Times.Never);
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
-                It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
-                Times.Never);
-        }
+        // Assert
+        _projectServiceMock.Verify(p => p.GetProjectMembersAsync(It.IsAny<int>()), Times.Never);
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
+            It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
 
-        [Test]
-        public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_NoProjectMembers_NoNotificationsSent()
-        {
-            var iteration = new Iteration { Id = 100, ProjectId = 200 };
-            var stride = new Stride { Id = 3, Name = "Sprint A", IterationId = 100 };
-            _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
-                           .ReturnsAsync(new List<Stride> { stride });
-            _iterationRepoMock.Setup(r => r.GetByIdAsync(100)).ReturnsAsync(iteration);
-            _projectServiceMock.Setup(p => p.GetProjectMembersAsync(200))
-                               .ReturnsAsync(new List<ProjectMemberDto>());
+    [Test]
+    public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_NoProjectMembers_NoNotificationsSent()
+    {
+        var iteration = new Iteration { Id = 100, ProjectId = 200 };
+        var stride = new Stride { Id = 3, Name = "Sprint A", IterationId = 100 };
+        _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
+                       .ReturnsAsync(new List<Stride> { stride });
+        _iterationRepoMock.Setup(r => r.GetByIdAsync(100)).ReturnsAsync(iteration);
+        _projectServiceMock.Setup(p => p.GetProjectMembersAsync(200))
+                           .ReturnsAsync(new List<ProjectMemberDto>());
 
-            await _service.SendDeadlineNotificationsAsync();
+        await _service.SendDeadlineNotificationsAsync();
 
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
-                It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
-                Times.Never);
-        }
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
+            It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
 
-        [Test]
-        public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_SendsNotificationsToAllMembers()
-        {
-            var iteration = new Iteration { Id = 1, ProjectId = 5 };
-            var stride = new Stride { Id = 10, Name = "Sprint 1", IterationId = 1 };
-            var members = new List<ProjectMemberDto>
+    [Test]
+    public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_SendsNotificationsToAllMembers()
+    {
+        var iteration = new Iteration { Id = 1, ProjectId = 5 };
+        var stride = new Stride { Id = 10, Name = "Sprint 1", IterationId = 1 };
+        var members = new List<ProjectMemberDto>
             {
                 new ProjectMemberDto { UserId = 100, UserName = "Alice" },
                 new ProjectMemberDto { UserId = 200, UserName = "Bob" }
             };
 
-            _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
-                           .ReturnsAsync(new List<Stride> { stride });
-            _iterationRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(iteration);
-            _projectServiceMock.Setup(p => p.GetProjectMembersAsync(5)).ReturnsAsync(members);
+        _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
+                       .ReturnsAsync(new List<Stride> { stride });
+        _iterationRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(iteration);
+        _projectServiceMock.Setup(p => p.GetProjectMembersAsync(5)).ReturnsAsync(members);
 
-            await _service.SendDeadlineNotificationsAsync();
+        await _service.SendDeadlineNotificationsAsync();
 
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
-                100,
-                NotificationType.StrideEnding,
-                "Stride 'Sprint 1' ends in 3 days.",
-                "/projects/5/strides"
-            ), Times.Once);
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
+            100,
+            NotificationType.StrideEnding,
+            "Stride 'Sprint 1' ends in 3 days.",
+            "/projects/5/strides"
+        ), Times.Once);
 
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
-                200,
-                NotificationType.StrideEnding,
-                "Stride 'Sprint 1' ends in 3 days.",
-                "/projects/5/strides"
-            ), Times.Once);
-        }
-
-        [Test]
-        public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_MultipleStrides_SendsForEach()
-        {
-            var iteration1 = new Iteration { Id = 1, ProjectId = 10 };
-            var iteration2 = new Iteration { Id = 2, ProjectId = 20 };
-            var stride1 = new Stride { Id = 1, Name = "S1", IterationId = 1 };
-            var stride2 = new Stride { Id = 2, Name = "S2", IterationId = 2 };
-            var members1 = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 1 } };
-            var members2 = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 2 } };
-
-            _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
-                           .ReturnsAsync(new List<Stride> { stride1, stride2 });
-            _iterationRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(iteration1);
-            _iterationRepoMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(iteration2);
-            _projectServiceMock.Setup(p => p.GetProjectMembersAsync(10)).ReturnsAsync(members1);
-            _projectServiceMock.Setup(p => p.GetProjectMembersAsync(20)).ReturnsAsync(members2);
-
-            await _service.SendDeadlineNotificationsAsync();
-
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(1, It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
-            _notificationServiceMock.Verify(n => n.CreateNotificationAsync(2, It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
-        }
-
-        #endregion
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
+            200,
+            NotificationType.StrideEnding,
+            "Stride 'Sprint 1' ends in 3 days.",
+            "/projects/5/strides"
+        ), Times.Once);
     }
+
+    [Test]
+    public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_MultipleStrides_SendsForEach()
+    {
+        var iteration1 = new Iteration { Id = 1, ProjectId = 10 };
+        var iteration2 = new Iteration { Id = 2, ProjectId = 20 };
+        var stride1 = new Stride { Id = 1, Name = "S1", IterationId = 1 };
+        var stride2 = new Stride { Id = 2, Name = "S2", IterationId = 2 };
+        var members1 = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 1 } };
+        var members2 = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 2 } };
+
+        _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
+                       .ReturnsAsync(new List<Stride> { stride1, stride2 });
+        _iterationRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(iteration1);
+        _iterationRepoMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(iteration2);
+        _projectServiceMock.Setup(p => p.GetProjectMembersAsync(10)).ReturnsAsync(members1);
+        _projectServiceMock.Setup(p => p.GetProjectMembersAsync(20)).ReturnsAsync(members2);
+
+        await _service.SendDeadlineNotificationsAsync();
+
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(1, It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _notificationServiceMock.Verify(n => n.CreateNotificationAsync(2, It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    #endregion
+}

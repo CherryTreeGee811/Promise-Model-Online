@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -36,13 +36,13 @@ public class ProjectsControllerImportUnitTests
         _mockProjectImportService = new Mock<IProjectImportService>();
         _mockProjectImportValidationService = new Mock<IProjectImportValidationService>();
         _mockGenericService = new Mock<IGenericService<Project>>();
-            _controller = new UserProjectsController(
-                _mockProjectService.Object,
-                _mockUserRepo.Object,
-                _mockMapper.Object,
-                _mockGenericService.Object,
-                _mockProjectImportService.Object,
-                _mockProjectImportValidationService.Object);
+        _controller = new UserProjectsController(
+            _mockProjectService.Object,
+            _mockUserRepo.Object,
+            _mockMapper.Object,
+            _mockGenericService.Object,
+            _mockProjectImportService.Object,
+            _mockProjectImportValidationService.Object);
     }
 
     [Test]

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Auth.Services;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;

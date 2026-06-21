@@ -73,13 +73,13 @@ public class LoginControllerUnitTests
     [Test]
     [Description("REQ_FUN_002: Login form returns view with LoginViewModel")]
     public void REQ_FUN_002_Index_Get_ReturnsViewWithViewModel()
-        {
-            // Act
-            var result = _controller.Index(returnUrl: null);
+    {
+        // Act
+        var result = _controller.Index(returnUrl: null);
 
-            // Assert
-            Assert.That(result, Is.TypeOf<ViewResult>());
-            var view = (ViewResult)result;
+        // Assert
+        Assert.That(result, Is.TypeOf<ViewResult>());
+        var view = (ViewResult)result;
         Assert.That(view.Model, Is.TypeOf<LoginViewModel>());
     }
 

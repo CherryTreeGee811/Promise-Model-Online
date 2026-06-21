@@ -1,11 +1,11 @@
-using System.Net;
+﻿using System.Net;
 using PromiseModelOnline.Api.DTOs;
 
 namespace PromiseModelOnline.Api.Tests.IntegrationTests;
 
 /// <summary>Integration tests for full project lifecycle workflows.</summary>
 // Requirements: REQ_FUN_003 REQ_FUN_039 REQ_FUN_040
-    public class ProjectsIntegrationTests : ApiIntegrationTestBase
+public class ProjectsIntegrationTests : ApiIntegrationTestBase
 {
     [Test]
     public async Task CreateProject_AsOwner_ReturnsCreated()
