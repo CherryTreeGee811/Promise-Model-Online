@@ -539,9 +539,11 @@ export function renderEmptyState(contentDiv: HTMLElement | undefined, message: s
 function getRenderedNodePosition(node: { x: number; y: number }, contentOffsetX: number, contentOffsetY: number): { x: number; y: number } {
     const nx = Number.isFinite(node.x) ? node.x : 0;
     const ny = Number.isFinite(node.y) ? node.y : 0;
+    const rx = ny + contentOffsetX;
+    const ry = nx + contentOffsetY;
     return {
-        x: ny + contentOffsetX,
-        y: nx + contentOffsetY,
+        x: Number.isFinite(rx) ? rx : 0,
+        y: Number.isFinite(ry) ? ry : 0,
     };
 }
 
@@ -674,7 +676,7 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
         animationSpeed = 1,
     } = options;
 
-    const nodeScale = uniformNodeScale ?? 1;
+    const nodeScale = Number.isFinite(uniformNodeScale) ? uniformNodeScale : 1;
     const containerTag = isEnableLinks ? 'a' : 'g';
     const duration = Math.max(0, Math.round(200 / Math.max(0.1, animationSpeed)));
     const t = d3.transition().duration(duration);
@@ -687,7 +689,9 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
     function getFinalTransform(d: Record<string, unknown>): string {
         const dx = Number.isFinite(d.x as number) ? (d.x as number) : 0;
         const dy = Number.isFinite(d.y as number) ? (d.y as number) : 0;
-        return `translate(${dy + contentOffsetX}, ${dx + contentOffsetY}) scale(${nodeScale})`;
+        const ttx = dy + contentOffsetX;
+        const tty = dx + contentOffsetY;
+        return `translate(${Number.isFinite(ttx) ? ttx : 0}, ${Number.isFinite(tty) ? tty : 0}) scale(${Number.isFinite(nodeScale) ? nodeScale : 1})`;
     }
 
     /**
@@ -701,7 +705,9 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
         const rawPy = parent ? (parent.x as number) : 0;
         const px = Number.isFinite(rawPx) ? rawPx : 0;
         const py = Number.isFinite(rawPy) ? rawPy : 0;
-        return `translate(${px + contentOffsetX}, ${py + contentOffsetY}) scale(${nodeScale})`;
+        const ttx = px + contentOffsetX;
+        const tty = py + contentOffsetY;
+        return `translate(${Number.isFinite(ttx) ? ttx : 0}, ${Number.isFinite(tty) ? tty : 0}) scale(${Number.isFinite(nodeScale) ? nodeScale : 1})`;
     }
 
     /**
@@ -710,20 +716,20 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
      * @returns {string} An SVG path data string.
      */
     function getFinalLinkPath(d: Record<string, unknown>): string {
-        const sx = Number.isFinite((d.source as Record<string, unknown>).x as number) ? (d.source as Record<string, unknown>).x as number : 0;
-        const sy = Number.isFinite((d.source as Record<string, unknown>).y as number) ? (d.source as Record<string, unknown>).y as number : 0;
-        const tx = Number.isFinite((d.target as Record<string, unknown>).x as number) ? (d.target as Record<string, unknown>).x as number : 0;
-        const ty = Number.isFinite((d.target as Record<string, unknown>).y as number) ? (d.target as Record<string, unknown>).y as number : 0;
-        return (d3.linkHorizontal() as (link: { source: { x: number; y: number }; target: { x: number; y: number } }) => string)({
-                source: {
-                    x: sx + contentOffsetY,
-                    y: sy + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale),
-                },
-                target: {
-                    x: tx + contentOffsetY,
-                    y: ty + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale),
-                },
-            });
+        const rawSx = (d.source as Record<string, unknown>).x as number;
+        const rawSy = (d.source as Record<string, unknown>).y as number;
+        const rawTx = (d.target as Record<string, unknown>).x as number;
+        const rawTy = (d.target as Record<string, unknown>).y as number;
+        const sx = Number.isFinite(rawSx) ? rawSx : 0;
+        const sy = Number.isFinite(rawSy) ? rawSy : 0;
+        const tx = Number.isFinite(rawTx) ? rawTx : 0;
+        const ty = Number.isFinite(rawTy) ? rawTy : 0;
+        const ax = Number.isFinite(sx + contentOffsetY) ? sx + contentOffsetY : 0;
+        const ay = Number.isFinite(sy + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale)) ? sy + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale) : 0;
+        const bx = Number.isFinite(tx + contentOffsetY) ? tx + contentOffsetY : 0;
+        const by = Number.isFinite(ty + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale)) ? ty + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale) : 0;
+        const midX = (ax + bx) / 2;
+        return 'M' + ax + ',' + ay + 'C' + midX + ',' + ay + ',' + midX + ',' + by + ',' + bx + ',' + by;
     }
 
     // --- Link paths ---
@@ -1060,12 +1066,14 @@ function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportH
     let sgx = isCompact ? COMPACT_STEP_GAP_X : STEP_GAP_X;
     let sgy = isCompact ? COMPACT_STEP_GAP_Y : STEP_GAP_Y;
     let fg = isCompact ? COMPACT_FOREHEAD_GAP : FOREHEAD_GAP;
-    let cs = uniformNodeScale;
+    let cs = Number.isFinite(uniformNodeScale) ? uniformNodeScale : 1;
     if (isCompact) {
         const vc = countRenderableNodes(treeData);
         const p = getCompactLayoutProfile(vc, viewportWidth, viewportHeight);
-        cs = p.nodeScale ?? cs; sgy = p.minGapY ?? sgy; fg = p.forehead ?? fg;
-        if (maxDepth > 0 && viewportWidth > 0) sgx = Math.max(Math.max(viewportWidth - margin.left - margin.right - CARD_WIDTH * cs, CARD_WIDTH) / maxDepth, p.minGapX ?? COMPACT_MIN_TIER_GAP);
+        cs = Number.isFinite(p.nodeScale) ? p.nodeScale : cs;
+        sgy = Number.isFinite(p.minGapY) ? p.minGapY : sgy;
+        fg = Number.isFinite(p.forehead) ? p.forehead : fg;
+        if (maxDepth > 0 && viewportWidth > 0) sgx = Math.max(Math.max(viewportWidth - margin.left - margin.right - CARD_WIDTH * cs, CARD_WIDTH) / maxDepth, Number.isFinite(p.minGapX) ? p.minGapX : COMPACT_MIN_TIER_GAP);
         if (maxDepth > 0 && viewportHeight > 0) sgy = Math.max(Math.floor(Math.max(viewportHeight - margin.top - margin.bottom - CARD_HEIGHT * cs - fg, CARD_HEIGHT) / Math.max(1, maxDepth)), COMPACT_MIN_TIER_GAP_Y);
     }
     return { stepGapX: sgx, stepGapY: sgy, foreheadGap: fg, cardScale: cs };
@@ -1312,7 +1320,7 @@ function scheduleFocusRefinement(
         const measuredWidth = Number(measuredViewport.width ?? 0);
         const measuredHeight = Number(measuredViewport.height ?? 0);
 
-        if (measuredWidth <= 1 || measuredHeight <= 1) {
+        if (!Number.isFinite(measuredWidth) || !Number.isFinite(measuredHeight) || measuredWidth <= 1 || measuredHeight <= 1) {
             return;
         }
 
@@ -1566,15 +1574,21 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
 
     // Defer render until viewport has non-zero dimensions.
     // D3 tree layout produces NaN SVG coordinates when viewport is 0-sized
-    // (e.g. headless browser before layout resolves). Deferring by one
-    // animation frame allows the DOM to settle.
+    // (e.g. headless browser before layout resolves). Deferring by up to
+    // 3 animation frames allows the DOM to settle.
+    const retryCount = (options._retryCount as number) ?? 0;
     if (!viewportWidth || !viewportHeight) {
-        requestAnimationFrame(() => renderStackGraph(contentDiv, d3, treeData, options));
+        if (retryCount < 3) {
+            requestAnimationFrame(() => renderStackGraph(contentDiv, d3, treeData, { ...options, _retryCount: retryCount + 1 }));
+        }
         return;
     }
 
     const layout = computeGraphLayout(compact as boolean, viewportWidth, viewportHeight, margin as unknown as { top: number; right: number; bottom: number; left: number }, maxDepth, treeData, (uniformNodeScale as number) ?? 1);
-    const { stepGapX, stepGapY, foreheadGap, cardScale } = layout;
+    const stepGapX = Number.isFinite(layout.stepGapX) ? layout.stepGapX : 200;
+    const stepGapY = Number.isFinite(layout.stepGapY) ? layout.stepGapY : 100;
+    const foreheadGap = Number.isFinite(layout.foreheadGap) ? layout.foreheadGap : 20;
+    const cardScale = Number.isFinite(layout.cardScale) ? layout.cardScale : 1;
 
     const treeLayout = d3.tree().nodeSize([stepGapY, stepGapX]);
     treeLayout(root);
