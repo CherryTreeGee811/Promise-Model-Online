@@ -135,7 +135,7 @@ function addBurndownTooltip(svg: D3Sel, d3: D3Chart, xScale: (v: number) => numb
  * @param {number} width - Stroke width
  * @param {string} fill - Fill color
  */
-export function drawLine(svg: D3Sel, data: number[], lineGen: (d: unknown[]) => string, className: string, stroke: string, width: number, fill: string): void {
+function drawLine(svg: D3Sel, data: number[], lineGen: (d: unknown[]) => string, className: string, stroke: string, width: number, fill: string): void {
     svg.append('path')
         .datum(data)
         .attr('class', className)
@@ -154,7 +154,7 @@ export function drawLine(svg: D3Sel, data: number[], lineGen: (d: unknown[]) => 
  * @param {string} fill - Fill color
  * @param {number} opacity - Fill opacity
  */
-export function drawArea(svg: D3Sel, data: Array<{ x: number; y0: number; y1: number; behind: boolean }>, areaGen: (d: unknown[]) => string, className: string, fill: string, opacity: number): void {
+function drawArea(svg: D3Sel, data: Array<{ x: number; y0: number; y1: number; behind: boolean }>, areaGen: (d: unknown[]) => string, className: string, fill: string, opacity: number): void {
     if (data.length < 2) return;
     svg.append('path')
         .datum(data)
