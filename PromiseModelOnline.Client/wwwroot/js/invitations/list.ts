@@ -99,7 +99,7 @@ export function loadInvitationsPage(_contentDiv: HTMLElement): void {
                 });
             }
         } catch {
-            errorElement.textContent = 'Failed to load invitations.';
+            if (errorElement) errorElement.textContent = 'Failed to load invitations.';
         }
     }
 

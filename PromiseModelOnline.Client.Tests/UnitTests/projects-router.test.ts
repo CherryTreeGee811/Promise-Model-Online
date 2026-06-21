@@ -6,7 +6,7 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/utils/permissions.ts', () =>
 beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '<div id="content"></div><ul id="main-menu"></ul><div id="error-text"></div><div id="detail-stack-graph"></div>';
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('<div>mock</div>') });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}), text: () => Promise.resolve('<div>mock</div>') });
     (globalThis as Record<string, unknown>).tippy ??= vi.fn().mockReturnValue({ show: vi.fn(), hide: vi.fn(), destroy: vi.fn(), setProps: vi.fn() });
 });
 
