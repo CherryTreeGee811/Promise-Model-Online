@@ -111,7 +111,7 @@ async function networkFirst(request) {
  * @returns {Promise<Response>} The response from cache or network.
  */
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cached = await caches.match(request, { ignoreSearch: true });
   if (cached) return cached;
   try {
     const response = await fetch(request);
