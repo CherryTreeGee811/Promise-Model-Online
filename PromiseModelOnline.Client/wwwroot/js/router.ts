@@ -347,6 +347,7 @@ export function loadTemplateWithError(contentDiv: HTMLElement, label: string): (
  * @returns {void}
  */
 function showErrorPage(contentDiv: HTMLElement, message: string): void {
+    if (!contentDiv) return;
     contentDiv.replaceChildren();
     const h1 = document.createElement('h1');
     h1.textContent = message;

@@ -49,6 +49,7 @@ function handleNavClick(event: Event, navContentDiv: HTMLElement, contentDiv: HT
  * @throws {Error} If the fetch request fails.
  */
 export async function loadNavTemplate(navContentDiv: HTMLElement, _contentDiv: HTMLElement): Promise<void> {
+    if (!navContentDiv) return;
     const templateName = isLoggedIn() ? 'authenticated.html' : 'anonymous.html';
 
     try {
