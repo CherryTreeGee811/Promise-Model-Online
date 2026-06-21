@@ -1,4 +1,6 @@
-﻿namespace PromiseModelOnline.Client.Tests.Helpers;
+﻿using System.Text.Json;
+
+namespace PromiseModelOnline.Client.Tests.Helpers;
 
 /// <summary>Base class for Playwright-based client UI tests.</summary>
 /// <remarks>
@@ -93,6 +95,7 @@ public abstract class PlaywrightTestBase
             await Context.RouteAsync("**/*", MockApiHandler.HandleRouteAsync);
 
             await Page.GotoAsync(BaseUrl + "/");
+            await PopulateSwCacheAsync();
             _initialized = true;
         }
         finally
@@ -298,6 +301,75 @@ public abstract class PlaywrightTestBase
 
     /// <summary>Click a navigation link by its element ID.</summary>
     protected async Task ClickNavLinkAsync(string linkId) => await ClickAsync($"#{linkId}");
+
+    /// <summary>Pre-populate the service worker cache from local files.</summary>
+    /// <remarks>
+    ///   Workaround for Firefox where SW-scope fetch() fails with self-signed
+    ///   SSL certs even with IgnoreHTTPSErrors. Uses the page context's
+    ///   fetch() (which goes through Playwright route interception or nginx)
+    ///   to obtain real HTTP Response objects that Firefox's font/image
+    ///   rendering engines can properly consume.
+    /// </remarks>
+    private async Task PopulateSwCacheAsync()
+    {
+        var swPath = Path.Combine(GetWwwRoot(), "sw.mjs");
+        if (!File.Exists(swPath)) return;
+
+        var swContent = File.ReadAllText(swPath);
+        var start = swContent.IndexOf("PRECACHE = [", StringComparison.Ordinal);
+        start = swContent.IndexOf('[', start);
+        var end = swContent.IndexOf(']', start);
+        var arrayContent = swContent[start..(end + 1)];
+        var json = arrayContent.Replace('\'', '"').Replace(",]", "]");
+        var precacheEntries = JsonSerializer.Deserialize<string[]>(json) ?? [];
+
+        if (precacheEntries.Length == 0) return;
+
+        // Wait up to 5s for the SW to register and activate
+        var swReady = false;
+        for (var i = 0; i < 10; i++)
+        {
+            swReady = await Page.EvaluateAsync<bool>(@"
+                navigator.serviceWorker.getRegistration().then(r =>
+                    r !== undefined && r.active !== null
+                )");
+            if (swReady) break;
+            await Task.Delay(500);
+        }
+        if (!swReady) return;
+
+        // Fetch each PRECACHE entry from the page context and store in the SW cache.
+        // Using fetch() preserves real HTTP response headers/properties so that
+        // Firefox's font/image engines can properly consume them.
+        var baseUrl = BaseUrl;
+        await Page.EvaluateAsync<object?>(@"
+            (precacheJson => {
+                const urls = JSON.parse(precacheJson);
+                return caches.keys().then(async keys => {
+                    const cacheName = keys.find(k => k.startsWith('pmo-')) || 'pmo-v4';
+                    const cache = await caches.open(cacheName);
+                    await Promise.all(urls.map(async (url) => {
+                        try {
+                            const response = await fetch(url);
+                            if (response.ok) await cache.put(url, response);
+                        } catch (e) {
+                            // Entry may not exist in test environment
+                        }
+                    }));
+                });
+            })
+        ", System.Text.Json.JsonSerializer.Serialize(precacheEntries));
+
+        // Signal the SW that cache is ready
+        await Page.EvaluateAsync(@"
+            navigator.serviceWorker.getRegistration().then(r => {
+                if (r && r.active) r.active.postMessage({ type: 'CACHE_READY' });
+            })");
+    }
+
+    private static string GetWwwRoot() => Path.GetFullPath(Path.Combine(
+        AppContext.BaseDirectory, "..", "..", "..", "..",
+        "PromiseModelOnline.Client", "wwwroot"));
 
     /// <summary>Capture a screenshot and page HTML for debugging test failures.</summary>
     private async Task DumpDebugInfoAsync()

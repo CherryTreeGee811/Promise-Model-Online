@@ -216,7 +216,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-1.60.0
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/PromiseModelOnline.Client.Tests.csproj', 'package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers (all)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -225,6 +227,7 @@ jobs:
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
+          npx playwright-core install --with-deps chromium
 
       - name: Install system deps (cache hit — browsers already cached)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
@@ -233,6 +236,7 @@ jobs:
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox  2>&1 | tail -3
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit   2>&1 | tail -3
+          npx playwright-core install --with-deps chromium 2>&1 | tail -3
 
       - name: Run Client Tests (Chromium)
         shell: bash

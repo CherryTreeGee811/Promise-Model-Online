@@ -3,6 +3,13 @@ const CACHE = 'pmo-v4';
 
 const swSelf = /** @type {{ addEventListener: Function, skipWaiting: Function, clients: { claim: Function }, location: { origin: string } }} */ (/** @type {unknown} */ (self));
 
+let _cacheReady = false;
+swSelf.addEventListener('message', event => {
+  if (event.data && event.data.type === 'CACHE_READY') {
+    _cacheReady = true;
+  }
+});
+
 /** @type {string[]} */
 const PRECACHE = [
   '/dist/js/main.js',
@@ -46,7 +53,9 @@ const BFF_PATHS = [
 
 swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
   event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(PRECACHE))
+    caches.open(CACHE).then(async cache => {
+      await Promise.allSettled(PRECACHE.map(url => cache.add(url)));
+    })
   );
   swSelf.skipWaiting();
 });
@@ -55,6 +64,10 @@ swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() =>
+      caches.open(CACHE).then(cache => cache.keys()).then(keys => {
+        if (keys.length > 0) _cacheReady = true;
+      })
     )
   );
   swSelf.clients.claim();
@@ -137,6 +150,8 @@ async function cacheFirst(request) {
 }
 
 swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r: Response | Promise<Response>) => void }} event */ event => {
+  if (!_cacheReady) return;
+
   const { request } = event;
   const url = new URL(request.url);
 
@@ -151,15 +166,16 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
   }
 
   if (isStaticAsset(path)) {
-    event.respondWith(cacheFirst(request));
+    event.respondWith(cacheFirst(request).catch(() => new Response('', { status: 204 })));
     return;
   }
 
   if (isTemplate(path)) {
     event.respondWith(
-      networkFirst(request)
-        .catch(() => caches.match('/templates/error.html'))
+      cacheFirst(request)
+        .then(r => r || caches.match('/templates/error.html'))
         .then(r => r || new Response('', { status: 204 }))
+        .catch(() => new Response('', { status: 204 }))
     );
     return;
   }
@@ -169,6 +185,7 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
       networkFirst(request)
         .catch(() => caches.match('/templates/error.html'))
         .then(r => r || new Response('', { status: 204 }))
+        .catch(() => new Response('', { status: 204 }))
     );
     return;
   }
@@ -178,6 +195,7 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
       networkFirst(request)
         .catch(() => caches.match('/templates/error.html'))
         .then(r => r || new Response('', { status: 204 }))
+        .catch(() => new Response('', { status: 204 }))
     );
   }
 });

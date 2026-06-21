@@ -416,7 +416,7 @@ public class OidcAuthTests : PlaywrightTestBase
     [Description("REQ-OIDC-16: Authorize endpoint handles redirect_uri parameter")]
     public async Task REQ_INT_015_AuthorizeEndpoint_AcceptsRedirectUri()
     {
-        await Page.GotoAsync(BaseUrl + "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=" + Uri.EscapeDataString("https://localhost:9000/signin-oidc"), new PageGotoOptions { Timeout = 2000 });
+        await Page.GotoAsync(BaseUrl + "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=" + Uri.EscapeDataString(BaseUrl + "/signin-oidc"), new PageGotoOptions { Timeout = 2000 });
         Assert.That(await WaitUntilAsync(() => Task.FromResult(Page.Url.Contains("/account/login")), 2), Is.True,
             "Should redirect to login page");
     }
