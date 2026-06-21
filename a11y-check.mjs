@@ -60,6 +60,9 @@ for (const route of ROUTES) {
       await page.evaluate(axeSource);
       await new Promise(r => setTimeout(r, 500));
 
+      const debugHtml = await page.evaluate(() => document.getElementById('main-message')?.outerHTML || 'NOT FOUND');
+      if (debugHtml !== 'NOT FOUND') process.stdout.write(' [DBG] ');
+
       const aaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']));
       const aaaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag2aaa', 'wcag21aaa']));
 
@@ -71,6 +74,23 @@ for (const route of ROUTES) {
         console.log('✅ AA/AAA');
       } else {
         console.log(`❌ AA=${aaCount} AAA=${aaaCount}`);
+        if (debugHtml !== 'NOT FOUND') {
+          const computed = await page.evaluate(() => {
+            const el = document.getElementById('main-message');
+            if (!el) return '';
+            const p = el.querySelector('p');
+            const s = p?.querySelector('strong');
+            return JSON.stringify({
+              outer: el.outerHTML.slice(0, 300),
+              bg: getComputedStyle(el).background,
+              color: getComputedStyle(el).color,
+              pColor: p ? getComputedStyle(p).color : null,
+              pBg: p ? getComputedStyle(p).background : null,
+              strongColor: s ? getComputedStyle(s).color : null,
+            });
+          });
+          console.log(`       [DBG] ${computed}`);
+        }
         for (const v of aaViolations) {
           console.log(`       [AA] ${v.id}: ${v.help}`);
           for (const n of v.nodes.slice(0, 2)) {

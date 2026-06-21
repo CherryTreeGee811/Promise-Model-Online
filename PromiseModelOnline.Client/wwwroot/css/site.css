@@ -1578,12 +1578,13 @@ button {
 }
 
 #main-message {
-  color: var(--color-text);
+  color: #1a1a1a !important;
+  background: #f2f2f2 !important;
 }
 
 #main-message p,
 #main-message p strong {
-  color: var(--color-text);
+  color: #1a1a1a !important;
 }
 
 /*********************************************
