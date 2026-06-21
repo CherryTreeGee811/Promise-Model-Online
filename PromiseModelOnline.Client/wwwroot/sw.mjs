@@ -4,7 +4,7 @@ const CACHE = 'pmo-v4';
 const swSelf = /** @type {{ addEventListener: Function, skipWaiting: Function, clients: { claim: Function }, location: { origin: string } }} */ (/** @type {unknown} */ (self));
 
 let _cacheReady = false;
-swSelf.addEventListener('message', event => {
+swSelf.addEventListener('message', /** @param {{ data: { type: string } }} event */ event => {
   if (event.data && event.data.type === 'CACHE_READY') {
     _cacheReady = true;
   }
