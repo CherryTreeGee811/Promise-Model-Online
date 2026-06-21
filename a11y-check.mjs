@@ -37,43 +37,10 @@ async function runAxe(page, tags) {
   }, tags);
 }
 
-async function scanPage(browser, route, viewport) {
-  const page = await browser.newPage();
-  await page.setViewport(viewport);
-  const url = `${targetUrl}${route.path ? '/#' + route.path : ''}`;
-
-  try {
-    await page.goto(url, { waitUntil: 'networkidle0', timeout: 15000 });
-  } catch {
-    // navigation timeout — continue with whatever loaded
-  }
-  await new Promise(r => setTimeout(r, 2000));
-  await page.evaluate(axeSource);
-  await new Promise(r => setTimeout(r, 500));
-
-  // WCAG 2.1 AA
-  const aaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']));
-
-  // WCAG 2.1 AAA (including contrast-enhanced)
-  const aaaViolations = JSON.parse(await runAxe(page, ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag2aaa', 'wcag21aaa']));
-
-  await page.close();
-  return { aaViolations, aaaViolations };
-}
-
 let totalViolations = 0;
 
 console.log(`\n  A11y scan: ${targetUrl}\n`);
 
-for (const route of ROUTES) {
-  for (const vp of VIEWPORTS) {
-    const result = await scanPage(null, route, vp);
-    // scanPage requires a page — need to create browser once
-    // Fallback: reuse a single browser across all scans
-  }
-}
-
-// Re-run with proper browser lifecycle
 const browser = await launch({
   headless: 'new',
   args: ['--no-sandbox', '--disable-setuid-sandbox'],
