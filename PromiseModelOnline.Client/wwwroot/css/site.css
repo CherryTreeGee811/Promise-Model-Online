@@ -1577,16 +1577,6 @@ button {
   border-left: 4px solid var(--color-success);
 }
 
-#main-message {
-  color: #1a1a1a !important;
-  background: #f2f2f2 !important;
-}
-
-#main-message p,
-#main-message p strong {
-  color: #1a1a1a !important;
-}
-
 /*********************************************
   15. Text Spacing Support (WCAG 1.4.12)
 **********************************************/

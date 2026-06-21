@@ -1,4 +1,4 @@
-import { launch } from 'puppeteer';
+import { chromium } from 'playwright-core';
 import { readFileSync } from 'node:fs';
 
 const targetUrl = process.argv[2] || 'http://localhost:4173';
@@ -41,22 +41,24 @@ let totalViolations = 0;
 
 console.log(`\n  A11y scan: ${targetUrl}\n`);
 
-const browser = await launch({
-  headless: 'new',
-  executablePath: '/home/JacobSeed/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome',
-  args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors'],
+const browser = await chromium.launch({
+  headless: true,
+  args: ['--no-sandbox', '--disable-setuid-sandbox'],
 });
 
 for (const route of ROUTES) {
   for (const vp of VIEWPORTS) {
-    const page = await browser.newPage();
-    await page.setViewport({ width: vp.width, height: vp.height });
+    const context = await browser.newContext({
+      viewport: { width: vp.width, height: vp.height },
+      ignoreHTTPSErrors: true,
+    });
+    const page = await context.newPage();
     const url = `${targetUrl}${route.path ? '/#' + route.path : ''}`;
 
     process.stdout.write(`  ${route.name.padEnd(16)} ${vp.name.padEnd(9)} `);
 
     try {
-      await page.goto(url, { waitUntil: 'networkidle0', timeout: 15000 }).catch(() => {});
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
       await new Promise(r => setTimeout(r, 2000));
       await page.evaluate(axeSource);
       await new Promise(r => setTimeout(r, 500));
@@ -89,6 +91,7 @@ for (const route of ROUTES) {
       console.log(`⚠️  error: ${err.message?.slice(0, 80)}`);
     } finally {
       await page.close();
+      await context.close();
     }
   }
 }
