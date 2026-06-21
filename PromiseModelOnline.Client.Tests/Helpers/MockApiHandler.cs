@@ -99,10 +99,10 @@ public static partial class MockApiHandler
         var path = uri.AbsolutePath;
         var query = HttpUtility.ParseQueryString(uri.Query);
 
-        // Let nginx serve SW scripts and font files directly so that Firefox
-        // receives fully-native HTTP responses (Playwright route fulfillment
-        // can cause SW registration and font rendering to fail on Firefox).
-        if (path == "/sw.mjs" || path.EndsWith(".woff2") || path.EndsWith(".woff"))
+        // Let nginx serve SW scripts directly so that Firefox's SW registration
+        // receives a fully-native HTTP response (Playwright route fulfillment
+        // can cause SW registration to fail on Firefox).
+        if (path == "/sw.mjs")
         {
             await route.ContinueAsync();
             return;

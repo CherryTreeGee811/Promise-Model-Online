@@ -141,7 +141,10 @@ const ROUTES: {
 async function initServiceWorker(): Promise<void> {
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('/sw.mjs', { scope: '/' });
+      const reg = await navigator.serviceWorker.register('/sw.mjs', { scope: '/' });
+      if (reg.active) {
+        reg.active.postMessage({ type: 'CACHE_READY' });
+      }
     } catch (error) {
       console.warn('SW registration failed:', error);
     }

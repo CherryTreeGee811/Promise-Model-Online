@@ -64,10 +64,6 @@ swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() =>
-      caches.open(CACHE).then(cache => cache.keys()).then(keys => {
-        if (keys.length > 0) _cacheReady = true;
-      })
     )
   );
   swSelf.clients.claim();
