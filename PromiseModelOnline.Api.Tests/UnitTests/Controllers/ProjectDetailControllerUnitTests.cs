@@ -17,8 +17,7 @@ using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>Unit tests for <see cref="ProjectDetailController"/> covering project operations.</summary>
 // Requirements: REQ_FUN_003 REQ_FUN_011
     public class ProjectDetailControllerTests
@@ -392,4 +391,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         }
     }
-}

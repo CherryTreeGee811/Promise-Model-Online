@@ -9,8 +9,7 @@ using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="MomentRepository"/> covering moment queries and filtering.</summary>
     // Requirements: REQ_FUN_008
@@ -165,4 +164,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(list.Select(m => m.Id), Is.EquivalentTo(new[] { 1, 5 }));
         }
     }
-}

@@ -10,8 +10,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_003 REQ_FUN_011 REQ_FUN_012
     /// <summary>Unit tests for <see cref="ProjectService"/> covering project CRUD, access control, and slug generation.</summary>
@@ -245,4 +244,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

@@ -9,8 +9,7 @@ using PromiseModelOnline.Api.Models;
 using PMO.Core.Models;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="FlowRepository"/> covering flow queries.</summary>
     // Requirements: REQ_FUN_007
@@ -126,4 +125,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(Context.Set<MomentTask>().Any(), Is.False);
         }
     }
-}

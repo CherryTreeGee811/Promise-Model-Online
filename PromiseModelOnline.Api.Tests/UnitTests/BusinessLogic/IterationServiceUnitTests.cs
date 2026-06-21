@@ -7,8 +7,7 @@ using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="IterationService"/> covering iteration queries and generic CRUD.</summary>
     // Requirements: REQ_FUN_023
@@ -114,4 +113,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

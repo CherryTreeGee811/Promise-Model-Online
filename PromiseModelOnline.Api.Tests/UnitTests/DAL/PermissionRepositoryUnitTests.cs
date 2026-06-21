@@ -9,8 +9,7 @@ using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="PermissionRepository"/> covering permission queries.</summary>
     // Requirements: REQ_FUN_013
@@ -135,4 +134,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(ids, Is.Empty);
         }
     }
-}

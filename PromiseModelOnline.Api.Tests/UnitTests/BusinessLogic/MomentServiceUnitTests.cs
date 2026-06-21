@@ -11,8 +11,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_008 REQ_FUN_027 REQ_FUN_028 REQ_FUN_029 REQ_FUN_030 REQ_FUN_031
     /// <summary>Unit tests for <see cref="MomentService"/> covering moment CRUD, burndown, status, and assignments.</summary>
@@ -407,4 +406,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

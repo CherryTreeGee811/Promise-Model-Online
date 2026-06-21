@@ -8,8 +8,7 @@ using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="ReactionRepository"/> covering reaction queries.</summary>
     // Requirements: REQ_SYS_004
@@ -158,4 +157,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(saved.StackItemId, Is.EqualTo(15));
         }
     }
-}

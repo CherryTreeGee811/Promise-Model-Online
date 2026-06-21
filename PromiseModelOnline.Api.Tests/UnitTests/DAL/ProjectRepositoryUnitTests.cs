@@ -8,8 +8,7 @@ using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="ProjectRepository"/> covering project queries.</summary>
     // Requirements: REQ_FUN_003
@@ -146,4 +145,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(Context.Set<CommentMention>().Any(), Is.False);
         }
     }
-}

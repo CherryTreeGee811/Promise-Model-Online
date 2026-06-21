@@ -8,8 +8,7 @@ using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="EpicRepository"/> covering epic queries.</summary>
     // Requirements: REQ_FUN_005
@@ -98,4 +97,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(saved, Is.Not.Null);
         }
     }
-}

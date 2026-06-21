@@ -19,8 +19,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>
     /// Unit tests for <see cref="ProjectStridesController"/> covering stride operations.
     /// Requirements: REQ_USE_012
@@ -391,4 +390,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

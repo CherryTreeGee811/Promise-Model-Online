@@ -12,8 +12,7 @@ using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_013 REQ_FUN_014 REQ_FUN_015 REQ_FUN_016
     /// <summary>Unit tests for <see cref="PermissionService"/> covering invitations, acceptance, and access control.</summary>
@@ -376,4 +375,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

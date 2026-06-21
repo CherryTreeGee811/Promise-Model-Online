@@ -5,8 +5,7 @@ using NUnit.Framework;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>Unit tests for <see cref="UpdateMomentEstimateRequest"/> validation.</summary>
     // Requirements: REQ_FUN_029
     public class UpdateMomentEstimateRequestTests
@@ -49,4 +48,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(results.Any(result => result.MemberNames.Contains(nameof(UpdateMomentEstimateRequest.Estimate))), Is.True);
         }
     }
-}

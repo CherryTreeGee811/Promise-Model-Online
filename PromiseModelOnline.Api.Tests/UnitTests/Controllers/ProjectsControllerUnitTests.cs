@@ -11,8 +11,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>Unit tests for <see cref="UserProjectsController"/> covering project CRUD.</summary>
 // Requirements: REQ_FUN_003 REQ_FUN_039 REQ_FUN_040
     public class ProjectsControllerTests
@@ -123,4 +122,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         }
     }
-}

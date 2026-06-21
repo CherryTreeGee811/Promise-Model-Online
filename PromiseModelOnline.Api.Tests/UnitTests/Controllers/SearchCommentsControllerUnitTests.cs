@@ -10,8 +10,7 @@ using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>
     /// Unit tests for <see cref="SearchCommentsController"/> covering the entity-map endpoint.
     /// Requirements: REQ_FUN_017 — Comments and entity map must support linking across the hierarchy.
@@ -181,4 +180,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

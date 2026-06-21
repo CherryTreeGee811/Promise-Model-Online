@@ -11,8 +11,7 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="ReactionService"/> CRUD operations.</summary>
     // Requirements: REQ_SYS_004
@@ -165,4 +164,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

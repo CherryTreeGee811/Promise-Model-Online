@@ -13,8 +13,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>Unit tests for <see cref="NotificationsController"/> covering notification read state.</summary>
 // Requirements: REQ_FUN_035
     public class NotificationControllerUnitTests
@@ -186,4 +185,3 @@ namespace PromiseModelOnline.Api.Tests
             _notificationServiceMock.Verify(s => s.MarkAllAsReadAsync(It.IsAny<int>()), Times.Never);
         }
     }
-}

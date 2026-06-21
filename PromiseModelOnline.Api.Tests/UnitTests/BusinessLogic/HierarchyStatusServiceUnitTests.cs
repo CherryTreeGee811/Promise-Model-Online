@@ -6,8 +6,7 @@ using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_009 REQ_SYS_004
     /// <summary>Unit tests for <see cref="HierarchyStatusService"/> covering status recalculation up the hierarchy.</summary>
@@ -126,4 +125,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(updatedFlow!.StatusColor, Is.EqualTo(StatusColorRules.Blocked));
         }
     }
-}

@@ -9,8 +9,7 @@ using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Tests.Infrastructure;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="UserRepository"/> covering lookup, auto-provisioning, and search.</summary>
     // Requirements: REQ_FUN_001 REQ_FUN_002
@@ -449,4 +448,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

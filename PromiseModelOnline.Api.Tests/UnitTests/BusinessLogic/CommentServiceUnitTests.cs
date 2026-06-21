@@ -12,8 +12,7 @@ using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_017 REQ_FUN_018 REQ_FUN_019
     /// <summary>Unit tests for <see cref="CommentService"/> covering comment creation, mentions, and retrieval.</summary>
@@ -246,4 +245,3 @@ namespace PromiseModelOnline.Api.Tests
             _commentRepoMock.Verify(r => r.AddCommentAsync(It.Is<Comment>(c => c.ParentCommentId == 5)), Times.Once);
         }
     }
-}

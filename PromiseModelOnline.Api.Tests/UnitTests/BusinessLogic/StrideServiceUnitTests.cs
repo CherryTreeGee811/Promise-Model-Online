@@ -11,8 +11,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_023 REQ_FUN_024 REQ_FUN_025 REQ_FUN_026
     /// <summary>Unit tests for <see cref="StrideService"/> covering stride queries and deadline notifications.</summary>
@@ -207,4 +206,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

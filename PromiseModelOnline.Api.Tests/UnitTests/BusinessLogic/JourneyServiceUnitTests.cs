@@ -8,8 +8,7 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_006 REQ_FUN_009 REQ_FUN_011 REQ_FUN_012
     /// <summary>Unit tests for <see cref="JourneyService"/> covering journey CRUD and hierarchy recalculation.</summary>
@@ -127,4 +126,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

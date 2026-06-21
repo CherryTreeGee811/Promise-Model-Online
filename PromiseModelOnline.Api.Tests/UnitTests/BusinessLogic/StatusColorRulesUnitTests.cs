@@ -1,8 +1,7 @@
 using NUnit.Framework;
 using PromiseModelOnline.Api.BusinessLogic;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     /// <summary>Unit tests for <see cref="StatusColorRules"/> roll-up, normalization, and canonical mapping.</summary>
     // Requirements: REQ_FUN_027
@@ -40,4 +39,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(StatusColorRules.Normalize("Todo"), Is.EqualTo(StatusColorRules.Todo));
         }
     }
-}

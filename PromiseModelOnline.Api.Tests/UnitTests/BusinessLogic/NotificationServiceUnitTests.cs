@@ -15,8 +15,7 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using Microsoft.AspNetCore.SignalR;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     [TestFixture]
     // Requirements: REQ_FUN_035 REQ_FUN_036 REQ_FUN_038
     /// <summary>Unit tests for <see cref="NotificationService"/> covering notification CRUD and SignalR dispatch.</summary>
@@ -239,4 +238,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

@@ -14,8 +14,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>Unit tests for <see cref="ReactionsController"/> covering reaction CRUD.</summary>
 // Requirements: REQ_SYS_004
     public class ReactionsControllerUnitTests
@@ -214,4 +213,3 @@ namespace PromiseModelOnline.Api.Tests
             _loggerMock.VerifyLog(LogLevel.Warning, "Failed to delete reaction");
         }
     }
-}

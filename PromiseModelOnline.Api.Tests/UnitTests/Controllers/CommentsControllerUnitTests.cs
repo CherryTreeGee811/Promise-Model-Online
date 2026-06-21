@@ -15,8 +15,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>Unit tests for <see cref="CommentsController"/> covering comment operations.</summary>
 // Requirements: REQ_FUN_017
     public class CommentsControllerUnitTests
@@ -740,4 +739,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

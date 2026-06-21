@@ -4,8 +4,7 @@ using NUnit.Framework;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>Unit tests for <see cref="UpdateMomentTypeRequest"/> validation.</summary>
     // Requirements: REQ_FUN_008
     public class UpdateMomentTypeRequestTests
@@ -66,4 +65,3 @@ namespace PromiseModelOnline.Api.Tests
             Assert.That(isValid, Is.False);
         }
     }
-}

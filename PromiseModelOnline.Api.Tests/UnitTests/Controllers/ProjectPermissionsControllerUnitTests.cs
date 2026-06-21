@@ -13,8 +13,7 @@ using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
-{
+namespace PromiseModelOnline.Api.Tests;
     /// <summary>
     /// Unit tests for <see cref="ProjectPermissionsController"/> covering permission management within a project scope.
     /// Requirements: REQ_FUN_003 REQ_USE_012
@@ -343,4 +342,3 @@ namespace PromiseModelOnline.Api.Tests
 
         #endregion
     }
-}

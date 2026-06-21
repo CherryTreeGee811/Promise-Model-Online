@@ -6,8 +6,7 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using System.Threading.Tasks;
 
-namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
-{
+namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers;
     [TestFixture]
     /// <summary>Unit tests for <see cref="DeadlineNotificationRunsController"/> covering notification triggers.</summary>
     // Requirements: REQ_FUN_038
@@ -45,4 +44,3 @@ namespace PromiseModelOnline.Api.Tests.UnitTests.Controllers
             _strideServiceMock.Verify(s => s.SendDeadlineNotificationsAsync(), Times.Once);
         }
     }
-}
