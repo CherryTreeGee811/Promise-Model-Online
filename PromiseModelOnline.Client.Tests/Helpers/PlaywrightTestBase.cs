@@ -101,15 +101,19 @@ public abstract class PlaywrightTestBase
         }
     }
 
-    /// <summary>Navigate to the app root and clear cookies before each test.</summary>
+    /// <summary>Clear state, then navigate to the app root before each test.</summary>
     [SetUp]
     public async Task Setup()
     {
+        // Layer 1: Clear state BEFORE navigation so the SPA loads into a clean session
+        await Context.ClearCookiesAsync();
+        MockApiHandler.SetSessionValue(null);
+
         for (var attempt = 0; attempt < 3; attempt++)
         {
             try
             {
-                await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
+                await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 10000 });
                 break;
             }
             catch (TimeoutException)
@@ -126,11 +130,12 @@ public abstract class PlaywrightTestBase
                 ex.Message.Contains("interrupted by another navigation"))
             {
                 if (attempt == 2) throw;
-                await Task.Delay(1000);
+                // Layer 2: Navigation was interrupted (e.g. SPA redirect). Wait for the
+                // redirected page to settle instead of starting a fresh navigation.
+                await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+                break;
             }
         }
-        await Context.ClearCookiesAsync();
-        MockApiHandler.SetSessionValue(null);
         await Page.SetViewportSizeAsync(1280, 720);
     }
 

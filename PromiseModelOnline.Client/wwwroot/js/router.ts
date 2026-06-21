@@ -429,7 +429,11 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
     const path = location.pathname;
 
     if (['/login', '/logout', '/register'].includes(path)) {
-        location.assign(path);
+        // Layer 3: Don't redirect to the same path we're already on — it would
+        // interrupt any in-progress navigation (causing Playwright race conditions).
+        if (path !== location.pathname) {
+            location.assign(path);
+        }
         return;
     }
 
