@@ -1060,8 +1060,8 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
  * @param {number} maxDepth - The maximum tree depth.
  * @param {object} treeData - The tree data.
  * @param {number} [uniformNodeScale] - Uniform node scale factor.
-  * @returns {{ stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number }} The computed layout values.
-  */
+ * @returns {{ stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number }} The computed layout values.
+ */
 
 /**
  * Apply compact layout adjustments for the tree graph.
@@ -1114,6 +1114,21 @@ function getSafeLayout(layout: { stepGapX: number; stepGapY: number; foreheadGap
     };
 }
 
+/**
+ * Compute tree graph layout parameters for compact or standard mode.
+ * @param {boolean} isCompact - Whether compact mode is active.
+ * @param {number} viewportWidth - The viewport width.
+ * @param {number} viewportHeight - The viewport height.
+ * @param {object} margin - The SVG margin.
+ * @param {number} margin.left - The left margin.
+ * @param {number} margin.right - The right margin.
+ * @param {number} margin.top - The top margin.
+ * @param {number} margin.bottom - The bottom margin.
+ * @param {number} maxDepth - The maximum tree depth.
+ * @param {object} treeData - The tree data.
+ * @param {number} [uniformNodeScale] - Uniform node scale factor.
+ * @returns {{ stepGapX: number; stepGapY: number; foreheadGap: number; cardScale: number }} The computed layout values.
+ */
 function computeGraphLayout(isCompact: boolean, viewportWidth: number, viewportHeight: number, margin: { top: number; right: number; bottom: number; left: number }, maxDepth: number, treeData: Record<string, unknown>, uniformNodeScale = 1) {
     const cs = Number.isFinite(uniformNodeScale) ? uniformNodeScale : 1;
     if (isCompact) {
@@ -1576,8 +1591,8 @@ function logPostRenderFocusDebug(
  * @param {boolean} [options.enableLinks] - Whether links are enabled.
  * @param {boolean} [options.animate] - Whether to animate transitions.
  * @param {number} [options.animationSpeed] - Animation speed multiplier.
-  * @returns {({ node: SVGElement | null; zoom: object | null } | null | void)} The SVG node and zoom behavior (if enabled), or null/undefined.
-  */
+ * @returns {({ node: SVGElement | null; zoom: object | null } | null | void)} The SVG node and zoom behavior (if enabled), or null/undefined.
+ */
 
 /**
  * Set up D3 zoom behavior on the SVG.
@@ -1588,7 +1603,7 @@ function logPostRenderFocusDebug(
  * @param {number} viewportHeight - The viewport height.
  * @param {number} graphWidth - The graph width.
  * @param {number} graphHeight - The graph height.
- * @param {Function | null | undefined} onZoom - Zoom event callback.
+ * @param {(transform: object, meta: {user?: boolean}) => void | null | undefined} onZoom - Zoom event callback.
  * @returns {{ zoom: object; initialScale: number }} The zoom behavior and initial scale.
  */
 function setupZoomBehavior(d3: D3Module, svg: D3Sel, zoomLayer: D3Sel, viewportWidth: number, viewportHeight: number, graphWidth: number, graphHeight: number, onZoom: ((transform: Record<string, unknown>, meta: Record<string, unknown>) => void) | null | undefined): { zoom: unknown; initialScale: number } {
@@ -1634,7 +1649,7 @@ function deferRender(contentDiv: HTMLElement | undefined, d3: D3Module, treeData
  * @param {string | undefined} options.owner - Project owner.
  * @param {string | undefined} options.project - Project slug.
  * @param {string | undefined} options.focusNodeId - Focus node ID.
- * @param {Function | undefined} options.onContextMenu - Context menu callback.
+ * @param {(event: MouseEvent | KeyboardEvent | object, data: object) => void | undefined} options.onContextMenu - Context menu callback.
  * @param {boolean} options.enableZoom - Whether zoom is enabled.
  * @param {boolean | undefined} options.enableLinks - Whether links are enabled.
  * @param {number | undefined} options.uniformNodeScale - Node scale factor.
@@ -1642,6 +1657,7 @@ function deferRender(contentDiv: HTMLElement | undefined, d3: D3Module, treeData
  * @param {number} options.animationSpeed - Animation speed.
  * @returns {object} The node options object.
  */
+
 type NodeOptionsParameters = {
     owner: string | undefined;
     project: string | undefined;
@@ -1654,6 +1670,23 @@ type NodeOptionsParameters = {
     animationSpeed: number;
 };
 
+/**
+ * Build the node options object for appendGraphNodes.
+ * @param {number} contentOffsetX - X offset.
+ * @param {number} contentOffsetY - Y offset.
+ * @param {string} cardClipPathId - Clip path ID.
+ * @param {object} options - Additional options.
+ * @param {string | undefined} options.owner - Project owner.
+ * @param {string | undefined} options.project - Project slug.
+ * @param {string | undefined} options.focusNodeId - Focus node ID.
+ * @param {(event: MouseEvent | KeyboardEvent | object, data: object) => void | undefined} options.onContextMenu - Context menu callback.
+ * @param {boolean} options.enableZoom - Whether zoom is enabled.
+ * @param {boolean | undefined} options.enableLinks - Whether links are enabled.
+ * @param {number | undefined} options.uniformNodeScale - Node scale factor.
+ * @param {boolean} options.isAnimating - Whether animation is active.
+ * @param {number} options.animationSpeed - Animation speed.
+ * @returns {object} The node options object.
+ */
 function getNodeOptions(contentOffsetX: number, contentOffsetY: number, cardClipPathId: string, options: NodeOptionsParameters): Record<string, unknown> {
     return {
         contentOffsetX,
@@ -1688,8 +1721,8 @@ function getNodeOptions(contentOffsetX: number, contentOffsetY: number, cardClip
  * @param {string} [options.clipPathIdPrefix] - Prefix for the clip path ID.
  * @param {string} [options.ariaLabel] - The SVG aria-label.
  * @param {string} [options.emptyMessage] - Message when no cards to display.
- * @param {Function} [options.onZoom] - Zoom event callback.
- * @param {Function} [options.onContextMenu] - Context menu callback.
+ * @param {(transform: object, meta: {user?: boolean}) => void} [options.onZoom] - Zoom event callback.
+ * @param {(event: MouseEvent | KeyboardEvent | object, data: object) => void} [options.onContextMenu] - Context menu callback.
  * @param {number} [options.minGraphWidth] - Minimum graph width.
  * @param {number} [options.minGraphHeight] - Minimum graph height.
  * @param {number} [options.uniformNodeScale] - Uniform node scale factor.
