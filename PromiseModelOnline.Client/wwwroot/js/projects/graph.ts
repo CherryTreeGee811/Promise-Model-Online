@@ -111,7 +111,7 @@ const graphState: GraphState = {
  * @param {object} node - The graph node to check.
  * @returns {boolean} True if the node has children.
  */
-function hasNodeChildren(node: GraphNode): boolean {
+export function hasNodeChildren(node: GraphNode): boolean {
     return Array.isArray(node?.children) && node.children.length > 0;
 }
 
@@ -144,7 +144,7 @@ function setNodeCollapsed(nodeId: string, isCollapsed: boolean): void {
  * @param {object} node - The graph node.
  * @returns {number} The number of hidden descendants.
  */
-function getHiddenDescendantCount(node: GraphNode): number {
+export function getHiddenDescendantCount(node: GraphNode): number {
     if (!hasNodeChildren(node)) return 0;
 
     return node.children!.reduce((sum, child) => sum + countRenderableNodes(child), 0);
@@ -219,7 +219,7 @@ function expandAllNodes(): void {
  * Create the default filter state for the graph.
  * @returns {{search: string, includeChildren: boolean, types: Set<string>, effort: string, stride: string, status: string, assignment: string}} The default filters.
  */
-function createDefaultFilters(): GraphFilters {
+export function createDefaultFilters(): GraphFilters {
     return {
         search: '',
         includeChildren: false,
@@ -236,7 +236,7 @@ function createDefaultFilters(): GraphFilters {
  * @param {string} value - The raw type filter value.
  * @returns {Set<string>} The parsed set of node types.
  */
-function parseTypeList(value: string | null): Set<string> {
+export function parseTypeList(value: string | null): Set<string> {
     if (value === null) return new Set(NODE_TYPES);
 
     const types = new Set<string>();
@@ -256,7 +256,7 @@ function parseTypeList(value: string | null): Set<string> {
  * @param {Set<string>} types - The raw set of selected types.
  * @returns {Set<string>} The normalized contiguous set of types.
  */
-function normalizeTypeSelection(types: Set<string>): Set<string> {
+export function normalizeTypeSelection(types: Set<string>): Set<string> {
     const selected = [...types ?? []].filter(type => NODE_TYPE_INDEX.has(type as never));
     if (selected.length === 0) return new Set();
 
@@ -272,7 +272,7 @@ function normalizeTypeSelection(types: Set<string>): Set<string> {
  * @param {string} value - The raw status filter value.
  * @returns {string} The normalized status bucket ('all', 'done', 'blocked', 'inprogress', or others).
  */
-function getStatusFilterValue(value: string): string {
+export function getStatusFilterValue(value: string): string {
     const normalized = normalizeText(value);
     if (!normalized || normalized === 'all') return 'all';
     if (['done', 'blocked', 'inprogress', 'todo', 'other'].includes(normalized)) return normalized;
@@ -297,7 +297,7 @@ const GRAPH_FILTER_FIELD = 'graph-filter-field';
  * @param {string} value - Raw filter value.
  * @returns {string} Normalized filter value.
  */
-function getAssignmentFilterValue(value: string): string {
+export function getAssignmentFilterValue(value: string): string {
     const normalized = normalizeText(value);
     if (normalized === ASSIGNED_TO_ME) return ASSIGNED_TO_ME;
     return 'all';
@@ -308,7 +308,7 @@ function getAssignmentFilterValue(value: string): string {
  * @param {string} value - The raw effort filter value.
  * @returns {string} The normalized effort bucket ('all', 'unestimated', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL').
  */
-function getEffortFilterValue(value: string): string {
+export function getEffortFilterValue(value: string): string {
     const normalized = normalizeText(value);
     if (normalized === 'all' || normalized === 'unestimated') return normalized;
     if (['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'].includes(normalized)) return normalized.toUpperCase();
@@ -320,7 +320,7 @@ function getEffortFilterValue(value: string): string {
  * @param {string} value - The raw stride filter value.
  * @returns {string} The normalized stride bucket ('all', 'backlog', or a stride ID string).
  */
-function getStrideFilterValue(value: string): string {
+export function getStrideFilterValue(value: string): string {
     const normalized = normalizeText(value);
     if (normalized === 'all' || normalized === 'backlog') return normalized;
     if (/^\d+$/.test(normalized)) return normalized;
@@ -332,7 +332,7 @@ function getStrideFilterValue(value: string): string {
  * @param {string} nodeType - The node type key.
  * @returns {string} The short label.
  */
-function getTypeShortLabel(nodeType: string): string {
+export function getTypeShortLabel(nodeType: string): string {
     switch (nodeType) {
         case 'promise': { return 'Promise';
         }
@@ -354,7 +354,7 @@ function getTypeShortLabel(nodeType: string): string {
  * @param {object} moment - The moment data.
  * @returns {object} The graph node.
  */
-function buildMomentNode(moment: Record<string, unknown>): GraphNode {
+export function buildMomentNode(moment: Record<string, unknown>): GraphNode {
     return createNode('moment', moment, []) as unknown as GraphNode;
 }
 
@@ -363,7 +363,7 @@ function buildMomentNode(moment: Record<string, unknown>): GraphNode {
  * @param {object} flow - The flow data.
  * @returns {object} The graph node with children.
  */
-function buildFlowNode(flow: Record<string, unknown>): GraphNode {
+export function buildFlowNode(flow: Record<string, unknown>): GraphNode {
     const moments = ((flow.moments ?? []) as Record<string, unknown>[]).map(x => buildMomentNode(x));
     return createNode('flow', flow, moments) as unknown as GraphNode;
 }
@@ -373,7 +373,7 @@ function buildFlowNode(flow: Record<string, unknown>): GraphNode {
  * @param {object} journey - The journey data.
  * @returns {object} The graph node with children.
  */
-function buildJourneyNode(journey: Record<string, unknown>): GraphNode {
+export function buildJourneyNode(journey: Record<string, unknown>): GraphNode {
     const flows = ((journey.flows ?? []) as Record<string, unknown>[]).map(x => buildFlowNode(x));
     return createNode('journey', journey, flows) as unknown as GraphNode;
 }
@@ -383,7 +383,7 @@ function buildJourneyNode(journey: Record<string, unknown>): GraphNode {
  * @param {object} epic - The epic data.
  * @returns {object} The graph node with children.
  */
-function buildEpicNode(epic: Record<string, unknown>): GraphNode {
+export function buildEpicNode(epic: Record<string, unknown>): GraphNode {
     const journeys = ((epic.journeys ?? []) as Record<string, unknown>[]).map(x => buildJourneyNode(x));
     return createNode('epic', epic, journeys) as unknown as GraphNode;
 }
@@ -393,7 +393,7 @@ function buildEpicNode(epic: Record<string, unknown>): GraphNode {
  * @param {object} promise - The promise data.
  * @returns {object} The graph node with children.
  */
-function buildPromiseNode(promise: Record<string, unknown>): GraphNode {
+export function buildPromiseNode(promise: Record<string, unknown>): GraphNode {
     const epics = ((promise.epics ?? []) as Record<string, unknown>[]).map(x => buildEpicNode(x));
     return createNode('promise', promise, epics) as unknown as GraphNode;
 }
@@ -404,7 +404,7 @@ function buildPromiseNode(promise: Record<string, unknown>): GraphNode {
  * @param {string} search - The search string.
  * @returns {boolean} True if the node matches the search (or search is empty).
  */
-function isNodeSearchMatching(node: GraphNode, search: string): boolean {
+export function isNodeSearchMatching(node: GraphNode, search: string): boolean {
     if (!search) return true;
     const searchText = node._searchText ?? getNodeSearchText(node) as string;
     return searchText.includes(search);
@@ -416,7 +416,7 @@ function isNodeSearchMatching(node: GraphNode, search: string): boolean {
  * @param {string} status - The status filter value.
  * @returns {boolean} True if the node matches the status filter.
  */
-function isNodeStatusMatching(node: GraphNode, status: string): boolean {
+export function isNodeStatusMatching(node: GraphNode, status: string): boolean {
     if (status === 'all') return true;
     const statusBucket = node._statusBucket ?? getStatusBucket(node.payload?.statusColor as string) as string;
     return statusBucket === status;
@@ -442,7 +442,7 @@ function isNodeAssignmentMatching(node: GraphNode, assignment: string): boolean 
  * @param {string} effort - The effort filter value.
  * @returns {boolean} True if the node matches the effort filter.
  */
-function isNodeEffortMatching(node: GraphNode, effort: string): boolean {
+export function isNodeEffortMatching(node: GraphNode, effort: string): boolean {
     if (effort === 'all') return true;
     if (node.nodeType !== 'moment') return false;
     const effortBucket = node._effortBucket ?? getMomentEffortBucket(node.payload?.effortEstimate) as string;
@@ -455,7 +455,7 @@ function isNodeEffortMatching(node: GraphNode, effort: string): boolean {
  * @param {string} stride - The stride filter value.
  * @returns {boolean} True if the node matches the stride filter.
  */
-function isNodeStrideMatching(node: GraphNode, stride: string): boolean {
+export function isNodeStrideMatching(node: GraphNode, stride: string): boolean {
     if (stride === 'all') return true;
     if (node.nodeType !== 'moment') return false;
     const strideBucket = node._strideBucket ?? getMomentStrideBucket(node.payload) as string;
@@ -484,14 +484,16 @@ function isNodeMatching(node: GraphNode, filters: GraphFilters): boolean {
  * @param {{visibleNodes: number; hiddenNodes: number}} metrics - Accumulator for node counts.
  * @param {number} metrics.visibleNodes - The running count of visible nodes.
  * @param {number} metrics.hiddenNodes - The running count of hidden nodes.
+ * @param {Set<string>} [collapsedIds] - Optional set of collapsed node IDs. Defaults to graphState.
  * @returns {GraphNode} The cloned subtree with collapse metadata.
  */
-function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNodes: number }): GraphNode {
+export function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNodes: number }, collapsedIds?: Set<string>): GraphNode {
     if (node.nodeType !== 'root') {
         metrics.visibleNodes += 1;
     }
 
-    const isCollapsed = isNodeCollapsed(node.id);
+    const collapsedSet = collapsedIds ?? graphState.collapsedNodeIds;
+    const isCollapsed = collapsedSet?.has(node.id) ?? isNodeCollapsed(node.id);
     const hiddenDescendantCount = isCollapsed ? getHiddenDescendantCount(node) : 0;
 
     if (hiddenDescendantCount > 0) {
@@ -503,7 +505,7 @@ function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNo
         _searchMatched: false,
         _isCollapsed: isCollapsed,
         _hiddenDescendantCount: hiddenDescendantCount,
-        children: isCollapsed ? [] : (node.children ?? []).map(child => cloneSubtree(child, metrics)),
+        children: isCollapsed ? [] : (node.children ?? []).map(child => cloneSubtree(child, metrics, collapsedSet)),
     };
 }
 
@@ -512,17 +514,19 @@ function cloneSubtree(node: GraphNode, metrics: { visibleNodes: number; hiddenNo
  * @param {object} filters - The active filter criteria.
  * @param {{visibleNodes: number, directMatches: number, hiddenNodes: number}} metrics - Accumulator for filter result metrics.
  * @param {boolean} [isRoot] - Whether this is the root node.
+ * @param {Set<string>} [collapsedIds] - Optional set of collapsed node IDs. Defaults to graphState.
  * @returns {object | undefined} The filtered subtree, or undefined if no match.
  */
-function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetrics, isRoot: boolean = false): GraphNode | null | undefined {
-    const isCollapsed = isNodeCollapsed(node.id);
+export function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetrics, isRoot: boolean = false, collapsedIds?: Set<string>): GraphNode | null | undefined {
+    const collapsedSet = collapsedIds ?? graphState.collapsedNodeIds;
+    const isCollapsed = collapsedSet?.has(node.id) ?? isNodeCollapsed(node.id);
     const hiddenDescendantCount = isCollapsed ? getHiddenDescendantCount(node) : 0;
     const searchMatched = !isRoot && filters.search && (node._searchText ?? getNodeSearchText(node) as string).includes(filters.search);
 
     if (searchMatched && filters.includeChildren && !isCollapsed) {
         metrics.directMatches += 1;
         return {
-            ...cloneSubtree(node, metrics),
+            ...cloneSubtree(node, metrics, collapsedSet),
             _searchMatched: true,
         };
     }
@@ -534,7 +538,7 @@ function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetri
     const filteredChildren = isCollapsed
         ? []
         : (node.children ?? [])
-            .map(child => filterTree(child, filters, metrics))
+            .map(child => filterTree(child, filters, metrics, false, collapsedSet))
             .filter(Boolean) as unknown as GraphNode[];
 
     const isSelfMatches = !isRoot && isNodeMatching(node, filters);
@@ -569,7 +573,7 @@ function filterTree(node: GraphNode, filters: GraphFilters, metrics: FilterMetri
  * Read filter state from the current URL search parameters.
  * @returns {{search: string, includeChildren: boolean, types: Set<string>, effort: string, stride: string, status: string, assignment: string}} The parsed filter state.
  */
-function readFiltersFromUrl(): GraphFilters {
+export function readFiltersFromUrl(): GraphFilters {
     const parameters = new URLSearchParams(location.search);
     const search = normalizeText(parameters.get('q'));
     const isIncludeChildren = parameters.get('children') === '1' || parameters.get('children') === 'true';
@@ -604,7 +608,7 @@ function readGraphFocusFromUrl(): string | null | undefined {
  * Synchronize the current filter state to the browser's URL search parameters.
  * @param {object} filters - The filter state to persist.
  */
-function syncFiltersToUrl(filters: GraphFilters): void {
+export function syncFiltersToUrl(filters: GraphFilters): void {
     const parameters = new URLSearchParams();
 
     if (filters.search) {
@@ -1037,7 +1041,7 @@ function updateFilterSummary(metrics: FilterMetrics): void {
  * @param {object} treeData - The tree root to search.
  * @returns {object|undefined} The first matching node, or undefined.
  */
-function findFirstSearchMatch(treeData: GraphNode): GraphNode | undefined {
+export function findFirstSearchMatch(treeData: GraphNode): GraphNode | undefined {
     if (!treeData) return;
 
     if (treeData._searchMatched) {
@@ -1060,7 +1064,7 @@ function findFirstSearchMatch(treeData: GraphNode): GraphNode | undefined {
  * @param {SVGElement} svgNode - The SVG element to apply zoom transforms to.
  * @param {object} d3Instance - The D3 module instance.
  */
-function initZoomControls(zoomBehavior: unknown, svgNode: SVGElement, d3Instance: Record<string, unknown>): void {
+export function initZoomControls(zoomBehavior: unknown, svgNode: SVGElement, d3Instance: Record<string, unknown>): void {
     if (!zoomBehavior || !svgNode || !d3Instance) return;
 
     const selection = (d3Instance.select as (sel: string | Element | null) => { transition: () => { duration: (ms: number) => { call: (zoom: unknown, ...arguments_: unknown[]) => void } } })(svgNode);

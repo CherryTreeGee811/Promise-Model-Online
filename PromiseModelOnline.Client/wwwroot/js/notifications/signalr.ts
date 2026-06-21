@@ -57,6 +57,8 @@ export async function startSignalR(onNotification: (data?: unknown) => void) {
     try {
         await connection.start();
     } catch (error) {
+        const guardState = signalrGuard;
+        guardState.isStarted = false;
         console.warn('SignalR connection failed, notifications will not be real-time:', error);
         showToast('Unable to connect to notification service.', 'warning', 5000);
         return;

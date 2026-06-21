@@ -728,8 +728,8 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
         const ay = Number.isFinite(sy + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale)) ? sy + contentOffsetX + ((CARD_WIDTH / 2) * nodeScale) : 0;
         const bx = Number.isFinite(tx + contentOffsetY) ? tx + contentOffsetY : 0;
         const by = Number.isFinite(ty + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale)) ? ty + contentOffsetX - ((CARD_WIDTH / 2) * nodeScale) : 0;
-        const midX = (ax + bx) / 2;
-        return 'M' + ax + ',' + ay + 'C' + midX + ',' + ay + ',' + midX + ',' + by + ',' + bx + ',' + by;
+        const midY = (ay + by) / 2;
+        return 'M' + ay + ',' + ax + 'C' + midY + ',' + ax + ',' + midY + ',' + bx + ',' + by + ',' + bx;
     }
 
     // --- Link paths ---

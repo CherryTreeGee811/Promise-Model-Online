@@ -61,12 +61,14 @@ export async function loadNavTemplate(navContentDiv: HTMLElement, _contentDiv: H
         setActiveNavLink();
         if (isLoggedIn()) void startNotificationPolling();
     } catch (error: unknown) {
-        navContentDiv.replaceChildren();
-        const errorH1 = document.createElement('h1');
-        errorH1.textContent = 'Error loading template';
-        const errorP = document.createElement('p');
-        errorP.textContent = (error as Error).message;
-        navContentDiv.append(errorH1, errorP);
+        if (navContentDiv) {
+            navContentDiv.replaceChildren();
+            const errorH1 = document.createElement('h1');
+            errorH1.textContent = 'Error loading template';
+            const errorP = document.createElement('p');
+            errorP.textContent = (error as Error).message;
+            navContentDiv.append(errorH1, errorP);
+        }
         throw error;
     }
 }

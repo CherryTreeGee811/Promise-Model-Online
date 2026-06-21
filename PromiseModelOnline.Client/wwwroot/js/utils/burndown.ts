@@ -60,7 +60,7 @@ function hasBurndownData(element: HTMLElement, points: BurndownPoint[]): boolean
  * @param {BurndownPoint[]} points - The burndown data points
  * @returns {{startDate: Date, endDate: Date, days: number[], actualPoints: number[], finalIdeal: number[], lastDay: number}} Processed burndown data
  */
-function processBurndownPoints(points: BurndownPoint[]): { startDate: Date; endDate: Date; days: number[]; actualPoints: number[]; finalIdeal: number[]; lastDay: number } {
+export function processBurndownPoints(points: BurndownPoint[]): { startDate: Date; endDate: Date; days: number[]; actualPoints: number[]; finalIdeal: number[]; lastDay: number } {
     const sorted = points.toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const startDate = new Date(sorted[0].date);
     const endDate = new Date(sorted.at(-1)!.date);
@@ -135,7 +135,7 @@ function addBurndownTooltip(svg: D3Sel, d3: D3Chart, xScale: (v: number) => numb
  * @param {number} width - Stroke width
  * @param {string} fill - Fill color
  */
-function drawLine(svg: D3Sel, data: number[], lineGen: (d: unknown[]) => string, className: string, stroke: string, width: number, fill: string): void {
+export function drawLine(svg: D3Sel, data: number[], lineGen: (d: unknown[]) => string, className: string, stroke: string, width: number, fill: string): void {
     svg.append('path')
         .datum(data)
         .attr('class', className)
@@ -154,7 +154,7 @@ function drawLine(svg: D3Sel, data: number[], lineGen: (d: unknown[]) => string,
  * @param {string} fill - Fill color
  * @param {number} opacity - Fill opacity
  */
-function drawArea(svg: D3Sel, data: Array<{ x: number; y0: number; y1: number; behind: boolean }>, areaGen: (d: unknown[]) => string, className: string, fill: string, opacity: number): void {
+export function drawArea(svg: D3Sel, data: Array<{ x: number; y0: number; y1: number; behind: boolean }>, areaGen: (d: unknown[]) => string, className: string, fill: string, opacity: number): void {
     if (data.length < 2) return;
     svg.append('path')
         .datum(data)
@@ -176,7 +176,7 @@ function drawArea(svg: D3Sel, data: Array<{ x: number; y0: number; y1: number; b
  * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} behind - Array of behind-points
  * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} ahead - Array of ahead-points
  */
-function handleCrossPoint(diffLeft: number, diffRight: number, crossPoint: { x: number; y0: number; y1: number; behind: boolean }, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
+export function handleCrossPoint(diffLeft: number, diffRight: number, crossPoint: { x: number; y0: number; y1: number; behind: boolean }, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
     const behindCopy = { ...crossPoint, behind: true };
     const aheadCopy = { ...crossPoint, behind: false };
     if (diffLeft >= 0) behind.push(behindCopy);
@@ -195,7 +195,7 @@ function handleCrossPoint(diffLeft: number, diffRight: number, crossPoint: { x: 
  * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} behind - Array of behind-points
  * @param {Array<{ x: number; y0: number; y1: number; behind: boolean }>} ahead - Array of ahead-points
  */
-function processSegment(index: number, days: number[], actualPoints: number[], finalIdeal: number[], xScale: (v: number) => number, yScale: (v: number) => number, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
+export function processSegment(index: number, days: number[], actualPoints: number[], finalIdeal: number[], xScale: (v: number) => number, yScale: (v: number) => number, behind: Array<{ x: number; y0: number; y1: number; behind: boolean }>, ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }>): void {
     const leftDay = days[index];
     const rightDay = days[index + 1];
     const actualLeft = actualPoints[index];
@@ -238,7 +238,7 @@ function processSegment(index: number, days: number[], actualPoints: number[], f
  * @param {object} yScale - The D3 y-scale
  * @returns {{ enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> }} Enhanced behind/ahead points
  */
-function buildEnhancedPoints(days: number[], actualPoints: number[], finalIdeal: number[], xScale: (v: number) => number, yScale: (v: number) => number): { enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> } {
+export function buildEnhancedPoints(days: number[], actualPoints: number[], finalIdeal: number[], xScale: (v: number) => number, yScale: (v: number) => number): { enhancedBehind: Array<{ x: number; y0: number; y1: number; behind: boolean }>; enhancedAhead: Array<{ x: number; y0: number; y1: number; behind: boolean }> } {
     const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
     const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
 

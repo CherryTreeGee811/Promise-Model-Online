@@ -168,17 +168,15 @@ function getCreateFormDefaults(nodeData: Record<string, unknown>): Record<string
  * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
  * @throws {Error} If the request fails or returns a non-OK status.
  */
-async function requestJson(url: string, options: Record<string, unknown>): Promise<unknown> {
-    const optionHeaders = options.headers as Record<string, unknown> | undefined;
-    const fetchOptions = options as Record<string, unknown>;
-    delete fetchOptions.headers;
+export async function requestJson(url: string, options: Record<string, unknown>): Promise<unknown> {
+    const existingHeaders = (options.headers as Record<string, unknown> | undefined) ?? {};
     const response = await apiFetch(url, {
         mode: 'cors',
-        ...fetchOptions,
+        ...options,
         headers: {
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
-            ...(optionHeaders ?? {}) as Record<string, unknown>,
+            ...existingHeaders,
         },
     });
 
@@ -430,7 +428,7 @@ function createFormActionsBar(closeMenus: () => void, submitText: string): { can
  * @param {() => void} closeMenus - Function to close all menus.
  * @returns {HTMLFormElement|undefined} The form element or undefined.
  */
-function buildMomentFormElement(
+export function buildMomentFormElement(
     nodeData: Record<string, unknown>,
     _owner: string,
     _project: string,

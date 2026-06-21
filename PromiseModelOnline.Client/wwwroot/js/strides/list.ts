@@ -39,7 +39,7 @@ const _state: {
  * Enable or disable UI controls based on the user's edit permission.
  * @param {boolean} canEdit - Whether the user has edit permission.
  */
-function applyPermissionUI(canEdit: boolean): void {
+export function applyPermissionUI(canEdit: boolean): void {
     const controls = document.querySelectorAll(
         '.status-dropdown, .estimate-dropdown, .owner-dropdown, .moment-type-dropdown, .backlog-target-stride, .move-to-backlog-btn, .move-to-stride-from-backlog-btn'
     );
@@ -68,7 +68,7 @@ function preserveScroll(action: () => unknown): unknown {
  * @param {Record<string, unknown>} stride - The stride object.
  * @returns {number} The start date timestamp, or 0 if invalid.
  */
-function getStrideStartDateValue(stride: Record<string, unknown>): number {
+export function getStrideStartDateValue(stride: Record<string, unknown>): number {
     const d = new Date(stride?.startDate as string);
     return Number.isFinite(d?.getTime?.()) ? d.getTime() : 0;
 }
@@ -787,7 +787,7 @@ async function handleViewNav(event: MouseEvent, navContentDiv: HTMLElement, cont
  * @param {string} project - The project slug.
  * @returns {Promise<void>}
  */
-async function handleMoveToBacklog(button: HTMLElement, owner: string, project: string): Promise<void> {
+export async function handleMoveToBacklog(button: HTMLElement, owner: string, project: string): Promise<void> {
     const momentId = Number(button.dataset.momentId!);
     promptMoveToBacklog(momentId, async () => {
         const updated = await assignMomentToStride(owner, project, momentId, undefined) as Record<string, unknown>;
@@ -812,7 +812,7 @@ async function handleMoveToBacklog(button: HTMLElement, owner: string, project: 
  * @param {string} project - The project slug.
  * @returns {Promise<void>}
  */
-async function handleMoveToStride(button: HTMLElement, owner: string, project: string): Promise<void> {
+export async function handleMoveToStride(button: HTMLElement, owner: string, project: string): Promise<void> {
     const momentId = Number(button.dataset.momentId!);
     const row = button.closest('tr') as HTMLElement | null;
     const select = row?.querySelector('.backlog-target-stride') as HTMLSelectElement | null;
@@ -841,7 +841,7 @@ async function handleMoveToStride(button: HTMLElement, owner: string, project: s
  * @param {string} project - The project slug.
  * @returns {Promise<void>}
  */
-async function handleProgressStride(button: HTMLElement, owner: string, project: string): Promise<void> {
+export async function handleProgressStride(button: HTMLElement, owner: string, project: string): Promise<void> {
     const strideId = Number(button.dataset.strideId!);
     if (!(await promptProgressStride(strideId))) return;
     try {
