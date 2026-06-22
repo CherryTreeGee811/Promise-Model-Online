@@ -15,6 +15,17 @@
  *   TEST_PASSWORD - test account password (default: Hello123*)
  */
 
+// puppeteer-core 24.x renamed ignoreHTTPSErrors to acceptInsecureCerts;
+// memlab still sets the old name which is silently dropped.
+const puppeteer = require('puppeteer');
+const __origLaunch = puppeteer.launch;
+puppeteer.launch = function (opts) {
+  opts = Object.assign({}, opts);
+  opts.acceptInsecureCerts = true;
+  opts.args = [...(opts.args || []), '--ignore-certificate-errors'];
+  return __origLaunch(opts);
+};
+
 const URL = process.env.URL || 'http://localhost:4173';
 const TEST_USER = process.env.TEST_USER || 'pmo_test';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || 'Hello123*';
