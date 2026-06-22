@@ -157,7 +157,8 @@ async function fetchPathEntities(nodeType: string, nodeId: string | number, owne
     switch (nodeType) {
         case 'moment': {
             moment = await getMoment(owner, project, numericId) as Record<string, unknown>;
-            flow = await getFlowById(owner, project, (moment as Record<string, unknown>).flowId as number) as Record<string, unknown>;
+            if (!moment) { moment = undefined; break; }
+            flow = await getFlowById(owner, project, moment.flowId as number) as Record<string, unknown>;
             break;
         }
         case 'flow': {

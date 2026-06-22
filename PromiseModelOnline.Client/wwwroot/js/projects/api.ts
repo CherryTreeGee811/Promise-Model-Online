@@ -72,6 +72,7 @@ export async function deleteProject(owner: string, project: string) {
 export async function getProject(owner: string, project: string) {
     const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}`);
 
+    if (!response) return;
     if (response.status === 204) return;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 

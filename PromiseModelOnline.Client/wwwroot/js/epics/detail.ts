@@ -95,7 +95,8 @@ async function loadParentPromise(owner: string, project: string, epic: Epic, nav
  * @returns {Promise<void>}
  */
 async function loadEpicJourneys(owner: string, project: string, epicId: string, epic: Record<string, unknown>, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
-    const journeysList = document.querySelector('#epic-journeys-list') as HTMLElement;
+    const journeysList = document.querySelector('#epic-journeys-list') as HTMLElement | null;
+    if (!journeysList) return;
 
     try {
         const journeys = await getJourneys(owner, project, epicId) as JourneyItem[];
@@ -185,7 +186,7 @@ async function loadEpicJourneys(owner: string, project: string, epicId: string, 
 
         bindLinkClickHandlers(journeysList, 'a[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
     } catch {
-        journeysList.replaceChildren();
+        journeysList?.replaceChildren();
         const p = document.createElement('p');
         p.className = 'error';
         p.textContent = 'Failed to load journeys.';
@@ -216,16 +217,18 @@ function upsertEpicGraphViewButton(detailDiv: HTMLElement, epic: Epic): void {
  * @param {{ permission: string } | undefined} permission - Permission object
  */
 export async function loadEpicDetail(owner: string, project: string, epicId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
-    const detailDiv = document.querySelector('#epic-detail-content') as HTMLElement;
-    const errorElement = document.querySelector('#error-text') as HTMLElement;
-    const loadingElement = document.querySelector('#epic-detail-loading') as HTMLElement;
+    const detailDiv = document.querySelector('#epic-detail-content') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const loadingElement = document.querySelector('#epic-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
+    if (!detailDiv) return;
     if (loadingElement) loadingElement.hidden = false;
     if (errorElement) errorElement.textContent = '';
 
     try {
         const epic = await getEpic(owner, project, epicId) as Epic;
+        if (!epic) return;
         await loadEntityLookupMap('Epic', epic.id, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;

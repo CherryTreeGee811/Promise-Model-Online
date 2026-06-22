@@ -8,6 +8,7 @@ import { authStore } from './stores/auth.ts';
  */
 export async function apiGet<T = unknown>(url: string): Promise<T | undefined> {
   const response = await apiFetch(url);
+  if (!response) return;
   if (response.status === 204) return;
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
@@ -38,6 +39,7 @@ async function apiMutate<T = unknown>(url: string, body: unknown | undefined, me
     options.body = JSON.stringify(body);
   }
   const response = await apiFetch(url, options);
+  if (!response) return;
   if (isReturnJson && response.status === 204) return;
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return isReturnJson ? response.json() : true;

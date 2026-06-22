@@ -298,6 +298,160 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
 }
 
 /**
+ * @param {Element} saveButton - The save button element
+ * @param {HTMLTextAreaElement} input - The description input element
+ * @param {HTMLElement} messageElement - The message display element
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment data object
+ * @param {ReturnType<typeof setupInlineEdit>} [editor] - The inline editor instance
+ */
+function setupMomentEditDescriptionHandler(
+    saveButton: Element,
+    input: HTMLTextAreaElement,
+    messageElement: HTMLElement,
+    owner: string,
+    project: string,
+    momentId: string,
+    moment: Moment,
+    editor?: ReturnType<typeof setupInlineEdit>,
+): void {
+    saveButton.addEventListener('click', async () => {
+        messageElement.textContent = '';
+        (saveButton as HTMLButtonElement).disabled = true;
+
+        const newDescription = input.value;
+        try {
+            const updated = await updateMomentDescription(owner, project, momentId, newDescription) as Record<string, unknown>;
+            moment.description = (updated?.description as string) ?? (newDescription.trim() ? newDescription : undefined);
+            patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
+                description: moment.description,
+            });
+            if (editor) editor.showSavedPopover(formatCommentText(moment.description || ''));
+        } catch (error) {
+            messageElement.textContent = 'Save failed';
+            console.error(error);
+        } finally {
+            (saveButton as HTMLButtonElement).disabled = false;
+        }
+    });
+}
+
+/**
+ * @param {HTMLSelectElement} select - The status select element
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment data object
+ * @param {HTMLElement | null} completedCell - The completed date cell
+ */
+function setupMomentStatusChangeHandler(
+    select: HTMLSelectElement,
+    owner: string,
+    project: string,
+    momentId: string,
+    moment: Moment,
+    completedCell: HTMLElement | null,
+): void {
+    select.addEventListener('change', async () => {
+        const previous = select.value;
+        const writeTo = select;
+        try {
+            const updated = await updateMomentStatus(owner, project, momentId, select.value) as Record<string, unknown>;
+            moment.status = updated.status as string;
+            moment.statusColor = updated.statusColor as string;
+            moment.completedAt = updated.completedAt as string;
+            writeTo.value = updated.status as string;
+            await refreshDetailStackGraph();
+            if (updated.completedAt) {
+                const d = new Date(updated.completedAt as string);
+                if (completedCell) completedCell.textContent = d.toLocaleDateString('en-CA');
+            } else {
+                if (completedCell) completedCell.textContent = '\u{2013}';
+            }
+        } catch {
+            writeTo.value = previous;
+            showToast('Failed to update status', 'error');
+        }
+    });
+}
+
+/**
+ * @param {HTMLSelectElement} select - The type select element
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment data object
+ */
+function setupMomentTypeChangeHandler(
+    select: HTMLSelectElement,
+    owner: string,
+    project: string,
+    momentId: string,
+    moment: Moment,
+): void {
+    select.addEventListener('change', async () => {
+        const newType = select.value;
+        const writeTo = select;
+        try {
+            const updated = await updateMomentType(owner, project, momentId, newType) as Record<string, unknown>;
+            if (updated && updated.type) {
+                moment.type = updated.type as string;
+                writeTo.value = updated.type as string;
+                patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
+                    type: updated.type,
+                });
+            }
+        } catch {
+            writeTo.value = moment.type;
+            showToast('Failed to update type', 'error');
+        }
+    });
+}
+
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {Record<string, unknown>} permission - Permission object
+ * @returns {Promise<void>}
+ */
+/**
+ * Bind a click delegation handler to a detail container for flow navigation links.
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ */
+function bindFlowNavigationHandler(detailDiv: HTMLElement, owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
+    detailDiv.addEventListener('click', (event: MouseEvent) => {
+        const flowLink = (event.target as HTMLElement).closest('a.detail-link');
+        if (!flowLink) return;
+
+        if (event.ctrlKey || event.metaKey || event.button === 1) return;
+
+        event.preventDefault();
+        void navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
+    });
+}
+
+/**
+ * Upsert the graph view button for a moment detail page.
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {string} sequenceNumber - The moment sequence number
+ */
+function upsertMomentGraphViewButton(detailDiv: HTMLElement, sequenceNumber: number): void {
+    const { owner: go, project: gp } = getOwnerProjectFromPath();
+    if (!go || !gp) return;
+    const href = buildGraphViewHref(go, gp, `moment-${sequenceNumber}`);
+    if (href) upsertGraphViewButton(detailDiv, href);
+}
+
+/**
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
  * @param {string} momentId - The moment ID
@@ -307,16 +461,18 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
  * @returns {Promise<void>}
  */
 export async function loadMomentDetail(owner: string, project: string, momentId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
-    const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement;
-    const errorElement = document.querySelector('#error-text') as HTMLElement;
-    const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement;
+    const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
+    if (!detailDiv || !errorElement) return;
     if (loadingElement) loadingElement.hidden = false;
     errorElement.textContent = '';
 
     try {
         const moment = await getMoment(owner, project, momentId) as Moment;
+        if (!moment) return;
         await loadEntityLookupMap('Moment', moment.id, owner, project);
         if (loadingElement) loadingElement.hidden = true;
 
@@ -351,99 +507,33 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
         const descriptionMessage = document.querySelector('#moment-description-msg') as HTMLElement;
         if (descriptionSaveButton && descriptionInput && descriptionMessage) {
-            (descriptionSaveButton as HTMLButtonElement).addEventListener('click', async () => {
-                descriptionMessage.textContent = '';
-                (descriptionSaveButton as HTMLButtonElement).disabled = true;
-
-                const newDescription = descriptionInput.value;
-                try {
-                    const updated = await updateMomentDescription(owner, project, momentId, newDescription) as Record<string, unknown>;
-                    moment.description = (updated?.description as string) ?? (newDescription.trim() ? newDescription : undefined);
-                    patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
-                        description: moment.description,
-                    });
-                    if (momentEditor) momentEditor.showSavedPopover(formatCommentText(moment.description || ''));
-                } catch (error) {
-                    descriptionMessage.textContent = 'Save failed';
-                    console.error(error);
-                } finally {
-                    (descriptionSaveButton as HTMLButtonElement).disabled = false;
-                }
-            });
+            setupMomentEditDescriptionHandler(descriptionSaveButton, descriptionInput, descriptionMessage, owner, project, momentId, moment, momentEditor);
         }
 
-        detailDiv.addEventListener('click', (event: MouseEvent) => {
-            const flowLink = (event.target as HTMLElement).closest('a.detail-link');
-            if (!flowLink) return;
-
-            if (event.ctrlKey || event.metaKey || event.button === 1) return;
-
-            event.preventDefault();
-            void navigate(`/${owner}/${project}/flows/${flowLink.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
-        });
+        bindFlowNavigationHandler(detailDiv, owner, project, navContentDiv, contentDiv);
 
         void setupEstimateHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
 
         await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
 
         const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
-        const completedCell = detailDiv.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement;
+        const completedCell = detailDiv?.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null;
         if (statusSelectElement) {
-            statusSelectElement.addEventListener('change', async () => {
-                const previous = statusSelectElement.value;
-                const writeTo = statusSelectElement;
-                try {
-                    const updated = await updateMomentStatus(owner, project, momentId, statusSelectElement.value) as Record<string, unknown>;
-                    moment.status = updated.status as string;
-                    moment.statusColor = updated.statusColor as string;
-                    moment.completedAt = updated.completedAt as string;
-                    writeTo.value = updated.status as string;
-                    await refreshDetailStackGraph();
-                    if (updated.completedAt) {
-                        const d = new Date(updated.completedAt as string);
-                        completedCell.textContent = d.toLocaleDateString('en-CA');
-                    } else {
-                        completedCell.textContent = '\u{2013}';
-                    }
-                } catch {
-                    writeTo.value = previous;
-                    showToast('Failed to update status', 'error');
-                }
-            });
+            setupMomentStatusChangeHandler(statusSelectElement, owner, project, momentId, moment, completedCell);
         }
 
         const typeSelectElement = document.querySelector('#moment-type-select') as HTMLSelectElement;
         if (typeSelectElement) {
-            typeSelectElement.addEventListener('change', async () => {
-                const newType = typeSelectElement.value;
-                const writeTo = typeSelectElement;
-                try {
-                    const updated = await updateMomentType(owner, project, momentId, newType) as Record<string, unknown>;
-                    if (updated && updated.type) {
-                        moment.type = updated.type as string;
-                        writeTo.value = updated.type as string;
-                        patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
-                            type: updated.type,
-                        });
-                    }
-                } catch {
-                    writeTo.value = moment.type;
-                    showToast('Failed to update type', 'error');
-                }
-            })
+            setupMomentTypeChangeHandler(typeSelectElement, owner, project, momentId, moment);
         }
 
         initBackLink();
         loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
 
-        const { owner: go, project: gp } = getOwnerProjectFromPath();
-        if (go && gp) {
-            const href = buildGraphViewHref(go, gp, `moment-${moment.sequenceNumber}`);
-            if (href) upsertGraphViewButton(detailDiv, href);
-        }
+        upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
     } catch (error) {
         if (loadingElement) loadingElement.hidden = true;
-        errorElement.textContent = 'Failed to load moment details.';
+        if (errorElement) errorElement.textContent = 'Failed to load moment details.';
         console.error(error);
     }
 }

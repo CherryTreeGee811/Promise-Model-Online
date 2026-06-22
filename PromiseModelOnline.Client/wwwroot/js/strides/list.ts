@@ -1610,9 +1610,11 @@ function populateBacklogStrideSelects(): void {
  * @param {Record<string, unknown> } permission - The user's permission object.
  */
 export async function loadStridesList(owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown> | null): Promise<void> {
-    const strideBoard = document.querySelector('#stride-board') as HTMLElement;
+    const strideBoard = document.querySelector('#stride-board') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    if (!strideBoard || !errorElement) return;
+
     const backlogSection = document.querySelector('#backlog-section') as HTMLElement | null;
-    const errorElement = document.querySelector('#error-text') as HTMLElement;
     const projectTitle = document.querySelector('#project-title') as HTMLElement | null;
     const strideButtonElement = document.querySelector('#create-stride-btn') as HTMLElement | null;
     const strideButtonLabelElement = document.querySelector('#create-stride-btn-label') as HTMLElement | null;
@@ -1685,8 +1687,8 @@ export async function loadStridesList(owner: string, project: string, navContent
         // Attach planning event listeners (inline updates only; no full reload)
         attachPlanningListeners(owner, project, navContentDiv, contentDiv);
     } catch (error) {
-        strideBoard.replaceChildren();
-        errorElement.textContent = 'Failed to load data.';
+        strideBoard?.replaceChildren();
+        if (errorElement) errorElement.textContent = 'Failed to load data.';
         console.error(error);
     }
 }

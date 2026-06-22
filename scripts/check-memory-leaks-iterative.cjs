@@ -20,7 +20,7 @@ const __origLaunch = puppeteer.launch;
 puppeteer.launch = function (opts) {
   opts = Object.assign({}, opts);
   opts.acceptInsecureCerts = true;
-  opts.args = [...(opts.args || []), '--ignore-certificate-errors'];
+  opts.args = [...(opts.args || []), '--ignore-certificate-errors', '--no-sandbox'];
   return __origLaunch(opts);
 };
 

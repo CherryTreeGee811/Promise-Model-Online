@@ -250,16 +250,18 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
  * @param {{ permission: string } | undefined} permission - Permission object
  */
 export async function loadJourneyDetail(owner: string, project: string, journeyId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
-    const detailDiv = document.querySelector('#journey-detail-content') as HTMLElement;
-    const errorElement = document.querySelector('#error-text') as HTMLElement;
-    const loadingElement = document.querySelector('#journey-detail-loading') as HTMLElement;
+    const detailDiv = document.querySelector('#journey-detail-content') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const loadingElement = document.querySelector('#journey-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
+    if (!detailDiv) return;
     if (loadingElement) loadingElement.hidden = false;
     if (errorElement) errorElement.textContent = '';
 
     try {
         const journey = await getJourney(owner, project, journeyId) as Journey;
+        if (!journey) return;
         await loadEntityLookupMap('Journey', journey.id, owner, project);
         if (loadingElement) loadingElement.hidden = true;
 

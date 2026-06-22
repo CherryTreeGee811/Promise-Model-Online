@@ -262,7 +262,7 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
 
         bindLinkClickHandlers(momentsList, 'a[moment-id]', 'moment-seq', 'moments', owner, project, navContentDiv, contentDiv);
     } catch {
-        momentsList.replaceChildren();
+        momentsList?.replaceChildren();
         const p = document.createElement('p');
         p.className = 'error';
         p.textContent = 'Failed to load moments.';
@@ -293,16 +293,18 @@ function upsertFlowGraphViewButton(detailDiv: HTMLElement, flow: Flow): void {
  * @param {{ permission: string } | undefined} permission - Permission object
  */
 export async function loadFlowDetail(owner: string, project: string, flowId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
-    const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement;
-    const errorElement = document.querySelector('#error-text') as HTMLElement;
-    const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement;
+    const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
+    if (!detailDiv) return;
     if (loadingElement) loadingElement.hidden = false;
     if (errorElement) errorElement.textContent = '';
 
     try {
         const flow = await getFlow(owner, project, flowId) as Flow;
+        if (!flow) return;
         await loadEntityLookupMap('Flow', flow.id, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;
