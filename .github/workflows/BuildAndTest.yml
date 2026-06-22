@@ -382,10 +382,12 @@ jobs:
           docker run --rm \
             --network host \
             -v /tmp:/zap/wrk:rw \
+            -v ${{ github.workspace }}/infrastructure/tests/zap-baseline.conf:/zap/wrk/zap-baseline.conf:ro \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-full-scan.py \
             -t https://localhost:9000 \
             -r /zap/wrk/zap-report.html \
+            -c /zap/wrk/zap-baseline.conf \
             -z "-config globalexeurl.url="
 
       - name: Tear Down E2E Stack
