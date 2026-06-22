@@ -15,35 +15,42 @@ function settle(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function click(page, selector) {
-  const el = await page.waitForSelector(selector, { timeout: 5000 }).catch(() => null);
-  if (el) {
-    await el.evaluate(node => node.click());
-    await settle(300);
-  }
-}
-
-async function interactWithPage(page) {
-  try {
-    const buttons = await page.$$('button, a.btn, .nav-link, .list-group-item, [role=button]');
-    for (const btn of buttons.slice(0, 3)) {
-      try {
-        await btn.click();
-        await settle(300);
-      } catch {
-        // element may be hidden or non-interactive
-      }
+async function safeClickInteractiveElements(page) {
+  await page.evaluate(() => {
+    const els = document.querySelectorAll('button, a.btn, .nav-link, .list-group-item, [role=button]');
+    let count = 0;
+    for (const el of els) {
+      if (count >= 3) break;
+      el.addEventListener('click', e => e.preventDefault(), { once: true });
+      el.click();
+      count++;
     }
-  } catch {
-    // no interactive elements
+  });
+  await settle(1000);
+}
+
+async function tryOpenAndCloseModals(page) {
+  const modalTriggers = await page.$$('[data-bs-toggle="modal"], .modal-trigger, .btn-outline-secondary').catch(() => []);
+  for (const trigger of modalTriggers.slice(0, 2)) {
+    await trigger.evaluate(el => {
+      el.addEventListener('click', e => e.preventDefault(), { once: true });
+      el.click();
+    }).catch(() => {});
+    await settle(500);
+    const closeButtons = await page.$$('[data-bs-dismiss="modal"], .btn-close, .modal .btn-secondary').catch(() => []);
+    for (const btn of closeButtons.slice(0, 2)) {
+      await btn.evaluate(el => {
+        el.addEventListener('click', e => e.preventDefault(), { once: true });
+        el.click();
+      }).catch(() => {});
+      await settle(500);
+    }
   }
 }
 
-async function navigateAndInteract(page, url) {
-  await page.goto(url, { waitUntil: 'load', timeout: 30000 });
-  await settle(1000);
-  await interactWithPage(page);
-  await settle(500);
+function navigateSpa(route) {
+  history.pushState({}, '', route);
+  window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
 module.exports = {
@@ -52,34 +59,25 @@ module.exports = {
   action: async page => {
     for (const route of ROUTES) {
       try {
-        await navigateAndInteract(page, new URL(route, page.url()).href);
+        await page.evaluate(navigateSpa, route);
+        await settle(1000);
+        await safeClickInteractiveElements(page);
+        await settle(500);
       } catch {
         // route may require auth or be unavailable
       }
     }
 
-    try {
-      const modalTriggers = await page.$$('[data-bs-toggle="modal"], .modal-trigger, .btn-outline-secondary');
-      for (const trigger of modalTriggers.slice(0, 2)) {
-        try {
-          await trigger.click();
-          await settle(500);
-          const closeButtons = await page.$$('[data-bs-dismiss="modal"], .btn-close, .modal .btn-secondary');
-          for (const btn of closeButtons.slice(0, 2)) {
-            try {
-              await btn.click();
-              await settle(500);
-            } catch { /* ignore */ }
-          }
-        } catch { /* ignore */ }
-      }
-    } catch { /* no modal triggers */ }
+    await tryOpenAndCloseModals(page);
 
     return { page };
   },
 
   back: async page => {
-    await page.goto(URL, { waitUntil: 'load', timeout: 30000 });
+    await page.evaluate(() => {
+      history.pushState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
     await settle(2000);
     return { page };
   },

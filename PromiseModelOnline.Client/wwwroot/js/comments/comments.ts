@@ -1,3 +1,4 @@
+import { showToast } from '../ui/toast.ts';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.ts';
 import { htmlToNodes } from '../utils/html.ts';
 import { isAtLeast } from '../utils/permissions.ts';
@@ -106,7 +107,7 @@ export async function loadComments(container: HTMLElement, parentType: string, p
                         window.scrollTo(0, y);
                     }
                 } catch (error) {
-                    alert('Failed to post comment.');
+                    showToast('Failed to post comment.', 'error');
                     console.error(error);
                 }
             });

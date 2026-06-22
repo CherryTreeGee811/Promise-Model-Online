@@ -2,6 +2,7 @@ import { assignMomentToStride, updateMomentStatus, updateMomentEstimate, updateM
 import { getProject } from '../projects/api.ts';
 import { buildGraphViewHref } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
+import { showToast } from '../ui/toast.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
 import { renderLoadingSpinner, createConfirmationPromise } from '../utils/html.ts';
 import { openIterationCreateModal } from '../utils/iteration-create-modal.ts';
@@ -595,7 +596,7 @@ function promptMoveConfirm(_momentId: number | string, modalPrefix: string, mess
             bootstrap?.Modal?.getOrCreateInstance?.(modalElement)?.hide();
         } catch (error) {
             console.error(error);
-            alert('Failed to move moment');
+            showToast('Failed to move moment', 'error');
         } finally {
             (nextButton as HTMLInputElement).disabled = false;
         }
@@ -693,7 +694,7 @@ async function handleStatusChange(select: HTMLSelectElement, owner: string, proj
         if (row) updateStatusBadge(row, updated.status as string);
     } catch {
         restoreSelect.value = previous;
-        alert('Failed to update status');
+        showToast('Failed to update status', 'error');
     }
 }
 
@@ -716,7 +717,7 @@ async function handleEstimateChange(select: HTMLSelectElement, owner: string, pr
         if (card) updateStrideTotalEffortFromDom(card);
     } catch {
         restoreSelect.value = previous;
-        alert('Failed to update estimate');
+        showToast('Failed to update estimate', 'error');
     }
 }
 
@@ -738,7 +739,7 @@ async function handleOwnerChange(select: HTMLSelectElement, owner: string, proje
         restoreSelect.value = String(updated.ownerId ?? '');
     } catch {
         restoreSelect.value = previous;
-        alert('Failed to update owner');
+        showToast('Failed to update owner', 'error');
     }
 }
 
@@ -759,7 +760,7 @@ async function handleTypeChange(select: HTMLSelectElement, owner: string, projec
         writeTo.dataset.currentType = newType;
     } catch {
         writeTo.value = previous;
-        alert('Failed to update type');
+        showToast('Failed to update type', 'error');
     }
 }
 
@@ -862,7 +863,7 @@ export async function handleProgressStride(button: HTMLElement, owner: string, p
         }
     } catch (error) {
         console.error('Failed to progress stride', error);
-        alert('Failed to progress stride');
+        showToast('Failed to progress stride', 'error');
     }
 }
 

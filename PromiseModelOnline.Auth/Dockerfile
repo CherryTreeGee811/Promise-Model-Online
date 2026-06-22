@@ -36,5 +36,8 @@ COPY PromiseModelOnline.Auth/wwwroot /app/wwwroot
 USER root
 RUN chown app:app /app/cert.pem /app/key.pem && chmod 600 /app/cert.pem /app/key.pem
 RUN mkdir -p /app/dp-keys && chown app:app /app/dp-keys
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:8060/health || exit 1
+
 USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Auth.dll"]

@@ -26,13 +26,11 @@ jobs:
           fi
                 
       - name: Setup .NET
-        if: false
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
       - name: Cache NuGet packages
-        if: false
         uses: actions/cache@v5
         id: nuget-cache
         with:
@@ -49,12 +47,10 @@ jobs:
           key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Restore & Build All Projects
-        if: false
         shell: bash
         run: dotnet build Promise-Model-Online.sln
 
       - name: Check .NET packages for known vulnerabilities
-        if: false
         shell: bash
         run: |
           for proj in PromiseModelOnline.Api PromiseModelOnline.Api.Tests PromiseModelOnline.Auth PromiseModelOnline.Auth.Tests PromiseModelOnline.BFF; do
@@ -66,7 +62,6 @@ jobs:
         run: npm ci
 
       - name: Production dependency audit
-        if: false
         shell: bash
         run: |
           echo "=== Production dependency tree ==="
@@ -76,17 +71,14 @@ jobs:
           npm audit --omit=dev --audit-level=low
 
       - name: Full dependency audit (production + dev)
-        if: false
         shell: bash
         run: npm audit --audit-level=high
 
       - name: Production dependency boundary check (Layer 1)
-        if: false
         shell: bash
         run: bash scripts/check-prod-deps.sh
 
       - name: ESLint & Quality (client JS/CSS/HTML)
-        if: false
         shell: bash
         run: |
           npm run lint
@@ -100,12 +92,10 @@ jobs:
           npm run build
 
       - name: Source code import boundary (Layer 2)
-        if: false
         shell: bash
         run: bash scripts/check-source-imports.sh
 
       - name: Bundle boundary audit (Layer 3)
-        if: false
         shell: bash
         run: bash scripts/check-bundle.sh
 
@@ -121,7 +111,6 @@ jobs:
           PEM
       
       - name: Add GATEWAY CI TLS/SSL CERT & KEY
-        if: false
         shell: bash
         run: |
           mkdir -p PromiseModelOnline.BFF
@@ -133,7 +122,6 @@ jobs:
           PEM
 
       - name: Add AUTH CI TLS/SSL CERT & KEY
-        if: false
         shell: bash
         run: |
           mkdir -p PromiseModelOnline.Auth
@@ -145,7 +133,6 @@ jobs:
           PEM
 
       - name: Write secrets from GitHub Secrets
-        if: false
         shell: bash
         run: |
             mkdir -p secrets
@@ -157,7 +144,6 @@ jobs:
             printf '%s' "${{ secrets.UMAMI_DB_PASSWORD }}" > secrets/umami_db_password.txt
 
       - name: Run Auth Unit Tests
-        if: false
         shell: bash
         run: |
           mkdir -p AuthTestResults
@@ -169,7 +155,6 @@ jobs:
             --filter "FullyQualifiedName!~IntegrationTests"
 
       - name: Run API Unit Tests
-        if: false
         shell: bash
         run: |
           mkdir -p ApiUnitTestResults
@@ -181,7 +166,6 @@ jobs:
             --filter "FullyQualifiedName!~IntegrationTests"
 
       - name: Run Auth Integration Tests
-        if: false
         shell: bash
         run: |
           dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
@@ -192,7 +176,6 @@ jobs:
             --filter "FullyQualifiedName~IntegrationTests"
 
       - name: Run BFF Integration Tests
-        if: false
         shell: bash
         run: |
           mkdir -p BffTestResults
@@ -204,7 +187,6 @@ jobs:
             --filter "FullyQualifiedName~IntegrationTests"
 
       - name: Run API Integration Tests
-        if: false
         shell: bash
         run: |
           mkdir -p ApiIntegrationTestResults
@@ -232,7 +214,6 @@ jobs:
           exit 1
 
       - name: Cache Playwright browsers
-        if: false
         id: playwright-cache
         uses: actions/cache@v5
         with:
@@ -250,8 +231,8 @@ jobs:
           restore-keys: |
             puppeteer-${{ runner.os }}-
 
-      - name: Install Playwright browsers (all)
-        if: false
+      - name: Install Playwright browsers (cache miss)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
@@ -260,7 +241,7 @@ jobs:
           npx playwright-core install --with-deps chromium
 
       - name: Install system deps (cache hit — browsers already cached)
-        if: false
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
         shell: bash
         run: |
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1 | tail -3
@@ -283,7 +264,6 @@ jobs:
         run: npx @puppeteer/browsers install chrome 2>&1 | tail -3
 
       - name: Run Client Tests (Chromium)
-        if: false
         shell: bash
         env:
           TEST_BROWSER: chromium
@@ -295,7 +275,6 @@ jobs:
             --logger "console;verbosity=normal"
 
       - name: Run Client Tests (Firefox)
-        if: false
         shell: bash
         env:
           TEST_BROWSER: firefox
@@ -307,7 +286,6 @@ jobs:
             --logger "console;verbosity=normal"
 
       - name: Run Client Tests (WebKit)
-        if: false
         shell: bash
         env:
           TEST_BROWSER: webkit
@@ -319,14 +297,13 @@ jobs:
             --logger "console;verbosity=normal"
 
       - name: A11y + Responsive + Lighthouse Audit
-        if: false
         shell: bash
         run: |
           npm run lint:a11y https://localhost:9000
           npm run lint:responsive https://localhost:9000
           npm run lint:lighthouse
 
-      - name: Memory Leak Audit
+      - name: Memory Leak Audit (single-run)
         shell: bash
         env:
           PUPPETEER_CACHE_DIR: ~/.cache/puppeteer
@@ -335,13 +312,20 @@ jobs:
             --scenario scripts/memlab-scenarios/leak-check.cjs \
             --chromium-binary "$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)"
 
+      - name: Memory Leak Audit (iterative)
+        shell: bash
+        env:
+          PUPPETEER_CACHE_DIR: ~/.cache/puppeteer
+        run: |
+          URL=https://localhost:9000 node scripts/check-memory-leaks-iterative.cjs \
+            --chromium-binary "$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)"
+
       - name: Teardown Client UI Test Environment
         if: always()
         shell: bash
         run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
       - name: Start E2E Stack (without rate limiting)
-        if: false
         shell: bash
         run: |
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
@@ -382,7 +366,6 @@ jobs:
           exit 1
 
       - name: Run E2E Tests — Core (no rate-limiting)
-        if: false
         shell: bash
         run: |
           mkdir -p E2eTestResults
@@ -394,7 +377,6 @@ jobs:
             --filter "FullyQualifiedName!~RateLimitingTests"
 
       - name: Security — TLS/SSL scan (testssl.sh)
-        if: false
         shell: bash
         run: |
           docker run --rm \
@@ -406,7 +388,6 @@ jobs:
         continue-on-error: true
 
       - name: Security — OWASP ZAP DAST scan
-        if: false
         shell: bash
         run: |
           docker run --rm \
@@ -417,15 +398,12 @@ jobs:
             -t https://localhost:9000 \
             -r /zap/wrk/zap-report.html \
             -z "-config globalexeurl.url="
-        continue-on-error: true
 
       - name: Tear Down E2E Stack
-        if: false
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
 
       - name: Start E2E Stack for Rate-Limit Tests
-        if: false
         shell: bash
         run: |
           export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
@@ -448,7 +426,6 @@ jobs:
           exit 1
 
       - name: Wait for port (host side)
-        if: false
         shell: bash
         run: |
           for i in $(seq 1 15); do
@@ -460,7 +437,6 @@ jobs:
           exit 1
 
       - name: Run E2E Tests — Rate Limiting only
-        if: false
         shell: bash
         run: |
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
@@ -471,20 +447,15 @@ jobs:
             --filter "FullyQualifiedName~RateLimitingTests"
 
       - name: Tear Down E2E Stack (Rate-Limit)
-        if: false
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
 
-      # ─── 7-9. Memlab debug mode — everything below skipped ───
-
       - name: Upload coverage reports to Codecov
-        if: false
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Hadolint (all Dockerfiles)
-        if: false
         shell: bash
         run: |
           for dockerfile in */Dockerfile; do
@@ -493,7 +464,6 @@ jobs:
           done
 
       - name: Run Trivy (Dockerfiles + .csproj config)
-        if: false
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "fs"
@@ -505,8 +475,6 @@ jobs:
           args: "--skip-dirs node_modules"
 
       - name: Scan Docker images
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -517,8 +485,6 @@ jobs:
           exit-code: "0"
 
       - name: Scan Docker image (client)
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -529,8 +495,6 @@ jobs:
           exit-code: "0"
 
       - name: Scan Docker image (auth)
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -541,8 +505,6 @@ jobs:
           exit-code: "0"
 
       - name: Scan Docker image (bff)
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -553,42 +515,36 @@ jobs:
           exit-code: "0"
 
       - name: Upload Trivy filesystem results
-        if: false
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-results.sarif"
           category: "trivy-fs"
 
       - name: Upload Trivy image scan results (API)
-        if: false
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-api.sarif"
           category: "trivy-image-api"
 
       - name: Upload Trivy image scan results (client)
-        if: false
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-client.sarif"
           category: "trivy-image-client"
 
       - name: Upload Trivy image scan results (auth)
-        if: false
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-auth.sarif"
           category: "trivy-image-auth"
 
       - name: Upload Trivy image scan results (bff)
-        if: false
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-bff.sarif"
           category: "trivy-image-bff"
 
       - name: Generate SBOM (source — .csproj + package.json)
-        if: false
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "fs"
@@ -599,8 +555,6 @@ jobs:
           args: "--skip-dirs node_modules"
 
       - name: Generate SBOM (API container — includes OS packages)
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -610,8 +564,6 @@ jobs:
           exit-code: "0"
 
       - name: Generate SBOM (Client container — includes OS packages)
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -621,8 +573,6 @@ jobs:
           exit-code: "0"
 
       - name: Generate SBOM (Auth container — includes OS packages)
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -632,8 +582,6 @@ jobs:
           exit-code: "0"
 
       - name: Generate SBOM (BFF container — includes OS packages)
-        if: false
-        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
@@ -643,7 +591,6 @@ jobs:
           exit-code: "0"
 
       - name: Upload SBOMs
-        if: false
         uses: actions/upload-artifact@v4
         with:
           name: sbom
@@ -657,7 +604,7 @@ jobs:
             /tmp/zap-report.html
 
       - name: Push Docker Images to DockerHub
-        if: false
+        if: github.ref == 'refs/heads/main'
         shell: bash
         run: |
           docker tag promisemodelonlineapi cherrytree811/promisemodelonlineapi:latest

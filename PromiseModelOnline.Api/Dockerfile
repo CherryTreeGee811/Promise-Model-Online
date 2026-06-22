@@ -34,5 +34,8 @@ COPY --from=build /src/pmo_pm /app/pmo_pm
 # Ensure files are readable by the app user
 USER root
 RUN chown -R app:app /app/pmo_pm || true
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
 USER app
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Api.dll"]

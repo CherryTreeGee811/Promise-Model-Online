@@ -1,7 +1,7 @@
 <div class="privacy-page">
 
 <h1>Privacy Policy</h1>
-<p class="privacy-date"><strong>Effective Date:</strong> June 9, 2026</p>
+<p class="privacy-date"><strong>Effective Date:</strong> June 21, 2026</p>
 
 <h2>1. Introduction</h2>
 <p>Promise Model Online ("PMO," "we," "our," or "us") is a self-hosted project management application. This Privacy Policy explains how personal data is collected, used, stored, and disclosed when you use the PMO application. We are committed to compliance with applicable privacy laws, including:</p>
@@ -41,7 +41,29 @@
   <li><strong>Audit logs:</strong> User actions (create, update, delete) are logged with actor identity, timestamp, entity type, and changes for security and compliance. These logs are stored within the deployed database.</li>
 </ul>
 
-<h3>3.4 Analytics (Optional)</h3>
+<h3>3.4 Application Performance Telemetry (Optional)</h3>
+<p>The deployment may include an optional client-side telemetry module. When enabled, this module collects fully anonymized performance and health metrics:</p>
+<ul>
+  <li>JavaScript heap size (sampled every 60 seconds)</li>
+  <li>DOM node count</li>
+  <li>Count of uncaught runtime errors (error messages only, no stack traces)</li>
+  <li>Count of long-running tasks (&gt;50ms, indicating possible jank)</li>
+  <li>Service worker state (registered / activated / error)</li>
+  <li>Current page route (anonymized — project names and identifiers replaced with placeholders)</li>
+</ul>
+<p>The telemetry module explicitly does <strong>not</strong> collect:</p>
+<ul>
+  <li>User IDs, usernames, email addresses, or any account identifiers</li>
+  <li>IP addresses</li>
+  <li>Cookies or any data stored in cookies</li>
+  <li>Stack traces (which may contain user data or PII)</li>
+  <li>URL query parameters, form data, or any text content from the DOM</li>
+  <li>Project names, task descriptions, comments, or any user-generated content</li>
+  <li>Session tokens or authentication material</li>
+</ul>
+<p>The telemetry module respects the <strong>Global Privacy Control (GPC)</strong> signal. Users may also opt out at any time by adding <code>&lt;meta name="telemetry" content="off"&gt;</code> to the page, which can be configured by the deploying organization. There is no persistent storage, no queuing, and no retry on delivery failure — all data is sent on a best-effort basis via the Beacon API.</p>
+
+<h3>3.5 Analytics (Optional)</h3>
 <p>The deployment may include self-hosted Umami analytics. When configured, Umami collects:</p>
 <ul>
   <li>Pages viewed and referrer URLs</li>
@@ -50,10 +72,10 @@
 </ul>
 <p>Umami does <strong>not</strong> use cookies, does <strong>not</strong> collect personally identifiable information, does <strong>not</strong> track users across sites, and never shares data with third parties. All analytics data remains on the deployment server.</p>
 
-<h3>3.5 Federated Authentication (Optional)</h3>
+<h3>3.6 Federated Authentication (Optional)</h3>
 <p>If the deploying organization enables Google OAuth as an external identity provider using OpenID Connect (OAuth 2.1), users may sign in with their Google account. In this flow, PMO receives the user's Google email address and name during first sign-in. PMO does not access any other Google account data. Internal registration with email verification remains available regardless of whether Google OAuth is enabled.</p>
 
-<h3>3.6 Email Communications (Optional)</h3>
+<h3>3.7 Email Communications (Optional)</h3>
 <p>If SendGrid is configured, email addresses may be used for account verification, password resets, invitation notifications, and deadline reminders. Email content is transactional only; PMO does not send marketing emails.</p>
 
 <h2>4. How We Use Information</h2>
@@ -71,7 +93,7 @@
 <p>For users in the European Economic Area, processing is based on:</p>
 <ul>
   <li><strong>Legitimate interest:</strong> Providing the project management service the user or their organization has requested.</li>
-  <li><strong>Consent:</strong> Where required (e.g., optional analytics, Google OAuth). Consent may be withdrawn at any time.</li>
+  <li><strong>Consent:</strong> Where required (e.g., optional analytics and telemetry, Google OAuth). Consent may be withdrawn at any time.</li>
   <li><strong>Contractual necessity:</strong> Processing required to deliver the service to the deploying organization.</li>
 </ul>
 
@@ -81,21 +103,22 @@
   <li>HTTPS encryption for all data in transit</li>
   <li>Password hashing using industry-standard algorithms</li>
   <li>OAuth 2.1 and OpenID Connect for authentication</li>
-  <li>Content Security Policy (CSP) to prevent cross-site scripting</li>
+  <li>Content Security Policy (CSP) blocking all external resource loads</li>
   <li>Rate limiting to prevent brute-force attacks</li>
   <li>Docker secrets for all credentials and keys</li>
+  <li>Non-root application containers</li>
 </ul>
 
 <h2>7. Data Retention</h2>
 <p>Data is retained for as long as the deploying organization maintains the PMO instance. Users may request deletion of their account and associated data at any time. Audit logs may be retained longer for security and legal compliance. The deploying organization is responsible for defining and communicating specific retention policies.</p>
 
-<h2>8. Third-Party Services</h2>
-<p>The PMO application architecture references these external services. Whether each is active depends on the deploying organization's configuration:</p>
+<h2>8. Third-Party Dependencies</h2>
+<p>PMO bundles several open-source libraries that are served from the same server as the application (no external CDN requests are made by the application code). Telemetry and analytics data are transmitted to the same server. Whether each optional integration is active depends on the deploying organization's configuration:</p>
 
 <table class="privacy-table">
   <thead>
     <tr>
-      <th>Service</th>
+      <th>Component</th>
       <th>Purpose</th>
       <th>Data Shared</th>
       <th>Required</th>
@@ -103,9 +126,27 @@
   </thead>
   <tbody>
     <tr>
-      <td>jsDelivr CDN</td>
-      <td>Deliver Bootstrap, Bootstrap Icons, SignalR, Tippy.js libraries</td>
-      <td>IP address (standard HTTP request)</td>
+      <td>Bootstrap, Bootstrap Icons</td>
+      <td>UI framework and icons</td>
+      <td>None (self-hosted)</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>D3.js</td>
+      <td>Graph visualization rendering</td>
+      <td>None (self-hosted)</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>SignalR (ASP.NET Core)</td>
+      <td>Real-time notifications and updates</td>
+      <td>None (self-hosted)</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Tippy.js, Popper.js</td>
+      <td>Tooltips and popovers</td>
+      <td>None (self-hosted)</td>
       <td>Yes</td>
     </tr>
     <tr>
@@ -123,7 +164,13 @@
     <tr>
       <td>Umami</td>
       <td>Self-hosted analytics</td>
-      <td>None (page views are anonymized)</td>
+      <td>Anonymized page view data</td>
+      <td>Optional</td>
+    </tr>
+    <tr>
+      <td>Performance Telemetry</td>
+      <td>Client-side health monitoring</td>
+      <td>Anonymized metrics (heap, errors, performance)</td>
       <td>Optional</td>
     </tr>
   </tbody>
@@ -138,7 +185,7 @@
   <li><strong>Portability:</strong> Receive your data in a structured, machine-readable JSON format via the <code>/api/users/me/export</code> endpoint, accessible through the My Data page at <code>/account/delete</code>.</li>
   <li><strong>Restriction:</strong> Limit how your data is processed.</li>
   <li><strong>Objection:</strong> Object to processing based on legitimate interest.</li>
-  <li><strong>Withdraw consent:</strong> Where processing is consent-based.</li>
+  <li><strong>Withdraw consent:</strong> Where processing is consent-based (telemetry and analytics may be opted out by the deploying organization).</li>
 </ul>
 <p>To exercise these rights, contact the deploying organization's administrator. Requests will be fulfilled within 30 days as required by applicable law.</p>
 
@@ -151,10 +198,10 @@
   <li>Expires after 8 hours of inactivity</li>
   <li>Contains no personal data</li>
 </ul>
-<p>No tracking cookies, advertising cookies, or third-party cookies are used by PMO. The optional Umami analytics module does not use cookies.</p>
+<p>No tracking cookies, advertising cookies, or third-party cookies are used by PMO. The optional Umami analytics module does not use cookies. The optional telemetry module does not use cookies or persistent storage.</p>
 
 <h2>11. International Data Transfers</h2>
-<p>Because PMO is self-hosted, all data resides on servers under the deploying organization's control. The deploying organization determines where data is physically stored. If third-party services (Google OAuth, SendGrid) are configured, data may be transferred to those providers' servers in accordance with their respective privacy policies and data processing agreements.</p>
+<p>Because PMO is self-hosted, all data resides on servers under the deploying organization's control. The deploying organization determines where data is physically stored. If optional third-party services (Google OAuth, SendGrid) are configured, data may be transferred to those providers' servers in accordance with their respective privacy policies and data processing agreements.</p>
 
 <h2>12. Children's Privacy</h2>
 <p>PMO is not intended for use by individuals under the age of 16. We do not knowingly collect personal data from children. If you believe a child has provided personal data, contact the deploying organization's administrator for deletion.</p>

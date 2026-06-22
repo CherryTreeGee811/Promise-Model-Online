@@ -8,6 +8,7 @@ import {
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
 import { getStrides } from '../strides/api.ts';
+import { showToast } from '../ui/toast.ts';
 import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml, htmlToNodes } from '../utils/html.ts';
@@ -240,7 +241,7 @@ async function setupEstimateHandler(owner: string, project: string, momentId: st
                 await updateMomentEstimate(owner, project, momentId, estimate);
                 moment.effortEstimate = estimate;
                 patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { effortEstimate: estimate });
-            } catch (error) { alert('Failed to update estimate'); console.error(error); }
+            } catch (error) { showToast('Failed to update estimate', 'error'); console.error(error); }
         });
     }
 }
@@ -272,7 +273,7 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
                 try {
                     const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
                     assignStrideResult(updated);
-                } catch (error) { alert('Failed to update assigned stride'); console.error(error); }
+                } catch (error) { showToast('Failed to update assigned stride', 'error'); console.error(error); }
             });
 
             /**
@@ -406,7 +407,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
                     }
                 } catch {
                     writeTo.value = previous;
-                    alert('Failed to update status');
+                    showToast('Failed to update status', 'error');
                 }
             });
         }
@@ -427,7 +428,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
                     }
                 } catch {
                     writeTo.value = moment.type;
-                    alert('Failed to update type');
+                    showToast('Failed to update type', 'error');
                 }
             })
         }
@@ -623,7 +624,7 @@ async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, proj
     } catch (error) {
         checkbox.checked = isPreviousChecked;
         if (label) label.textContent = isPreviousChecked ? 'Completed' : 'Open';
-        alert('Failed to update task completion');
+        showToast('Failed to update task completion', 'error');
         console.error(error);
     } finally { checkbox.disabled = false; }
 }

@@ -1,3 +1,4 @@
+import { showToast } from '../ui/toast.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
 
 import { getPendingInvitations, acceptInvitation } from './api.ts';
@@ -93,7 +94,7 @@ export function loadInvitationsPage(_contentDiv: HTMLElement): void {
                         }
                         window.scrollTo(0, y);
                     } catch (error) {
-                        alert('Failed to accept invitation');
+                        showToast('Failed to accept invitation', 'error');
                         console.error(error);
                     }
                 });

@@ -7,6 +7,7 @@ import { handleKnowledgeBaseRoutes } from './knowledge-base/router.ts';
 import { loadMyTasksPage } from './moments/my-tasks.ts';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts';
 import { handleNotificationsRoutes } from './notifications/router.ts';
+import { initTelemetry } from './telemetry.ts';
 
 /**
  * @typedef {{ allowed: true } | { allowed: false; redirect?: string }} GuardResult
@@ -162,6 +163,8 @@ async function initApp(): Promise<true> {
   const navContentDiv = document.querySelector('#main-menu') as HTMLElement;
 
   await checkSession();
+
+  initTelemetry();
 
   initNavEventDelegation(navContentDiv, contentDiv);
 

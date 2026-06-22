@@ -1,3 +1,4 @@
+import { showToast } from '../ui/toast.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
 
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.ts';
@@ -157,7 +158,7 @@ function renderNotificationsInto(listDiv: HTMLElement, notifications: { id: numb
             window.scrollTo(0, y);
 
         } catch (error) {
-            alert('Failed to mark all as read');
+            showToast('Failed to mark all as read', 'error');
             console.error(error);
         }
     });
@@ -177,7 +178,7 @@ function renderNotificationsInto(listDiv: HTMLElement, notifications: { id: numb
                 window.scrollTo(0, y);
 
             } catch (error) {
-                alert('Failed to mark notification as read');
+                showToast('Failed to mark notification as read', 'error');
                 console.error(error);
             }
         });

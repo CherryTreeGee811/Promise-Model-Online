@@ -1,4 +1,5 @@
 import { getUsername } from '../auth-state.ts';
+import { showToast } from '../ui/toast.ts';
 
 import { getReactions, addReaction, updateReaction } from './api.ts';
 
@@ -116,7 +117,7 @@ export function loadReactions(container: HTMLElement, parentType: string, parent
                 renderSummary();
                 window.scrollTo(0, y);
             } catch {
-                alert('Failed to react');
+                showToast('Failed to react', 'error');
             }
         });
     }
