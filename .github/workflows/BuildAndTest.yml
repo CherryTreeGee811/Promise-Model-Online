@@ -211,16 +211,18 @@ jobs:
           docker logs promisemodelonlineclient --tail 30 2>&1
           exit 1
 
-      - name: Cache Playwright browsers
+      - name: Cache Playwright + Puppeteer browsers
         id: playwright-cache
         uses: actions/cache@v5
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('**/PromiseModelOnline.Client.Tests.csproj', 'package-lock.json') }}
+          path: |
+            ~/.cache/ms-playwright
+            ~/.cache/puppeteer
+          key: browsers-${{ runner.os }}-${{ hashFiles('**/PromiseModelOnline.Client.Tests.csproj', 'package-lock.json') }}
           restore-keys: |
-            playwright-${{ runner.os }}-
+            browsers-${{ runner.os }}-
 
-      - name: Install Playwright browsers (all)
+      - name: Install browsers (cache miss)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
@@ -228,6 +230,7 @@ jobs:
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit
           npx playwright-core install --with-deps chromium
+          npx puppeteer browsers install chrome
 
       - name: Install system deps (cache hit — browsers already cached)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
@@ -237,6 +240,7 @@ jobs:
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps firefox  2>&1 | tail -3
           pwsh ./PromiseModelOnline.Client.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps webkit   2>&1 | tail -3
           npx playwright-core install --with-deps chromium 2>&1 | tail -3
+          npx puppeteer browsers install chrome 2>&1 | tail -3
 
       - name: Run Client Tests (Chromium)
         shell: bash
@@ -340,7 +344,7 @@ jobs:
         shell: bash
         run: |
           URL=https://localhost:9000 npx memlab run \
-            --scenario scripts/memlab-scenarios/leak-check-authenticated.js
+            --scenario scripts/memlab-scenarios/leak-check-authenticated.cjs
           npx lhci autorun --config=.lighthouserc.e2e.json
 
       - name: Security — TLS/SSL scan (testssl.sh)

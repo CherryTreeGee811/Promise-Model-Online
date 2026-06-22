@@ -13,7 +13,7 @@
     "lint:dead": "knip --no-progress",
     "lint:all": "npm run lint && npm run lint:html && npm run lint:css && npm run lint:dry && npm run lint:dead && npm run typecheck",
     "lint:a11y": "node a11y-check.mjs",
-    "lint:leaks": "memlab run --scenario scripts/memlab-scenarios/leak-check.js",
+    "lint:leaks": "memlab run --scenario scripts/memlab-scenarios/leak-check.cjs",
     "lint:lighthouse": "lhci autorun",
     "lint:ci": "npm run lint && npm run lint:html && npm run lint:css && npm run lint:dry && npm run lint:dead && npm run lint:nginx && npm run lint:responsive && npm run typecheck && npm run lint:a11y",
     "lint:nginx": "bash scripts/check-nginx.sh",

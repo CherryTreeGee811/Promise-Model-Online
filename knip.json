@@ -3,8 +3,8 @@
   "entry": [
     "PromiseModelOnline.Client/wwwroot/js/router.ts",
     "PromiseModelOnline.Client/wwwroot/sw.mjs",
-    "scripts/memlab-scenarios/leak-check.js",
-    "scripts/memlab-scenarios/leak-check-authenticated.js"
+    "scripts/memlab-scenarios/leak-check.cjs",
+    "scripts/memlab-scenarios/leak-check-authenticated.cjs"
   ],
   "project": [
     "PromiseModelOnline.Client/wwwroot/js/**/*.ts",
