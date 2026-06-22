@@ -236,6 +236,28 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Global exception handler that returns RFC 7807 problem+json and logs
+// via Serilog — prevents stack traces from leaking in error responses.
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+        var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (exceptionFeature?.Error is not null)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger("GlobalExceptionHandler");
+            logger.LogError(exceptionFeature.Error, "Unhandled exception processing {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+        await context.Response.WriteAsync(
+            """{"type":"https://tools.ietf.org/html/rfc7231#section-6.6.1","title":"Internal Server Error","status":500}""");
+    });
+});
+
 app.UseStatusCodePages(context =>
 {
     var code = context.HttpContext.Response.StatusCode;

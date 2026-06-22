@@ -6,6 +6,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Serilog;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
@@ -166,6 +167,28 @@ var app = builder.Build();
 
 // Apply pending EF Core migrations at startup.
 app.ApplyMigrations();
+
+// Global exception handler that returns RFC 7807 problem+json and logs
+// via Serilog — prevents stack traces from leaking in error responses.
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+        var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        if (exceptionFeature?.Error is not null)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger("GlobalExceptionHandler");
+            logger.LogError(exceptionFeature.Error, "Unhandled exception processing {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+        await context.Response.WriteAsync(
+            """{"type":"https://tools.ietf.org/html/rfc7231#section-6.6.1","title":"Internal Server Error","status":500}""");
+    });
+});
 
 // Seed OpenIddict applications and development users in development mode only.
 if (app.Environment.IsDevelopment())
