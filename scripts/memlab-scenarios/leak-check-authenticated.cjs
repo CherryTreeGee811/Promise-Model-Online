@@ -54,8 +54,8 @@ async function interactWithPage(page) {
   }
 }
 
-async function settle(page, ms) {
-  await page.waitForTimeout(ms);
+async function settle(_page, ms) {
+  await new Promise(r => setTimeout(r, ms));
 }
 
 module.exports = {
