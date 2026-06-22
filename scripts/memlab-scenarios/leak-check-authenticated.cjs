@@ -96,7 +96,7 @@ module.exports = {
 
     for (const route of routes) {
       try {
-        await page.goto(`${URL}/#${route}`, { waitUntil: 'networkidle0', timeout: 15000 });
+        await page.evaluate((r) => { window.location.hash = r; }, route).catch(() => {});
         await settle(page, 1000);
         await interactWithPage(page);
         await settle(page, 500);
@@ -125,7 +125,9 @@ module.exports = {
   },
 
   back: async page => {
-    await page.goto(URL, { waitUntil: 'networkidle0', timeout: 15000 }).catch(() => {});
+    // Use SPA hash navigation instead of page.goto to avoid triggering
+    // memlab's page-reload detection (checkPageReload).
+    await page.evaluate(() => { window.location.hash = ''; }).catch(() => {});
     await settle(page, 2000);
   },
 };
