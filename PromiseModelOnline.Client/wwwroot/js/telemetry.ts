@@ -155,21 +155,4 @@ export function initTelemetry(): void {
   state.intervalId = setInterval(sendTelemetry, SAMPLE_INTERVAL_MS);
 }
 
-/**
- * Stop telemetry collection and reset accumulated metrics.
- */
-export function stopTelemetry(): void {
-  if (state.intervalId) {
-    clearInterval(state.intervalId);
-    state.intervalId = undefined;
-  }
-  state.errorMessages = [];
-  state.longTaskCount = 0;
-}
 
-/**
- * Force an immediate telemetry send outside the regular interval.
- */
-export function forceSend(): void {
-  sendTelemetry();
-}

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
@@ -70,7 +69,6 @@ public class EmailVerificationController(
     [AllowAnonymous]
     [HttpPost("confirm")]
     [ValidateAntiForgeryToken]
-    [EnableRateLimiting("VerifyCodePolicy")]
     public async Task<IActionResult> Confirm(VerifyEmailViewModel model)
     {
         ViewBag.Resent = false;
@@ -123,7 +121,6 @@ public class EmailVerificationController(
     [AllowAnonymous]
     [HttpPost("resend")]
     [ValidateAntiForgeryToken]
-    [EnableRateLimiting("ResendVerificationPolicy")]
     public async Task<IActionResult> Resend(string? userId)
     {
         if (string.IsNullOrWhiteSpace(userId))

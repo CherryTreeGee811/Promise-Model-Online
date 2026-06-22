@@ -3,7 +3,6 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.Models;
@@ -59,7 +58,6 @@ public class AccountController(
     /// <returns>A redirect or the registration view with errors.</returns>
     [AllowAnonymous]
     [HttpPost("")]
-    [EnableRateLimiting("Email")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
@@ -161,7 +159,6 @@ public class AccountController(
     /// <returns>A redirect back to the verification page.</returns>
     [AllowAnonymous]
     [HttpPost("resend-code")]
-    [EnableRateLimiting("Email")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResendCode(string email, string userId)
     {

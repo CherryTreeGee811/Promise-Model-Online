@@ -144,7 +144,19 @@ builder.Services.AddDataProtection()
 builder.Services.AddMemoryCache();
 
 // SendGrid email service for transactional emails (verification codes).
-builder.Services.AddSingleton<IEmailService, EmailService>();
+// Falls back to a no-op logger if SendGrid is not configured.
+var sendGridApiKey = builder.Configuration["SendGrid:ApiKey"];
+if (string.IsNullOrEmpty(sendGridApiKey))
+{
+    var sendGridFile = builder.Configuration["SendGrid:ApiKey_FILE"];
+    if (!string.IsNullOrEmpty(sendGridFile) && File.Exists(sendGridFile))
+        sendGridApiKey = (await File.ReadAllTextAsync(sendGridFile).ConfigureAwait(false)).Trim();
+}
+
+if (!string.IsNullOrEmpty(sendGridApiKey))
+    builder.Services.AddSingleton<IEmailService, EmailService>();
+else
+    builder.Services.AddSingleton<IEmailService, NoOpEmailService>();
 
 // Kestrel HTTPS with certificate file support; MVC controllers and views.
 builder.ConfigureHttps();
