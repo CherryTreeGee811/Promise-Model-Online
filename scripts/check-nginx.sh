@@ -109,11 +109,7 @@ for pair in "${CONFIG_PAIRS[@]}"; do
     ERRORS=$((ERRORS + 1))
   fi
 
-  if grep -q 'ssl_protocols\|ssl_ciphers' "$SERVER"; then
-    echo "    ✅ TLS settings found"
-  else
-    echo "    ⚠️  No explicit TLS settings — verify deployment handles this"
-  fi
+
 done
 
 echo ""

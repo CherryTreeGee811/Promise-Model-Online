@@ -24,6 +24,12 @@ puppeteer.launch = function (opts) {
   return __origLaunch(opts);
 };
 
+const argv = require('node:process').argv;
+const chromiumBinary = (() => {
+  const idx = argv.indexOf('--chromium-binary');
+  return idx !== -1 && argv[idx + 1] ? argv[idx + 1] : undefined;
+})();
+
 const URL = process.env.URL || 'http://localhost:4173';
 const ITERATIONS = parseInt(process.env.ITERATIONS || '5', 10);
 const THRESHOLD = parseInt(process.env.THRESHOLD || '51200', 10);
@@ -83,10 +89,12 @@ async function getHeapSize(page) {
 async function main() {
   console.error(`Iterative memory leak check: ${ITERATIONS} iterations, ${(THRESHOLD / 1024).toFixed(1)}KB threshold\n`);
 
-  const browser = await puppeteer.launch({
+  const launchOpts = {
     headless: true,
     acceptInsecureCerts: true,
-  });
+  };
+  if (chromiumBinary) launchOpts.executablePath = chromiumBinary;
+  const browser = await puppeteer.launch(launchOpts);
 
   try {
     const page = await browser.newPage();
