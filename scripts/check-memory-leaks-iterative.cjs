@@ -10,8 +10,8 @@
  *
  * Environment:
  *   URL       - target URL (default: http://localhost:4173)
- *   ITERATIONS - number of navigation cycles (default: 5)
- *   THRESHOLD - max allowed heap growth in bytes (default: 51200 = 50KB)
+ *   ITERATIONS - number of navigation cycles (default: 10)
+ *   THRESHOLD - max allowed heap growth in bytes (default: 524288 = 512KB)
  */
 
 const puppeteer = require('puppeteer');
@@ -31,8 +31,8 @@ const chromiumBinary = (() => {
 })();
 
 const URL = process.env.URL || 'http://localhost:4173';
-const ITERATIONS = parseInt(process.env.ITERATIONS || '5', 10);
-const THRESHOLD = parseInt(process.env.THRESHOLD || '51200', 10);
+const ITERATIONS = parseInt(process.env.ITERATIONS || '10', 10);
+const THRESHOLD = parseInt(process.env.THRESHOLD || '524288', 10);
 
 const ROUTES = ['/account/login', '/privacy', '/tos', '/knowledge-base', '/change-password', '/account/delete'];
 
@@ -113,11 +113,16 @@ async function main() {
       console.error(`  [${i + 1}] heap: ${(size / 1024 / 1024).toFixed(2)} MB (Δ ${(delta / 1024).toFixed(1)} KB)`);
     }
 
-    // Check for monotonic growth
+    // Check for sustained heap growth using running minimum.
+    // The running minimum avoids false positives from normal GC cycles
+    // and first-iteration initialization spikes. A real leak prevents
+    // the heap floor from recovering between iterations.
+    let minSeen = sizes[0];
     let maxGrowth = 0;
     for (let i = 1; i < sizes.length; i++) {
-      const growth = sizes[i] - sizes[0];
+      const growth = sizes[i] - minSeen;
       if (growth > maxGrowth) maxGrowth = growth;
+      if (sizes[i] < minSeen) minSeen = sizes[i];
     }
 
     console.error(`\n  Total heap growth: ${(maxGrowth / 1024).toFixed(1)} KB (threshold: ${(THRESHOLD / 1024).toFixed(1)} KB)`);

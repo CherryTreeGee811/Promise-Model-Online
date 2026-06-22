@@ -141,7 +141,7 @@ async function cacheFirst(request) {
   }
 }
 
-swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r: Response | Promise<Response>) => void }} event */ event => {
+swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r: Response | Promise<Response>) => void, waitUntil: (p: Promise<unknown>) => void }} event */ event => {
   if (!_cacheReady) return;
 
   const { request } = event;
@@ -158,40 +158,40 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
   }
 
   if (isStaticAsset(path)) {
-    event.respondWith(
-      cacheFirst(request)
-        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-    );
+    const responsePromise = cacheFirst(request)
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
     return;
   }
 
   if (isTemplate(path)) {
-    event.respondWith(
-      networkFirst(request)
-        .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-    );
+    const responsePromise = networkFirst(request)
+      .then(r => r || caches.match('/templates/error.html'))
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
     return;
   }
 
   if (path === '/' || path === '/index.html' || path === '/manifest.json') {
-    event.respondWith(
-      networkFirst(request)
-        .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-    );
+    const responsePromise = networkFirst(request)
+      .then(r => r || caches.match('/templates/error.html'))
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
     return;
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      networkFirst(request)
-        .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
-    );
+    const responsePromise = networkFirst(request)
+      .then(r => r || caches.match('/templates/error.html'))
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
   }
 });
