@@ -107,21 +107,21 @@ function sendTelemetry(): void {
 
 /**
  * Set up a PerformanceObserver to count long tasks.
+ * Guards against unsupported entry types to avoid console warnings in Firefox/WebKit.
  */
 function observeLongTasks(): void {
   if (typeof PerformanceObserver === 'undefined') return;
-  try {
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.duration > LONG_TASK_THRESHOLD_MS) {
-          state.longTaskCount++;
-        }
+  if (!('supportedEntryTypes' in PerformanceObserver)) return;
+  const entryTypes = PerformanceObserver.supportedEntryTypes as unknown[];
+  if (!Array.isArray(entryTypes) || !entryTypes.includes('longtask')) return;
+  const observer = new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) {
+      if (entry.duration > LONG_TASK_THRESHOLD_MS) {
+        state.longTaskCount++;
       }
-    });
-    observer.observe({ type: 'longtask', buffered: false });
-  } catch {
-    // PerformanceObserver not supported or blocked
-  }
+    }
+  });
+  observer.observe({ type: 'longtask', buffered: false });
 }
 
 /**

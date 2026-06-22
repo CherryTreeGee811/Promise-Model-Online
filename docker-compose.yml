@@ -22,7 +22,7 @@ services:
     image: ${DOCKER_REGISTRY-}promisemodelonlinebff
     container_name: promisemodelonlinebff
     ports:
-      - "8010:8010/tcp"
+      - "127.0.0.1:8010:8010/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8010
@@ -124,7 +124,7 @@ services:
     networks:
       - promisemodelonline-net
     ports:
-      - 1433:1433/tcp
+      - "127.0.0.1:1433:1433/tcp"
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}

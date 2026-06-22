@@ -16,8 +16,6 @@ const PRECACHE = [
   '/css/site.css',
   '/lib/css/bootstrap.min.css',
   '/lib/css/bootstrap-icons.min.css',
-  '/lib/css/fonts/bootstrap-icons.woff2',
-  '/lib/css/fonts/bootstrap-icons.woff',
   '/lib/js/bootstrap.bundle.min.js',
   '/lib/js/signalr.min.js',
   '/lib/js/d3.min.js',
@@ -84,7 +82,7 @@ function isBffPath(path) {
  * @returns {boolean} True if the path matches a static asset extension.
  */
 function isStaticAsset(path) {
-  return /\.(css|mjs|js|png|jpg|jpeg|gif|ico|svg|woff|woff2)$/.test(path);
+  return /\.(css|mjs|js|png|jpg|jpeg|gif|ico|svg)$/.test(path);
 }
 
 /**
@@ -127,8 +125,9 @@ async function networkFirst(request) {
 
 /**
  * Cache-first fetch strategy: serve from cache if available, otherwise fetch and cache.
+ * Returns null on complete failure so callers can decide the fallback.
  * @param {Request} request - The fetch request.
- * @returns {Promise<Response>} The response from cache or network.
+ * @returns {Promise<Response|null>} The response from cache or network, or null.
  */
 async function cacheFirst(request) {
   const cached = await caches.match(request, { ignoreSearch: true });
@@ -139,9 +138,9 @@ async function cacheFirst(request) {
       const cache = await caches.open(CACHE);
       cache.put(request, response.clone());
     }
-    return response;
+    return response.ok ? response : null;
   } catch {
-    return new Response('Offline', { status: 503 });
+    return null;
   }
 }
 
@@ -162,13 +161,19 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
   }
 
   if (isStaticAsset(path)) {
-    event.respondWith(cacheFirst(request).catch(() => new Response('', { status: 204 })));
+    event.respondWith(
+      cacheFirst(request)
+        .then(r => r || new Response('', { status: 204 }))
+        .catch(() => new Response('', { status: 204 }))
+    );
     return;
   }
 
   if (isTemplate(path)) {
     event.respondWith(
       cacheFirst(request)
+        .then(r => r)
+        .catch(() => null)
         .then(r => r || caches.match('/templates/error.html'))
         .then(r => r || new Response('', { status: 204 }))
         .catch(() => new Response('', { status: 204 }))
@@ -179,7 +184,7 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
   if (path === '/' || path === '/index.html' || path === '/manifest.json') {
     event.respondWith(
       networkFirst(request)
-        .catch(() => caches.match('/templates/error.html'))
+        .then(r => r || caches.match('/templates/error.html'))
         .then(r => r || new Response('', { status: 204 }))
         .catch(() => new Response('', { status: 204 }))
     );
@@ -189,7 +194,7 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
   if (request.mode === 'navigate') {
     event.respondWith(
       networkFirst(request)
-        .catch(() => caches.match('/templates/error.html'))
+        .then(r => r || caches.match('/templates/error.html'))
         .then(r => r || new Response('', { status: 204 }))
         .catch(() => new Response('', { status: 204 }))
     );
