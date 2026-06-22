@@ -160,8 +160,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
   if (isStaticAsset(path)) {
     event.respondWith(
       cacheFirst(request)
-        .then(r => r || new Response(null, { status: 204 }))
-        .catch(() => new Response(null, { status: 204 }))
+        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
     );
     return;
   }
@@ -170,8 +170,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
     event.respondWith(
       networkFirst(request)
         .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response(null, { status: 204 }))
-        .catch(() => new Response(null, { status: 204 }))
+        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
     );
     return;
   }
@@ -180,8 +180,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
     event.respondWith(
       networkFirst(request)
         .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response(null, { status: 204 }))
-        .catch(() => new Response(null, { status: 204 }))
+        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
     );
     return;
   }
@@ -190,8 +190,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
     event.respondWith(
       networkFirst(request)
         .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response(null, { status: 204 }))
-        .catch(() => new Response(null, { status: 204 }))
+        .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
+        .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain' } }))
     );
   }
 });
