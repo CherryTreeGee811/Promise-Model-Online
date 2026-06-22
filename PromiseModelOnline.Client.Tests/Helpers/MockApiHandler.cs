@@ -139,7 +139,17 @@ public static partial class MockApiHandler
                 return;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[MockHandler] Error handling {method} {path}: {ex.Message}");
+        }
+
+        // Unhandled route — for API/hub routes, return 204 instead of hitting the real (non-existent) backend
+        if (path.StartsWith("/api/") || path.StartsWith("/hubs/"))
+        {
+            await route.FulfillAsync(new RouteFulfillOptions { Status = 204 });
+            return;
+        }
 
         await route.ContinueAsync();
     }
