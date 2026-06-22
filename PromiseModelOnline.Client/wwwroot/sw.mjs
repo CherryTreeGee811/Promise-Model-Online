@@ -171,9 +171,7 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
 
   if (isTemplate(path)) {
     event.respondWith(
-      cacheFirst(request)
-        .then(r => r)
-        .catch(() => null)
+      networkFirst(request)
         .then(r => r || caches.match('/templates/error.html'))
         .then(r => r || new Response('', { status: 204 }))
         .catch(() => new Response('', { status: 204 }))
