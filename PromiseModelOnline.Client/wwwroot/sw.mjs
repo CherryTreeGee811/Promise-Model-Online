@@ -1,14 +1,10 @@
 /** @type {string} */
-const CACHE = 'pmo-v4';
+const CACHE = 'pmo-v5';
 
 const swSelf = /** @type {{ addEventListener: Function, skipWaiting: Function, clients: { claim: Function }, location: { origin: string } }} */ (/** @type {unknown} */ (self));
 
+/** @type {boolean} */
 let _cacheReady = false;
-swSelf.addEventListener('message', /** @param {{ data: { type: string } }} event */ event => {
-  if (event.data && event.data.type === 'CACHE_READY') {
-    _cacheReady = true;
-  }
-});
 
 /** @type {string[]} */
 const PRECACHE = [
@@ -65,6 +61,7 @@ swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown
     )
   );
   swSelf.clients.claim();
+  _cacheReady = true;
 });
 
 /**
@@ -104,7 +101,7 @@ async function networkFirst(request) {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
@@ -116,7 +113,7 @@ async function networkFirst(request) {
       const offline = await caches.match('/templates/error.html');
       if (offline) return offline;
     } catch {}
-    return new Response('', {
+    return new Response(null, {
       status: 200,
       headers: { 'Content-Type': 'text/html' }
     });
@@ -136,7 +133,7 @@ async function cacheFirst(request) {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response.ok ? response : null;
   } catch {
@@ -163,8 +160,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
   if (isStaticAsset(path)) {
     event.respondWith(
       cacheFirst(request)
-        .then(r => r || new Response('', { status: 204 }))
-        .catch(() => new Response('', { status: 204 }))
+        .then(r => r || new Response(null, { status: 204 }))
+        .catch(() => new Response(null, { status: 204 }))
     );
     return;
   }
@@ -173,8 +170,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
     event.respondWith(
       networkFirst(request)
         .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response('', { status: 204 }))
-        .catch(() => new Response('', { status: 204 }))
+        .then(r => r || new Response(null, { status: 204 }))
+        .catch(() => new Response(null, { status: 204 }))
     );
     return;
   }
@@ -183,8 +180,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
     event.respondWith(
       networkFirst(request)
         .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response('', { status: 204 }))
-        .catch(() => new Response('', { status: 204 }))
+        .then(r => r || new Response(null, { status: 204 }))
+        .catch(() => new Response(null, { status: 204 }))
     );
     return;
   }
@@ -193,8 +190,8 @@ swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r
     event.respondWith(
       networkFirst(request)
         .then(r => r || caches.match('/templates/error.html'))
-        .then(r => r || new Response('', { status: 204 }))
-        .catch(() => new Response('', { status: 204 }))
+        .then(r => r || new Response(null, { status: 204 }))
+        .catch(() => new Response(null, { status: 204 }))
     );
   }
 });
