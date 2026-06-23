@@ -36,12 +36,13 @@ public class HomePageTests : PlaywrightTestBase
     [Test]
     public async Task REQ_SYS_021_HomePage_AuthenticatedUser_ShowsProjectAndTaskLinks()
     {
-        // Arrange
         await NavigateAsUser("/");
-        // Act & Assert
-        await WaitForSelectorAsync("#home-cta-area a[href='/projects']", 2);
-        await WaitForSelectorAsync("#home-cta-area a[href='/moments/my-tasks']");
-        await WaitForSelectorAsync("#home-cta-area a[href='/knowledge-base']");
+        var projectsLink = Page.Locator("#home-cta-area a[href='/projects']");
+        var myTasksLink = Page.Locator("#home-cta-area a[href='/moments/my-tasks']");
+        var kbLink = Page.Locator("#home-cta-area a[href='/knowledge-base']");
+        await Assertions.Expect(projectsLink).ToBeVisibleAsync();
+        await Assertions.Expect(myTasksLink).ToBeVisibleAsync();
+        await Assertions.Expect(kbLink).ToBeVisibleAsync();
     }
 
     [Test]

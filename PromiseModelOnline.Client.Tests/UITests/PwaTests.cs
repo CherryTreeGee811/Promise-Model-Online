@@ -63,14 +63,16 @@ public class PwaTests : PlaywrightTestBase
     [Description("REQ_PWA_001: Service worker registration")]
     public async Task REQ_INT_007_ServiceWorker_IsRegistered()
     {
-        // Arrange
         await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
 
-        // Act
+        // Wait for at least one SW registration
         await Page.WaitForFunctionAsync(
             "navigator.serviceWorker.getRegistrations().then(r => r.length > 0)",
             new PageWaitForFunctionOptions { Timeout = 1000 });
-        // Assert
+
+        var regCount = await Page.EvaluateAsync<int>(
+            "navigator.serviceWorker.getRegistrations().then(r => r.length)");
+        Assert.That(regCount, Is.GreaterThan(0), "At least one service worker must be registered");
     }
 
     [Test]

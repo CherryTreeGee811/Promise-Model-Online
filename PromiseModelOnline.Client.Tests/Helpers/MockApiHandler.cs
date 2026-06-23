@@ -147,7 +147,7 @@ public static partial class MockApiHandler
         // Unhandled route — for API/hub routes, return 204 instead of hitting the real (non-existent) backend
         if (path.StartsWith("/api/") || path.StartsWith("/hubs/"))
         {
-            await route.FulfillAsync(new RouteFulfillOptions { Status = 204 });
+            await route.FulfillAsync(new RouteFulfillOptions { Status = 204, Headers = CorsHeaders });
             return;
         }
 

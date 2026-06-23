@@ -14,6 +14,8 @@ public class VisualRegressionTests : PlaywrightTestBase
         var path = Path.Combine(ScreenshotDir, $"{name}.png");
         await Page.ScreenshotAsync(new PageScreenshotOptions { Path = path, FullPage = true });
         TestContext.Progress.WriteLine($"Screenshot saved: {path}");
+        Assert.That(File.Exists(path), Is.True, "Screenshot file must exist");
+        Assert.That(new FileInfo(path).Length, Is.GreaterThan(0), "Screenshot must have content");
     }
 
     [Test]
@@ -22,7 +24,6 @@ public class VisualRegressionTests : PlaywrightTestBase
         await EnsureLoggedIn();
         await Task.Delay(500);
         await CaptureScreenshot("home");
-        Assert.Pass();
     }
 
     [Test]
@@ -31,7 +32,6 @@ public class VisualRegressionTests : PlaywrightTestBase
         await NavigateAsUser("/projects");
         await Task.Delay(500);
         await CaptureScreenshot("projects-list");
-        Assert.Pass();
     }
 
     [Test]
@@ -41,7 +41,6 @@ public class VisualRegressionTests : PlaywrightTestBase
         await WaitForSelectorAsync("#graph-viewport");
         await Task.Delay(1000);
         await CaptureScreenshot("graph");
-        Assert.Pass();
     }
 
     [Test]
@@ -50,7 +49,6 @@ public class VisualRegressionTests : PlaywrightTestBase
         await NavigateAsUser("/pmo_test/seeded-project/strides");
         await Task.Delay(1000);
         await CaptureScreenshot("stride-board");
-        Assert.Pass();
     }
 
     [Test]
@@ -59,7 +57,6 @@ public class VisualRegressionTests : PlaywrightTestBase
         await NavigateAsUser("/pmo_test/seeded-project/promises/1");
         await Task.Delay(500);
         await CaptureScreenshot("promise-detail");
-        Assert.Pass();
     }
 
     [Test]
@@ -68,6 +65,5 @@ public class VisualRegressionTests : PlaywrightTestBase
         await EnsureLoggedIn();
         await Task.Delay(500);
         await CaptureScreenshot("navigation");
-        Assert.Pass();
     }
 }
