@@ -32,7 +32,7 @@ interface TelemetryState {
 const SAMPLE_INTERVAL_MS = 60_000;
 const MAX_ERRORS = 20;
 const LONG_TASK_THRESHOLD_MS = 50;
-const knownAccountPaths = new Set(['pmo_test', 'account', 'moments', 'knowledge-base']);
+const knownAccountPaths = new Set(['pmo_test', 'account', 'moments', 'knowledge-base', 'projects', 'privacy', 'tos']);
 
 const state: TelemetryState = {
   intervalId: undefined,
@@ -57,13 +57,13 @@ function isOptedOut(): boolean {
  * @param {string} path - The full URL pathname.
  * @returns {string} The anonymized path pattern.
  */
-function anonymizePath(path: string): string {
+export function anonymizePath(path: string): string {
   const segments = path.replace(/^https?:\/\/[^/]+/, '').split('/').filter(Boolean);
   return '/' + segments.map(s => {
     if (knownAccountPaths.has(s)) return s;
     if (/^[a-f0-9-]{36}$/i.test(s)) return ':id';
-    if (/^[a-z0-9-]{2,64}$/i.test(s) && segments.indexOf(s) === 1) return ':owner';
-    if (/^[a-z0-9-]{2,64}$/i.test(s) && segments.indexOf(s) === 2) return ':project';
+    if (/^[a-z0-9-]{2,64}$/i.test(s) && segments.indexOf(s) === 0) return ':owner';
+    if (/^[a-z0-9-]{2,64}$/i.test(s) && segments.indexOf(s) === 1) return ':project';
     return s;
   }).join('/');
 }
