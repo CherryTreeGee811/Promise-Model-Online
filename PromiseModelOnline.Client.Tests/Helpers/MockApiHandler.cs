@@ -253,6 +253,7 @@ public static partial class MockApiHandler
             ("GET", "/api/project-permissions") when isNonOwner => Json(200, """[{"id":2,"userId":2,"email":"nonowner@example.com","userName":"Test NonOwner","level":"Edit","status":"Active"}]"""),
 
             ("GET", "/api/projects/pmo_test/seeded-project/graph") when isOwner => Json(200, s_graphData),
+            ("GET", "/api/projects/pmo_test/seeded-project/graph") => Json(200, s_graphData),
 
             ("GET", "/api/strides") when isOwner => Json(200, """[{"id":10,"name":"Stride One","iterationId":1,"startDate":"2026-05-01T00:00:00Z","endDate":"2026-05-07T00:00:00Z","durationDays":7,"isActive":true,"status":"Planned","displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"},{"id":20,"name":"Stride Two","iterationId":1,"startDate":"2026-05-08T00:00:00Z","endDate":"2026-05-15T00:00:00Z","durationDays":8,"isActive":true,"status":"InProgress","displayOrder":2,"createdAt":"2026-05-01T00:00:00Z"}]"""),
             ("GET", "/api/strides") when isNonOwner => Json(200, """[{"id":10,"name":"Stride One","iterationId":1,"startDate":"2026-05-01T00:00:00Z","endDate":"2026-05-07T00:00:00Z","durationDays":7,"isActive":true,"status":"Planned","displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"}]"""),
