@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.BFF;
+﻿namespace PromiseModelOnline.BFF;
 
 /// <summary>Helper utilities for BFF request handling and URL validation.</summary>
 public static class BffHelpers
@@ -11,12 +11,9 @@ public static class BffHelpers
     /// </remarks>
     /// <param name="request">The HTTP request to inspect.</param>
     /// <returns><c>true</c> if the request expects a JSON response.</returns>
-    public static bool IsAjax(HttpRequest request)
-    {
-        return request.Headers["X-Requested-With"] == "XMLHttpRequest"
+    public static bool IsAjax(HttpRequest request) => request.Headers["X-Requested-With"] == "XMLHttpRequest"
             || request.Headers.Accept.Any(value =>
                 value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
-    }
 
     /// <summary>Validate that a return URL is a safe local redirect target.</summary>
     /// <remarks>

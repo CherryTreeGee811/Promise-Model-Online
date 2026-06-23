@@ -1,81 +1,108 @@
-// @ts-nocheck
-import { getPendingInvitations, acceptInvitation } from './api.ts';
-import { escapeHtml } from '../utils/html.ts';
+import { showToast } from '../ui/toast.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
 
-/**
- * Load the invitations listing page.
- * @param {HTMLElement} contentDiv - The main content container element.
- */
-export function loadInvitationsPage(contentDiv) {
-    const listDiv = /** @type {HTMLElement} */ (document.getElementById('invitations-list'));
-    const errorEl = /** @type {HTMLElement} */ (document.getElementById('error-text'));
+import { getPendingInvitations, acceptInvitation } from './api.ts';
 
-    /** Fetch and render pending invitations. */
+interface Invitation {
+  projectName: string;
+  level: string;
+  permissionId: string | number;
+}
+
+/**
+ * @returns {HTMLElement} The empty state element
+ */
+function buildEmptyState(): HTMLElement {
+    return renderEmptyStateSection({
+        icon: 'bi-envelope',
+        title: 'No pending invitations.',
+        description: 'When someone invites you to a project, it will appear here.',
+    });
+}
+
+/**
+ * @param {HTMLElement} _contentDiv - Content container
+ */
+export function loadInvitationsPage(_contentDiv: HTMLElement): void {
+    const listDiv = document.querySelector('#invitations-list') as HTMLElement;
+    const errorElement = document.querySelector('#error-text') as HTMLElement;
+
+    /**
+     *
+     */
     async function refresh() {
         try {
-            const invitations = await getPendingInvitations();
+            const invitations = await getPendingInvitations() as Invitation[];
 
             if (!invitations || invitations.length === 0) {
-                listDiv.innerHTML = renderEmptyStateSection({
-                    icon: 'bi-envelope',
-                    title: 'No pending invitations.',
-                    description: 'When someone invites you to a project, it will appear here.',
-                });
+                listDiv.replaceChildren(buildEmptyState());
                 return;
             }
 
-            listDiv.innerHTML = `
-                <table class="table table-sm table-striped table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th>Permission</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${invitations.map(inv => `
-                            <tr>
-                                <td>${escapeHtml(inv.projectName)}</td>
-                                <td>${inv.level}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary accept-btn" data-permission-id="${inv.permissionId}" type="button">Accept</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            const table = document.createElement('table');
+            table.className = 'table table-sm table-striped table-hover align-middle';
 
-            document.querySelectorAll('.accept-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const id = parseInt(/** @type {string} */(btn.dataset.permissionId), 10);
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            const headers = ['Project', 'Permission', 'Actions'];
+            for (const h of headers) {
+                const th = document.createElement('th');
+                th.textContent = h;
+                headerRow.append(th);
+            }
+            thead.append(headerRow);
+            table.append(thead);
+
+            const tbody = document.createElement('tbody');
+            for (const inv of invitations) {
+                const tr = document.createElement('tr');
+
+                const tdProject = document.createElement('td');
+                tdProject.textContent = inv.projectName;
+                tr.append(tdProject);
+
+                const tdPerm = document.createElement('td');
+                tdPerm.textContent = inv.level;
+                tr.append(tdPerm);
+
+                const tdActions = document.createElement('td');
+                const button = document.createElement('button');
+                button.className = 'btn btn-sm btn-outline-primary accept-btn';
+                button.type = 'button';
+                button.dataset.permissionId = String(inv.permissionId);
+                button.textContent = 'Accept';
+                tdActions.append(button);
+                tr.append(tdActions);
+
+                tbody.append(tr);
+            }
+            table.append(tbody);
+            listDiv.replaceChildren(table);
+
+            for (const button of listDiv.querySelectorAll('.accept-btn')) {
+                button.addEventListener('click', async () => {
+                    const id = Number((button as HTMLElement).dataset.permissionId!);
                     try {
                         await acceptInvitation(id);
                         const y = window.scrollY;
-                        const row = btn.closest('tr');
+                        const row = button.closest('tr');
                         row?.remove();
 
-                        const remaining = listDiv.querySelectorAll('tbody tr').length;
+                        const remaining = listDiv.querySelectorAll(':scope tbody tr').length;
                         if (remaining === 0) {
-                            listDiv.innerHTML = renderEmptyStateSection({
-                                icon: 'bi-envelope',
-                                title: 'No pending invitations.',
-                                description: 'When someone invites you to a project, it will appear here.',
-                            });
+                            listDiv.replaceChildren(buildEmptyState());
                         }
                         window.scrollTo(0, y);
-                    } catch (err) {
-                        alert('Failed to accept invitation');
-                        console.error(err);
+                    } catch (error) {
+                        showToast('Failed to accept invitation', 'error');
+                        console.error(error);
                     }
                 });
-            });
-        } catch (err) {
-            errorEl.textContent = 'Failed to load invitations.';
+            }
+        } catch {
+            if (errorElement) errorElement.textContent = 'Failed to load invitations.';
         }
     }
 
-    refresh();
+    void refresh();
 }

@@ -17,7 +17,7 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 USER root
-RUN apt-get update && apt-get install -y curl \
+RUN apt-get update && apt-get install -y --no-install-recommends curl=8.5.0-2ubuntu10.9 \
     && rm -rf /var/lib/apt/lists/*
 USER app
 COPY --from=build /app/publish .
@@ -30,5 +30,8 @@ RUN chown app:app /app/cert.pem /app/key.pem && chmod 600 /app/cert.pem /app/key
 USER app
 
 EXPOSE 8010
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:8010/health || exit 1
 
 ENTRYPOINT ["dotnet", "PromiseModelOnline.BFF.dll"]

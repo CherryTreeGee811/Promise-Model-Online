@@ -1,0 +1,28 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "PromiseModelOnline.Client/wwwroot/js/router.ts",
+    "PromiseModelOnline.Client/wwwroot/sw.mjs",
+    "scripts/memlab-scenarios/leak-check.cjs",
+    "scripts/memlab-scenarios/leak-check-authenticated.cjs"
+  ],
+  "project": [
+    "PromiseModelOnline.Client/wwwroot/js/**/*.ts",
+    "scripts/**/*.js",
+    "scripts/**/*.cjs",
+    "*.mjs"
+  ],
+  "ignore": [],
+  "ignoreDependencies": [
+    "@popperjs/core",
+    "@types/d3",
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "axe-core",
+    "bootstrap",
+    "bootstrap-icons",
+    "d3",
+    "puppeteer",
+    "tippy.js"
+  ]
+}

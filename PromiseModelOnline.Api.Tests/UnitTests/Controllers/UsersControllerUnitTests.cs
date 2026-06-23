@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,7 +16,7 @@ using PromiseModelOnline.Api.Tests.Infrastructure;
 namespace PromiseModelOnline.Api.Tests;
 
 [TestFixture]
-    /// <summary>Unit tests for <see cref="UsersController"/> covering user profile and search.</summary>
+/// <summary>Unit tests for <see cref="UsersController"/> covering user profile and search.</summary>
 // Requirements: REQ_SYS_014
 public class UsersControllerUnitTests
 {
@@ -43,10 +43,7 @@ public class UsersControllerUnitTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        _context.Dispose();
-    }
+    public void TearDown() => _context.Dispose();
 
     [Test]
     public async Task REQ_SYS_014_Me_ReturnsUserInfo_WhenAuthenticated()

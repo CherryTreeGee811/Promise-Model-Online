@@ -1,17 +1,16 @@
-// @ts-nocheck
 import { fetchUnreadNotifications } from './api.ts';
-import { startSignalR, stopSignalR } from './signalr.ts';
+import { startSignalR } from './signalr.ts';
 
 const NOTIFICATIONS_EVENT = 'pmo:notifications:unread-updated';
-let started = false;
+const _state = { isStarted: false };
 
 /**
  * Update the notification badge DOM element with the given count.
  * Shows the badge when count > 0, hides it otherwise.
  * @param {number} count - The number of unread notifications.
  */
-function setBadgeCount(count) {
-    const badge = /** @type {HTMLElement|null} */ (document.getElementById('notification-badge'));
+function setBadgeCount(count: number) {
+    const badge = /** @type {HTMLElement} */ (document.querySelector('#notification-badge'));
     if (!badge) return;
 
     const safeCount = Number.isFinite(count) ? count : 0;
@@ -34,7 +33,7 @@ async function handleNotificationUpdate() {
         const count = Array.isArray(notifications) ? notifications.length : 0;
         setBadgeCount(count);
 
-        window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
+        dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT, {
             detail: { notifications: Array.isArray(notifications) ? notifications : [] }
         }));
     } catch {
@@ -50,22 +49,16 @@ export async function updateNotificationBadge() {
 /**
  * Stop the notification polling loop.
  * Disconnects the SignalR hub and resets the started flag so that
- * startNotificationPolling may be called again later.
+/** Start polling for unread notification updates.
  */
-export function stopNotificationPolling() {
-    started = false;
-    stopSignalR();
-}
+export async function startNotificationPolling() {
+    await handleNotificationUpdate();
 
-/** Start polling for unread notification updates. */
-export function startNotificationPolling() {
-    handleNotificationUpdate();
+    if (_state.isStarted) return;
+    _state.isStarted = true;
 
-    if (started) return;
-    started = true;
-
-    startSignalR(() => {
-        handleNotificationUpdate();
+    void startSignalR(() => {
+        void handleNotificationUpdate();
     });
 }
 

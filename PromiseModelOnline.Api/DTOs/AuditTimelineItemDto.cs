@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>An audit event entry displayed on the project timeline.</summary>
 public class AuditTimelineItemDto

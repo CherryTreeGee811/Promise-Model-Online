@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>Request DTO for updating an entity's description.</summary>
 public class UpdateDescriptionRequestDto

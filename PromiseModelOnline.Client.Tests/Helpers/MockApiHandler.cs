@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Web;
 
 namespace PromiseModelOnline.Client.Tests.Helpers;
@@ -14,6 +14,32 @@ public static partial class MockApiHandler
     private static readonly string WwwRoot;
 
     private static readonly Dictionary<string, MockResponse> StaticFileCache = [];
+
+    /// <summary>Current session value set by the test via <see cref="SetSessionValue"/>.</summary>
+    private static string? s_currentSession;
+
+    /// <summary>Set the session value for the mock handler to use.</summary>
+    public static void SetSessionValue(string? sessionValue) => s_currentSession = sessionValue;
+
+    /// <summary>Get the session value from cookie headers or fallback to the static value.</summary>
+    private static string? GetSessionValue(IRequest request)
+    {
+        if (s_currentSession is not null)
+            return s_currentSession;
+
+        var cookie = request.Headers.TryGetValue("cookie", out var c) ? c
+            : request.Headers.TryGetValue("Cookie", out var c2) ? c2
+            : "";
+
+        if (cookie.Contains("owner-session") || cookie.Contains("__Host-pmo.session=owner-session") || cookie.Contains("pmo.session=owner-session"))
+            return "owner-session";
+        if (cookie.Contains("nonowner-session") || cookie.Contains("__Host-pmo.session=nonowner-session") || cookie.Contains("pmo.session=nonowner-session"))
+            return "nonowner-session";
+        if (cookie.Contains("__Host-pmo.session=") || cookie.Contains("pmo.session="))
+            return "other-session";
+
+        return null;
+    }
 
     static MockApiHandler()
     {
@@ -46,13 +72,13 @@ public static partial class MockApiHandler
         if (isBinary)
         {
             var bytes = File.ReadAllBytes(filePath);
-            var binResponse = new MockResponse(200, contentType, "", []) { BodyBytes = bytes };
+            var binResponse = new MockResponse(200, contentType, "", CorsHeaders) { BodyBytes = bytes };
             StaticFileCache[path] = binResponse;
             return binResponse;
         }
 
         var text = File.ReadAllText(filePath);
-        var result = new MockResponse(200, contentType, text, []);
+        var result = new MockResponse(200, contentType, text, CorsHeaders);
         StaticFileCache[path] = result;
         return result;
     }
@@ -64,13 +90,10 @@ public static partial class MockApiHandler
         var request = route.Request;
         var url = request.Url;
         var method = request.Method;
-        var cookie = request.Headers.TryGetValue("cookie", out var c) ? c
-            : request.Headers.TryGetValue("Cookie", out var c2) ? c2
-            : "";
-        var isOwner = cookie.Contains("__Host-pmo.session=owner-session");
-        var isNonOwner = cookie.Contains("__Host-pmo.session=nonowner-session");
-        var ownerSession = isOwner || isNonOwner || cookie.Contains("__Host-pmo.session=");
-
+        var session = GetSessionValue(request);
+        var isOwner = session == "owner-session";
+        var isNonOwner = session == "nonowner-session";
+        var ownerSession = session is not null;
 
         var uri = new Uri(url);
         var path = uri.AbsolutePath;
@@ -107,7 +130,17 @@ public static partial class MockApiHandler
                 return;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[MockHandler] Error handling {method} {path}: {ex.Message}");
+        }
+
+        // Unhandled route — for API/hub routes, return 204 instead of hitting the real (non-existent) backend
+        if (path.StartsWith("/api/") || path.StartsWith("/hubs/"))
+        {
+            await route.FulfillAsync(new RouteFulfillOptions { Status = 204, Headers = CorsHeaders });
+            return;
+        }
 
         await route.ContinueAsync();
     }
@@ -118,9 +151,11 @@ public static partial class MockApiHandler
         {
             Status = response.Status,
             ContentType = response.ContentType,
-            Body = response.Body,
-            BodyBytes = response.BodyBytes,
         };
+        if (response.BodyBytes is { Length: > 0 })
+            opts.BodyBytes = response.BodyBytes;
+        else
+            opts.Body = response.Body;
         if (response.Headers.Count > 0)
             opts.Headers = response.Headers;
         await route.FulfillAsync(opts);
@@ -131,12 +166,19 @@ public static partial class MockApiHandler
         public byte[]? BodyBytes { get; init; }
     }
 
-    private static MockResponse Json(int status, string body) => new(status, "application/json", body, []);
-    private static MockResponse Html(int status, string body) => new(status, "text/html", body, []);
+    /// <summary>Base CORS headers required for credentialed fetches in WebKit.</summary>
+    private static readonly Dictionary<string, string> CorsHeaders = new()
+    {
+        ["Access-Control-Allow-Origin"] = "https://localhost:9000",
+        ["Access-Control-Allow-Credentials"] = "true",
+    };
+
+    private static MockResponse Json(int status, string body) => new(status, "application/json", body, CorsHeaders);
+    private static MockResponse Html(int status, string body) => new(status, "text/html", body, CorsHeaders);
 
     private static MockResponse MetaRefresh(string url) =>
         Html(200, $"""<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url={url}"></head><body></body></html>""");
-    private static MockResponse Redirect(string location) => new(302, "text/plain", "", new() { ["Location"] = location });
+    private static MockResponse Redirect(string location) => new(302, "text/plain", "", new(CorsHeaders) { ["Location"] = location });
 
     private static bool HasGrantType(IRequest request, string grantType) =>
         request.PostData?.Contains($"grant_type={grantType}", StringComparison.Ordinal) == true;
@@ -157,9 +199,7 @@ public static partial class MockApiHandler
         string method, string path,
         System.Collections.Specialized.NameValueCollection query,
         bool isOwner, bool isNonOwner, bool ownerSession,
-        IRequest request)
-    {
-        return (method, path) switch
+        IRequest request) => (method, path) switch
         {
             ("GET", "/health") => Json(200, """{"status":"healthy"}"""),
             ("GET", "/manifest.json") => GetStaticFileResponse(path) ?? Html(200, s_html),
@@ -204,6 +244,7 @@ public static partial class MockApiHandler
             ("GET", "/api/project-permissions") when isNonOwner => Json(200, """[{"id":2,"userId":2,"email":"nonowner@example.com","userName":"Test NonOwner","level":"Edit","status":"Active"}]"""),
 
             ("GET", "/api/projects/pmo_test/seeded-project/graph") when isOwner => Json(200, s_graphData),
+            ("GET", "/api/projects/pmo_test/seeded-project/graph") => Json(200, s_graphData),
 
             ("GET", "/api/strides") when isOwner => Json(200, """[{"id":10,"name":"Stride One","iterationId":1,"startDate":"2026-05-01T00:00:00Z","endDate":"2026-05-07T00:00:00Z","durationDays":7,"isActive":true,"status":"Planned","displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"},{"id":20,"name":"Stride Two","iterationId":1,"startDate":"2026-05-08T00:00:00Z","endDate":"2026-05-15T00:00:00Z","durationDays":8,"isActive":true,"status":"InProgress","displayOrder":2,"createdAt":"2026-05-01T00:00:00Z"}]"""),
             ("GET", "/api/strides") when isNonOwner => Json(200, """[{"id":10,"name":"Stride One","iterationId":1,"startDate":"2026-05-01T00:00:00Z","endDate":"2026-05-07T00:00:00Z","durationDays":7,"isActive":true,"status":"Planned","displayOrder":1,"createdAt":"2026-05-01T00:00:00Z"}]"""),
@@ -231,6 +272,12 @@ public static partial class MockApiHandler
             ("GET", "/api/journeys/by-epic/1") => Json(200, """[{"id":1,"name":"Journey One","epicId":1,"displayOrder":1}]"""),
             ("GET", "/api/journeys/by-epic/10") => Json(200, "[]"),
             ("GET", "/api/flows/1") => Json(200, """{"id":1,"name":"Flow One","journeyId":1,"displayOrder":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/flows/1") when isOwner => Json(200, """{"id":1,"name":"Flow One","journeyId":1,"displayOrder":1,"statement":"Flow One","sequenceNumber":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/journeys/1") when isOwner => Json(200, """{"id":1,"name":"Journey One","epicId":1,"displayOrder":1,"statement":"Journey One","sequenceNumber":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/promises/1") when isOwner => Json(200, """{"id":1,"statement":"Project Promise One","projectId":1,"displayOrder":1,"sequenceNumber":1}"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/epics") => Json(200, """[{"id":1,"statement":"Epic One","promiseId":1,"displayOrder":1,"sequenceNumber":1}]"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/flows") => Json(200, """[{"id":1,"name":"Flow One","journeyId":1,"displayOrder":1,"statement":"Flow One","sequenceNumber":1}]"""),
+            ("GET", "/api/projects/pmo_test/seeded-project/moments") => Json(200, """[{"id":100,"sequenceNumber":100,"statement":"Moment 100","flowId":1,"displayOrder":1,"statusColor":"red","effortEstimate":"S","assignedStrideId":10},{"id":101,"sequenceNumber":101,"statement":"Moment 101","flowId":1,"displayOrder":2,"statusColor":"green","effortEstimate":"M","assignedStrideId":10}]"""),
 
             ("GET", "/api/iterations") => Json(200, """[{"id":1,"name":"Sprint 1","projectId":1,"displayOrder":1,"startDate":"2026-06-01","endDate":"2026-06-14"}]"""),
             ("GET", "/api/audit-events") => Json(200, """[{"id":1,"action":"Project created","userId":1,"userName":"Test Owner","timestamp":"2026-05-01T00:00:00Z"}]"""),
@@ -267,7 +314,6 @@ public static partial class MockApiHandler
 
             _ => null
         };
-    }
 
     private static MockResponse HandleChangePassword(IRequest request)
     {

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -60,7 +60,9 @@ public class ChangePasswordControllerUnitTests
     {
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
-            CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
+            CurrentPassword = "old",
+            NewPassword = "new",
+            ConfirmPassword = "new"
         });
 
         Assert.That(result, Is.TypeOf<UnauthorizedResult>());
@@ -82,7 +84,9 @@ public class ChangePasswordControllerUnitTests
         // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
-            CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "different"
+            CurrentPassword = "old",
+            NewPassword = "new",
+            ConfirmPassword = "different"
         });
 
         // Assert
@@ -99,7 +103,9 @@ public class ChangePasswordControllerUnitTests
         // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
-            CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
+            CurrentPassword = "old",
+            NewPassword = "new",
+            ConfirmPassword = "new"
         });
 
         // Assert
@@ -118,7 +124,9 @@ public class ChangePasswordControllerUnitTests
         // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
-            CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
+            CurrentPassword = "old",
+            NewPassword = "new",
+            ConfirmPassword = "new"
         });
 
         // Assert
@@ -142,7 +150,9 @@ public class ChangePasswordControllerUnitTests
         // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
-            CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
+            CurrentPassword = "old",
+            NewPassword = "new",
+            ConfirmPassword = "new"
         });
 
         Assert.That(result, Is.TypeOf<BadRequestObjectResult>());
@@ -173,7 +183,9 @@ public class ChangePasswordControllerUnitTests
         // Act
         var result = await _controller.ChangePassword(new ChangePasswordRequest
         {
-            CurrentPassword = "old", NewPassword = "new", ConfirmPassword = "new"
+            CurrentPassword = "old",
+            NewPassword = "new",
+            ConfirmPassword = "new"
         });
 
         Assert.That(result, Is.TypeOf<OkObjectResult>());
@@ -192,9 +204,7 @@ public class ChangePasswordControllerUnitTests
 
 internal static class LoggerMockExtensions
 {
-    public static void VerifyLog<T>(this Mock<ILogger<T>> mock, LogLevel level, string contains)
-    {
-        mock.Verify(
+    public static void VerifyLog<T>(this Mock<ILogger<T>> mock, LogLevel level, string contains) => mock.Verify(
             x => x.Log(
                 level,
                 It.IsAny<EventId>(),
@@ -202,5 +212,4 @@ internal static class LoggerMockExtensions
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce());
-    }
 }

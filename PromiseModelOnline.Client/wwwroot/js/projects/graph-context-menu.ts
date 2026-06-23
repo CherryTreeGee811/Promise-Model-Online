@@ -1,14 +1,12 @@
-// @ts-nocheck
-const tippy = (window as any).tippy;
-
 import { apiFetch } from '../api.ts';
-import { updateMomentStatus } from '../moments/api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
-import { STATUS_OPTIONS } from '../utils/status-utils.ts';
+import { updateMomentStatus } from '../moments/api.ts';
+import { ensureModal, createConfirmationPromise } from '../utils/html.ts';
+import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
 
-let _ctxOwner: any = null;
-let _ctxProject: any = null;
-let _ctxPermission: any = null;
+
+
+const _contextState: { owner: string; project: string; permission: Record<string, unknown> | undefined } = { owner: '', project: '', permission: undefined };
 
 const NODE_CHILD_LABELS: Record<string, string> = {
     root: 'Promise',
@@ -22,25 +20,31 @@ const NODE_CHILD_LABELS: Record<string, string> = {
  * Get the API route for deleting a graph node by its type and ID.
  * @param {string} nodeType - The node type.
  * @param {string|number} nodeId - The node's ID.
- * @returns {string|null} The delete API route, or null if invalid.
+ * @returns {string} The delete API route, or null if invalid.
  */
-function getDeleteRoute(nodeType: string, nodeId?: string | number): string | null {
+function getDeleteRoute(nodeType: string, nodeId?: string | number): string | undefined {
     const normalizedType = normalizeNodeType(nodeType);
 
     if (normalizedType === 'root') {
-        return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
+        return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}`;
     }
 
-    const numericId = Number.parseInt(nodeId as any, 10);
-    if (Number.isNaN(numericId)) return null;
+    const numericId = Math.trunc(Number(nodeId));
+    if (Number.isNaN(numericId)) return;
 
     switch (normalizedType) {
-        case 'promise': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/promises/${numericId}`;
-        case 'epic': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/epics/${numericId}`;
-        case 'journey': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/journeys/${numericId}`;
-        case 'flow': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/flows/${numericId}`;
-        case 'moment': return `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}/moments/${numericId}`;
-        default: return null;
+        case 'promise': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/promises/${numericId}`;
+        }
+        case 'epic': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/epics/${numericId}`;
+        }
+        case 'journey': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/journeys/${numericId}`;
+        }
+        case 'flow': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/flows/${numericId}`;
+        }
+        case 'moment': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/moments/${numericId}`;
+        }
+        default: { return;
+        }
     }
 }
 
@@ -50,7 +54,7 @@ function getDeleteRoute(nodeType: string, nodeId?: string | number): string | nu
  * @returns {string} The normalized node type.
  */
 function normalizeNodeType(nodeType: string): string {
-    return String(nodeType ?? '').trim().toLowerCase();
+    return (nodeType ?? '').trim().toLowerCase();
 }
 
 /**
@@ -58,18 +62,18 @@ function normalizeNodeType(nodeType: string): string {
  * @param {object} nodeData - The node data.
  * @returns {string} The node's label text.
  */
-function getNodeLabel(nodeData: any): string {
-    const payload = nodeData?.payload ?? {};
+function getNodeLabel(nodeData: Record<string, unknown>): string {
+    const payload = (nodeData?.payload ?? {}) as Record<string, unknown>;
     return String(payload.statement ?? payload.name ?? `#${payload.id ?? ''}`).trim();
 }
 
 /**
  * Get the label for the child type of a given node type.
  * @param {string} nodeType - The parent node type.
- * @returns {string|null} The child type label, or null if none.
+ * @returns {string} The child type label, or null if none.
  */
-function getChildLabel(nodeType: string): string | null {
-    return NODE_CHILD_LABELS[normalizeNodeType(nodeType)] ?? null;
+function getChildLabel(nodeType: string): string | undefined {
+    return NODE_CHILD_LABELS[normalizeNodeType(nodeType)];
 }
 
 
@@ -77,102 +81,114 @@ function getChildLabel(nodeType: string): string | null {
 /**
  * Get the API metadata for creating a child entity under a given node.
  * @param {object} nodeData - The parent node data.
- * @returns {{entityLabel: string, endpoint: string, parentField: string}|null} The create action metadata, or null.
+ * @returns {{entityLabel: string, endpoint: string, parentField: string}} The create action metadata, or null.
  */
-function getCreateActionMeta(nodeData: any): { entityLabel: string; endpoint: string; parentField: string } | null {
-    const normalizedType = normalizeNodeType(nodeData.nodeType);
+function getCreateActionMeta(nodeData: Record<string, unknown>): { entityLabel: string; endpoint: string; parentField: string } | undefined {
+    const normalizedType = normalizeNodeType(nodeData.nodeType as string);
 
-    const base = `/api/projects/${encodeURIComponent(_ctxOwner)}/${encodeURIComponent(_ctxProject)}`;
+    const base = `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}`;
     switch (normalizedType) {
-        case 'root':
+        case 'root': {
             return { entityLabel: 'Promise', endpoint: `${base}/promises/create`, parentField: 'projectId' };
-        case 'promise':
+        }
+        case 'promise': {
             return { entityLabel: 'Epic', endpoint: `${base}/epics/create`, parentField: 'productPromiseId' };
-        case 'epic':
+        }
+        case 'epic': {
             return { entityLabel: 'Journey', endpoint: `${base}/journeys/create`, parentField: 'epicId' };
-        case 'journey':
+        }
+        case 'journey': {
             return { entityLabel: 'Flow', endpoint: `${base}/flows/create`, parentField: 'journeyId' };
-        case 'flow':
+        }
+        case 'flow': {
             return { entityLabel: 'Moment', endpoint: `${base}/moments/create`, parentField: 'flowId' };
-        default:
-            return null;
+        }
+        default: {
+            return;
+        }
     }
 }
 
 /**
  * Get default values for the create form based on the parent node type.
  * @param {object} nodeData - The parent node data.
- * @returns {object|null} Default form values (statement, description, displayOrder), or null.
+ * @returns {object} Default form values (statement, description, displayOrder), or null.
  */
-function getCreateFormDefaults(nodeData: any): Record<string, any> | null {
-    const normalizedType = normalizeNodeType(nodeData.nodeType);
-    const childCount = Number.parseInt(nodeData.childCount ?? 0, 10) || 0;
+function getCreateFormDefaults(nodeData: Record<string, unknown>): Record<string, unknown> | undefined {
+    const normalizedType = normalizeNodeType(nodeData.nodeType as string);
+    const childCount = Math.trunc(Number(nodeData.childCount ?? 0)) || 0;
     const nextDisplayOrder = childCount + 1;
 
     switch (normalizedType) {
-        case 'root':
+        case 'root': {
             return {
                 statement: 'New Promise',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'promise':
+        }
+        case 'promise': {
             return {
                 statement: 'New Epic',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'epic':
+        }
+        case 'epic': {
             return {
                 statement: 'New Journey',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'journey':
+        }
+        case 'journey': {
             return {
                 statement: 'New Flow',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        case 'flow':
+        }
+        case 'flow': {
             return {
                 statement: 'New Moment',
                 description: '',
                 displayOrder: nextDisplayOrder,
             };
-        default:
-            return null;
+        }
+        default: {
+            return;
+        }
     }
 }
 
 /**
  * Make an authenticated JSON API request.
  * @param {string} url - The request URL.
- * @param {object} [options={}] - Fetch options (headers, method, body, etc.).
+ * @param {object} [options] - Fetch options (headers, method, body, etc.).
  * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
  * @throws {Error} If the request fails or returns a non-OK status.
  */
-async function requestJson(url: string, options: Record<string, any>): Promise<any> {
-    const { headers: optionHeaders, ...fetchOptions } = options;
+export async function requestJson(url: string, options: Record<string, unknown>): Promise<unknown> {
+    const existingHeaders = (options.headers as Record<string, unknown> | undefined) ?? {};
     const response = await apiFetch(url, {
         mode: 'cors',
-        ...fetchOptions,
+        ...options,
         headers: {
             'Accept': 'application/json',
             'Accept-Language': 'en-CA',
-            ...(optionHeaders ?? {}),
+            ...existingHeaders,
         },
     });
 
     if (response.ok) {
         if (response.status === 204) {
-            return null;
+            return;
         }
         return response.json();
     }
 
     if (response.status === 401) {
-        document.getElementById('login-link')?.click();
+        (document.querySelector('#login-link') as HTMLElement)?.click();
     }
 
     let message = `HTTP error! status: ${response.status}`;
@@ -187,33 +203,12 @@ async function requestJson(url: string, options: Record<string, any>): Promise<a
 }
 
 /**
- * Ensure a Bootstrap modal element exists in the DOM, creating it if necessary.
- * @param {string} modalId - The ID for the modal element.
- * @param {string} modalMarkup - The HTML markup for the modal.
- * @returns {HTMLElement|null} The modal element, or null if creation failed.
- */
-function ensureModal(modalId: string, modalMarkup: string): HTMLElement | null {
-    let modalEl = document.getElementById(modalId);
-    if (modalEl) return modalEl;
-
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = modalMarkup.trim();
-    modalEl = wrapper.firstElementChild as HTMLElement | null;
-
-    if (modalEl) {
-        document.body.appendChild(modalEl);
-    }
-
-    return modalEl;
-}
-
-/**
  * Open a Bootstrap modal to confirm deletion of an item.
  * @param {string} label - The label of the item to delete.
  * @returns {Promise<boolean>} Resolves to true if confirmed, false otherwise.
  */
 function openDeleteConfirmationModal(label: string): Promise<boolean> {
-    const modalEl = ensureModal('graph-delete-confirmation-modal', `
+    const modalElement = ensureModal('graph-delete-confirmation-modal', `
         <div class="modal fade" id="graph-delete-confirmation-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -231,40 +226,22 @@ function openDeleteConfirmationModal(label: string): Promise<boolean> {
         </div>
     `);
 
-    if (!modalEl) {
-        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    if (!modalElement) {
+        return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
     }
 
-    const titleEl = modalEl.querySelector('#graph-delete-confirmation-modal-title');
-    const bodyEl = modalEl.querySelector('#graph-delete-confirmation-modal-body');
-    const confirmButton = modalEl.querySelector('#graph-delete-confirmation-confirm');
+    const titleElement = modalElement.querySelector('#graph-delete-confirmation-modal-title') as HTMLElement | null;
+    const bodyElement = modalElement.querySelector('#graph-delete-confirmation-modal-body') as HTMLElement | null;
+    const confirmButton = modalElement.querySelector('#graph-delete-confirmation-confirm') as HTMLButtonElement | null;
 
-    if (!titleEl || !bodyEl || !confirmButton) {
-        return Promise.resolve(window.confirm(`Delete ${label}? This cannot be undone.`));
+    if (!titleElement || !bodyElement || !confirmButton) {
+        return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
     }
 
-    titleEl.textContent = `Delete ${label}`;
-    bodyEl.textContent = `Delete ${label}? This cannot be undone.`;
+    titleElement.textContent = `Delete ${label}`;
+    bodyElement.textContent = `Delete ${label}? This cannot be undone.`;
 
-    return new Promise<boolean>(resolve => {
-        let settled = false;
-
-        const settle = (value: boolean) => {
-            if (settled) return;
-            settled = true;
-            resolve(value);
-        };
-
-        const modalInstance = (window as any).bootstrap?.Modal?.getOrCreateInstance(modalEl);
-
-        confirmButton.addEventListener('click', () => {
-            settle(true);
-            modalInstance?.hide();
-        }, { once: true });
-
-        modalEl.addEventListener('hidden.bs.modal', () => settle(false), { once: true });
-        modalInstance?.show();
-    });
+    return createConfirmationPromise(modalElement, confirmButton);
 }
 
 /**
@@ -331,8 +308,8 @@ function createSelectField({ name, label, value = '', options = [] }: {
         const optionElement = document.createElement('option');
         optionElement.value = option.value;
         optionElement.textContent = option.label;
-        optionElement.selected = String(option.value) === String(value);
-        select.appendChild(optionElement);
+        optionElement.selected = option.value === value;
+        select.append(optionElement);
     }
 
     field.append(fieldLabel, select);
@@ -353,13 +330,13 @@ function getMomentTypeOptions(): Array<{ value: string; label: string }> {
 /**
  * Get the current status value of a moment node, mapping statusColor to a canonical status.
  * @param {object} nodeData - The node data.
- * @returns {string} The canonical status value (Done, Blocked, InProgress, Todo).
+ * @returns {string} The canonical status value (Done, Blocked, InProgress, or not started).
  */
-function getMomentStatusValue(nodeData: any): string {
-    const payload = nodeData?.payload ?? {};
+function getMomentStatusValue(nodeData: Record<string, unknown>): string {
+    const payload = (nodeData?.payload ?? {}) as Record<string, unknown>;
     const status = String(payload.status ?? payload.Status ?? '').trim();
     if (status) {
-        const match = STATUS_OPTIONS.find((option: any) => option.value.toLowerCase() === status.toLowerCase());
+        const match = STATUS_OPTIONS.find((option: { value: string; icon: string; label: string }) => option.value.toLowerCase() === status.toLowerCase());
         if (match) {
             return match.value;
         }
@@ -393,7 +370,7 @@ function getMomentEstimateOptions(): Array<{ value: string; label: string }> {
 
 /**
  * Get the option list for stride selection, including a Backlog option.
- * @param {object[]} [strides=[]] - The available strides.
+ * @param {object[]} [strides] - The available strides.
  * @returns {{value: string, label: string}[]} The stride options.
  */
 function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): Array<{ value: string; label: string }> {
@@ -411,23 +388,58 @@ function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): A
  * @param {object} nodeData - The parent (flow) node data.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {function} getAvailableStrides - Function returning the list of available strides.
- * @param {function} onGraphMutated - Callback after successful creation.
- * @param {function} closeMenus - Function to close all context menus.
- * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
+ * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Function returning the list of available strides.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after successful creation.
+ * @param {() => void} closeMenus - Function to close all context menus.
+ * @returns {HTMLFormElement|undefined} The form element, or undefined if creation metadata is missing.
  */
-function buildMomentFormElement(
-    nodeData: any,
-    owner: string,
-    project: string,
+
+/**
+ * Create the cancel and submit buttons for a graph context menu form.
+ * @param {() => void} closeMenus - Function to close all menus on cancel.
+ * @param {string} submitText - The text for the submit button.
+ * @returns {{ cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement }} The created button elements.
+ */
+function createFormActionsBar(closeMenus: () => void, submitText: string): { cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement } {
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--secondary';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', event => {
+        event.preventDefault();
+        closeMenus();
+    });
+
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
+    submitButton.textContent = submitText;
+
+    return { cancelButton, submitButton };
+}
+
+/**
+ * Build the create-moment form element with moment-specific fields.
+ * @param {object} nodeData - The parent (flow) node data.
+ * @param {string} _owner - The project owner.
+ * @param {string} _project - The project slug.
+ * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Optional stride list.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after creation.
+ * @param {() => void} closeMenus - Function to close all menus.
+ * @returns {HTMLFormElement|undefined} The form element or undefined.
+ */
+export function buildMomentFormElement(
+    nodeData: Record<string, unknown>,
+    _owner: string,
+    _project: string,
     getAvailableStrides: (() => Array<{ id: number; name?: string }>) | undefined,
     onGraphMutated: (() => void) | undefined,
     closeMenus: () => void,
-): HTMLFormElement | null {
-    const createMeta = getCreateActionMeta(nodeData);
+): HTMLFormElement | undefined {
+    const actionMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
-    if (!createMeta || !defaults) {
-        return null;
+    if (!actionMeta || !defaults) {
+        return;
     }
 
     const form = document.createElement('form');
@@ -444,7 +456,7 @@ function buildMomentFormElement(
     const statementField = createInputField({
         name: 'statement',
         label: 'Statement',
-        value: defaults.statement,
+        value: defaults.statement as string,
         placeholder: 'New Moment',
     });
 
@@ -452,7 +464,7 @@ function buildMomentFormElement(
         name: 'description',
         label: 'Description',
         type: 'textarea',
-        value: defaults.description,
+        value: defaults.description as string,
         placeholder: 'Optional description',
         rows: 3,
     });
@@ -468,7 +480,7 @@ function buildMomentFormElement(
         name: 'status',
         label: 'Status',
         value: 'Todo',
-        options: STATUS_OPTIONS.map((o: any) => ({ value: o.value, label: `${o.icon} ${o.label}` })),
+        options: STATUS_OPTIONS.map((o: { value: string; icon: string; label: string }) => ({ value: o.value, label: `${o.icon} ${o.label}` })),
     });
 
     const estimateField = createSelectField({
@@ -487,21 +499,7 @@ function buildMomentFormElement(
 
     const actions = document.createElement('div');
     actions.className = 'graph-context-menu-form__actions';
-
-    const cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--secondary';
-    cancelButton.textContent = 'Cancel';
-    cancelButton.addEventListener('click', event => {
-        event.preventDefault();
-        closeMenus();
-    });
-
-    const submitButton = document.createElement('button');
-    submitButton.type = 'submit';
-    submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
-    submitButton.textContent = 'Create Moment';
-
+    const { cancelButton, submitButton } = createFormActionsBar(closeMenus, 'Submit');
     actions.append(cancelButton, submitButton);
 
     form.append(
@@ -517,36 +515,44 @@ function buildMomentFormElement(
     );
 
     // Autocomplete for entity references in description
-    createCommentAutocomplete(descriptionField.input, nodeData.nodeType, nodeData.payload?.id);
+    createCommentAutocomplete(descriptionField.input as HTMLTextAreaElement, nodeData.nodeType as string, (nodeData.payload as Record<string, unknown> | undefined)?.id as string);
 
     form.addEventListener('submit', async event => {
         event.preventDefault();
         submitButton.disabled = true;
         submitButton.textContent = 'Creating Moment...';
 
-        const statement = statementField.input.value.trim();
-        const description = descriptionField.input.value.trim();
-
-        if (!statement) {
+        if (!statementField.input.value.trim()) {
             submitButton.disabled = false;
             submitButton.textContent = 'Create Moment';
             statementField.input.focus();
             return;
         }
 
-        const payload: Record<string, any> = {
+        const statement = statementField.input.value.trim();
+        const description = descriptionField.input.value.trim();
+        const effortValue = estimateField.select.value;
+        let effortEstimate;
+        if (effortValue !== '-') {
+            effortEstimate = effortValue;
+        }
+        let assignedStrideId;
+        if (strideField.select.value) {
+            assignedStrideId = Number(strideField.select.value);
+        }
+        const payload: Record<string, unknown> = {
             statement,
-            description: description || null,
-            flowId: nodeData.payload?.id,
+            description,
+            flowId: (nodeData.payload as Record<string, unknown> | undefined)?.id,
             type: typeField.select.value,
             status: statusField.select.value,
-            effortEstimate: estimateField.select.value === '-' ? null : estimateField.select.value || null,
-            assignedStrideId: strideField.select.value ? Number.parseInt(strideField.select.value, 10) : null,
-            displayOrder: (Number.parseInt(nodeData.childCount ?? 0, 10) || 0) + 1,
+            effortEstimate,
+            assignedStrideId,
+            displayOrder: (Math.trunc(Number(nodeData.childCount ?? 0)) || 0) + 1,
         };
 
         try {
-            await requestJson(createMeta.endpoint, {
+            await requestJson(actionMeta.endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -569,18 +575,18 @@ function buildMomentFormElement(
 /**
  * Build the change-moment-status form element.
  * @param {object} nodeData - The moment node data.
- * @param {function} onGraphMutated - Callback after successful status update.
- * @param {function} closeMenus - Function to close all context menus.
- * @returns {HTMLFormElement|null} The form element, or null if the moment sequence number is missing.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after successful status update.
+ * @param {() => void} closeMenus - Function to close all context menus.
+ * @returns {HTMLFormElement|undefined} The form element, or undefined if the moment sequence number is missing.
  */
 function buildMomentStatusFormElement(
-    nodeData: any,
-    onGraphMutated: ((...args: any[]) => any) | undefined,
+    nodeData: Record<string, unknown>,
+    onGraphMutated: ((...arguments_: Record<string, unknown>[]) => unknown) | undefined,
     closeMenus: () => void,
-): HTMLFormElement | null {
-    const momentSeq = nodeData?.payload?.sequenceNumber;
-    if (momentSeq == null) {
-        return null;
+): HTMLFormElement | undefined {
+    const momentSeq = (nodeData?.payload as Record<string, unknown> | undefined)?.sequenceNumber;
+    if (momentSeq === null) {
+        return;
     }
 
     const form = document.createElement('form');
@@ -598,7 +604,7 @@ function buildMomentStatusFormElement(
         name: 'status',
         label: 'Status',
         value: getMomentStatusValue(nodeData),
-        options: STATUS_OPTIONS.map((o: any) => ({ value: o.value, label: `${o.icon} ${o.label}` })),
+        options: STATUS_OPTIONS.map((o: { value: string; icon: string; label: string }) => ({ value: o.value, label: `${o.icon} ${o.label}` })),
     });
 
     const actions = document.createElement('div');
@@ -627,7 +633,7 @@ function buildMomentStatusFormElement(
         submitButton.textContent = 'Saving Status...';
 
         try {
-            await updateMomentStatus(_ctxOwner, _ctxProject, momentSeq, statusField.select.value);
+            await updateMomentStatus(_contextState.owner, _contextState.project, momentSeq as string | number, statusField.select.value);
             closeMenus();
             await onGraphMutated?.();
         } catch (error) {
@@ -646,26 +652,26 @@ function buildMomentStatusFormElement(
  * @param {object} nodeData - The parent node data.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {function} getAvailableStrides - Function returning available strides (for moments).
- * @param {function} onGraphMutated - Callback after successful creation.
- * @param {function} closeMenus - Function to close all context menus.
- * @returns {HTMLFormElement|null} The form element, or null if creation metadata is missing.
+ * @param {(() => Array<{ id: number; name?: string }>) | undefined} getAvailableStrides - Function returning available strides (for moments).
+ * @param {(() => void) | undefined} onGraphMutated - Callback after successful creation.
+ * @param {() => void} closeMenus - Function to close all context menus.
+ * @returns {HTMLFormElement|undefined} The form element, or undefined if creation metadata is missing.
  */
 function buildCreateFormElement(
-    nodeData: any,
+    nodeData: Record<string, unknown>,
     owner: string,
     project: string,
     getAvailableStrides: (() => Array<{ id: number; name?: string }>) | undefined,
     onGraphMutated: (() => void) | undefined,
     closeMenus: () => void,
-): HTMLFormElement | null {
-    const createMeta = getCreateActionMeta(nodeData);
+): HTMLFormElement | undefined {
+    const actionMeta = getCreateActionMeta(nodeData);
     const defaults = getCreateFormDefaults(nodeData);
-    if (!createMeta || !defaults) {
-        return null;
+    if (!actionMeta || !defaults) {
+        return;
     }
 
-    if (createMeta.entityLabel === 'Moment') {
+    if (actionMeta.entityLabel === 'Moment') {
         return buildMomentFormElement(nodeData, owner, project, getAvailableStrides, onGraphMutated, closeMenus);
     }
 
@@ -674,24 +680,24 @@ function buildCreateFormElement(
 
     const title = document.createElement('div');
     title.className = 'graph-context-menu-form__title';
-    title.textContent = `Create ${createMeta.entityLabel}`;
+    title.textContent = `Create ${actionMeta.entityLabel}`;
 
     const subtitle = document.createElement('div');
     subtitle.className = 'graph-context-menu-form__subtitle';
-    subtitle.textContent = `Add a new ${createMeta.entityLabel.toLowerCase()} beneath this card.`;
+    subtitle.textContent = `Add a new ${actionMeta.entityLabel.toLowerCase()} beneath this card.`;
 
     const statementField = createInputField({
         name: 'statement',
         label: 'Statement',
-        value: defaults.statement,
-        placeholder: `New ${createMeta.entityLabel}`,
+        value: defaults.statement as string,
+        placeholder: `New ${actionMeta.entityLabel}`,
     });
 
     const descriptionField = createInputField({
         name: 'description',
         label: 'Description',
         type: 'textarea',
-        value: defaults.description,
+        value: defaults.description as string,
         placeholder: 'Optional description',
         rows: 4,
     });
@@ -711,45 +717,44 @@ function buildCreateFormElement(
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
     submitButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--primary';
-    submitButton.textContent = `Create ${createMeta.entityLabel}`;
+    submitButton.textContent = `Create ${actionMeta.entityLabel}`;
 
     actions.append(cancelButton, submitButton);
 
     form.append(title, subtitle, statementField.field, descriptionField.field, actions);
 
     // Autocomplete for entity references in description
-    createCommentAutocomplete(descriptionField.input, nodeData.nodeType, nodeData.payload?.id);
+    createCommentAutocomplete(descriptionField.input as HTMLTextAreaElement, nodeData.nodeType as string, (nodeData.payload as Record<string, unknown> | undefined)?.id as string);
 
     form.addEventListener('submit', async event => {
         event.preventDefault();
         submitButton.disabled = true;
-        submitButton.textContent = `Creating ${createMeta.entityLabel}...`;
+        submitButton.textContent = `Creating ${actionMeta.entityLabel}...`;
 
-        const statement = statementField.input.value.trim();
-        const description = descriptionField.input.value.trim();
-
-        if (!statement) {
+        if (!statementField.input.value.trim()) {
             submitButton.disabled = false;
-            submitButton.textContent = `Create ${createMeta.entityLabel}`;
+            submitButton.textContent = `Create ${actionMeta.entityLabel}`;
             statementField.input.focus();
             return;
         }
 
-        const nextDisplayOrder = (Number.parseInt(nodeData.childCount ?? 0, 10) || 0) + 1;
-        const payload: Record<string, any> = {
+        const statement = statementField.input.value.trim();
+        const description = descriptionField.input.value.trim();
+        const nextDisplayOrder = (Math.trunc(Number(nodeData.childCount ?? 0)) || 0) + 1;
+        const payload: Record<string, unknown> = {
             statement,
-            description: description || null,
+            description: description || undefined,
             displayOrder: nextDisplayOrder,
         };
 
-        if (createMeta.parentField === 'projectId') {
+        if (actionMeta.parentField === 'projectId') {
             // projectId context is encoded in the endpoint URL; no separate body field needed
         } else {
-            payload[createMeta.parentField] = nodeData.payload?.id;
+            payload[actionMeta.parentField] = (nodeData.payload as Record<string, unknown> | undefined)?.id;
         }
 
         try {
-            await requestJson(createMeta.endpoint, {
+            await requestJson(actionMeta.endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -761,7 +766,7 @@ function buildCreateFormElement(
             await onGraphMutated?.();
         } catch (error) {
             submitButton.disabled = false;
-            submitButton.textContent = `Create ${createMeta.entityLabel}`;
+            submitButton.textContent = `Create ${actionMeta.entityLabel}`;
             throw error;
         }
     });
@@ -774,29 +779,29 @@ function buildCreateFormElement(
  * @param {object} nodeData - The node data for which to build actions.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.
- * @param {function} onGraphMutated - Callback after any mutation.
- * @param {function} onProjectDeleted - Callback when the project is deleted.
- * @param {function} closeMenus - Function to close all context menus.
- * @param {function} openCreateForm - Function to open the create form.
- * @param {function} openMomentStatusForm - Function to open the moment status form.
- * @param {function} isNodeChildrenHidden - Function to check if a node's children are hidden.
- * @param {function} setNodeChildrenHidden - Function to toggle children visibility.
- * @param {function} revealNextLevel - Function to reveal the next level of children.
- * @param {object} permission - The current user's permission object.
- * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: function}[]} The action list.
+ * @param {(() => void) | undefined} onGraphMutated - Callback after any mutation.
+ * @param {(() => void) | undefined} onProjectDeleted - Callback when the project is deleted.
+ * @param {() => void} closeMenus - Function to close all context menus.
+ * @param {(nodeData: object, owner: string, project: string, refreshGraph: (() => void) | undefined) => void} openCreateForm - Function to open the create form.
+ * @param {(nodeData: object, refreshGraph: (() => void) | undefined) => void} openMomentStatusForm - Function to open the moment status form.
+ * @param {((nodeData: object) => boolean) | undefined} isNodeChildrenHidden - Function to check if a node's children are hidden.
+ * @param {((nodeData: object, hidden: boolean) => void) | undefined} setNodeChildrenHidden - Function to toggle children visibility.
+ * @param {((nodeData: object) => void) | undefined} revealNextLevel - Function to reveal the next level of children.
+ * @param {{ permission?: string } | null | undefined} permission - The current user's permission object.
+ * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} The action list.
  */
 function buildMenuActions(
-    nodeData: any,
+    nodeData: Record<string, unknown>,
     owner: string,
     project: string,
     onGraphMutated: (() => void) | undefined,
     onProjectDeleted: (() => void) | undefined,
     closeMenus: () => void,
-    openCreateForm: (nodeData: any, owner: string, project: string, refreshGraph: (() => void) | undefined) => void,
-    openMomentStatusForm: (nodeData: any, refreshGraph: (() => void) | undefined) => void,
-    isNodeChildrenHidden: ((nodeData: any) => boolean) | undefined,
-    setNodeChildrenHidden: ((nodeData: any, hidden: boolean) => void) | undefined,
-    revealNextLevel: ((nodeData: any) => void) | undefined,
+    openCreateForm: (nodeData: Record<string, unknown>, owner: string, project: string, refreshGraph: (() => void) | undefined) => void,
+    openMomentStatusForm: (nodeData: Record<string, unknown>, refreshGraph: (() => void) | undefined) => void,
+    isNodeChildrenHidden: ((nodeData: Record<string, unknown>) => boolean) | undefined,
+    setNodeChildrenHidden: ((nodeData: Record<string, unknown>, isHidden: boolean) => void) | undefined,
+    revealNextLevel: ((nodeData: Record<string, unknown>) => void) | undefined,
     permission: { permission?: string } | null | undefined,
 ): Array<{
     id: string;
@@ -815,11 +820,11 @@ function buildMenuActions(
         disabledReason?: string;
         handler: () => Promise<void>;
     }> = [];
-    const childLabel = getChildLabel(nodeData.nodeType);
-    const childCount = Number.parseInt(nodeData?.childCount ?? 0, 10) || 0;
-    const hiddenDescendantCount = Number.parseInt(nodeData?._hiddenDescendantCount ?? 0, 10) || 0;
+    const childLabel = getChildLabel(nodeData.nodeType as string);
+    const childCount = Math.trunc(Number(nodeData?.childCount ?? 0)) || 0;
+    const hiddenDescendantCount = Math.trunc(Number(nodeData?._hiddenDescendantCount ?? 0)) || 0;
     const canToggleChildren = childCount > 0 || hiddenDescendantCount > 0;
-    const childrenHidden = canToggleChildren && Boolean(isNodeChildrenHidden?.(nodeData));
+    const isChildrenHidden = canToggleChildren && Boolean(isNodeChildrenHidden?.(nodeData));
 
     if (childLabel) {
         actions.push({
@@ -836,16 +841,16 @@ function buildMenuActions(
 
     if (canToggleChildren) {
         actions.push({
-            id: childrenHidden ? 'reveal-children' : 'hide-children',
-            label: childrenHidden ? 'Reveal Children' : 'Hide Children',
+            id: isChildrenHidden ? 'reveal-children' : 'hide-children',
+            label: isChildrenHidden ? 'Reveal Children' : 'Hide Children',
             danger: false,
             handler: async () => {
-                await setNodeChildrenHidden?.(nodeData, !childrenHidden);
+                await setNodeChildrenHidden?.(nodeData, !isChildrenHidden);
             },
         });
     }
 
-    if (childrenHidden && hiddenDescendantCount > 0) {
+    if (isChildrenHidden && hiddenDescendantCount > 0) {
         actions.push({
             id: 'reveal-next-level',
             label: 'Reveal Next Level',
@@ -856,7 +861,7 @@ function buildMenuActions(
         });
     }
 
-    if (normalizeNodeType(nodeData.nodeType) === 'moment') {
+    if (normalizeNodeType(nodeData.nodeType as string) === 'moment') {
         actions.push({
             id: 'change-status',
             label: 'Change Status',
@@ -876,28 +881,28 @@ function buildMenuActions(
         disabled: !canEdit,
         disabledReason: 'Requires Edit permission.',
         handler: async () => {
-            const label = getNodeLabel(nodeData) || normalizeNodeType(nodeData.nodeType) || 'item';
-            const confirmationLabel = nodeData.nodeType === 'root' ? 'project' : label;
+            const label = getNodeLabel(nodeData) || normalizeNodeType(nodeData.nodeType as string) || 'item';
+            const confirmationLabel = (nodeData.nodeType as string) === 'root' ? 'project' : label;
             closeMenus?.();
 
-            const confirmed = await openDeleteConfirmationModal(confirmationLabel);
-            if (!confirmed) {
+            const isConfirmed = await openDeleteConfirmationModal(confirmationLabel);
+            if (!isConfirmed) {
                 return;
             }
 
-            if (normalizeNodeType(nodeData.nodeType) === 'root') {
-                const deleteRoute = getDeleteRoute('root');
-                await requestJson(deleteRoute, { method: 'DELETE' });
+            if (normalizeNodeType(nodeData.nodeType as string) === 'root') {
+                const endpointUrl = getDeleteRoute('root')!;
+                await requestJson(endpointUrl, { method: 'DELETE' });
                 await onProjectDeleted?.();
                 return;
             }
 
-            const deleteRoute = getDeleteRoute(nodeData.nodeType, nodeData.payload?.id);
-            if (!deleteRoute) {
+            const endpointUrl = getDeleteRoute(nodeData.nodeType as string, (nodeData.payload as Record<string, unknown> | undefined)?.id as string | number | undefined);
+            if (!endpointUrl) {
                 throw new Error('Unable to determine the delete route for this node.');
             }
 
-            await requestJson(deleteRoute, { method: 'DELETE' });
+            await requestJson(endpointUrl, { method: 'DELETE' });
             await onGraphMutated?.();
         },
     });
@@ -907,7 +912,7 @@ function buildMenuActions(
 
 /**
  * Build the DOM element for the context menu from a list of actions.
- * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: function}[]} actions - The action definitions.
+ * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} actions - The action definitions.
  * @returns {HTMLDivElement} The menu element.
  */
 function buildMenuElement(actions: Array<{
@@ -942,16 +947,25 @@ function buildMenuElement(actions: Array<{
             await action.handler();
         });
 
-        menu.appendChild(button);
+        menu.append(button);
     }
 
     return menu;
 }
 
 /**
- * Create a context menu controller for the graph visualization using Tippy.js.
- * @param {{owner: string, project: string, getAvailableStrides: function, onGraphMutated: function, onProjectDeleted: function, isNodeChildrenHidden: function, setNodeChildrenHidden: function, revealNextLevel: function, permission: object}} [options={}] - Configuration options.
- * @returns {{hide: function, destroy: function, open: function}} The context menu controller.
+ * Create a context menu controller for the graph visualization using Tippy.js popups.
+ * @param {object} [root0] - Configuration options.
+ * @param {string} [root0.owner] - The project owner's slug.
+ * @param {string} [root0.project] - The project's slug.
+ * @param {() => Array<{ id: number; name?: string }>} [root0.getAvailableStrides] - Function returning available strides (for moment creation).
+ * @param {() => void} [root0.onGraphMutated] - Callback invoked after any graph mutation.
+ * @param {() => void} [root0.onProjectDeleted] - Callback invoked when the project is deleted.
+ * @param {(nodeData: object) => boolean} [root0.isNodeChildrenHidden] - Function to check if a node's children are hidden.
+ * @param {(nodeData: object, hidden: boolean) => void} [root0.setNodeChildrenHidden] - Function to toggle a node's children visibility.
+ * @param {(nodeData: object) => void} [root0.revealNextLevel] - Function to reveal the next level of children beneath a node.
+ * @param {{ permission?: string }} [root0.permission] - The current user's permission object for gating edit actions.
+ * @returns {{hide: () => void, destroy: () => void, open: (event: MouseEvent, nodeData: object) => void}} An object with hide, destroy, and open methods for the context menu.
  */
 export function createGraphContextMenuController({
     owner,
@@ -969,27 +983,27 @@ export function createGraphContextMenuController({
     getAvailableStrides?: () => Array<{ id: number; name?: string }>;
     onGraphMutated?: () => void;
     onProjectDeleted?: () => void;
-    isNodeChildrenHidden?: (nodeData: any) => boolean;
-    setNodeChildrenHidden?: (nodeData: any, hidden: boolean) => void;
-    revealNextLevel?: (nodeData: any) => void;
+    isNodeChildrenHidden?: (nodeData: Record<string, unknown>) => boolean;
+    setNodeChildrenHidden?: (nodeData: Record<string, unknown>, isHidden: boolean) => void;
+    revealNextLevel?: (nodeData: Record<string, unknown>) => void;
     permission?: { permission?: string };
 } = {}): {
     hide: () => void;
     destroy: () => void;
-    open: (event: MouseEvent, nodeData: any) => void;
+    open: (event: MouseEvent, nodeData: Record<string, unknown>) => void;
 } {
-    _ctxOwner = owner;
-    _ctxProject = project;
-    _ctxPermission = permission;
-    let referenceRect: DOMRect | null = null;
+    _contextState.owner = owner ?? '';
+    _contextState.project = project ?? '';
+    _contextState.permission = permission;
+    let referenceRect: DOMRect | undefined;
     const virtualReference = document.createElement('div');
     const menuContent = document.createElement('div');
     const appendTarget = () => {
-        const viewport = document.getElementById('graph-viewport');
+        const viewport = document.querySelector('#graph-viewport');
         if (viewport && document.fullscreenElement === viewport) return viewport;
         return document.body;
     };
-    const createFormTippy = tippy(document.createElement('div'), {
+    const formTippy = tippy(document.createElement('div'), {
         trigger: 'manual',
         appendTo: appendTarget,
         content: document.createElement('div'),
@@ -1000,7 +1014,7 @@ export function createGraphContextMenuController({
         theme: 'graph-menu',
         animation: false,
         offset: [8, 8],
-        onHidden(instance: any) {
+        onHidden(instance: { setContent: (c: HTMLElement) => void; show: () => void; hide: () => void }) {
             instance.setContent(document.createElement('div'));
         },
     });
@@ -1026,7 +1040,7 @@ export function createGraphContextMenuController({
      * Hide the create form tippy popup.
      */
     function hideCreateForm() {
-        createFormTippy.hide();
+        formTippy.hide();
     }
 
     /**
@@ -1048,9 +1062,29 @@ export function createGraphContextMenuController({
      * Destroy the context menu controller and clean up resources.
      */
     function destroy() {
-        createFormTippy.destroy();
-        instance.destroy();
+        formTippy.destroy?.();
+        instance.destroy?.();
         menuContent.replaceChildren();
+    }
+
+    /**
+     * Open a tippy popup with a form element.
+     * @param {() => HTMLElement | undefined | null} buildForm - Function that builds the form element
+     */
+    function openForm(buildForm: () => HTMLElement | undefined | null) {
+        const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
+        const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
+        const form = buildForm();
+
+        if (!form) {
+            return;
+        }
+
+        formTippy.setProps({
+            getReferenceClientRect: () => anchorRect,
+        });
+        formTippy.setContent(form);
+        formTippy.show();
     }
 
     /**
@@ -1058,43 +1092,19 @@ export function createGraphContextMenuController({
      * @param {object} nodeData - The parent node data.
      * @param {string} sourceOwner - The project owner's slug.
      * @param {string} sourceProject - The project's slug.
-     * @param {function} refreshGraph - Callback to refresh the graph after creation.
+     * @param {(() => void) | undefined} refreshGraph - Callback to refresh the graph after creation.
      */
-    function openCreateForm(nodeData: any, sourceOwner: string, sourceProject: string, refreshGraph: (() => void) | undefined) {
-        const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
-        const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
-        const form = buildCreateFormElement(nodeData, sourceOwner, sourceProject, getAvailableStrides, refreshGraph, closeMenus);
-
-        if (!form) {
-            return;
-        }
-
-        createFormTippy.setProps({
-            getReferenceClientRect: () => anchorRect,
-        });
-        createFormTippy.setContent(form);
-        createFormTippy.show();
+    function openCreateForm(nodeData: Record<string, unknown>, sourceOwner: string, sourceProject: string, refreshGraph: (() => void) | undefined) {
+        openForm(() => buildCreateFormElement(nodeData, sourceOwner, sourceProject, getAvailableStrides, refreshGraph, closeMenus));
     }
 
     /**
      * Open the change-moment-status form tippy popup.
      * @param {object} nodeData - The moment node data.
-     * @param {function} refreshGraph - Callback to refresh the graph after status update.
+     * @param {(() => void) | undefined} refreshGraph - Callback to refresh the graph after status update.
      */
-    function openMomentStatusForm(nodeData: any, refreshGraph: (() => void) | undefined) {
-        const menuRect = referenceRect ?? new DOMRect(0, 0, 0, 0);
-        const anchorRect = new DOMRect(menuRect.right + 12, menuRect.top, 1, 1);
-        const form = buildMomentStatusFormElement(nodeData, refreshGraph, closeMenus);
-
-        if (!form) {
-            return;
-        }
-
-        createFormTippy.setProps({
-            getReferenceClientRect: () => anchorRect,
-        });
-        createFormTippy.setContent(form);
-        createFormTippy.show();
+    function openMomentStatusForm(nodeData: Record<string, unknown>, refreshGraph: (() => void) | undefined) {
+        openForm(() => buildMomentStatusFormElement(nodeData, refreshGraph, closeMenus));
     }
 
     /**
@@ -1102,7 +1112,7 @@ export function createGraphContextMenuController({
      * @param {MouseEvent} event - The triggering mouse event.
      * @param {object} nodeData - The node data for which to show the context menu.
      */
-    function open(event: MouseEvent, nodeData: any) {
+    function open(event: MouseEvent, nodeData: Record<string, unknown>) {
         const clientX = Number(event?.clientX ?? 0);
         const clientY = Number(event?.clientY ?? 0);
         referenceRect = new DOMRect(clientX, clientY, 1, 1);
@@ -1119,7 +1129,7 @@ export function createGraphContextMenuController({
             isNodeChildrenHidden,
             setNodeChildrenHidden,
             revealNextLevel,
-            _ctxPermission,
+            _contextState.permission,
         );
         menuContent.replaceChildren(buildMenuElement(actions));
 

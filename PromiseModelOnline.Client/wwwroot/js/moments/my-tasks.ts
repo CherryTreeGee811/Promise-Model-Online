@@ -1,92 +1,189 @@
-// @ts-nocheck
-import { getMyAssignedMoments, updateMomentType } from './api.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { renderEmptyStateSection } from '../utils/empty-table.ts';
 import { navigate } from '../router.ts';
 
+import { getMyAssignedMoments, updateMomentType } from './api.ts';
+
+interface MyTaskMoment {
+    sequenceNumber: number;
+    statement: string;
+    type: string;
+    status: string;
+    effortEstimate?: string;
+    ownerSlug?: string;
+    projectSlug?: string;
+}
+
 /**
- * Load the my-tasks page showing moments assigned to the current user.
- * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
- * @param {HTMLElement} contentDiv - Content container for client-side routing.
+ * @returns {HTMLElement} Empty state element
  */
-export function loadMyTasksPage(navContentDiv, contentDiv) {
-    const content = /** @type {HTMLElement} */ (document.getElementById('my-tasks-content'));
-    const errorEl = /** @type {HTMLElement} */ (document.getElementById('error-text'));
+function buildEmptyState(): HTMLElement {
+    const div = document.createElement('div');
+    div.className = 'no-items d-flex flex-column align-items-center gap-3 py-5';
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'empty-table-icon';
+    const icon = document.createElement('i');
+    icon.className = 'bi bi-list-task';
+    iconDiv.append(icon);
+    div.append(iconDiv);
+    const title = document.createElement('h5');
+    title.className = 'fw-semibold text-secondary mb-1';
+    title.textContent = 'You have no assigned tasks.';
+    div.append(title);
+    const desc = document.createElement('p');
+    desc.className = 'text-muted mb-2';
+    desc.textContent = 'When a moment is assigned to you, it will appear here.';
+    div.append(desc);
+    return div;
+}
 
-    getMyAssignedMoments()
-        .then(moments => {
-            if (!moments || moments.length === 0) {
-                content.innerHTML = renderEmptyStateSection({
-                    icon: 'bi-list-task',
-                    title: 'You have no assigned tasks.',
-                    description: 'When a moment is assigned to you, it will appear here.',
-                });
-                return;
-            }
+/**
+ * @param {MyTaskMoment} m - The task moment data
+ * @returns {HTMLTableRowElement} The table row element
+ */
+function createTaskRow(m: MyTaskMoment): HTMLTableRowElement {
+    const tr = document.createElement('tr');
+    tr.dataset.momentId = String(m.sequenceNumber);
+    tr.dataset.owner = m.ownerSlug || '';
+    tr.dataset.project = m.projectSlug || '';
 
-            content.innerHTML = `
-                <table class="table table-sm table-striped table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Statement</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Effort</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${moments.map(m => `
-                            <tr data-moment-id="${m.sequenceNumber}" data-owner="${m.ownerSlug || ''}" data-project="${m.projectSlug || ''}">
-                                <td>${escapeHtml(m.statement)}</td>
-                                <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.sequenceNumber}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
-                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                <td>${m.effortEstimate ?? '–'}</td>
-                                <td>${m.ownerSlug && m.projectSlug
-                                    ? `<a href="/${m.ownerSlug}/${m.projectSlug}/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" data-owner="${m.ownerSlug}" data-project="${m.projectSlug}" class="btn btn-sm btn-outline-primary">View</a>`
-                                    : `<a href="/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a>`}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+    const tdStatement = document.createElement('td');
+    tdStatement.textContent = m.statement;
+    tr.append(tdStatement);
 
-            content.addEventListener('change', async (e) => {
-                const target = /** @type {HTMLElement} */(e.target);
-                if (target.matches('.moment-type-select')) {
-                    const row = target.closest('tr');
-                    const owner = row?.dataset.owner;
-                    const project = row?.dataset.project;
-                    if (!owner || !project) {
-                        console.error('Cannot determine project for moment type update');
-                        return;
-                    }
-                    const momentId = parseInt(/** @type {string} */(target.dataset.momentId), 10);
-                    const newType = /** @type {HTMLSelectElement} */(target).value;
-                    const previous = target.dataset.currentType || newType;
-                    try {
-                        await updateMomentType(owner, project, momentId, newType);
-                        target.dataset.currentType = newType;
-                    } catch (err) {
-                        /** @type {HTMLSelectElement} */(target).value = previous;
-                        console.error('Failed to update moment type:', err);
-                    }
-                }
-            });
+    const tdType = document.createElement('td');
+    const select = document.createElement('select');
+    select.className = 'form-select form-select-sm moment-type-select';
+    select.dataset.momentId = String(m.sequenceNumber);
+    select.dataset.currentType = m.type;
+    select.setAttribute('aria-label', 'Moment type');
+    const optStory = document.createElement('option');
+    optStory.value = 'Story';
+    optStory.textContent = 'Story';
+    if (m.type === 'Story') optStory.selected = true;
+    select.append(optStory);
+    const optJob = document.createElement('option');
+    optJob.value = 'Job';
+    optJob.textContent = 'Job';
+    if (m.type === 'Job') optJob.selected = true;
+    select.append(optJob);
+    tdType.append(select);
+    tr.append(tdType);
 
-            content.querySelectorAll('a[moment-seq]').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    if (e.ctrlKey || e.metaKey || e.button === 1) return;
-                    e.preventDefault();
-                    const owner = link.getAttribute('data-owner');
-                    const project = link.getAttribute('data-project');
-                    const seq = link.getAttribute('moment-seq');
-                    navigate(`/${owner}/${project}/moments/${seq}`, navContentDiv, contentDiv);
-                });
-            });
-        })
-        .catch(err => {
-            errorEl.textContent = 'Failed to load your tasks.';
-            console.error(err);
+    const tdStatus = document.createElement('td');
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 'status-badge status-' + (m.status || '').toLowerCase();
+    statusSpan.textContent = m.status;
+    tdStatus.append(statusSpan);
+    tr.append(tdStatus);
+
+    const tdEffort = document.createElement('td');
+    tdEffort.textContent = m.effortEstimate ?? '\u{2013}';
+    tr.append(tdEffort);
+
+    const tdActions = document.createElement('td');
+    const a = document.createElement('a');
+    a.setAttribute('moment-seq', String(m.sequenceNumber));
+    a.className = 'btn btn-sm btn-outline-primary';
+    a.textContent = 'View';
+    if (m.ownerSlug && m.projectSlug) {
+        a.href = '/' + m.ownerSlug + '/' + m.projectSlug + '/moments/' + m.sequenceNumber;
+        a.dataset.owner = m.ownerSlug;
+        a.dataset.project = m.projectSlug;
+    } else {
+        a.href = '/moments/' + m.sequenceNumber;
+    }
+    tdActions.append(a);
+    tr.append(tdActions);
+    return tr;
+}
+
+/**
+ * @param {HTMLElement} content - The content container element
+ */
+function setupTaskEvents(content: HTMLElement): void {
+    content.addEventListener('change', async (event) => {
+        const target = event.target as HTMLElement;
+        if (!target.matches('.moment-type-select')) return;
+        const row = target.closest('tr') as HTMLElement | null;
+        const owner = row?.dataset.owner;
+        const project = row?.dataset.project;
+        if (!owner || !project) {
+            console.error('Cannot determine project for moment type update');
+            return;
+        }
+        const momentId = Number(target.dataset.momentId ?? '');
+        const selectElement = target as HTMLSelectElement;
+        const newType = selectElement.value;
+        const previous = target.dataset.currentType || newType;
+        try {
+            await updateMomentType(owner, project, momentId, newType);
+            target.dataset.currentType = newType;
+        } catch (error) {
+            selectElement.value = previous;
+            console.error('Failed to update moment type:', error);
+        }
+    });
+}
+
+/**
+ * @param {HTMLElement} content - The content container element
+ * @param {HTMLElement} navContentDiv - The navigation content container
+ * @param {HTMLElement} contentDiv - The main content container
+ */
+function bindTaskLinks(content: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
+    for (const link of content.querySelectorAll('a[moment-seq]') as NodeListOf<HTMLAnchorElement>) {
+        link.addEventListener('click', (event: MouseEvent) => {
+            if (event.ctrlKey || event.metaKey || event.button === 1) return;
+            event.preventDefault();
+            const owner = link.dataset.owner;
+            const project = link.dataset.project;
+            const seq = link.getAttribute('moment-seq');
+            void navigate('/' + owner + '/' + project + '/moments/' + seq, navContentDiv, contentDiv);
         });
+    }
+}
+
+/**
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ */
+export async function loadMyTasksPage(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const content = document.querySelector('#my-tasks-content') as HTMLElement;
+    if (!content) return;
+
+    const errorElement = document.querySelector('#error-text') as HTMLElement;
+
+    try {
+        const moments = await getMyAssignedMoments() as MyTaskMoment[];
+
+        if (!moments || moments.length === 0) {
+            content.replaceChildren(buildEmptyState());
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'table table-sm table-striped table-hover align-middle';
+
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        for (const h of ['Statement', 'Type', 'Status', 'Effort', 'Actions']) {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.append(th);
+        }
+        thead.append(headerRow);
+        table.append(thead);
+
+        const tbody = document.createElement('tbody');
+        for (const m of moments) {
+            tbody.append(createTaskRow(m));
+        }
+        table.append(tbody);
+        content.replaceChildren(table);
+
+        setupTaskEvents(content);
+        bindTaskLinks(content, navContentDiv, contentDiv);
+    } catch (error) {
+        if (errorElement) errorElement.textContent = 'Failed to load your tasks.';
+        console.error(error);
+    }
 }

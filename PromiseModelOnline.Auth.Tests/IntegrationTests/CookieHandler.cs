@@ -1,12 +1,10 @@
-using System.Net;
+﻿using System.Net;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;
 
-public class CookieHandler : DelegatingHandler
+public class CookieHandler(HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
 {
     public CookieContainer CookieContainer { get; } = new();
-
-    public CookieHandler(HttpMessageHandler innerHandler) : base(innerHandler) { }
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)

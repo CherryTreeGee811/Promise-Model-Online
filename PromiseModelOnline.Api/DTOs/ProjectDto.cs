@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>Data transfer object for <see cref="Models.Project"/> responses.</summary>
 /// <remarks>Used by project endpoints to return project details without navigation properties.</remarks>

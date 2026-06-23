@@ -1,4 +1,4 @@
-#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
+﻿#pragma warning disable S6964 // Models are EF Core entities, not action input DTOs
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

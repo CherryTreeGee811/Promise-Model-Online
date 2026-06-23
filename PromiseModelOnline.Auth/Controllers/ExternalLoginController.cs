@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -6,26 +7,19 @@ using System.Security.Claims;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>Handles external (Google) login: challenge, callback, and account linking.</summary>
+/// <remarks>Initializes the controller with sign-in, user management, and logging dependencies.</remarks>
+/// <param name="signInManager">The Identity sign-in manager for external authentication flows.</param>
+/// <param name="userManager">The Identity user manager for user lookups and creation.</param>
+/// <param name="logger">The logger for external authentication audit events.</param>
 [Route("account/external")]
-public class ExternalLoginController : Controller
+public class ExternalLoginController(
+    SignInManager<IdentityUser> signInManager,
+    UserManager<IdentityUser> userManager,
+    ILogger<ExternalLoginController> logger) : Controller
 {
-    private readonly SignInManager<IdentityUser> _signInManager;
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly ILogger<ExternalLoginController> _logger;
-
-    /// <summary>Initializes the controller with sign-in, user management, and logging dependencies.</summary>
-    /// <param name="signInManager">The Identity sign-in manager for external authentication flows.</param>
-    /// <param name="userManager">The Identity user manager for user lookups and creation.</param>
-    /// <param name="logger">The logger for external authentication audit events.</param>
-    public ExternalLoginController(
-        SignInManager<IdentityUser> signInManager,
-        UserManager<IdentityUser> userManager,
-        ILogger<ExternalLoginController> logger)
-    {
-        _signInManager = signInManager;
-        _userManager = userManager;
-        _logger = logger;
-    }
+    private readonly SignInManager<IdentityUser> _signInManager = signInManager;
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly ILogger<ExternalLoginController> _logger = logger;
 
     /// <summary>Initiate an external authentication challenge (e.g., Google OAuth).</summary>
     /// <param name="provider">The external authentication provider name (e.g., <c>"Google"</c>).</param>

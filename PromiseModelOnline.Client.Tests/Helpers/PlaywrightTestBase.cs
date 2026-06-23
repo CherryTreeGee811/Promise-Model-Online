@@ -1,3 +1,5 @@
+﻿using System.Text.Json;
+
 namespace PromiseModelOnline.Client.Tests.Helpers;
 
 /// <summary>Base class for Playwright-based client UI tests.</summary>
@@ -36,17 +38,26 @@ public abstract class PlaywrightTestBase
             if (_initialized) return;
 
             _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
-            _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+
+            var browserType = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant() switch
+            {
+                "firefox" => _playwright.Firefox,
+                "webkit" => _playwright.Webkit,
+                _ => _playwright.Chromium,
+            };
+
+            var browserName = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant() ?? "chromium";
+            var launchArgs = browserName switch
+            {
+                "firefox" => new[] { "--no-sandbox" },
+                "webkit" => Array.Empty<string>(),
+                _ => new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage", "--disable-web-security", "--allow-running-insecure-content" },
+            };
+
+            _browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = IsHeadless,
-                Args = new[]
-                {
-                    "--ignore-certificate-errors",
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-web-security",
-                    "--allow-running-insecure-content"
-                }
+                Args = launchArgs,
             });
 
             Context = await _browser.NewContextAsync(new BrowserNewContextOptions
@@ -65,6 +76,7 @@ public abstract class PlaywrightTestBase
                     || e.Text.Contains("None of the transports", StringComparison.OrdinalIgnoreCase)
                     || e.Text.Contains("transports supported", StringComparison.OrdinalIgnoreCase)
                     || e.Text.Contains("negotiation with the server", StringComparison.OrdinalIgnoreCase)
+                    || e.Text.Contains("/umami/", StringComparison.OrdinalIgnoreCase)
                     || (e.Text.Contains("Failed to load resource", StringComparison.OrdinalIgnoreCase)
                         && (e.Text.Contains("404", StringComparison.OrdinalIgnoreCase)
                             || e.Text.Contains("401", StringComparison.OrdinalIgnoreCase))))
@@ -83,6 +95,7 @@ public abstract class PlaywrightTestBase
             await Context.RouteAsync("**/*", MockApiHandler.HandleRouteAsync);
 
             await Page.GotoAsync(BaseUrl + "/");
+            await PopulateSwCacheAsync();
             _initialized = true;
         }
         finally
@@ -91,24 +104,41 @@ public abstract class PlaywrightTestBase
         }
     }
 
-    /// <summary>Navigate to the app root and clear cookies before each test.</summary>
+    /// <summary>Clear state, then navigate to the app root before each test.</summary>
     [SetUp]
     public async Task Setup()
     {
+        // Layer 1: Clear state BEFORE navigation so the SPA loads into a clean session
+        await Context.ClearCookiesAsync();
+        MockApiHandler.SetSessionValue(null);
+
         for (var attempt = 0; attempt < 3; attempt++)
         {
             try
             {
-                await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 15000 });
+                await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 10000 });
                 break;
             }
-            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation"))
+            catch (TimeoutException)
             {
                 if (attempt == 2) throw;
-                await Task.Delay(1000);
+                await Task.Delay(500);
+            }
+            catch (PlaywrightException ex) when (
+                ex.Message.Contains("ERR_ABORTED") ||
+                ex.Message.Contains("NS_BINDING_ABORTED") ||
+                ex.Message.Contains("NS_ERROR_FAILURE") ||
+                ex.Message.Contains("NS_ERROR_NETONRESET") ||
+                ex.Message.Contains("Download is starting") ||
+                ex.Message.Contains("interrupted by another navigation"))
+            {
+                if (attempt == 2) throw;
+                // Layer 2: Navigation was interrupted (e.g. SPA redirect). Wait for the
+                // redirected page to settle instead of starting a fresh navigation.
+                await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+                break;
             }
         }
-        await Context.ClearCookiesAsync();
         await Page.SetViewportSizeAsync(1280, 720);
     }
 
@@ -125,15 +155,21 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Ensure a valid session exists by navigating as a user.</summary>
-    protected async Task EnsureLoggedIn(string targetPath = "/")
-    {
-        await NavigateAsUser(targetPath);
-    }
+    protected async Task EnsureLoggedIn(string targetPath = "/") => await NavigateAsUser(targetPath);
 
     /// <summary>Set the BFF session cookie to simulate authentication.</summary>
     /// <param name="sessionValue">The session cookie value (e.g., "owner-session", "nonowner-session").</param>
+    /// <remarks>
+    ///   Sets both the real <c>__Host-</c> prefixed cookie (for Chromium/Firefox)
+    ///   and a non-prefixed fallback <c>pmo.session</c> (for WebKit, which may reject
+    ///   <c>__Host-</c> cookies when Playwright adds a Domain attribute).
+    ///   Also stores the session value in <see cref="MockApiHandler"/> as a fallback
+    ///   for browsers where Playwright route interception does not expose the Cookie header.
+    /// </remarks>
     protected async Task SetSessionCookie(string sessionValue = "owner-session")
     {
+        MockApiHandler.SetSessionValue(sessionValue);
+
         try
         {
             await Page.EvaluateAsync($"document.cookie = '__Host-pmo.session={sessionValue}; path=/; secure'");
@@ -142,6 +178,18 @@ public abstract class PlaywrightTestBase
         {
             await Context.AddCookiesAsync([
                 new Cookie { Name = "__Host-pmo.session", Value = sessionValue, Url = "https://localhost:9000/", Secure = true }
+            ]);
+        }
+
+        try
+        {
+            var value = $"pmo.session={sessionValue}; path=/; secure";
+            await Page.EvaluateAsync($"document.cookie = '{value}'");
+        }
+        catch
+        {
+            await Context.AddCookiesAsync([
+                new Cookie { Name = "pmo.session", Value = sessionValue, Url = "https://localhost:9000/", Secure = true }
             ]);
         }
     }
@@ -154,19 +202,24 @@ public abstract class PlaywrightTestBase
         {
             try
             {
-                await Page.GotoAsync(BaseUrl + path, new PageGotoOptions { Timeout = 15000 });
+                await Page.GotoAsync(BaseUrl + path, new PageGotoOptions { Timeout = 2000 });
                 return;
             }
             catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation"))
             {
                 if (attempt == 2) throw;
-                await Task.Delay(1000);
+                await Task.Delay(100);
+            }
+            catch (TimeoutException)
+            {
+                if (attempt == 2) throw;
+                await Task.Delay(100);
             }
         }
     }
 
     /// <summary>Wait for a DOM selector to appear and return its locator.</summary>
-    protected async Task<ILocator> WaitForSelectorAsync(string selector, int timeoutSeconds = 20)
+    protected async Task<ILocator> WaitForSelectorAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = Page.Locator(selector).First;
         await locator.WaitForAsync(new LocatorWaitForOptions { Timeout = timeoutSeconds * 1000 });
@@ -174,7 +227,7 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Click an element identified by CSS selector.</summary>
-    protected async Task ClickAsync(string selector, int timeoutSeconds = 10)
+    protected async Task ClickAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = Page.Locator(selector);
         await locator.ScrollIntoViewIfNeededAsync();
@@ -182,54 +235,48 @@ public abstract class PlaywrightTestBase
     }
 
     /// <summary>Get an attribute value from an element.</summary>
-    protected async Task<string> GetAttributeAsync(string selector, string attribute, int timeoutSeconds = 10)
+    protected async Task<string> GetAttributeAsync(string selector, string attribute, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         return await locator.GetAttributeAsync(attribute) ?? "";
     }
 
     /// <summary>Get the text content of an element.</summary>
-    protected async Task<string> GetTextContentAsync(string selector, int timeoutSeconds = 10)
+    protected async Task<string> GetTextContentAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         return await locator.TextContentAsync() ?? "";
     }
 
     /// <summary>Check if an element is visible on the page.</summary>
-    protected async Task<bool> IsVisibleAsync(string selector)
-    {
-        return await Page.Locator(selector).IsVisibleAsync();
-    }
+    protected async Task<bool> IsVisibleAsync(string selector) => await Page.Locator(selector).IsVisibleAsync();
 
     /// <summary>Count elements matching a CSS selector.</summary>
-    protected async Task<int> CountElementsAsync(string selector)
-    {
-        return await Page.Locator(selector).CountAsync();
-    }
+    protected async Task<int> CountElementsAsync(string selector) => await Page.Locator(selector).CountAsync();
 
     /// <summary>Fill an input field with a value.</summary>
-    protected async Task FillAsync(string selector, string value, int timeoutSeconds = 10)
+    protected async Task FillAsync(string selector, string value, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         await locator.FillAsync(value);
     }
 
     /// <summary>Select an option from a select element by its value.</summary>
-    protected async Task SelectOptionByValueAsync(string selector, string value, int timeoutSeconds = 10)
+    protected async Task SelectOptionByValueAsync(string selector, string value, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         await locator.SelectOptionAsync(new SelectOptionValue { Value = value });
     }
 
     /// <summary>Get the currently selected value of a select element.</summary>
-    protected async Task<string> GetSelectedOptionValueAsync(string selector, int timeoutSeconds = 10)
+    protected async Task<string> GetSelectedOptionValueAsync(string selector, int timeoutSeconds = 2)
     {
         var locator = await WaitForSelectorAsync(selector, timeoutSeconds);
         return await locator.InputValueAsync();
     }
 
     /// <summary>Wait until a predicate returns true, with a timeout.</summary>
-    protected async Task<bool> WaitUntilAsync(Func<Task<bool>> predicate, int timeoutSeconds = 10)
+    protected async Task<bool> WaitUntilAsync(Func<Task<bool>> predicate, int timeoutSeconds = 2)
     {
         var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
         while (DateTime.UtcNow < deadline)
@@ -240,29 +287,89 @@ public abstract class PlaywrightTestBase
                     return true;
             }
             catch { }
-            await Task.Delay(200);
+            await Task.Delay(100);
         }
         return false;
     }
 
     /// <summary>Trigger an SPA navigation via pushState and popstate event.</summary>
-    protected async Task NavigateSpaAsync(string path)
-    {
-        await Page.EvaluateAsync("p => { window.history.pushState({}, '', p); window.dispatchEvent(new PopStateEvent('popstate')); }", path);
-    }
+    protected async Task NavigateSpaAsync(string path) => await Page.EvaluateAsync("p => { window.history.pushState({}, '', p); window.dispatchEvent(new PopStateEvent('popstate')); }", path);
 
     /// <summary>Wait for the page URL to contain a specific string.</summary>
-    protected async Task<bool> WaitForUrlContainsAsync(string expected, int timeoutSeconds = 10)
-    {
-        return await WaitUntilAsync(() =>
-            Task.FromResult(Page.Url.Contains(expected)), timeoutSeconds);
-    }
+    protected async Task<bool> WaitForUrlContainsAsync(string expected, int timeoutSeconds = 2) => await WaitUntilAsync(() =>
+                                                                                                            Task.FromResult(Page.Url.Contains(expected)), timeoutSeconds);
 
     /// <summary>Click a navigation link by its element ID.</summary>
-    protected async Task ClickNavLinkAsync(string linkId)
+    protected async Task ClickNavLinkAsync(string linkId) => await ClickAsync($"#{linkId}");
+
+    /// <summary>Pre-populate the service worker cache from local files.</summary>
+    /// <remarks>
+    ///   Workaround for Firefox where SW-scope fetch() fails with self-signed
+    ///   SSL certs even with IgnoreHTTPSErrors. Uses the page context's
+    ///   fetch() (which goes through Playwright route interception or nginx)
+    ///   to obtain real HTTP Response objects that Firefox's font/image
+    ///   rendering engines can properly consume.
+    /// </remarks>
+    private async Task PopulateSwCacheAsync()
     {
-        await ClickAsync($"#{linkId}");
+        var swPath = Path.Combine(GetWwwRoot(), "sw.mjs");
+        if (!File.Exists(swPath)) return;
+
+        var swContent = File.ReadAllText(swPath);
+        var start = swContent.IndexOf("PRECACHE = [", StringComparison.Ordinal);
+        start = swContent.IndexOf('[', start);
+        var end = swContent.IndexOf(']', start);
+        var arrayContent = swContent[start..(end + 1)];
+        var json = arrayContent.Replace('\'', '"').Replace(",]", "]");
+        var precacheEntries = JsonSerializer.Deserialize<string[]>(json) ?? [];
+
+        if (precacheEntries.Length == 0) return;
+
+        // Wait up to 5s for the SW to register and activate
+        var swReady = false;
+        for (var i = 0; i < 10; i++)
+        {
+            swReady = await Page.EvaluateAsync<bool>(@"
+                navigator.serviceWorker.getRegistration().then(r =>
+                    r !== undefined && r.active !== null
+                )");
+            if (swReady) break;
+            await Task.Delay(500);
+        }
+        if (!swReady) return;
+
+        // Fetch each PRECACHE entry from the page context and store in the SW cache.
+        // Using fetch() preserves real HTTP response headers/properties so that
+        // Firefox's font/image engines can properly consume them.
+        var baseUrl = BaseUrl;
+        await Page.EvaluateAsync<object?>(@"
+            (precacheJson => {
+                const urls = JSON.parse(precacheJson);
+                return caches.keys().then(async keys => {
+                    const cacheName = keys.find(k => k.startsWith('pmo-')) || 'pmo-v4';
+                    const cache = await caches.open(cacheName);
+                    await Promise.all(urls.map(async (url) => {
+                        try {
+                            const response = await fetch(url);
+                            if (response.ok) await cache.put(url, response);
+                        } catch (e) {
+                            // Entry may not exist in test environment
+                        }
+                    }));
+                });
+            })
+        ", System.Text.Json.JsonSerializer.Serialize(precacheEntries));
+
+        // Signal the SW that cache is ready
+        await Page.EvaluateAsync(@"
+            navigator.serviceWorker.getRegistration().then(r => {
+                if (r && r.active) r.active.postMessage({ type: 'CACHE_READY' });
+            })");
     }
+
+    private static string GetWwwRoot() => Path.GetFullPath(Path.Combine(
+        AppContext.BaseDirectory, "..", "..", "..", "..",
+        "PromiseModelOnline.Client", "wwwroot"));
 
     /// <summary>Capture a screenshot and page HTML for debugging test failures.</summary>
     private async Task DumpDebugInfoAsync()
@@ -270,7 +377,7 @@ public abstract class PlaywrightTestBase
         try
         {
             var screenshotPath = Path.Combine(Path.GetTempPath(), $"playwright-failure-{Guid.NewGuid()}.png");
-            await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true });
+            await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true, Timeout = 2000 });
             TestContext.Progress.WriteLine($"Screenshot saved to: {screenshotPath}");
 
             var html = await Page.ContentAsync();

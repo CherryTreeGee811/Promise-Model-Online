@@ -1,4 +1,4 @@
-using PMO.Core.Models;
+﻿using PMO.Core.Models;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
@@ -16,47 +16,35 @@ namespace PromiseModelOnline.Api.BusinessLogic;
 ///   -> moments -> tasks, plus iterations and strides) and serializes it into a
 ///   <see cref="ProjectExportDocument"/> for backup or transfer. Scoped lifetime.
 /// </remarks>
-public sealed class ProjectExportService : IProjectExportService
+/// <remarks>Initializes the export service with all hierarchy repositories.</remarks>
+/// <param name="projectRepository">Repository for project data access.</param>
+/// <param name="epicRepository">Repository for epic data access.</param>
+/// <param name="journeyRepository">Repository for journey data access.</param>
+/// <param name="flowRepository">Repository for flow data access.</param>
+/// <param name="momentRepository">Repository for moment data access.</param>
+/// <param name="momentTaskRepository">Repository for moment sub-task data access.</param>
+/// <param name="iterationRepository">Repository for iteration data access.</param>
+/// <param name="strideRepository">Repository for stride data access.</param>
+public sealed class ProjectExportService(
+    IProjectRepository projectRepository,
+    IEpicRepository epicRepository,
+    IJourneyRepository journeyRepository,
+    IFlowRepository flowRepository,
+    IMomentRepository momentRepository,
+    IMomentTaskRepository momentTaskRepository,
+    IIterationRepository iterationRepository,
+    IStrideRepository strideRepository) : IProjectExportService
 {
     private const string ExportSchemaVersion = "1.0";
 
-    private readonly IProjectRepository _projectRepository;
-    private readonly IEpicRepository _epicRepository;
-    private readonly IJourneyRepository _journeyRepository;
-    private readonly IFlowRepository _flowRepository;
-    private readonly IMomentRepository _momentRepository;
-    private readonly IMomentTaskRepository _momentTaskRepository;
-    private readonly IIterationRepository _iterationRepository;
-    private readonly IStrideRepository _strideRepository;
-
-    /// <summary>Initializes the export service with all hierarchy repositories.</summary>
-    /// <param name="projectRepository">Repository for project data access.</param>
-    /// <param name="epicRepository">Repository for epic data access.</param>
-    /// <param name="journeyRepository">Repository for journey data access.</param>
-    /// <param name="flowRepository">Repository for flow data access.</param>
-    /// <param name="momentRepository">Repository for moment data access.</param>
-    /// <param name="momentTaskRepository">Repository for moment sub-task data access.</param>
-    /// <param name="iterationRepository">Repository for iteration data access.</param>
-    /// <param name="strideRepository">Repository for stride data access.</param>
-    public ProjectExportService(
-        IProjectRepository projectRepository,
-        IEpicRepository epicRepository,
-        IJourneyRepository journeyRepository,
-        IFlowRepository flowRepository,
-        IMomentRepository momentRepository,
-        IMomentTaskRepository momentTaskRepository,
-        IIterationRepository iterationRepository,
-        IStrideRepository strideRepository)
-    {
-        _projectRepository = projectRepository;
-        _epicRepository = epicRepository;
-        _journeyRepository = journeyRepository;
-        _flowRepository = flowRepository;
-        _momentRepository = momentRepository;
-        _momentTaskRepository = momentTaskRepository;
-        _iterationRepository = iterationRepository;
-        _strideRepository = strideRepository;
-    }
+    private readonly IProjectRepository _projectRepository = projectRepository;
+    private readonly IEpicRepository _epicRepository = epicRepository;
+    private readonly IJourneyRepository _journeyRepository = journeyRepository;
+    private readonly IFlowRepository _flowRepository = flowRepository;
+    private readonly IMomentRepository _momentRepository = momentRepository;
+    private readonly IMomentTaskRepository _momentTaskRepository = momentTaskRepository;
+    private readonly IIterationRepository _iterationRepository = iterationRepository;
+    private readonly IStrideRepository _strideRepository = strideRepository;
 
     /// <summary>Build a complete export document for a project, including all hierarchy entities and metadata.</summary>
     /// <param name="projectId">The project ID to export.</param>
@@ -290,40 +278,28 @@ public sealed class ProjectExportService : IProjectExportService
     /// <summary>Map a <see cref="MomentTask"/> to its export DTO.</summary>
     /// <param name="task">The moment task to map.</param>
     /// <returns>The mapped export moment task DTO.</returns>
-    private static ProjectExportMomentTask MapTask(MomentTask task)
+    private static ProjectExportMomentTask MapTask(MomentTask task) => new ProjectExportMomentTask
     {
-        return new ProjectExportMomentTask
-        {
-            Id = task.Id,
-            MomentId = task.MomentId,
-            Name = task.Name,
-            Description = task.Description,
-            OwnerId = task.OwnerId,
-            IsCompleted = task.IsCompleted,
-            CreatedAt = task.CreatedAt,
-            CompletedAt = task.CompletedAt
-        };
-    }
+        Id = task.Id,
+        MomentId = task.MomentId,
+        Name = task.Name,
+        Description = task.Description,
+        OwnerId = task.OwnerId,
+        IsCompleted = task.IsCompleted,
+        CreatedAt = task.CreatedAt,
+        CompletedAt = task.CompletedAt
+    };
 
     /// <summary>Order items by <c>DisplayOrder</c> then <c>Id</c> for consistent export output.</summary>
     /// <param name="items">The items to order.</param>
     /// <returns>The ordered items.</returns>
-    private static IOrderedEnumerable<T> OrderByDisplayOrder<T>(IEnumerable<T> items) where T : class
-    {
-        return items.OrderBy(GetDisplayOrder).ThenBy(GetId);
-    }
+    private static IOrderedEnumerable<T> OrderByDisplayOrder<T>(IEnumerable<T> items) where T : class => items.OrderBy(GetDisplayOrder).ThenBy(GetId);
 
     /// <summary>Order iterations by ID then name.</summary>
-    private static IOrderedEnumerable<Iteration> OrderByIteration(IEnumerable<Iteration> items)
-    {
-        return items.OrderBy(iteration => iteration.Id).ThenBy(iteration => iteration.Name);
-    }
+    private static IOrderedEnumerable<Iteration> OrderByIteration(IEnumerable<Iteration> items) => items.OrderBy(iteration => iteration.Id).ThenBy(iteration => iteration.Name);
 
     /// <summary>Order strides by start date then ID.</summary>
-    private static IOrderedEnumerable<Stride> OrderByStride(IEnumerable<Stride> items)
-    {
-        return items.OrderBy(stride => stride.StartDate).ThenBy(stride => stride.Id);
-    }
+    private static IOrderedEnumerable<Stride> OrderByStride(IEnumerable<Stride> items) => items.OrderBy(stride => stride.StartDate).ThenBy(stride => stride.Id);
 
     /// <summary>Get the <c>DisplayOrder</c> property value from an item via reflection.</summary>
     private static int GetDisplayOrder<T>(T item) where T : class

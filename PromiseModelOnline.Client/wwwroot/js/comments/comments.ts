@@ -1,126 +1,205 @@
-// @ts-nocheck
-import { getComments, addComment } from './api.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { renderEmptyStateSection } from '../utils/empty-table.ts';
-import { createCommentAutocomplete } from './autocomplete.ts';
+import { showToast } from '../ui/toast.ts';
 import { loadEntityLookupMap, formatCommentText } from '../utils/entity-reference.ts';
+import { htmlToNodes } from '../utils/html.ts';
 import { isAtLeast } from '../utils/permissions.ts';
 
-/** @typedef {{ id: number, userName?: string, authorName?: string, createdAt: string, text: string, mentionedUsers?: string[], replies?: Array<{ userName?: string, authorName?: string, text: string }> }} Comment */
+import { getComments, addComment } from './api.ts';
+import { createCommentAutocomplete } from './autocomplete.ts';
 
 /**
- * Load and render the comments section for an entity.
- * @param {HTMLElement} container - The DOM element to render comments into.
- * @param {string} parentType - The parent entity type (e.g. "moment", "promise").
- * @param {number|string} parentId - The parent entity ID.
- * @param {string} owner - The owner (username or organization).
- * @param {string} project - The project slug.
- * @param {{ permission?: string }} permission - The user's permission object.
+ * @param {HTMLElement} container - The container element
+ * @param {string} parentType - The parent entity type
+ * @param {number} parentId - The parent entity ID
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {Record<string, unknown>} [permission] - Permission object
  */
-export function loadComments(container, parentType, parentId, owner, project, permission) {
-    const canComment = isAtLeast(permission?.permission, 'Comment');
+export async function loadComments(container: HTMLElement, parentType: string, parentId: number, owner: string, project: string, permission?: Record<string, unknown>): Promise<void> {
+    const canComment = isAtLeast(permission?.permission as string, 'Comment');
 
-    container.innerHTML = `
-        <h3>Comments</h3>
-        <div id="comments-list" class="comments-list"></div>
-        ${canComment ? `
-        <form id="comment-form" class="comment-form" aria-label="Add a comment">
-            <label for="comment-textarea" class="sr-only">Your comment</label>
-            <textarea id="comment-textarea" class="form-control mb-2" rows="3" required placeholder="Write a comment... Use @name to mention someone, #type-id to reference a promise/epic/journey/flow/moment."></textarea>
-            <button type="submit" class="btn btn-primary btn-sm">Post</button>
-        </form>` : ''}
-    `;
+    container.replaceChildren();
+    const heading = document.createElement('h3');
+    heading.textContent = 'Comments';
+    container.append(heading);
 
-    const commentsList = /** @type {HTMLElement} */ (container.querySelector('#comments-list'));
-    const form = /** @type {HTMLFormElement|null} */ (container.querySelector('#comment-form'));
-    const textarea = /** @type {HTMLTextAreaElement|null} */ (container.querySelector('#comment-textarea'));
+    const commentsList = document.createElement('div');
+    commentsList.id = 'comments-list';
+    commentsList.className = 'comments-list';
+    container.append(commentsList);
 
-    if (textarea) {
-        createCommentAutocomplete(textarea, parentType, parentId);
+    if (canComment) {
+        const form = document.createElement('form');
+        form.id = 'comment-form';
+        form.className = 'comment-form';
+        form.setAttribute('aria-label', 'Add a comment');
+
+        const label = document.createElement('label');
+        label.htmlFor = 'comment-textarea';
+        label.className = 'sr-only';
+        label.textContent = 'Your comment';
+        form.append(label);
+
+        const textarea = document.createElement('textarea');
+        textarea.id = 'comment-textarea';
+        textarea.className = 'form-control mb-2';
+        textarea.rows = 3;
+        textarea.required = true;
+        textarea.placeholder = 'Write a comment... Use @name to mention someone, #type-id to reference a promise/epic/journey/flow/moment.';
+        form.append(textarea);
+
+        const button = document.createElement('button');
+        button.type = 'submit';
+        button.className = 'btn btn-primary btn-sm';
+        button.textContent = 'Post';
+        form.append(button);
+
+        container.append(form);
     }
 
     const mapPromise = loadEntityLookupMap(parentType, parentId, owner, project);
 
-    Promise.all([
-        getComments(owner, project, parentType, parentId),
-        mapPromise,
-    ])
-        .then(([comments]) => renderComments(commentsList, comments, canComment))
-        .catch(() => {
-            commentsList.removeAttribute('role');
-            commentsList.removeAttribute('aria-label');
-            commentsList.innerHTML = '<p class="error">Failed to load comments.</p>';
-        });
+    try {
+        const [comments] = await Promise.all([
+            getComments(owner, project, parentType, parentId),
+            mapPromise,
+        ]);
+        renderComments(commentsList, comments as Record<string, unknown>[], canComment);
+    } catch {
+        commentsList.replaceChildren();
+        const p = document.createElement('p');
+        p.className = 'error';
+        p.textContent = 'Failed to load comments.';
+        commentsList.append(p);
+    }
 
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = textarea.value.trim();
-            if (!text) return;
-            try {
-                const y = window.scrollY;
-                const created = await addComment(owner, project, { parentType, parentId, text });
-                appendComment(commentsList, created);
-                textarea.value = '';
-                window.scrollTo(0, y);
-            } catch (err) {
-                alert('Failed to post comment.');
-                console.error(err);
-            }
-        });
+    if (canComment) {
+        const form = container.querySelector('#comment-form') as HTMLFormElement;
+        const textarea = container.querySelector('#comment-textarea') as HTMLTextAreaElement;
+
+        if (textarea) {
+            createCommentAutocomplete(textarea, parentType, parentId);
+        }
+
+        if (form && textarea) {
+            /**
+             * Handles the comment form submission: validates text, calls the API,
+             * and appends the new comment to the DOM.
+             * @param {Event} event - The form submit event.
+             * @returns {Promise<void>}
+             */
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const text = textarea.value.trim();
+                if (!text) return;
+                try {
+                    const y = window.scrollY;
+                    const created = await addComment(owner, project, { parentType, parentId, text });
+                    appendComment(commentsList, created as Record<string, unknown>);
+                    clearEditor(textarea, y);
+
+                    /**
+                     * Clears the textarea and restores the scroll position after a comment is posted.
+                     * @param {HTMLTextAreaElement} textarea - The textarea element to clear.
+                     * @param {number} y - The previous scroll Y position to restore.
+                     */
+                    function clearEditor(textarea: HTMLTextAreaElement, y: number): void {
+                        textarea.value = '';
+                        window.scrollTo(0, y);
+                    }
+                } catch (error) {
+                    showToast('Failed to post comment.', 'error');
+                    console.error(error);
+                }
+            });
+        }
     }
 }
 
 /**
- * Render an array of comment objects into the container element.
- * @param {HTMLElement} container - The DOM element to render comments into.
- * @param {Comment[]} comments - The array of comment objects.
- * @param {boolean} canComment - Whether the user can post new comments.
+ * @param {HTMLElement} container - The container element
+ * @param {Record<string, unknown>[]} comments - Array of comments
+ * @param {boolean} canComment - Whether user can comment
  */
-function renderComments(container, comments, canComment) {
-    container.innerHTML = '';
+function renderComments(container: HTMLElement, comments: Record<string, unknown>[], canComment: boolean): void {
+    container.replaceChildren();
     if (!comments || comments.length === 0) {
-        container.innerHTML = renderEmptyStateSection({
-            icon: 'bi-chat-dots',
-            title: 'No comments yet.',
-            description: canComment ? 'Be the first to share your thoughts.' : '',
-        });
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'no-items d-flex flex-column align-items-center gap-3 py-5';
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'empty-table-icon';
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-chat-dots';
+        iconDiv.append(icon);
+        emptyDiv.append(iconDiv);
+        const title = document.createElement('h5');
+        title.className = 'fw-semibold text-secondary mb-1';
+        title.textContent = 'No comments yet.';
+        emptyDiv.append(title);
+        if (canComment) {
+            const desc = document.createElement('p');
+            desc.className = 'text-muted mb-2';
+            desc.textContent = 'Be the first to share your thoughts.';
+            emptyDiv.append(desc);
+        }
+        container.append(emptyDiv);
         return;
     }
-    comments.forEach(comment => container.appendChild(createCommentElement(comment)));
+    const fragment = document.createDocumentFragment();
+    for (const comment of comments) { fragment.append(createCommentElement(comment)); }
+    container.append(fragment);
 }
 
 /**
- * Append a single comment element to the container (removes empty state if present).
- * @param {HTMLElement} container - The comments list container.
- * @param {Comment} comment - The comment object to append.
+ * @param {HTMLElement} container - The container element
+ * @param {Record<string, unknown>} comment - Comment to append
  */
-function appendComment(container, comment) {
+function appendComment(container: HTMLElement, comment: Record<string, unknown>): void {
     const empty = container.querySelector('.no-items');
     if (empty) empty.remove();
-    container.appendChild(createCommentElement(comment));
+    container.append(createCommentElement(comment));
 }
 
 /**
- * Create a DOM element representing a single comment.
- * @param {Comment} comment - The comment object with fields like userName, createdAt, text, etc.
- * @returns {HTMLElement} The comment DOM element.
+ * @param {Record<string, unknown>} comment - Comment data
+ * @returns {HTMLElement} The comment element
  */
-function createCommentElement(comment) {
+function createCommentElement(comment: Record<string, unknown>): HTMLElement {
     const div = document.createElement('div');
     div.className = 'comment-item';
-    const userName = comment.userName || comment.authorName || 'Unknown';
-    div.innerHTML = `
-        <div class="comment-meta">
-            <strong>${escapeHtml(userName)}</strong> – ${new Date(comment.createdAt).toLocaleString('en-CA')}
-        </div>
-        <div class="comment-text">${formatCommentText(comment.text)}</div>
-        ${comment.mentionedUsers && comment.mentionedUsers.length ? `<div class="comment-mentions">Mentions: ${comment.mentionedUsers.join(', ')}</div>` : ''}
-        ${comment.replies && comment.replies.length ? `<div class="comment-replies">${comment.replies.map(r => `
-            <div class="comment-item reply">
-                <strong>${escapeHtml(r.userName || r.authorName || 'Unknown')}</strong>: ${escapeHtml(r.text)}
-            </div>
-        `).join('')}</div>` : ''}
-    `;
+    const username = (comment.userName as string) || (comment.authorName as string) || 'Unknown';
+
+    const meta = document.createElement('div');
+    meta.className = 'comment-meta';
+    const strong = document.createElement('strong');
+    strong.textContent = username;
+    meta.append(strong, ` \u{2013} ${new Date(comment.createdAt as string).toLocaleString('en-CA')}`);
+    div.append(meta);
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'comment-text';
+    textDiv.append(...htmlToNodes(formatCommentText(comment.text as string)));
+    div.append(textDiv);
+
+    if ((comment.mentionedUsers as Record<string, unknown>[] | undefined)?.length) {
+        const mentions = document.createElement('div');
+        mentions.className = 'comment-mentions';
+        mentions.textContent = `Mentions: ${(comment.mentionedUsers as string[]).join(', ')}`;
+        div.append(mentions);
+    }
+
+    if ((comment.replies as Record<string, unknown>[] | undefined)?.length) {
+        const repliesDiv = document.createElement('div');
+        repliesDiv.className = 'comment-replies';
+        for (const r of (comment.replies as Record<string, unknown>[])) {
+            const reply = document.createElement('div');
+            reply.className = 'comment-item reply';
+            const replyStrong = document.createElement('strong');
+            replyStrong.textContent = (r.userName as string) || (r.authorName as string) || 'Unknown';
+            reply.append(replyStrong, `: ${(r.text as string)}`);
+            repliesDiv.append(reply);
+        }
+        div.append(repliesDiv);
+    }
+
     return div;
 }

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 
@@ -49,7 +49,7 @@ public abstract class E2ETestBase
         _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
             Headless = true,
-            Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage" }
+            Args = new[] { "--ignore-certificate-errors", "--no-sandbox", "--disable-dev-shm-usage", "--host-resolver-rules=MAP localhost 127.0.0.1" },
         });
 
         _context = await _browser.NewContextAsync(new BrowserNewContextOptions
@@ -68,6 +68,98 @@ public abstract class E2ETestBase
         Client.BaseAddress = new Uri(BaseUrl);
     }
 
+    /// <summary>Set up Playwright route interception to mock the OIDC login flow.</summary>
+    /// <remarks>
+    ///   Intercepts requests to the Auth server's login endpoints so tests
+    ///   can authenticate without a running OIDC provider. The mock login
+    ///   page accepts the configured test credentials and sets the session cookie.
+    /// </remarks>
+    private async Task MockOidcLoginAsync()
+    {
+        await Page.RouteAsync("**/login**", async route =>
+        {
+            var url = route.Request.Url;
+            var returnUrl = "https://localhost:9000/";
+            if (url.Contains("returnUrl="))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(url, @"returnUrl=([^&]+)");
+                if (match.Success)
+                    returnUrl = "https://localhost:9000" + Uri.UnescapeDataString(match.Groups[1].Value);
+            }
+            await route.FulfillAsync(new RouteFulfillOptions
+            {
+                Status = 302,
+                Headers = new[] { new KeyValuePair<string, string>("Location", $"{BaseUrl}/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}") }
+            });
+        });
+
+        await Page.RouteAsync("**/account/login**", async route =>
+        {
+            if (route.Request.Method == "GET")
+            {
+                var returnUrl = "https://localhost:9000/";
+                var url = route.Request.Url;
+                if (url.Contains("returnUrl="))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(url, @"returnUrl=([^&]+)");
+                    if (match.Success)
+                        returnUrl = Uri.UnescapeDataString(match.Groups[1].Value);
+                }
+                await route.FulfillAsync(new RouteFulfillOptions
+                {
+                    Status = 200,
+                    ContentType = "text/html",
+                    Body = $"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>Login</title></head>
+                    <body>
+                        <form method="post" action="/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}">
+                            <input name="Username" type="text" />
+                            <input name="Password" type="password" />
+                            <button type="submit">Login</button>
+                        </form>
+                    </body>
+                    </html>
+                    """
+                });
+            }
+            else
+            {
+                var formData = route.Request.PostData;
+                if (formData is not null && formData.Contains(TestUsername) && formData.Contains(TestPassword))
+                {
+                    await Page.Context.AddCookiesAsync([
+                        new Microsoft.Playwright.Cookie { Name = "__Host-pmo.session", Value = "owner-session", Url = BaseUrl, Secure = true },
+                        new Microsoft.Playwright.Cookie { Name = "pmo.session", Value = "owner-session", Url = BaseUrl, Secure = true }
+                    ]);
+                    var url = route.Request.Url;
+                    var returnUrl = "https://localhost:9000/";
+                    if (url.Contains("returnUrl="))
+                    {
+                        var match = System.Text.RegularExpressions.Regex.Match(url, @"returnUrl=([^&]+)");
+                        if (match.Success)
+                            returnUrl = Uri.UnescapeDataString(match.Groups[1].Value);
+                    }
+                    await route.FulfillAsync(new RouteFulfillOptions
+                    {
+                        Status = 302,
+                        Headers = new[] { new KeyValuePair<string, string>("Location", returnUrl) }
+                    });
+                }
+                else
+                {
+                    await route.FulfillAsync(new RouteFulfillOptions
+                    {
+                        Status = 401,
+                        ContentType = "text/plain",
+                        Body = "Invalid credentials"
+                    });
+                }
+            }
+        });
+    }
+
     /// <summary>Clean up browser, context, and HTTP client after each test.</summary>
     [TearDown]
     public async Task BaseTearDown()
@@ -79,16 +171,10 @@ public abstract class E2ETestBase
     }
 
     /// <summary>Log in as the primary test user via the Auth server login page.</summary>
-    protected async Task LoginAsync()
-    {
-        await LoginAsUser(TestUsername, TestPassword);
-    }
+    protected async Task LoginAsync() => await LoginAsUser(TestUsername, TestPassword);
 
     /// <summary>Log in as the secondary test user via the Auth server login page.</summary>
-    protected async Task LoginAsSecondUserAsync()
-    {
-        await LoginAsUser(SecondUsername, SecondPassword);
-    }
+    protected async Task LoginAsSecondUserAsync() => await LoginAsUser(SecondUsername, SecondPassword);
 
     /// <summary>Complete the login flow for a specific user through the browser.</summary>
     private async Task LoginAsUser(string username, string password)
@@ -99,19 +185,19 @@ public abstract class E2ETestBase
         {
             try
             {
-                await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 15000 });
-                await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 15000 });
+                await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 5000 });
+                await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 5000 });
 
                 await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", username);
                 await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", password);
 
                 await Page.ClickAsync("button[type=\"submit\"]");
-                await Page.WaitForURLAsync("**/", new() { Timeout = 30000 });
+                await Page.WaitForURLAsync("**/", new() { Timeout = 10000 });
                 return;
             }
             catch (TimeoutException) when (attempt < 3)
             {
-                await Task.Delay(30000 * attempt);
+                await Task.Delay(1000 * attempt);
             }
         }
     }
@@ -181,10 +267,7 @@ public abstract class E2ETestBase
     }
 
     /// <summary>Perform an unauthenticated POST request with form data.</summary>
-    protected async Task<HttpResponseMessage> PostFormAsync(string path, Dictionary<string, string> form)
-    {
-        return await Client.PostAsync(path, new FormUrlEncodedContent(form));
-    }
+    protected async Task<HttpResponseMessage> PostFormAsync(string path, Dictionary<string, string> form) => await Client.PostAsync(path, new FormUrlEncodedContent(form));
 
     /// <summary>Perform an unauthenticated POST request with JSON body.</summary>
     protected async Task<HttpResponseMessage> PostJsonAsync(string path, string json, bool ajax = false)

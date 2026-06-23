@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Auth.Extensions;
+﻿namespace PromiseModelOnline.Auth.Extensions;
 
 /// <summary>Extension methods for resolving Docker secrets embedded in connection strings.</summary>
 public static class ConnectionStringExtensions
@@ -14,7 +14,7 @@ public static class ConnectionStringExtensions
 
         var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
 
-        for (int i = 0; i < parts.Count; i++)
+        for (var i = 0; i < parts.Count; i++)
         {
             if (parts[i].StartsWith("Password_FILE="))
             {

@@ -1,5 +1,3 @@
-// @ts-nocheck
-import { escapeHtml } from './html.ts';
 import { renderEmptyTableRow } from './empty-table.ts';
 
 interface TableConfig {
@@ -14,14 +12,15 @@ interface TableConfig {
 /**
  * Render a full table into the given container with headers, item rows, and
  * an optional inline add-row at the bottom. Handles empty state.
- * @param container - Target DOM element to render into.
- * @param config.headers - Column header labels.
- * @param config.items - Array of data items to render.
- * @param config.emptyMessage - Fallback text when items is empty and no emptyConfig.
- * @param config.emptyConfig - Empty-table-row options (overrides emptyMessage).
- * @param config.renderItemRow - Callback producing HTML for each item row.
- * @param config.renderAddRow - Callback producing HTML for the add row.
- * @returns The tbody element, or null if container is missing.
+ * @param {HTMLElement} container - Target DOM element to render into.
+ * @param {object} config - Table configuration.
+ * @param {string[]} config.headers - Column header labels.
+ * @param {unknown[]} config.items - Array of data items to render.
+ * @param {string} [config.emptyMessage] - Fallback text when items is empty and no emptyConfig.
+ * @param {Record<string, unknown>} [config.emptyConfig] - Empty-table-row options (overrides emptyMessage).
+ * @param {(item: unknown) => string} config.renderItemRow - Callback producing HTML for each item row.
+ * @param {() => string} [config.renderAddRow] - Callback producing HTML for the add row.
+ * @returns {HTMLElement } The tbody element, or null if container is missing.
  */
 export function renderTableWithInlineAddRow(container: HTMLElement, {
     headers,
@@ -32,50 +31,81 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
     renderAddRow = () => '',
 }: TableConfig): HTMLElement | null {
     const columnCount = headers.length;
-    const rowsHtml = items && items.length
-        ? items.map(renderItemRow).join('')
-        : emptyConfig
-            ? renderEmptyTableRow({ colspan: columnCount, ...emptyConfig })
-            : `<tr class="inline-table-empty-row"><td class="no-items" colspan="${columnCount}">${escapeHtml(emptyMessage)}</td></tr>`;
+    container.replaceChildren();
 
-    const addRowHtml = renderAddRow ? renderAddRow() : '';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
 
-    container.innerHTML = `
-        <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover align-middle mb-0 promisemodel-table">
-            <thead class="table-light">
-                <tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
-            </thead>
-            <tbody>
-                ${rowsHtml}
-                ${addRowHtml}
-            </tbody>
-        </table>
-        </div>
-    `;
+    const table = document.createElement('table');
+    table.className = 'table table-sm table-striped table-hover align-middle mb-0 promisemodel-table';
 
-    return container.querySelector('tbody');
+    const thead = document.createElement('thead');
+    thead.className = 'table-light';
+    const headerRow = document.createElement('tr');
+    for (const header of headers) {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+
+    const tbody = document.createElement('tbody');
+
+    if (items && items.length > 0) {
+        const parser = new DOMParser();
+        for (const item of items) {
+            const document_ = parser.parseFromString(`<table><tbody>${renderItemRow(item)}</tbody></table>`, 'text/html');
+            const row = document_.querySelector('tr');
+            if (row) tbody.append(row);
+        }
+    } else if (emptyConfig) {
+        tbody.append(renderEmptyTableRow({ colspan: columnCount, ...emptyConfig }));
+    } else {
+        const tr = document.createElement('tr');
+        tr.className = 'inline-table-empty-row';
+        const td = document.createElement('td');
+        td.className = 'no-items';
+        td.colSpan = columnCount;
+        td.textContent = emptyMessage ?? '';
+        tr.append(td);
+        tbody.append(tr);
+    }
+
+    const rowHtmlText = renderAddRow();
+    if (rowHtmlText) {
+        const parser = new DOMParser();
+        const document_ = parser.parseFromString(`<table><tbody>${rowHtmlText}</tbody></table>`, 'text/html');
+        const row = document_.querySelector('tr');
+        if (row) tbody.append(row);
+    }
+
+    table.append(tbody);
+    wrapper.append(table);
+    container.append(wrapper);
+
+    return tbody;
 }
 
 /**
  * Insert a row element before the inline add-row in a tbody.
  * Appends to the end if no add-row is found.
- * @param tbody - The table body element.
- * @param rowElement - The new row element to insert.
+ * @param {HTMLElement} tbody - The table body element.
+ * @param {HTMLElement} rowElement - The new row element to insert.
  */
 export function insertRowBeforeAddRow(tbody: HTMLElement, rowElement: HTMLElement): void {
-    const addRow = tbody.querySelector('tr[data-inline-add-row="1"]');
-    if (addRow) {
-        tbody.insertBefore(rowElement, addRow);
+    const rowElement_ = tbody.querySelector('tr[data-inline-add-row="1"]');
+    if (rowElement_) {
+        rowElement_.before(rowElement);
         return;
     }
 
-    tbody.appendChild(rowElement);
+    tbody.append(rowElement);
 }
 
 /**
  * Remove the empty-state row from a table body if present.
- * @param tbody - The table body element.
+ * @param {HTMLElement} tbody - The table body element.
  */
 export function removeInlineEmptyRow(tbody: HTMLElement): void {
     tbody.querySelector('.inline-table-empty-row')?.remove();

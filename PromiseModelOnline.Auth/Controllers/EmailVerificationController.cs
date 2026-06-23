@@ -1,8 +1,7 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
@@ -10,32 +9,24 @@ using PromiseModelOnline.Auth.ViewModels;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>Handles email verification flow: confirm code, resend code, verification page.</summary>
+/// <remarks>Initializes the controller with user manager, email service, logger, and cache.</remarks>
+/// <param name="userManager">The Identity user manager for user lookups.</param>
+/// <param name="emailService">The email service for sending verification codes.</param>
+/// <param name="logger">The logger for verification audit events.</param>
+/// <param name="cache">The memory cache for storing verification codes.</param>
 [Route("account/verify-email")]
-public class EmailVerificationController : Controller
+public class EmailVerificationController(
+    UserManager<IdentityUser> userManager,
+    IEmailService emailService,
+    ILogger<EmailVerificationController> logger,
+    IMemoryCache cache) : Controller
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IEmailService _emailService;
-    private readonly ILogger<EmailVerificationController> _logger;
-    private readonly IMemoryCache _cache;
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IEmailService _emailService = emailService;
+    private readonly ILogger<EmailVerificationController> _logger = logger;
+    private readonly IMemoryCache _cache = cache;
 
     private const string VerificationCodePrefix = "verify_code:";
-
-    /// <summary>Initializes the controller with user manager, email service, logger, and cache.</summary>
-    /// <param name="userManager">The Identity user manager for user lookups.</param>
-    /// <param name="emailService">The email service for sending verification codes.</param>
-    /// <param name="logger">The logger for verification audit events.</param>
-    /// <param name="cache">The memory cache for storing verification codes.</param>
-    public EmailVerificationController(
-        UserManager<IdentityUser> userManager,
-        IEmailService emailService,
-        ILogger<EmailVerificationController> logger,
-        IMemoryCache cache)
-    {
-        _userManager = userManager;
-        _emailService = emailService;
-        _logger = logger;
-        _cache = cache;
-    }
 
     /// <summary>Generate a cryptographically random 6-digit verification code.</summary>
     private static string GenerateVerificationCode()
@@ -48,6 +39,7 @@ public class EmailVerificationController : Controller
 
     /// <summary>Display the email verification page for a given user.</summary>
     /// <param name="userId">The user ID to verify.</param>
+    /// <param name="resent">Optional flag indicating the verification email was re-sent.</param>
     /// <returns>The verification view, or a redirect to login if the user is not found or already verified.</returns>
     [AllowAnonymous]
     [HttpGet("")]
@@ -77,7 +69,6 @@ public class EmailVerificationController : Controller
     [AllowAnonymous]
     [HttpPost("confirm")]
     [ValidateAntiForgeryToken]
-    [EnableRateLimiting("VerifyCodePolicy")]
     public async Task<IActionResult> Confirm(VerifyEmailViewModel model)
     {
         ViewBag.Resent = false;
@@ -125,12 +116,11 @@ public class EmailVerificationController : Controller
     }
 
     /// <summary>Generate and send a new verification code via email.</summary>
-        /// <param name="userId">The user ID.</param>
-        /// <returns>A redirect to the verification page or login.</returns>
+    /// <param name="userId">The user ID.</param>
+    /// <returns>A redirect to the verification page or login.</returns>
     [AllowAnonymous]
     [HttpPost("resend")]
     [ValidateAntiForgeryToken]
-    [EnableRateLimiting("ResendVerificationPolicy")]
     public async Task<IActionResult> Resend(string? userId)
     {
         if (string.IsNullOrWhiteSpace(userId))

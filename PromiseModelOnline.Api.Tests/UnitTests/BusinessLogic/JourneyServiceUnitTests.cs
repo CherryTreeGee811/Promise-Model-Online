@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Moq;
@@ -8,123 +8,122 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 
-namespace PromiseModelOnline.Api.Tests
+namespace PromiseModelOnline.Api.Tests;
+
+[TestFixture]
+// Requirements: REQ_FUN_006 REQ_FUN_009 REQ_FUN_011 REQ_FUN_012
+/// <summary>Unit tests for <see cref="JourneyService"/> covering journey CRUD and hierarchy recalculation.</summary>
+public class JourneyServiceUnitTests
 {
-    [TestFixture]
-    // Requirements: REQ_FUN_006 REQ_FUN_009 REQ_FUN_011 REQ_FUN_012
-    /// <summary>Unit tests for <see cref="JourneyService"/> covering journey CRUD and hierarchy recalculation.</summary>
-    public class JourneyServiceUnitTests
+    private Mock<IJourneyRepository> _journeyRepoMock = null!;
+    private Mock<IHierarchyStatusService> _hierarchyStatusServiceMock = null!;
+    private JourneyService _service = null!;
+
+    [SetUp]
+    public void SetUp()
     {
-        private Mock<IJourneyRepository> _journeyRepoMock = null!;
-        private Mock<IHierarchyStatusService> _hierarchyStatusServiceMock = null!;
-        private JourneyService _service = null!;
+        _journeyRepoMock = new Mock<IJourneyRepository>();
+        _hierarchyStatusServiceMock = new Mock<IHierarchyStatusService>();
+        _service = new JourneyService(_journeyRepoMock.Object, _hierarchyStatusServiceMock.Object);
+    }
 
-        [SetUp]
-        public void SetUp()
-        {
-            _journeyRepoMock = new Mock<IJourneyRepository>();
-            _hierarchyStatusServiceMock = new Mock<IHierarchyStatusService>();
-            _service = new JourneyService(_journeyRepoMock.Object, _hierarchyStatusServiceMock.Object);
-        }
+    #region GetJourneysByEpicAsync Tests
 
-        #region GetJourneysByEpicAsync Tests
-
-        [Test]
-        public async Task REQ_FUN_006_GetJourneysByEpicAsync_ReturnsMatchingJourneys()
-        {
-            // Arrange
-            var journeys = new List<Journey>
+    [Test]
+    public async Task REQ_FUN_006_GetJourneysByEpicAsync_ReturnsMatchingJourneys()
+    {
+        // Arrange
+        var journeys = new List<Journey>
             {
                 new Journey { Id = 1, Statement = "Onboarding Journey", EpicId = 10 },
                 new Journey { Id = 2, Statement = "Settings Journey", EpicId = 10 }
             };
 
-            _journeyRepoMock.Setup(r => r.GetJourneysByEpicAsync(10)).ReturnsAsync(journeys);
+        _journeyRepoMock.Setup(r => r.GetJourneysByEpicAsync(10)).ReturnsAsync(journeys);
 
-            // Act
-            var result = await _service.GetJourneysByEpicAsync(10);
+        // Act
+        var result = await _service.GetJourneysByEpicAsync(10);
 
-            // Assert
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result.Count(), Is.EqualTo(2));
-            Assert.That(result.All(j => j.EpicId == 10), Is.True);
-            _journeyRepoMock.Verify(r => r.GetJourneysByEpicAsync(10), Times.Once);
-        }
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Count(), Is.EqualTo(2));
+        Assert.That(result.All(j => j.EpicId == 10), Is.True);
+        _journeyRepoMock.Verify(r => r.GetJourneysByEpicAsync(10), Times.Once);
+    }
 
-        [Test]
-        public async Task REQ_FUN_006_GetJourneysByEpicAsync_NoJourneys_ReturnsEmpty()
-        {
-            _journeyRepoMock.Setup(r => r.GetJourneysByEpicAsync(99)).ReturnsAsync(new List<Journey>());
+    [Test]
+    public async Task REQ_FUN_006_GetJourneysByEpicAsync_NoJourneys_ReturnsEmpty()
+    {
+        _journeyRepoMock.Setup(r => r.GetJourneysByEpicAsync(99)).ReturnsAsync(new List<Journey>());
 
-            var result = await _service.GetJourneysByEpicAsync(99);
+        var result = await _service.GetJourneysByEpicAsync(99);
 
-            Assert.That(result, Is.Empty);
-        }
+        Assert.That(result, Is.Empty);
+    }
 
-        #endregion
+    #endregion
 
-        #region Inherited generic methods
+    #region Inherited generic methods
 
-        [Test]
-        public async Task REQ_FUN_006_GetAllAsync_DelegatesToRepository()
-        {
-            var journeys = new List<Journey>
+    [Test]
+    public async Task REQ_FUN_006_GetAllAsync_DelegatesToRepository()
+    {
+        var journeys = new List<Journey>
             {
                 new Journey { Id = 1 },
                 new Journey { Id = 2 }
             };
-            _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetAllAsync()).ReturnsAsync(journeys);
+        _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetAllAsync()).ReturnsAsync(journeys);
 
-            var result = await _service.GetAllAsync();
+        var result = await _service.GetAllAsync();
 
-            Assert.That(result.Count(), Is.EqualTo(2));
-        }
-
-        [Test]
-        public async Task REQ_FUN_006_GetByIdAsync_ReturnsJourney_WhenFound()
-        {
-            var journey = new Journey { Id = 5, Statement = "Test Journey" };
-            _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(5)).ReturnsAsync(journey);
-
-            var result = await _service.GetByIdAsync(5);
-
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result!.Id, Is.EqualTo(5));
-        }
-
-        [Test]
-        public async Task REQ_FUN_006_GetByIdAsync_ReturnsNull_WhenNotFound()
-        {
-            _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Journey?)null);
-
-            var result = await _service.GetByIdAsync(404);
-
-            Assert.That(result, Is.Null);
-        }
-
-        [Test]
-        public async Task REQ_FUN_006_AddAsync_RollsUpHierarchyFromEpic()
-        {
-            var journey = new Journey { Id = 8, EpicId = 22 };
-
-            await _service.AddAsync(journey);
-
-            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromJourneyAsync(8), Times.Once);
-        }
-
-        [Test]
-        public async Task REQ_FUN_006_DeleteByIdAsync_RollsUpHierarchyFromEpic()
-        {
-            var journey = new Journey { Id = 8, EpicId = 22 };
-            _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(8)).ReturnsAsync(journey);
-            _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.DeleteByIdAsync(8)).ReturnsAsync(true);
-
-            var deleted = await _service.DeleteByIdAsync(8);
-
-            Assert.That(deleted, Is.True);
-            _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromEpicAsync(22), Times.Once);
-        }
-
-        #endregion
+        Assert.That(result.Count(), Is.EqualTo(2));
     }
+
+    [Test]
+    public async Task REQ_FUN_006_GetByIdAsync_ReturnsJourney_WhenFound()
+    {
+        var journey = new Journey { Id = 5, Statement = "Test Journey" };
+        _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(5)).ReturnsAsync(journey);
+
+        var result = await _service.GetByIdAsync(5);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Id, Is.EqualTo(5));
+    }
+
+    [Test]
+    public async Task REQ_FUN_006_GetByIdAsync_ReturnsNull_WhenNotFound()
+    {
+        _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Journey?)null);
+
+        var result = await _service.GetByIdAsync(404);
+
+        Assert.That(result, Is.Null);
+    }
+
+    [Test]
+    public async Task REQ_FUN_006_AddAsync_RollsUpHierarchyFromEpic()
+    {
+        var journey = new Journey { Id = 8, EpicId = 22 };
+
+        await _service.AddAsync(journey);
+
+        _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromJourneyAsync(8), Times.Once);
+    }
+
+    [Test]
+    public async Task REQ_FUN_006_DeleteByIdAsync_RollsUpHierarchyFromEpic()
+    {
+        var journey = new Journey { Id = 8, EpicId = 22 };
+        _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.GetByIdAsync(8)).ReturnsAsync(journey);
+        _journeyRepoMock.As<IGenericRepository<Journey>>().Setup(r => r.DeleteByIdAsync(8)).ReturnsAsync(true);
+
+        var deleted = await _service.DeleteByIdAsync(8);
+
+        Assert.That(deleted, Is.True);
+        _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromEpicAsync(22), Times.Once);
+    }
+
+    #endregion
 }

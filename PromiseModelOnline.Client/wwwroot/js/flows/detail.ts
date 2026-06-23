@@ -1,324 +1,438 @@
-// @ts-nocheck
-import { navigate } from '../router.ts';
-import { getFlow, getMoments, updateFlowDescription } from './api.ts';
-import { createMoment, updateMomentType } from '../moments/api.ts';
+import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { getJourneyById } from '../journeys/api.ts';
-import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
+import { createMoment, updateMomentType } from '../moments/api.ts';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
     patchChildMetrics,
-    patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.ts';
-import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
-import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
+import { navigate } from '../router.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { loadEntityLookupMap } from '../utils/entity-reference.ts';
+import { escapeHtml } from '../utils/html.ts';
+import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
+import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
-/** @typedef {{ id: number, sequenceNumber: number, statement: string, description?: string, statusColor?: string, createdAt: string, updatedAt?: string, journeyId: number }} Flow */
+import { getFlow, getMoments, updateFlowDescription } from './api.ts';
+
+interface Flow {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    description?: string;
+    statusColor?: string;
+    createdAt: string;
+    updatedAt?: string;
+    journeyId: number;
+}
+
+interface Moment {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    description?: string;
+    statusColor?: string;
+    type: string;
+    status: string;
+}
+
+interface Journey {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    statusColor?: string;
+}
 
 /**
- * Load and render the flow detail page with moments, graph, comments, and reactions.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {string} flowId - The flow's sequence number.
- * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
- * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * Handle moment type <select> changes by updating via the API.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @returns {void}
  */
-export function loadFlowDetail(owner, project, flowId, navContentDiv, contentDiv, permission) {
-    const detailDiv = /** @type {HTMLElement} */ (document.getElementById('flow-detail-content'));
-    const errorEl = /** @type {HTMLElement} */ (document.getElementById('error-text'));
-    const loadingEl = /** @type {HTMLElement|null} */ (document.getElementById('flow-detail-loading'));
+function setupMomentTypeChangeHandler(owner: string, project: string): void {
+    const momentsList = document.querySelector('#flow-moments-list') as HTMLElement;
+    if (momentsList) {
+        momentsList.addEventListener('change', async (event) => {
+            const target = event.target as HTMLElement;
+            if (target.matches('.moment-type-select')) {
+                const momentId = Number(target.dataset.momentId!);
+                const newType = (target as HTMLSelectElement).value;
+                const previous = target.dataset.currentType || newType;
+                try {
+                    await updateMomentType(owner, project, momentId, newType);
+                    target.dataset.currentType = newType;
+                } catch (error) {
+                    (target as HTMLSelectElement).value = previous;
+                    console.error('Failed to update moment type:', error);
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Load and render the parent journey name for a flow.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {Flow} flow - The flow whose parent journey to load
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
+async function loadFlowJourneyName(owner: string, project: string, flow: Flow, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const journeyCell = document.querySelector('#flow-journey-cell') as HTMLElement;
+    try {
+        const journey = await getJourneyById(owner, project, flow.journeyId) as Journey;
+        const icon = getStatusIcon(journey.statusColor ?? '');
+        const label = getStatusLabel(journey.statusColor ?? '');
+        if (journeyCell) journeyCell.replaceChildren();
+        const link = document.createElement('a');
+        link.href = '/' + owner + '/' + project + '/journeys/' + journey.sequenceNumber;
+        link.className = 'detail-link link-primary text-decoration-none fw-semibold';
+        link.textContent = journey.statement;
+        if (journeyCell) journeyCell.append(link);
+        const statusSpan = document.createElement('span');
+        statusSpan.setAttribute('aria-hidden', 'true');
+        statusSpan.textContent = icon;
+        if (journeyCell) journeyCell.append(statusSpan);
+        const srSpan = document.createElement('span');
+        srSpan.className = 'sr-only';
+        srSpan.textContent = label;
+        if (journeyCell) journeyCell.append(srSpan);
+
+        const linkElement = journeyCell?.querySelector('a.detail-link') as HTMLElement;
+        if (linkElement) {
+            linkElement.addEventListener('click', (event) => {
+                const me = event as MouseEvent;
+                if (me.ctrlKey || me.metaKey || me.button === 1) return;
+                event.preventDefault();
+                void navigate(linkElement.getAttribute('href')!, navContentDiv, contentDiv);
+            });
+        }
+    } catch {}
+}
+
+/**
+ * Load and render the moments list for a flow.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
+ * @param {Flow} flow - The flow data object
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
+async function loadFlowMoments(owner: string, project: string, flowId: string, flow: Record<string, unknown>, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const momentsList = document.querySelector('#flow-moments-list') as HTMLElement;
+
+    try {
+        const moments = await getMoments(owner, project, flowId) as Moment[];
+        patchChildMetrics('flow-' + flow.sequenceNumber, moments as unknown as Record<string, unknown>[]);
+        const tbody = renderTableWithInlineAddRow(momentsList, {
+            headers: ['Statement', 'Type', 'Status', 'Actions'],
+            items: moments || [],
+            emptyMessage: 'No moments found for this flow.',
+            renderItemRow: (item: unknown) => {
+                const m = item as Moment;
+                return '<tr data-moment-id="' + m.sequenceNumber + '">'
+                    + '<td>' + escapeHtml(m.statement) + '</td>'
+                    + '<td><select class="form-select form-select-sm moment-type-select" data-moment-id="' + m.sequenceNumber + '" data-current-type="' + m.type + '" aria-label="Moment type"><option value="Story"' + (m.type === 'Story' ? ' selected' : '') + '>Story</option><option value="Job"' + (m.type === 'Job' ? ' selected' : '') + '>Job</option></select></td>'
+                    + '<td><span class="status-badge status-' + (m.status || '').toLowerCase() + '">' + m.status + '</span></td>'
+                    + '<td><a href="/' + owner + '/' + project + '/moments/' + m.sequenceNumber + '" moment-seq="' + m.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td>'
+                    + '</tr>';
+            },
+            renderAddRow: () => '<tr data-inline-add-row="1">'
+                + '<td>'
+                + '<form id="add-moment-form" class="inline-add-form">'
+                + '<input id="add-moment-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Moment Statement..." aria-label="New moment statement">'
+                + '</form>'
+                + '</td>'
+                + '<td>'
+                + '<select id="add-moment-type" class="form-select form-select-sm" form="add-moment-form">'
+                + '<option value="Story">Story</option>'
+                + '<option value="Job">Job</option>'
+                + '</select>'
+                + '</td>'
+                + '<td><span class="status-badge status-todo">Todo</span></td>'
+                + '<td>'
+                + '<button id="add-moment-submit" type="submit" form="add-moment-form" class="btn btn-sm btn-outline-primary">Add</button>'
+                + '<span id="add-moment-msg"></span>'
+                + '</td>'
+                + '</tr>',
+        });
+
+        setupAddChildForm({
+            formId: 'add-moment-form',
+            inputId: 'add-moment-statement',
+            submitButtonId: 'add-moment-submit',
+            msgId: 'add-moment-msg',
+            typeSelectId: 'add-moment-type',
+            owner,
+            project,
+            tbody,
+            onCreate: async (statement, type) => createMoment(owner, project, {
+                statement,
+                flowId,
+                type: type ?? 'Story',
+                status: 'Todo',
+                displayOrder: (moments || []).length + 1,
+            }) as Promise<Record<string, unknown> | null>,
+            getRowHtml: (created) => '<tr><td>' + escapeHtml(created.statement as string) + '</td>'
+                + '<td><select class="form-select form-select-sm moment-type-select" data-moment-id="' + created.sequenceNumber + '" data-current-type="' + created.type + '" aria-label="Moment type">'
+                + '<option value="Story"' + (created.type === 'Story' ? ' selected' : '') + '>Story</option>'
+                + '<option value="Job"' + (created.type === 'Job' ? ' selected' : '') + '>Job</option>'
+                + '</select></td>'
+                + '<td><span class="status-badge status-' + ((created.status as string) || '').toLowerCase() + '">' + created.status + '</span></td>'
+                + '<td><a href="/' + owner + '/' + project + '/moments/' + created.sequenceNumber + '" moment-seq="' + created.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td></tr>',
+            datasetKey: 'moment-id',
+            childMetricsKey: 'flow-' + flow.sequenceNumber,
+            items: moments as unknown as Record<string, unknown>[],
+        });
+
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'table-responsive';
+        const momentTable = document.createElement('table');
+        momentTable.className = 'table table-sm table-striped align-middle promisemodel-table';
+
+        const mThead = document.createElement('thead');
+        const mHeaderRow = document.createElement('tr');
+        const mHeaders = ['Statement', 'Type', 'Status', 'Actions'];
+        for (const h of mHeaders) {
+            const th = document.createElement('th');
+            th.textContent = h;
+            mHeaderRow.append(th);
+        }
+        mThead.append(mHeaderRow);
+        momentTable.append(mThead);
+
+        const mTbody = document.createElement('tbody');
+        for (const m of moments) {
+            const tr = document.createElement('tr');
+            tr.dataset.momentId = String(m.sequenceNumber);
+
+            const tdStatement = document.createElement('td');
+            tdStatement.textContent = m.statement;
+            tr.append(tdStatement);
+
+            const tdType = document.createElement('td');
+            const typeSel = document.createElement('select');
+            typeSel.className = 'form-select form-select-sm moment-type-select';
+            typeSel.dataset.momentId = String(m.sequenceNumber);
+            typeSel.dataset.currentType = m.type;
+            typeSel.setAttribute('aria-label', 'Moment type');
+            const optStory = document.createElement('option');
+            optStory.value = 'Story';
+            optStory.textContent = 'Story';
+            if (m.type === 'Story') optStory.selected = true;
+            typeSel.append(optStory);
+            const optJob = document.createElement('option');
+            optJob.value = 'Job';
+            optJob.textContent = 'Job';
+            if (m.type === 'Job') optJob.selected = true;
+            typeSel.append(optJob);
+            tdType.append(typeSel);
+            tr.append(tdType);
+
+            const tdStatus = document.createElement('td');
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'status-badge status-' + (m.status || '').toLowerCase();
+            statusSpan.textContent = m.status;
+            tdStatus.append(statusSpan);
+            tr.append(tdStatus);
+
+            const tdActions = document.createElement('td');
+            const viewLink = document.createElement('a');
+            viewLink.href = '/' + owner + '/' + project + '/moments/' + m.sequenceNumber;
+            viewLink.setAttribute('moment-id', String(m.id));
+            viewLink.setAttribute('moment-seq', String(m.sequenceNumber));
+            viewLink.className = 'btn btn-sm btn-outline-primary';
+            viewLink.textContent = 'View';
+            tdActions.append(viewLink);
+            tr.append(tdActions);
+
+            mTbody.append(tr);
+        }
+        momentTable.append(mTbody);
+        tableWrapper.append(momentTable);
+        momentsList.replaceChildren(tableWrapper);
+
+        setupMomentTypeChangeHandler(owner, project);
+
+        bindLinkClickHandlers(momentsList, 'a[moment-id]', 'moment-seq', 'moments', owner, project, navContentDiv, contentDiv);
+    } catch {
+        momentsList?.replaceChildren();
+        const p = document.createElement('p');
+        p.className = 'error';
+        p.textContent = 'Failed to load moments.';
+        momentsList.append(p);
+    }
+}
+
+/**
+ * Insert or update the graph view button for a flow.
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {Flow} flow - The flow data
+ * @returns {void}
+ */
+function upsertFlowGraphViewButton(detailDiv: HTMLElement, flow: Flow): void {
+    const { owner: go, project: gp } = getOwnerProjectFromPath();
+    if (go && gp) {
+        const href = buildGraphViewHref(go, gp, 'flow-' + flow.sequenceNumber);
+        if (href) upsertGraphViewButton(detailDiv, href);
+    }
+}
+
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {{ permission: string } | undefined} permission - Permission object
+ */
+export async function loadFlowDetail(owner: string, project: string, flowId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
+    const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
-    if (loadingEl) loadingEl.hidden = false;
-    errorEl.textContent = '';
+    if (!detailDiv) return;
+    if (loadingElement) loadingElement.hidden = false;
+    if (errorElement) errorElement.textContent = '';
 
-    getFlow(owner, project, flowId)
-        .then(flow => Promise.all([
-            Promise.resolve(flow),
-            loadEntityLookupMap('Flow', flow.id, owner, project),
-        ]))
-        .then(([flow]) => {
-            if (loadingEl) loadingEl.hidden = true;
+    try {
+        const flow = await getFlow(owner, project, flowId) as Flow;
+        if (!flow) return;
+        await loadEntityLookupMap('Flow', flow.id, owner, project);
 
-            mountDetailStackGraph({
-                nodeType: 'flow',
-                nodeId: flowId,
-                owner,
-                project,
-            });
+        if (loadingElement) loadingElement.hidden = true;
 
-            detailDiv.innerHTML = `
-                <div class="detail-card flow-detail-card">
-                    <h2>${escapeHtml(flow.statement)}</h2>
-                    <table class="table table-sm table-striped align-middle detail-table">
-                        <tr><th scope="row"><label for="description-input">Description</label></th><td>
-                            <div class="inline-edit-wrapper">
-                                <p id="description-view" class="inline-edit-view">${formatCommentText(flow.description || '')}</p>
-                                <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
-                                <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(flow.description || '')}</textarea>
-                            </div>
-                            <div class="field-actions"><button id="cancel-desc" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
-                        </td></tr>
-                        <tr>
-                            <th>Journey</th>
-                            <td id="flow-journey-cell">
-                                <a href="/${owner}/${project}/journeys/${flow.journeyId}" class="detail-link link-primary text-decoration-none fw-semibold">Journey ${flow.journeyId}</a>
-                            </td>
-                        </tr>
-                        <tr><th scope="row">Status</th><td>${getStatusHtml(flow.statusColor)}</td></tr>
-                        <tr><th scope="row">Created</th><td>${new Date(flow.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th scope="row">Updated</th><td>${flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
-                    </table>
-                    <h3>Moments</h3>
-                    <div id="flow-moments-list">
-                        <p>Loading moments...</p>
-                    </div>
-                    <div id="flow-comments"></div>
-                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
-                </div>
-            `;
-
-            const descInput = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('description-input'));
-            const descView = /** @type {HTMLElement|null} */ (document.getElementById('description-view'));
-            const editBtn = /** @type {HTMLElement|null} */ (document.getElementById('edit-desc-btn'));
-            const saveBtn = /** @type {HTMLElement|null} */ (document.getElementById('save-desc'));
-            const cancelBtn = /** @type {HTMLElement|null} */ (document.getElementById('cancel-desc'));
-            let editor = null;
-            if (descInput && descView && editBtn) {
-                createCommentAutocomplete(descInput, 'Flow', flow.id);
-                editor = setupInlineEdit(descInput, descView, editBtn, saveBtn, cancelBtn);
-            }
-
-            const journeyLink = detailDiv.querySelector('.detail-link[journey-id]');
-            if (journeyLink) {
-                journeyLink.addEventListener('click', (e) => {
-                    if (e.ctrlKey || e.metaKey || e.button === 1) return;
-                    e.preventDefault();
-                    navigate(`/${owner}/${project}/journeys/${journeyLink.getAttribute('journey-seq')}`, navContentDiv, contentDiv);
-                });
-            }
-
-            const momentsList = /** @type {HTMLElement} */ (document.getElementById('flow-moments-list'));
-            getMoments(owner, project, flowId)
-                .then(moments => {
-                    patchChildMetrics(`flow-${flow.sequenceNumber}`, moments);
-                    const tbody = renderTableWithInlineAddRow(momentsList, {
-                        headers: ['Statement', 'Type', 'Status', 'Actions'],
-                        items: moments || [],
-                        emptyMessage: 'No moments found for this flow.',
-                        renderItemRow: m => `
-                            <tr data-moment-id="${m.sequenceNumber}">
-                                <td>${escapeHtml(m.statement)}</td>
-                                <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.sequenceNumber}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
-                                <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                            </tr>
-                        `,
-                        renderAddRow: () => `
-                            <tr data-inline-add-row="1">
-                                <td>
-                                    <form id="add-moment-form" class="inline-add-form">
-                                        <input id="add-moment-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Moment Statement..." aria-label="New moment statement">
-                                    </form>
-                                </td>
-                                <td>
-                                    <select id="add-moment-type" class="form-select form-select-sm" form="add-moment-form">
-                                        <option value="Story">Story</option>
-                                        <option value="Job">Job</option>
-                                    </select>
-                                </td>
-                                <td><span class="status-badge status-todo">Todo</span></td>
-                                <td>
-                                    <button id="add-moment-submit" type="submit" form="add-moment-form" class="btn btn-sm btn-outline-primary">Add</button>
-                                    <span id="add-moment-msg"></span>
-                                </td>
-                            </tr>
-                        `,
-                    });
-
-                    const form = momentsList.querySelector('#add-moment-form');
-                    const statementInput = momentsList.querySelector('#add-moment-statement');
-                    const typeSelect = momentsList.querySelector('#add-moment-type');
-                    const msg = momentsList.querySelector('#add-moment-msg');
-                    const submitBtn = momentsList.querySelector('#add-moment-submit');
-
-                    if (form && statementInput && typeSelect && msg && submitBtn) {
-                        form.addEventListener('submit', async event => {
-                            event.preventDefault();
-                            msg.textContent = '';
-
-                            const statement = statementInput.value.trim();
-                            if (!statement) {
-                                msg.textContent = 'Statement is required.';
-                                return;
-                            }
-
-                            submitBtn.disabled = true;
-
-                            try {
-                                const created = await createMoment(owner, project, {
-                                    statement,
-                                    flowId,
-                                    type: typeSelect.value,
-                                    status: 'Todo',
-                                    displayOrder: (moments || []).length + 1,
-                                });
-
-                                if (created) {
-                                    removeInlineEmptyRow(tbody);
-                                    const row = document.createElement('tr');
-                                    row.dataset.momentId = created.id;
-                                    row.innerHTML = `
-                                        <td>${escapeHtml(created.statement)}</td>
-                                        <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${created.sequenceNumber}" data-current-type="${created.type}" aria-label="Moment type"><option value="Story" ${created.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${created.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
-                                        <td><span class="status-badge status-${(created.status || '').toLowerCase()}">${created.status}</span></td>
-                                        <td><a href="/${owner}/${project}/moments/${created.sequenceNumber}" moment-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                                    `;
-                                    insertRowBeforeAddRow(tbody, row);
-                                    statementInput.value = '';
-                                    typeSelect.value = 'Story';
-                                    patchChildMetrics(`flow-${flow.sequenceNumber}`, [...(moments || []), created]);
-                                }
-                            } catch (err) {
-                                msg.textContent = 'Failed to add moment.';
-                                console.error(err);
-                            } finally {
-                                submitBtn.disabled = false;
-                            }
-                        });
-                    }
-
-                    momentsList.innerHTML = `
-                        <table class="table table-sm table-striped align-middle promisemodel-table">
-                            <thead>
-                                <tr>
-                                    <th>Statement</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${moments.map(m => `
-                                    <tr data-moment-id="${m.sequenceNumber}">
-                                        <td>${escapeHtml(m.statement)}</td>
-                                        <td><select class="form-select form-select-sm moment-type-select" data-moment-id="${m.sequenceNumber}" data-current-type="${m.type}" aria-label="Moment type"><option value="Story" ${m.type === 'Story' ? 'selected' : ''}>Story</option><option value="Job" ${m.type === 'Job' ? 'selected' : ''}>Job</option></select></td>
-                                        <td><span class="status-badge status-${(m.status || '').toLowerCase()}">${m.status}</span></td>
-                                        <td><a href="/${owner}/${project}/moments/${m.sequenceNumber}" moment-id="${m.id}" moment-seq="${m.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-
-                    momentsList.addEventListener('change', async (e) => {
-                        const target = /** @type {HTMLElement} */(e.target);
-                        if (target.matches('.moment-type-select')) {
-                            const momentId = parseInt(/** @type {string} */(target.dataset.momentId), 10);
-                            const newType = /** @type {HTMLSelectElement} */(target).value;
-                            const previous = target.dataset.currentType || newType;
-                            try {
-                                await updateMomentType(owner, project, momentId, newType);
-                                target.dataset.currentType = newType;
-                            } catch (err) {
-                                /** @type {HTMLSelectElement} */(target).value = previous;
-                                console.error('Failed to update moment type:', err);
-                            }
-                        }
-                    });
-
-                    momentsList.querySelectorAll('a[moment-id]').forEach(link => {
-                        link.addEventListener('click', (e) => {
-                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
-                            e.preventDefault();
-                            navigate(`/${owner}/${project}/moments/${link.getAttribute('moment-seq')}`, navContentDiv, contentDiv);
-                        });
-                    });
-                })
-                .catch(() => {
-                    momentsList.innerHTML = '<p class="error">Failed to load moments.</p>';
-                });
-
-            initBackLink();
-
-            const journeyCell = /** @type {HTMLElement} */ (document.getElementById('flow-journey-cell'));
-            getJourneyById(owner, project, flow.journeyId)
-                .then(journey => {
-                    const icon = getStatusIcon(journey.statusColor);
-                    const label = getStatusLabel(journey.statusColor);
-                    journeyCell.innerHTML = `<a href="/${owner}/${project}/journeys/${journey.sequenceNumber}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(journey.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
-
-                    const link = journeyCell.querySelector('a.detail-link');
-                    if (link) {
-                        link.addEventListener('click', (e) => {
-                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
-                            e.preventDefault();
-                            navigate(link.getAttribute('href'), navContentDiv, contentDiv);
-                        });
-                    }
-                })
-                .catch(() => {
-                });
-
-            const descMsg = document.getElementById('desc-save-msg');
-            if (saveBtn) {
-                saveBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    descMsg.textContent = '';
-                    saveBtn.disabled = true;
-                    const newDesc = /** @type {HTMLTextAreaElement} */(document.getElementById('description-input')).value;
-                    try {
-                        const updated = await updateFlowDescription(owner, project, flowId, newDesc);
-                        flow.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
-                        patchDetailStackGraphNode(`flow-${flow.sequenceNumber}`, {
-                            description: flow.description,
-                        });
-                        if (editor) editor.showSavedPopover(formatCommentText(flow.description || ''));
-                    } catch (err) {
-                        descMsg.textContent = 'Save failed';
-                        console.error(err);
-                    } finally {
-                        saveBtn.disabled = false;
-                    }
-                });
-            }
-
-            (function gateFlowDetailControls() {
-                const canEdit = permission?.permission === 'Edit';
-                if (!canEdit) {
-                    const editBtn = document.getElementById('edit-desc-btn');
-                    const saveBtn = document.getElementById('save-desc');
-                    const descInput = document.getElementById('description-input');
-                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
-                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
-                    if (descInput) descInput.disabled = true;
-
-                    const addMomentInput = document.getElementById('add-moment-statement');
-                    const addMomentSubmit = document.getElementById('add-moment-submit');
-                    if (addMomentInput) addMomentInput.disabled = true;
-                    if (addMomentSubmit) { addMomentSubmit.disabled = true; addMomentSubmit.title = 'Requires Edit permission.'; }
-
-                    const addMomentType = document.getElementById('add-moment-type');
-                    if (addMomentType) addMomentType.disabled = true;
-                }
-            })();
-
-            loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
-
-            const { owner: go, project: gp } = getOwnerProjectFromPath();
-            if (go && gp) {
-                const href = buildGraphViewHref(go, gp, `flow-${flow.sequenceNumber}`);
-                upsertGraphViewButton(detailDiv, href);
-            }
-        })
-        .catch(err => {
-            if (loadingEl) loadingEl.hidden = true;
-            errorEl.textContent = 'Failed to load flow details.';
-            console.error(err);
+        void mountDetailStackGraph({
+            nodeType: 'flow',
+            nodeId: flowId,
+            owner,
+            project,
         });
+
+        const detailCard = document.createElement('div');
+        detailCard.className = 'detail-card flow-detail-card';
+
+        const heading = document.createElement('h2');
+        heading.textContent = flow.statement;
+        detailCard.append(heading);
+
+        const table = document.createElement('table');
+        table.className = 'table table-sm table-striped align-middle detail-table';
+
+        const descRow = document.createElement('tr');
+        const descTh = document.createElement('th');
+        descTh.scope = 'row';
+        const descLabel = document.createElement('label');
+        descLabel.htmlFor = 'description-input';
+        descLabel.textContent = 'Description';
+        descTh.append(descLabel);
+        descRow.append(descTh);
+        const descTd = document.createElement('td');
+        buildInlineEditUI(descTd, '', flow.description || '');
+        descRow.append(descTd);
+        table.append(descRow);
+
+        const journeyRow = document.createElement('tr');
+        const journeyTh = document.createElement('th');
+        journeyTh.textContent = 'Journey';
+        journeyRow.append(journeyTh);
+        const journeyTd = document.createElement('td');
+        journeyTd.id = 'flow-journey-cell';
+        const journeyLink = document.createElement('a');
+        journeyLink.href = `/${owner}/${project}/journeys/${flow.journeyId}`;
+        journeyLink.className = 'detail-link link-primary text-decoration-none fw-semibold';
+        journeyLink.setAttribute('journey-id', String(flow.journeyId));
+        journeyLink.setAttribute('journey-seq', String(flow.journeyId));
+        journeyLink.textContent = `Journey ${flow.journeyId}`;
+        journeyTd.append(journeyLink);
+        journeyRow.append(journeyTd);
+        table.append(journeyRow);
+
+        const statusRow = document.createElement('tr');
+        const statusTh = document.createElement('th');
+        statusTh.scope = 'row';
+        statusTh.textContent = 'Status';
+        statusRow.append(statusTh);
+        const statusTd = document.createElement('td');
+        const statusIconSpan = document.createElement('span');
+        statusIconSpan.setAttribute('aria-hidden', 'true');
+        statusIconSpan.textContent = getStatusIcon(flow.statusColor ?? '');
+        statusTd.append(statusIconSpan);
+        const statusSrSpan = document.createElement('span');
+        statusSrSpan.className = 'sr-only';
+        statusSrSpan.textContent = getStatusLabel(flow.statusColor ?? '');
+        statusTd.append(statusSrSpan);
+        statusRow.append(statusTd);
+        table.append(statusRow);
+
+        table.append(createDateRow('Created', flow.createdAt));
+        table.append(createDateRow('Updated', flow.updatedAt));
+
+        detailCard.append(table);
+
+        const momentsHeading = document.createElement('h3');
+        momentsHeading.textContent = 'Moments';
+        detailCard.append(momentsHeading);
+
+        const momentsList = document.createElement('div');
+        momentsList.id = 'flow-moments-list';
+        const loadingP = document.createElement('p');
+        loadingP.textContent = 'Loading moments...';
+        momentsList.append(loadingP);
+        detailCard.append(momentsList);
+
+        const commentsDiv = document.createElement('div');
+        commentsDiv.id = 'flow-comments';
+        detailCard.append(commentsDiv);
+
+        const backButton = document.createElement('button');
+        backButton.id = 'back-link';
+        backButton.className = 'btn btn-outline-secondary btn-sm';
+        backButton.type = 'button';
+        const backSpan = document.createElement('span');
+        backSpan.setAttribute('aria-hidden', 'true');
+        backSpan.textContent = '\u{2190}';
+        backButton.append(backSpan, ' Back');
+        detailCard.append(backButton);
+
+        if (detailDiv) detailDiv.replaceChildren(detailCard);
+
+        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
+        const descViewElement = document.querySelector('#description-view') as HTMLElement;
+        const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
+        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
+        const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
+        if (descInput && descViewElement && editButton) {
+            createCommentAutocomplete(descInput, 'Flow', flow.id);
+            const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
+            (flow as unknown as Record<string, unknown>).__editor = editor;
+        }
+
+        bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
+
+        await loadFlowMoments(owner, project, flowId, flow as unknown as Record<string, unknown>, navContentDiv, contentDiv);
+
+        initBackLink();
+
+        await loadFlowJourneyName(owner, project, flow, navContentDiv, contentDiv);
+
+        setupDescriptionHandler(owner, project, flowId, 'flow', flow, updateFlowDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
+
+        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-moment-statement', '#add-moment-submit', '#add-moment-type']);
+
+        loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
+
+        upsertFlowGraphViewButton(detailDiv, flow);
+    } catch (error) {
+        if (loadingElement) loadingElement.hidden = true;
+        if (errorElement) errorElement.textContent = 'Failed to load flow details.';
+        console.error(error);
+    }
 }

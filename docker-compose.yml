@@ -22,7 +22,7 @@ services:
     image: ${DOCKER_REGISTRY-}promisemodelonlinebff
     container_name: promisemodelonlinebff
     ports:
-      - "8010:8010/tcp"
+      - "127.0.0.1:8010:8010/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:8010
@@ -124,7 +124,7 @@ services:
     networks:
       - promisemodelonline-net
     ports:
-      - 1433:1433/tcp
+      - "127.0.0.1:1433:1433/tcp"
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD:-SADevelopment10*}
@@ -146,11 +146,11 @@ services:
       PMO_API_DB_USER: ${PMO_API_DB_USER:-pmo_api}
       PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER:-pmo_auth}
     volumes:
-      - ./db/init/run-init.sh:/init/run-init.sh:ro
+      - ./scripts/init-db.sh:/init/init-db.sh:ro
     entrypoint:
       - /bin/sh
       - -c
-      - set -e; tr -d '\r' < /init/run-init.sh > /tmp/run-init.lf && /bin/sh /tmp/run-init.lf
+      - set -e; tr -d '\r' < /init/init-db.sh > /tmp/init-db.lf && /bin/sh /tmp/init-db.lf
     restart: "no"
 
   umami:

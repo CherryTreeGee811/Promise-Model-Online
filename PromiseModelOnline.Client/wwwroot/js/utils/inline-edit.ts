@@ -1,48 +1,54 @@
-// @ts-nocheck
 /**
  * Set up an inline-edit toggle between a display view and a hidden input field.
- * @param inputEl - The hidden input element.
- * @param viewEl - The visible display element.
- * @param editBtn - Button to switch from view mode to edit mode.
- * @param saveBtn - Button to save (optional; shows "Saved!" popover if provided).
- * @param cancelBtn - Button to cancel and restore previous value.
- * @returns An object with `showView` and `showSavedPopover` helper methods.
+ * @param {HTMLElement} inputElement - The hidden input element.
+ * @param {HTMLElement} viewElement - The visible display element.
+ * @param {HTMLElement} editButton - Button to switch from view mode to edit mode.
+ * @param {HTMLElement } saveButton - Button to save (optional; shows "Saved!" popover if provided).
+ * @param {HTMLElement } cancelButton - Button to cancel and restore previous value.
+ * @returns {object} An object with `showView` and `showSavedPopover` helper methods.
  */
-export function setupInlineEdit(inputEl: HTMLElement, viewEl: HTMLElement, editBtn: HTMLElement, saveBtn: HTMLElement | null, cancelBtn: HTMLElement | null): { showView: (value: string) => void; showSavedPopover: (value: string) => void } {
+export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElement, editButton: HTMLElement, saveButton?: HTMLElement, cancelButton?: HTMLElement): { showView: (value: string) => void; showSavedPopover: (value: string) => void } {
   let cancelValue = '';
   let cancelViewHtml = '';
 
+  /**
+   * Switch from edit mode back to view mode, displaying the given value.
+   * @param {string} value - The HTML content to display.
+   */
   function showView(value: string): void {
-    viewEl.innerHTML = value || '';
-    viewEl.style.display = '';
-    inputEl.style.display = 'none';
-    if (saveBtn) saveBtn.style.display = 'none';
-    editBtn.style.display = '';
-    if (cancelBtn) cancelBtn.style.display = 'none';
+    viewElement.textContent = value || '';
+    viewElement.style.display = '';
+    inputElement.style.display = 'none';
+    if (saveButton) saveButton.style.display = 'none';
+    editButton.style.display = '';
+    if (cancelButton) cancelButton.style.display = 'none';
   }
 
+  /**
+   * Switch from view mode to edit mode, showing the input field.
+   */
   function showEdit(): void {
-    cancelValue = (inputEl as HTMLInputElement).value;
-    cancelViewHtml = viewEl.innerHTML;
-    viewEl.style.display = 'none';
-    inputEl.style.display = '';
-    editBtn.style.display = 'none';
-    if (saveBtn) saveBtn.style.display = '';
-    if (cancelBtn) cancelBtn.style.display = '';
-    inputEl.focus();
+    cancelValue = (inputElement as HTMLInputElement).value;
+    cancelViewHtml = viewElement.textContent || '';
+    viewElement.style.display = 'none';
+    inputElement.style.display = '';
+    editButton.style.display = 'none';
+    if (saveButton) saveButton.style.display = '';
+    if (cancelButton) cancelButton.style.display = '';
+    inputElement.focus();
   }
 
-  viewEl.style.display = '';
-  inputEl.style.display = 'none';
-  editBtn.style.display = '';
-  if (saveBtn) saveBtn.style.display = 'none';
-  if (cancelBtn) cancelBtn.style.display = 'none';
+  viewElement.style.display = '';
+  inputElement.style.display = 'none';
+  editButton.style.display = '';
+  if (saveButton) saveButton.style.display = 'none';
+  if (cancelButton) cancelButton.style.display = 'none';
 
-  editBtn.addEventListener('click', showEdit);
+  editButton.addEventListener('click', showEdit);
 
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-      (inputEl as HTMLInputElement).value = cancelValue;
+  if (cancelButton) {
+    cancelButton.addEventListener('click', () => {
+      (inputElement as HTMLInputElement).value = cancelValue;
       showView(cancelViewHtml);
     });
   }
@@ -50,12 +56,13 @@ export function setupInlineEdit(inputEl: HTMLElement, viewEl: HTMLElement, editB
   return {
     showView,
     showSavedPopover(value: string): void {
-      if (!saveBtn) {
+      if (!saveButton) {
         showView(value);
         return;
       }
-      if (typeof bootstrap !== 'undefined' && (bootstrap as any).Popover) {
-        const popover = new (bootstrap as any).Popover(saveBtn, {
+      if (typeof bootstrap !== 'undefined' && bootstrap.Popover) {
+        const PopoverClass = bootstrap.Popover as unknown as new (element: HTMLElement, options: Record<string, unknown>) => { show: () => void; dispose: () => void };
+        const popover = new PopoverClass(saveButton, {
           trigger: 'manual',
           placement: 'top',
           content: 'Saved!',

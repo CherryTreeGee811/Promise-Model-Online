@@ -1,4 +1,4 @@
-using Microsoft.OpenApi;
+﻿using Microsoft.OpenApi;
 using PromiseModelOnline.Api.Extensions;
 using System.Text.Json.Serialization;
 using System.Security.Cryptography.X509Certificates;
@@ -72,7 +72,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         o.Authority = issuer;
         o.Audience = audience;
-        o.TokenValidationParameters.ValidateAudience = false;
+        o.TokenValidationParameters.ValidAudience = audience;
         o.TokenValidationParameters.ValidIssuer = issuer;
 
         o.Events = new JwtBearerEvents
@@ -124,7 +124,8 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>{
+builder.Services.AddSwaggerGen(c =>
+{
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -203,7 +204,7 @@ app.UseCors(MyAllowSpecificOrigins);
 
 if (app.Environment.IsDevelopment())
 {
-     app.UseSwagger();
+    app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api Server");
@@ -225,7 +226,9 @@ app.MapHub<NotificationHub>("/hubs/notifications");
 
 await app.RunAsync();
 
+/// <summary>Entry point for the Resource API server application.</summary>
 public partial class Program
 {
+    /// <summary>Prevents instantiation of the <see cref="Program"/> class.</summary>
     protected Program() { }
 }

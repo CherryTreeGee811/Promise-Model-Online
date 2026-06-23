@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,20 +12,16 @@ namespace PromiseModelOnline.Auth.Controllers;
 ///   Signs out the application cookie and delegates the end_session response to OpenIddict
 ///   so the client receives proper post-logout redirect handling.
 /// </remarks>
+/// <remarks>Initializes the controller with logging for session termination audit events.</remarks>
+/// <param name="logger">The logger for logout audit events.</param>
 [ApiController]
 [Route("connect/logout")]
-public class LogoutController : ControllerBase
+public class LogoutController(ILogger<LogoutController> logger) : ControllerBase
 {
-    private readonly ILogger<LogoutController> _logger;
-
-    /// <summary>Initializes the controller with logging for session termination audit events.</summary>
-    /// <param name="logger">The logger for logout audit events.</param>
-    public LogoutController(ILogger<LogoutController> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<LogoutController> _logger = logger;
 
     /// <summary>Sign out the current user and process the end_session request.</summary>
+    [Authorize]
     [HttpGet, HttpPost]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Logout()

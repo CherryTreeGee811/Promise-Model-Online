@@ -1,288 +1,391 @@
-// @ts-nocheck
-import { navigate } from '../router.ts';
-import { getJourney, getFlows, updateJourneyDescription } from './api.ts';
-import { createFlow } from '../flows/api.ts';
+import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { getEpicById } from '../epics/api.ts';
-import { renderTableWithInlineAddRow, insertRowBeforeAddRow, removeInlineEmptyRow } from '../utils/inline-table.ts';
-import { escapeHtml } from '../utils/html.ts';
-import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
+import { createFlow } from '../flows/api.ts';
 import {
     destroyDetailStackGraph,
     mountDetailStackGraph,
     patchChildMetrics,
     patchDetailStackGraphNode,
 } from '../projects/detail-stack-graph.ts';
-import { getStatusHtml, getStatusIcon, getStatusLabel, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
+import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
+import { navigate } from '../router.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
+import { escapeHtml } from '../utils/html.ts';
+import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
+import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
-/** @typedef {{ id: number, sequenceNumber: number, statement: string, description?: string, statusColor?: string, createdAt: string, updatedAt?: string, epicId: number }} Journey */
+import { getJourney, getFlows, updateJourneyDescription } from './api.ts';
+
+interface Journey {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    description?: string;
+    statusColor?: string;
+    createdAt: string;
+    updatedAt?: string;
+    epicId: number;
+}
+
+interface FlowItem {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+}
+
+interface EpicItem {
+    id: number;
+    sequenceNumber: number;
+    statement: string;
+    statusColor?: string;
+}
 
 /**
- * Load and render the journey detail page with flows, graph, comments, and reactions.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {string} journeyId - The journey's sequence number.
- * @param {HTMLElement} navContentDiv - Navigation container for client-side routing.
- * @param {HTMLElement} contentDiv - Content container for client-side routing.
- * @param {{ permission?: string }|null} permission - The user's permission object.
+ * Set up the description inline-edit save handler for a journey.
+ * @param {Journey} journey - The journey data object (mutated in place)
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} journeyId - The journey ID
+ * @param {HTMLButtonElement} saveButton - The save button element
+ * @param {HTMLElement | null} descMessage - The save message element
+ * @param {{ showSavedPopover?: (html: string) => void } | undefined} editor - The inline edit editor
+ * @returns {Promise<void>}
  */
-export function loadJourneyDetail(owner, project, journeyId, navContentDiv, contentDiv, permission) {
-    const detailDiv = /** @type {HTMLElement} */ (document.getElementById('journey-detail-content'));
-    const errorEl = /** @type {HTMLElement} */ (document.getElementById('error-text'));
-    const loadingEl = /** @type {HTMLElement|null} */ (document.getElementById('journey-detail-loading'));
+async function setupJourneyDescriptionHandler(journey: Journey, owner: string, project: string, journeyId: string, saveButton: HTMLButtonElement, descMessage: HTMLElement | null, editor: { showSavedPopover?: (html: string) => void } | undefined): Promise<void> {
+    if (saveButton) {
+        saveButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (descMessage) descMessage.textContent = '';
+            saveButton.disabled = true;
+            const newDesc = (document.querySelector('#description-input') as HTMLTextAreaElement).value;
+            try {
+                const updated = await updateJourneyDescription(owner, project, journeyId, newDesc) as { description?: string } | undefined;
+                journey.description = updated?.description ?? (newDesc.trim() ? newDesc : undefined);
+                patchDetailStackGraphNode('journey-' + journey.sequenceNumber, {
+                    description: journey.description,
+                });
+                if (editor?.showSavedPopover) editor.showSavedPopover(formatCommentText(journey.description || ''));
+            } catch (error) {
+                if (descMessage) descMessage.textContent = 'Save failed';
+                console.error(error);
+            } finally {
+                saveButton.disabled = false;
+            }
+        });
+    }
+}
+
+/**
+ * Load and render the parent epic link for a journey.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {Journey} journey - The journey whose parent epic to load
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @returns {Promise<void>}
+ */
+async function loadParentEpic(owner: string, project: string, journey: Journey, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    const epicCell = document.querySelector('#journey-epic-cell') as HTMLElement;
+    try {
+        const epic = await getEpicById(owner, project, journey.epicId) as EpicItem;
+        const icon = getStatusIcon(epic.statusColor ?? '');
+        const label = getStatusLabel(epic.statusColor ?? '');
+        if (epicCell) epicCell.replaceChildren();
+        const link = document.createElement('a');
+        link.href = '/' + owner + '/' + project + '/epics/' + epic.sequenceNumber;
+        link.className = 'detail-link link-primary text-decoration-none fw-semibold';
+        link.textContent = epic.statement;
+        if (epicCell) epicCell.append(link);
+        const statusSpan = document.createElement('span');
+        statusSpan.setAttribute('aria-hidden', 'true');
+        statusSpan.textContent = icon;
+        if (epicCell) epicCell.append(statusSpan);
+        const srSpan = document.createElement('span');
+        srSpan.className = 'sr-only';
+        srSpan.textContent = label;
+        if (epicCell) epicCell.append(srSpan);
+
+        if (link) {
+            link.addEventListener('click', (event) => {
+                const me = event as MouseEvent;
+                if (me.ctrlKey || me.metaKey || me.button === 1) return;
+                event.preventDefault();
+                void navigate(link.getAttribute('href')!, navContentDiv, contentDiv);
+            });
+        }
+    } catch {}
+}
+
+/**
+ * Insert or update the graph view button for a journey.
+ * @param {HTMLElement} detailDiv - The detail container element
+ * @param {Journey} journey - The journey data
+ * @returns {void}
+ */
+function upsertJourneyGraphViewButton(detailDiv: HTMLElement, journey: Journey): void {
+    const { owner: go, project: gp } = getOwnerProjectFromPath();
+    if (go && gp) {
+        const href = buildGraphViewHref(go, gp, 'journey-' + journey.sequenceNumber);
+        if (href) upsertGraphViewButton(detailDiv, href);
+    }
+}
+
+/**
+ * Load and render the flows list for a journey.
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} journeyId - The journey ID
+ * @param {Journey} journey - The journey data object
+ * @param {HTMLElement} navContentDiv - Navigation container for routing
+ * @param {HTMLElement} contentDiv - Content container for routing
+ * @param {HTMLElement} flowsList - Container element for the flows list
+ * @returns {Promise<void>}
+ */
+async function loadJourneyFlows(owner: string, project: string, journeyId: string, journey: Journey, navContentDiv: HTMLElement, contentDiv: HTMLElement, flowsList: HTMLElement): Promise<void> {
+    try {
+        const flows = await getFlows(owner, project, journeyId) as FlowItem[];
+        patchChildMetrics('journey-' + journey.sequenceNumber, flows as unknown as Record<string, unknown>[]);
+        const tbody = renderTableWithInlineAddRow(flowsList, {
+            headers: ['Statement', 'Actions'],
+            items: flows || [],
+            emptyMessage: 'No flows found for this journey.',
+            renderItemRow: (item: unknown) => {
+                const f = item as FlowItem;
+                return '<tr data-flow-id="' + f.id + '">'
+                    + '<td>' + escapeHtml(f.statement) + '</td>'
+                    + '<td><a href="/' + owner + '/' + project + '/flows/' + f.sequenceNumber + '" flow-id="' + f.id + '" flow-seq="' + f.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td>'
+                    + '</tr>';
+            },
+            renderAddRow: () => '<tr data-inline-add-row="1">'
+                + '<td>'
+                + '<form id="add-flow-form" class="inline-add-form">'
+                + '<input id="add-flow-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Flow Statement..." aria-label="New flow statement">'
+                + '</form>'
+                + '</td>'
+                + '<td>'
+                + '<button id="add-flow-submit" type="submit" form="add-flow-form" class="btn btn-sm btn-outline-primary">Add</button>'
+                + '<span id="add-flow-msg"></span>'
+                + '</td>'
+                + '</tr>',
+        });
+
+        setupAddChildForm({
+            formId: 'add-flow-form',
+            inputId: 'add-flow-statement',
+            submitButtonId: 'add-flow-submit',
+            msgId: 'add-flow-msg',
+            owner,
+            project,
+            tbody,
+            onCreate: async (statement) => createFlow(owner, project, {
+                statement,
+                journeyId,
+                displayOrder: (flows || []).length + 1,
+            }) as Promise<Record<string, unknown> | null>,
+            getRowHtml: (created) => '<tr><td>' + escapeHtml(created.statement as string) + '</td>'
+                + '<td><a href="/' + owner + '/' + project + '/flows/' + created.sequenceNumber + '" flow-id="' + created.id + '" flow-seq="' + created.sequenceNumber + '" class="btn btn-sm btn-outline-primary">View</a></td></tr>',
+            datasetKey: 'flow-id',
+            childMetricsKey: 'journey-' + journey.sequenceNumber,
+            items: flows as unknown as Record<string, unknown>[],
+        });
+
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'table-responsive';
+        const flowTable = document.createElement('table');
+        flowTable.className = 'table table-sm table-striped align-middle promisemodel-table';
+
+        const fThead = document.createElement('thead');
+        const fHeaderRow = document.createElement('tr');
+        const fHeaders = ['Statement', 'Actions'];
+        for (const h of fHeaders) {
+            const th = document.createElement('th');
+            th.textContent = h;
+            fHeaderRow.append(th);
+        }
+        fThead.append(fHeaderRow);
+        flowTable.append(fThead);
+
+        const fTbody = document.createElement('tbody');
+        for (const f of flows) {
+            const tr = document.createElement('tr');
+            const tdStatement = document.createElement('td');
+            tdStatement.textContent = f.statement;
+            tr.append(tdStatement);
+
+            const tdActions = document.createElement('td');
+            const viewLink = document.createElement('a');
+            viewLink.href = '/' + owner + '/' + project + '/flows/' + f.sequenceNumber;
+            viewLink.setAttribute('flow-id', String(f.id));
+            viewLink.setAttribute('flow-seq', String(f.sequenceNumber));
+            viewLink.className = 'btn btn-sm btn-outline-primary';
+            viewLink.textContent = 'View';
+            tdActions.append(viewLink);
+            tr.append(tdActions);
+
+            fTbody.append(tr);
+        }
+        flowTable.append(fTbody);
+        tableWrapper.append(flowTable);
+        flowsList.replaceChildren(tableWrapper);
+
+        bindLinkClickHandlers(flowsList, 'a[flow-id]', 'flow-seq', 'flows', owner, project, navContentDiv, contentDiv);
+
+    } catch {
+        flowsList.replaceChildren();
+        const p = document.createElement('p');
+        p.className = 'error';
+        p.textContent = 'Failed to load flows.';
+        flowsList.append(p);
+    }
+}
+
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} journeyId - The journey ID
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {{ permission: string } | undefined} permission - Permission object
+ */
+export async function loadJourneyDetail(owner: string, project: string, journeyId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
+    const detailDiv = document.querySelector('#journey-detail-content') as HTMLElement | null;
+    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    const loadingElement = document.querySelector('#journey-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
-    if (loadingEl) loadingEl.hidden = false;
-    errorEl.textContent = '';
+    if (!detailDiv) return;
+    if (loadingElement) loadingElement.hidden = false;
+    if (errorElement) errorElement.textContent = '';
 
-    getJourney(owner, project, journeyId)
-        .then(journey => Promise.all([
-            Promise.resolve(journey),
-            loadEntityLookupMap('Journey', journey.id, owner, project),
-        ]))
-        .then(([journey]) => {
-            if (loadingEl) loadingEl.hidden = true;
+    try {
+        const journey = await getJourney(owner, project, journeyId) as Journey;
+        if (!journey) return;
+        await loadEntityLookupMap('Journey', journey.id, owner, project);
+        if (loadingElement) loadingElement.hidden = true;
 
-            mountDetailStackGraph({
-                nodeType: 'journey',
-                nodeId: journeyId,
-                owner,
-                project,
-            });
-
-            detailDiv.innerHTML = `
-                <div class="detail-card journey-detail-card">
-                    <h2>${escapeHtml(journey.statement)}</h2>
-                    <table class="table table-sm table-striped align-middle detail-table">
-                        <tr><th scope="row"><label for="description-input">Description</label></th><td>
-                            <div class="inline-edit-wrapper">
-                                <p id="description-view" class="inline-edit-view">${formatCommentText(journey.description || '')}</p>
-                                <button id="edit-desc-btn" class="btn btn-success btn-sm inline-edit-btn" type="button" title="Edit description"><i class="bi bi-pencil"></i></button>
-                                <textarea id="description-input" rows="4" class="form-control detail-textarea" aria-label="Description" style="display:none">${escapeHtml(journey.description || '')}</textarea>
-                            </div>
-                            <div class="field-actions"><button id="cancel-desc" class="btn btn-outline-secondary btn-sm" type="button" style="display:none">Cancel</button> <button id="save-desc" class="btn btn-primary btn-sm" type="button">Save</button> <span id="desc-save-msg"></span></div>
-                        </td></tr>
-                        <tr>
-                            <th>Epic</th>
-                            <td id="journey-epic-cell">
-                                <a href="/${owner}/${project}/epics/${journey.epicId}" class="detail-link link-primary text-decoration-none fw-semibold">Epic ${journey.epicId}</a>
-                            </td>
-                        </tr>
-                        <tr><th scope="row">Status</th><td>${getStatusHtml(journey.statusColor)}</td></tr>
-                        <tr><th scope="row">Created</th><td>${new Date(journey.createdAt).toLocaleDateString('en-CA')}</td></tr>
-                        <tr><th scope="row">Updated</th><td>${journey.updatedAt ? new Date(journey.updatedAt).toLocaleDateString('en-CA') : '–'}</td></tr>
-                    </table>
-                    <h3>Flows</h3>
-                    <div id="journey-flows-list">
-                        <p>Loading flows...</p>
-                    </div>
-                    <div id="journey-comments"></div>
-                    <button id="back-link" class="btn btn-outline-secondary btn-sm" type="button"><span aria-hidden="true">←</span> Back</button>
-                </div>
-            `;
-
-            const descInput = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('description-input'));
-            const descView = /** @type {HTMLElement|null} */ (document.getElementById('description-view'));
-            const editBtn = /** @type {HTMLElement|null} */ (document.getElementById('edit-desc-btn'));
-            const saveBtn = /** @type {HTMLElement|null} */ (document.getElementById('save-desc'));
-            const cancelBtn = /** @type {HTMLElement|null} */ (document.getElementById('cancel-desc'));
-            let editor = null;
-            if (descInput && descView && editBtn) {
-                createCommentAutocomplete(descInput, 'Journey', journey.id);
-                editor = setupInlineEdit(descInput, descView, editBtn, saveBtn, cancelBtn);
-            }
-
-            const epicLink = detailDiv.querySelector('a.detail-link[epic-id]');
-            if (epicLink) {
-                epicLink.addEventListener('click', (e) => {
-                    if (e.ctrlKey || e.metaKey || e.button === 1) return;
-                    e.preventDefault();
-                    navigate(`/${owner}/${project}/epics/${epicLink.getAttribute('epic-seq')}`, navContentDiv, contentDiv);
-                });
-            }
-
-            const flowsList = /** @type {HTMLElement} */ (document.getElementById('journey-flows-list'));
-            getFlows(owner, project, journeyId)
-                .then(flows => {
-                    patchChildMetrics(`journey-${journey.sequenceNumber}`, flows);
-                    const tbody = renderTableWithInlineAddRow(flowsList, {
-                        headers: ['Statement', 'Actions'],
-                        items: flows || [],
-                        emptyMessage: 'No flows found for this journey.',
-                        renderItemRow: f => `
-                            <tr data-flow-id="${f.id}">
-                                <td>${escapeHtml(f.statement)}</td>
-                                <td><a href="/${owner}/${project}/flows/${f.sequenceNumber}" flow-id="${f.id}" flow-seq="${f.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                            </tr>
-                        `,
-                        renderAddRow: () => `
-                            <tr data-inline-add-row="1">
-                                <td>
-                                    <form id="add-flow-form" class="inline-add-form">
-                                        <input id="add-flow-statement" class="form-control form-control-sm" type="text" maxlength="500" required placeholder="New Flow Statement..." aria-label="New flow statement">
-                                    </form>
-                                </td>
-                                <td>
-                                    <button id="add-flow-submit" type="submit" form="add-flow-form" class="btn btn-sm btn-outline-primary">Add</button>
-                                    <span id="add-flow-msg"></span>
-                                </td>
-                            </tr>
-                        `,
-                    });
-
-                    const form = flowsList.querySelector('#add-flow-form');
-                    const statementInput = flowsList.querySelector('#add-flow-statement');
-                    const msg = flowsList.querySelector('#add-flow-msg');
-                    const submitBtn = flowsList.querySelector('#add-flow-submit');
-
-                    if (form && statementInput && msg && submitBtn) {
-                        form.addEventListener('submit', async event => {
-                            event.preventDefault();
-                            msg.textContent = '';
-
-                            const statement = statementInput.value.trim();
-                            if (!statement) {
-                                msg.textContent = 'Statement is required.';
-                                return;
-                            }
-
-                            submitBtn.disabled = true;
-
-                            try {
-                                const created = await createFlow(owner, project, {
-                                    statement,
-                                    journeyId,
-                                    displayOrder: (flows || []).length + 1,
-                                });
-
-                                if (created) {
-                                    removeInlineEmptyRow(tbody);
-                                    const row = document.createElement('tr');
-                                    row.dataset.flowId = created.id;
-                                    row.innerHTML = `
-                                        <td>${escapeHtml(created.statement)}</td>
-                                        <td><a href="/${owner}/${project}/flows/${created.sequenceNumber}" flow-id="${created.id}" flow-seq="${created.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                                    `;
-                                    insertRowBeforeAddRow(tbody, row);
-                                    statementInput.value = '';
-                                    patchChildMetrics(`journey-${journey.sequenceNumber}`, [...(flows || []), created]);
-                                }
-                            } catch (err) {
-                                msg.textContent = 'Failed to add flow.';
-                                console.error(err);
-                            } finally {
-                                submitBtn.disabled = false;
-                            }
-                        });
-                    }
-
-                    flowsList.innerHTML = `
-                        <table class="table table-sm table-striped align-middle promisemodel-table">
-                            <thead>
-                                <tr>
-                                    <th>Statement</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${flows.map(f => `
-                                    <tr>
-                                        <td>${escapeHtml(f.statement)}</td>
-                                        <td><a href="/${owner}/${project}/flows/${f.sequenceNumber}" flow-id="${f.id}" flow-seq="${f.sequenceNumber}" class="btn btn-sm btn-outline-primary">View</a></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-
-                    flowsList.querySelectorAll('a[flow-id]').forEach(link => {
-                        link.addEventListener('click', (e) => {
-                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
-                            e.preventDefault();
-                            navigate(`/${owner}/${project}/flows/${link.getAttribute('flow-seq')}`, navContentDiv, contentDiv);
-                        });
-                    });
-                })
-                .catch(() => {
-                    flowsList.innerHTML = '<p class="error">Failed to load flows.</p>';
-                });
-
-            initBackLink();
-
-            const epicCell = /** @type {HTMLElement} */ (document.getElementById('journey-epic-cell'));
-            getEpicById(owner, project, journey.epicId)
-                .then(epic => {
-                    const icon = getStatusIcon(epic.statusColor);
-                    const label = getStatusLabel(epic.statusColor);
-                    epicCell.innerHTML = `<a href="/${owner}/${project}/epics/${epic.sequenceNumber}" class="detail-link link-primary text-decoration-none fw-semibold">${escapeHtml(epic.statement)}</a> <span aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
-                    const link = epicCell.querySelector('a.detail-link');
-
-                    if (link) {
-                        link.addEventListener('click', (e) => {
-                            if (e.ctrlKey || e.metaKey || e.button === 1) return;
-                            e.preventDefault();
-                            navigate(link.getAttribute('href'), navContentDiv, contentDiv);
-                        });
-                    }
-                })
-                .catch(() => {
-                });
-
-            const descMsg = document.getElementById('desc-save-msg');
-            if (saveBtn) {
-                saveBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    descMsg.textContent = '';
-                    saveBtn.disabled = true;
-                    const newDesc = /** @type {HTMLTextAreaElement} */(document.getElementById('description-input')).value;
-                    try {
-                        const updated = await updateJourneyDescription(owner, project, journeyId, newDesc);
-                        journey.description = updated?.description ?? (newDesc.trim() ? newDesc : null);
-                        patchDetailStackGraphNode(`journey-${journey.sequenceNumber}`, {
-                            description: journey.description,
-                        });
-                        if (editor) editor.showSavedPopover(formatCommentText(journey.description || ''));
-                    } catch (err) {
-                        descMsg.textContent = 'Save failed';
-                        console.error(err);
-                    } finally {
-                        saveBtn.disabled = false;
-                    }
-                });
-            }
-
-            (function gateJourneyDetailControls() {
-                const canEdit = permission?.permission === 'Edit';
-                if (!canEdit) {
-                    const editBtn = document.getElementById('edit-desc-btn');
-                    const saveBtn = document.getElementById('save-desc');
-                    const descInput = document.getElementById('description-input');
-                    if (editBtn) { editBtn.disabled = true; editBtn.title = 'Requires Edit permission.'; }
-                    if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Requires Edit permission.'; }
-                    if (descInput) descInput.disabled = true;
-
-                    const addFlowInput = document.getElementById('add-flow-statement');
-                    const addFlowSubmit = document.getElementById('add-flow-submit');
-                    if (addFlowInput) addFlowInput.disabled = true;
-                    if (addFlowSubmit) { addFlowSubmit.disabled = true; addFlowSubmit.title = 'Requires Edit permission.'; }
-                }
-            })();
-
-            loadCommentsAndReactions(detailDiv, 'Journey', journey.id, owner, project, permission);
-
-            const { owner: go, project: gp } = getOwnerProjectFromPath();
-            if (go && gp) {
-                const href = buildGraphViewHref(go, gp, `journey-${journey.sequenceNumber}`);
-                upsertGraphViewButton(detailDiv, href);
-            }
-
-            if (loadingEl) loadingEl.hidden = true;
-        })
-        .catch(err => {
-            if (loadingEl) loadingEl.hidden = true;
-            errorEl.textContent = 'Failed to load journey details.';
-            console.error(err);
+        void mountDetailStackGraph({
+            nodeType: 'journey',
+            nodeId: journeyId,
+            owner,
+            project,
         });
+
+        const detailCard = document.createElement('div');
+        detailCard.className = 'detail-card journey-detail-card';
+
+        const heading = document.createElement('h2');
+        heading.textContent = journey.statement;
+        detailCard.append(heading);
+
+        const table = document.createElement('table');
+        table.className = 'table table-sm table-striped align-middle detail-table';
+
+        const descRow = document.createElement('tr');
+        const descTh = document.createElement('th');
+        descTh.scope = 'row';
+        const descLabel = document.createElement('label');
+        descLabel.htmlFor = 'description-input';
+        descLabel.textContent = 'Description';
+        descTh.append(descLabel);
+        descRow.append(descTh);
+        const descTd = document.createElement('td');
+        buildInlineEditUI(descTd, '', journey.description || '');
+        descRow.append(descTd);
+        table.append(descRow);
+
+        const epicRow = document.createElement('tr');
+        const epicTh = document.createElement('th');
+        epicTh.textContent = 'Epic';
+        epicRow.append(epicTh);
+        const epicTd = document.createElement('td');
+        epicTd.id = 'journey-epic-cell';
+        const epicLink = document.createElement('a');
+        epicLink.href = `/${owner}/${project}/epics/${journey.epicId}`;
+        epicLink.className = 'detail-link link-primary text-decoration-none fw-semibold';
+        epicLink.setAttribute('epic-id', String(journey.epicId));
+        epicLink.setAttribute('epic-seq', String(journey.epicId));
+        epicLink.textContent = `Epic ${journey.epicId}`;
+        epicTd.append(epicLink);
+        epicRow.append(epicTd);
+        table.append(epicRow);
+
+        table.append(createStatusRow(journey.statusColor));
+
+        table.append(createDateRow('Created', journey.createdAt));
+
+        table.append(createDateRow('Updated', journey.updatedAt));
+
+        detailCard.append(table);
+
+        const flowsHeading = document.createElement('h3');
+        flowsHeading.textContent = 'Flows';
+        detailCard.append(flowsHeading);
+
+        const flowsList = document.createElement('div');
+        flowsList.id = 'journey-flows-list';
+        const loadingP = document.createElement('p');
+        loadingP.textContent = 'Loading flows...';
+        flowsList.append(loadingP);
+        detailCard.append(flowsList);
+
+        const commentsDiv = document.createElement('div');
+        commentsDiv.id = 'journey-comments';
+        detailCard.append(commentsDiv);
+
+        const backButton = document.createElement('button');
+        backButton.id = 'back-link';
+        backButton.className = 'btn btn-outline-secondary btn-sm';
+        backButton.type = 'button';
+        const backSpan = document.createElement('span');
+        backSpan.setAttribute('aria-hidden', 'true');
+        backSpan.textContent = '\u{2190}';
+        backButton.append(backSpan, ' Back');
+        detailCard.append(backButton);
+
+        if (detailDiv) detailDiv.replaceChildren(detailCard);
+
+        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
+        const descViewElement = document.querySelector('#description-view') as HTMLElement;
+        const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
+        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
+        const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
+        let editor: { showSavedPopover?: (html: string) => void } | undefined;
+        if (descInput && descViewElement && editButton) {
+            createCommentAutocomplete(descInput, 'Journey', journey.id);
+            editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
+        }
+
+        const epicLinkElement = detailDiv?.querySelector('a.detail-link[epic-id]') as HTMLElement;
+        if (epicLinkElement) {
+            epicLinkElement.addEventListener('click', (event) => {
+                const me = event as MouseEvent;
+                if (me.ctrlKey || me.metaKey || me.button === 1) return;
+                event.preventDefault();
+                void navigate('/' + owner + '/' + project + '/epics/' + epicLinkElement.getAttribute('epic-seq'), navContentDiv, contentDiv);
+            });
+        }
+
+        await loadJourneyFlows(owner, project, journeyId, journey, navContentDiv, contentDiv, flowsList);
+
+        initBackLink();
+
+        await loadParentEpic(owner, project, journey, navContentDiv, contentDiv);
+
+        const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
+        await setupJourneyDescriptionHandler(journey, owner, project, journeyId, saveButton, descMessage, editor);
+
+        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit']);
+
+        loadCommentsAndReactions(detailDiv, 'Journey', journey.id, owner, project, permission);
+
+        upsertJourneyGraphViewButton(detailDiv, journey);
+
+        if (loadingElement) loadingElement.hidden = true;
+    } catch (error) {
+        if (loadingElement) loadingElement.hidden = true;
+        if (errorElement) errorElement.textContent = 'Failed to load journey details.';
+        console.error(error);
+    }
 }

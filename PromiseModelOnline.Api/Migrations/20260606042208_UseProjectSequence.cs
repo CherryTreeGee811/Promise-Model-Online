@@ -2,43 +2,43 @@
 
 #nullable disable
 
-namespace PromiseModelOnline.Api.Migrations
+namespace PromiseModelOnline.Api.Migrations;
+
+/// <inheritdoc />
+public partial class UseProjectSequence : Migration
 {
     /// <inheritdoc />
-    public partial class UseProjectSequence : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropIndex(
-                name: "IX_Moments_FlowId_SequenceNumber",
-                table: "Moments");
+        migrationBuilder.DropIndex(
+            name: "IX_Moments_FlowId_SequenceNumber",
+            table: "Moments");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Journeys_EpicId_SequenceNumber",
-                table: "Journeys");
+        migrationBuilder.DropIndex(
+            name: "IX_Journeys_EpicId_SequenceNumber",
+            table: "Journeys");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Flows_JourneyId_SequenceNumber",
-                table: "Flows");
+        migrationBuilder.DropIndex(
+            name: "IX_Flows_JourneyId_SequenceNumber",
+            table: "Flows");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Epics_ProductPromiseId_SequenceNumber",
-                table: "Epics");
+        migrationBuilder.DropIndex(
+            name: "IX_Epics_ProductPromiseId_SequenceNumber",
+            table: "Epics");
 
-            migrationBuilder.CreateTable(
-                name: "ProjectSequences",
-                columns: table => new
-                {
-                    ProjectId = table.Column<int>(type: "int", nullable: false),
-                    NextSequenceNumber = table.Column<int>(type: "int", nullable: false, defaultValue: 1)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProjectSequences", x => x.ProjectId);
-                });
+        migrationBuilder.CreateTable(
+            name: "ProjectSequences",
+            columns: table => new
+            {
+                ProjectId = table.Column<int>(type: "int", nullable: false),
+                NextSequenceNumber = table.Column<int>(type: "int", nullable: false, defaultValue: 1)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_ProjectSequences", x => x.ProjectId);
+            });
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 INSERT INTO ProjectSequences (ProjectId, NextSequenceNumber)
                 SELECT ProjectId, MAX(m) + 1
                 FROM (
@@ -72,37 +72,36 @@ namespace PromiseModelOnline.Api.Migrations
                 ) src
                 GROUP BY ProjectId
             ");
-        }
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.CreateIndex(
-                name: "IX_Epics_ProductPromiseId_SequenceNumber",
-                table: "Epics",
-                columns: new[] { "ProductPromiseId", "SequenceNumber" },
-                unique: true);
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.CreateIndex(
+            name: "IX_Epics_ProductPromiseId_SequenceNumber",
+            table: "Epics",
+            columns: new[] { "ProductPromiseId", "SequenceNumber" },
+            unique: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Flows_JourneyId_SequenceNumber",
-                table: "Flows",
-                columns: new[] { "JourneyId", "SequenceNumber" },
-                unique: true);
+        migrationBuilder.CreateIndex(
+            name: "IX_Flows_JourneyId_SequenceNumber",
+            table: "Flows",
+            columns: new[] { "JourneyId", "SequenceNumber" },
+            unique: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Journeys_EpicId_SequenceNumber",
-                table: "Journeys",
-                columns: new[] { "EpicId", "SequenceNumber" },
-                unique: true);
+        migrationBuilder.CreateIndex(
+            name: "IX_Journeys_EpicId_SequenceNumber",
+            table: "Journeys",
+            columns: new[] { "EpicId", "SequenceNumber" },
+            unique: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Moments_FlowId_SequenceNumber",
-                table: "Moments",
-                columns: new[] { "FlowId", "SequenceNumber" },
-                unique: true);
+        migrationBuilder.CreateIndex(
+            name: "IX_Moments_FlowId_SequenceNumber",
+            table: "Moments",
+            columns: new[] { "FlowId", "SequenceNumber" },
+            unique: true);
 
-            migrationBuilder.DropTable(
-                name: "ProjectSequences");
-        }
+        migrationBuilder.DropTable(
+            name: "ProjectSequences");
     }
 }

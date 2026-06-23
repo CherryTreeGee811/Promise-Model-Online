@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>Data transfer object for project member information.</summary>
 public class ProjectMemberDto

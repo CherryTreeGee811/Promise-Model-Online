@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -8,26 +8,19 @@ using PromiseModelOnline.Auth.Models;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>API endpoint for authenticated users to delete their account.</summary>
+/// <remarks>Initializes the controller with Identity, token management, and logging dependencies.</remarks>
+/// <param name="userManager">The Identity user manager for password verification and account deletion.</param>
+/// <param name="tokenManager">The OpenIddict token manager for revoking all user tokens on deletion.</param>
+/// <param name="logger">The logger for account deletion audit events.</param>
 [ApiController]
 [Route("account/me")]
-public class DeleteAccountController : ControllerBase
+public class DeleteAccountController(UserManager<IdentityUser> userManager,
+                               IOpenIddictTokenManager tokenManager,
+                               ILogger<DeleteAccountController> logger) : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IOpenIddictTokenManager _tokenManager;
-    private readonly ILogger<DeleteAccountController> _logger;
-
-    /// <summary>Initializes the controller with Identity, token management, and logging dependencies.</summary>
-    /// <param name="userManager">The Identity user manager for password verification and account deletion.</param>
-    /// <param name="tokenManager">The OpenIddict token manager for revoking all user tokens on deletion.</param>
-    /// <param name="logger">The logger for account deletion audit events.</param>
-    public DeleteAccountController(UserManager<IdentityUser> userManager,
-                                   IOpenIddictTokenManager tokenManager,
-                                   ILogger<DeleteAccountController> logger)
-    {
-        _userManager = userManager;
-        _tokenManager = tokenManager;
-        _logger = logger;
-    }
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IOpenIddictTokenManager _tokenManager = tokenManager;
+    private readonly ILogger<DeleteAccountController> _logger = logger;
 
     /// <summary>Validate password, revoke all tokens, and delete the user account.</summary>
     /// <param name="request">The delete request containing the user's password for verification.</param>

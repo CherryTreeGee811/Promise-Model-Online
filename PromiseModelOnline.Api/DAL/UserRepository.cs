@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using PromiseModelOnline.Api.Enums;
@@ -7,151 +7,143 @@ using System.Threading.Tasks;
 using System;
 using System.Linq;
 
-namespace PromiseModelOnline.Api.DAL
+namespace PromiseModelOnline.Api.DAL;
+
+/// <summary>EF Core implementation of <see cref="IUserRepository"/> supporting search and SSO auto-provisioning.</summary>
+/// <remarks>
+///   Scoped lifetime. The <see cref="GetOrCreateUserByEmailAsync"/> method is the primary entry
+///   point for OAuth/SSO login flows, creating user records on first sign-in and updating
+///   display names on subsequent logins.
+/// </remarks>
+/// <remarks>Initializes the repository with the shared database context.</remarks>
+/// <param name="context">The EF Core database context.</param>
+public class UserRepository(PromiseModelOnlineContext context) : GenericRepository<User>(context), IUserRepository
 {
-    /// <summary>EF Core implementation of <see cref="IUserRepository"/> supporting search and SSO auto-provisioning.</summary>
+
+    /// <summary>Find users by exact display name match.</summary>
+    /// <param name="name">The display name to match. Not null.</param>
+    /// <returns>Users whose name matches exactly.</returns>
+    public async Task<IEnumerable<User>> GetUsersByNameAsync(string name) => await FindAsync(u => u.Name == name);
+
+    /// <summary>Find users by exact email address match.</summary>
+    /// <param name="email">The email address to look up. Not null.</param>
+    /// <returns>Users with the given email.</returns>
+    public async Task<IEnumerable<User>> FindByEmailAsync(string email)
+        => await FindAsync(u => u.Email == email);
+
+    /// <summary>Look up a user by their unique URL-safe slug.</summary>
+    /// <param name="slug">The user's slug. Not null or empty.</param>
+    /// <returns>The matching user, or <c>null</c> if not found.</returns>
+    public async Task<User?> GetBySlugAsync(string slug) => await _dbSet.FirstOrDefaultAsync(u => u.Slug == slug);
+
+    /// <summary>Return a user by email or create a new account (SSO auto-provision).</summary>
     /// <remarks>
-    ///   Scoped lifetime. The <see cref="GetOrCreateUserByEmailAsync"/> method is the primary entry
-    ///   point for OAuth/SSO login flows, creating user records on first sign-in and updating
-    ///   display names on subsequent logins.
+    ///   If the user already exists and a <paramref name="username"/> is supplied, the display
+    ///   name is updated if it still matches the email (indicating an auto-created account that
+    ///   has not been customized). A unique slug is generated from the username or email prefix,
+    ///   with a numeric suffix to avoid collisions.
     /// </remarks>
-    public class UserRepository : GenericRepository<User>, IUserRepository
+    /// <param name="email">The user's email address. Not null.</param>
+    /// <param name="username">Optional username for new accounts or to update the display name on existing ones.</param>
+    /// <returns>The existing or newly-created user.</returns>
+    public async Task<User> GetOrCreateUserByEmailAsync(string email, string? username = null)
     {
-        /// <summary>Initializes the repository with the shared database context.</summary>
-        /// <param name="context">The EF Core database context.</param>
-        public UserRepository(PromiseModelOnlineContext context) : base(context) { }
+        var users = await FindByEmailAsync(email);
+        var existing = users.FirstOrDefault();
 
-        /// <summary>Find users by exact display name match.</summary>
-        /// <param name="name">The display name to match. Not null.</param>
-        /// <returns>Users whose name matches exactly.</returns>
-        public async Task<IEnumerable<User>> GetUsersByNameAsync(string name)
+        if (existing is not null)
         {
-            return await FindAsync(u => u.Name == name);
-        }
-
-        /// <summary>Find users by exact email address match.</summary>
-        /// <param name="email">The email address to look up. Not null.</param>
-        /// <returns>Users with the given email.</returns>
-        public async Task<IEnumerable<User>> FindByEmailAsync(string email)
-            => await FindAsync(u => u.Email == email);
-
-        /// <summary>Look up a user by their unique URL-safe slug.</summary>
-        /// <param name="slug">The user's slug. Not null or empty.</param>
-        /// <returns>The matching user, or <c>null</c> if not found.</returns>
-        public async Task<User?> GetBySlugAsync(string slug)
-        {
-            return await _dbSet.FirstOrDefaultAsync(u => u.Slug == slug);
-        }
-
-        /// <summary>Return a user by email or create a new account (SSO auto-provision).</summary>
-        /// <remarks>
-        ///   If the user already exists and a <paramref name="username"/> is supplied, the display
-        ///   name is updated if it still matches the email (indicating an auto-created account that
-        ///   has not been customized). A unique slug is generated from the username or email prefix,
-        ///   with a numeric suffix to avoid collisions.
-        /// </remarks>
-        /// <param name="email">The user's email address. Not null.</param>
-        /// <param name="username">Optional username for new accounts or to update the display name on existing ones.</param>
-        /// <returns>The existing or newly-created user.</returns>
-        public async Task<User> GetOrCreateUserByEmailAsync(string email, string? username = null)
-        {
-            var users = await FindByEmailAsync(email);
-            var existing = users.FirstOrDefault();
-
-            if (existing is not null)
+            if (!string.IsNullOrEmpty(username))
             {
-                if (!string.IsNullOrEmpty(username))
-                {
-                    if (existing.Name == existing.Email)
-                    {
-                        existing.Name = username;
-                    }
-
-                    if (string.IsNullOrEmpty(existing.Slug))
-                    {
-                        existing.Slug = username;
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(username) && existing.Name == existing.Email)
+                if (existing.Name == existing.Email)
                 {
                     existing.Name = username;
-                    Update(existing);
-                    await SaveChangesAsync();
                 }
-                else if (string.IsNullOrEmpty(existing.Slug) && !string.IsNullOrEmpty(username))
+
+                if (string.IsNullOrEmpty(existing.Slug))
                 {
-                    Update(existing);
-                    await SaveChangesAsync();
+                    existing.Slug = username;
                 }
-
-                return existing;
             }
 
-            var baseSlug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown");
-            var slug = baseSlug;
-            var counter = 1;
-            while (await _dbSet.AnyAsync(u => u.Slug == slug))
+            if (!string.IsNullOrEmpty(username) && existing.Name == existing.Email)
             {
-                slug = $"{baseSlug}_{counter}";
-                counter++;
+                existing.Name = username;
+                Update(existing);
+                await SaveChangesAsync();
+            }
+            else if (string.IsNullOrEmpty(existing.Slug) && !string.IsNullOrEmpty(username))
+            {
+                Update(existing);
+                await SaveChangesAsync();
             }
 
-            var user = new User
-            {
-                Email = email ?? string.Empty,
-                Name = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
-                Slug = slug,
-                Role = UserRole.Professional,
-                CreatedAt = DateTime.UtcNow
-            };
-            await AddAsync(user);
-            await SaveChangesAsync();
-            return user;
+            return existing;
         }
 
-        /// <summary>Search users who are members of a specific project by partial name match.</summary>
-        /// <param name="projectId">The project ID to search within. Must be greater than zero.</param>
-        /// <param name="searchTerm">Partial display name to match (case-insensitive). Not null.</param>
-        /// <param name="maxResults">Maximum results to return, range [1, 50]. Default is 5.</param>
-        /// <returns>Matching project members.</returns>
-        public async Task<IEnumerable<User>> SearchUsersByProjectAsync(int projectId, string searchTerm, int maxResults = 5)
+        var baseSlug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown");
+        var slug = baseSlug;
+        var counter = 1;
+        while (await _dbSet.AnyAsync(u => u.Slug == slug))
         {
-            if (string.IsNullOrWhiteSpace(searchTerm))
-                return Enumerable.Empty<User>();
-
-            var project = await _context.Set<Project>().FindAsync(projectId);
-            var ownerId = project?.OwnerId;
-
-            var userIds = await _context.Set<Permission>()
-                .Where(p => p.ProjectId == projectId && p.Status == PermissionStatus.Active)
-                .Select(p => p.UserId)
-                .Distinct()
-                .ToListAsync();
-
-            if (ownerId.HasValue && !userIds.Contains(ownerId.Value))
-                userIds.Add(ownerId.Value);
-
-            return await _dbSet
-                .Where(u => userIds.Contains(u.Id) && u.Name.ToLower().Contains(searchTerm.ToLower()))
-                .Take(maxResults)
-                .ToListAsync();
+            slug = $"{baseSlug}_{counter}";
+            counter++;
         }
 
-        /// <summary>Global user search by name or email across all projects.</summary>
-        /// <param name="searchTerm">Partial name or email to match (case-insensitive). Not null.</param>
-        /// <param name="maxResults">Maximum results to return, range [1, 50]. Default is 10.</param>
-        /// <returns>Matching users.</returns>
-        public async Task<IEnumerable<User>> SearchUsersAsync(string searchTerm, int maxResults = 10)
+        var user = new User
         {
-            if (string.IsNullOrWhiteSpace(searchTerm))
-                return Enumerable.Empty<User>();
+            Email = email ?? string.Empty,
+            Name = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
+            Slug = slug,
+            Role = UserRole.Professional,
+            CreatedAt = DateTime.UtcNow
+        };
+        await AddAsync(user);
+        await SaveChangesAsync();
+        return user;
+    }
 
-            var lower = searchTerm.ToLower();
-            return await _dbSet
-                .Where(u => u.Name.ToLower().Contains(lower) || u.Email.ToLower().Contains(lower))
-                .Take(maxResults)
-                .ToListAsync();
-        }
+    /// <summary>Search users who are members of a specific project by partial name match.</summary>
+    /// <param name="projectId">The project ID to search within. Must be greater than zero.</param>
+    /// <param name="searchTerm">Partial display name to match (case-insensitive). Not null.</param>
+    /// <param name="maxResults">Maximum results to return, range [1, 50]. Default is 5.</param>
+    /// <returns>Matching project members.</returns>
+    public async Task<IEnumerable<User>> SearchUsersByProjectAsync(int projectId, string searchTerm, int maxResults = 5)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return Enumerable.Empty<User>();
+
+        var project = await _context.Set<Project>().FindAsync(projectId);
+        var ownerId = project?.OwnerId;
+
+        var userIds = await _context.Set<Permission>()
+            .Where(p => p.ProjectId == projectId && p.Status == PermissionStatus.Active)
+            .Select(p => p.UserId)
+            .Distinct()
+            .ToListAsync();
+
+        if (ownerId.HasValue && !userIds.Contains(ownerId.Value))
+            userIds.Add(ownerId.Value);
+
+        return await _dbSet
+            .Where(u => userIds.Contains(u.Id) && u.Name.ToLower().Contains(searchTerm.ToLower()))
+            .Take(maxResults)
+            .ToListAsync();
+    }
+
+    /// <summary>Global user search by name or email across all projects.</summary>
+    /// <param name="searchTerm">Partial name or email to match (case-insensitive). Not null.</param>
+    /// <param name="maxResults">Maximum results to return, range [1, 50]. Default is 10.</param>
+    /// <returns>Matching users.</returns>
+    public async Task<IEnumerable<User>> SearchUsersAsync(string searchTerm, int maxResults = 10)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return Enumerable.Empty<User>();
+
+        var lower = searchTerm.ToLower();
+        return await _dbSet
+            .Where(u => u.Name.ToLower().Contains(lower) || u.Email.ToLower().Contains(lower))
+            .Take(maxResults)
+            .ToListAsync();
     }
 }

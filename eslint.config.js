@@ -1,6 +1,22 @@
 import globals from 'globals';
 import security from 'eslint-plugin-security';
+import jsdoc from 'eslint-plugin-jsdoc';
+import importx from 'eslint-plugin-import-x';
 import tseslint from 'typescript-eslint';
+import unicorn from 'eslint-plugin-unicorn';
+import regexp from 'eslint-plugin-regexp';
+import noUnsanitized from 'eslint-plugin-no-unsanitized';
+import sonarjs from 'eslint-plugin-sonarjs';
+import noSecrets from 'eslint-plugin-no-secrets';
+
+const importRules = {
+  'import-x/first': 'warn',
+  'import-x/newline-after-import': 'warn',
+  'import-x/no-duplicates': 'warn',
+  'import-x/no-self-import': 'warn',
+  'import-x/no-useless-path-segments': 'warn',
+  'import-x/order': ['warn', { alphabetize: { order: 'asc' }, 'newlines-between': 'always' }],
+};
 
 export default tseslint.config(
   {
@@ -8,15 +24,25 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.es2021,
+        ...globals.es2025,
         bootstrap: 'readonly',
         signalR: 'readonly',
       },
     },
-    plugins: { security },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized, sonarjs, 'no-secrets': noSecrets },
     rules: {
+      ...jsdoc.configs['flat/recommended'].rules,
+      ...unicorn.configs.recommended.rules,
+      ...regexp.configs['flat/recommended'].rules,
+      ...noUnsanitized.configs.recommended.rules,
+      ...sonarjs.configs.recommended.rules,
+      'sonarjs/no-duplicated-branches': 'error',
+      'no-unsanitized/property': 'warn',
+      'unicorn/filename-case': 'off',
+      'unicorn/prefer-number-coercion': 'warn',
+      ...importRules,
       'security/detect-eval-with-expression': 'warn',
-      'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-non-literal-fs-filename': 'warn',
       'security/detect-non-literal-regexp': 'warn',
       'security/detect-non-literal-require': 'warn',
       'security/detect-possible-timing-attacks': 'warn',
@@ -26,23 +52,23 @@ export default tseslint.config(
       'no-implied-eval': 'error',
       'no-new-func': 'error',
       'no-undef': 'error',
-      'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
+      'no-unused-vars': 'warn',
       'no-constant-binary-expression': 'error',
       'no-constructor-return': 'error',
-      'no-duplicate-imports': 'error',
       'no-promise-executor-return': 'error',
       'no-self-assign': 'warn',
       'no-self-compare': 'warn',
       'no-template-curly-in-string': 'warn',
       'no-unmodified-loop-condition': 'warn',
       'no-unreachable-loop': 'warn',
-      'require-atomic-updates': 'off',
+      'require-atomic-updates': 'error',
       'no-async-promise-executor': 'error',
       'no-await-in-loop': 'warn',
       'prefer-promise-reject-errors': 'warn',
       'prefer-const': 'warn',
       'no-var': 'error',
       'eqeqeq': ['warn', 'smart'],
+      'no-secrets/no-secrets': 'error',
     },
   },
   {
@@ -50,14 +76,26 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.es2021,
+        ...globals.es2025,
+        bootstrap: 'readonly',
+        signalR: 'readonly',
       },
       parser: tseslint.parser,
+      parserOptions: { project: true },
     },
-    plugins: { security, '@typescript-eslint': tseslint.plugin },
+    plugins: { security, jsdoc, 'import-x': importx, unicorn, regexp, 'no-unsanitized': noUnsanitized, '@typescript-eslint': tseslint.plugin, sonarjs, 'no-secrets': noSecrets },
     rules: {
+      ...jsdoc.configs['flat/recommended'].rules,
+      ...unicorn.configs.recommended.rules,
+      ...regexp.configs['flat/recommended'].rules,
+      ...noUnsanitized.configs.recommended.rules,
+      'no-unsanitized/property': 'warn',
+      'unicorn/filename-case': 'off',
+      'unicorn/prefer-number-coercion': 'warn',
+      ...importRules,
+      'import-x/no-cycle': 'warn',
       'security/detect-eval-with-expression': 'warn',
-      'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-non-literal-fs-filename': 'warn',
       'security/detect-non-literal-regexp': 'warn',
       'security/detect-non-literal-require': 'warn',
       'security/detect-possible-timing-attacks': 'warn',
@@ -68,22 +106,25 @@ export default tseslint.config(
       'no-new-func': 'error',
       'no-constant-binary-expression': 'error',
       'no-constructor-return': 'error',
-      'no-duplicate-imports': 'error',
       'no-promise-executor-return': 'error',
       'no-self-assign': 'warn',
       'no-self-compare': 'warn',
       'no-template-curly-in-string': 'warn',
       'no-unmodified-loop-condition': 'warn',
       'no-unreachable-loop': 'warn',
-      'require-atomic-updates': 'off',
+      'require-atomic-updates': 'error',
       'no-async-promise-executor': 'error',
       'no-await-in-loop': 'warn',
       'prefer-promise-reject-errors': 'warn',
       'prefer-const': 'warn',
       'no-var': 'error',
       'eqeqeq': ['warn', 'smart'],
+      ...sonarjs.configs.recommended.rules,
+      'sonarjs/no-duplicated-branches': 'error',
       '@typescript-eslint/no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+      'no-secrets/no-secrets': 'error',
     },
   },
 );

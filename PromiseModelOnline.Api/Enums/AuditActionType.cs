@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.Enums;
+﻿namespace PromiseModelOnline.Api.Enums;
 
 /// <summary>Describes the type of change recorded in an audit event.</summary>
 /// <remarks>

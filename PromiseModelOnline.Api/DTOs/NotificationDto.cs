@@ -1,11 +1,11 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>Data transfer object for <see cref="Models.Notification"/> responses.</summary>
 public class NotificationDto
 {
     /// <summary>Primary key.</summary>
     public int Id { get; set; }
-    
+
     /// <summary>Notification message text.</summary>
     public string Message { get; set; } = string.Empty;
     /// <summary>Entity type discriminator.</summary>

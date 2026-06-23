@@ -14,31 +14,31 @@ public class Notification
     /// <summary>Primary key.</summary>
     [Key]
     public int Id { get; set; }
-    
+
     /// <summary>Foreign key to the recipient <see cref="User"/>.</summary>
     public int UserId { get; set; }
-    
+
     /// <summary>The notification category.</summary>
     public NotificationType Type { get; set; }
-    
+
     /// <summary>Display message text.</summary>
     public string Message { get; set; } = string.Empty;
-    
+
     /// <summary>Whether the user has dismissed this notification.</summary>
     public bool IsRead { get; set; }
-    
+
     /// <summary>UTC timestamp of creation.</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     /// <summary>Optional navigation URL.</summary>
     public string? Link { get; set; }
-    
+
     /// <summary>Whether a corresponding email has been sent.</summary>
     public bool IsEmailSent { get; set; }
-    
+
     /// <summary>Optional ID of the referenced entity.</summary>
     public int? ReferenceId { get; set; }
-    
+
     /// <summary>Optional type name of the referenced entity.</summary>
     public string? ReferenceType { get; set; }
 }

@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Auth.Middleware;
+﻿namespace PromiseModelOnline.Auth.Middleware;
 
 /// <summary>Middleware that adds security-related HTTP response headers.</summary>
 /// <remarks>
@@ -6,16 +6,11 @@ namespace PromiseModelOnline.Auth.Middleware;
 ///   <c>Strict-Transport-Security</c> (for HTTPS requests), and <c>Referrer-Policy</c> headers
 ///   to all responses.
 /// </remarks>
-public class SecurityHeadersMiddleware
+/// <remarks>Initializes the middleware with the next delegate in the pipeline.</remarks>
+/// <param name="next">The next delegate in the request pipeline.</param>
+public class SecurityHeadersMiddleware(RequestDelegate next)
 {
-    private readonly RequestDelegate _next;
-
-    /// <summary>Initializes the middleware with the next delegate in the pipeline.</summary>
-    /// <param name="next">The next delegate in the request pipeline.</param>
-    public SecurityHeadersMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
+    private readonly RequestDelegate _next = next;
 
     /// <summary>Apply security headers to the response and invoke the next middleware.</summary>
     /// <param name="context">The HTTP context for the current request.</param>
@@ -33,6 +28,17 @@ public class SecurityHeadersMiddleware
         }
 
         headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+
+        headers["Content-Security-Policy"] =
+            "default-src 'self'; " +
+            "script-src 'self'; " +
+            "style-src 'self'; " +
+            "img-src 'self' data:; " +
+            "font-src 'self'; " +
+            "connect-src 'self'; " +
+            "frame-ancestors 'none'; " +
+            "base-uri 'self'; " +
+            "form-action 'self'";
 
         await _next(context);
     }

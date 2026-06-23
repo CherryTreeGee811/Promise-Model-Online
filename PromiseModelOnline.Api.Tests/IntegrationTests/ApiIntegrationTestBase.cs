@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -161,10 +161,7 @@ public abstract class ApiIntegrationTestBase
     protected string NonOwnerToken => GenerateToken(NonOwnerUserId, NonOwnerEmail, "Test NonOwner", "pmo_test2", "projects.read", "projects.write");
     protected string NoScopeToken => GenerateToken(TestUserId, TestUserEmail, "Test Owner", "pmo_test");
 
-    protected void SetAuthHeader(string token)
-    {
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-    }
+    protected void SetAuthHeader(string token) => Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
     protected async Task<HttpResponseMessage> GetAsync(string path) => await Client.GetAsync(path);
 

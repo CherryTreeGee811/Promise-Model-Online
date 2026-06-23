@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -29,22 +29,16 @@ public static class StrideAutomationExtensions
 ///     <item>Sends deadline notifications for strides ending in 3 days.</item>
 ///   </list>
 /// </remarks>
+/// <remarks>Initializes the automation service with scope factory and logger.</remarks>
+/// <param name="scopeFactory">Factory for creating service scopes.</param>
+/// <param name="logger">Logger for automation events.</param>
 #pragma warning disable S3881 // "Dispose" is correct for a simple timer cleanup; full pattern not needed.
-internal class StrideAutomationService : IHostedService, IDisposable
+internal class StrideAutomationService(IServiceScopeFactory scopeFactory,
+                               ILogger<StrideAutomationService> logger) : IHostedService, IDisposable
 {
     private Timer? _timer;
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<StrideAutomationService> _logger;
-
-    /// <summary>Initializes the automation service with scope factory and logger.</summary>
-    /// <param name="scopeFactory">Factory for creating service scopes.</param>
-    /// <param name="logger">Logger for automation events.</param>
-    public StrideAutomationService(IServiceScopeFactory scopeFactory,
-                                   ILogger<StrideAutomationService> logger)
-    {
-        _scopeFactory = scopeFactory;
-        _logger = logger;
-    }
+    private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+    private readonly ILogger<StrideAutomationService> _logger = logger;
 
     /// <summary>Start the automation timer, firing immediately and then every hour.</summary>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>

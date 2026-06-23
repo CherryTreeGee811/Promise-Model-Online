@@ -1,4 +1,4 @@
-using SendGrid;
+﻿using SendGrid;
 using SendGrid.Helpers.Mail;
 
 namespace PromiseModelOnline.Auth.Services;

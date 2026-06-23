@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.DTOs;
+﻿namespace PromiseModelOnline.Api.DTOs;
 
 /// <summary>Data transfer object for <see cref="Models.Stride"/> responses.</summary>
 public class StrideDto

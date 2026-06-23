@@ -1,37 +1,36 @@
-using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Cryptography.X509Certificates;
 
-namespace PromiseModelOnline.Auth.Extensions
+namespace PromiseModelOnline.Auth.Extensions;
+
+/// <summary>Extension methods for configuring Kestrel HTTPS with certificate files.</summary>
+public static class KestrelExtensions
 {
-    /// <summary>Extension methods for configuring Kestrel HTTPS with certificate files.</summary>
-    public static class KestrelExtensions
+    /// <summary>Configure Kestrel to listen on port 8060 with HTTPS using <c>cert.pem</c>/<c>key.pem</c>, or fall back to HTTP.</summary>
+    /// <param name="builder">The web application builder to configure.</param>
+    public static void ConfigureHttps(this WebApplicationBuilder builder)
     {
-        /// <summary>Configure Kestrel to listen on port 8060 with HTTPS using <c>cert.pem</c>/<c>key.pem</c>, or fall back to HTTP.</summary>
-        /// <param name="builder">The web application builder to configure.</param>
-        public static void ConfigureHttps(this WebApplicationBuilder builder)
-        {
-            var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
-            var keyPath  = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
+        var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
+        var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
 
-            if (File.Exists(certPath) && File.Exists(keyPath))
+        if (File.Exists(certPath) && File.Exists(keyPath))
+        {
+            builder.WebHost.ConfigureKestrel(options =>
             {
-                builder.WebHost.ConfigureKestrel(options =>
+                options.ListenAnyIP(8060, listen =>
                 {
-                    options.ListenAnyIP(8060, listen =>
-                    {
-                        var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-                        listen.UseHttps(cert);
-                    });
+                    var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+                    listen.UseHttps(cert);
                 });
-            }
-            else
-            {
-                var defaultUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
-                var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? defaultUrl;
+            });
+        }
+        else
+        {
+            var defaultUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
+            var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? defaultUrl;
 #pragma warning disable S1075 // Hardcoded URI default fallback
-                if (string.IsNullOrEmpty(urls)) urls = "http://+:8060";
+            if (string.IsNullOrEmpty(urls)) urls = "http://+:8060";
 #pragma warning restore S1075
-                builder.WebHost.UseUrls(urls.Replace("https://", "http://"));
-            }
+            builder.WebHost.UseUrls(urls.Replace("https://", "http://"));
         }
     }
 }

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc.Filters;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -14,21 +14,16 @@ namespace PromiseModelOnline.Api.Filters;
 ///   status code, and UTC timestamp for POST, PUT, PATCH, and DELETE requests that return
 ///   successful (2xx) status codes. Non-mutating requests pass through without logging.
 /// </remarks>
-public sealed class AuditLoggingActionFilter : IAsyncActionFilter
+/// <remarks>Initializes the filter with a logger.</remarks>
+/// <param name="logger">The logger for audit events.</param>
+public sealed class AuditLoggingActionFilter(ILogger<AuditLoggingActionFilter> logger) : IAsyncActionFilter
 {
     private static readonly HashSet<string> MutatingMethods = new(StringComparer.OrdinalIgnoreCase)
     {
         "POST", "PUT", "PATCH", "DELETE"
     };
 
-    private readonly ILogger<AuditLoggingActionFilter> _logger;
-
-    /// <summary>Initializes the filter with a logger.</summary>
-    /// <param name="logger">The logger for audit events.</param>
-    public AuditLoggingActionFilter(ILogger<AuditLoggingActionFilter> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<AuditLoggingActionFilter> _logger = logger;
 
     /// <summary>Execute the filter, logging audit info for successful mutating requests.</summary>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)

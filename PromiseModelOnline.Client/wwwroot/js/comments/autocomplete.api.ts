@@ -1,25 +1,25 @@
 import { apiGet } from '../api.ts';
 
 /**
- * Search for users within a project for @-mention autocomplete.
- * @param {string} parentType - The parent entity type.
- * @param {number|string} parentId - The parent entity ID.
- * @param {string} search - The search term to filter users.
- * @returns {Promise<Array>} A promise resolving to matching user objects.
+ * Searches users by name for the mention autocomplete (`@` trigger).
+ * @param {string} parentType - The type of parent entity (e.g. 'moment').
+ * @param {string | number} parentId - The ID of the parent entity.
+ * @param {string} search - The partial user name to search for.
+ * @returns {Promise<Record<string, unknown>[]>} A promise resolving to matching user records.
  */
-export function searchUsers(parentType, parentId, search) {
-  const params = new URLSearchParams({ parentType, parentId, search });
-  return apiGet(`/api/comments/search-users?${params}`);
+export function searchUsers(parentType: string, parentId: string | number, search: string) {
+  const parameters = new URLSearchParams({ parentType, parentId: String(parentId), search });
+  return apiGet(`/api/comments/search-users?${parameters}`);
 }
 
 /**
- * Search for entities in the hierarchy for comment linking.
- * @param {string} parentType - The parent entity type.
- * @param {number|string} parentId - The parent entity ID.
- * @param {string} search - The search term to filter entities.
- * @returns {Promise<Array>} A promise resolving to matching entity objects.
+ * Searches promises by statement for the #-reference autocomplete.
+ * @param {string} parentType - The type of parent entity (e.g. 'moment').
+ * @param {string | number} parentId - The ID of the parent entity.
+ * @param {string} search - The partial promise statement to search for.
+ * @returns {Promise<Record<string, unknown>[]>} A promise resolving to matching promise records.
  */
-export function searchPromises(parentType, parentId, search) {
-  const params = new URLSearchParams({ parentType, parentId, search });
-  return apiGet(`/api/comments/search-promises?${params}`);
+export function searchPromises(parentType: string, parentId: string | number, search: string) {
+  const parameters = new URLSearchParams({ parentType, parentId: String(parentId), search });
+  return apiGet(`/api/comments/search-promises?${parameters}`);
 }

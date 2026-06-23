@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
@@ -7,26 +7,19 @@ using PromiseModelOnline.Auth.Models;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>API endpoint for authenticated users to change their password and revoke refresh tokens.</summary>
+/// <remarks>Initializes the controller with required services for password management and token revocation.</remarks>
+/// <param name="userManager">Identity user manager for password verification and changes.</param>
+/// <param name="tokenManager">OpenIddict token manager for refresh token revocation.</param>
+/// <param name="logger">Logger for security-relevant error events.</param>
 [ApiController]
 [Route("account/me/password")]
-public class ChangePasswordController : ControllerBase
+public class ChangePasswordController(UserManager<IdentityUser> userManager,
+                                IOpenIddictTokenManager tokenManager,
+                                ILogger<ChangePasswordController> logger) : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IOpenIddictTokenManager _tokenManager;
-    private readonly ILogger<ChangePasswordController> _logger;
-
-    /// <summary>Initializes the controller with required services for password management and token revocation.</summary>
-    /// <param name="userManager">Identity user manager for password verification and changes.</param>
-    /// <param name="tokenManager">OpenIddict token manager for refresh token revocation.</param>
-    /// <param name="logger">Logger for security-relevant error events.</param>
-    public ChangePasswordController(UserManager<IdentityUser> userManager,
-                                    IOpenIddictTokenManager tokenManager,
-                                    ILogger<ChangePasswordController> logger)
-    {
-        _userManager = userManager;
-        _tokenManager = tokenManager;
-        _logger = logger;
-    }
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IOpenIddictTokenManager _tokenManager = tokenManager;
+    private readonly ILogger<ChangePasswordController> _logger = logger;
 
     /// <summary>Validate current password, update to new password, and revoke all refresh tokens.</summary>
     /// <param name="request">The password change request containing current password, new password, and confirmation.</param>

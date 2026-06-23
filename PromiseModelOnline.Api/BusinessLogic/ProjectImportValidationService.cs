@@ -1,4 +1,4 @@
-using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+﻿using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using System;
 using System.Collections.Generic;
@@ -182,23 +182,17 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
     /// <param name="project">The exported project data.</param>
     /// <param name="strideId">The stride ID to check.</param>
     /// <returns>True if the stride exists.</returns>
-    private static bool StrideExists(ProjectExportProject project, int strideId)
-    {
-        return project.Iterations.Any(iteration => iteration.Strides.Any(stride => stride.Id == strideId));
-    }
+    private static bool StrideExists(ProjectExportProject project, int strideId) => project.Iterations.Any(iteration => iteration.Strides.Any(stride => stride.Id == strideId));
 
     /// <summary>Check if a moment with the given ID exists in the exported project.</summary>
     /// <param name="project">The exported project data.</param>
     /// <param name="momentId">The moment ID to check.</param>
-    private static bool MomentExists(ProjectExportProject project, int momentId)
-    {
-        return project.ProductPromises
+    private static bool MomentExists(ProjectExportProject project, int momentId) => project.ProductPromises
             .SelectMany(promise => promise.Epics)
             .SelectMany(epic => epic.Journeys)
             .SelectMany(journey => journey.Flows)
             .SelectMany(flow => flow.Moments)
             .Any(moment => moment.Id == momentId);
-    }
 
     /// <summary>Get <c>Id</c> property via reflection.</summary>
     /// <param name="item">The item to inspect.</param>

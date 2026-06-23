@@ -1,10 +1,11 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using PromiseModelOnline.BFF;
+using Serilog;
 using Yarp.ReverseProxy.Transforms;
 
 // BFF (Backend for Frontend) entry point.
@@ -12,6 +13,14 @@ using Yarp.ReverseProxy.Transforms;
 // authentication, session management, and token forwarding via YARP.
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
     ?? throw new InvalidOperationException("AUTH_PUBLIC_ISSUER is required.");
@@ -127,6 +136,7 @@ builder.Services
 
         options.ClientId = "pmo-spa";
         options.ResponseType = "code";
+        options.ResponseMode = "query";
         options.UsePkce = true;
         options.SaveTokens = true;
         options.SignInScheme = "cookie";
@@ -226,6 +236,37 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Global exception handler that returns RFC 7807 problem+json and logs
+// via Serilog — prevents stack traces from leaking in error responses.
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+        var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (exceptionFeature?.Error is not null)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger("GlobalExceptionHandler");
+            logger.LogError(exceptionFeature.Error, "Unhandled exception processing {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+        await context.Response.WriteAsync(
+            """{"type":"https://tools.ietf.org/html/rfc7231#section-6.6.1","title":"Internal Server Error","status":500}""");
+    });
+});
+
+app.UseStatusCodePages(context =>
+{
+    var code = context.HttpContext.Response.StatusCode;
+    var log = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+    log.LogWarning("BFF returned status {StatusCode} for {Method} {Path}",
+        code, context.HttpContext.Request.Method, context.HttpContext.Request.Path);
+    return Task.CompletedTask;
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -244,16 +285,16 @@ app.MapReverseProxy(proxyPipeline =>
         var authenticateResult = await context.AuthenticateAsync("cookie");
 
         if (!authenticateResult.Succeeded)
+        {
+            if (BffHelpers.IsAjax(context.Request))
             {
-                if (BffHelpers.IsAjax(context.Request))
-                {
-                    var log = context.RequestServices.GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("BFFProxy");
-                    log.LogWarning("Proxy: unauthenticated AJAX request to {Method} {Path} returned 401",
-                        context.Request.Method, context.Request.Path);
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return;
-                }
+                var log = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("BFFProxy");
+                log.LogWarning("Proxy: unauthenticated AJAX request to {Method} {Path} returned 401",
+                    context.Request.Method, context.Request.Path);
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
 
             var returnUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
 
@@ -273,7 +314,9 @@ app.MapReverseProxy(proxyPipeline =>
 
 await app.RunAsync();
 
+/// <summary>Entry point for the BFF server application.</summary>
 public partial class Program
 {
+    /// <summary>Prevents instantiation of the <see cref="Program"/> class.</summary>
     protected Program() { }
 }

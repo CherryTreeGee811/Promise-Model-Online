@@ -1,111 +1,81 @@
-import { setAuthState, clearAuth } from './auth-state.ts';
+import { authStore } from './stores/auth.ts';
 
 /**
  * Perform a GET request and parse JSON response.
- * @param url - The API endpoint URL.
- * @returns The parsed JSON body, or null for 204 No Content.
- * @throws Error if the HTTP response is not OK.
+ * @param {string} url - The API endpoint URL.
+ * @returns {Promise<T | undefined>} The parsed JSON body, or null for 204 No Content.
+ * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiGet(url: string): Promise<unknown> {
-  const res = await apiFetch(url);
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+export async function apiGet<T = unknown>(url: string): Promise<T | undefined> {
+  const response = await apiFetch(url);
+  if (!response) return;
+  if (response.status === 204) return;
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
 }
 
 /**
  * Perform a GET request and return an empty array on null.
- * @param url - The API endpoint URL.
- * @returns The parsed JSON array, or empty array.
+ * @param {string} url - The API endpoint URL.
+ * @returns {Promise<T[]>} The parsed JSON array, or empty array.
  */
-export async function apiGetList(url: string): Promise<unknown[]> {
-  const data = await apiGet(url);
-  return (data as unknown[]) ?? [];
+export async function apiGetList<T = unknown>(url: string): Promise<T[]> {
+  const data = await apiGet<T[]>(url);
+  return data ?? [];
+}
+
+/**
+ * Perform a mutation request (POST, PUT, PATCH, DELETE) with optional JSON body.
+ * @param {string} url - The API endpoint URL.
+ * @param {unknown | undefined} body - The request payload, or undefined for DELETE.
+ * @param {string} method - The HTTP method.
+ * @param {boolean} isReturnJson - Whether to return parsed JSON or boolean.
+ * @returns {Promise<T | undefined | boolean>} Response data or success flag.
+ */
+async function apiMutate<T = unknown>(url: string, body: unknown | undefined, method: string, isReturnJson: boolean): Promise<T | undefined | boolean> {
+  const options: Record<string, unknown> = { method };
+  if (body !== undefined) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(body);
+  }
+  const response = await apiFetch(url, options);
+  if (!response) return;
+  if (isReturnJson && response.status === 204) return;
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return isReturnJson ? response.json() : true;
 }
 
 /**
  * Perform a POST request with a JSON body.
- * @param url - The API endpoint URL.
- * @param body - The request payload.
- * @returns The parsed JSON response, or null for 204.
- * @throws Error if the HTTP response is not OK.
+ * @param {string} url - The API endpoint URL.
+ * @param {unknown} body - The request payload.
+ * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
+ * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiPost(url: string, body: unknown): Promise<unknown> {
-  const res = await apiFetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+export async function apiPost<T = unknown>(url: string, body: unknown): Promise<T | undefined> {
+  return apiMutate<T>(url, body, 'POST', true) as Promise<T | undefined>;
 }
 
-/**
- * Perform a PUT request with a JSON body.
- * @param url - The API endpoint URL.
- * @param body - The request payload.
- * @returns True on success.
- * @throws Error if the HTTP response is not OK.
- */
-export async function apiPut(url: string, body: unknown): Promise<boolean> {
-  const res = await apiFetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return true;
-}
 
 /**
  * Perform a PATCH request with a JSON body.
  * @param {string} url - The API endpoint URL.
- * @param {object} body - The request payload.
- * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
+ * @param {unknown} body - The request payload.
+ * @returns {Promise<T | undefined>} The parsed JSON response, or null for 204.
  * @throws {Error} If the HTTP response is not OK.
  */
-export async function apiPatch(url: string, body: unknown): Promise<unknown> {
-  const res = await apiFetch(url, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+export async function apiPatch<T = unknown>(url: string, body: unknown): Promise<T | undefined> {
+  return apiMutate<T>(url, body, 'PATCH', true) as Promise<T | undefined>;
 }
 
-/**
- * Perform a DELETE request.
- * @param {string} url - The API endpoint URL.
- * @returns {Promise<boolean>} True on success.
- * @throws {Error} If the HTTP response is not OK.
- */
-export async function apiDelete(url: string): Promise<boolean> {
-  const res = await apiFetch(url, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return true;
-}
-
-/**
- * Build a project-scoped API URL from owner slug, project slug, and optional path.
- * @param owner - The project owner's slug.
- * @param project - The project's slug.
- * @param path - Optional additional path segment.
- * @returns The constructed URL.
- */
-export function projectUrl(owner: string, project: string, path = ''): string {
-  return `/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}${path}`;
-}
 
 /**
  * Core fetch wrapper that includes credentials, sets JSON accept headers,
  * and redirects to /login on 401 responses.
- * @param url - The URL to fetch.
- * @param options - Additional fetch options.
- * @returns The fetch Response.
- * @throws Error if the server returns 401 (redirects to login).
+ * @param {string} url - The URL to fetch.
+ * @param {Record<string, unknown>} options - Additional fetch options.
+ * @returns {Promise<Response>} The fetch Response.
+ * @throws {Error} If the server returns 401 (redirects to login).
  */
 export async function apiFetch(url: string, options: Record<string, unknown> = {}): Promise<Response> {
     const response = await fetch(url, {
@@ -113,14 +83,14 @@ export async function apiFetch(url: string, options: Record<string, unknown> = {
         credentials: 'include',
         headers: {
             'Accept': 'application/json',
-            ...(options.headers as Record<string, string> || {}),
+            ...options.headers as Record<string, string>,
         }
     });
 
     if (response.status === 401) {
-        clearAuth();
-        if (!window.location.pathname.startsWith('/login')) {
-            window.location.href = '/login';
+        authStore.set({ isAuthenticated: false, username: undefined, userId: undefined });
+        if (!location.pathname.startsWith('/login')) {
+            location.assign('/login');
         }
         throw new Error('Unauthorized');
     }
@@ -144,13 +114,13 @@ export async function checkSession() {
 
         if (response.ok) {
             const data = await response.json();
-            setAuthState({ isAuthenticated: true, username: data.name, userId: data.userId });
+            authStore.set({ isAuthenticated: true, username: data.name, userId: data.userId });
             return true;
         }
     } catch {
         // No session
     }
 
-    clearAuth();
+    authStore.set({ isAuthenticated: false, username: undefined, userId: undefined });
     return false;
 }

@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.Enums;
+﻿namespace PromiseModelOnline.Api.Enums;
 
 /// <summary>Tracks the lifecycle state of a project permission / invitation.</summary>
 /// <remarks>

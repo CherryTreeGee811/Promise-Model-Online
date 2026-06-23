@@ -1,77 +1,80 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using OpenIddict.Abstractions;
 
-namespace PromiseModelOnline.Auth.Extensions
+namespace PromiseModelOnline.Auth.Extensions;
+
+/// <summary>Seeds development users and OpenIddict scopes into the database.</summary>
+/// <remarks>
+///   Creates test users (<c>pmo_test</c>, <c>pmo_test2</c>) with password <c>Hello123*</c>
+///   and custom scopes (<c>projects.read</c>, <c>projects.write</c>).
+///   Only runs in development environments.
+/// </remarks>
+public static class AuthorizationSeeder
 {
-    /// <summary>Seeds development users and OpenIddict scopes into the database.</summary>
-    /// <remarks>
-    ///   Creates test users (<c>pmo_test</c>, <c>pmo_test2</c>) with password <c>Hello123*</c>
-    ///   and custom scopes (<c>projects.read</c>, <c>projects.write</c>).
-    ///   Only runs in development environments.
-    /// </remarks>
-    public static class AuthorizationSeeder
+    /// <summary>Seed test users and custom scopes.</summary>
+    /// <param name="services">The service provider to resolve managers.</param>
+    public static async Task SeedAsync(IServiceProvider services)
     {
-        /// <summary>Seed test users and custom scopes.</summary>
-        /// <param name="services">The service provider to resolve managers.</param>
-        public static async Task SeedAsync(IServiceProvider services)
+        var env = services.GetRequiredService<IWebHostEnvironment>();
+        if (!env.IsDevelopment()) return;
+
+        using var scope = services.CreateScope();
+
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
+
+        await SeedUsersAsync(userManager);
+        await SeedScopesAsync(scopeManager);
+    }
+
+    /// <summary>Seed test users for development environments.</summary>
+    /// <param name="userManager">The Identity user manager.</param>
+    private static async Task SeedUsersAsync(UserManager<IdentityUser> userManager)
+    {
+        var users = new[]
         {
-            using var scope = services.CreateScope();
-
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-            var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
-
-            await SeedUsersAsync(userManager);
-            await SeedScopesAsync(scopeManager);
-        }
-
-        /// <summary>Seed test users for development environments.</summary>
-        /// <param name="userManager">The Identity user manager.</param>
-        private static async Task SeedUsersAsync(UserManager<IdentityUser> userManager)
-        {
-            var users = new[]
-            {
                 new { UserName = "pmo_test", Email = "pmo@gmail.com" },
                 new { UserName = "pmo_test2", Email = "pmo2@gmail.com" }
             };
 
-            foreach (var u in users)
+        foreach (var u in users)
+        {
+            if (await userManager.FindByNameAsync(u.UserName) == null)
             {
-                if (await userManager.FindByNameAsync(u.UserName) == null)
+                var newUser = new IdentityUser
                 {
-                    var newUser = new IdentityUser
-                    {
-                        UserName = u.UserName,
-                        Email = u.Email,
-                        EmailConfirmed = true
-                    };
+                    UserName = u.UserName,
+                    Email = u.Email,
+                    EmailConfirmed = true
+                };
 
-                    await userManager.CreateAsync(newUser, "Hello123*");
-                }
+                await userManager.CreateAsync(newUser, "Hello123*");
             }
         }
+    }
 
-        /// <summary>Seed custom scopes (projects.read, projects.write) for the API resource.</summary>
-        /// <param name="scopeManager">The OpenIddict scope manager.</param>
-        private static async Task SeedScopesAsync(IOpenIddictScopeManager scopeManager)
+    /// <summary>Seed custom scopes (projects.read, projects.write) for the API resource.</summary>
+    /// <param name="scopeManager">The OpenIddict scope manager.</param>
+    private static async Task SeedScopesAsync(IOpenIddictScopeManager scopeManager)
+    {
+        if (await scopeManager.FindByNameAsync("projects.read") == null)
         {
-            if (await scopeManager.FindByNameAsync("projects.read") == null)
+            await scopeManager.CreateAsync(new OpenIddictScopeDescriptor
             {
-                await scopeManager.CreateAsync(new OpenIddictScopeDescriptor
-                {
-                    Name = "projects.read",
-                    DisplayName = "Read projects"
-                });
-            }
+                Name = "projects.read",
+                DisplayName = "Read projects"
+            });
+        }
 
-            if (await scopeManager.FindByNameAsync("projects.write") == null)
+        if (await scopeManager.FindByNameAsync("projects.write") == null)
+        {
+            await scopeManager.CreateAsync(new OpenIddictScopeDescriptor
             {
-                await scopeManager.CreateAsync(new OpenIddictScopeDescriptor
-                {
-                    Name = "projects.write",
-                    DisplayName = "Write projects"
-                });
-            }
+                Name = "projects.write",
+                DisplayName = "Write projects"
+            });
         }
     }
 }

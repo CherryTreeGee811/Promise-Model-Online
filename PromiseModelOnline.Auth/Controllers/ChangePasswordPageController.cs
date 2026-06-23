@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,27 +8,20 @@ using OpenIddict.Abstractions;
 namespace PromiseModelOnline.Auth.Controllers;
 
 /// <summary>MVC controller for the change-password page (GET form, POST submission).</summary>
+/// <remarks>Initializes the controller with user manager, token manager, and logger.</remarks>
+/// <param name="userManager">The Identity user manager for password verification and changes.</param>
+/// <param name="tokenManager">The OpenIddict token manager for revoking refresh tokens after password change.</param>
+/// <param name="logger">The logger for password change audit events.</param>
 [Route("account/change-password")]
 [Authorize]
-public class ChangePasswordPageController : Controller
+public class ChangePasswordPageController(
+    UserManager<IdentityUser> userManager,
+    IOpenIddictTokenManager tokenManager,
+    ILogger<ChangePasswordPageController> logger) : Controller
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IOpenIddictTokenManager _tokenManager;
-    private readonly ILogger<ChangePasswordPageController> _logger;
-
-    /// <summary>Initializes the controller with user manager, token manager, and logger.</summary>
-    /// <param name="userManager">The Identity user manager for password verification and changes.</param>
-    /// <param name="tokenManager">The OpenIddict token manager for revoking refresh tokens after password change.</param>
-    /// <param name="logger">The logger for password change audit events.</param>
-    public ChangePasswordPageController(
-        UserManager<IdentityUser> userManager,
-        IOpenIddictTokenManager tokenManager,
-        ILogger<ChangePasswordPageController> logger)
-    {
-        _userManager = userManager;
-        _tokenManager = tokenManager;
-        _logger = logger;
-    }
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IOpenIddictTokenManager _tokenManager = tokenManager;
+    private readonly ILogger<ChangePasswordPageController> _logger = logger;
 
     /// <summary>Display the change-password form.</summary>
     /// <returns>The change-password view.</returns>

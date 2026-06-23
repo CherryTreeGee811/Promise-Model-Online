@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -54,9 +55,16 @@ public class BffWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(services =>
         {
+            // Remove Serilog's logger factory so standard ILoggerProvider instances work
+            services.RemoveAll<ILoggerFactory>();
+
             services.AddTransient<TestAuthHandler>();
             services.AddTransient<TestChallengeHandler>();
-            services.AddSingleton<ILoggerProvider>(LogCapture);
+            services.AddLogging(logging =>
+            {
+                logging.ClearProviders();
+                logging.AddProvider(LogCapture);
+            });
 
             services.PostConfigure<AuthenticationOptions>(options =>
             {
@@ -74,11 +82,8 @@ public class BffWebApplicationFactory : WebApplicationFactory<Program>
 
     /// <summary>Create an HTTP client with optional redirect following.</summary>
     /// <param name="allowAutoRedirect">Whether to follow redirect responses.</param>
-    public HttpClient CreateClient(bool allowAutoRedirect)
+    public HttpClient CreateClient(bool allowAutoRedirect) => CreateClient(new WebApplicationFactoryClientOptions
     {
-        return CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = allowAutoRedirect
-        });
-    }
+        AllowAutoRedirect = allowAutoRedirect
+    });
 }

@@ -9,8 +9,7 @@ using PromiseModelOnline.Api.DAL;
 
 #nullable disable
 
-namespace PromiseModelOnline.Api.Migrations
-{
+namespace PromiseModelOnline.Api.Migrations;
     [DbContext(typeof(PromiseModelOnlineContext))]
     [Migration("20260514041451_Initial")]
     partial class Initial
@@ -1093,4 +1092,3 @@ namespace PromiseModelOnline.Api.Migrations
 #pragma warning restore 612, 618
         }
     }
-}

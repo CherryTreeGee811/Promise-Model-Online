@@ -7,10 +7,7 @@
     <UserSecretsId>be5c9476-367c-4cb4-821a-c47853027f38</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
-    <!-- Allow building without prune package data present in some SDK/runtime previews -->
-    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +33,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="..\BannedSymbols.txt" />
   </ItemGroup>
 
   <ItemGroup>

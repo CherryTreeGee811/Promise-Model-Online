@@ -1,25 +1,30 @@
-// @ts-nocheck
+import { htmlToNodes } from '../utils/html.ts';
+
 /**
- * Build an HTML string for a knowledge base section.
- * @param {string} id - The section element ID.
- * @param {string} title - The section heading text.
- * @param {string} content - The inner HTML content for the section.
- * @returns {string} The complete section HTML string.
+ * @param {string} id - Section element ID
+ * @param {string} title - Section title
+ * @param {string} content - Section HTML content
+ * @returns {HTMLElement} The section element
  */
-function section(id, title, content) {
-  return `
-    <section id="${id}" class="kb-section">
-      <h1>${title}</h1>
-      ${content}
-    </section>
-  `;
+function section(id: string, title: string, content: string): HTMLElement {
+  const sectionElement = document.createElement('section');
+  sectionElement.id = id;
+  sectionElement.className = 'kb-section';
+  const h1 = document.createElement('h1');
+  h1.textContent = title;
+  sectionElement.append(h1);
+  sectionElement.append(...htmlToNodes(content));
+  return sectionElement;
 }
 
-/** Load the knowledge base page content. */
+/**
+ *
+ */
 export function loadKnowledgeBase() {
-    const kbContent = /** @type {HTMLElement} */ (document.getElementById('kb-content'));
+    const kbContent = document.querySelector('#kb-content') as HTMLElement;
 
-    kbContent.innerHTML = [
+    if (!kbContent) return;
+    kbContent.replaceChildren(
       section('overview', 'The Promise Stack Overview', `
         <p class="lead">We ship value, not just features. This knowledge base aligns every technical detail with user value.</p>
         <div class="table-responsive mt-3">
@@ -91,55 +96,61 @@ export function loadKnowledgeBase() {
           <li><strong>Core Value Promise (CVP):</strong> Record the evidence gathered that justifies promoting an idea into a fully committed Product Promise.</li>
         </ul>
       `),
-    ].join('\n');
+    );
 
     initSidebarScroll();
     initScrollSpy();
 }
 
-/** Initialize smooth scrolling for knowledge base sidebar navigation links. */
+/**
+ *
+ */
 function initSidebarScroll() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', e => {
+    for (const link of navLinks) {
+        link.addEventListener('click', event => {
             const hash = link.getAttribute('href');
             if (!hash || !hash.startsWith('#')) return;
-            e.preventDefault();
+            event.preventDefault();
 
-            const target = document.getElementById(hash.slice(1));
+            const target = document.querySelector(hash);
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                navLinks.forEach(l => l.removeAttribute('aria-current'));
+                for (const l of navLinks) l.removeAttribute('aria-current');
                 link.setAttribute('aria-current', 'true');
             }
         });
-    });
+    }
 }
 
-/** Initialize scroll spy to highlight the active knowledge base section in the sidebar. */
+/**
+ *
+ */
 function initScrollSpy() {
     const navLinks = document.querySelectorAll('.kb-nav-link');
     const sections = document.querySelectorAll('.kb-section[id]');
-    if (!sections.length) return;
+    if (sections.length === 0) return;
 
-    let ticking = false;
+    let isTicking = false;
     const onScroll = () => {
-        if (!ticking) {
-            window.requestAnimationFrame(() => {
-                const scrollY = window.scrollY + 100;
-                let currentId = null;
-                sections.forEach(section => {
-                    const top = section.offsetTop;
-                    if (scrollY >= top) currentId = section.id;
-                });
-                navLinks.forEach(link => {
-                    const isCurrent = link.getAttribute('href') === `#${currentId}`;
-                    link.setAttribute('aria-current', isCurrent ? 'true' : 'false');
-                });
-                ticking = false;
-            });
-            ticking = true;
+        if (isTicking) {
+        	return;
         }
+
+        requestAnimationFrame(() => {
+            const scrollY = window.scrollY + 100;
+            let currentId;
+            for (const section of sections) {
+                const top = (section as HTMLElement).offsetTop;
+                if (scrollY >= top) currentId = section.id;
+            }
+            for (const link of navLinks) {
+                const isCurrent = link.getAttribute('href') === `#${currentId}`;
+                link.setAttribute('aria-current', isCurrent ? 'true' : 'false');
+            }
+            isTicking = false;
+        });
+        isTicking = true;
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });

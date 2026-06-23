@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using PromiseModelOnline.Api.DAL;
 
@@ -26,8 +26,5 @@ public abstract class RepositoryTestBase
 
     /// <summary>Dispose the database context after each test.</summary>
     [TearDown]
-    public void BaseTearDown()
-    {
-        Context.Dispose();
-    }
+    public void BaseTearDown() => Context.Dispose();
 }

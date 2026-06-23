@@ -2,29 +2,29 @@ import { apiGet, apiPatch } from '../api.ts';
 
 /**
  * Fetch all notifications from the API.
- * @returns {Promise<Array>} Array of notification objects.
+ * @returns {Promise<object[]>} Array of notification objects.
  */
-async function fetchNotifications() {
+async function fetchNotifications(): Promise<Record<string, unknown>[]> {
   try {
-    return await apiGet('/api/notifications') ?? [];
+    return (await apiGet('/api/notifications') ?? []) as Record<string, unknown>[];
   } catch {
     return [];
   }
 }
 
-/** Alias for fetchNotifications; retrieves unread notifications. @type {typeof fetchNotifications} */
+/** Alias for fetchNotifications; retrieves unread notifications. \@type {typeof fetchNotifications} */
 export const fetchUnreadNotifications = fetchNotifications;
-/** Alias for fetchNotifications; retrieves all notifications. @type {typeof fetchNotifications} */
+/** Alias for fetchNotifications; retrieves all notifications. \@type {typeof fetchNotifications} */
 export const fetchAllNotifications = fetchNotifications;
 
 /**
  * Mark a single notification as read.
  * @param {number} id - The notification ID.
- * @returns {Promise<Object>} The API response.
+ * @returns {Promise<object>} The API response.
  */
-export const markNotificationAsRead = id => apiPatch(`/api/notifications/${id}`, { isRead: true });
+export const markNotificationAsRead = (id: string | number) => apiPatch(`/api/notifications/${id}`, { isRead: true });
 /**
  * Mark all notifications as read.
- * @returns {Promise<Object>} The API response.
+ * @returns {Promise<object>} The API response.
  */
 export const markAllNotificationsAsRead = () => apiPatch('/api/notifications', { isRead: true, applyToAll: true });

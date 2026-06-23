@@ -1,9 +1,15 @@
 /** @type {string} */
-const CACHE = 'pmo-v3';
+const CACHE = 'pmo-v5';
+
+const swSelf = /** @type {{ addEventListener: Function, skipWaiting: Function, clients: { claim: Function }, location: { origin: string } }} */ (/** @type {unknown} */ (self));
+
+/** @type {boolean} */
+let _cacheReady = false;
 
 /** @type {string[]} */
 const PRECACHE = [
   '/dist/js/main.js',
+  '/css/site.css',
   '/lib/css/bootstrap.min.css',
   '/lib/css/bootstrap-icons.min.css',
   '/lib/js/bootstrap.bundle.min.js',
@@ -20,7 +26,9 @@ const PRECACHE = [
   '/manifest.json',
   '/templates/404.html',
   '/templates/error.html',
-  '/templates/home.html'
+  '/templates/home.html',
+  '/templates/navigation/anonymous.html',
+  '/templates/navigation/authenticated.html'
 ];
 
 /** @type {string[]} */
@@ -37,18 +45,23 @@ const BFF_PATHS = [
   '/signin-google'
 ];
 
-self.addEventListener('install', /** @param {ExtendableEvent} event */ event => {
-  event.waitUntil(caches.open(CACHE));
-  self.skipWaiting();
+swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
+  event.waitUntil(
+    caches.open(CACHE).then(async cache => {
+      await Promise.allSettled(PRECACHE.map(url => cache.add(url)));
+    })
+  );
+  swSelf.skipWaiting();
 });
 
-self.addEventListener('activate', /** @param {ExtendableEvent} event */ event => {
+swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  swSelf.clients.claim();
+  _cacheReady = true;
 });
 
 /**
@@ -66,7 +79,7 @@ function isBffPath(path) {
  * @returns {boolean} True if the path matches a static asset extension.
  */
 function isStaticAsset(path) {
-  return /\.(css|mjs|js|png|jpg|jpeg|gif|ico|svg|woff|woff2)$/.test(path);
+  return /\.(css|mjs|js|png|jpg|jpeg|gif|ico|svg)$/.test(path);
 }
 
 /**
@@ -88,41 +101,53 @@ async function networkFirst(request) {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    throw new Error('Network unavailable');
+    try {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+    } catch {}
+    try {
+      const offline = await caches.match('/templates/error.html');
+      if (offline) return offline;
+    } catch {}
+    return new Response(null, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' }
+    });
   }
 }
 
 /**
  * Cache-first fetch strategy: serve from cache if available, otherwise fetch and cache.
+ * Returns null on complete failure so callers can decide the fallback.
  * @param {Request} request - The fetch request.
- * @returns {Promise<Response>} The response from cache or network.
+ * @returns {Promise<Response|null>} The response from cache or network, or null.
  */
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cached = await caches.match(request, { ignoreSearch: true });
   if (cached) return cached;
   try {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
-    return response;
+    return response.ok ? response : null;
   } catch {
-    return;
+    return null;
   }
 }
 
-self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
+swSelf.addEventListener('fetch', /** @param {{ request: Request, respondWith: (r: Response | Promise<Response>) => void, waitUntil: (p: Promise<unknown>) => void }} event */ event => {
+  if (!_cacheReady) return;
+
   const { request } = event;
   const url = new URL(request.url);
 
-  if (url.origin !== self.location.origin) {
+  if (url.origin !== swSelf.location.origin) {
     return;
   }
 
@@ -133,23 +158,40 @@ self.addEventListener('fetch', /** @param {FetchEvent} event */ event => {
   }
 
   if (isStaticAsset(path)) {
-    event.waitUntil(cacheFirst(request));
+    const responsePromise = cacheFirst(request)
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
     return;
   }
 
   if (isTemplate(path)) {
-    event.respondWith(networkFirst(request));
+    const responsePromise = networkFirst(request)
+      .then(r => r || caches.match('/templates/error.html'))
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
     return;
   }
 
   if (path === '/' || path === '/index.html' || path === '/manifest.json') {
-    event.respondWith(networkFirst(request));
+    const responsePromise = networkFirst(request)
+      .then(r => r || caches.match('/templates/error.html'))
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
     return;
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      networkFirst(request).catch(() => fetch(request))
-    );
+    const responsePromise = networkFirst(request)
+      .then(r => r || caches.match('/templates/error.html'))
+      .then(r => r || new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }))
+      .catch(() => new Response('', { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } }));
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
   }
 });
