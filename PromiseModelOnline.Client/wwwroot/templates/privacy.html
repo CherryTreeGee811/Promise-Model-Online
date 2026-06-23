@@ -1,7 +1,7 @@
 <div class="privacy-page">
 
 <h1>Privacy Policy</h1>
-<p class="privacy-date"><strong>Effective Date:</strong> June 21, 2026</p>
+<p class="privacy-date"><strong>Effective Date:</strong> June 23, 2026</p>
 
 <h2>1. Introduction</h2>
 <p>Promise Model Online ("PMO," "we," "our," or "us") is a self-hosted project management application. This Privacy Policy explains how personal data is collected, used, stored, and disclosed when you use the PMO application. We are committed to compliance with applicable privacy laws, including:</p>
@@ -20,7 +20,7 @@
 <p>When a user registers through the internal registration form, we collect:</p>
 <ul>
   <li>Username</li>
-  <li>Email address (verified via email confirmation)</li>
+  <li>Email address (verified via email confirmation when SendGrid is configured)</li>
   <li>Password (hashed, never stored in plaintext)</li>
 </ul>
 <p>After registration, users may set a display name within the application.</p>
@@ -107,6 +107,7 @@
   <li>Rate limiting to prevent brute-force attacks</li>
   <li>Docker secrets for all credentials and keys</li>
   <li>Non-root application containers</li>
+  <li>Cloudflare tunnel for edge security, TLS termination, and DDoS protection</li>
 </ul>
 
 <h2>7. Data Retention</h2>
@@ -201,7 +202,7 @@
 <p>No tracking cookies, advertising cookies, or third-party cookies are used by PMO. The optional Umami analytics module does not use cookies. The optional telemetry module does not use cookies or persistent storage.</p>
 
 <h2>11. International Data Transfers</h2>
-<p>Because PMO is self-hosted, all data resides on servers under the deploying organization's control. The deploying organization determines where data is physically stored. If optional third-party services (Google OAuth, SendGrid) are configured, data may be transferred to those providers' servers in accordance with their respective privacy policies and data processing agreements.</p>
+<p>Because PMO is self-hosted, all data resides on servers under the deploying organization's control. The deploying organization determines where data is physically stored. If optional third-party services (Google OAuth, SendGrid) are configured, data may be transferred to those providers' servers in accordance with their respective privacy policies and data processing agreements. If Cloudflare tunnel is configured, encrypted request metadata may transit through Cloudflare's edge network.</p>
 
 <h2>12. Children's Privacy</h2>
 <p>PMO is not intended for use by individuals under the age of 16. We do not knowingly collect personal data from children. If you believe a child has provided personal data, contact the deploying organization's administrator for deletion.</p>

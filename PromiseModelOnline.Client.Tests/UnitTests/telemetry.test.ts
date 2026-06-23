@@ -280,8 +280,9 @@ describe('error collection', () => {
 
   it('captures unhandled promise rejections', async () => {
     initTelemetry();
+    const rejected = Promise.reject(new Error('async failed')).catch(() => {});
     window.dispatchEvent(new PromiseRejectionEvent('unhandledrejection', {
-      promise: Promise.reject(new Error('async failed')),
+      promise: rejected,
       reason: new Error('async failed'),
     }));
     vi.advanceTimersByTime(60_000);
@@ -310,8 +311,9 @@ describe('error collection', () => {
 
   it('stringifies non-Error rejection reasons', async () => {
     initTelemetry();
+    const rejected = Promise.reject('string reason').catch(() => {});
     window.dispatchEvent(new PromiseRejectionEvent('unhandledrejection', {
-      promise: Promise.reject('string reason'),
+      promise: rejected,
       reason: 'string reason',
     }));
     vi.advanceTimersByTime(60_000);
