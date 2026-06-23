@@ -388,7 +388,8 @@ jobs:
             -t https://localhost:9000 \
             -r /zap/wrk/zap-report.html \
             -c /zap/wrk/zap-baseline.conf \
-            -z "-config globalexeurl.url="
+            -port 8079 \
+            -z "-config globalexcludeurl.url="
 
       - name: Tear Down E2E Stack
         shell: bash
