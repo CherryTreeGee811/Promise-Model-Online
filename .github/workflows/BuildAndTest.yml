@@ -378,6 +378,25 @@ jobs:
 #             --logger "console;verbosity=normal" \
 #             --filter "FullyQualifiedName!~RateLimitingTests"
 
+      - name: Cache OWASP ZAP container image
+        id: zap-image-cache
+        uses: actions/cache@v5
+        with:
+          path: /tmp/zap-image.tar
+          key: zap-image-${{ runner.os }}-v1
+
+      - name: Load or pull OWASP ZAP image
+        shell: bash
+        run: |
+          if [ -f /tmp/zap-image.tar ]; then
+            docker load < /tmp/zap-image.tar
+            echo "Loaded ZAP image from cache"
+          else
+            docker pull ghcr.io/zaproxy/zaproxy:stable
+            docker save ghcr.io/zaproxy/zaproxy:stable > /tmp/zap-image.tar
+            echo "Pulled and cached ZAP image"
+          fi
+
       - name: Security — OWASP ZAP DAST scan
         shell: bash
         run: |
