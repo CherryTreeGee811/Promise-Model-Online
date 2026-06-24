@@ -80,11 +80,10 @@ var proxyBuilder = builder.Services
 
             if (!string.IsNullOrWhiteSpace(token))
             {
+                transformContext.ProxyRequest.Headers.Remove("Cookie");
                 transformContext.ProxyRequest.Headers.Authorization =
                     new AuthenticationHeaderValue("Bearer", token);
             }
-
-            transformContext.ProxyRequest.Headers.Remove("Cookie");
         });
     });
 

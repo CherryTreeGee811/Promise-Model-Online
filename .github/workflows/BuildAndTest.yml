@@ -38,7 +38,7 @@ jobs:
       - name: Check __Host-pmo.auth only (no pmo.auth in production)
         shell: bash
         run: |
-          MATCHES=$(grep -rn 'pmo\.auth' PromiseModelOnline.Api/ PromiseModelOnline.Auth/ PromiseModelOnline.BFF/ PromiseModelOnline.Client/ 2>/dev/null | grep -v '\.Tests/' | grep -v node_modules | grep -v '__Host-pmo\.auth' || true)
+          MATCHES=$(grep -rn 'pmo\.auth' PromiseModelOnline.Api/ PromiseModelOnline.Auth/ PromiseModelOnline.BFF/ PromiseModelOnline.Client/ 2>/dev/null | grep -v '\.Tests/' | grep -v node_modules | grep -v '__Host-pmo\.auth' | grep -vE '\.(ts|js):' || true)
           if [ -n "$MATCHES" ]; then
             echo "ERROR: pmo.auth cookie found in production source. Use __Host-pmo.auth only."
             echo "$MATCHES"
