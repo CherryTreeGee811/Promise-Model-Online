@@ -74,6 +74,11 @@
             </div>
         </main>
     </div>
+<div id="cookie-banner" role="alert" aria-live="polite">
+    <p>This site uses essential cookies for authentication and security. No tracking cookies are used.</p>
+    <p class="cookie-banner-links"><a href="/privacy">Privacy Policy</a></p>
+    <button id="cookie-banner-dismiss" aria-label="Dismiss cookie notice">Got it</button>
+</div>
 <footer class="footer" role="contentinfo">
     <div>
         &copy; 2026 - Promise Model Online
@@ -81,6 +86,21 @@
         &nbsp;|&nbsp; <a href="/tos">Terms of Service</a>
     </div>
 </footer>
+<script>
+    (function() {
+        var banner = document.getElementById('cookie-banner');
+        var dismissBtn = document.getElementById('cookie-banner-dismiss');
+        if (localStorage.getItem('cookie-consent')) {
+            banner.style.display = 'none';
+        } else {
+            banner.style.display = 'block';
+        }
+        dismissBtn.addEventListener('click', function() {
+            localStorage.setItem('cookie-consent', 'dismissed');
+            banner.style.display = 'none';
+        });
+    })();
+</script>
     <script src="/lib/js/d3.min.js" defer></script>
     <script src="/lib/js/signalr.min.js" defer></script>
     <script src="/lib/js/bootstrap.bundle.min.js" defer></script>

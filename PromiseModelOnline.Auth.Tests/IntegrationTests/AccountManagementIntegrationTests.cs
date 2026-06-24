@@ -29,7 +29,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
         var response = await Client.SendAsync(request);
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
-        var cookie = ExtractSetCookieHeader(response, "pmo.auth");
+        var cookie = ExtractSetCookieHeader(response, "__Host-pmo.auth");
         Assert.That(cookie, Is.Not.Null, "Identity cookie not found in login response");
         return cookie!;
     }
@@ -53,7 +53,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
         var response = await Client.SendAsync(request);
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
-        var cookie = ExtractSetCookieHeader(response, "pmo.auth");
+        var cookie = ExtractSetCookieHeader(response, "__Host-pmo.auth");
         Assert.That(cookie, Is.Not.Null, "Identity cookie not found in login response");
         return cookie!;
     }
@@ -269,7 +269,8 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
                 { "Username", uniqueUser },
                 { "Email", uniqueEmail },
                 { "Password", TestPassword },
-                { "ConfirmPassword", TestPassword }
+                { "ConfirmPassword", TestPassword },
+                { "PrivacyConsent", "true" }
             }));
         Assert.That(regResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 

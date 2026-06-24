@@ -75,7 +75,7 @@ public class AccountControllerUnitTests
     public async Task REQ_FUN_001_Register_Post_ExistingUsername_ReturnsViewWithError()
     {
         // Arrange
-        var model = new RegisterViewModel { Username = "existing", Email = "e@e.com", Password = "pw", ConfirmPassword = "pw" };
+        var model = new RegisterViewModel { Username = "existing", Email = "e@e.com", Password = "pw", ConfirmPassword = "pw", PrivacyConsent = true };
         _userManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Username 'existing' is already taken." }));
@@ -92,7 +92,7 @@ public class AccountControllerUnitTests
     public async Task REQ_FUN_001_Register_Post_ExistingEmail_ReturnsViewWithError()
     {
         // Arrange
-        var model = new RegisterViewModel { Username = "new", Email = "taken@test.com", Password = "pw", ConfirmPassword = "pw" };
+        var model = new RegisterViewModel { Username = "new", Email = "taken@test.com", Password = "pw", ConfirmPassword = "pw", PrivacyConsent = true };
         _userManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Email 'taken@test.com' is already taken." }));
@@ -109,7 +109,7 @@ public class AccountControllerUnitTests
     public async Task REQ_FUN_001_Register_Post_CreateFails_ReturnsViewWithErrors()
     {
         // Arrange
-        var model = new RegisterViewModel { Username = "new", Email = "new@test.com", Password = "pw", ConfirmPassword = "pw" };
+        var model = new RegisterViewModel { Username = "new", Email = "new@test.com", Password = "pw", ConfirmPassword = "pw", PrivacyConsent = true };
         _userManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Error occurred." }));
@@ -125,7 +125,7 @@ public class AccountControllerUnitTests
     public async Task REQ_FUN_001_Register_Post_Success_RedirectsToEmailVerification()
     {
         // Arrange
-        var model = new RegisterViewModel { Username = "new", Email = "new@test.com", Password = "pw", ConfirmPassword = "pw" };
+        var model = new RegisterViewModel { Username = "new", Email = "new@test.com", Password = "pw", ConfirmPassword = "pw", PrivacyConsent = true };
         _userManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), "pw"))
             .ReturnsAsync(IdentityResult.Success);

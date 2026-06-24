@@ -1,4 +1,5 @@
 ﻿using OpenIddict.Abstractions;
+using Microsoft.IdentityModel.Tokens;
 using PromiseModelOnline.Auth.DAL;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.X509Certificates;
@@ -6,15 +7,15 @@ using PromiseModelOnline.Auth.Common;
 
 namespace PromiseModelOnline.Auth.Extensions;
 
-/// <summary>Extension methods for configuring OpenIddict server and validation.</summary>
+/// <summary>OpenIddict server and validation configuration.</summary>
+/// <remarks>Configures the authorization and token endpoints, PKCE enforcement, certificate loading, and client seeding.</remarks>
 public static class OpenIddictExtensions
 {
-    /// <summary>Register OpenIddict with EF Core storage, authorization code + refresh token flows, PKCE, and certificate configuration.</summary>
-    /// <param name="services">The service collection to register into.</param>
-    /// <param name="config">The application configuration for certificate loading.</param>
-    /// <param name="env">The web hosting environment for development-mode overrides.</param>
-    /// <returns>The same service collection for chaining.</returns>
-    public static IServiceCollection AddOpenIddictServerConfig(
+    /// <summary>Configure the OpenIddict server with authorization code flow, PKCE, and custom scopes.</summary>
+    /// <param name="services">The service collection to add OpenIddict to.</param>
+    /// <param name="config">The application configuration for certificate and issuer settings.</param>
+    /// <param name="env">The web host environment for dev-mode configuration.</param>
+    public static void AddOpenIddictServerConfig(
         this IServiceCollection services,
         IConfiguration config,
         IWebHostEnvironment env)
@@ -72,8 +73,6 @@ public static class OpenIddictExtensions
                 options.UseLocalServer();
                 options.UseAspNetCore();
             });
-
-        return services;
     }
 
     /// <summary>Load the signing/encryption certificate from <c>cert.pfx</c> or fall back to ephemeral keys for development.</summary>
@@ -110,5 +109,73 @@ public static class OpenIddictExtensions
             options.AddEphemeralEncryptionKey();
             options.AddEphemeralSigningKey();
         }
+    }
+
+    /// <summary>Seed the <c>pmo-spa</c> OpenIddict client application for the BFF.</summary>
+    /// <param name="services">The service provider used to resolve the application manager.</param>
+    public static async Task SeedAsync(IServiceProvider services)
+    {
+        var manager = services.GetRequiredService<IOpenIddictApplicationManager>();
+        var config = services.GetRequiredService<IConfiguration>();
+
+        var extraUris = (config["Auth:AdditionalRedirectUris"] ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(u => new Uri(u.Trim()));
+
+        var descriptor = new OpenIddictApplicationDescriptor
+        {
+            ClientId = "pmo-spa",
+            ClientType = OpenIddictConstants.ClientTypes.Public,
+            ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
+            DisplayName = "PMO BFF Client",
+            RedirectUris =
+                {
+                    new Uri($"{AppUrls.BaseUrl}/signin-oidc")
+                },
+            PostLogoutRedirectUris =
+                {
+                    new Uri(AppUrls.BaseUrl)
+                }
+        };
+
+        foreach (var uri in extraUris)
+            descriptor.RedirectUris.Add(uri);
+
+        AddPermissions(descriptor);
+
+        var existing = await manager.FindByClientIdAsync("pmo-spa");
+
+        if (existing is null)
+        {
+            await manager.CreateAsync(descriptor);
+        }
+        else
+        {
+            await manager.UpdateAsync(existing, descriptor);
+        }
+    }
+
+    /// <summary>Add required endpoints, grant types, scopes, and PKCE requirement to the client descriptor.</summary>
+    /// <param name="descriptor">The application descriptor to add permissions to.</param>
+    private static void AddPermissions(OpenIddictApplicationDescriptor descriptor)
+    {
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Token);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.EndSession);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Revocation);
+
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.ResponseTypes.Code);
+
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.OpenId);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Profile);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Email);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.OfflineAccess);
+
+        descriptor.Permissions.Add("scp:projects.read");
+        descriptor.Permissions.Add("scp:projects.write");
+
+        descriptor.Requirements.Add(OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange);
     }
 }

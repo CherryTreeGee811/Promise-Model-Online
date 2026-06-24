@@ -115,11 +115,16 @@ public class UsersController(
         var reactions = await _context.Reactions.Where(r => r.UserId == userId).ToListAsync();
         var permissions = await _context.Set<Permission>().Where(p => p.UserId == userId).ToListAsync();
         var assignments = await _context.Set<MomentAssignment>().Where(ma => ma.UserId == userId).ToListAsync();
+        var comments = await _context.Set<Comment>().Where(c => c.UserId == userId).ToListAsync();
+        var commentIds = comments.Select(c => c.Id).ToHashSet();
+        var mentions = await _context.Set<CommentMention>().Where(m => commentIds.Contains(m.CommentId)).ToListAsync();
 
         _context.Set<Notification>().RemoveRange(notifications);
         _context.Reactions.RemoveRange(reactions);
         _context.Set<Permission>().RemoveRange(permissions);
         _context.Set<MomentAssignment>().RemoveRange(assignments);
+        _context.Set<CommentMention>().RemoveRange(mentions);
+        _context.Set<Comment>().RemoveRange(comments);
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();

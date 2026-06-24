@@ -102,7 +102,7 @@ public class AuthWebApplicationFactory : IAsyncDisposable
 
             builder.Services.ConfigureApplicationCookie(options =>
             {
-                options.Cookie.Name = "pmo.auth";
+                options.Cookie.Name = "__Host-pmo.auth";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
                 options.Cookie.SameSite = SameSiteMode.Lax;

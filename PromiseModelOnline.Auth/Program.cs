@@ -38,14 +38,17 @@ var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
 AppUrls.BaseUrl = appBaseUrl.TrimEnd('/');
 AppUrls.PublicIssuer = publicIssuer.TrimEnd('/');
 
-// CORS policy allowing the SPA origin and the BFF origin with credentials.
+// CORS policy allowing the SPA origin, BFF origin, and any configured additional origins.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("SPA", policy =>
     {
+        var extraOrigins = (builder.Configuration["Auth:AdditionalRedirectUris"] ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(o => new Uri(o.Trim()).GetLeftPart(UriPartial.Authority));
+
         policy.WithOrigins(
-                AppUrls.BaseUrl,
-                "https://promisemodelonline.bff:8010")
+            [AppUrls.BaseUrl, "https://promisemodelonline.bff:8010", ..extraOrigins])
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -75,7 +78,7 @@ builder.Services
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "pmo.auth";
+    options.Cookie.Name = "__Host-pmo.auth";
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Lax;
@@ -84,6 +87,14 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/account/login";
     options.LogoutPath = "/connect/logout";
     options.AccessDeniedPath = "/account/access-denied";
+});
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = ".AspNetCore.Antiforgery";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 // OpenIddict server with authorization code flow, PKCE, certificate configuration, and custom scopes.
@@ -190,13 +201,13 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     });
 });
 
-// Seed OpenIddict applications and development users in development mode only.
+// Seed OpenIddict applications (all environments) and development users (development only).
+using var seedScope = app.Services.CreateScope();
+
+await OpenIddictSeeder.SeedAsync(seedScope.ServiceProvider);
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-
-    await OpenIddictSeeder.SeedAsync(scope.ServiceProvider);
-    await AuthorizationSeeder.SeedAsync(scope.ServiceProvider);
+    await AuthorizationSeeder.SeedAsync(seedScope.ServiceProvider);
 }
 
 // Forwarded headers for reverse proxy scenarios (X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host).

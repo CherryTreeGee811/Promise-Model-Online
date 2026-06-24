@@ -2343,3 +2343,51 @@ button:disabled,
 .toast.bg-warning .toast-body i {
   color: #1a1a1a !important;
 }
+
+/* Cookie consent banner */
+#cookie-banner {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #1a252f;
+  color: #e8eaed;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+  border-top: 1px solid #30363d;
+}
+
+#cookie-banner p {
+  margin: 0 0 0.25rem;
+  display: inline;
+}
+
+#cookie-banner .cookie-banner-links {
+  display: inline;
+  margin-left: 0.5rem;
+}
+
+#cookie-banner .cookie-banner-links a {
+  color: #58a6ff;
+  text-decoration: underline;
+}
+
+#cookie-banner button {
+  display: inline-block;
+  margin-left: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  background: #30363d;
+  color: #e8eaed;
+  border: 1px solid #58a6ff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+#cookie-banner button:hover {
+  background: #58a6ff;
+  color: #0d1117;
+}

@@ -10,8 +10,6 @@ RUN npm run build
 # Stage 2: Nginx
 FROM nginx:stable-alpine-slim
 
-RUN apk add --no-cache curl=8.19.0-r0
-
 RUN addgroup -g 1000 -S appgroup && \
     adduser -u 1000 -S appuser -G appgroup
 
@@ -31,9 +29,6 @@ COPY PromiseModelOnline.Client/cert.pem /etc/nginx/cert.pem
 COPY PromiseModelOnline.Client/key.pem /etc/nginx/key.pem
 RUN  chown appuser:appgroup /etc/nginx/key.pem /etc/nginx/cert.pem
 RUN chmod 644 /etc/nginx/cert.pem && chmod 600 /etc/nginx/key.pem
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -fsk https://localhost:9000/health || exit 1
 
 USER appuser
 

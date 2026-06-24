@@ -92,9 +92,9 @@
 <h2>5. Legal Basis for Processing (GDPR)</h2>
 <p>For users in the European Economic Area, processing is based on:</p>
 <ul>
-  <li><strong>Legitimate interest:</strong> Providing the project management service the user or their organization has requested.</li>
-  <li><strong>Consent:</strong> Where required (e.g., optional analytics and telemetry, Google OAuth). Consent may be withdrawn at any time.</li>
-  <li><strong>Contractual necessity:</strong> Processing required to deliver the service to the deploying organization.</li>
+  <li><strong>Legitimate interest:</strong> Providing the project management service the user or their organization has requested (Art. 6(1)(f) GDPR).</li>
+  <li><strong>Consent:</strong> Where required, e.g., optional analytics and telemetry, Google OAuth (Art. 6(1)(a), Art. 7 GDPR; PIPEDA Principle 4.3). Consent may be withdrawn at any time (Art. 7(3) GDPR).</li>
+  <li><strong>Contractual necessity:</strong> Processing required to deliver the service to the deploying organization (Art. 6(1)(b) GDPR).</li>
 </ul>
 
 <h2>6. Data Storage and Security</h2>
@@ -109,9 +109,10 @@
   <li>Non-root application containers</li>
   <li>Cloudflare tunnel for edge security, TLS termination, and DDoS protection</li>
 </ul>
+<p>These measures implement <strong>GDPR Art. 32</strong> (security of processing) and <strong>Art. 5(1)(f)</strong> (integrity and confidentiality; PIPEDA Principle 4.7 Safeguards). When Cloudflare tunnel is configured, Cloudflare acts as a data processor under <strong>Art. 28 GDPR</strong>.</p>
 
 <h2>7. Data Retention</h2>
-<p>Data is retained for as long as the deploying organization maintains the PMO instance. Users may request deletion of their account and associated data at any time. Audit logs may be retained longer for security and legal compliance. The deploying organization is responsible for defining and communicating specific retention policies.</p>
+<p>Data is retained for as long as the deploying organization maintains the PMO instance, in accordance with the storage limitation principle (<strong>Art. 5(1)(e) GDPR</strong>; <strong>PIPEDA Principle 4.5</strong> Limiting Retention). Users may request deletion of their account and associated data at any time. Audit logs may be retained longer for security and legal compliance. The deploying organization is responsible for defining and communicating specific retention policies.</p>
 
 <h2>8. Third-Party Dependencies</h2>
 <p>PMO bundles several open-source libraries that are served from the same server as the application (no external CDN requests are made by the application code). Telemetry and analytics data are transmitted to the same server. Whether each optional integration is active depends on the deploying organization's configuration:</p>
@@ -174,21 +175,27 @@
       <td>Anonymized metrics (heap, errors, performance)</td>
       <td>Optional</td>
     </tr>
+    <tr>
+      <td>Cloudflare</td>
+      <td>Edge security, TLS termination, DDoS protection (when tunnel is configured)</td>
+      <td>Source IP, request URLs, HTTP headers — governed by <a href="https://www.cloudflare.com/cloudflare-customer-dpa/">Cloudflare DPA</a> (Art. 28 GDPR)</td>
+      <td>Optional</td>
+    </tr>
   </tbody>
 </table>
 
 <h2>9. Your Rights</h2>
 <p>Depending on your jurisdiction, you have the right to:</p>
 <ul>
-  <li><strong>Access:</strong> Request a copy of your personal data.</li>
-  <li><strong>Rectification:</strong> Correct inaccurate or incomplete data.</li>
-  <li><strong>Erasure:</strong> Request deletion of your personal data ("right to be forgotten") through the My Data page at <code>/account/delete</code> or by contacting your administrator.</li>
-  <li><strong>Portability:</strong> Receive your data in a structured, machine-readable JSON format via the <code>/api/users/me/export</code> endpoint, accessible through the My Data page at <code>/account/delete</code>.</li>
-  <li><strong>Restriction:</strong> Limit how your data is processed.</li>
-  <li><strong>Objection:</strong> Object to processing based on legitimate interest.</li>
-  <li><strong>Withdraw consent:</strong> Where processing is consent-based (telemetry and analytics may be opted out by the deploying organization).</li>
+  <li><strong>Access:</strong> Request a copy of your personal data (<strong>Art. 15 GDPR</strong>; <strong>PIPEDA Principle 4.9</strong>).</li>
+  <li><strong>Rectification:</strong> Correct inaccurate or incomplete data (<strong>Art. 16 GDPR</strong>).</li>
+  <li><strong>Erasure:</strong> Request deletion of your personal data ("right to be forgotten") through the My Data page at <code>/account/delete</code> or by contacting your administrator (<strong>Art. 17 GDPR</strong>).</li>
+  <li><strong>Portability:</strong> Receive your data in a structured, machine-readable JSON format via the <code>/api/users/me/export</code> endpoint, accessible through the My Data page at <code>/account/delete</code> (<strong>Art. 20 GDPR</strong>).</li>
+  <li><strong>Restriction:</strong> Limit how your data is processed (<strong>Art. 18 GDPR</strong>).</li>
+  <li><strong>Objection:</strong> Object to processing based on legitimate interest (<strong>Art. 21 GDPR</strong>).</li>
+  <li><strong>Withdraw consent:</strong> Where processing is consent-based (telemetry and analytics may be opted out by the deploying organization) (<strong>Art. 7(3) GDPR</strong>).</li>
 </ul>
-<p>To exercise these rights, contact the deploying organization's administrator. Requests will be fulfilled within 30 days as required by applicable law.</p>
+<p>To exercise these rights, contact the deploying organization's administrator. Requests will be fulfilled within 30 days as required by applicable law (<strong>Art. 12(3) GDPR</strong>).</p>
 
 <h2>10. Cookie Policy</h2>
 <p>PMO uses a single essential session cookie (<code>__Host-pmo.session</code>) for authentication. This cookie:</p>
@@ -202,7 +209,7 @@
 <p>No tracking cookies, advertising cookies, or third-party cookies are used by PMO. The optional Umami analytics module does not use cookies. The optional telemetry module does not use cookies or persistent storage.</p>
 
 <h2>11. International Data Transfers</h2>
-<p>Because PMO is self-hosted, all data resides on servers under the deploying organization's control. The deploying organization determines where data is physically stored. If optional third-party services (Google OAuth, SendGrid) are configured, data may be transferred to those providers' servers in accordance with their respective privacy policies and data processing agreements. If Cloudflare tunnel is configured, encrypted request metadata may transit through Cloudflare's edge network.</p>
+<p>Because PMO is self-hosted, all data resides on servers under the deploying organization's control. The deploying organization determines where data is physically stored. If optional third-party services (Google OAuth, SendGrid) are configured, data may be transferred to those providers' servers in accordance with their respective privacy policies and data processing agreements (<strong>GDPR Art. 44–49</strong>; <strong>PIPEDA Principle 4.1.3</strong>). If Cloudflare tunnel is configured, encrypted request metadata may transit through Cloudflare's edge network. Data processing by Cloudflare is governed by their <a href="https://www.cloudflare.com/cloudflare-customer-dpa/">Data Processing Agreement</a> (<strong>Art. 28 GDPR</strong>), which incorporates EU Standard Contractual Clauses for international transfers (<strong>Art. 46 GDPR</strong>). The deploying organization is responsible for ensuring a DPA is in place with Cloudflare.</p>
 
 <h2>12. Children's Privacy</h2>
 <p>PMO is not intended for use by individuals under the age of 16. We do not knowingly collect personal data from children. If you believe a child has provided personal data, contact the deploying organization's administrator for deletion.</p>
