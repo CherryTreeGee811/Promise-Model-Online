@@ -228,7 +228,7 @@ jobs:
         shell: bash
         run: |
           for i in $(seq 1 15); do
-            STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            STATUS=$(docker exec promisemodelonlineclient sh -c "wget -q -O /dev/null http://localhost:8080/health 2>/dev/null && echo 200 || echo 000")
             if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
             sleep 2
           done

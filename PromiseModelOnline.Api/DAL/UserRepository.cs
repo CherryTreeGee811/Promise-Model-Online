@@ -81,7 +81,7 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
             return existing;
         }
 
-        var baseSlug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown");
+        var baseSlug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : "Unknown");
         var slug = baseSlug;
         var counter = 1;
         while (await _dbSet.AnyAsync(u => u.Slug == slug))
