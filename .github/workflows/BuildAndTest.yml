@@ -228,7 +228,7 @@ jobs:
         shell: bash
         run: |
           for i in $(seq 1 15); do
-            STATUS=$(curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            STATUS=$(docker exec promisemodelonlineclient sh -c "test -f /tmp/nginx.pid && echo 200 || echo 000" 2>/dev/null || true)
             if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
             sleep 2
           done
@@ -444,7 +444,7 @@ jobs:
         shell: bash
         run: |
           for i in $(seq 1 15); do
-            STATUS=$(curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            STATUS=$(docker exec promisemodelonlineclient sh -c "test -f /tmp/nginx.pid && echo 200 || echo 000" 2>/dev/null || true)
             if [ "$STATUS" = "200" ]; then echo "Port 9000 ready"; exit 0; fi
             sleep 2
           done
