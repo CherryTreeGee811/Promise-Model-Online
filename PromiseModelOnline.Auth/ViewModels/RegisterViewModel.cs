@@ -24,4 +24,9 @@ public class RegisterViewModel
     [DataType(DataType.Password)]
     [Compare("Password", ErrorMessage = "Passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
+
+    /// <summary>Consent to the Privacy Policy and Terms of Service. Required.</summary>
+    [Required(ErrorMessage = "You must agree to the Privacy Policy and Terms of Service.")]
+    [Range(typeof(bool), "true", "true", ErrorMessage = "You must agree to the Privacy Policy and Terms of Service.")]
+    public bool PrivacyConsent { get; set; }
 }

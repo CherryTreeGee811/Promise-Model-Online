@@ -1,6 +1,9 @@
 ﻿using OpenIddict.Abstractions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using PromiseModelOnline.Auth.Common;
 
@@ -18,6 +21,11 @@ public static class OpenIddictSeeder
     public static async Task SeedAsync(IServiceProvider services)
     {
         var manager = services.GetRequiredService<IOpenIddictApplicationManager>();
+        var config = services.GetRequiredService<IConfiguration>();
+
+        var extraUris = (config["Auth:AdditionalRedirectUris"] ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(u => new Uri(u.Trim()));
 
         var descriptor = new OpenIddictApplicationDescriptor
         {
@@ -34,6 +42,9 @@ public static class OpenIddictSeeder
                     new Uri(AppUrls.BaseUrl)
                 }
         };
+
+        foreach (var uri in extraUris)
+            descriptor.RedirectUris.Add(uri);
 
         AddPermissions(descriptor);
 

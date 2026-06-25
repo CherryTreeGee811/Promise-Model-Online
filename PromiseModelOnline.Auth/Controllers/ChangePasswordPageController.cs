@@ -70,6 +70,14 @@ public class ChangePasswordPageController(
             return Unauthorized();
         }
 
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        if (!hasPassword)
+        {
+            _logger.LogWarning("ChangePasswordPage: no local password set for {UserId} — use forgot password", userId);
+            ModelState.AddModelError("", "You do not have a local password. Use \"Forgot Password\" to set one first.");
+            return View("~/Views/ChangePassword/Index.cshtml");
+        }
+
         var isValid = await _userManager.CheckPasswordAsync(user, currentPassword);
         if (!isValid)
         {

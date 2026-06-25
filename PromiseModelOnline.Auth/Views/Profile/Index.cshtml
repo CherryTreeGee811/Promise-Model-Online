@@ -1,0 +1,62 @@
+@model ProfileViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="form-div auth-card">
+    <div class="auth-card-icon" aria-hidden="true">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+        </svg>
+    </div>
+
+    <h2 class="auth-card-heading">My Profile</h2>
+    <p class="auth-card-subtitle">Update your display name</p>
+
+    @if (ViewBag.Updated ?? false)
+    {
+        <div class="auth-message auth-success" role="alert">
+            Your profile has been updated.
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="auth-message auth-error" role="alert">
+            <ul>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form method="post" class="auth-form">
+        @Html.AntiForgeryToken()
+        <div class="field-group">
+            <label asp-for="Username" class="field-label">Display Name</label>
+            <input asp-for="Username" type="text" class="field-input" placeholder="Your display name" autocomplete="username" required aria-required="true" />
+        </div>
+        <div class="field-group">
+            <label class="field-label">Email</label>
+            <p class="field-value">@Model.Email
+                @if (Model.EmailConfirmed == true)
+                {
+                    <span class="badge bg-success">Verified</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark">Not Verified</span>
+                }
+            </p>
+        </div>
+        <button type="submit" class="submit-btn"><span class="btn-text">Save Changes</span><span class="spinner" aria-hidden="true"></span></button>
+    </form>
+
+    <p class="auth-link" style="margin-top:1.5rem;">
+        <a href="/account/change-password">Change password</a>
+    </p>
+</div>

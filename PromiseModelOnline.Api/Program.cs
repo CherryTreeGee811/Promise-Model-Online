@@ -29,7 +29,7 @@ builder.Services.AddCors(options =>
         {
             policy
             .WithOrigins(
-                "https://localhost:9000",
+                builder.Configuration["APP_BASE_URL"] ?? "https://localhost:9000",
                 "https://promisemodelonlineclient:9000")
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .AllowAnyHeader()
@@ -66,14 +66,18 @@ else
 // JWT Bearer authentication with token validation and SignalR token support.
 var issuer = config["JwtSettings:Issuer"]!;
 var audience = config["JwtSettings:Audience"]!;
+var metadataAddress = config["JwtSettings:MetadataAddress"] ?? $"{issuer}/.well-known/openid-configuration";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
         o.Authority = issuer;
+        o.MetadataAddress = metadataAddress;
         o.Audience = audience;
         o.TokenValidationParameters.ValidAudience = audience;
         o.TokenValidationParameters.ValidIssuer = issuer;
+        o.TokenValidationParameters.TokenDecryptionKeyResolver = (token, securityToken, kid, parameters) =>
+            parameters.IssuerSigningKeys;
 
         o.Events = new JwtBearerEvents
         {
@@ -86,20 +90,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
+            },
+
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILogger<JwtBearerHandler>>();
+                logger.LogError(context.Exception,
+                    "JWT bearer authentication failed for {Path}",
+                    context.HttpContext.Request.Path);
+                return Task.CompletedTask;
             }
         };
 
-        if (builder.Environment.IsDevelopment())
+#pragma warning disable S4830 // Self-signed cert OK for Docker-internal backchannel
+        o.BackchannelHttpHandler = new HttpClientHandler
         {
-#pragma warning disable S4830 // Development-only self-signed cert
-            o.BackchannelHttpHandler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback =
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-            };
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
 #pragma warning restore S4830
+
+        if (builder.Environment.IsDevelopment())
             o.RequireHttpsMetadata = false;
-        }
     });
 
 // Scope claims transformer and authorization policies for projects.read / projects.write.

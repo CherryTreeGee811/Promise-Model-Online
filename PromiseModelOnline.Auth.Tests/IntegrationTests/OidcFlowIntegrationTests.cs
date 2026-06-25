@@ -848,7 +848,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         var authorizedUrl = await ExtractRedirectLocation(loginPostResponse);
 
         // Extract the auth cookie from the login POST response
-        var authCookie = ExtractSetCookieHeader(loginPostResponse, "pmo.auth");
+        var authCookie = ExtractSetCookieHeader(loginPostResponse, "__Host-pmo.auth");
         Assert.That(authCookie, Is.Not.Null, "Auth cookie not found in login response");
 
         // Step 4: GET authorize (now authenticated) -> redirect with code
@@ -922,7 +922,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         var response = await Client.SendAsync(request);
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
-        var cookie = ExtractSetCookieHeader(response, "pmo.auth");
+        var cookie = ExtractSetCookieHeader(response, "__Host-pmo.auth");
         Assert.That(cookie, Is.Not.Null, "Identity cookie not found in login response");
         return cookie!;
     }

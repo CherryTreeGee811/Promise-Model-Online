@@ -129,6 +129,26 @@ public class ChangePasswordPageControllerUnitTests
     }
 
     [Test]
+    [Description("REQ_USE_012: No local password set returns view with help text")]
+    public async Task ChangePassword_NoLocalPassword_ReturnsViewWithHelp()
+    {
+        // Arrange
+        var user = new IdentityUser { Id = "1", UserName = "google-user" };
+        SetSubjectUser("1");
+        _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
+        _userManagerMock.Setup(x => x.HasPasswordAsync(user)).ReturnsAsync(false);
+
+        // Act
+        var result = await _controller.ChangePassword("old", "new", "new");
+
+        // Assert
+        Assert.That(result, Is.TypeOf<ViewResult>());
+        Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
+            Is.EqualTo("You do not have a local password. Use \"Forgot Password\" to set one first."));
+        _loggerMock.VerifyLog(LogLevel.Warning, "no local password set");
+    }
+
+    [Test]
     [Description("REQ_USE_012 + REQ-SEC-LOG-001: Invalid current password returns view and logs warning")]
     public async Task ChangePassword_InvalidCurrentPassword_ReturnsViewWithError()
     {
@@ -136,6 +156,7 @@ public class ChangePasswordPageControllerUnitTests
         var user = new IdentityUser { Id = "1", UserName = "test" };
         SetSubjectUser("1");
         _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
+        _userManagerMock.Setup(x => x.HasPasswordAsync(user)).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "wrong")).ReturnsAsync(false);
 
         // Act
@@ -156,6 +177,7 @@ public class ChangePasswordPageControllerUnitTests
         var user = new IdentityUser { Id = "1", UserName = "test" };
         SetSubjectUser("1");
         _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
+        _userManagerMock.Setup(x => x.HasPasswordAsync(user)).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "old")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.ChangePasswordAsync(user, "old", "new"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too weak" }));
@@ -178,6 +200,7 @@ public class ChangePasswordPageControllerUnitTests
         var user = new IdentityUser { Id = "1", UserName = "test" };
         SetSubjectUser("1");
         _userManagerMock.Setup(x => x.FindByIdAsync("1")).ReturnsAsync(user);
+        _userManagerMock.Setup(x => x.HasPasswordAsync(user)).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, "old")).ReturnsAsync(true);
         _userManagerMock.Setup(x => x.ChangePasswordAsync(user, "old", "new"))
             .ReturnsAsync(IdentityResult.Success);

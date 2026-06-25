@@ -59,6 +59,12 @@
                 </button>
             </div>
         </div>
+        <div class="field-group form-check">
+            <input asp-for="PrivacyConsent" type="checkbox" class="form-check-input" id="privacyConsent" required aria-required="true" />
+            <label class="form-check-label" for="privacyConsent">
+                I agree to the <a href="/privacy" target="_blank">Privacy Policy</a> and <a href="/tos" target="_blank">Terms of Service</a>
+            </label>
+        </div>
         <button type="submit" class="submit-btn"><span class="btn-text">Register</span><span class="spinner" aria-hidden="true"></span></button>
     </form>
 

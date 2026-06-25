@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using PromiseModelOnline.BFF;
 using Serilog;
 using Yarp.ReverseProxy.Transforms;
@@ -30,6 +31,9 @@ var metadataAddress = builder.Configuration["AUTH_METADATA_ADDRESS"]
 
 var appBaseUrl = builder.Configuration["APP_BASE_URL"]
     ?? throw new InvalidOperationException("APP_BASE_URL is required.");
+
+var internalAuthority = builder.Configuration["AUTH_INTERNAL_AUTHORITY"]
+    ?? publicIssuer;
 
 publicIssuer = publicIssuer.TrimEnd('/');
 appBaseUrl = appBaseUrl.TrimEnd('/');
@@ -76,11 +80,10 @@ var proxyBuilder = builder.Services
 
             if (!string.IsNullOrWhiteSpace(token))
             {
+                transformContext.ProxyRequest.Headers.Remove("Cookie");
                 transformContext.ProxyRequest.Headers.Authorization =
                     new AuthenticationHeaderValue("Bearer", token);
             }
-
-            transformContext.ProxyRequest.Headers.Remove("Cookie");
         });
     });
 
@@ -131,8 +134,9 @@ builder.Services
     })
     .AddOpenIdConnect("oidc", options =>
     {
-        options.Authority = publicIssuer;
+        options.Authority = internalAuthority;
         options.MetadataAddress = metadataAddress;
+        options.TokenValidationParameters.ValidIssuer = publicIssuer;
 
         options.ClientId = "pmo-spa";
         options.ResponseType = "code";
@@ -143,6 +147,12 @@ builder.Services
 
         options.CallbackPath = "/signin-oidc";
         options.SignedOutCallbackPath = "/signout-callback-oidc";
+
+        options.CorrelationCookie.Name = ".AspNetCore.Correlation.oidc";
+        options.CorrelationCookie.HttpOnly = true;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.Path = "/signin-oidc";
 
         options.Scope.Clear();
         options.Scope.Add("openid");
@@ -168,14 +178,14 @@ builder.Services
             OnRedirectToIdentityProvider = context =>
             {
                 context.ProtocolMessage.RedirectUri = $"{appBaseUrl}/signin-oidc";
-                context.ProtocolMessage.IssuerAddress = $"{appBaseUrl}/connect/authorize";
+                context.ProtocolMessage.IssuerAddress = $"{publicIssuer}/connect/authorize";
                 return Task.CompletedTask;
             },
 
             OnRedirectToIdentityProviderForSignOut = context =>
             {
                 context.ProtocolMessage.PostLogoutRedirectUri = appBaseUrl;
-                context.ProtocolMessage.IssuerAddress = $"{appBaseUrl}/connect/logout";
+                context.ProtocolMessage.IssuerAddress = $"{publicIssuer}/connect/logout";
                 return Task.CompletedTask;
             },
 
@@ -204,16 +214,16 @@ builder.Services
             }
         };
 
-        if (builder.Environment.IsDevelopment())
+#pragma warning disable S4830 // Self-signed cert OK for Docker-internal backchannel
+        options.BackchannelHttpHandler = new HttpClientHandler
         {
-#pragma warning disable S4830 // Development-only self-signed cert
-            options.BackchannelHttpHandler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback =
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-            };
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
 #pragma warning restore S4830
 
+        if (builder.Environment.IsDevelopment())
+        {
             options.RequireHttpsMetadata = false;
         }
     });
@@ -235,6 +245,11 @@ if (builder.Environment.IsDevelopment())
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+});
 
 // Global exception handler that returns RFC 7807 problem+json and logs
 // via Serilog — prevents stack traces from leaking in error responses.

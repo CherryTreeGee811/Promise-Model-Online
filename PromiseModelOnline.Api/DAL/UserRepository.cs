@@ -81,7 +81,7 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
             return existing;
         }
 
-        var baseSlug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown");
+        var baseSlug = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : "Unknown");
         var slug = baseSlug;
         var counter = 1;
         while (await _dbSet.AnyAsync(u => u.Slug == slug))
@@ -92,14 +92,27 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
 
         var user = new User
         {
-            Email = email ?? string.Empty,
-            Name = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email ?? "Unknown"),
+            Email = email,
+            Name = username ?? (!string.IsNullOrEmpty(email) && email.Contains('@') ? email.Split('@')[0] : email),
             Slug = slug,
             Role = UserRole.Professional,
             CreatedAt = DateTime.UtcNow
         };
         await AddAsync(user);
-        await SaveChangesAsync();
+        try
+        {
+            await SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            var retryUsers = await FindByEmailAsync(email);
+            var retryUser = retryUsers.FirstOrDefault();
+            if (retryUser is not null)
+            {
+                return retryUser;
+            }
+            throw;
+        }
         return user;
     }
 

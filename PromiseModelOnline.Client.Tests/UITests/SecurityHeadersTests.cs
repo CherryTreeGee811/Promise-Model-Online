@@ -238,9 +238,11 @@ public class SecurityHeadersTests
     [Description("No inline style hashes in CSP are stale (all correspond to actual tippy styles)")]
     public void Nginx_Csp_NoStaleStyleHashes()
     {
-        // Arrange: extract all sha256 hashes from the CSP style-src
+        // Arrange: extract all sha256 hashes from the CSP style-src only
         var csp = ExtractNginxCsp();
-        var hashMatches = Regex.Matches(csp, @"sha256-([A-Za-z0-9+/=]{20,})");
+        var styleSrcMatch = Regex.Match(csp, @"style-src\s+([^;]+)");
+        var styleSrc = styleSrcMatch.Success ? styleSrcMatch.Groups[1].Value : "";
+        var hashMatches = Regex.Matches(styleSrc, @"sha256-([A-Za-z0-9+/=]{20,})");
         var cspHashes = hashMatches.Select(m => m.Groups[1].Value).ToHashSet();
 
         // Extract current tippy style hashes

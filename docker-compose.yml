@@ -4,7 +4,7 @@ services:
     container_name: promisemodelonlineclient
     hostname: localhost
     ports:
-      - "9000:9000/tcp"
+      - "127.0.0.1:9000:9000/tcp"
     depends_on:
       - promisemodelonline.bff
     networks:
@@ -13,10 +13,31 @@ services:
       context: .
       dockerfile: PromiseModelOnline.Client/Dockerfile
     healthcheck:
-      test: ["CMD", "curl", "-kf", "https://localhost:9000/health"]
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
       interval: 15s
       timeout: 5s
       retries: 3
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.1
+    container_name: cloudflared
+    command: tunnel --no-autoupdate run
+    profiles: [production]
+    secrets:
+      - cloudflare_tunnel_token
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/cloudflare_tunnel_token
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      promisemodelonline.client:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
   promisemodelonline.bff:
     image: ${DOCKER_REGISTRY-}promisemodelonlinebff
@@ -24,12 +45,13 @@ services:
     ports:
       - "127.0.0.1:8010:8010/tcp"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:8010
-      - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
-      - AUTH_METADATA_ADDRESS=https://promisemodelonline.auth:8060/.well-known/openid-configuration
-      - APP_BASE_URL=https://localhost:9000
-      - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
+      - APP_BASE_URL=${APP_BASE_URL}
+      - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - AUTH_INTERNAL_AUTHORITY=${AUTH_INTERNAL_AUTHORITY}
+      - AUTH_METADATA_ADDRESS=${AUTH_METADATA_ADDRESS}
+      - DATA_PROTECTION_KEYS_PATH=${DATA_PROTECTION_KEYS_PATH:-/app/dp-keys}
     volumes:
       - bff-dp-keys:/app/dp-keys
     depends_on:
@@ -61,10 +83,11 @@ services:
     image: ${DOCKER_REGISTRY-}promisemodelonlineapi
     container_name: promisemodelonlineapi
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:8000
-      - JwtSettings__Issuer=https://promisemodelonline.auth:8060
+      - JwtSettings__Issuer=${AUTH_PUBLIC_ISSUER}
       - JwtSettings__Audience=promisemodelonline.api
+      - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey=${AUTH__REG_KEY:-}
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER:-pmo_api};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
     secrets:
@@ -89,19 +112,21 @@ services:
     image: ${DOCKER_REGISTRY-}promisemodelonlineauth
     container_name: promisemodelonlineauth
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:8060
-      - APP_BASE_URL=https://localhost:9000
-      - AUTH_PUBLIC_ISSUER=https://promisemodelonline.auth:8060
-      - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER:-pmo_auth};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
-      - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID:-}
+      - APP_BASE_URL=${APP_BASE_URL}
+      - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - Certificates__Password_FILE=/run/secrets/cert_password
+      - DATA_PROTECTION_KEYS_PATH=${DATA_PROTECTION_KEYS_PATH:-/app/dp-keys}
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID}
       - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
       - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
     volumes:
       - auth-dp-keys:/app/dp-keys
     secrets:
       - auth_db_password
+      - cert_password
       - google_client_secret
       - sendgrid_api_key
     depends_on:
@@ -246,3 +271,7 @@ secrets:
     file: ./secrets/umami_db_password.txt
   umami_admin_password:
     file: ./secrets/umami_admin_password.txt
+  cloudflare_tunnel_token:
+    file: ./secrets/cloudflare_tunnel_token.txt
+  cert_password:
+    file: ./secrets/cert_password.txt

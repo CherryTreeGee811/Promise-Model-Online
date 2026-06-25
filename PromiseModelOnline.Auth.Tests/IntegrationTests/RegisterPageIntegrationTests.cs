@@ -110,7 +110,8 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
             { "Username", uniqueUser },
             { "Email", uniqueEmail },
             { "Password", TestPassword },
-            { "ConfirmPassword", TestPassword }
+            { "ConfirmPassword", TestPassword },
+            { "PrivacyConsent", "true" }
         };
 
         var request = CreatePostWithAntiforgery("/account/register", antiforgery, formData);
@@ -138,7 +139,8 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
             { "Username", uniqueUser },
             { "Email", sharedEmail },
             { "Password", TestPassword },
-            { "ConfirmPassword", TestPassword }
+            { "ConfirmPassword", TestPassword },
+            { "PrivacyConsent", "true" }
         };
         var request1 = CreatePostWithAntiforgery("/account/register?returnUrl=/account/login", antiforgery1, formData1);
         var response1 = await Client.SendAsync(request1);
@@ -151,7 +153,8 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
             { "Username", uniqueUser + "_alt" },
             { "Email", sharedEmail },
             { "Password", TestPassword },
-            { "ConfirmPassword", TestPassword }
+            { "ConfirmPassword", TestPassword },
+            { "PrivacyConsent", "true" }
         };
         var request2 = CreatePostWithAntiforgery("/account/register", antiforgery2, formData2);
         var response2 = await Client.SendAsync(request2);
@@ -175,7 +178,8 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
             { "Username", sharedUser },
             { "Email", sharedUser + "@test.com" },
             { "Password", TestPassword },
-            { "ConfirmPassword", TestPassword }
+            { "ConfirmPassword", TestPassword },
+            { "PrivacyConsent", "true" }
         };
         var request1 = CreatePostWithAntiforgery("/account/register?returnUrl=/account/login", antiforgery1, formData1);
         var response1 = await Client.SendAsync(request1);
@@ -188,7 +192,8 @@ public class RegisterPageIntegrationTests : IntegrationTestBase
             { "Username", sharedUser },
             { "Email", "other_" + sharedUser + "@test.com" },
             { "Password", TestPassword },
-            { "ConfirmPassword", TestPassword }
+            { "ConfirmPassword", TestPassword },
+            { "PrivacyConsent", "true" }
         };
         var request2 = CreatePostWithAntiforgery("/account/register", antiforgery2, formData2);
         var response2 = await Client.SendAsync(request2);

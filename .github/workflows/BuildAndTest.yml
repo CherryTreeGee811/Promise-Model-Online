@@ -24,6 +24,26 @@ jobs:
             echo "$LARGE"
             exit 1
           fi
+
+      - name: Check __Host-pmo.session only (no pmo.session in production)
+        shell: bash
+        run: |
+          MATCHES=$(grep -rn 'pmo\.session' PromiseModelOnline.Api/ PromiseModelOnline.Auth/ PromiseModelOnline.BFF/ PromiseModelOnline.Client/ 2>/dev/null | grep -v '\.Tests/' | grep -v node_modules | grep -v '__Host-pmo\.session' || true)
+          if [ -n "$MATCHES" ]; then
+            echo "ERROR: pmo.session cookie found in production source. Use __Host-pmo.session only."
+            echo "$MATCHES"
+            exit 1
+          fi
+
+      - name: Check __Host-pmo.auth only (no pmo.auth in production)
+        shell: bash
+        run: |
+          MATCHES=$(grep -rn 'pmo\.auth' PromiseModelOnline.Api/ PromiseModelOnline.Auth/ PromiseModelOnline.BFF/ PromiseModelOnline.Client/ 2>/dev/null | grep -v '\.Tests/' | grep -v node_modules | grep -v '__Host-pmo\.auth' | grep -vE '\.(ts|js):' || true)
+          if [ -n "$MATCHES" ]; then
+            echo "ERROR: pmo.auth cookie found in production source. Use __Host-pmo.auth only."
+            echo "$MATCHES"
+            exit 1
+          fi
                 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -144,6 +164,7 @@ jobs:
             printf '%s' "${{ secrets.SENDGRID_API_KEY }}" > secrets/sendgrid_api_key.txt
             printf '%s' "${{ secrets.UMAMI_ADMIN_PASSWORD }}" > secrets/umami_admin_password.txt
             printf '%s' "${{ secrets.UMAMI_DB_PASSWORD }}" > secrets/umami_db_password.txt
+            printf '%s' "${{ secrets.CERT_PASSWORD }}" > secrets/cert_password.txt
 
       - name: Run Auth Unit Tests
         shell: bash
@@ -207,7 +228,7 @@ jobs:
         shell: bash
         run: |
           for i in $(seq 1 15); do
-            STATUS=$(docker exec promisemodelonlineclient curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            STATUS=$(docker exec promisemodelonlineclient sh -c "test -f /tmp/nginx.pid && echo 200 || echo 000" 2>/dev/null || true)
             if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
             sleep 2
           done
@@ -423,7 +444,7 @@ jobs:
         shell: bash
         run: |
           for i in $(seq 1 15); do
-            STATUS=$(curl -sk -o /dev/null -w "%{http_code}" https://localhost:9000/health 2>/dev/null || true)
+            STATUS=$(docker exec promisemodelonlineclient sh -c "test -f /tmp/nginx.pid && echo 200 || echo 000" 2>/dev/null || true)
             if [ "$STATUS" = "200" ]; then echo "Port 9000 ready"; exit 0; fi
             sleep 2
           done

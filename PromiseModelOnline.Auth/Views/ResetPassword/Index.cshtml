@@ -1,0 +1,57 @@
+@model ResetPasswordViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Reset Password";
+}
+
+<div class="form-div auth-card">
+    <div class="auth-card-icon" aria-hidden="true">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+    </div>
+
+    <h2 class="auth-card-heading">Set New Password</h2>
+    <p class="auth-card-subtitle">Enter your new password below</p>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="auth-message auth-error" role="alert">
+            <ul>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form method="post" class="auth-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Token" />
+        <input type="hidden" asp-for="Email" />
+        <div class="field-group">
+            <label asp-for="Password" class="field-label">New Password</label>
+            <div class="password-wrapper">
+                <input asp-for="Password" type="password" class="field-input password-input" placeholder="Enter new password" autocomplete="new-password" required aria-required="true" />
+                <button type="button" class="password-toggle" aria-label="Show password">
+                    <span class="eye-icon" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        <div class="field-group">
+            <label asp-for="ConfirmPassword" class="field-label">Confirm New Password</label>
+            <div class="password-wrapper">
+                <input asp-for="ConfirmPassword" type="password" class="field-input password-input" placeholder="Confirm new password" autocomplete="new-password" required aria-required="true" />
+                <button type="button" class="password-toggle" aria-label="Show password">
+                    <span class="eye-icon" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        <button type="submit" class="submit-btn"><span class="btn-text">Reset Password</span><span class="spinner" aria-hidden="true"></span></button>
+    </form>
+
+    <p class="auth-link">
+        <a href="/account/login">Back to sign in</a>
+    </p>
+</div>

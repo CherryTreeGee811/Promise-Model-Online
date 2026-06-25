@@ -1,0 +1,21 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Invalid Reset Link";
+}
+
+<div class="form-div auth-card">
+    <div class="auth-card-icon" aria-hidden="true">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+    </div>
+
+    <h2 class="auth-card-heading">Invalid Reset Link</h2>
+    <p class="auth-card-subtitle">This password reset link is invalid or has expired.</p>
+
+    <p class="auth-link" style="margin-top:1.5rem;">
+        <a href="/account/forgot-password">Request a new reset link</a>
+    </p>
+</div>
