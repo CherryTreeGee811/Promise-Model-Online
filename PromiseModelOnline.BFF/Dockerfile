@@ -32,6 +32,6 @@ USER app
 EXPOSE 8010
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:8010/health || exit 1
+  CMD curl -fk https://localhost:8010/health || exit 1
 
 ENTRYPOINT ["dotnet", "PromiseModelOnline.BFF.dll"]

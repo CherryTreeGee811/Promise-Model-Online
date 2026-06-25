@@ -37,12 +37,6 @@
           - "--exclude=secrets"
         delete: yes
 
-    - name: Generate Swarm compose file (for future reference)
-      ansible.builtin.template:
-        src: "{{ playbook_dir }}/../templates/docker-compose.swarm.yml.j2"
-        dest: "{{ project_root }}/docker-compose.swarm.yml"
-        mode: "0644"
-
     - name: Copy .env file to VM
       ansible.builtin.copy:
         src: "{{ pmo_root }}/.env"
@@ -53,7 +47,7 @@
       no_log: true
       ansible.builtin.copy:
         dest: "{{ project_root }}/secrets/{{ item }}"
-        content: "{{ lookup('file', pmo_root ~ '/secrets/' ~ item) }}\n"
+        content: "{{ lookup('file', pmo_root ~ '/secrets/' ~ item) | trim }}"
         mode: "0644"
       loop:
         - auth_db_password.txt
@@ -64,6 +58,7 @@
         - umami_db_password.txt
         - umami_admin_password.txt
         - cloudflare_tunnel_token.txt
+        - db_sa_password.txt
 
     - name: Check if existing cert is ECDSA (needs RSA regeneration)
       ansible.builtin.shell:
@@ -157,32 +152,34 @@
 
     - name: Deploy Docker Compose stack
       ansible.builtin.shell:
-        cmd: docker compose up -d
+        cmd: |
+          export DB_SA_PASSWORD=$(cat {{ project_root }}/secrets/db_sa_password.txt)
+          export UMAMI_DB_PASSWORD=$(cat {{ project_root }}/secrets/umami_db_password.txt)
+          docker compose up -d
       args:
         chdir: "{{ project_root }}"
       register: deploy_result
+      no_log: true
 
     - name: Wait for all services to be healthy
       ansible.builtin.shell:
         cmd: |
           for i in $(seq 1 60); do
-            STATUS=$(docker compose ps --format '{{.Status}}' 2>/dev/null || true)
             ALL_READY=true
-            for s in $STATUS; do
-              case "$s" in
-                Up*healthy*) ;;
-                Up*) ALL_READY=false ;;
-                *) ALL_READY=false ;;
-              esac
+            for c in promisemodelonlineauth promisemodelonlineapi promisemodelonlinebff promisemodelonlineclient; do
+              HEALTH=$(docker ps --filter "name=$c" --filter "health=healthy" -q 2>/dev/null)
+              if [ -z "$HEALTH" ]; then
+                ALL_READY=false
+              fi
             done
-            if [ "$ALL_READY" = "true" ] && [ -n "$STATUS" ]; then
+            if [ "$ALL_READY" = "true" ]; then
               echo "All services ready"
               exit 0
             fi
             sleep 5
           done
           echo "ERROR: Timed out waiting for services"
-          docker compose ps --format 'table {{.Name}}\t{{.Status}}\t{{.Health}}'
+          docker compose ps
           exit 1
       args:
         chdir: "{{ project_root }}"
@@ -191,9 +188,6 @@
     - name: Verify stack is serving
       ansible.builtin.shell:
         cmd: |
-          echo "=== Auth health ==="
-          curl -sk https://localhost:8060/health
-          echo ""
           echo "=== BFF health ==="
           curl -sk https://localhost:8010/health
           echo ""

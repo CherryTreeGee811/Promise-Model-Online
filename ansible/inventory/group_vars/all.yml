@@ -11,31 +11,7 @@ vm_cloud_image: https://cloud-images.ubuntu.com/noble/current/noble-server-cloud
 
 # Deployment paths
 pmo_repo_root: /home/pmo_admin/promise-model-online
-pmo_compose_file: docker-compose.yml
-pmo_env_file: .env.prod
 
-# Docker Compose project
-compose_project_name: promisemodelonline
 
-# Secrets (override per-environment; dev defaults match .env)
-auth_db_password: "AuthDevelopment10*"
-api_db_password: "ApiDevelopment10*"
-google_client_secret: ""
-sendgrid_api_key: ""
-umami_db_password: "umami"
-umami_admin_password: "umami"
 
-# Database
-db_sa_password: "SADevelopment10*"
-
-# Auth config
-auth_google_client_id: ""
-
-# Umami
-umami_website_id: "813ea5c6-8576-44d0-b702-923f5ba331cd"
-
-# Certificate signing password (used for cert.pfx token signing key)
-cert_pfx_password: "change-me-in-production"
-# Cloudflare tunnel token (leave empty unless using cloudflared)
-cloudflare_tunnel_token: ""
 
