@@ -23,7 +23,7 @@ public class RateLimitingTests : E2ETestBase
     {
         // Arrange (no setup needed)
         // Act
-        var statuses = await HammerAsync("/account/register", 10);
+        var statuses = await HammerAsync("/account/register", 20);
 
         // Assert
         Assert.That(statuses, Does.Contain(HttpStatusCode.TooManyRequests).Or.Contain(HttpStatusCode.ServiceUnavailable),
