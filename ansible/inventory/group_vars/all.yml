@@ -34,3 +34,8 @@ auth_google_client_id: ""
 # Umami
 umami_website_id: "813ea5c6-8576-44d0-b702-923f5ba331cd"
 
+# Certificate signing password (used for cert.pfx token signing key)
+cert_pfx_password: "change-me-in-production"
+# Cloudflare tunnel token (leave empty unless using cloudflared)
+cloudflare_tunnel_token: ""
+
