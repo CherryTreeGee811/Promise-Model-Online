@@ -1,0 +1,182 @@
+---
+- name: Provision QEMU/KVM virtual machine
+  hosts: host_machine
+  gather_facts: true
+  vars:
+    ssh_key: "{{ lookup('file', '~/.ssh/pmo_vm_key.pub') }}"
+
+  tasks:
+    - name: Ensure required tools exist
+      ansible.builtin.shell:
+        cmd: "which {{ item }}"
+      loop:
+        - virsh
+        - virt-install
+        - qemu-img
+        - xorrisofs
+      changed_when: false
+
+    - name: Check libvirtd is running
+      ansible.builtin.shell:
+        cmd: systemctl is-active --quiet libvirtd
+      changed_when: false
+      failed_when: false
+      register: libvirtd_status
+
+    - name: Warn if libvirtd is not running
+      ansible.builtin.fail:
+        msg: |
+          libvirtd is not running. Start it first:
+            sudo systemctl enable --now libvirtd
+      when: libvirtd_status.rc != 0
+
+    - name: Check default network exists
+      ansible.builtin.shell:
+        cmd: virsh -c qemu:///system net-info default 2>/dev/null | grep -q 'Active.*yes'
+      changed_when: false
+      failed_when: false
+      register: net_status
+
+    - name: Warn if default network is not active
+      ansible.builtin.fail:
+        msg: |
+          Default libvirt network is not active or does not exist.
+          Define and start it:
+            sudo cat /etc/libvirt/qemu/networks/default.xml | virsh -c qemu:///system net-define /dev/stdin && virsh -c qemu:///system net-start default && virsh -c qemu:///system net-autostart default
+      when: net_status.rc != 0
+
+    - name: Set VM paths
+      ansible.builtin.set_fact:
+        vm_dir: "/var/tmp/libvirt-vms/{{ vm_name }}"
+        cloud_img: "/var/tmp/libvirt-vms/{{ vm_name }}/cloudimg.qcow2"
+        vm_disk: "/var/tmp/libvirt-vms/{{ vm_name }}/vm.qcow2"
+        cloud_init_iso: "/var/tmp/libvirt-vms/{{ vm_name }}/cloudinit.iso"
+
+    - name: Create VM directory
+      ansible.builtin.file:
+        path: "{{ vm_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Download Ubuntu cloud image
+      ansible.builtin.get_url:
+        url: "{{ vm_cloud_image }}"
+        dest: "{{ cloud_img }}"
+      register: dl_result
+      retries: 3
+      delay: 5
+
+    - name: Create cloud-init directory with correct filenames
+      ansible.builtin.file:
+        path: "{{ vm_dir }}/cloud-init"
+        state: directory
+        mode: "0755"
+
+    - name: Write meta-data
+      ansible.builtin.copy:
+        dest: "{{ vm_dir }}/cloud-init/meta-data"
+        content: |
+          instance-id: {{ vm_name }}-{{ ansible_date_time.epoch }}
+          local-hostname: {{ vm_name }}
+
+    - name: Write cloud-init user-data
+      ansible.builtin.copy:
+        dest: "{{ vm_dir }}/cloud-init/user-data"
+        content: |
+          #cloud-config
+          hostname: {{ vm_name }}
+          users:
+            - name: pmo_admin
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              shell: /bin/bash
+              ssh_authorized_keys:
+                - {{ ssh_key }}
+          packages:
+            - qemu-guest-agent
+            - docker.io
+            - docker-compose-v2
+          package_update: true
+          runcmd:
+            - systemctl enable --now docker
+            - systemctl enable --now qemu-guest-agent
+
+    - name: Write cloud-init network-config
+      ansible.builtin.copy:
+        dest: "{{ vm_dir }}/cloud-init/network-config"
+        content: |
+          version: 2
+          ethernets:
+            enp1s0:
+              addresses:
+                - {{ vm_ip }}/24
+              gateway4: 192.168.122.1
+              nameservers:
+                addresses:
+                  - 1.1.1.1
+                  - 8.8.8.8
+
+    - name: Generate cloud-init ISO
+      ansible.builtin.shell:
+        cmd: >
+          xorrisofs -output "{{ cloud_init_iso }}"
+          -volid cidata -joliet -rock
+          "{{ vm_dir }}/cloud-init"
+        creates: "{{ cloud_init_iso }}"
+
+    - name: Clean up cloud-init directory
+      ansible.builtin.file:
+        path: "{{ vm_dir }}/cloud-init"
+        state: absent
+
+    - name: Check if VM already exists
+      ansible.builtin.shell:
+        cmd: virsh -c qemu:///system domstate {{ vm_name }} 2>/dev/null || echo "not found"
+      register: vm_state
+      changed_when: false
+
+    - name: Remove existing VM if present
+      ansible.builtin.shell:
+        cmd: |
+          virsh -c qemu:///system destroy {{ vm_name }} 2>/dev/null || true
+          virsh -c qemu:///system undefine {{ vm_name }} --nvram 2>/dev/null || true
+      when: vm_state.stdout != "not found" and vm_state.stdout != ""
+
+    - name: Create VM disk (qcow2 backing store)
+      ansible.builtin.shell:
+        cmd: >
+          qemu-img create -f qcow2
+          -b "{{ cloud_img }}" -F qcow2
+          "{{ vm_disk }}" {{ vm_disk_gb }}G
+        creates: "{{ vm_disk }}"
+
+    - name: Define and start VM
+      ansible.builtin.shell:
+        cmd: >
+          virt-install --connect qemu:///system
+          --name {{ vm_name }}
+          --memory {{ vm_memory_mb }}
+          --vcpus {{ vm_vcpus }}
+          --disk "{{ vm_disk }},bus=virtio"
+          --disk "{{ cloud_init_iso }},device=cdrom,bus=sata"
+          --network network={{ vm_network }},model=virtio
+          --os-variant {{ vm_os_variant }}
+          --graphics none
+          --console pty,target_type=virtio
+          --serial pty
+          --noautoconsole
+          --import
+      register: vm_install
+      failed_when: vm_install.rc != 0 and 'already exists' not in vm_install.stderr
+
+    - name: Wait for VM to become reachable
+      ansible.builtin.wait_for:
+        host: "{{ vm_ip }}"
+        port: 22
+        delay: 10
+        timeout: 300
+
+    - name: Add VM to known hosts
+      ansible.builtin.known_hosts:
+        name: "{{ vm_ip }}"
+        state: present
+        key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 ' + vm_ip + ' 2>/dev/null') }}"

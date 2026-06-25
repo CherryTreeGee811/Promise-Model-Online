@@ -1,0 +1,261 @@
+services:
+  promisemodelonline-client:
+    image: promisemodelonlineclient:latest
+    hostname: localhost
+    ports:
+      - published: 9000
+        target: 9000
+        protocol: tcp
+        mode: host
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  promisemodelonline-bff:
+    image: promisemodelonlinebff:latest
+    ports:
+      - published: 8010
+        target: 8010
+        protocol: tcp
+        mode: host
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: https://+:8010
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /app/cert.pem
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: /app/key.pem
+      APP_BASE_URL: https://promisemodel.online
+      AUTH_AUTHORITY: https://promisemodel.online
+      AUTH_PUBLIC_ISSUER: https://promisemodel.online
+      AUTH_INTERNAL_AUTHORITY: https://promisemodelonline-auth:8060
+      AUTH_METADATA_ADDRESS: https://promisemodel.online/.well-known/openid-configuration
+      DATA_PROTECTION_KEYS_PATH: /app/dp-keys
+      ReverseProxy__Clusters__api-cluster__Destinations__api__Address: http://promisemodelonline-api:8000/
+    secrets:
+      - cert_password
+    volumes:
+      - bff-dp-keys:/app/dp-keys
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      - promisemodelonline-auth
+      - promisemodelonline-api
+    healthcheck:
+      test: ["CMD", "curl", "-sk", "-o", "/dev/null", "-w", "%{http_code}", "https://localhost:8010/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  promisemodelonline-api:
+    image: promisemodelonlineapi:latest
+    ports:
+      - published: 8000
+        target: 8000
+        protocol: tcp
+        mode: host
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8000
+      APP_BASE_URL: https://promisemodel.online
+      ConnectionStrings__MSSQL: Server=promisemodelonline-db,1433;Database=PromiseModelOnline;User Id=pmo_api;Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+      JwtSettings__Issuer: https://promisemodel.online
+      JwtSettings__Audience: promisemodelonline.api
+      JwtSettings__MetadataAddress: https://promisemodel.online/.well-known/openid-configuration
+    secrets:
+      - api_db_password
+    volumes:
+      - "{{ pmo_repo_root }}/pmo_pm:/app/pmo_pm"
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      - promisemodelonline-auth
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  promisemodelonline-auth:
+    image: promisemodelonlineauth:latest
+    ports:
+      - published: 8060
+        target: 8060
+        protocol: tcp
+        mode: host
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: https://+:8060
+      APP_BASE_URL: https://promisemodel.online
+      AUTH_PUBLIC_ISSUER: https://promisemodel.online
+      AUTH_METADATA_ADDRESS: https://promisemodel.online/.well-known/openid-configuration
+      Certificates__Password_FILE: /run/secrets/cert_password
+      DATA_PROTECTION_KEYS_PATH: /app/dp-keys
+      ConnectionStrings__MSSQL: Server=promisemodelonline-db,1433;Database=PromiseModelOnlineAuth;User Id=pmo_auth;Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      Authentication__Google__ClientId: "{{ auth_google_client_id }}"
+      Authentication__Google__ClientSecret_FILE: /run/secrets/google_client_secret
+      SendGrid__ApiKey_FILE: /run/secrets/sendgrid_api_key
+    secrets:
+      - auth_db_password
+      - cert_password
+      - google_client_secret
+      - sendgrid_api_key
+    volumes:
+      - auth-dp-keys:/app/dp-keys
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "curl", "-sk", "-o", "/dev/null", "-w", "%{http_code}", "https://localhost:8060/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 10s
+
+  promisemodelonline-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: {{ db_sa_password }}
+    volumes:
+      - mssqldata:/var/opt/mssql
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 10s
+
+  promisemodelonline-db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    entrypoint: ["/bin/sh", "/init/init-db.sh"]
+    secrets:
+      - auth_db_password
+      - api_db_password
+    environment:
+      DB_SA_PASSWORD: {{ db_sa_password }}
+      PMO_API_DB_USER: pmo_api
+      PMO_AUTH_DB_USER: pmo_auth
+    volumes:
+      - "{{ pmo_repo_root }}/scripts/init-db.sh:/init/init-db.sh:ro"
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      - promisemodelonline-db
+    deploy:
+      restart_policy:
+        condition: none
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    environment:
+      DATABASE_URL: postgresql://umami:{{ umami_db_password }}@umami-db:5432/umami
+    secrets:
+      - umami_db_password
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      - umami-db
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  umami-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
+    secrets:
+      - umami_db_password
+    volumes:
+      - umamidata:/var/lib/postgresql/data
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  umami-init:
+    image: postgres:16-alpine
+    entrypoint: ["/bin/sh", "/init/umami-init.sh"]
+    secrets:
+      - umami_db_password
+      - umami_admin_password
+    environment:
+      UMAMI_DB_PASSWORD: {{ umami_db_password }}
+      UMAMI_ADMIN_PASSWORD: {{ umami_admin_password }}
+      UMAMI_ADMIN_USERNAME: pmo_admin
+    volumes:
+      - "{{ pmo_repo_root }}/scripts/umami-init.sh:/init/umami-init.sh:ro"
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      - umami
+    deploy:
+      restart_policy:
+        condition: none
+
+volumes:
+  bff-dp-keys:
+  auth-dp-keys:
+  mssqldata:
+  umamidata:
+
+networks:
+  promisemodelonline-net:
+    driver: overlay
+
+secrets:
+  auth_db_password:
+    external: true
+  api_db_password:
+    external: true
+  cert_password:
+    external: true
+  google_client_secret:
+    external: true
+  sendgrid_api_key:
+    external: true
+  umami_db_password:
+    external: true
+  umami_admin_password:
+    external: true

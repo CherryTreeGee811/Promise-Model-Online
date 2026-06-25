@@ -1,0 +1,211 @@
+---
+- name: Deploy Docker Compose stack to VM
+  hosts: vm_host
+  gather_facts: true
+  vars_prompt:
+    - name: cloudflare_tunnel_token
+      prompt: "Cloudflare Tunnel Token (leave blank if not using)"
+      private: true
+      confirm: true
+    - name: cert_pfx_password
+      prompt: "cert.pfx password (min 4 chars)"
+      private: true
+      confirm: true
+      unsafe: true
+
+  tasks:
+    - name: Create project directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ pmo_repo_root }}"
+        - "{{ pmo_repo_root }}/secrets"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Api"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Auth"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.BFF"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Client"
+        - "{{ pmo_repo_root }}/scripts"
+        - "{{ pmo_repo_root }}/pmo_pm"
+
+    - name: Sync project source to VM
+      ansible.builtin.synchronize:
+        src: "{{ playbook_dir }}/../../"
+        dest: "{{ pmo_repo_root }}"
+        rsync_opts:
+          - "--exclude=node_modules"
+          - "--exclude=.git"
+          - "--exclude=bin"
+          - "--exclude=obj"
+          - "--exclude=__pycache__"
+          - "--exclude=.DS_Store"
+          - "--exclude=secrets"
+        delete: yes
+
+    - name: Generate Swarm compose file (for future reference)
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../templates/docker-compose.swarm.yml.j2"
+        dest: "{{ pmo_repo_root }}/docker-compose.swarm.yml"
+        mode: "0644"
+
+    - name: Create .env file for docker compose
+      ansible.builtin.copy:
+        dest: "{{ pmo_repo_root }}/.env"
+        content: |
+          ASPNETCORE_ENVIRONMENT=Production
+          APP_BASE_URL=https://promisemodel.online
+          AUTH_PUBLIC_ISSUER=https://promisemodel.online
+          AUTH_INTERNAL_AUTHORITY=https://promisemodelonline.auth:8060
+          AUTH_METADATA_ADDRESS=https://promisemodel.online/.well-known/openid-configuration
+          AUTH_DB_USER=pmo_auth
+          PMO_API_DB_USER=pmo_api
+          AUTH_GOOGLE_CLIENT_ID={{ auth_google_client_id }}
+          UMAMI_ADMIN_USERNAME=pmo_admin
+          DB_SA_PASSWORD={{ db_sa_password }}
+          UMAMI_DB_PASSWORD={{ umami_db_password }}
+          UMAMI_ADMIN_PASSWORD={{ umami_admin_password }}
+          UMAMI_WEBSITE_ID={{ umami_website_id | default("813ea5c6-8576-44d0-b702-923f5ba331cd") }}
+        mode: "0600"
+
+    - name: Create secret files for Docker Compose
+      no_log: true
+      ansible.builtin.copy:
+        dest: "{{ pmo_repo_root }}/secrets/{{ item.file }}"
+        content: "{{ item.content }}\n"
+        mode: "0644"
+      loop:
+        - file: auth_db_password.txt
+          content: "{{ auth_db_password }}"
+        - file: api_db_password.txt
+          content: "{{ api_db_password }}"
+        - file: cert_password.txt
+          content: "{{ cert_pfx_password }}"
+        - file: google_client_secret.txt
+          content: "{{ google_client_secret }}"
+        - file: sendgrid_api_key.txt
+          content: "{{ sendgrid_api_key }}"
+        - file: umami_db_password.txt
+          content: "{{ umami_db_password }}"
+        - file: umami_admin_password.txt
+          content: "{{ umami_admin_password }}"
+
+    - name: Check if existing cert is ECDSA (needs RSA regeneration)
+      ansible.builtin.shell:
+        cmd: |
+          openssl x509 -in {{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pem -noout -text 2>/dev/null | grep -q "id-ecPublicKey" && echo "ECDSA" || echo "RSA or missing"
+      register: cert_type_check
+      changed_when: false
+      failed_when: false
+
+    - name: Remove old ECDSA certs to force RSA regeneration
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Client/cert.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Client/key.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Auth/key.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pfx"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.BFF/cert.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.BFF/key.pem"
+      when: cert_type_check.stdout == "ECDSA"
+
+    - name: Generate all self-signed certificates
+      block:
+        - name: Client cert
+          ansible.builtin.shell:
+            cmd: >
+              openssl req -x509 -newkey rsa:4096 -nodes
+              -keyout "{{ pmo_repo_root }}/PromiseModelOnline.Client/key.pem"
+              -out "{{ pmo_repo_root }}/PromiseModelOnline.Client/cert.pem"
+              -days 365 -subj "/CN=promisemodel.online/O=Promise Model Online/C=CA"
+            creates: "{{ pmo_repo_root }}/PromiseModelOnline.Client/cert.pem"
+
+        - name: Auth cert
+          ansible.builtin.shell:
+            cmd: >
+              openssl req -x509 -newkey rsa:4096 -nodes
+              -keyout "{{ pmo_repo_root }}/PromiseModelOnline.Auth/key.pem"
+              -out "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pem"
+              -days 365 -subj "/CN=promisemodelonline.auth/O=Promise Model Online Auth/C=CA"
+            creates: "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pem"
+
+        - name: cert.pfx for token signing
+          ansible.builtin.shell:
+            cmd: >
+              openssl pkcs12 -export
+              -in "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pem"
+              -inkey "{{ pmo_repo_root }}/PromiseModelOnline.Auth/key.pem"
+              -out "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pfx"
+              -passout pass:{{ cert_pfx_password }}
+              -name "Promise Model Online Token Signing"
+            creates: "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pfx"
+
+        - name: BFF cert
+          ansible.builtin.shell:
+            cmd: >
+              openssl req -x509 -newkey rsa:4096 -nodes
+              -keyout "{{ pmo_repo_root }}/PromiseModelOnline.BFF/key.pem"
+              -out "{{ pmo_repo_root }}/PromiseModelOnline.BFF/cert.pem"
+              -days 365 -subj "/CN=promisemodelonline.bff/O=Promise Model Online BFF/C=CA"
+            creates: "{{ pmo_repo_root }}/PromiseModelOnline.BFF/cert.pem"
+
+    - name: Set permissions on certs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: "0600"
+      loop:
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Client/key.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Client/cert.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Auth/key.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.Auth/cert.pfx"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.BFF/key.pem"
+        - "{{ pmo_repo_root }}/PromiseModelOnline.BFF/cert.pem"
+
+    - name: Build Docker images
+      ansible.builtin.shell:
+        cmd: docker compose build
+      args:
+        chdir: "{{ pmo_repo_root }}"
+      register: build_result
+      changed_when: "'Successfully built' in build_result.stdout or 'Built' in build_result.stdout"
+
+    - name: Deploy Docker Compose stack
+      ansible.builtin.shell:
+        cmd: docker compose up -d
+      args:
+        chdir: "{{ pmo_repo_root }}"
+      register: deploy_result
+
+    - name: Wait for all services to be healthy
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 60); do
+            STATUS=$(docker compose ps --format '{{.Status}}' 2>/dev/null || true)
+            ALL_READY=true
+            for s in $STATUS; do
+              case "$s" in
+                Up*healthy*) ;;
+                Up*) ALL_READY=false ;;
+                *) ALL_READY=false ;;
+              esac
+            done
+            if [ "$ALL_READY" = "true" ] && [ -n "$STATUS" ]; then
+              echo "All services ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Timed out waiting for services"
+          docker compose ps --format 'table {{.Name}}\t{{.Status}}\t{{.Health}}'
+          exit 1
+      args:
+        chdir: "{{ pmo_repo_root }}"
+      register: health_result
+
+    - name: Print deployment status
+      ansible.builtin.debug:
+        msg: "Deployment completed successfully"
