@@ -164,7 +164,7 @@ jobs:
             printf '%s' "${{ secrets.SENDGRID_API_KEY }}" > secrets/sendgrid_api_key.txt
             printf '%s' "${{ secrets.UMAMI_ADMIN_PASSWORD }}" > secrets/umami_admin_password.txt
             printf '%s' "${{ secrets.UMAMI_DB_PASSWORD }}" > secrets/umami_db_password.txt
-            printf '%s' "${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}" > secrets/cloudflare_tunnel_token.txt
+            printf '%s' "${{ secrets.CERT_PASSWORD }}" > secrets/cert_password.txt
 
       - name: Run Auth Unit Tests
         shell: bash
