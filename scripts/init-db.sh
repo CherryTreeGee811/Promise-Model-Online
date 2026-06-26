@@ -1,9 +1,5 @@
 #!/bin/sh
 
-SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
-API_USER=${API_DB_USER:-pmo_api}
-AUTH_USER=${AUTH_DB_USER:-pmo_auth}
-
 read_secret_file() {
     if [ ! -f "$1" ]; then
         echo "FATAL: Secret file $1 not found. Mount a Docker secret at this path." >&2
@@ -16,6 +12,7 @@ read_secret_file() {
     cat "$1"
 }
 
+SA_PASSWORD=$(read_secret_file /run/secrets/db_sa_password)
 API_PASSWORD=$(read_secret_file /run/secrets/api_db_password)
 AUTH_PASSWORD=$(read_secret_file /run/secrets/auth_db_password)
 SQLCMD=/opt/mssql-tools/bin/sqlcmd

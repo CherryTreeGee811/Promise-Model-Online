@@ -75,8 +75,7 @@ services:
       - Auth__RegistrationKey=${AUTH__REG_KEY:-}
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
     secrets:
-      - source: api_db_password
-        mode: 0444
+      - api_db_password
     depends_on:
       promisemodelonline.auth:
         condition: service_started
@@ -113,14 +112,10 @@ services:
       - ./keys/auth/key.pem:/app/key.pem:ro
       - ./keys/auth/cert.pfx:/app/cert.pfx:ro
     secrets:
-      - source: auth_db_password
-        mode: 0444
-      - source: cert_password
-        mode: 0444
-      - source: google_client_secret
-        mode: 0444
-      - source: sendgrid_api_key
-        mode: 0444
+      - auth_db_password
+      - cert_password
+      - google_client_secret
+      - sendgrid_api_key
     depends_on:
       promisemodelonline.db-init:
         condition: service_completed_successfully
@@ -144,7 +139,9 @@ services:
       - "127.0.0.1:1433:1433/tcp"
     environment:
       ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD}
+      MSSQL_SA_PASSWORD_FILE: /run/secrets/db_sa_password
+    secrets:
+      - db_sa_password
     volumes:
       - mssql-data:/var/opt/mssql
 
@@ -158,8 +155,8 @@ services:
     secrets:
       - auth_db_password
       - api_db_password
+      - db_sa_password
     environment:
-      DB_SA_PASSWORD: ${DB_SA_PASSWORD}
       PMO_API_DB_USER: ${PMO_API_DB_USER}
       PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER}
     volumes:
@@ -175,10 +172,14 @@ services:
     container_name: umami
     ports:
       - "127.0.0.1:3000:3000/tcp"
+    entrypoint: /init/umami-entrypoint.sh
     environment:
-      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
       DATABASE_TYPE: postgresql
       TRACKER_SCRIPT_NAME: script.js
+    secrets:
+      - umami_db_password
+    volumes:
+      - ./scripts/umami-entrypoint.sh:/init/umami-entrypoint.sh:ro
     depends_on:
       umami-db:
         condition: service_healthy
@@ -194,8 +195,7 @@ services:
       POSTGRES_USER: umami
       POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
     secrets:
-      - source: umami_db_password
-        mode: 0444
+      - umami_db_password
     volumes:
       - umami-db:/var/lib/postgresql/data
     networks:
@@ -222,10 +222,8 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
       UMAMI_ADMIN_USERNAME: ${UMAMI_ADMIN_USERNAME}
     secrets:
-      - source: umami_db_password
-        mode: 0444
-      - source: umami_admin_password
-        mode: 0444
+      - umami_db_password
+      - umami_admin_password
     volumes:
       - ./scripts/umami-init.sh:/init/umami-init.sh:ro
     depends_on:
@@ -266,5 +264,7 @@ secrets:
     file: ./secrets/umami_db_password.txt
   umami_admin_password:
     file: ./secrets/umami_admin_password.txt
+  db_sa_password:
+    file: ./secrets/db_sa_password.txt
   cert_password:
     file: ./secrets/cert_password.txt
