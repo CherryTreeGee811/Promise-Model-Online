@@ -40,7 +40,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
                 const epicItem = epic as Record<string, unknown>;
                 return '<tr data-epic-id="' + (epicItem.id as string) + '">'
                     + '<td>' + escapeHtml(epicItem.statement as string) + '</td>'
-                    + '<td><a href="/' + owner + '/' + project + '/epics/' + (epicItem.sequenceNumber as string) + '" epic-seq="' + (epicItem.sequenceNumber as string) + '" class="btn btn-sm btn-outline-primary">View</a></td>'
+                    + '<td><a href="/' + owner + '/' + project + '/epics/' + (epicItem.sequenceNumber as string) + '" data-epic-seq="' + (epicItem.sequenceNumber as string) + '" class="btn btn-sm btn-outline-primary">View</a></td>'
                     + '</tr>';
             },
             renderAddRow: () => '<tr data-inline-add-row="1">'
@@ -66,7 +66,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
             tbody,
             onCreate: async (statement) => createEpic(owner, project, {
                 statement,
-                productPromiseId: promiseId,
+                productPromiseId: (promise as Record<string, unknown>).id as number,
                 displayOrder: (epics || []).length + 1,
             }) as Promise<Record<string, unknown> | null>,
             getRowHtml: (created) => '<tr><td>' + escapeHtml(created.statement as string) + '</td>'
@@ -76,43 +76,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
             items: epics as Record<string, unknown>[],
         });
 
-        epicsList!.replaceChildren();
-        const epicsTable = document.createElement('table');
-        epicsTable.className = 'table table-sm table-striped align-middle promisemodel-table';
-
-        const epicsThead = document.createElement('thead');
-        const epicsHeaderRow = document.createElement('tr');
-        const statementTh = document.createElement('th');
-        statementTh.scope = 'col';
-        statementTh.textContent = 'Statement';
-        const actionsTh = document.createElement('th');
-        actionsTh.scope = 'col';
-        actionsTh.textContent = 'Actions';
-        epicsHeaderRow.append(statementTh, actionsTh);
-        epicsThead.append(epicsHeaderRow);
-        epicsTable.append(epicsThead);
-
-        const epicsTbody = document.createElement('tbody');
-        for (const epic of epics as Array<{ id: string; sequenceNumber: string; statement: string }>) {
-            const epicTr = document.createElement('tr');
-            epicTr.dataset.epicSeq = epic.sequenceNumber;
-            const epicStatementTd = document.createElement('td');
-            epicStatementTd.textContent = epic.statement;
-            const epicActionsTd = document.createElement('td');
-            const epicViewLink = document.createElement('a');
-            epicViewLink.href = '/' + owner + '/' + project + '/epics/' + epic.sequenceNumber;
-            epicViewLink.dataset.epicId = epic.id;
-            epicViewLink.dataset.epicSeq = epic.sequenceNumber;
-            epicViewLink.className = 'btn btn-sm btn-outline-primary';
-            epicViewLink.textContent = 'View';
-            epicActionsTd.append(epicViewLink);
-            epicTr.append(epicStatementTd, epicActionsTd);
-            epicsTbody.append(epicTr);
-        }
-        epicsTable.append(epicsTbody);
-        epicsList!.append(epicsTable);
-
-        bindLinkClickHandlers(detailDiv!, 'a[epic-id]', 'epic-seq', 'epics', owner, project, navContentDiv, contentDiv);
+        bindLinkClickHandlers(detailDiv!, 'a[data-epic-seq]', 'data-epic-seq', 'epics', owner, project, navContentDiv, contentDiv);
     } catch {
         if (epicsList) {
             epicsList.replaceChildren();

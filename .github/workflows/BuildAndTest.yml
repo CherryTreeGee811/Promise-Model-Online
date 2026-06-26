@@ -136,6 +136,8 @@ jobs:
             printf '%s' "${{ secrets.UMAMI_ADMIN_PASSWORD }}" > secrets/umami_admin_password.txt
             printf '%s' "${{ secrets.UMAMI_DB_PASSWORD }}" > secrets/umami_db_password.txt
             printf '%s' "${{ secrets.CERT_PASSWORD }}" > secrets/cert_password.txt
+            printf '%s' "${{ secrets.DB_SA_PASSWORD }}" > secrets/db_sa_password.txt
+            printf '%s' "${{ secrets.AUTH__REG_KEY }}" > secrets/auth_registration_key.txt
 
       - name: Run Auth Unit Tests
         shell: bash
@@ -322,10 +324,6 @@ jobs:
       - name: Start E2E Stack (without rate limiting)
         shell: bash
         run: |
-          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
-          export JWT__KEY="${{ secrets.JWT__KEY }}"
-          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
-
           docker compose --project-name promisemodelonline \
             -f docker-compose.yml \
             -f infrastructure/tests/docker-compose.e2e-override.yml \
@@ -392,10 +390,6 @@ jobs:
       - name: Start E2E Stack for Rate-Limit Tests
         shell: bash
         run: |
-          export DB_SA_PASSWORD="${{ secrets.DB_SA_PASSWORD }}"
-          export JWT__KEY="${{ secrets.JWT__KEY }}"
-          export AUTH__REG_KEY="${{ secrets.AUTH__REG_KEY }}"
-
           docker compose --project-name promisemodelonline up -d
 
           for i in $(seq 1 40); do

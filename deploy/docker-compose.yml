@@ -88,10 +88,12 @@ services:
       - JwtSettings__Issuer=${AUTH_PUBLIC_ISSUER}
       - JwtSettings__Audience=promisemodelonline.api
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
-      - Auth__RegistrationKey=${AUTH__REG_KEY:-}
+      - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
     secrets:
       - source: api_db_password
+        mode: 0444
+      - source: auth_registration_key
         mode: 0444
     depends_on:
       promisemodelonline.auth:
@@ -276,6 +278,8 @@ secrets:
     file: ./secrets/umami_db_password.txt
   umami_admin_password:
     file: ./secrets/umami_admin_password.txt
+  auth_registration_key:
+    file: ./secrets/auth_registration_key.txt
   cloudflare_tunnel_token:
     file: ./secrets/cloudflare_tunnel_token.txt
   cert_password:
