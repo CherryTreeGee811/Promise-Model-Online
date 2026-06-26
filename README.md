@@ -159,9 +159,12 @@ CSP `default-src 'none'` with hash-based allowance, HSTS, `X-Frame-Options: DENY
  
  ### Prerequisites
  
- 1. **Inventory:** Update `deploy/ansible/inventory/hosts.yml` with your production server details.
- 2. **Secrets:** Populate `deploy/secrets/` with the required text files (`db_sa_password.txt`, `api_db_password.txt`, etc.).
- 3. **SSH Access:** Ensure your local SSH key (`~/.ssh/pmo_vm_key.pub`) is authorized on the target host.
+ 1. **SSH Key:** Generate an SSH key pair for VM access:
+    ```bash
+    ssh-keygen -t ed25519 -f ~/.ssh/pmo_vm_key -C "pmo_admin@vm" -N ""
+    ```
+ 2. **Inventory:** Update `deploy/ansible/inventory/hosts.yml` with your production server details.
+ 3. **Secrets:** Populate `deploy/secrets/` with the required text files (`db_sa_password.txt`, `api_db_password.txt`, etc.).
  
  ### 1. Provision the VM (if not set up)
  
