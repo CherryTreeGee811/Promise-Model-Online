@@ -57,7 +57,7 @@ public class UserProjectsController(
     /// <param name="request">The project creation data.</param>
     /// <returns>The created project DTO.</returns>
     [Authorize(Policy = "projects.write")]
-    [HttpPost]
+    [HttpPost("create")]
     public async Task<ActionResult<ProjectDto>> Create([FromBody] ProjectCreateDto request)
     {
         if (request is null) return BadRequest("Request body is required.");

@@ -91,7 +91,7 @@ public class ProjectMomentsController(
 
     /// <summary>Update a moment within the project scope.</summary>
     /// <param name="seq">The moment's sequence number within its flow.</param>
-    /// <param name="entity">The updated moment entity.</param>
+    /// <param name="dto">The updated moment data.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
     /// <response code="204">The moment was updated successfully.</response>
@@ -100,9 +100,9 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] Moment entity, string owner, string project)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdateMomentRequestDto dto, string owner, string project)
     {
-        if (entity is null) return BadRequest("Request body is required.");
+        if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
@@ -114,10 +114,23 @@ public class ProjectMomentsController(
         if (existing is null)
             return NotFound();
 
-        if (existing.Id != entity.Id)
+        if (existing.Id != dto.Id)
             return BadRequest();
 
-        await _momentService.UpdateAsync(entity);
+        existing.Statement = dto.Statement;
+        existing.Description = dto.Description;
+        existing.FlowId = dto.FlowId;
+        existing.Type = dto.Type;
+        existing.Status = dto.Status;
+        existing.EffortEstimate = dto.EffortEstimate;
+        existing.SequenceNumber = dto.SequenceNumber;
+        existing.DisplayOrder = dto.DisplayOrder;
+        existing.StatusColor = dto.StatusColor;
+        existing.OwnerId = dto.OwnerId;
+        existing.AssignedStrideId = dto.AssignedStrideId;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _momentService.UpdateAsync(existing);
         return NoContent();
     }
 

@@ -98,28 +98,38 @@ public class ProjectStridesController(
         return Ok(_mapper.Map(stride, _strideService));
     }
     /// <summary>Create a new stride within the project scope.</summary>
-    /// <param name="entity">The stride entity to create.</param>
+    /// <param name="dto">The stride data.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
     /// <returns>The created stride as a DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<StrideDto>> Create([FromBody] Stride entity, string owner, string project)
+    public async Task<ActionResult<StrideDto>> Create([FromBody] CreateStrideRequestDto dto, string owner, string project)
     {
-        if (entity is null) return BadRequest("Request body is required.");
+        if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
-        if (entity.IterationId.HasValue)
+        if (dto.IterationId.HasValue)
         {
             var iteration = await _context.Iterations
-                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == entity.IterationId.Value);
+                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == dto.IterationId.Value);
 
             if (iteration is null)
                 return NotFound("Iteration not found.");
         }
+
+        var entity = new Stride
+        {
+            Name = dto.Name,
+            IterationId = dto.IterationId,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            DurationDays = dto.DurationDays,
+            IsActive = dto.IsActive,
+        };
 
         await _strideService.AddAsync(entity);
         return CreatedAtAction(nameof(GetById), new { owner, project, id = entity.Id }, _mapper.Map(entity, _strideService));
