@@ -38,7 +38,7 @@ async function loadPromiseEpics(owner: string, project: string, promiseId: strin
             emptyMessage: 'No epics found for this promise.',
             renderItemRow: (epic: unknown) => {
                 const epicItem = epic as Record<string, unknown>;
-                return '<tr data-epic-id="' + (epicItem.id as string) + '">'
+                return '<tr data-epic-id="' + (epicItem.id as string) + '" data-epic-seq="' + (epicItem.sequenceNumber as string) + '">'
                     + '<td>' + escapeHtml(epicItem.statement as string) + '</td>'
                     + '<td><a href="/' + owner + '/' + project + '/epics/' + (epicItem.sequenceNumber as string) + '" data-epic-seq="' + (epicItem.sequenceNumber as string) + '" class="btn btn-sm btn-outline-primary">View</a></td>'
                     + '</tr>';
