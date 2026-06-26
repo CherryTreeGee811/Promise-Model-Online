@@ -178,6 +178,12 @@ CSP `default-src 'none'` with hash-based allowance, HSTS, `X-Frame-Options: DENY
  ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/deploy-stack.yml
  ```
  
+ ### 3. Deprovision the stack
+ 
+ ```bash
+ ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/destroy-stack.yml
+ ```
+ 
  ---
  
  ## Getting Started
