@@ -3,25 +3,49 @@ using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.DTOs;
 
+/// <summary>Data transfer object for updating an existing moment entity.</summary>
 public class UpdateMomentRequestDto
 {
+    /// <summary>Primary key of the moment to update.</summary>
     [JsonRequired]
     public int Id { get; set; }
+
+    /// <summary>Short description of the moment.</summary>
     [JsonRequired]
     public string Statement { get; set; } = string.Empty;
+
+    /// <summary>Optional longer description.</summary>
     public string? Description { get; set; }
+
+    /// <summary>Foreign key to the parent flow.</summary>
     [JsonRequired]
     public int FlowId { get; set; }
+
+    /// <summary>Entity type discriminator.</summary>
     [JsonRequired]
     public MomentType Type { get; set; }
+
+    /// <summary>Current workflow status.</summary>
     [JsonRequired]
     public MomentStatus Status { get; set; }
+
+    /// <summary>Effort estimate using Fibonacci sizing, or null.</summary>
     public Estimate? EffortEstimate { get; set; }
+
+    /// <summary>Sequence number within the parent scope.</summary>
     [JsonRequired]
     public int SequenceNumber { get; set; }
+
+    /// <summary>Sort order within the parent scope.</summary>
     [JsonRequired]
     public int DisplayOrder { get; set; }
+
+    /// <summary>Status display color.</summary>
     public string StatusColor { get; set; } = "red";
+
+    /// <summary>Foreign key to the responsible user, or null.</summary>
     public int? OwnerId { get; set; }
+
+    /// <summary>Foreign key to the assigned stride, or null.</summary>
     public int? AssignedStrideId { get; set; }
 }
