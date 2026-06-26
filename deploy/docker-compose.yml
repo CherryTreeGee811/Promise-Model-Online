@@ -1,28 +1,47 @@
 services:
   promisemodelonline.client:
-    image: ${DOCKER_REGISTRY-}promisemodelonlineclient
+    image: cherrytree811/promisemodelonlineclient
     container_name: promisemodelonlineclient
     hostname: localhost
     ports:
       - "127.0.0.1:9000:9000/tcp"
     depends_on:
       - promisemodelonline.bff
+    networks:
+      - promisemodelonline-net
     volumes:
       - ./keys/client/cert.pem:/etc/nginx/cert.pem:ro
       - ./keys/client/key.pem:/etc/nginx/key.pem:ro
-    networks:
-      - promisemodelonline-net
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.Client/Dockerfile
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
       interval: 15s
       timeout: 5s
       retries: 3
 
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.1
+    container_name: cloudflared
+    command: tunnel --no-autoupdate run
+    profiles: [production]
+    secrets:
+      - source: cloudflare_tunnel_token
+        mode: 0444
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/cloudflare_tunnel_token
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      promisemodelonline.client:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
   promisemodelonline.bff:
-    image: ${DOCKER_REGISTRY-}promisemodelonlinebff
+    image: cherrytree811/promisemodelonlinebff
     container_name: promisemodelonlinebff
     ports:
       - "127.0.0.1:8010:8010/tcp"
@@ -45,9 +64,6 @@ services:
         condition: service_healthy
     networks:
       - promisemodelonline-net
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.BFF/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
       interval: 15s
@@ -64,7 +80,7 @@ services:
           memory: 512M
 
   promisemodelonline.api:
-    image: ${DOCKER_REGISTRY-}promisemodelonlineapi
+    image: cherrytree811/promisemodelonlineapi
     container_name: promisemodelonlineapi
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
@@ -84,9 +100,6 @@ services:
         condition: service_completed_successfully
     networks:
       - promisemodelonline-net
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.Api/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "http://localhost:8000/health"]
       interval: 15s
@@ -94,7 +107,7 @@ services:
       retries: 3
     
   promisemodelonline.auth:
-    image: ${DOCKER_REGISTRY-}promisemodelonlineauth
+    image: cherrytree811/promisemodelonlineauth
     container_name: promisemodelonlineauth
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
@@ -126,9 +139,6 @@ services:
         condition: service_completed_successfully
     networks:
       - promisemodelonline-net
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.Auth/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "https://localhost:8060/health"]
       interval: 20s
@@ -266,5 +276,7 @@ secrets:
     file: ./secrets/umami_db_password.txt
   umami_admin_password:
     file: ./secrets/umami_admin_password.txt
+  cloudflare_tunnel_token:
+    file: ./secrets/cloudflare_tunnel_token.txt
   cert_password:
     file: ./secrets/cert_password.txt

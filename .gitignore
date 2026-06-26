@@ -15,11 +15,14 @@ query
 # macOS exclusion files.
 *.DS_Store
 
-# SSL certificates (if any)
+# SSL certificates and keys
 *.pem
+*.pfx
+keys/
 
 # Docker secrets (actual values — use .example.txt templates instead)
 secrets/*.txt
+deploy/secrets/*.txt
 
 # Rider / JetBrains cache files and solution user settings
 **/*.lscache

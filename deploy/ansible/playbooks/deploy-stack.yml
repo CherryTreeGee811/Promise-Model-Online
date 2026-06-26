@@ -4,11 +4,11 @@
   gather_facts: true
 
   vars:
-    pmo_root: "{{ playbook_dir }}/../../"
+    deploy_root: "{{ playbook_dir }}/../../"
     project_root: "{{ pmo_repo_root }}"
 
   tasks:
-    - name: Create project directories
+    - name: Create project directories on VM
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -16,38 +16,27 @@
       loop:
         - "{{ project_root }}"
         - "{{ project_root }}/secrets"
-        - "{{ project_root }}/PromiseModelOnline.Api"
-        - "{{ project_root }}/PromiseModelOnline.Auth"
-        - "{{ project_root }}/PromiseModelOnline.BFF"
-        - "{{ project_root }}/PromiseModelOnline.Client"
         - "{{ project_root }}/scripts"
-        - "{{ project_root }}/pmo_pm"
+        - "{{ project_root }}/keys/client"
+        - "{{ project_root }}/keys/auth"
+        - "{{ project_root }}/keys/bff"
 
-    - name: Sync project source to VM
+    - name: Sync deploy directory to VM
       ansible.builtin.synchronize:
-        src: "{{ pmo_root }}"
+        src: "{{ deploy_root }}"
         dest: "{{ project_root }}"
         rsync_opts:
-          - "--exclude=node_modules"
-          - "--exclude=.git"
-          - "--exclude=bin"
-          - "--exclude=obj"
-          - "--exclude=__pycache__"
-          - "--exclude=.DS_Store"
+          - "--exclude=keys"
           - "--exclude=secrets"
+          - "--exclude=ansible"
+          - "--exclude=.DS_Store"
         delete: yes
-
-    - name: Copy .env file to VM
-      ansible.builtin.copy:
-        src: "{{ pmo_root }}/.env"
-        dest: "{{ project_root }}/.env"
-        mode: "0600"
 
     - name: Create secret files on VM
       no_log: true
       ansible.builtin.copy:
         dest: "{{ project_root }}/secrets/{{ item }}"
-        content: "{{ lookup('file', pmo_root ~ '/secrets/' ~ item) | trim }}"
+        content: "{{ lookup('file', deploy_root ~ '/secrets/' ~ item) | trim }}"
         mode: "0644"
       loop:
         - auth_db_password.txt
@@ -63,7 +52,7 @@
     - name: Check if existing cert is ECDSA (needs RSA regeneration)
       ansible.builtin.shell:
         cmd: |
-          openssl x509 -in {{ project_root }}/PromiseModelOnline.Auth/cert.pem -noout -text 2>/dev/null | grep -q "id-ecPublicKey" && echo "ECDSA" || echo "RSA or missing"
+          openssl x509 -in {{ project_root }}/keys/auth/cert.pem -noout -text 2>/dev/null | grep -q "id-ecPublicKey" && echo "ECDSA" || echo "RSA or missing"
       register: cert_type_check
       changed_when: false
       failed_when: false
@@ -73,13 +62,13 @@
         path: "{{ item }}"
         state: absent
       loop:
-        - "{{ project_root }}/PromiseModelOnline.Client/cert.pem"
-        - "{{ project_root }}/PromiseModelOnline.Client/key.pem"
-        - "{{ project_root }}/PromiseModelOnline.Auth/cert.pem"
-        - "{{ project_root }}/PromiseModelOnline.Auth/key.pem"
-        - "{{ project_root }}/PromiseModelOnline.Auth/cert.pfx"
-        - "{{ project_root }}/PromiseModelOnline.BFF/cert.pem"
-        - "{{ project_root }}/PromiseModelOnline.BFF/key.pem"
+        - "{{ project_root }}/keys/client/cert.pem"
+        - "{{ project_root }}/keys/client/key.pem"
+        - "{{ project_root }}/keys/auth/cert.pem"
+        - "{{ project_root }}/keys/auth/key.pem"
+        - "{{ project_root }}/keys/auth/cert.pfx"
+        - "{{ project_root }}/keys/bff/cert.pem"
+        - "{{ project_root }}/keys/bff/key.pem"
       when: cert_type_check.stdout == "ECDSA"
 
     - name: Generate all self-signed certificates
@@ -88,60 +77,60 @@
           ansible.builtin.shell:
             cmd: >
               openssl req -x509 -newkey rsa:4096 -nodes
-              -keyout "{{ project_root }}/PromiseModelOnline.Client/key.pem"
-              -out "{{ project_root }}/PromiseModelOnline.Client/cert.pem"
+              -keyout "{{ project_root }}/keys/client/key.pem"
+              -out "{{ project_root }}/keys/client/cert.pem"
               -days 365 -subj "/CN=promisemodel.online/O=Promise Model Online/C=CA"
-            creates: "{{ project_root }}/PromiseModelOnline.Client/cert.pem"
+            creates: "{{ project_root }}/keys/client/cert.pem"
 
         - name: Auth cert
           ansible.builtin.shell:
             cmd: >
               openssl req -x509 -newkey rsa:4096 -nodes
-              -keyout "{{ project_root }}/PromiseModelOnline.Auth/key.pem"
-              -out "{{ project_root }}/PromiseModelOnline.Auth/cert.pem"
+              -keyout "{{ project_root }}/keys/auth/key.pem"
+              -out "{{ project_root }}/keys/auth/cert.pem"
               -days 365 -subj "/CN=promisemodelonline.auth/O=Promise Model Online Auth/C=CA"
-            creates: "{{ project_root }}/PromiseModelOnline.Auth/cert.pem"
+            creates: "{{ project_root }}/keys/auth/cert.pem"
 
         - name: cert.pfx for token signing
           ansible.builtin.shell:
             cmd: >
               openssl pkcs12 -export
-              -in "{{ project_root }}/PromiseModelOnline.Auth/cert.pem"
-              -inkey "{{ project_root }}/PromiseModelOnline.Auth/key.pem"
-              -out "{{ project_root }}/PromiseModelOnline.Auth/cert.pfx"
-              -passout pass:{{ lookup('file', pmo_root ~ '/secrets/cert_password.txt') | trim }}
+              -in "{{ project_root }}/keys/auth/cert.pem"
+              -inkey "{{ project_root }}/keys/auth/key.pem"
+              -out "{{ project_root }}/keys/auth/cert.pfx"
+              -passout pass:{{ lookup('file', deploy_root ~ '/secrets/cert_password.txt') | trim }}
               -name "Promise Model Online Token Signing"
-            creates: "{{ project_root }}/PromiseModelOnline.Auth/cert.pfx"
+            creates: "{{ project_root }}/keys/auth/cert.pfx"
 
         - name: BFF cert
           ansible.builtin.shell:
             cmd: >
               openssl req -x509 -newkey rsa:4096 -nodes
-              -keyout "{{ project_root }}/PromiseModelOnline.BFF/key.pem"
-              -out "{{ project_root }}/PromiseModelOnline.BFF/cert.pem"
+              -keyout "{{ project_root }}/keys/bff/key.pem"
+              -out "{{ project_root }}/keys/bff/cert.pem"
               -days 365 -subj "/CN=promisemodelonline.bff/O=Promise Model Online BFF/C=CA"
-            creates: "{{ project_root }}/PromiseModelOnline.BFF/cert.pem"
+            creates: "{{ project_root }}/keys/bff/cert.pem"
 
     - name: Set permissions on certs
       ansible.builtin.file:
         path: "{{ item }}"
-        mode: "0600"
+        mode: "0644"
       loop:
-        - "{{ project_root }}/PromiseModelOnline.Client/key.pem"
-        - "{{ project_root }}/PromiseModelOnline.Client/cert.pem"
-        - "{{ project_root }}/PromiseModelOnline.Auth/key.pem"
-        - "{{ project_root }}/PromiseModelOnline.Auth/cert.pem"
-        - "{{ project_root }}/PromiseModelOnline.Auth/cert.pfx"
-        - "{{ project_root }}/PromiseModelOnline.BFF/key.pem"
-        - "{{ project_root }}/PromiseModelOnline.BFF/cert.pem"
+        - "{{ project_root }}/keys/client/key.pem"
+        - "{{ project_root }}/keys/client/cert.pem"
+        - "{{ project_root }}/keys/auth/key.pem"
+        - "{{ project_root }}/keys/auth/cert.pem"
+        - "{{ project_root }}/keys/auth/cert.pfx"
+        - "{{ project_root }}/keys/bff/key.pem"
+        - "{{ project_root }}/keys/bff/cert.pem"
 
-    - name: Build Docker images
+    - name: Pull Docker images from registry
       ansible.builtin.shell:
-        cmd: docker compose build
+        cmd: docker compose pull
       args:
         chdir: "{{ project_root }}"
-      register: build_result
-      changed_when: "'Successfully built' in build_result.stdout or 'Built' in build_result.stdout"
+      register: pull_result
+      changed_when: "'Downloaded' in pull_result.stderr or 'Pulled' in pull_result.stderr"
 
     - name: Remove old stack and volumes for clean deploy
       ansible.builtin.shell:

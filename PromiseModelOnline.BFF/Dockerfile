@@ -21,12 +21,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl=8.5.0-2ubu
     && rm -rf /var/lib/apt/lists/*
 USER app
 COPY --from=build /app/publish .
-COPY PromiseModelOnline.BFF/cert.pem /app/cert.pem
-COPY PromiseModelOnline.BFF/key.pem /app/key.pem
 
 USER root
-RUN chown app:app /app/cert.pem /app/key.pem && chmod 600 /app/cert.pem /app/key.pem && \
-    mkdir -p /app/dp-keys && chown app:app /app/dp-keys
+RUN mkdir -p /app/dp-keys && chown app:app /app/dp-keys
 USER app
 
 EXPOSE 8010

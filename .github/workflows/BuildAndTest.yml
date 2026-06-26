@@ -121,38 +121,9 @@ jobs:
         shell: bash
         run: bash scripts/check-bundle.sh
 
-      - name: Add Client CI TLS/SSL CERT & KEY
+      - name: Generate dev certs for volume mounts
         shell: bash
-        run: |
-          mkdir -p PromiseModelOnline.Client
-          cat > PromiseModelOnline.Client/cert.pem <<'PEM'
-          ${{ vars.CLIENT_CI_CERT }}
-          PEM
-          cat > PromiseModelOnline.Client/key.pem <<'PEM'
-          ${{ secrets.CLIENT_CI_KEY }}
-          PEM
-      
-      - name: Add GATEWAY CI TLS/SSL CERT & KEY
-        shell: bash
-        run: |
-          mkdir -p PromiseModelOnline.BFF
-          cat > PromiseModelOnline.BFF/cert.pem <<'PEM'
-          ${{ vars.BFF_CI_CERT }}
-          PEM
-          cat > PromiseModelOnline.BFF/key.pem <<'PEM'
-          ${{ secrets.BFF_CI_KEY }}
-          PEM
-
-      - name: Add AUTH CI TLS/SSL CERT & KEY
-        shell: bash
-        run: |
-          mkdir -p PromiseModelOnline.Auth
-          cat > PromiseModelOnline.Auth/cert.pem <<'PEM'
-          ${{ vars.AUTH_CI_CERT }}
-          PEM
-          cat > PromiseModelOnline.Auth/key.pem <<'PEM'
-          ${{ secrets.AUTH_CI_KEY }}
-          PEM
+        run: bash scripts/generate-dev-certs.sh
 
       - name: Write secrets from GitHub Secrets
         shell: bash

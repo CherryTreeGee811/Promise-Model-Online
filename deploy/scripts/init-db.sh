@@ -1,0 +1,104 @@
+#!/bin/sh
+
+SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
+API_USER=${API_DB_USER:-pmo_api}
+AUTH_USER=${AUTH_DB_USER:-pmo_auth}
+
+read_secret_file() {
+    if [ ! -f "$1" ]; then
+        echo "FATAL: Secret file $1 not found. Mount a Docker secret at this path." >&2
+        exit 1
+    fi
+    if [ ! -s "$1" ]; then
+        echo "FATAL: Secret file $1 is empty. Populate it with a password." >&2
+        exit 1
+    fi
+    cat "$1"
+}
+
+API_PASSWORD=$(read_secret_file /run/secrets/api_db_password)
+AUTH_PASSWORD=$(read_secret_file /run/secrets/auth_db_password)
+SQLCMD=/opt/mssql-tools/bin/sqlcmd
+
+sql_escape_literal() {
+  printf "%s" "$1" | sed "s/'/''/g"
+}
+
+API_PASSWORD_SQL=$(sql_escape_literal "$API_PASSWORD")
+AUTH_PASSWORD_SQL=$(sql_escape_literal "$AUTH_PASSWORD")
+
+until "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
+  echo 'Waiting for SQL Server...'
+  sleep 5
+done
+
+cat >/tmp/create-app-accounts.generated.sql <<EOF
+SET NOCOUNT ON;
+GO
+
+IF DB_ID(N'PromiseModelOnline') IS NULL
+BEGIN
+  CREATE DATABASE [PromiseModelOnline];
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = N'pmo_api')
+BEGIN
+  CREATE LOGIN [pmo_api] WITH PASSWORD = N'$API_PASSWORD_SQL', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF;
+END
+GO
+
+USE [PromiseModelOnline];
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'pmo_api')
+BEGIN
+  CREATE USER [pmo_api] FOR LOGIN [pmo_api];
+END
+GO
+
+ALTER LOGIN [pmo_api] WITH DEFAULT_DATABASE = [PromiseModelOnline];
+GO
+
+IF IS_ROLEMEMBER(N'db_owner', N'pmo_api') <> 1
+BEGIN
+  EXEC sp_addrolemember N'db_owner', N'pmo_api';
+END
+GO
+
+IF DB_ID(N'PromiseModelOnlineAuth') IS NULL
+BEGIN
+  CREATE DATABASE [PromiseModelOnlineAuth];
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = N'pmo_auth')
+BEGIN
+  CREATE LOGIN [pmo_auth] WITH PASSWORD = N'$AUTH_PASSWORD_SQL', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF;
+END
+GO
+
+USE [PromiseModelOnlineAuth];
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'pmo_auth')
+BEGIN
+  CREATE USER [pmo_auth] FOR LOGIN [pmo_auth];
+END
+GO
+
+ALTER LOGIN [pmo_auth] WITH DEFAULT_DATABASE = [PromiseModelOnlineAuth];
+GO
+
+IF IS_ROLEMEMBER(N'db_owner', N'pmo_auth') <> 1
+BEGIN
+  EXEC sp_addrolemember N'db_owner', N'pmo_auth';
+END
+GO
+
+-- sa deliberately left enabled for db-init restart support
+EOF
+
+"$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql
+
+echo 'Database application accounts created or already present.'
