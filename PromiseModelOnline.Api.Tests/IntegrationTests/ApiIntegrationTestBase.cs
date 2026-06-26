@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,13 +20,14 @@ public abstract class ApiIntegrationTestBase
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     private static readonly RsaSecurityKey TestSigningKey = new(RSA.Create(2048));
     private static readonly string TestIssuer = $"https://test-auth-{Guid.NewGuid():N}/";
 
-    private WebApplicationFactory<Program> _factory = null!;
+    protected WebApplicationFactory<Program> Factory = null!;
     protected HttpClient Client { get; private set; } = null!;
     protected int TestUserId => 1;
     protected string TestUserEmail => "owner@example.com";
@@ -37,7 +39,7 @@ public abstract class ApiIntegrationTestBase
     {
         var dbName = $"TestDb_{Guid.NewGuid():N}";
 
-        _factory = new WebApplicationFactory<Program>()
+        Factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
                 builder.UseSetting("Environment", "Testing");
@@ -92,13 +94,13 @@ public abstract class ApiIntegrationTestBase
             });
 
         // Ensure database exists before any hosted services query it
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = Factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
             db.Database.EnsureCreated();
         }
 
-        Client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        Client = Factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
@@ -110,12 +112,12 @@ public abstract class ApiIntegrationTestBase
     public async Task BaseTearDown()
     {
         Client.Dispose();
-        await _factory.DisposeAsync();
+        await Factory.DisposeAsync();
     }
 
     protected async Task SeedTestDataAsync()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
 
         if (!db.Users.Any())
@@ -175,6 +177,12 @@ public abstract class ApiIntegrationTestBase
     {
         var json = JsonSerializer.Serialize(body, JsonOptions);
         return await Client.PatchAsync(path, new StringContent(json, System.Text.Encoding.UTF8, "application/json"));
+    }
+
+    protected async Task<HttpResponseMessage> PutAsync(string path, object body)
+    {
+        var json = JsonSerializer.Serialize(body, JsonOptions);
+        return await Client.PutAsync(path, new StringContent(json, System.Text.Encoding.UTF8, "application/json"));
     }
 
     protected async Task<T?> ReadJsonAsync<T>(HttpResponseMessage response)

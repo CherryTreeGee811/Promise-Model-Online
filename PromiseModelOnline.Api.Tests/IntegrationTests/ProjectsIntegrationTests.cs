@@ -13,7 +13,7 @@ public class ProjectsIntegrationTests : ApiIntegrationTestBase
         // Arrange
         SetAuthHeader(OwnerToken);
         // Act
-        var response = await PostAsync("/api/projects", new { name = "New Project", slug = "new-project" });
+        var response = await PostAsync("/api/projects/create", new { name = "New Project" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
         var project = await ReadJsonAsync<ProjectDto>(response);
@@ -40,7 +40,7 @@ public class ProjectsIntegrationTests : ApiIntegrationTestBase
     public async Task CreateProject_Unauthenticated_Returns401()
     {
         // Act
-        var response = await PostAsync("/api/projects", new { name = "Evil", slug = "evil" });
+        var response = await PostAsync("/api/projects/create", new { name = "Evil" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
@@ -51,7 +51,7 @@ public class ProjectsIntegrationTests : ApiIntegrationTestBase
         // Arrange
         SetAuthHeader(ReadOnlyToken);
         // Act
-        var response = await PostAsync("/api/projects", new { name = "NoWrite", slug = "no-write" });
+        var response = await PostAsync("/api/projects/create", new { name = "NoWrite" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
     }

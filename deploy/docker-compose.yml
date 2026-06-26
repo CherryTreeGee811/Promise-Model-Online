@@ -1,0 +1,286 @@
+services:
+  promisemodelonline.client:
+    image: cherrytree811/promisemodelonlineclient
+    container_name: promisemodelonlineclient
+    hostname: localhost
+    ports:
+      - "127.0.0.1:9000:9000/tcp"
+    depends_on:
+      - promisemodelonline.bff
+    networks:
+      - promisemodelonline-net
+    volumes:
+      - ./keys/client/cert.pem:/etc/nginx/cert.pem:ro
+      - ./keys/client/key.pem:/etc/nginx/key.pem:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.1
+    container_name: cloudflared
+    command: tunnel --no-autoupdate run
+    profiles: [production]
+    secrets:
+      - source: cloudflare_tunnel_token
+        mode: 0444
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/cloudflare_tunnel_token
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      promisemodelonline.client:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  promisemodelonline.bff:
+    image: cherrytree811/promisemodelonlinebff
+    container_name: promisemodelonlinebff
+    ports:
+      - "127.0.0.1:8010:8010/tcp"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=https://+:8010
+      - APP_BASE_URL=${APP_BASE_URL}
+      - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - AUTH_INTERNAL_AUTHORITY=${AUTH_INTERNAL_AUTHORITY}
+      - AUTH_METADATA_ADDRESS=${AUTH_METADATA_ADDRESS}
+      - DATA_PROTECTION_KEYS_PATH=${DATA_PROTECTION_KEYS_PATH}
+    volumes:
+      - bff-dp-keys:/app/dp-keys
+      - ./keys/bff/cert.pem:/app/cert.pem:ro
+      - ./keys/bff/key.pem:/app/key.pem:ro
+    depends_on:
+      promisemodelonline.api:
+        condition: service_healthy
+      promisemodelonline.auth:
+        condition: service_healthy
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  promisemodelonline.api:
+    image: cherrytree811/promisemodelonlineapi
+    container_name: promisemodelonlineapi
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=http://+:8000
+      - JwtSettings__Issuer=${AUTH_PUBLIC_ISSUER}
+      - JwtSettings__Audience=promisemodelonline.api
+      - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
+      - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+    secrets:
+      - source: api_db_password
+        mode: 0444
+      - source: auth_registration_key
+        mode: 0444
+    depends_on:
+      promisemodelonline.auth:
+        condition: service_started
+      promisemodelonline.db-init:
+        condition: service_completed_successfully
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    
+  promisemodelonline.auth:
+    image: cherrytree811/promisemodelonlineauth
+    container_name: promisemodelonlineauth
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=https://+:8060
+      - APP_BASE_URL=${APP_BASE_URL}
+      - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - Certificates__Password_FILE=/run/secrets/cert_password
+      - DATA_PROTECTION_KEYS_PATH=${DATA_PROTECTION_KEYS_PATH}
+      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
+      - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
+    volumes:
+      - auth-dp-keys:/app/dp-keys
+      - ./keys/auth/cert.pem:/app/cert.pem:ro
+      - ./keys/auth/key.pem:/app/key.pem:ro
+      - ./keys/auth/cert.pfx:/app/cert.pfx:ro
+    secrets:
+      - source: auth_db_password
+        mode: 0444
+      - source: cert_password
+        mode: 0444
+      - source: google_client_secret
+        mode: 0444
+      - source: sendgrid_api_key
+        mode: 0444
+    depends_on:
+      promisemodelonline.db-init:
+        condition: service_completed_successfully
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8060/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  promisemodelonline.db:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: promisemodelonlinedb
+    networks:
+      - promisemodelonline-net
+    ports:
+      - "127.0.0.1:1433:1433/tcp"
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD}
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+  promisemodelonline.db-init:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: promisemodelonlinedbinit
+    depends_on:
+      - promisemodelonline.db
+    networks:
+      - promisemodelonline-net
+    secrets:
+      - auth_db_password
+      - api_db_password
+    environment:
+      DB_SA_PASSWORD: ${DB_SA_PASSWORD}
+      PMO_API_DB_USER: ${PMO_API_DB_USER}
+      PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER}
+    volumes:
+      - ./scripts/init-db.sh:/init/init-db.sh:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - set -e; tr -d '\r' < /init/init-db.sh > /tmp/init-db.lf && /bin/sh /tmp/init-db.lf
+    restart: "no"
+
+  umami:
+    image: docker.umami.is/umami-software/umami:postgresql-latest
+    container_name: umami
+    ports:
+      - "127.0.0.1:3000:3000/tcp"
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      DATABASE_TYPE: postgresql
+      TRACKER_SCRIPT_NAME: script.js
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    networks:
+      - promisemodelonline-net
+    restart: unless-stopped
+
+  umami-db:
+    image: postgres:16-alpine
+    container_name: umami-db
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
+    secrets:
+      - source: umami_db_password
+        mode: 0444
+    volumes:
+      - umami-db:/var/lib/postgresql/data
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  umami-init:
+    image: postgres:16-alpine
+    container_name: umami-init
+    entrypoint: >
+      /bin/sh -c "
+      apk add --no-cache apache2-utils > /dev/null 2>&1 &&
+      /init/umami-init.sh
+      "
+    environment:
+      WEBSITE_ID: ${UMAMI_WEBSITE_ID:-813ea5c6-8576-44d0-b702-923f5ba331cd}
+      WEBSITE_NAME: ${UMAMI_WEBSITE_NAME:-Promise Model Online}
+      WEBSITE_DOMAIN: ${UMAMI_WEBSITE_DOMAIN:-localhost}
+      POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
+      UMAMI_ADMIN_USERNAME: ${UMAMI_ADMIN_USERNAME}
+    secrets:
+      - source: umami_db_password
+        mode: 0444
+      - source: umami_admin_password
+        mode: 0444
+    volumes:
+      - ./scripts/umami-init.sh:/init/umami-init.sh:ro
+    depends_on:
+      umami:
+        condition: service_started
+    networks:
+      - promisemodelonline-net
+    restart: "no"
+
+networks:
+  promisemodelonline-net:
+    driver: bridge
+
+volumes:
+  mssql-data:
+    name: mssqldata
+    driver: local
+  bff-dp-keys:
+    name: bffdpkeys
+    driver: local
+  auth-dp-keys:
+    name: authdpkeys
+    driver: local
+  umami-db:
+    name: umamidata
+    driver: local
+
+secrets:
+  auth_db_password:
+    file: ./secrets/auth_db_password.txt
+  api_db_password:
+    file: ./secrets/api_db_password.txt
+  google_client_secret:
+    file: ./secrets/google_client_secret.txt
+  sendgrid_api_key:
+    file: ./secrets/sendgrid_api_key.txt
+  umami_db_password:
+    file: ./secrets/umami_db_password.txt
+  umami_admin_password:
+    file: ./secrets/umami_admin_password.txt
+  auth_registration_key:
+    file: ./secrets/auth_registration_key.txt
+  cloudflare_tunnel_token:
+    file: ./secrets/cloudflare_tunnel_token.txt
+  cert_password:
+    file: ./secrets/cert_password.txt

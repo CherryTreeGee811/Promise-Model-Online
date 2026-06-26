@@ -1,0 +1,17 @@
+---
+# VM configuration
+vm_name: pmo-vm
+vm_memory_mb: 4096
+vm_vcpus: 4
+vm_disk_gb: 40
+vm_network: default
+vm_ip: 192.168.122.50
+vm_os_variant: ubuntu24.04
+vm_cloud_image: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+
+# Deployment paths
+pmo_repo_root: /home/pmo_admin/promise-model-online
+
+
+
+

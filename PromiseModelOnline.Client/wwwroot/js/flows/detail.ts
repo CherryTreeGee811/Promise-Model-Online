@@ -174,7 +174,7 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
             tbody,
             onCreate: async (statement, type) => createMoment(owner, project, {
                 statement,
-                flowId,
+                flowId: (flow as Record<string, unknown>).id as number,
                 type: type ?? 'Story',
                 status: 'Todo',
                 displayOrder: (moments || []).length + 1,
@@ -191,75 +191,7 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
             items: moments as unknown as Record<string, unknown>[],
         });
 
-        const tableWrapper = document.createElement('div');
-        tableWrapper.className = 'table-responsive';
-        const momentTable = document.createElement('table');
-        momentTable.className = 'table table-sm table-striped align-middle promisemodel-table';
-
-        const mThead = document.createElement('thead');
-        const mHeaderRow = document.createElement('tr');
-        const mHeaders = ['Statement', 'Type', 'Status', 'Actions'];
-        for (const h of mHeaders) {
-            const th = document.createElement('th');
-            th.textContent = h;
-            mHeaderRow.append(th);
-        }
-        mThead.append(mHeaderRow);
-        momentTable.append(mThead);
-
-        const mTbody = document.createElement('tbody');
-        for (const m of moments) {
-            const tr = document.createElement('tr');
-            tr.dataset.momentId = String(m.sequenceNumber);
-
-            const tdStatement = document.createElement('td');
-            tdStatement.textContent = m.statement;
-            tr.append(tdStatement);
-
-            const tdType = document.createElement('td');
-            const typeSel = document.createElement('select');
-            typeSel.className = 'form-select form-select-sm moment-type-select';
-            typeSel.dataset.momentId = String(m.sequenceNumber);
-            typeSel.dataset.currentType = m.type;
-            typeSel.setAttribute('aria-label', 'Moment type');
-            const optStory = document.createElement('option');
-            optStory.value = 'Story';
-            optStory.textContent = 'Story';
-            if (m.type === 'Story') optStory.selected = true;
-            typeSel.append(optStory);
-            const optJob = document.createElement('option');
-            optJob.value = 'Job';
-            optJob.textContent = 'Job';
-            if (m.type === 'Job') optJob.selected = true;
-            typeSel.append(optJob);
-            tdType.append(typeSel);
-            tr.append(tdType);
-
-            const tdStatus = document.createElement('td');
-            const statusSpan = document.createElement('span');
-            statusSpan.className = 'status-badge status-' + (m.status || '').toLowerCase();
-            statusSpan.textContent = m.status;
-            tdStatus.append(statusSpan);
-            tr.append(tdStatus);
-
-            const tdActions = document.createElement('td');
-            const viewLink = document.createElement('a');
-            viewLink.href = '/' + owner + '/' + project + '/moments/' + m.sequenceNumber;
-            viewLink.setAttribute('moment-id', String(m.id));
-            viewLink.setAttribute('moment-seq', String(m.sequenceNumber));
-            viewLink.className = 'btn btn-sm btn-outline-primary';
-            viewLink.textContent = 'View';
-            tdActions.append(viewLink);
-            tr.append(tdActions);
-
-            mTbody.append(tr);
-        }
-        momentTable.append(mTbody);
-        tableWrapper.append(momentTable);
-        momentsList.replaceChildren(tableWrapper);
-
         setupMomentTypeChangeHandler(owner, project);
-
         bindLinkClickHandlers(momentsList, 'a[moment-id]', 'moment-seq', 'moments', owner, project, navContentDiv, contentDiv);
     } catch {
         momentsList?.replaceChildren();

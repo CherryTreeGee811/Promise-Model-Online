@@ -116,15 +116,15 @@ public class ProjectFlowsController(
     }
     /// <summary>Update a flow within the project scope.</summary>
     /// <param name="seq">The flow sequence number.</param>
-    /// <param name="entity">The updated flow entity.</param>
+    /// <param name="dto">The updated flow data.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] Flow entity, string owner, string project)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdateFlowRequestDto dto, string owner, string project)
     {
-        if (entity is null) return BadRequest("Request body is required.");
+        if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
@@ -136,10 +136,19 @@ public class ProjectFlowsController(
         if (existing is null)
             return NotFound();
 
-        if (existing.Id != entity.Id)
+        if (existing.Id != dto.Id)
             return BadRequest();
 
-        await _service.UpdateAsync(entity);
+        existing.Statement = dto.Statement;
+        existing.Description = dto.Description;
+        existing.JourneyId = dto.JourneyId;
+        existing.SequenceNumber = dto.SequenceNumber;
+        existing.DisplayOrder = dto.DisplayOrder;
+        existing.StatusColor = dto.StatusColor;
+        existing.OwnerId = dto.OwnerId;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _service.UpdateAsync(existing);
         return NoContent();
     }
     /// <summary>Delete a flow by its sequence number.</summary>

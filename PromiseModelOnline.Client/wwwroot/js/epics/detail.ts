@@ -135,7 +135,7 @@ async function loadEpicJourneys(owner: string, project: string, epicId: string, 
             tbody,
             onCreate: async (statement) => createJourney(owner, project, {
                 statement,
-                epicId,
+                epicId: (epic as Record<string, unknown>).id as number,
                 displayOrder: (journeys || []).length + 1,
             }) as Promise<Record<string, unknown> | null>,
             getRowHtml: (created) => '<tr><td>' + escapeHtml(created.statement as string) + '</td>'
@@ -144,45 +144,6 @@ async function loadEpicJourneys(owner: string, project: string, epicId: string, 
             childMetricsKey: 'epic-' + epic.sequenceNumber,
             items: journeys as unknown as Record<string, unknown>[],
         });
-
-        const tableWrapper = document.createElement('div');
-        tableWrapper.className = 'table-responsive';
-        const journeyTable = document.createElement('table');
-        journeyTable.className = 'table table-sm table-striped align-middle promisemodel-table';
-
-        const indexThead = document.createElement('thead');
-        const indexHeaderRow = document.createElement('tr');
-        const indexHeaders = ['Statement', 'Actions'];
-        for (const h of indexHeaders) {
-            const th = document.createElement('th');
-            th.textContent = h;
-            indexHeaderRow.append(th);
-        }
-        indexThead.append(indexHeaderRow);
-        journeyTable.append(indexThead);
-
-        const indexTbody = document.createElement('tbody');
-        for (const index of journeys) {
-            const tr = document.createElement('tr');
-            const tdStatement = document.createElement('td');
-            tdStatement.textContent = index.statement;
-            tr.append(tdStatement);
-
-            const tdActions = document.createElement('td');
-            const viewLink = document.createElement('a');
-            viewLink.href = '/' + owner + '/' + project + '/journeys/' + index.sequenceNumber;
-            viewLink.setAttribute('journey-id', String(index.id));
-            viewLink.setAttribute('journey-seq', String(index.sequenceNumber));
-            viewLink.className = 'btn btn-sm btn-outline-primary';
-            viewLink.textContent = 'View';
-            tdActions.append(viewLink);
-            tr.append(tdActions);
-
-            indexTbody.append(tr);
-        }
-        journeyTable.append(indexTbody);
-        tableWrapper.append(journeyTable);
-        journeysList.replaceChildren(tableWrapper);
 
         bindLinkClickHandlers(journeysList, 'a[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
     } catch {

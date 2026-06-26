@@ -1,9 +1,5 @@
 #!/bin/sh
 
-SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
-API_USER=${API_DB_USER:-pmo_api}
-AUTH_USER=${AUTH_DB_USER:-pmo_auth}
-
 read_secret_file() {
     if [ ! -f "$1" ]; then
         echo "FATAL: Secret file $1 not found. Mount a Docker secret at this path." >&2
@@ -16,6 +12,7 @@ read_secret_file() {
     cat "$1"
 }
 
+SA_PASSWORD=$(read_secret_file /run/secrets/db_sa_password)
 API_PASSWORD=$(read_secret_file /run/secrets/api_db_password)
 AUTH_PASSWORD=$(read_secret_file /run/secrets/auth_db_password)
 SQLCMD=/opt/mssql-tools/bin/sqlcmd
@@ -28,6 +25,11 @@ API_PASSWORD_SQL=$(sql_escape_literal "$API_PASSWORD")
 AUTH_PASSWORD_SQL=$(sql_escape_literal "$AUTH_PASSWORD")
 
 until "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
+  # Check if failure is due to SA being disabled
+  if "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" 2>&1 | grep -q "18470"; then
+    echo "SA account disabled. Assuming already initialized."
+    exit 0
+  fi
   echo 'Waiting for SQL Server...'
   sleep 5
 done
@@ -95,10 +97,24 @@ BEGIN
   EXEC sp_addrolemember N'db_owner', N'pmo_auth';
 END
 GO
-
--- sa deliberately left enabled for db-init restart support
 EOF
 
 "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql
 
-echo 'Database application accounts created or already present.'
+# Explicitly verify initialization
+echo "Verifying database initialization..."
+"$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "
+IF DB_ID(N'PromiseModelOnline') IS NULL OR DB_ID(N'PromiseModelOnlineAuth') IS NULL
+BEGIN
+  RAISERROR('Database initialization failed.', 16, 1);
+END
+"
+if [ $? -ne 0 ]; then
+  echo "ERROR: Database verification failed." >&2
+  exit 1
+fi
+
+# Disable SA after verification
+"$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "ALTER LOGIN sa DISABLE;"
+
+echo 'Database application accounts created, SA disabled, and initialization verified.'

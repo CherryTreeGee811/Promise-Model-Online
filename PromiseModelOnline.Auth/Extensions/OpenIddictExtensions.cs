@@ -99,8 +99,20 @@ public static class OpenIddictExtensions
                 X509KeyStorageFlags.PersistKeySet |
                 X509KeyStorageFlags.Exportable);
 
-            options.AddSigningCertificate(cert);
-            options.AddEncryptionCertificate(cert);
+            var ecdsaKey = cert.GetECDsaPrivateKey();
+            if (ecdsaKey is not null)
+            {
+                options.AddSigningCredentials(
+                    new SigningCredentials(
+                        new ECDsaSecurityKey(ecdsaKey),
+                        SecurityAlgorithms.EcdsaSha256));
+                options.AddEphemeralEncryptionKey();
+            }
+            else
+            {
+                options.AddSigningCertificate(cert);
+                options.AddEncryptionCertificate(cert);
+            }
         }
         else
         {

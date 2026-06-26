@@ -1,0 +1,192 @@
+---
+- name: Deploy Docker Compose stack to VM
+  hosts: vm_host
+  gather_facts: true
+
+  vars:
+    deploy_root: "{{ playbook_dir }}/../../"
+    project_root: "{{ pmo_repo_root }}"
+
+  tasks:
+    - name: Create project directories on VM
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ project_root }}"
+        - "{{ project_root }}/secrets"
+        - "{{ project_root }}/scripts"
+        - "{{ project_root }}/keys/client"
+        - "{{ project_root }}/keys/auth"
+        - "{{ project_root }}/keys/bff"
+
+    - name: Sync deploy directory to VM
+      ansible.builtin.synchronize:
+        src: "{{ deploy_root }}"
+        dest: "{{ project_root }}"
+        rsync_opts:
+          - "--exclude=keys"
+          - "--exclude=secrets"
+          - "--exclude=ansible"
+          - "--exclude=.DS_Store"
+        delete: yes
+
+    - name: Create secret files on VM
+      no_log: true
+      ansible.builtin.copy:
+        dest: "{{ project_root }}/secrets/{{ item }}"
+        content: "{{ lookup('file', deploy_root ~ '/secrets/' ~ item) | trim }}"
+        mode: "0644"
+      loop:
+        - auth_db_password.txt
+        - api_db_password.txt
+        - cert_password.txt
+        - google_client_secret.txt
+        - sendgrid_api_key.txt
+        - umami_db_password.txt
+        - umami_admin_password.txt
+        - cloudflare_tunnel_token.txt
+        - db_sa_password.txt
+
+    - name: Check if existing cert is ECDSA (needs RSA regeneration)
+      ansible.builtin.shell:
+        cmd: |
+          openssl x509 -in {{ project_root }}/keys/auth/cert.pem -noout -text 2>/dev/null | grep -q "id-ecPublicKey" && echo "ECDSA" || echo "RSA or missing"
+      register: cert_type_check
+      changed_when: false
+      failed_when: false
+
+    - name: Remove old ECDSA certs to force RSA regeneration
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ project_root }}/keys/client/cert.pem"
+        - "{{ project_root }}/keys/client/key.pem"
+        - "{{ project_root }}/keys/auth/cert.pem"
+        - "{{ project_root }}/keys/auth/key.pem"
+        - "{{ project_root }}/keys/auth/cert.pfx"
+        - "{{ project_root }}/keys/bff/cert.pem"
+        - "{{ project_root }}/keys/bff/key.pem"
+      when: cert_type_check.stdout == "ECDSA"
+
+    - name: Generate all self-signed certificates
+      block:
+        - name: Client cert
+          ansible.builtin.shell:
+            cmd: >
+              openssl req -x509 -newkey rsa:4096 -nodes
+              -keyout "{{ project_root }}/keys/client/key.pem"
+              -out "{{ project_root }}/keys/client/cert.pem"
+              -days 365 -subj "/CN=promisemodel.online/O=Promise Model Online/C=CA"
+            creates: "{{ project_root }}/keys/client/cert.pem"
+
+        - name: Auth cert
+          ansible.builtin.shell:
+            cmd: >
+              openssl req -x509 -newkey rsa:4096 -nodes
+              -keyout "{{ project_root }}/keys/auth/key.pem"
+              -out "{{ project_root }}/keys/auth/cert.pem"
+              -days 365 -subj "/CN=promisemodelonline.auth/O=Promise Model Online Auth/C=CA"
+            creates: "{{ project_root }}/keys/auth/cert.pem"
+
+        - name: cert.pfx for token signing
+          ansible.builtin.shell:
+            cmd: >
+              openssl pkcs12 -export
+              -in "{{ project_root }}/keys/auth/cert.pem"
+              -inkey "{{ project_root }}/keys/auth/key.pem"
+              -out "{{ project_root }}/keys/auth/cert.pfx"
+              -passout pass:{{ lookup('file', deploy_root ~ '/secrets/cert_password.txt') | trim }}
+              -name "Promise Model Online Token Signing"
+            creates: "{{ project_root }}/keys/auth/cert.pfx"
+
+        - name: BFF cert
+          ansible.builtin.shell:
+            cmd: >
+              openssl req -x509 -newkey rsa:4096 -nodes
+              -keyout "{{ project_root }}/keys/bff/key.pem"
+              -out "{{ project_root }}/keys/bff/cert.pem"
+              -days 365 -subj "/CN=promisemodelonline.bff/O=Promise Model Online BFF/C=CA"
+            creates: "{{ project_root }}/keys/bff/cert.pem"
+
+    - name: Set permissions on certs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: "0644"
+      loop:
+        - "{{ project_root }}/keys/client/key.pem"
+        - "{{ project_root }}/keys/client/cert.pem"
+        - "{{ project_root }}/keys/auth/key.pem"
+        - "{{ project_root }}/keys/auth/cert.pem"
+        - "{{ project_root }}/keys/auth/cert.pfx"
+        - "{{ project_root }}/keys/bff/key.pem"
+        - "{{ project_root }}/keys/bff/cert.pem"
+
+    - name: Pull Docker images from registry
+      ansible.builtin.shell:
+        cmd: docker compose pull
+      args:
+        chdir: "{{ project_root }}"
+      register: pull_result
+      changed_when: "'Downloaded' in pull_result.stderr or 'Pulled' in pull_result.stderr"
+
+    - name: Remove old stack and volumes for clean deploy
+      ansible.builtin.shell:
+        cmd: docker compose down -v 2>/dev/null; echo "cleaned"
+      args:
+        chdir: "{{ project_root }}"
+      changed_when: false
+
+    - name: Deploy Docker Compose stack
+      ansible.builtin.shell:
+        cmd: |
+          export DB_SA_PASSWORD=$(cat {{ project_root }}/secrets/db_sa_password.txt)
+          export UMAMI_DB_PASSWORD=$(cat {{ project_root }}/secrets/umami_db_password.txt)
+          docker compose up -d
+      args:
+        chdir: "{{ project_root }}"
+      register: deploy_result
+      no_log: true
+
+    - name: Wait for all services to be healthy
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 60); do
+            ALL_READY=true
+            for c in promisemodelonlineauth promisemodelonlineapi promisemodelonlinebff promisemodelonlineclient; do
+              HEALTH=$(docker ps --filter "name=$c" --filter "health=healthy" -q 2>/dev/null)
+              if [ -z "$HEALTH" ]; then
+                ALL_READY=false
+              fi
+            done
+            if [ "$ALL_READY" = "true" ]; then
+              echo "All services ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Timed out waiting for services"
+          docker compose ps
+          exit 1
+      args:
+        chdir: "{{ project_root }}"
+      register: health_result
+
+    - name: Verify stack is serving
+      ansible.builtin.shell:
+        cmd: |
+          echo "=== BFF health ==="
+          curl -sk https://localhost:8010/health
+          echo ""
+          echo "=== Client HTTPS ==="
+          curl -sk https://localhost:9000/ | head -3
+          echo ""
+      args:
+        executable: /bin/bash
+      register: verify_result
+
+    - name: Print deployment results
+      ansible.builtin.debug:
+        msg: "{{ verify_result.stdout }}"

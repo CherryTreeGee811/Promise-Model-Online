@@ -181,7 +181,7 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
             tbody,
             onCreate: async (statement) => createFlow(owner, project, {
                 statement,
-                journeyId,
+                journeyId: journey.id,
                 displayOrder: (flows || []).length + 1,
             }) as Promise<Record<string, unknown> | null>,
             getRowHtml: (created) => '<tr><td>' + escapeHtml(created.statement as string) + '</td>'
@@ -190,45 +190,6 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
             childMetricsKey: 'journey-' + journey.sequenceNumber,
             items: flows as unknown as Record<string, unknown>[],
         });
-
-        const tableWrapper = document.createElement('div');
-        tableWrapper.className = 'table-responsive';
-        const flowTable = document.createElement('table');
-        flowTable.className = 'table table-sm table-striped align-middle promisemodel-table';
-
-        const fThead = document.createElement('thead');
-        const fHeaderRow = document.createElement('tr');
-        const fHeaders = ['Statement', 'Actions'];
-        for (const h of fHeaders) {
-            const th = document.createElement('th');
-            th.textContent = h;
-            fHeaderRow.append(th);
-        }
-        fThead.append(fHeaderRow);
-        flowTable.append(fThead);
-
-        const fTbody = document.createElement('tbody');
-        for (const f of flows) {
-            const tr = document.createElement('tr');
-            const tdStatement = document.createElement('td');
-            tdStatement.textContent = f.statement;
-            tr.append(tdStatement);
-
-            const tdActions = document.createElement('td');
-            const viewLink = document.createElement('a');
-            viewLink.href = '/' + owner + '/' + project + '/flows/' + f.sequenceNumber;
-            viewLink.setAttribute('flow-id', String(f.id));
-            viewLink.setAttribute('flow-seq', String(f.sequenceNumber));
-            viewLink.className = 'btn btn-sm btn-outline-primary';
-            viewLink.textContent = 'View';
-            tdActions.append(viewLink);
-            tr.append(tdActions);
-
-            fTbody.append(tr);
-        }
-        flowTable.append(fTbody);
-        tableWrapper.append(flowTable);
-        flowsList.replaceChildren(tableWrapper);
 
         bindLinkClickHandlers(flowsList, 'a[flow-id]', 'flow-seq', 'flows', owner, project, navContentDiv, contentDiv);
 

@@ -77,15 +77,15 @@ public class ProjectPromisesController(
     }
     /// <summary>Update a promise within the project scope.</summary>
     /// <param name="seq">The promise sequence number.</param>
-    /// <param name="entity">The updated promise entity.</param>
+    /// <param name="dto">The updated promise data.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] Promise entity, string owner, string project)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdatePromiseRequestDto dto, string owner, string project)
     {
-        if (entity is null) return BadRequest("Request body is required.");
+        if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
@@ -97,10 +97,19 @@ public class ProjectPromisesController(
         if (existing is null)
             return NotFound();
 
-        if (existing.Id != entity.Id)
+        if (existing.Id != dto.Id)
             return BadRequest();
 
-        await _service.UpdateAsync(entity);
+        existing.Statement = dto.Statement;
+        existing.Description = dto.Description;
+        existing.ProjectId = dto.ProjectId;
+        existing.SequenceNumber = dto.SequenceNumber;
+        existing.DisplayOrder = dto.DisplayOrder;
+        existing.StatusColor = dto.StatusColor;
+        existing.OwnerId = dto.OwnerId;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _service.UpdateAsync(existing);
         return NoContent();
     }
     /// <summary>Delete a promise by its sequence number.</summary>

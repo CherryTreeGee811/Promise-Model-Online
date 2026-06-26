@@ -1,0 +1,6 @@
+---
+- name: Provision QEMU VM
+  ansible.builtin.import_playbook: provision-vm.yml
+
+- name: Deploy Docker Compose stack
+  ansible.builtin.import_playbook: deploy-stack.yml
