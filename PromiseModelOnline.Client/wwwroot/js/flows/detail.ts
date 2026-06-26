@@ -191,6 +191,7 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
             items: moments as unknown as Record<string, unknown>[],
         });
 
+        setupMomentTypeChangeHandler(owner, project);
         bindLinkClickHandlers(momentsList, 'a[moment-id]', 'moment-seq', 'moments', owner, project, navContentDiv, contentDiv);
     } catch {
         momentsList?.replaceChildren();
