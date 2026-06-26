@@ -154,8 +154,30 @@ Self-hosted **Umami** analytics (privacy-first: no cookies, no PII, no cross-sit
 CSP `default-src 'none'` with hash-based allowance, HSTS, `X-Frame-Options: DENY`, `Cross-Origin-Opener-Policy: same-origin`, `Permissions-Policy`, and `manifest-src 'self'`. A single session cookie (`__Host-pmo.session`) is HttpOnly, Secure, SameSite=Lax, carries no personal data, and expires after 8 hours of inactivity.
 
 ---
-
-## Getting Started
+ 
+ ## Production Deployment
+ 
+ ### Prerequisites
+ 
+ 1. **Inventory:** Update `deploy/ansible/inventory/hosts.yml` with your production server details.
+ 2. **Secrets:** Populate `deploy/secrets/` with the required text files (`db_sa_password.txt`, `api_db_password.txt`, etc.).
+ 3. **SSH Access:** Ensure your local SSH key (`~/.ssh/pmo_vm_key.pub`) is authorized on the target host.
+ 
+ ### 1. Provision the VM (if not set up)
+ 
+ ```bash
+ ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/provision-vm.yml
+ ```
+ 
+ ### 2. Deploy the stack
+ 
+ ```bash
+ ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/deploy-stack.yml
+ ```
+ 
+ ---
+ 
+ ## Getting Started
 
 ### Prerequisites
 
