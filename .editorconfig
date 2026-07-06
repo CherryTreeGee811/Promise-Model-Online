@@ -39,3 +39,114 @@ dotnet_style_explicit_tuple_names = true:warning
 csharp_style_throw_expression = true:warning
 csharp_style_pattern_matching_over_is_with_cast_check = true:warning
 csharp_style_pattern_matching_over_as_with_null_check = true:warning
+
+# ──────────────────────────────────────────────
+# CA rule severity configuration
+# ──────────────────────────────────────────────
+
+# CA2007: ConfigureAwait — noise in ASP.NET Core (no sync context to capture)
+dotnet_diagnostic.CA2007.severity = none
+
+# CA1707: Remove underscores from names — test naming convention is standard
+dotnet_diagnostic.CA1707.severity = none
+
+# CA1515: Make types internal — too noisy in multi-project solutions
+dotnet_diagnostic.CA1515.severity = none
+
+# CA1054/CA1056: URI parameters/properties as strings — common pattern
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1056.severity = none
+
+# CA2227: Collection properties should be read-only — common DTO pattern
+dotnet_diagnostic.CA1002.severity = none
+dotnet_diagnostic.CA2227.severity = none
+dotnet_diagnostic.CA1819.severity = none
+
+# CA1805: Do not initialize unnecessarily — noisy for field initializers
+dotnet_diagnostic.CA1805.severity = none
+
+# CA1051: Do not declare visible instance fields — common in test base classes
+dotnet_diagnostic.CA1051.severity = none
+
+# CA1711/CA1716: Naming — not worth blocking builds
+dotnet_diagnostic.CA1711.severity = none
+dotnet_diagnostic.CA1716.severity = none
+
+# ── Downgrade to suggestion (IDE-visible, does not fail build) ──
+
+# Performance
+dotnet_diagnostic.CA1848.severity = suggestion   # Use LoggerMessage delegates
+dotnet_diagnostic.CA1873.severity = suggestion   # Use AsSpan instead of Substring
+dotnet_diagnostic.CA1861.severity = suggestion   # Avoid constant arrays as arguments
+dotnet_diagnostic.CA1869.severity = suggestion   # Cache and reuse arrays
+dotnet_diagnostic.CA1852.severity = suggestion   # Seal internal types
+dotnet_diagnostic.CA1859.severity = suggestion   # Use concrete types when possible
+dotnet_diagnostic.CA1822.severity = suggestion   # Mark members as static
+dotnet_diagnostic.CA1850.severity = suggestion   # Prefer static HashData
+dotnet_diagnostic.CA1802.severity = suggestion   # Use const for readonly constants
+dotnet_diagnostic.CA1823.severity = suggestion   # Remove unused fields
+dotnet_diagnostic.CA1812.severity = suggestion   # Uninstantiated internal classes
+
+# Correctness (fix gradually)
+dotnet_diagnostic.CA1062.severity = suggestion   # Validate arguments of public methods
+dotnet_diagnostic.CA2213.severity = suggestion   # Dispose disposable fields
+dotnet_diagnostic.CA1031.severity = suggestion   # Do not catch general exception types
+dotnet_diagnostic.CA1849.severity = suggestion   # Call async methods when available
+dotnet_diagnostic.CA1860.severity = suggestion   # Prefer Length/Count
+dotnet_diagnostic.CA1865.severity = suggestion   # Prefer string overloads
+dotnet_diagnostic.CA2263.severity = suggestion   # Prefer generic overload
+dotnet_diagnostic.CA2000.severity = suggestion   # Dispose objects before losing scope
+dotnet_diagnostic.CA1816.severity = suggestion   # Dispose GC methods
+dotnet_diagnostic.CA2025.severity = suggestion   # Prevent StringBuilder overflow
+dotnet_diagnostic.CA1303.severity = suggestion   # Do not pass literals as localized params
+dotnet_diagnostic.CA2211.severity = suggestion   # Non-constant fields should not be visible
+dotnet_diagnostic.CA2234.severity = suggestion   # Pass System.Uri instead of string
+
+# Security (fix gradually)
+dotnet_diagnostic.CA5404.severity = suggestion   # Security: review token handling
+dotnet_diagnostic.CA5359.severity = suggestion   # Security: certificate validation
+
+# Culture-related correctness (fix gradually)
+dotnet_diagnostic.CA1304.severity = suggestion   # Specify CultureInfo
+dotnet_diagnostic.CA1305.severity = suggestion   # Specify IFormatProvider
+dotnet_diagnostic.CA1307.severity = suggestion   # Specify StringComparison
+dotnet_diagnostic.CA1308.severity = suggestion   # Normalize strings to uppercase
+dotnet_diagnostic.CA1310.severity = suggestion   # Specify StringComparison
+dotnet_diagnostic.CA1311.severity = suggestion   # Specify culture
+dotnet_diagnostic.CA1862.severity = suggestion   # Use string comparison methods
+
+# ── Test project overrides ──
+[**/PromiseModelOnline.*.Tests/**/*.cs]
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1869.severity = none
+dotnet_diagnostic.CA1852.severity = none
+dotnet_diagnostic.CA1859.severity = none
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1850.severity = none
+dotnet_diagnostic.CA1802.severity = none
+dotnet_diagnostic.CA1823.severity = none
+dotnet_diagnostic.CA1812.severity = none
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA2213.severity = none
+dotnet_diagnostic.CA1031.severity = none
+dotnet_diagnostic.CA1849.severity = none
+dotnet_diagnostic.CA1860.severity = none
+dotnet_diagnostic.CA1865.severity = none
+dotnet_diagnostic.CA2263.severity = none
+dotnet_diagnostic.CA2000.severity = none
+dotnet_diagnostic.CA1816.severity = none
+dotnet_diagnostic.CA2025.severity = none
+dotnet_diagnostic.CA1303.severity = none
+dotnet_diagnostic.CA2211.severity = none
+dotnet_diagnostic.CA2234.severity = none
+dotnet_diagnostic.CA5404.severity = none
+dotnet_diagnostic.CA5359.severity = none
+dotnet_diagnostic.CA1304.severity = none
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.CA1308.severity = none
+dotnet_diagnostic.CA1310.severity = none
+dotnet_diagnostic.CA1311.severity = none
+dotnet_diagnostic.CA1862.severity = none

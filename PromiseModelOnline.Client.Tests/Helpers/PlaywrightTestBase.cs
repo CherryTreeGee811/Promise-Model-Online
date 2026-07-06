@@ -119,20 +119,18 @@ public abstract class PlaywrightTestBase
                 await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 10000 });
                 break;
             }
-            catch (TimeoutException)
+            catch (TimeoutException) when (attempt < 2)
             {
-                if (attempt == 2) throw;
                 await Task.Delay(500);
             }
-            catch (PlaywrightException ex) when (
+            catch (PlaywrightException ex) when (attempt < 2 && (
                 ex.Message.Contains("ERR_ABORTED") ||
                 ex.Message.Contains("NS_BINDING_ABORTED") ||
                 ex.Message.Contains("NS_ERROR_FAILURE") ||
                 ex.Message.Contains("NS_ERROR_NETONRESET") ||
                 ex.Message.Contains("Download is starting") ||
-                ex.Message.Contains("interrupted by another navigation"))
+                ex.Message.Contains("interrupted by another navigation")))
             {
-                if (attempt == 2) throw;
                 // Layer 2: Navigation was interrupted (e.g. SPA redirect). Wait for the
                 // redirected page to settle instead of starting a fresh navigation.
                 await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
@@ -205,14 +203,12 @@ public abstract class PlaywrightTestBase
                 await Page.GotoAsync(BaseUrl + path, new PageGotoOptions { Timeout = 2000 });
                 return;
             }
-            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation"))
+            catch (PlaywrightException ex) when (attempt < 2 && (ex.Message.Contains("ERR_ABORTED") || ex.Message.Contains("interrupted by another navigation")))
             {
-                if (attempt == 2) throw;
                 await Task.Delay(100);
             }
-            catch (TimeoutException)
+            catch (TimeoutException) when (attempt < 2)
             {
-                if (attempt == 2) throw;
                 await Task.Delay(100);
             }
         }

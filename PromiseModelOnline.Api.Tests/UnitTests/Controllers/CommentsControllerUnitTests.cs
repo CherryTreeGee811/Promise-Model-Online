@@ -379,7 +379,7 @@ public class CommentsControllerUnitTests
 
         var exceptionMessage = "Parent entity not found";
         _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
-            .ThrowsAsync(new System.Exception(exceptionMessage));
+            .ThrowsAsync(new System.InvalidOperationException(exceptionMessage));
 
         ControllerTestHelpers.SetControllerUser(_controller, "error@example.com");
 
@@ -415,7 +415,7 @@ public class CommentsControllerUnitTests
             .ReturnsAsync(user);
 
         _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
-            .ThrowsAsync(new System.Exception("Promise with ID 999 not found"));
+            .ThrowsAsync(new System.InvalidOperationException("Promise with ID 999 not found"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "invalid@example.com");
 
@@ -448,7 +448,7 @@ public class CommentsControllerUnitTests
             .ReturnsAsync(user);
 
         _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
-            .ThrowsAsync(new System.Exception("Comment text cannot be empty"));
+            .ThrowsAsync(new System.InvalidOperationException("Comment text cannot be empty"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "empty@example.com");
 
@@ -473,7 +473,7 @@ public class CommentsControllerUnitTests
         };
 
         _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("failing@example.com", It.IsAny<string?>()))
-            .ThrowsAsync(new System.Exception("Database connection failed"));
+            .ThrowsAsync(new System.InvalidOperationException("Database connection failed"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "failing@example.com");
 

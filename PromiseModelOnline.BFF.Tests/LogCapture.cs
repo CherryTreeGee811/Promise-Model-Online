@@ -3,7 +3,7 @@
 namespace PromiseModelOnline.BFF.Tests;
 
 /// <summary>Captures log entries from the test server for assertions.</summary>
-public class LogCapture : ILoggerProvider
+public sealed class LogCapture : ILoggerProvider
 {
     private readonly List<(LogLevel Level, string Message)> _logs = [];
     private readonly object _lock = new();

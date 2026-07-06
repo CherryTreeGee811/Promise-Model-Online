@@ -222,7 +222,7 @@ public class ReactionsControllerUnitTests
             .ReturnsAsync(reaction);
         _reactionServiceMock
             .Setup(s => s.RemoveReactionAsync(15, currentUser.Id))
-            .ThrowsAsync(new System.Exception("remove failed"));
+            .ThrowsAsync(new System.InvalidOperationException("remove failed"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -12,6 +13,8 @@ public class CrudE2ETests : E2ETestBase
     private const string Owner = "pmo_test";
     private const string Project = "promise-model-online";
 
+    private static readonly SearchValues<char> UrlDelimiters = SearchValues.Create(['/', '?', '#']);
+
     // ──────────────────────────────
     //  Helper: parse entity seq from URL
     // ──────────────────────────────
@@ -20,9 +23,9 @@ public class CrudE2ETests : E2ETestBase
     {
         var pattern = $"/{segment}/";
         var idx = url.LastIndexOf(pattern, StringComparison.OrdinalIgnoreCase);
-        if (idx < 0) throw new Exception($"Could not find /{segment}/ in URL: {url}");
+        if (idx < 0) throw new InvalidOperationException($"Could not find /{segment}/ in URL: {url}");
         var after = url[(idx + pattern.Length)..];
-        var end = after.IndexOfAny(new[] { '/', '?', '#' });
+        var end = after.AsSpan().IndexOfAny(UrlDelimiters);
         if (end > 0) after = after[..end];
         return int.Parse(after);
     }
