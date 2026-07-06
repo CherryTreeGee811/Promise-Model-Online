@@ -22,6 +22,9 @@ public class ReactionsControllerUnitTests
 {
     private Mock<IReactionService> _reactionServiceMock = null!;
     private Mock<IUserRepository> _userRepositoryMock = null!;
+    private Mock<ICommentRepository> _commentRepositoryMock = null!;
+    private Mock<IPermissionService> _permissionServiceMock = null!;
+    private Mock<IReactionRepository> _reactionRepositoryMock = null!;
     private Mock<ILogger<ReactionsController>> _loggerMock = null!;
     private ReactionsController _controller = null!;
 
@@ -30,10 +33,16 @@ public class ReactionsControllerUnitTests
     {
         _reactionServiceMock = new Mock<IReactionService>();
         _userRepositoryMock = new Mock<IUserRepository>();
+        _commentRepositoryMock = new Mock<ICommentRepository>();
+        _permissionServiceMock = new Mock<IPermissionService>();
+        _reactionRepositoryMock = new Mock<IReactionRepository>();
         _loggerMock = new Mock<ILogger<ReactionsController>>();
         _controller = new ReactionsController(
             _reactionServiceMock.Object,
             _userRepositoryMock.Object,
+            _commentRepositoryMock.Object,
+            _permissionServiceMock.Object,
+            _reactionRepositoryMock.Object,
             _loggerMock.Object);
     }
 

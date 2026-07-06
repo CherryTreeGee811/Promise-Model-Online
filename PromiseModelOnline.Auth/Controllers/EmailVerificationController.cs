@@ -77,6 +77,9 @@ public class EmailVerificationController(
     [HttpGet("debug/code/{userId:guid}")]
     public IActionResult GetVerificationCode(Guid userId)
     {
+        if (!ModelState.IsValid)
+            return NotFound();
+
         if (!_env.IsDevelopment())
             return NotFound();
 

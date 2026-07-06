@@ -2,36 +2,35 @@
 
 #nullable disable
 
-namespace PromiseModelOnline.Api.Migrations
+namespace PromiseModelOnline.Api.Migrations;
+
+/// <inheritdoc />
+public partial class AddMomentFlowIdSequenceUniqueIndex : Migration
 {
     /// <inheritdoc />
-    public partial class AddMomentFlowIdSequenceUniqueIndex : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropIndex(
-                name: "IX_Moments_FlowId",
-                table: "Moments");
+        migrationBuilder.DropIndex(
+            name: "IX_Moments_FlowId",
+            table: "Moments");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Moments_FlowId_SequenceNumber",
-                table: "Moments",
-                columns: new[] { "FlowId", "SequenceNumber" },
-                unique: true);
-        }
+        migrationBuilder.CreateIndex(
+            name: "IX_Moments_FlowId_SequenceNumber",
+            table: "Moments",
+            columns: new[] { "FlowId", "SequenceNumber" },
+            unique: true);
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropIndex(
-                name: "IX_Moments_FlowId_SequenceNumber",
-                table: "Moments");
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropIndex(
+            name: "IX_Moments_FlowId_SequenceNumber",
+            table: "Moments");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Moments_FlowId",
-                table: "Moments",
-                column: "FlowId");
-        }
+        migrationBuilder.CreateIndex(
+            name: "IX_Moments_FlowId",
+            table: "Moments",
+            column: "FlowId");
     }
 }

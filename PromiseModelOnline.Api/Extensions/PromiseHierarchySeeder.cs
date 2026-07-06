@@ -695,42 +695,42 @@ public static class PromiseHierarchySeeder
         };
 
         var promises = await db.Promises.Where(p => p.ProjectId == projectId).ToListAsync();
-        foreach (var promise in promises)
+        foreach (var promiseId in promises.Select(p => p.Id))
         {
             var maxEpicChild = await db.Epics
-                .Where(e => e.ProductPromiseId == promise.Id)
+                .Where(e => e.ProductPromiseId == promiseId)
                 .MaxAsync(e => (int?)e.SequenceNumber) ?? 0;
-            entries.Add((promise.Id, "Epic", maxEpicChild + 1));
+            entries.Add((promiseId, "Epic", maxEpicChild + 1));
         }
 
         var promiseIds = promises.Select(p => p.Id).ToList();
         var epics = await db.Epics.Where(e => promiseIds.Contains(e.ProductPromiseId)).ToListAsync();
-        foreach (var epic in epics)
+        foreach (var epicId in epics.Select(e => e.Id))
         {
             var maxJourneyChild = await db.Journeys
-                .Where(j => j.EpicId == epic.Id)
+                .Where(j => j.EpicId == epicId)
                 .MaxAsync(j => (int?)j.SequenceNumber) ?? 0;
-            entries.Add((epic.Id, "Journey", maxJourneyChild + 1));
+            entries.Add((epicId, "Journey", maxJourneyChild + 1));
         }
 
         var epicIds = epics.Select(e => e.Id).ToList();
         var journeys = await db.Journeys.Where(j => epicIds.Contains(j.EpicId)).ToListAsync();
-        foreach (var journey in journeys)
+        foreach (var journeyId in journeys.Select(j => j.Id))
         {
             var maxFlowChild = await db.Flows
-                .Where(f => f.JourneyId == journey.Id)
+                .Where(f => f.JourneyId == journeyId)
                 .MaxAsync(f => (int?)f.SequenceNumber) ?? 0;
-            entries.Add((journey.Id, "Flow", maxFlowChild + 1));
+            entries.Add((journeyId, "Flow", maxFlowChild + 1));
         }
 
         var journeyIds = journeys.Select(j => j.Id).ToList();
         var flows = await db.Flows.Where(f => journeyIds.Contains(f.JourneyId)).ToListAsync();
-        foreach (var flow in flows)
+        foreach (var flowId in flows.Select(f => f.Id))
         {
             var maxMomentChild = await db.Moments
-                .Where(m => m.FlowId == flow.Id)
+                .Where(m => m.FlowId == flowId)
                 .MaxAsync(m => (int?)m.SequenceNumber) ?? 0;
-            entries.Add((flow.Id, "Moment", maxMomentChild + 1));
+            entries.Add((flowId, "Moment", maxMomentChild + 1));
         }
 
         foreach (var (parentId, scope, nextValue) in entries)

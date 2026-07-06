@@ -24,6 +24,7 @@ public class CommentsControllerUnitTests
     private Mock<ICommentService> _mockCommentService = null!;
     private Mock<IUserRepository> _mockUserRepository = null!;
     private Mock<ICommentRepository> _mockCommentRepository = null!;
+    private Mock<IPermissionService> _mockPermissionService = null!;
     private Mock<ILogger<CommentsController>> _mockLogger = null!;
     private CommentsController _controller = null!;
 
@@ -33,11 +34,13 @@ public class CommentsControllerUnitTests
         _mockCommentService = new Mock<ICommentService>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockCommentRepository = new Mock<ICommentRepository>();
+        _mockPermissionService = new Mock<IPermissionService>();
         _mockLogger = new Mock<ILogger<CommentsController>>();
         _controller = new CommentsController(
             _mockCommentService.Object,
             _mockUserRepository.Object,
             _mockCommentRepository.Object,
+            _mockPermissionService.Object,
             _mockLogger.Object);
     }
 
