@@ -12,6 +12,7 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests;
@@ -122,6 +123,9 @@ public class ReactionsControllerUnitTests
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
+
         // Act
         var result = await _controller.CreateReaction(request);
 
@@ -161,15 +165,22 @@ public class ReactionsControllerUnitTests
     {
         // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com", Name = "User" };
+        var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
 
         _userRepositoryMock
             .Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null))
             .ReturnsAsync(currentUser);
+        _reactionRepositoryMock
+            .Setup(r => r.GetByIdAsync(15))
+            .ReturnsAsync(reaction);
         _reactionServiceMock
             .Setup(s => s.RemoveReactionAsync(15, currentUser.Id))
             .Returns(Task.CompletedTask);
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
 
         // Act
         var result = await _controller.DeleteReaction(15);
@@ -201,15 +212,22 @@ public class ReactionsControllerUnitTests
     {
         // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com", Name = "User" };
+        var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
 
         _userRepositoryMock
             .Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null))
             .ReturnsAsync(currentUser);
+        _reactionRepositoryMock
+            .Setup(r => r.GetByIdAsync(15))
+            .ReturnsAsync(reaction);
         _reactionServiceMock
             .Setup(s => s.RemoveReactionAsync(15, currentUser.Id))
             .ThrowsAsync(new System.Exception("remove failed"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
 
         // Act
         var result = await _controller.DeleteReaction(15);

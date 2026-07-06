@@ -218,14 +218,14 @@ public class ReactionsIntegrationTests : ApiIntegrationTestBase
     }
 
     [Test]
-    [Description("REQ_FUN_009 sad path: Delete non-existent reaction returns 400")]
-    public async Task DeleteReaction_NonExistent_ReturnsBadRequest()
+    [Description("REQ_FUN_009 sad path: Delete non-existent reaction returns 404")]
+    public async Task DeleteReaction_NonExistent_ReturnsNotFound()
     {
         // Arrange
         SetAuthHeader(OwnerToken);
         // Act
         var response = await Client.DeleteAsync("/api/reactions/999");
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 }

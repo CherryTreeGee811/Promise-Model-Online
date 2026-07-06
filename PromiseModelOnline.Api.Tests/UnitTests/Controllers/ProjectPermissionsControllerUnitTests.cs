@@ -60,6 +60,15 @@ public class ProjectPermissionsControllerUnitTests
         _mockPermissionService.Setup(s => s.GetPermissionsByProjectAsync(projectEntity.Id))
             .ReturnsAsync(permissions);
 
+        ControllerTestHelpers.SetControllerUser(_controller, "admin@example.com");
+        var permUser = new User { Id = 1, Email = "admin@example.com" };
+        _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("admin@example.com", It.IsAny<string?>())).ReturnsAsync(permUser);
+        var permServices = new Mock<IServiceProvider>();
+        permServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        permServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = permServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(permUser.Id, projectEntity.Id)).ReturnsAsync(PermissionLevel.Edit);
+
         var result = await _controller.GetPermissions(owner, project);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
@@ -106,6 +115,12 @@ public class ProjectPermissionsControllerUnitTests
         _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync(email, username))
             .ReturnsAsync(user);
 
+        var inviteServices = new Mock<IServiceProvider>();
+        inviteServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        inviteServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = inviteServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, projectEntity.Id)).ReturnsAsync(PermissionLevel.Edit);
+
         var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
         var permissionDto = new PermissionDto { Id = 5, Level = "View" };
         _mockPermissionService.Setup(s => s.InviteUserAsync(request, user.Id))
@@ -138,6 +153,12 @@ public class ProjectPermissionsControllerUnitTests
         _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync(email, username))
             .ReturnsAsync(user);
 
+        var inviteServices = new Mock<IServiceProvider>();
+        inviteServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        inviteServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = inviteServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, projectEntity.Id)).ReturnsAsync(PermissionLevel.Edit);
+
         var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
         _mockPermissionService.Setup(s => s.InviteUserAsync(request, user.Id))
             .ThrowsAsync(new InvalidOperationException("Invitation failed"));
@@ -168,8 +189,8 @@ public class ProjectPermissionsControllerUnitTests
     }
 
     [Test]
-    [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing email claim on user returns Unauthorized")]
-    public async Task InviteUser_WithoutAuth_ReturnsUnauthorized()
+    [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing email claim on user returns Forbidden")]
+    public async Task InviteUser_WithoutAuth_ReturnsForbidden()
     {
         var owner = "testowner";
         var project = "testproject";
@@ -179,11 +200,16 @@ public class ProjectPermissionsControllerUnitTests
 
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
+        var authServices = new Mock<IServiceProvider>();
+        authServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        authServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = authServices.Object;
+
         var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
 
         var result = await _controller.InviteUser(request, owner, project);
 
-        Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
+        Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 
     #endregion
@@ -207,6 +233,12 @@ public class ProjectPermissionsControllerUnitTests
         var user = new User { Id = 10, Email = email, Name = username };
         _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync(email, username))
             .ReturnsAsync(user);
+
+        var revokeServices = new Mock<IServiceProvider>();
+        revokeServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        revokeServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = revokeServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, projectEntity.Id)).ReturnsAsync(PermissionLevel.Edit);
 
         var permissionId = 5;
 
@@ -233,6 +265,12 @@ public class ProjectPermissionsControllerUnitTests
         var user = new User { Id = 10, Email = email, Name = username };
         _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync(email, username))
             .ReturnsAsync(user);
+
+        var revokeServices = new Mock<IServiceProvider>();
+        revokeServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        revokeServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = revokeServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, projectEntity.Id)).ReturnsAsync(PermissionLevel.Edit);
 
         var permissionId = 5;
         _mockPermissionService.Setup(s => s.RemovePermissionAsync(permissionId, user.Id))
