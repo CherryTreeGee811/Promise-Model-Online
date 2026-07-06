@@ -210,6 +210,11 @@ public class PromiseModelOnlineContext(
             entity.HasIndex(e => new { e.OwnerId, e.Slug }).IsUnique();
         });
 
+        modelBuilder.Entity<Moment>(entity =>
+        {
+            entity.HasIndex(e => new { e.FlowId, e.SequenceNumber }).IsUnique();
+        });
+
         modelBuilder.Entity<EntitySequence>(entity =>
         {
             entity.HasKey(e => new { e.ParentId, e.Scope });

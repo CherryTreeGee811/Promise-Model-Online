@@ -26,7 +26,7 @@ AUTH_PASSWORD_SQL=$(sql_escape_literal "$AUTH_PASSWORD")
 
 until "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
   # Check if failure is due to SA being disabled
-  if "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" 2>&1 | grep -q "18470"; then
+  if "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" 2>&1 | grep -qi "account is disabled"; then
     echo "SA account disabled. Assuming already initialized."
     exit 0
   fi

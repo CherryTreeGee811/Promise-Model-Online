@@ -27,7 +27,7 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
   const dropdown = document.createElement('div');
   dropdown.className = 'comment-autocomplete';
   dropdown.role = 'listbox';
-  dropdown.style.display = 'none';
+  dropdown.classList.add('d-none');
   document.body.append(dropdown);
 
   const state: AutocompleteState = {
@@ -168,7 +168,7 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
 
     renderDropdown();
     positionDropdown();
-    dropdown.style.display = 'block';
+    dropdown.classList.remove('d-none');
   }
 
   /** Render the dropdown list items and highlight the current selection. */
@@ -255,7 +255,7 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
     state.highlightedIndex = -1;
     delete state.trigger;
     state.triggerStart = -1;
-    dropdown.style.display = 'none';
+    dropdown.classList.add('d-none');
   }
 
   /** Handle textarea input events: debounce and check for triggers. */

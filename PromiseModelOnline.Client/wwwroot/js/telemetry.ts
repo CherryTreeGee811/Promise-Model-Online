@@ -41,10 +41,11 @@ const state: TelemetryState = {
 };
 
 /**
- * Check whether the user has opted out via GPC signal or meta tag.
+ * Check whether the user has opted out via GPC signal, meta tag, or localStorage preference.
  * @returns {boolean} True if telemetry should be disabled.
  */
 function isOptedOut(): boolean {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('telemetry:disabled') === 'true') return true;
   if ('globalPrivacyControl' in navigator && (navigator as Record<string, unknown>).globalPrivacyControl) {
     return true;
   }

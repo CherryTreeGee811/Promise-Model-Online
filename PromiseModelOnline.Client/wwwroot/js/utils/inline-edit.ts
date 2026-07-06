@@ -17,11 +17,11 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
    */
   function showView(value: string): void {
     viewElement.textContent = value || '';
-    viewElement.style.display = '';
-    inputElement.style.display = 'none';
-    if (saveButton) saveButton.style.display = 'none';
-    editButton.style.display = '';
-    if (cancelButton) cancelButton.style.display = 'none';
+    viewElement.classList.remove('d-none');
+    inputElement.classList.add('d-none');
+    if (saveButton) saveButton.classList.add('d-none');
+    editButton.classList.remove('d-none');
+    if (cancelButton) cancelButton.classList.add('d-none');
   }
 
   /**
@@ -30,19 +30,19 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
   function showEdit(): void {
     cancelValue = (inputElement as HTMLInputElement).value;
     cancelViewHtml = viewElement.textContent || '';
-    viewElement.style.display = 'none';
-    inputElement.style.display = '';
-    editButton.style.display = 'none';
-    if (saveButton) saveButton.style.display = '';
-    if (cancelButton) cancelButton.style.display = '';
+    viewElement.classList.add('d-none');
+    inputElement.classList.remove('d-none');
+    editButton.classList.add('d-none');
+    if (saveButton) saveButton.classList.remove('d-none');
+    if (cancelButton) cancelButton.classList.remove('d-none');
     inputElement.focus();
   }
 
-  viewElement.style.display = '';
-  inputElement.style.display = 'none';
-  editButton.style.display = '';
-  if (saveButton) saveButton.style.display = 'none';
-  if (cancelButton) cancelButton.style.display = 'none';
+  viewElement.classList.remove('d-none');
+  inputElement.classList.add('d-none');
+  editButton.classList.remove('d-none');
+  if (saveButton) saveButton.classList.add('d-none');
+  if (cancelButton) cancelButton.classList.add('d-none');
 
   editButton.addEventListener('click', showEdit);
 
@@ -60,22 +60,14 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
         showView(value);
         return;
       }
-      if (typeof bootstrap !== 'undefined' && bootstrap.Popover) {
-        const PopoverClass = bootstrap.Popover as unknown as new (element: HTMLElement, options: Record<string, unknown>) => { show: () => void; dispose: () => void };
-        const popover = new PopoverClass(saveButton, {
-          trigger: 'manual',
-          placement: 'top',
-          content: 'Saved!',
-          customClass: 'inline-edit-saved-popover',
-        });
-        popover.show();
-        setTimeout(() => {
-          popover.dispose();
-          showView(value);
-        }, 1500);
-      } else {
+      const originalText = saveButton.textContent;
+      saveButton.textContent = 'Saved!';
+      saveButton.disabled = true;
+      setTimeout(() => {
+        saveButton.textContent = originalText;
+        saveButton.disabled = false;
         showView(value);
-      }
+      }, 1500);
     },
   };
 }

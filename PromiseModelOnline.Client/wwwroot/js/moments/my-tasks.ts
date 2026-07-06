@@ -4,6 +4,7 @@ import { getMyAssignedMoments, updateMomentType } from './api.ts';
 
 interface MyTaskMoment {
     sequenceNumber: number;
+    flowId: number;
     statement: string;
     type: string;
     status: string;
@@ -42,6 +43,7 @@ function buildEmptyState(): HTMLElement {
 function createTaskRow(m: MyTaskMoment): HTMLTableRowElement {
     const tr = document.createElement('tr');
     tr.dataset.momentId = String(m.sequenceNumber);
+    tr.dataset.flowId = String(m.flowId);
     tr.dataset.owner = m.ownerSlug || '';
     tr.dataset.project = m.projectSlug || '';
 
@@ -111,11 +113,12 @@ function setupTaskEvents(content: HTMLElement): void {
             return;
         }
         const momentId = Number(target.dataset.momentId ?? '');
+        const flowId = row?.dataset.flowId ? Number(row.dataset.flowId) : undefined;
         const selectElement = target as HTMLSelectElement;
         const newType = selectElement.value;
         const previous = target.dataset.currentType || newType;
         try {
-            await updateMomentType(owner, project, momentId, newType);
+            await updateMomentType(owner, project, momentId, newType, flowId);
             target.dataset.currentType = newType;
         } catch (error) {
             selectElement.value = previous;

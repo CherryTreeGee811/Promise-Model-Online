@@ -360,6 +360,7 @@ jobs:
       - name: Run E2E Tests — Core (no rate-limiting)
         shell: bash
         run: |
+          export PMO_ENABLE_RATE_LIMITING_TESTS=false
           mkdir -p E2eTestResults
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
             --no-build \
@@ -419,6 +420,7 @@ jobs:
       - name: Run E2E Tests — Rate Limiting only
         shell: bash
         run: |
+          export PMO_ENABLE_RATE_LIMITING_TESTS=true
           dotnet test ./PromiseModelOnline.E2E.Tests/PromiseModelOnline.E2E.Tests.csproj \
             --no-build \
             --collect:"XPlat Code Coverage" \

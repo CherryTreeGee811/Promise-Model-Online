@@ -17,7 +17,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_008: State parameter required for CSRF protection")]
     public async Task REQ_NF_008_Authorize_MissingState_ReturnsError()
     {
-        // OAuth 2.1 REQUIRES state for CSRF protection
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=https://localhost:9000/signin-oidc&scope=openid");
@@ -30,7 +30,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_008: Invalid/tampered state parameter is rejected")]
     public async Task REQ_NF_008_Authorize_InvalidState_ReturnsError()
     {
-        // Tampered state should not cause redirect to malicious URI
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=https://localhost:9000/signin-oidc&scope=openid&state=invalid");
@@ -45,6 +45,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_003: Untrusted redirect URI is rejected")]
     public async Task REQ_NF_008_Authorize_UntrustedRedirectUri_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=https://evil.com/callback&scope=openid&state=test");
@@ -57,6 +58,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_003: Missing redirect_uri is rejected")]
     public async Task REQ_NF_008_Authorize_NoRedirectUri_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?client_id=pmo-spa&response_type=code&scope=openid&state=test");
@@ -68,6 +70,7 @@ public class OidcMisuseTests : E2ETestBase
     [Test]
     public async Task REQ_NF_008_Authorize_MalformedRedirectUri_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=not-a-uri&scope=openid&state=test");
@@ -82,6 +85,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_002: Token request without code_verifier rejected (PKCE required)")]
     public async Task REQ_NF_008_Token_MissingCodeVerifier_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await PostFormAsync("/connect/token", new()
         {
@@ -99,6 +103,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_004: Invalid/expired authorization code is rejected")]
     public async Task REQ_NF_008_Token_InvalidCode_ReturnsBadRequest()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await PostFormAsync("/connect/token", new()
         {
@@ -119,7 +124,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_001: Implicit grant rejected (OAuth 2.1)")]
     public async Task REQ_NF_008_Token_ImplicitGrant_ReturnsError()
     {
-        // OAuth 2.1 forbids implicit grant
+        // Arrange (no setup needed)
         // Act
         var response = await PostFormAsync("/connect/token", new()
         {
@@ -136,7 +141,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_001: Password grant rejected (OAuth 2.1)")]
     public async Task REQ_NF_008_Token_PasswordGrant_ReturnsError()
     {
-        // OAuth 2.1 removes password grant
+        // Arrange (no setup needed)
         // Act
         var response = await PostFormAsync("/connect/token", new()
         {
@@ -154,6 +159,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_001: Client credentials grant rejected for public client")]
     public async Task REQ_NF_008_Token_ClientCredentials_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await PostFormAsync("/connect/token", new()
         {
@@ -169,6 +175,7 @@ public class OidcMisuseTests : E2ETestBase
     [Test]
     public async Task REQ_NF_008_Token_MissingGrantType_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await PostFormAsync("/connect/token", new()
         {
@@ -184,6 +191,7 @@ public class OidcMisuseTests : E2ETestBase
     [Test]
     public async Task REQ_NF_008_Authorize_MissingClientId_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?response_type=code&redirect_uri=https://localhost:9000/signin-oidc&scope=openid&state=test");
@@ -195,6 +203,7 @@ public class OidcMisuseTests : E2ETestBase
     [Test]
     public async Task REQ_NF_008_Authorize_InvalidClientId_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?client_id=evil-client&response_type=code&redirect_uri=https://localhost:9000/signin-oidc&scope=openid&state=test");
@@ -209,7 +218,7 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_AuthCookie_HasHostPrefix()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.FirstOrDefault(c => c.Name == "__Host-pmo.session");
@@ -221,7 +230,7 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_AuthCookie_IsHttpOnly()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.First(c => c.Name == "__Host-pmo.session");
@@ -234,7 +243,7 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_AuthCookie_IsSecure()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.First(c => c.Name == "__Host-pmo.session");
@@ -247,7 +256,7 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_AuthCookie_HasSameSiteLax()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.First(c => c.Name == "__Host-pmo.session");
@@ -260,7 +269,7 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_AuthCookie_HasRootPath()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.First(c => c.Name == "__Host-pmo.session");
@@ -273,7 +282,7 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_AuthCookie_HasNoDomainAttribute()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.First(c => c.Name == "__Host-pmo.session");
@@ -286,7 +295,7 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_AuthCookie_NotAccessibleViaDocumentCookie()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var jsCookie = await Page.EvaluateAsync<string>("document.cookie");
         // Assert
@@ -325,9 +334,9 @@ public class OidcMisuseTests : E2ETestBase
     public async Task REQ_NF_008_Login_AfterLogout_CanLoginAgain()
     {
         // Arrange
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         await Page.GotoAsync("/logout");
-        await LoginAsync();
+        await LoginAsUser(TestUsername, TestPassword);
         // Act
         var cookies = await Page.Context.CookiesAsync();
         var session = cookies.FirstOrDefault(c => c.Name == "__Host-pmo.session");
@@ -366,6 +375,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OIDC_001: Discovery endpoint returns valid OpenID Configuration")]
     public async Task REQ_NF_008_DiscoveryEndpoint_ReturnsValidJson()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync("/.well-known/openid-configuration");
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -386,6 +396,7 @@ public class OidcMisuseTests : E2ETestBase
     [Description("REQ_OAUTH_007: Invalid/unknown scope is rejected at authorize")]
     public async Task REQ_NF_008_Authorize_InvalidScope_ReturnsError()
     {
+        // Arrange (no setup needed)
         // Act
         var response = await GetAsync(
             "/connect/authorize?client_id=pmo-spa&response_type=code&redirect_uri=https://localhost:9000/signin-oidc&scope=admin&state=test");

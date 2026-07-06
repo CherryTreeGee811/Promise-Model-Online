@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Auth.Services;
@@ -12,15 +13,18 @@ namespace PromiseModelOnline.Auth.Controllers;
 /// <param name="userManager">ASP.NET Identity user manager for lookup and token generation.</param>
 /// <param name="emailService">Transactional email service for sending the reset link.</param>
 /// <param name="logger">Serilog logger for password-reset audit events.</param>
+/// <param name="env">The hosting environment for environment-specific behavior.</param>
 [Route("account/forgot-password")]
 public class ForgotPasswordController(
     UserManager<IdentityUser> userManager,
     IEmailService emailService,
-    ILogger<ForgotPasswordController> logger) : Controller
+    ILogger<ForgotPasswordController> logger,
+    IWebHostEnvironment env) : Controller
 {
     private readonly UserManager<IdentityUser> _userManager = userManager;
     private readonly IEmailService _emailService = emailService;
     private readonly ILogger<ForgotPasswordController> _logger = logger;
+    private readonly IWebHostEnvironment _env = env;
 
     /// <summary>Display the forgot-password form where users enter their email address.</summary>
     /// <returns>The forgot-password view.</returns>
@@ -66,5 +70,24 @@ public class ForgotPasswordController(
         _logger.LogInformation("Password reset email sent to {Email}", model.Email);
         ViewBag.Sent = true;
         return View("Index", model);
+    }
+
+    /// <summary>Debug endpoint: generate a password-reset token for a confirmed user (Development only).</summary>
+    [AllowAnonymous]
+    [HttpGet("debug/token")]
+    public async Task<IActionResult> GetResetToken(string? email)
+    {
+        if (!_env.IsDevelopment())
+            return NotFound();
+
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest(new { error = "Email is required" });
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null)
+            return NotFound(new { error = "User not found" });
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        return Ok(new { email, token });
     }
 }

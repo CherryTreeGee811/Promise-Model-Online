@@ -105,6 +105,8 @@ public static class PromiseHierarchySeeder
             await ReassignMomentsAndCompleteAsync(db, ownerIds, strideIds, currentStrideId);
         }
 
+        await SeedEntitySequencesAsync(db, project.Id, productSeq.Value - 1);
+
         logger?.LogInformation(
             "Promise hierarchy seed complete. ProjectId: {ProjectId}, Products: {ProductsInserted}/{ProductsTotal}, Epics: {EpicsInserted}/{EpicsTotal}, Journeys: {JourneysInserted}/{JourneysTotal}, Flows: {FlowsInserted}/{FlowsTotal}, Moments: {MomentsInserted}/{MomentsTotal}",
             project.Id,
@@ -629,27 +631,31 @@ public static class PromiseHierarchySeeder
     /// <summary>Create a project by name if it does not already exist.</summary>
     private static async Task<Project> EnsureProjectByNameAsync(PromiseModelOnlineContext db, int ownerId, string name, string? description)
     {
-        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == name);
+        var slug = Slugify(name);
+        var existing = await db.Projects.FirstOrDefaultAsync(p => p.Name == name || p.Slug == slug);
         if (existing != null)
         {
+            if (existing.Name != name)
+            {
+                existing.Name = name;
+            }
+            if (string.IsNullOrEmpty(existing.Slug))
+            {
+                existing.Slug = slug;
+            }
             if (existing.OwnerId != ownerId || existing.Description != description)
             {
                 existing.OwnerId = ownerId;
                 existing.Description = description ?? existing.Description;
-                await db.SaveChangesAsync();
             }
-            if (string.IsNullOrEmpty(existing.Slug))
-            {
-                existing.Slug = Slugify(name);
-                await db.SaveChangesAsync();
-            }
+            await db.SaveChangesAsync();
             return existing;
         }
 
         var project = new Project
         {
             Name = name,
-            Slug = Slugify(name),
+            Slug = slug,
             Description = description ?? string.Empty,
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow
@@ -675,6 +681,73 @@ public static class PromiseHierarchySeeder
     /// <summary>Get the maximum sequence number from a queryable.</summary>
     private static async Task<int> GetMaxSequenceAsync(IQueryable<int?> query)
     => await query.MaxAsync() ?? 0;
+
+    /// <summary>Seed the EntitySequences table so subsequent sequence generation picks up after seeded data.</summary>
+    /// <remarks>Scope strings must match the second argument passed to <c>GetNextSequenceAsync</c>.</remarks>
+    private static async Task SeedEntitySequencesAsync(PromiseModelOnlineContext db, int projectId, int maxPromiseSeq)
+    {
+        var existingSeqs = await db.EntitySequences.ToListAsync();
+        var byKey = new HashSet<(int ParentId, string Scope)>(existingSeqs.Select(es => (es.ParentId, es.Scope)));
+
+        var entries = new List<(int ParentId, string Scope, int NextValue)>
+        {
+            (projectId, "Promise", maxPromiseSeq + 1),
+        };
+
+        var promises = await db.Promises.Where(p => p.ProjectId == projectId).ToListAsync();
+        foreach (var promise in promises)
+        {
+            var maxEpicChild = await db.Epics
+                .Where(e => e.ProductPromiseId == promise.Id)
+                .MaxAsync(e => (int?)e.SequenceNumber) ?? 0;
+            entries.Add((promise.Id, "Epic", maxEpicChild + 1));
+        }
+
+        var promiseIds = promises.Select(p => p.Id).ToList();
+        var epics = await db.Epics.Where(e => promiseIds.Contains(e.ProductPromiseId)).ToListAsync();
+        foreach (var epic in epics)
+        {
+            var maxJourneyChild = await db.Journeys
+                .Where(j => j.EpicId == epic.Id)
+                .MaxAsync(j => (int?)j.SequenceNumber) ?? 0;
+            entries.Add((epic.Id, "Journey", maxJourneyChild + 1));
+        }
+
+        var epicIds = epics.Select(e => e.Id).ToList();
+        var journeys = await db.Journeys.Where(j => epicIds.Contains(j.EpicId)).ToListAsync();
+        foreach (var journey in journeys)
+        {
+            var maxFlowChild = await db.Flows
+                .Where(f => f.JourneyId == journey.Id)
+                .MaxAsync(f => (int?)f.SequenceNumber) ?? 0;
+            entries.Add((journey.Id, "Flow", maxFlowChild + 1));
+        }
+
+        var journeyIds = journeys.Select(j => j.Id).ToList();
+        var flows = await db.Flows.Where(f => journeyIds.Contains(f.JourneyId)).ToListAsync();
+        foreach (var flow in flows)
+        {
+            var maxMomentChild = await db.Moments
+                .Where(m => m.FlowId == flow.Id)
+                .MaxAsync(m => (int?)m.SequenceNumber) ?? 0;
+            entries.Add((flow.Id, "Moment", maxMomentChild + 1));
+        }
+
+        foreach (var (parentId, scope, nextValue) in entries)
+        {
+            if (byKey.Add((parentId, scope)))
+            {
+                db.EntitySequences.Add(new EntitySequence
+                {
+                    ParentId = parentId,
+                    Scope = scope,
+                    NextSequenceNumber = nextValue
+                });
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
 
     /// <summary>Locate the pmo_pm directory containing CSV files.</summary>
     private static string ResolvePmoPmDirectory(string contentRootPath)

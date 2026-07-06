@@ -1,5 +1,5 @@
 /** @type {string} */
-const CACHE = 'pmo-v5';
+const CACHE = 'pmo-v6';
 
 const swSelf = /** @type {{ addEventListener: Function, skipWaiting: Function, clients: { claim: Function }, location: { origin: string } }} */ (/** @type {unknown} */ (self));
 

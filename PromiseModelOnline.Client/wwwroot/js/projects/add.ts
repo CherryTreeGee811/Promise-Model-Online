@@ -41,9 +41,9 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
      */
     function clearMessages(): void {
         errorTextElement!.textContent = '';
-        errorTextElement!.style.display = 'none';
+        errorTextElement!.classList.add('d-none');
         successTextElement!.textContent = '';
-        successTextElement!.style.display = 'none';
+        successTextElement!.classList.add('d-none');
     }
 
     /**
@@ -117,7 +117,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         descriptionInput!.readOnly = isImportMode;
         newButtonLabelElement!.textContent = (isBusy ? getBusySubmitButtonLabel : getSubmitButtonLabel)();
         clearImportButton!.hidden = !isImportMode || !hasImportFile;
-        clearImportButton!.style.display = clearImportButton!.hidden ? 'none' : '';
+        clearImportButton!.classList.toggle('d-none', clearImportButton!.hidden);
     }
 
     /**
@@ -260,7 +260,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
 
         if (!name) {
             errorTextElement!.textContent = 'Project name is required.';
-            errorTextElement!.style.display = 'block';
+            errorTextElement!.classList.remove('d-none');
             return;
         }
 
@@ -269,7 +269,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
 
         if (!firstPromiseStatement) {
             errorTextElement!.textContent = 'The first Product Promise is required when creating from scratch.';
-            errorTextElement!.style.display = 'block';
+            errorTextElement!.classList.remove('d-none');
             return;
         }
 
@@ -286,7 +286,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
             void navigate(`/${createdProject.ownerSlug}/${createdProject.slug}/graph`, navContentDiv, contentDiv);
         } catch (error) {
             errorTextElement!.textContent = (error as Error).message || 'Failed to create project.';
-            errorTextElement!.style.display = 'block';
+            errorTextElement!.classList.remove('d-none');
         } finally {
             setBusyState(false, 'submit');
         }
@@ -302,7 +302,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         const file = importInput!.files?.[0];
         if (!file) {
             errorTextElement!.textContent = 'Choose a project export to import.';
-            errorTextElement!.style.display = 'block';
+            errorTextElement!.classList.remove('d-none');
             return;
         }
 
@@ -322,7 +322,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
             successTextElement!.textContent = warnings.length > 0
                 ? `Project imported with ${warnings.length} warning(s).`
                 : 'Project imported successfully.';
-            successTextElement!.style.display = 'block';
+            successTextElement!.classList.remove('d-none');
 
             if (ownerSlug && slug) {
                 void navigate(`/${ownerSlug}/${slug}/graph`, navContentDiv, contentDiv);
@@ -331,7 +331,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
             }
         } catch (error) {
             errorTextElement!.textContent = (error as Error).message || 'Failed to import project.';
-            errorTextElement!.style.display = 'block';
+            errorTextElement!.classList.remove('d-none');
         } finally {
             setBusyState(false, 'submit');
         }
@@ -372,7 +372,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
         } catch (error) {
             resetImportState();
             errorTextElement!.textContent = (error as Error).message || 'Failed to read imported project.';
-            errorTextElement!.style.display = 'block';
+            errorTextElement!.classList.remove('d-none');
         } finally {
             setBusyState(false, 'import');
         }

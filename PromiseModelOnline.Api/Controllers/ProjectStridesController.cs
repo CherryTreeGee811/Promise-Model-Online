@@ -112,6 +112,9 @@ public class ProjectStridesController(
         if (projectEntity is null)
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         if (dto.IterationId.HasValue)
         {
             var iteration = await _context.Iterations
@@ -150,6 +153,9 @@ public class ProjectStridesController(
         if (projectEntity is null)
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         var stride = await _context.Strides
             .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
 
@@ -185,6 +191,9 @@ public class ProjectStridesController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         var stride = await _context.Strides
             .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);

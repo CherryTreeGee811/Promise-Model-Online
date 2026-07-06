@@ -10,7 +10,6 @@ public class CreatePermissionRequestDto
     /// <summary>Email address.</summary>
     public string Email { get; set; } = string.Empty;
     /// <summary>ID of the project.</summary>
-    [JsonRequired]
     public int ProjectId { get; set; }
     /// <summary>Access level permission.</summary>
     [JsonRequired]

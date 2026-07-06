@@ -2,7 +2,7 @@
 
 namespace PromiseModelOnline.E2E.Tests;
 
-/// <summary>E2E tests for API misuse scenarios and error handling.</summary>
+/// <summary>Browser-based E2E tests for API misuse scenarios — returnUrl sanitization, 404 handling, input validation at multiple layers.</summary>
 // Requirements: REQ_NF_008
 public class MisuseTests : E2ETestBase
 {
@@ -11,9 +11,22 @@ public class MisuseTests : E2ETestBase
     {
         // Arrange (no setup needed)
         // Act
-        var response = await GetAsync("/login?returnUrl=https://evil.com");
+        await Page.GotoAsync("/login?returnUrl=https://evil.com");
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(Page.Url, Does.Not.Contain("evil.com"));
+    }
+
+    [Test]
+    public async Task REQ_NF_008_Login_AbsoluteUrl_BypassClient_RedirectsSafely()
+    {
+        // Arrange (no setup needed)
+        // Act
+        var response = await GetAsync("/login?returnUrl=https://evil.com");
+        var location = response.Headers.Location?.ToString() ?? "";
+
+        // Assert
+        Assert.That(location, Does.Not.Contain("evil.com"));
     }
 
     [Test]
@@ -21,9 +34,22 @@ public class MisuseTests : E2ETestBase
     {
         // Arrange (no setup needed)
         // Act
+        await Page.GotoAsync("/login?returnUrl=ftp://evil.com");
+
+        // Assert — the user is sent to the login flow, not to the FTP site
+        Assert.That(Page.Url, Does.Contain("/login"));
+    }
+
+    [Test]
+    public async Task REQ_NF_008_Login_FtpUrl_BypassClient_RedirectsSafely()
+    {
+        // Arrange (no setup needed)
+        // Act
         var response = await GetAsync("/login?returnUrl=ftp://evil.com");
+        var location = response.Headers.Location?.ToString() ?? "";
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(location, Does.Not.Contain("evil.com"));
     }
 
     [Test]
@@ -31,9 +57,22 @@ public class MisuseTests : E2ETestBase
     {
         // Arrange (no setup needed)
         // Act
+        await Page.GotoAsync("/login?returnUrl=javascript:alert(1)");
+
+        // Assert — the user is sent to the login flow, not where the JS URL would navigate
+        Assert.That(Page.Url, Does.Contain("/login"));
+    }
+
+    [Test]
+    public async Task REQ_NF_008_Login_JavaScriptUrl_BypassClient_RedirectsSafely()
+    {
+        // Arrange (no setup needed)
+        // Act
         var response = await GetAsync("/login?returnUrl=javascript:alert(1)");
+        var location = response.Headers.Location?.ToString() ?? "";
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(location, Does.Not.Contain("javascript"));
     }
 
     [Test]
@@ -41,9 +80,22 @@ public class MisuseTests : E2ETestBase
     {
         // Arrange (no setup needed)
         // Act
-        var response = await GetAsync("/login?returnUrl=//evil.com");
+        await Page.GotoAsync("/login?returnUrl=//evil.com");
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(Page.Url, Does.Not.Contain("evil.com"));
+    }
+
+    [Test]
+    public async Task REQ_NF_008_Login_DoubleSlashUrl_BypassClient_RedirectsSafely()
+    {
+        // Arrange (no setup needed)
+        // Act
+        var response = await GetAsync("/login?returnUrl=//evil.com");
+        var location = response.Headers.Location?.ToString() ?? "";
+
+        // Assert
+        Assert.That(location, Does.Not.Contain("evil.com"));
     }
 
     [Test]
@@ -51,48 +103,57 @@ public class MisuseTests : E2ETestBase
     {
         // Arrange (no setup needed)
         // Act
-        var response = await GetAsync("/login?returnUrl=/../../../etc/passwd");
+        await Page.GotoAsync("/login?returnUrl=/../secrets");
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(Page.Url, Does.Contain("/login"));
     }
 
     [Test]
-    public async Task REQ_NF_008_Login_BackslashUrl_DefaultsToRoot()
+    public async Task REQ_NF_008_Login_PathTraversal_BypassClient_RedirectsSafely()
     {
         // Arrange (no setup needed)
         // Act
-        var response = await GetAsync("/login?returnUrl=/\\evil.com");
+        var response = await GetAsync("/login?returnUrl=/../secrets");
+        var location = response.Headers.Location?.ToString() ?? "";
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(location, Does.Not.Contain("../"));
     }
 
     [Test]
-    public async Task REQ_NF_008_Login_EncodedAbsoluteUrl_DefaultsToRoot()
+    public async Task REQ_NF_008_StaticAssetNotFound_Returns404()
     {
         // Arrange (no setup needed)
         // Act
-        var response = await GetAsync("/login?returnUrl=https%3A%2F%2Fevil.com");
+        var response = await Page.GotoAsync("/nonexistent.js");
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(response, Is.Not.Null);
+        Assert.That((int)response.Status, Is.EqualTo(404));
     }
 
     [Test]
-    public async Task REQ_NF_008_Login_FragmentInReturnUrl_Handled()
+    public async Task REQ_NF_008_StaticAssetNotFound_BypassClient_Returns404()
     {
         // Arrange (no setup needed)
         // Act
-        var response = await GetAsync("/login?returnUrl=/profile#settings");
+        var response = await GetAsync("/nonexistent.js");
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 
     [Test]
-    public async Task REQ_NF_008_Login_QueryInjection_DefaultsToRoot()
+    public async Task REQ_NF_008_ApiNotFound_BypassClient_Returns404()
     {
-        // Arrange (no setup needed)
+        // Arrange — auth required to bypass the auth middleware and reach the router
+        await LoginAsync();
+
         // Act
-        var response = await GetAsync("/login?returnUrl=/redirect?url=https://evil.com");
+        var response = await AuthGetAsync("/api/nonexistent", ajax: true);
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 }

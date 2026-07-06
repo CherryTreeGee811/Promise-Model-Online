@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -14,17 +15,20 @@ namespace PromiseModelOnline.Auth.Controllers;
 /// <param name="emailService">The email service for sending verification codes.</param>
 /// <param name="logger">The logger for verification audit events.</param>
 /// <param name="cache">The memory cache for storing verification codes.</param>
+/// <param name="env">The hosting environment for environment-specific behavior.</param>
 [Route("account/verify-email")]
 public class EmailVerificationController(
     UserManager<IdentityUser> userManager,
     IEmailService emailService,
     ILogger<EmailVerificationController> logger,
-    IMemoryCache cache) : Controller
+    IMemoryCache cache,
+    IWebHostEnvironment env) : Controller
 {
     private readonly UserManager<IdentityUser> _userManager = userManager;
     private readonly IEmailService _emailService = emailService;
     private readonly ILogger<EmailVerificationController> _logger = logger;
     private readonly IMemoryCache _cache = cache;
+    private readonly IWebHostEnvironment _env = env;
 
     private const string VerificationCodePrefix = "verify_code:";
 
@@ -63,6 +67,26 @@ public class EmailVerificationController(
         });
     }
 
+    /// <summary>Debug endpoint: retrieve the cached verification code for a user.</summary>
+    /// <remarks>Only available when ASPNETCORE_ENVIRONMENT is Development. Returns the
+    /// 6-digit code cached during registration, enabling E2E tests to complete the
+    /// verification flow without reading the email.</remarks>
+    /// <param name="userId">The user's GUID.</param>
+    /// <returns>The cached verification code or 404.</returns>
+    [AllowAnonymous]
+    [HttpGet("debug/code/{userId:guid}")]
+    public IActionResult GetVerificationCode(Guid userId)
+    {
+        if (!_env.IsDevelopment())
+            return NotFound();
+
+        var cacheKey = $"{VerificationCodePrefix}{userId}";
+        if (!_cache.TryGetValue(cacheKey, out string? code) || code == null)
+            return NotFound();
+
+        return Ok(new { userId, code });
+    }
+
     /// <summary>Validate the verification code from cache and confirm the user's email.</summary>
     /// <param name="model">The verification form containing user ID and 6-digit code.</param>
     /// <returns>A redirect to the login page on success, or the verification view with errors.</returns>
@@ -95,13 +119,12 @@ public class EmailVerificationController(
             return View("Index", model);
         }
 
-        _cache.Remove(cacheKey);
-
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user2);
         var result = await _userManager.ConfirmEmailAsync(user2, token);
 
         if (result.Succeeded)
         {
+            _cache.Remove(cacheKey);
             _logger.LogInformation("Email confirmed for user {UserId}", user2.Id);
             return RedirectToAction("Index", "Login", new { verified = "true" });
         }

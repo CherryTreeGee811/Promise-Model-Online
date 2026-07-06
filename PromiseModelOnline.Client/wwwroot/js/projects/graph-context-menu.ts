@@ -585,6 +585,7 @@ function buildMomentStatusFormElement(
     closeMenus: () => void,
 ): HTMLFormElement | undefined {
     const momentSeq = (nodeData?.payload as Record<string, unknown> | undefined)?.sequenceNumber;
+    const flowId = (nodeData?.payload as Record<string, unknown> | undefined)?.flowId;
     if (momentSeq === null) {
         return;
     }
@@ -633,7 +634,7 @@ function buildMomentStatusFormElement(
         submitButton.textContent = 'Saving Status...';
 
         try {
-            await updateMomentStatus(_contextState.owner, _contextState.project, momentSeq as string | number, statusField.select.value);
+            await updateMomentStatus(_contextState.owner, _contextState.project, momentSeq as string | number, statusField.select.value, flowId as number | undefined);
             closeMenus();
             await onGraphMutated?.();
         } catch (error) {

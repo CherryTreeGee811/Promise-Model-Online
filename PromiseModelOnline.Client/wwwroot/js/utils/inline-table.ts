@@ -52,11 +52,15 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
 
     const tbody = document.createElement('tbody');
 
+    function createRowFromHtml(html: string): HTMLTableRowElement | null {
+        const template = document.createElement('template');
+        template.innerHTML = `<table><tbody>${html}</tbody></table>`;
+        return template.content.querySelector('tr');
+    }
+
     if (items && items.length > 0) {
-        const parser = new DOMParser();
         for (const item of items) {
-            const document_ = parser.parseFromString(`<table><tbody>${renderItemRow(item)}</tbody></table>`, 'text/html');
-            const row = document_.querySelector('tr');
+            const row = createRowFromHtml(renderItemRow(item));
             if (row) tbody.append(row);
         }
     } else if (emptyConfig) {
@@ -74,9 +78,7 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
 
     const rowHtmlText = renderAddRow();
     if (rowHtmlText) {
-        const parser = new DOMParser();
-        const document_ = parser.parseFromString(`<table><tbody>${rowHtmlText}</tbody></table>`, 'text/html');
-        const row = document_.querySelector('tr');
+        const row = createRowFromHtml(rowHtmlText);
         if (row) tbody.append(row);
     }
 

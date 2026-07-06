@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,17 +22,20 @@ namespace PromiseModelOnline.Api.Controllers;
 /// <param name="commentService">The comment service.</param>
 /// <param name="userRepository">The user repository.</param>
 /// <param name="commentRepository">The comment repository.</param>
+/// <param name="permissionService">The permission service for project-level authorization.</param>
 /// <param name="logger">The logger for audit and error events.</param>
 [Route("api/comments")]
 [ApiController]
 public class CommentsController(ICommentService commentService,
                           IUserRepository userRepository,
                           ICommentRepository commentRepository,
+                          IPermissionService permissionService,
                           ILogger<CommentsController> logger) : ControllerBase
 {
     private readonly ICommentService _commentService = commentService;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly ICommentRepository _commentRepository = commentRepository;
+    private readonly IPermissionService _permissionService = permissionService;
     private readonly ILogger<CommentsController> _logger = logger;
 
     /// <summary>Retrieve comments for a parent entity.</summary>
@@ -57,6 +61,7 @@ public class CommentsController(ICommentService commentService,
     /// <response code="201">Returns the created comment with a Location header.</response>
     /// <response code="400">Comment text is empty or a business rule fails.</response>
     /// <response code="401">Missing email claim in the JWT token.</response>
+    /// <response code="403">User does not have Comment-level permission on the project.</response>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
     public async Task<ActionResult<CommentDto>> CreateComment([FromBody] CreateCommentDto dto)
@@ -77,6 +82,22 @@ public class CommentsController(ICommentService commentService,
         try
         {
             var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+
+            int projectId;
+            try
+            {
+                projectId = await _commentRepository.ResolveProjectIdAsync(dto.ParentType, dto.ParentId);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Comment parent entity not found: {Type} {Id}", dto.ParentType, dto.ParentId);
+                return NotFound("Parent entity not found.");
+            }
+
+            var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId);
+            if (level == null || level < PermissionLevel.Comment)
+                return Forbid();
+
             var comment = await _commentService.CreateCommentAsync(dto, user.Id);
 
             return CreatedAtAction(nameof(GetComments),

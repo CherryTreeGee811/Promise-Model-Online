@@ -27,6 +27,7 @@ interface MomentTask {
 
 interface Moment {
     id: number;
+    flowId: number;
     sequenceNumber: number;
     statement: string;
     description?: string;
@@ -198,7 +199,7 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
         backButton.append(backSpan, ' Back');
         detailCard.append(backButton);
 
-        detailDiv.replaceChildren(detailCard);}
+        detailDiv.append(detailCard);}
 
 
 /**
@@ -238,7 +239,7 @@ async function setupEstimateHandler(owner: string, project: string, momentId: st
         estSelectElement.addEventListener('change', async () => {
             const estimate = estSelectElement.value === '-' ? undefined : estSelectElement.value;
             try {
-                await updateMomentEstimate(owner, project, momentId, estimate);
+                await updateMomentEstimate(owner, project, momentId, estimate, (moment as Record<string, unknown>).flowId as number);
                 moment.effortEstimate = estimate;
                 patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { effortEstimate: estimate });
             } catch (error) { showToast('Failed to update estimate', 'error'); console.error(error); }
@@ -271,7 +272,7 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
             strideSelectElement.addEventListener('change', async () => {
                 const value = strideSelectElement.value === '' ? undefined : Number(strideSelectElement.value);
                 try {
-                    const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
+                    const updated = await assignMomentToStride(owner, project, momentId, value, (moment as Record<string, unknown>).flowId as number) as Record<string, unknown>;
                     assignStrideResult(updated);
                 } catch (error) { showToast('Failed to update assigned stride', 'error'); console.error(error); }
             });
@@ -323,7 +324,7 @@ function setupMomentEditDescriptionHandler(
 
         const newDescription = input.value;
         try {
-            const updated = await updateMomentDescription(owner, project, momentId, newDescription) as Record<string, unknown>;
+            const updated = await updateMomentDescription(owner, project, momentId, newDescription, moment.flowId) as Record<string, unknown>;
             moment.description = (updated?.description as string) ?? (newDescription.trim() ? newDescription : undefined);
             patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
                 description: moment.description,
@@ -358,7 +359,7 @@ function setupMomentStatusChangeHandler(
         const previous = select.value;
         const writeTo = select;
         try {
-            const updated = await updateMomentStatus(owner, project, momentId, select.value) as Record<string, unknown>;
+            const updated = await updateMomentStatus(owner, project, momentId, select.value, moment.flowId) as Record<string, unknown>;
             moment.status = updated.status as string;
             moment.statusColor = updated.statusColor as string;
             moment.completedAt = updated.completedAt as string;
@@ -395,7 +396,7 @@ function setupMomentTypeChangeHandler(
         const newType = select.value;
         const writeTo = select;
         try {
-            const updated = await updateMomentType(owner, project, momentId, newType) as Record<string, unknown>;
+            const updated = await updateMomentType(owner, project, momentId, newType, moment.flowId) as Record<string, unknown>;
             if (updated && updated.type) {
                 moment.type = updated.type as string;
                 writeTo.value = updated.type as string;
@@ -627,7 +628,7 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
                     name,
                     description: taskDescriptionInput.value.trim(),
                     isCompleted: taskCompletedInput.checked,
-                }) as MomentTask;
+                }, moment.flowId) as MomentTask;
 
                 if (created) {
                     removeInlineEmptyRow(tbody);
@@ -709,7 +710,7 @@ async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, proj
     const isPreviousChecked = !checkbox.checked;
     checkbox.disabled = true;
     try {
-        const updated = await updateTaskCompletion(owner, project, momentId, taskId, checkbox.checked) as Record<string, unknown>;
+        const updated = await updateTaskCompletion(owner, project, momentId, taskId, checkbox.checked, moment.flowId) as Record<string, unknown>;
         applyCheckResult(checkbox, label, updated, isPreviousChecked, moment, momentId, taskId);
     } catch (error) {
         checkbox.checked = isPreviousChecked;

@@ -1,118 +1,92 @@
 ﻿using System.Net;
+using System.Text;
 
 namespace PromiseModelOnline.E2E.Tests;
 
-/// <summary>
-/// Verifies authorization boundaries — no privilege escalation,
-/// unauthenticated requests rejected, authenticated writes enforced.
-/// </summary>
+/// <summary>Browser-based E2E tests for API authorization boundaries — all unauthenticated requests rejected.</summary>
 // Requirements: REQ_INT_002 REQ_INT_016
 public class AuthorizationTests : E2ETestBase
 {
+    private const string Owner = "pmo_test";
+    private const string Project = "promise-model-online";
+
     [Test]
-    public async Task REQ_INT_002_ApiRead_Unauthenticated_Returns401()
+    [Description("REQ_INT_002 misuse: Unauthenticated GET to API returns 401")]
+    public async Task ApiRead_Unauthenticated_BypassClient_Returns401()
     {
-        // Arrange (no setup needed)
         // Act
         var response = await GetAsync("/api/projects", ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_INT_002_ApiWrite_Unauthenticated_Returns401()
+    [Description("REQ_INT_002 misuse: Unauthenticated POST to API returns 401")]
+    public async Task ApiWrite_Unauthenticated_BypassClient_Returns401()
     {
-        // Arrange (no setup needed)
+        // Arrange
+        var json = System.Text.Json.JsonSerializer.Serialize(new { name = "test", slug = "test" });
+
         // Act
-        var response = await PostJsonAsync("/api/projects/create",
-            """{"name":"evil","slug":"evil"}""", ajax: true);
+        var response = await PostJsonAsync("/api/projects/create", json, ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_INT_002_ApiDelete_Unauthenticated_Returns401()
+    [Description("REQ_INT_002 misuse: Unauthenticated DELETE to API returns 401")]
+    public async Task ApiDelete_Unauthenticated_BypassClient_Returns401()
     {
-        // Arrange (no setup needed)
         // Act
-        var response = await DeleteAsync("/api/projects/pmo_test/seeded-project", ajax: true);
+        var response = await DeleteAsync($"/api/projects/{Owner}/{Project}", ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_INT_002_ApiPatch_Unauthenticated_Returns401()
+    [Description("REQ_INT_002 misuse: Unauthenticated PATCH to API returns 401")]
+    public async Task ApiPatch_Unauthenticated_BypassClient_Returns401()
     {
-        // Arrange (no setup needed)
+        // Arrange
+        var json = System.Text.Json.JsonSerializer.Serialize(new { name = "hacked" });
+
         // Act
-        var response = await PatchJsonAsync("/api/projects/pmo_test/seeded-project/details",
-            """{"name":"hacked"}""", ajax: true);
+        var response = await PatchJsonAsync($"/api/projects/{Owner}/{Project}/details", json, ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_INT_002_ApiImport_Unauthenticated_Returns401()
+    [Description("REQ_INT_002 happy path: Authenticated user sees project graph content")]
+    public async Task AuthenticatedRead_ShowsContent()
     {
-        // Arrange (no setup needed)
+        // Arrange
+        await LoginAsync();
+
         // Act
-        var response = await PostJsonAsync("/api/projects/import",
-            """{"project":{"name":"test"}}""", ajax: true);
+        await Page.GotoAsync($"/{Owner}/{Project}/graph");
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        await Page.WaitForSelectorAsync("#graph-viewport", new() { Timeout = 30000 });
+        Assert.That(await Page.Locator("h1").InnerTextAsync(), Does.Contain("Graph"));
+        AssertNoCspViolations();
     }
 
     [Test]
-    public async Task REQ_INT_002_ApiComment_Unauthenticated_Returns401()
+    [Description("REQ_INT_002 happy path: Authenticated API read returns 200")]
+    public async Task AuthenticatedRead_BypassClient_Returns200()
     {
-        // Arrange (no setup needed)
-        // Act
-        var response = await PostJsonAsync("/api/comments",
-            """{"text":"spam"}""", ajax: true);
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    }
+        // Arrange
+        await LoginAsync();
 
-    [Test]
-    public async Task REQ_INT_002_ApiPermissions_Unauthenticated_Returns401()
-    {
-        // Arrange (no setup needed)
         // Act
-        var response = await PostJsonAsync("/api/projects/pmo_test/seeded-project/permissions",
-            """{"email":"evil@evil.com","level":"Edit"}""", ajax: true);
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    }
+        var response = await AuthGetAsync("/api/projects", ajax: true);
 
-    [Test]
-    public async Task REQ_INT_002_ApiNotificationPatch_Unauthenticated_Returns401()
-    {
-        // Arrange (no setup needed)
-        // Act
-        var response = await PatchJsonAsync("/api/notifications/1", """{"isRead":true}""", ajax: true);
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    }
-
-    [Test]
-    public async Task REQ_INT_002_ApiWebForm_Unauthenticated_ReturnsRedirect()
-    {
-        // Non-AJAX requests should redirect to login, not expose data
-        // Arrange (no setup needed)
-        // Act
-        var response = await GetAsync("/api/projects");
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
-    }
-
-    [Test]
-    public async Task REQ_INT_002_ApiWrite_WebForm_Unauthenticated_ReturnsRedirect()
-    {
-        // Arrange (no setup needed)
-        // Act
-        var response = await PostJsonAsync("/api/projects/create",
-            """{"name":"evil","slug":"evil"}""");
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 }

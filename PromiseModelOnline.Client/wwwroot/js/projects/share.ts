@@ -62,7 +62,7 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
     function closeAutocomplete(): void {
         const dropdown = document.querySelector('#invite-autocomplete') as HTMLElement | null;
         if (dropdown) {
-            dropdown.style.display = 'none';
+            dropdown.classList.add('d-none');
              
             dropdown.replaceChildren();
         }
@@ -135,7 +135,7 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
             acState.open = true;
             const dropdown = document.querySelector('#invite-autocomplete') as HTMLElement | null;
             if (dropdown) {
-                dropdown.style.display = 'block';
+                dropdown.classList.remove('d-none');
             }
             renderAutocomplete();
         } else {
