@@ -22,16 +22,18 @@ describe('setupInlineEdit', () => {
 
     it('toggles between view and edit modes on edit button click', () => {
         const input = document.createElement('input');
-        input.style.display = 'none';
         const view = document.createElement('span');
         view.textContent = 'hello';
         const editBtn = document.createElement('button');
         document.body.append(input, view, editBtn);
 
         setupInlineEdit(input, view, editBtn);
+        expect(input.classList.contains('d-none')).toBe(true);
+        expect(view.classList.contains('d-none')).toBe(false);
+
         editBtn.click();
-        expect(input.style.display).not.toBe('none');
-        expect(view.style.display).toBe('none');
+        expect(input.classList.contains('d-none')).toBe(false);
+        expect(view.classList.contains('d-none')).toBe(true);
     });
 
     it('accepts optional cancel and save buttons', () => {

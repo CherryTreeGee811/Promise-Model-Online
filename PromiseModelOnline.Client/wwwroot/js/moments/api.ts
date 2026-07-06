@@ -1,7 +1,10 @@
 import { apiGet, apiPost, apiPatch } from '../api.ts';
 
-const withFlowId = (url: string, flowId?: number) =>
-    flowId !== undefined ? `${url}${url.includes('?') ? '&' : '?'}flowId=${flowId}` : url;
+const withFlowId = (url: string, flowId?: number): string => {
+    if (flowId === undefined) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}flowId=${flowId}`;
+};
 
 export const getMoment = (owner: string, project: string, momentSeq: string | number, flowId?: number) => apiGet(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}`, flowId));
 export const createMoment = (owner: string, project: string, data: Record<string, unknown>) => apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/create`, data);

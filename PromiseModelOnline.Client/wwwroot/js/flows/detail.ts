@@ -49,6 +49,7 @@ interface Journey {
  * Handle moment type <select> changes by updating via the API.
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
  * @returns {void}
  */
 function setupMomentTypeChangeHandler(owner: string, project: string, flowId: string): void {

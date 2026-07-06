@@ -585,10 +585,11 @@ function buildMomentStatusFormElement(
     closeMenus: () => void,
 ): HTMLFormElement | undefined {
     const momentSeq = (nodeData?.payload as Record<string, unknown> | undefined)?.sequenceNumber;
-    const flowId = (nodeData?.payload as Record<string, unknown> | undefined)?.flowId;
     if (momentSeq === null) {
         return;
     }
+
+    const flowId = (nodeData?.payload as Record<string, unknown> | undefined)?.flowId;
 
     const form = document.createElement('form');
     form.className = 'graph-context-menu-form graph-context-menu-form--moment';

@@ -1,35 +1,49 @@
 const TELEMETRY_KEY = 'telemetry:disabled';
 
-function getTelemetryDisabled(): boolean {
+/**
+ * Check whether telemetry is currently disabled in local storage.
+ * @returns {boolean} True if telemetry is disabled in local storage.
+ */
+function isTelemetryDisabled(): boolean {
     return localStorage.getItem(TELEMETRY_KEY) === 'true';
 }
 
-function setTelemetryDisabled(disabled: boolean): void {
-    if (disabled) {
-        localStorage.setItem(TELEMETRY_KEY, 'true');
-    } else {
-        localStorage.removeItem(TELEMETRY_KEY);
-    }
+/** Persist the disabled state to local storage. */
+function disableTelemetry(): void {
+    localStorage.setItem(TELEMETRY_KEY, 'true');
 }
 
-function updateTelemetryStatus(toggle: HTMLInputElement, statusEl: HTMLElement): void {
-    if (toggle.checked) {
-        statusEl.textContent = 'Telemetry is disabled. No anonymized performance data will be sent.';
-    } else {
-        statusEl.textContent = 'Telemetry is enabled. Anonymized performance data will be sent periodically.';
-    }
+/** Remove the disabled state from local storage (re-enabling telemetry). */
+function enableTelemetry(): void {
+    localStorage.removeItem(TELEMETRY_KEY);
 }
 
+/**
+ * Update the status text shown beside the toggle.
+ * @param {HTMLInputElement} toggle - The telemetry toggle checkbox.
+ * @param {HTMLElement} statusElement - The element to show the status text in.
+ */
+function updateTelemetryStatus(toggle: HTMLInputElement, statusElement: HTMLElement): void {
+    statusElement.textContent = toggle.checked
+        ? 'Telemetry is disabled. No anonymized performance data will be sent.'
+        : 'Telemetry is enabled. Anonymized performance data will be sent periodically.';
+}
+
+/** Initialise the preferences page by wiring the telemetry toggle. */
 export function initPreferencesPage(): void {
     const toggle = document.querySelector<HTMLInputElement>('#telemetry-toggle');
-    const statusEl = document.querySelector<HTMLElement>('#telemetry-status');
-    if (!toggle || !statusEl) return;
+    const statusElement = document.querySelector<HTMLElement>('#telemetry-status');
+    if (!toggle || !statusElement) return;
 
-    toggle.checked = getTelemetryDisabled();
-    updateTelemetryStatus(toggle, statusEl);
+    toggle.checked = isTelemetryDisabled();
+    updateTelemetryStatus(toggle, statusElement);
 
     toggle.addEventListener('change', () => {
-        setTelemetryDisabled(toggle.checked);
-        updateTelemetryStatus(toggle, statusEl);
+        if (toggle.checked) {
+            disableTelemetry();
+        } else {
+            enableTelemetry();
+        }
+        updateTelemetryStatus(toggle, statusElement);
     });
 }

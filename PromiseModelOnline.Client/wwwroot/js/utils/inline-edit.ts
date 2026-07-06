@@ -62,10 +62,10 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
       }
       const originalText = saveButton.textContent;
       saveButton.textContent = 'Saved!';
-      saveButton.disabled = true;
+      (saveButton as HTMLButtonElement).disabled = true;
       setTimeout(() => {
         saveButton.textContent = originalText;
-        saveButton.disabled = false;
+        (saveButton as HTMLButtonElement).disabled = false;
         showView(value);
       }, 1500);
     },
