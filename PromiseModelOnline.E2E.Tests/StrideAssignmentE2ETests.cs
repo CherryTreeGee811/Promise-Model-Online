@@ -20,7 +20,7 @@ public class StrideAssignmentE2ETests : E2ETestBase
 
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/strides");
-        await Page.WaitForSelectorAsync("#stride-board", new() { Timeout = 15000 });
+        await Page.WaitForSelectorAsync("#stride-board .stride-card", new() { Timeout = 15000 });
 
         // Assert
         var board = await Page.Locator("#stride-board").IsVisibleAsync();

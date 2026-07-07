@@ -96,12 +96,24 @@ public class RegistrationE2ETests : E2ETestBase
     {
         // Arrange — register a user with a known email first so the duplicate exists
         var dupEmail = $"dupe-{Guid.NewGuid().ToString("N")[..8]}@example.com";
-        await _context.ClearCookiesAsync();
-        await NavigateForFormAsync("/account/register");
-        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
-        await FillRegistrationForm(NewUser().Username, dupEmail, TestPassword);
-        await Page.ClickAsync("button.submit-btn");
-        await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            if (attempt > 1) await _context.ClearCookiesAsync();
+            await NavigateForFormAsync("/account/register");
+            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+            await FillRegistrationForm(NewUser().Username, dupEmail, TestPassword);
+            await Page.ClickAsync("button.submit-btn");
+            try
+            {
+                await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
+                break;
+            }
+            catch (TimeoutException) when (attempt < 2)
+            {
+                var body = (await Page.TextContentAsync("body") ?? "").Trim();
+                if (body.Length != 0) throw;
+            }
+        }
 
         // Act — try to register the same email again
         await _context.ClearCookiesAsync();
