@@ -123,7 +123,7 @@ public class ProjectPermissionsControllerUnitTests
 
         var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
         var permissionDto = new PermissionDto { Id = 5, Level = "View" };
-        _mockPermissionService.Setup(s => s.InviteUserAsync(request, user.Id))
+        _mockPermissionService.Setup(s => s.InviteUserAsync(projectEntity.Id, request.Email, request.Level, user.Id))
             .ReturnsAsync(permissionDto);
 
         var result = await _controller.InviteUser(request, owner, project);
@@ -160,7 +160,7 @@ public class ProjectPermissionsControllerUnitTests
         _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, projectEntity.Id)).ReturnsAsync(PermissionLevel.Edit);
 
         var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
-        _mockPermissionService.Setup(s => s.InviteUserAsync(request, user.Id))
+        _mockPermissionService.Setup(s => s.InviteUserAsync(projectEntity.Id, request.Email, request.Level, user.Id))
             .ThrowsAsync(new InvalidOperationException("Invitation failed"));
 
         var result = await _controller.InviteUser(request, owner, project);

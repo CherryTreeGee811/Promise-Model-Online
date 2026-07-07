@@ -33,7 +33,8 @@ public static class RegistrationExtensions
         services.AddDbContext<PromiseModelOnlineContext>(options =>
             options.UseSqlServer(connectionString));
 
-        services.AddScoped<IPromiseModelOnlineContext, PromiseModelOnlineContext>();
+        services.AddScoped<IPromiseModelOnlineContext>(sp =>
+            sp.GetRequiredService<PromiseModelOnlineContext>());
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
         services.AddScoped(typeof(IGenericMapper<,>), typeof(GenericMapper<,>));

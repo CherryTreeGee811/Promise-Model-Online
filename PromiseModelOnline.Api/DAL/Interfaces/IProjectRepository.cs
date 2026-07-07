@@ -18,6 +18,11 @@ public interface IProjectRepository : IGenericRepository<Project>
     ///   Empty enumeration if the user has no projects.</returns>
     Task<IEnumerable<Project>> GetProjectsOwnedByUserAsync(int userId);
 
+    /// <summary>Return projects matching the given IDs, with Owner loaded.</summary>
+    /// <param name="ids">The project IDs to fetch. Must be non-null.</param>
+    /// <returns>Projects whose <c>Id</c> is in <paramref name="ids"/>, with <c>Owner</c> populated.</returns>
+    Task<IEnumerable<Project>> GetProjectsByIdsAsync(IEnumerable<int> ids);
+
     /// <summary>Return the top-level product promises for a project.</summary>
     /// <remarks>
     ///   Navigates the <see cref="Project.ProductPromises"/> navigation property and orders

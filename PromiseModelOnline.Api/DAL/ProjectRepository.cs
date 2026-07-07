@@ -21,7 +21,16 @@ public class ProjectRepository(PromiseModelOnlineContext context) : GenericRepos
     /// <param name="userId">The owner's user ID. Must be greater than zero.</param>
     /// <returns>Projects where <c>OwnerId == userId</c>. Empty if none.</returns>
     public async Task<IEnumerable<Project>> GetProjectsOwnedByUserAsync(int userId) => await _context.Set<Project>()
+            .Include(p => p.Owner)
             .Where(p => p.OwnerId == userId)
+            .ToListAsync();
+
+    /// <summary>Return projects matching the given IDs with their owner loaded.</summary>
+    /// <param name="ids">The project IDs to fetch. Must be non-null.</param>
+    /// <returns>Projects whose <c>Id</c> is in <paramref name="ids"/>, with <c>Owner</c> populated.</returns>
+    public async Task<IEnumerable<Project>> GetProjectsByIdsAsync(IEnumerable<int> ids) => await _context.Set<Project>()
+            .Include(p => p.Owner)
+            .Where(p => ids.Contains(p.Id))
             .ToListAsync();
 
     /// <summary>Return the top-level product promises for a project, ordered by display order.</summary>

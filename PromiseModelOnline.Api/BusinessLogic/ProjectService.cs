@@ -42,24 +42,11 @@ public class ProjectService(
         var ownedProjects = await _projectRepo.GetProjectsOwnedByUserAsync(userId);
 
         var sharedProjectIds = await _permissionRepo.GetProjectIdsForUserAsync(userId);
-        var sharedProjects = new List<Project>();
-        foreach (var projectId in sharedProjectIds)
-        {
-            var project = await _projectRepo.GetByIdAsync(projectId);
-            if (project is not null)
-                sharedProjects.Add(project);
-        }
+        var sharedProjects = sharedProjectIds.Any()
+            ? await _projectRepo.GetProjectsByIdsAsync(sharedProjectIds)
+            : Enumerable.Empty<Project>();
 
-        var allProjects = ownedProjects.Union(sharedProjects, new ProjectComparer()).ToList();
-
-        foreach (var project in allProjects.Where(p => p.Owner is null))
-        {
-            var owner = await _userRepo.GetByIdAsync(project.OwnerId);
-            if (owner is not null)
-                project.Owner = owner;
-        }
-
-        return allProjects;
+        return ownedProjects.Concat(sharedProjects).DistinctBy(p => p.Id).ToList();
     }
 
     /// <summary>Return the member list for a project (owner + active permission users).</summary>
@@ -84,17 +71,16 @@ public class ProjectService(
             });
 
         var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId);
-        foreach (var perm in permissions.Where(p => p.Status == PermissionStatus.Active && members.All(m => m.UserId != p.UserId)))
-        {
-            var user = await _userRepo.GetByIdAsync(perm.UserId);
-            if (user is not null)
-                members.Add(new ProjectMemberDto
-                {
-                    UserId = user.Id,
-                    UserName = user.Name,
-                    Email = user.Email
-                });
-        }
+        members.AddRange(permissions
+            .Where(p => p.Status == PermissionStatus.Active
+                        && members.All(m => m.UserId != p.UserId)
+                        && p.User is not null)
+            .Select(p => new ProjectMemberDto
+            {
+                UserId = p.User!.Id,
+                UserName = p.User.Name,
+                Email = p.User.Email
+            }));
 
         return members;
     }
@@ -144,14 +130,5 @@ public class ProjectService(
         }
     }
 
-    /// <summary>Equality comparer for <see cref="Project"/> based on ID.</summary>
-    private sealed class ProjectComparer : IEqualityComparer<Project>
-    {
-        /// <summary>Compare two projects by ID.</summary>
-        /// <param name="x">The first project to compare.</param>
-        /// <param name="y">The second project to compare.</param>
-        public bool Equals(Project? x, Project? y) => x?.Id == y?.Id;
-        /// <summary>Get hash code from project ID.</summary>
-        public int GetHashCode(Project obj) => obj.Id.GetHashCode();
-    }
+
 }

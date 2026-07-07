@@ -93,13 +93,11 @@ public class ProjectPermissionsController(
 
         if (userId == null) return Unauthorized();
 
-        request.ProjectId = projectEntity.Id;
-
         try
 
         {
 
-            var result = await _permissionService.InviteUserAsync(request, userId.Value);
+            var result = await _permissionService.InviteUserAsync(projectEntity.Id, request.Email, request.Level, userId.Value);
 
             _logger.LogInformation(
 
@@ -111,7 +109,7 @@ public class ProjectPermissionsController(
 
                 DateTime.UtcNow,
 
-                new { request.ProjectId, request.Email, request.Level });
+                new { projectEntity.Id, request.Email, request.Level });
 
             return CreatedAtAction(nameof(GetPermissions), new { owner, project }, result);
 

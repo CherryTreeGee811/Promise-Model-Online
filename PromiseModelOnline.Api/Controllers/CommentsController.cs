@@ -103,7 +103,7 @@ public class CommentsController(ICommentService commentService,
             return CreatedAtAction(nameof(GetComments),
                 new { type = dto.ParentType, parentId = dto.ParentId }, comment);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Failed to create comment");
             return BadRequest("The comment could not be created.");

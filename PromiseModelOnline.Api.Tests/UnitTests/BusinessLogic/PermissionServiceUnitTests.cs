@@ -92,10 +92,10 @@ public class PermissionServiceUnitTests
     {
         // Arrange
         _projectRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Project?)null);
-        var request = new CreatePermissionRequestDto { ProjectId = 99, Email = "test@test.com", Level = PermissionLevel.View };
+        var request = new CreatePermissionRequestDto { Email = "test@test.com", Level = PermissionLevel.View };
 
         // Act & Assert
-        Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, 1));
+        Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(99, request.Email, request.Level, 1));
     }
 
     [Test]
@@ -104,10 +104,10 @@ public class PermissionServiceUnitTests
         // Arrange
         var project = new Project { Id = 10, OwnerId = 55 };
         _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
-        var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "test@test.com", Level = PermissionLevel.View };
+        var request = new CreatePermissionRequestDto { Email = "test@test.com", Level = PermissionLevel.View };
 
         // Act & Assert
-        Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.InviteUserAsync(request, 1));
+        Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.InviteUserAsync(10, request.Email, request.Level, 1));
     }
 
     [Test]
@@ -122,9 +122,9 @@ public class PermissionServiceUnitTests
         _userRepoMock.Setup(r => r.FindByEmailAsync("invited@test.com")).ReturnsAsync(new[] { invitedUser });
         _permRepoMock.Setup(r => r.GetByUserAndProjectAsync(200, 10)).ReturnsAsync(new Permission { Id = 99 });
 
-        var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
+        var request = new CreatePermissionRequestDto { Email = "invited@test.com", Level = PermissionLevel.Comment };
 
-        Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, ownerId));
+        Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(10, request.Email, request.Level, ownerId));
     }
 
     [Test]
@@ -145,9 +145,9 @@ public class PermissionServiceUnitTests
 
         _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDto { Id = 0, Level = "Comment" });
 
-        var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "invited@test.com", Level = PermissionLevel.Comment };
+        var request = new CreatePermissionRequestDto { Email = "invited@test.com", Level = PermissionLevel.Comment };
 
-        var result = await _service.InviteUserAsync(request, ownerId);
+        var result = await _service.InviteUserAsync(10, request.Email, request.Level, ownerId);
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Id, Is.EqualTo(0));
@@ -165,9 +165,9 @@ public class PermissionServiceUnitTests
         _userRepoMock.Setup(r => r.FindByEmailAsync("nonexistent")).ReturnsAsync(Enumerable.Empty<User>());
         _userRepoMock.Setup(r => r.GetUsersByNameAsync("nonexistent")).ReturnsAsync(Enumerable.Empty<User>());
 
-        var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "nonexistent", Level = PermissionLevel.View };
+        var request = new CreatePermissionRequestDto { Email = "nonexistent", Level = PermissionLevel.View };
 
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(request, ownerId));
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(10, request.Email, request.Level, ownerId));
         Assert.That(ex.Message, Does.Contain("not found"));
     }
 
@@ -190,9 +190,9 @@ public class PermissionServiceUnitTests
 
         _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDto { Id = 0, Level = "Edit" });
 
-        var request = new CreatePermissionRequestDto { ProjectId = 10, Email = "someuser", Level = PermissionLevel.Edit };
+        var request = new CreatePermissionRequestDto { Email = "someuser", Level = PermissionLevel.Edit };
 
-        var result = await _service.InviteUserAsync(request, ownerId);
+        var result = await _service.InviteUserAsync(10, request.Email, request.Level, ownerId);
 
         Assert.That(result, Is.Not.Null);
         _permRepoMock.Verify(r => r.AddAsync(It.Is<Permission>(p => p.UserId == 300 && p.Level == PermissionLevel.Edit && p.Status == PermissionStatus.Pending)), Times.Once);

@@ -65,8 +65,7 @@ public class ProjectServiceUnitTests
 
         var p10 = new Project { Id = 10, Name = "Shared1" };
         var p20 = new Project { Id = 20, Name = "Shared2" };
-        _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(p10);
-        _projectRepoMock.Setup(r => r.GetByIdAsync(20)).ReturnsAsync(p20);
+        _projectRepoMock.Setup(r => r.GetProjectsByIdsAsync(new List<int> { 10, 20 })).ReturnsAsync(new List<Project> { p10, p20 });
 
         // Act
         var result = await _service.GetAccessibleProjectsAsync(200);
@@ -84,8 +83,7 @@ public class ProjectServiceUnitTests
         _projectRepoMock.Setup(r => r.GetProjectsOwnedByUserAsync(300)).ReturnsAsync(new List<Project>());
         _permissionRepoMock.Setup(r => r.GetProjectIdsForUserAsync(300)).ReturnsAsync(new List<int> { 99, 100 });
 
-        _projectRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Project?)null);
-        _projectRepoMock.Setup(r => r.GetByIdAsync(100)).ReturnsAsync(new Project { Id = 100 });
+        _projectRepoMock.Setup(r => r.GetProjectsByIdsAsync(new List<int> { 99, 100 })).ReturnsAsync(new List<Project> { new Project { Id = 100 } });
 
         // Act
         var result = await _service.GetAccessibleProjectsAsync(300);
@@ -102,7 +100,7 @@ public class ProjectServiceUnitTests
         var owned = new List<Project> { new Project { Id = 1, Name = "P1", OwnerId = 400 } };
         _projectRepoMock.Setup(r => r.GetProjectsOwnedByUserAsync(400)).ReturnsAsync(owned);
         _permissionRepoMock.Setup(r => r.GetProjectIdsForUserAsync(400)).ReturnsAsync(new List<int> { 1 });
-        _projectRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new Project { Id = 1, Name = "P1" });
+        _projectRepoMock.Setup(r => r.GetProjectsByIdsAsync(new List<int> { 1 })).ReturnsAsync(new List<Project> { new Project { Id = 1, Name = "P1" } });
 
         // Act
         var result = await _service.GetAccessibleProjectsAsync(400);
@@ -186,8 +184,8 @@ public class ProjectServiceUnitTests
 
         var permissions = new List<Permission>
             {
-                new Permission { UserId = 5, ProjectId = 20, Level = PermissionLevel.Edit, Status = PermissionStatus.Active }, // owner, should be ignored by deduplication
-                new Permission { UserId = 6, ProjectId = 20, Level = PermissionLevel.View, Status = PermissionStatus.Active }
+                new Permission { UserId = 5, User = owner, ProjectId = 20, Level = PermissionLevel.Edit, Status = PermissionStatus.Active }, // owner, should be ignored by deduplication
+                new Permission { UserId = 6, User = user2, ProjectId = 20, Level = PermissionLevel.View, Status = PermissionStatus.Active }
             };
         _permissionRepoMock.Setup(r => r.GetPermissionsByProjectAsync(20)).ReturnsAsync(permissions);
 
