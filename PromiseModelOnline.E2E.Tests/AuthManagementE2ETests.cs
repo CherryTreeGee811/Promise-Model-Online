@@ -74,31 +74,17 @@ public class AuthManagementE2ETests : E2ETestBase
         var username = $"e2e_auth_{suffix}";
         var email = $"e2e_auth_{suffix}@example.com";
 
-        // Retry once on anti-CSRF 400 (empty body)
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            if (attempt > 1) await _context.ClearCookiesAsync();
-            await NavigateForFormAsync("/account/register");
-            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+        await NavigateForFormAsync("/account/register");
+        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
 
-            await Page.FillAsync("#Username", username);
-            await Page.FillAsync("#Email", email);
-            await Page.FillAsync("#Password", NewPassword);
-            await Page.FillAsync("#ConfirmPassword", NewPassword);
-            await Page.CheckAsync("#privacyConsent");
+        await Page.FillAsync("#Username", username);
+        await Page.FillAsync("#Email", email);
+        await Page.FillAsync("#Password", NewPassword);
+        await Page.FillAsync("#ConfirmPassword", NewPassword);
+        await Page.CheckAsync("#privacyConsent");
 
-            await Page.ClickAsync("button.submit-btn");
-            try
-            {
-                await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
-                break;
-            }
-            catch (TimeoutException) when (attempt < 2)
-            {
-                var body = (await Page.TextContentAsync("body") ?? "").Trim();
-                if (body.Length != 0) throw;
-            }
-        }
+        await Page.ClickAsync("button.submit-btn");
+        await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         var match = Regex.Match(Page.Url, @"userId=([^&]+)");
         Assert.That(match.Success, Is.True, "Expected userId in redirect URL");

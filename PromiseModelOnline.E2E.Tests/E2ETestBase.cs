@@ -383,6 +383,21 @@ public abstract class E2ETestBase
         await _context.CookiesAsync();
     }
 
+    /// <summary>Navigate through the BFF login flow and sync anti-CSRF cookies after landing on the Auth server form.</summary>
+    /// <remarks>
+    ///   The BFF <c>/login</c> initiates an OIDC challenge that redirects through <c>/connect/authorize</c>
+    ///   to <c>/account/login</c> on the Auth server. The anti-CSRF cookie is set when the Auth server
+    ///   renders the login form. <c>CookiesAsync()</c> forces Playwright to synchronize its cookie state
+    ///   with the browser before the test fills and submits the form.
+    /// </remarks>
+    protected async Task NavigateForLoginAsync(string returnUrl = "/", int timeout = 15000)
+    {
+        await _context.ClearCookiesAsync(new() { Name = ".AspNetCore.Antiforgery" });
+        await Page.GotoAsync($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}", new() { Timeout = timeout });
+        await Page.WaitForURLAsync("**/account/login**", new() { Timeout = timeout });
+        await _context.CookiesAsync();
+    }
+
     /// <summary>Wait for redirect to login (either /login, /account/login, or /connect/authorize).</summary>
     protected async Task WaitForLoginRedirectAsync(int timeout = 5000)
     {

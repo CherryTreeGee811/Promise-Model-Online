@@ -14,8 +14,7 @@ public class OidcFlowTests : E2ETestBase
     {
         // Arrange — no pre-authentication, no pre-set cookies, no dev unlock
         // Navigate to BFF /login to trigger the full OIDC challenge redirect chain
-        await Page.GotoAsync("/login?returnUrl=/projects", new() { Timeout = 15000 });
-        await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 15000 });
+        await NavigateForLoginAsync("/projects");
 
         // Act — authenticate on the Auth server login page
         await Page.Locator("#Username").FillAsync(TestUsername);
@@ -51,30 +50,16 @@ public class OidcFlowTests : E2ETestBase
         var username = $"e2e_oidc_{suffix}";
         var email = $"e2e_oidc_{suffix}@example.com";
 
-        // Retry once on anti-CSRF 400
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            if (attempt > 1) await _context.ClearCookiesAsync();
-            await NavigateForFormAsync("/account/register");
-            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
-            await Page.FillAsync("#Username", username);
-            await Page.FillAsync("#Email", email);
-            await Page.FillAsync("#Password", TestPassword);
-            await Page.FillAsync("#ConfirmPassword", TestPassword);
-            await Page.CheckAsync("#privacyConsent");
+        await NavigateForFormAsync("/account/register");
+        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+        await Page.FillAsync("#Username", username);
+        await Page.FillAsync("#Email", email);
+        await Page.FillAsync("#Password", TestPassword);
+        await Page.FillAsync("#ConfirmPassword", TestPassword);
+        await Page.CheckAsync("#privacyConsent");
 
-            await Page.ClickAsync("button.submit-btn");
-            try
-            {
-                await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
-                break;
-            }
-            catch (TimeoutException) when (attempt < 2)
-            {
-                var body = (await Page.TextContentAsync("body") ?? "").Trim();
-                if (body.Length != 0) throw;
-            }
-        }
+        await Page.ClickAsync("button.submit-btn");
+        await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         var match = Regex.Match(Page.Url, @"userId=([^&]+)");
         Assert.That(match.Success, Is.True);
@@ -84,13 +69,14 @@ public class OidcFlowTests : E2ETestBase
         var json = System.Text.Json.JsonDocument.Parse(await codeResponse.Content.ReadAsStringAsync());
         var code = json.RootElement.GetProperty("code").GetString()!;
 
+        // Sync cookies after redirect to verify-email page, then submit verification
+        await _context.CookiesAsync();
         await Page.FillAsync("#Code", code);
         await Page.ClickAsync("button.submit-btn");
         await Page.WaitForURLAsync(new Regex("account/login"), new() { Timeout = 15000 });
 
-        // Act — full OIDC flow from scratch (no pre-authentication)
-        await Page.GotoAsync("/login?returnUrl=/projects", new() { Timeout = 15000 });
-        await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 15000 });
+        // Act — full OIDC flow from scratch using NavigateForLoginAsync for anti-CSRF sync
+        await NavigateForLoginAsync("/projects");
 
         await Page.Locator("#Username").FillAsync(username);
         await Page.Locator("#Password").FillAsync(TestPassword);
@@ -151,28 +137,18 @@ public class OidcFlowTests : E2ETestBase
     {
         // Arrange
         // Use a non-existent username so no real account's lockout counter is affected
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            if (attempt > 1) await _context.ClearCookiesAsync();
-            await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 5000 });
-            await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 5000 });
+        await NavigateForLoginAsync("/");
 
-            await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", "nonexistent_user");
-            await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", "wrong");
-            // Act
-            await Page.ClickAsync("button[type=\"submit\"]");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 10000 });
+        await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", "nonexistent_user");
+        await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", "wrong");
+        // Act
+        await Page.ClickAsync("button[type=\"submit\"]");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 10000 });
 
-            var body = await Page.TextContentAsync("body") ?? "";
-            if (body.Length != 0)
-            {
-                // Assert
-                Assert.That(body, Does.Contain("Invalid").Or.Contains("invalid"),
-                    "Error message should be shown for invalid credentials");
-                return;
-            }
-        }
-        Assert.Fail("Login form submission returned empty body after retry");
+        var body = await Page.TextContentAsync("body") ?? "";
+        // Assert
+        Assert.That(body, Does.Contain("Invalid").Or.Contains("invalid"),
+            "Error message should be shown for invalid credentials");
     }
 
     [Test]

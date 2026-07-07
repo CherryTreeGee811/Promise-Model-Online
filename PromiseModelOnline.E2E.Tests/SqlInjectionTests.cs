@@ -480,49 +480,18 @@ public class SqlInjectionTests : E2ETestBase
                 .Replace("--", "").Replace("=", "").Replace(" ", "");
             var email = $"sqli-{uniqueSuffix}-{clean[..Math.Min(15, clean.Length)]}@test.com";
 
-            // Retry once if anti-CSRF fails (back-to-back test runs can race on cookie propagation)
-            var registrationSucceeded = false;
-            for (var attempt = 1; attempt <= 2; attempt++)
-            {
-                if (attempt > 1) await _context.ClearCookiesAsync();
-                await NavigateForFormAsync("/account/register");
+            await NavigateForFormAsync("/account/register");
 
-                await Page.EvaluateAsync("document.querySelector('form').noValidate = true");
+            await Page.EvaluateAsync("document.querySelector('form').noValidate = true");
 
-                await Page.Locator("#Email").FillAsync(email);
-                await Page.Locator("#Username").FillAsync(email);
-                await Page.Locator("#Password").FillAsync("Test123*!");
-                await Page.Locator("#ConfirmPassword").FillAsync("Test123*!");
-                await Page.CheckAsync("#privacyConsent");
-                await Page.ClickAsync("button[type=\"submit\"]");
+            await Page.Locator("#Email").FillAsync(email);
+            await Page.Locator("#Username").FillAsync(email);
+            await Page.Locator("#Password").FillAsync("Test123*!");
+            await Page.Locator("#ConfirmPassword").FillAsync("Test123*!");
+            await Page.CheckAsync("#privacyConsent");
+            await Page.ClickAsync("button[type=\"submit\"]");
 
-                try
-                {
-                    await Page.WaitForSelectorAsync(".auth-message.auth-error, .verify-card", new() { Timeout = 10000 });
-                    registrationSucceeded = true;
-                    break;
-                }
-                catch (TimeoutException) when (attempt < 2)
-                {
-                    var body = (await Page.TextContentAsync("body") ?? "").Trim();
-                    if (body.Length != 0)
-                    {
-                        TestContext.Out.WriteLine($"TIMEOUT on payload: {Truncate(payload, 60)}");
-                        TestContext.Out.WriteLine($"  URL: {Page.Url}");
-                        TestContext.Out.WriteLine($"  Body: {Truncate(body, 200)}");
-                        throw;
-                    }
-                    TestContext.Out.WriteLine($"RETRY payload: {Truncate(payload, 60)} (empty body = anti-CSRF 400)");
-                }
-            }
-
-            if (!registrationSucceeded)
-            {
-                TestContext.Out.WriteLine($"TIMEOUT on payload: {Truncate(payload, 60)}");
-                TestContext.Out.WriteLine($"  URL: {Page.Url}");
-                TestContext.Out.WriteLine($"  Body: {Truncate(await Page.TextContentAsync("body") ?? "", 200)}");
-                throw new TimeoutException("Registration POST failed after 2 attempts (anti-CSRF)");
-            }
+            await Page.WaitForSelectorAsync(".auth-message.auth-error, .verify-card", new() { Timeout = 10000 });
 
             // Assert — either redirected to verify page (success) or shows validation error
             Assert.That(Page.Url, Does.Not.Contain("Exception"),

@@ -31,25 +31,12 @@ public class RegistrationE2ETests : E2ETestBase
         // Arrange
         var (username, email) = NewUser();
 
-        // Act — retry once on anti-CSRF 400
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            if (attempt > 1) await _context.ClearCookiesAsync();
-            await NavigateForFormAsync("/account/register");
-            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
-            await FillRegistrationForm(username, email, TestPassword);
-            await Page.ClickAsync("button.submit-btn");
-            try
-            {
-                await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
-                break;
-            }
-            catch (TimeoutException) when (attempt < 2)
-            {
-                var body = (await Page.TextContentAsync("body") ?? "").Trim();
-                if (body.Length != 0) throw;
-            }
-        }
+        // Act
+        await NavigateForFormAsync("/account/register");
+        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+        await FillRegistrationForm(username, email, TestPassword);
+        await Page.ClickAsync("button.submit-btn");
+        await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         // Assert
         Assert.That(Page.Url, Does.Contain("account/verify-email"));
@@ -96,24 +83,11 @@ public class RegistrationE2ETests : E2ETestBase
     {
         // Arrange — register a user with a known email first so the duplicate exists
         var dupEmail = $"dupe-{Guid.NewGuid().ToString("N")[..8]}@example.com";
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            if (attempt > 1) await _context.ClearCookiesAsync();
-            await NavigateForFormAsync("/account/register");
-            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
-            await FillRegistrationForm(NewUser().Username, dupEmail, TestPassword);
-            await Page.ClickAsync("button.submit-btn");
-            try
-            {
-                await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
-                break;
-            }
-            catch (TimeoutException) when (attempt < 2)
-            {
-                var body = (await Page.TextContentAsync("body") ?? "").Trim();
-                if (body.Length != 0) throw;
-            }
-        }
+        await NavigateForFormAsync("/account/register");
+        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+        await FillRegistrationForm(NewUser().Username, dupEmail, TestPassword);
+        await Page.ClickAsync("button.submit-btn");
+        await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         // Act — try to register the same email again
         await _context.ClearCookiesAsync();
@@ -135,25 +109,12 @@ public class RegistrationE2ETests : E2ETestBase
         // Arrange
         var (username, email) = NewUser();
 
-        // Act — retry once on anti-CSRF 400
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            if (attempt > 1) await _context.ClearCookiesAsync();
-            await NavigateForFormAsync("/account/register");
-            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
-            await FillRegistrationForm(username, email, "password");
-            await Page.ClickAsync("button.submit-btn");
-            try
-            {
-                await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });
-                break;
-            }
-            catch (TimeoutException) when (attempt < 2)
-            {
-                var body = (await Page.TextContentAsync("body") ?? "").Trim();
-                if (body.Length != 0) throw;
-            }
-        }
+        // Act
+        await NavigateForFormAsync("/account/register");
+        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+        await FillRegistrationForm(username, email, "password");
+        await Page.ClickAsync("button.submit-btn");
+        await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });
         var errorText = await Page.Locator(".auth-error").InnerTextAsync();
         Assert.That(errorText, Does.Contain("password").Or.Contain("Password"));
         AssertNoCspViolations();
@@ -178,27 +139,16 @@ public class RegistrationE2ETests : E2ETestBase
     {
         var (username, email) = NewUser();
 
-        // Retry once on anti-CSRF 400
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            if (attempt > 1) await _context.ClearCookiesAsync();
-            await NavigateForFormAsync("/account/register");
-            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+        await NavigateForFormAsync("/account/register");
+        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
 
-            await FillRegistrationForm(username, email, TestPassword);
+        await FillRegistrationForm(username, email, TestPassword);
 
-            await Page.ClickAsync("button.submit-btn");
-            try
-            {
-                await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
-                break;
-            }
-            catch (TimeoutException) when (attempt < 2)
-            {
-                var body = (await Page.TextContentAsync("body") ?? "").Trim();
-                if (body.Length != 0) throw;
-            }
-        }
+        await Page.ClickAsync("button.submit-btn");
+        await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
+
+        // Sync cookies after redirect to verify-email page for its own anti-CSRF form
+        await _context.CookiesAsync();
 
         var match = Regex.Match(Page.Url, @"userId=([^&]+)");
         Assert.That(match.Success, Is.True, "Expected userId in redirect URL");
