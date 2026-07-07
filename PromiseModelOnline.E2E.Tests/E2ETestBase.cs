@@ -70,6 +70,12 @@ public abstract class E2ETestBase
         try
         {
             await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 5000 });
+
+            // Wait for any async AJAX responses (which may set cookies) to complete
+            // before clearing, so residual OIDC/session cookies don't contaminate
+            // the next test's anti-CSRF state.
+            await Task.Delay(500);
+
             await Page.EvaluateAsync(@"() => {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.getRegistrations().then(r => r.forEach(r => r.unregister()));
@@ -84,11 +90,26 @@ public abstract class E2ETestBase
             // Ignore — SW cleanup is best-effort
         }
 
+        // Clear ALL cookies left over from the SPA warm-up navigation.
+        // The SPA triggers an OIDC redirect chain that sets nonce/correlation cookies,
+        // which contaminate the Auth server's anti-CSRF token generation and cause
+        // form POSTs to return 400 Bad Request.
+        await _context.ClearCookiesAsync();
+
         ConsoleErrors.Clear();
         Page.Console += (_, msg) =>
         {
             if (msg.Type == "error" || msg.Type == "warning")
                 ConsoleErrors.Add($"[{msg.Type}] {msg.Text}");
+        };
+        Page.Request += (_, req) =>
+        {
+            if (req.Method == "POST")
+                TestContext.Out.WriteLine($"[net] POST {req.Url}");
+        };
+        Page.RequestFailed += (_, req) =>
+        {
+            TestContext.Out.WriteLine($"[net] FAILED {req.Method} {req.Url} — {req.Failure}");
         };
 
         Client = new HttpClient(new HttpClientHandler
@@ -370,7 +391,7 @@ public abstract class E2ETestBase
         return await Client.SendAsync(request);
     }
 
-    /// <summary>Navigate and force Playwright cookie-store sync after navigation.</summary>
+    /// <summary>Navigate to a form page and sync cookies.</summary>
     /// <remarks>
     ///   Clears any stale <c>.AspNetCore.Antiforgery</c> cookie before navigating so the
     ///   server generates a fresh cookie + form-token pair in a single response, eliminating
@@ -380,19 +401,52 @@ public abstract class E2ETestBase
     {
         await _context.ClearCookiesAsync(new() { Name = ".AspNetCore.Antiforgery" });
         await Page.GotoAsync(url, new() { WaitUntil = WaitUntilState.Load, Timeout = timeout });
-        await _context.CookiesAsync();
+        TestContext.Out.WriteLine($"[debug] NavigateForFormAsync: {Page.Url}");
+        var cookies = await _context.CookiesAsync();
+        foreach (var c in cookies)
+            TestContext.Out.WriteLine($"[debug]   cookie: {c.Name}={c.Value[..Math.Min(c.Value.Length, 40)]}");
     }
 
-    /// <summary>Navigate through the BFF login flow and sync anti-CSRF cookies after landing on the Auth server form.</summary>
+    /// <summary>Submit a form via JavaScript to bypass the <c>initFormLoading</c> handler
+    /// that disables the submit button and breaks Playwright's form POST.</summary>
+    /// <remarks>
+    ///   Uses <c>HTMLFormElement.submit()</c> which <b>does not</b> fire the <c>submit</c>
+    ///   event, so the button-disabling handler in <c>auth-page.js</c> is skipped.
+    ///   Relies on the form fields already being filled by the test.
+    /// </remarks>
+    protected async Task SubmitFormAsync(string formSelector = ".auth-form")
+    {
+        TestContext.Out.WriteLine($"[debug] SubmitFormAsync('{formSelector}') URL: {Page.Url}");
+        try
+        {
+            await Page.EvaluateAsync($"document.querySelector('{formSelector}').submit()");
+        }
+        catch (PlaywrightException ex) when (ex.Message.Contains("Cannot read properties of null"))
+        {
+            var html = await Page.InnerHTMLAsync("body");
+            var truncated = html.Length > 3000 ? html[..3000] + "[...truncated]" : html;
+            TestContext.Out.WriteLine($"[debug] SubmitFormAsync FAILED — form '{formSelector}' not found");
+            TestContext.Out.WriteLine($"[debug] URL: {Page.Url}");
+            TestContext.Out.WriteLine($"[debug] Body HTML:\n{truncated}");
+            throw new InvalidOperationException(
+                $"submit: form '{formSelector}' not found.\nURL: {Page.Url}\nBody:\n{truncated}", ex);
+        }
+        // Brief wait for server response, then capture resulting page state
+        await Page.WaitForTimeoutAsync(200);
+        TestContext.Out.WriteLine($"[debug] SubmitFormAsync AFTER URL: {Page.Url}");
+        var bodyHtml = await Page.InnerHTMLAsync("body");
+        var bodyTrunc = bodyHtml.Length > 500 ? bodyHtml[..500] + "[...]" : bodyHtml;
+        TestContext.Out.WriteLine($"[debug] SubmitFormAsync AFTER body:\n{bodyTrunc}");
+    }
+
+    /// <summary>Navigate through the BFF login flow and sync cookies after landing on the Auth server form.</summary>
     /// <remarks>
     ///   The BFF <c>/login</c> initiates an OIDC challenge that redirects through <c>/connect/authorize</c>
-    ///   to <c>/account/login</c> on the Auth server. The anti-CSRF cookie is set when the Auth server
-    ///   renders the login form. <c>CookiesAsync()</c> forces Playwright to synchronize its cookie state
-    ///   with the browser before the test fills and submits the form.
+    ///   to <c>/account/login</c> on the Auth server. <c>CookiesAsync</c> forces Playwright
+    ///   to synchronize its cookie state after the OIDC redirect chain.
     /// </remarks>
     protected async Task NavigateForLoginAsync(string returnUrl = "/", int timeout = 15000)
     {
-        await _context.ClearCookiesAsync(new() { Name = ".AspNetCore.Antiforgery" });
         await Page.GotoAsync($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}", new() { Timeout = timeout });
         await Page.WaitForURLAsync("**/account/login**", new() { Timeout = timeout });
         await _context.CookiesAsync();
@@ -454,4 +508,5 @@ public abstract class E2ETestBase
         var responses = await Task.WhenAll(tasks);
         return responses.Select(r => r.StatusCode).ToList();
     }
+
 }

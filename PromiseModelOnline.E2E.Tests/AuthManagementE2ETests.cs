@@ -24,7 +24,7 @@ public class AuthManagementE2ETests : E2ETestBase
         await Page.FillAsync("#newPassword", TestPassword);
         await Page.FillAsync("#confirmPassword", TestPassword);
 
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
         await Page.WaitForURLAsync(new Regex("/account/change-password$"), new() { Timeout = 5000 });
 
         var successText = await Page.Locator(".auth-success").InnerTextAsync();
@@ -83,7 +83,7 @@ public class AuthManagementE2ETests : E2ETestBase
         await Page.FillAsync("#ConfirmPassword", NewPassword);
         await Page.CheckAsync("#privacyConsent");
 
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
         await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         var match = Regex.Match(Page.Url, @"userId=([^&]+)");
@@ -128,7 +128,7 @@ public class AuthManagementE2ETests : E2ETestBase
 
                 try
                 {
-                    await Page.ClickAsync("button.submit-btn");
+                    await SubmitFormAsync(".verify-code-form");
                     await Page.WaitForURLAsync(new Regex("account/login"), new() { Timeout = 30000 });
                 }
                 catch (TimeoutException)

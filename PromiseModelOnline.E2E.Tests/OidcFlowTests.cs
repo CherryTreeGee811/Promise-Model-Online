@@ -58,7 +58,7 @@ public class OidcFlowTests : E2ETestBase
         await Page.FillAsync("#ConfirmPassword", TestPassword);
         await Page.CheckAsync("#privacyConsent");
 
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
         await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         var match = Regex.Match(Page.Url, @"userId=([^&]+)");
@@ -72,7 +72,7 @@ public class OidcFlowTests : E2ETestBase
         // Sync cookies after redirect to verify-email page, then submit verification
         await _context.CookiesAsync();
         await Page.FillAsync("#Code", code);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync(".verify-code-form");
         await Page.WaitForURLAsync(new Regex("account/login"), new() { Timeout = 15000 });
 
         // Act — full OIDC flow from scratch using NavigateForLoginAsync for anti-CSRF sync

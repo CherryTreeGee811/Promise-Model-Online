@@ -32,7 +32,7 @@ public class ForgotPasswordE2ETests : E2ETestBase
         await NavigateForFormAsync("/account/forgot-password");
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
         await Page.FillAsync("#Email", TestUserEmail);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
         await Page.WaitForSelectorAsync(".auth-success", new() { Timeout = 5000 });
         var text = await Page.Locator(".auth-success").InnerTextAsync();
         Assert.That(text, Does.Contain("reset link"));
@@ -51,7 +51,7 @@ public class ForgotPasswordE2ETests : E2ETestBase
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
         await Page.FillAsync("#Password", NewPassword);
         await Page.FillAsync("#ConfirmPassword", NewPassword);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
 
         // Assert
         await Page.WaitForSelectorAsync("h2", new() { Timeout = 5000 });
@@ -70,7 +70,7 @@ public class ForgotPasswordE2ETests : E2ETestBase
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
         await Page.FillAsync("#Password", NewPassword);
         await Page.FillAsync("#ConfirmPassword", NewPassword);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
 
         // Assert
         await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });

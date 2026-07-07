@@ -35,7 +35,7 @@ public class RegistrationE2ETests : E2ETestBase
         await NavigateForFormAsync("/account/register");
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
         await FillRegistrationForm(username, email, TestPassword);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
         await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         // Assert
@@ -53,7 +53,7 @@ public class RegistrationE2ETests : E2ETestBase
 
         // Act
         await Page.FillAsync("#Code", code);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync(".verify-code-form");
 
         // Assert
         await Page.WaitForURLAsync(new Regex("account/login"), new() { Timeout = 5000 });
@@ -69,7 +69,7 @@ public class RegistrationE2ETests : E2ETestBase
 
         // Act
         await Page.FillAsync("#Code", "000000");
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync(".verify-code-form");
 
         // Assert
         await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });
@@ -86,7 +86,7 @@ public class RegistrationE2ETests : E2ETestBase
         await NavigateForFormAsync("/account/register");
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
         await FillRegistrationForm(NewUser().Username, dupEmail, TestPassword);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
         await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         // Act — try to register the same email again
@@ -94,7 +94,7 @@ public class RegistrationE2ETests : E2ETestBase
         await NavigateForFormAsync("/account/register");
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
         await FillRegistrationForm(NewUser().Username, dupEmail, TestPassword);
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
 
         // Assert
         await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });
@@ -113,7 +113,9 @@ public class RegistrationE2ETests : E2ETestBase
         await NavigateForFormAsync("/account/register");
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
         await FillRegistrationForm(username, email, "password");
-        await Page.ClickAsync("button.submit-btn");
+
+        // Act
+        await SubmitFormAsync();
         await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });
         var errorText = await Page.Locator(".auth-error").InnerTextAsync();
         Assert.That(errorText, Does.Contain("password").Or.Contain("Password"));
@@ -144,7 +146,7 @@ public class RegistrationE2ETests : E2ETestBase
 
         await FillRegistrationForm(username, email, TestPassword);
 
-        await Page.ClickAsync("button.submit-btn");
+        await SubmitFormAsync();
         await Page.WaitForURLAsync(new Regex("account/verify-email\\?userId="), new() { Timeout = 5000 });
 
         // Sync cookies after redirect to verify-email page for its own anti-CSRF form

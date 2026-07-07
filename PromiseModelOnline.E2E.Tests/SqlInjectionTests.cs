@@ -489,7 +489,7 @@ public class SqlInjectionTests : E2ETestBase
             await Page.Locator("#Password").FillAsync("Test123*!");
             await Page.Locator("#ConfirmPassword").FillAsync("Test123*!");
             await Page.CheckAsync("#privacyConsent");
-            await Page.ClickAsync("button[type=\"submit\"]");
+            await SubmitFormAsync();
 
             await Page.WaitForSelectorAsync(".auth-message.auth-error, .verify-card", new() { Timeout = 10000 });
 
