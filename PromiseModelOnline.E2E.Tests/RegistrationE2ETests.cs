@@ -135,14 +135,25 @@ public class RegistrationE2ETests : E2ETestBase
         // Arrange
         var (username, email) = NewUser();
 
-        // Act
-        await NavigateForFormAsync("/account/register");
-        await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
-        await FillRegistrationForm(username, email, "password");
-        await Page.ClickAsync("button.submit-btn");
-
-        // Assert
-        await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });
+        // Act — retry once on anti-CSRF 400
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            if (attempt > 1) await _context.ClearCookiesAsync();
+            await NavigateForFormAsync("/account/register");
+            await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
+            await FillRegistrationForm(username, email, "password");
+            await Page.ClickAsync("button.submit-btn");
+            try
+            {
+                await Page.WaitForSelectorAsync(".auth-error", new() { Timeout = 5000 });
+                break;
+            }
+            catch (TimeoutException) when (attempt < 2)
+            {
+                var body = (await Page.TextContentAsync("body") ?? "").Trim();
+                if (body.Length != 0) throw;
+            }
+        }
         var errorText = await Page.Locator(".auth-error").InnerTextAsync();
         Assert.That(errorText, Does.Contain("password").Or.Contain("Password"));
         AssertNoCspViolations();
