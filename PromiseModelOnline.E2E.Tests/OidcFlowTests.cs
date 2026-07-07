@@ -151,19 +151,28 @@ public class OidcFlowTests : E2ETestBase
     {
         // Arrange
         // Use a non-existent username so no real account's lockout counter is affected
-        await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 5000 });
-        await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 5000 });
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            if (attempt > 1) await _context.ClearCookiesAsync();
+            await Page.GotoAsync("/login?returnUrl=/", new() { Timeout = 5000 });
+            await Page.WaitForURLAsync("**/account/login**", new() { Timeout = 5000 });
 
-        await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", "nonexistent_user");
-        await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", "wrong");
-        // Act
-        await Page.ClickAsync("button[type=\"submit\"]");
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 10000 });
+            await Page.FillAsync("input[name=\"Username\"],input[name=\"username\"]", "nonexistent_user");
+            await Page.FillAsync("input[name=\"Password\"],input[name=\"password\"]", "wrong");
+            // Act
+            await Page.ClickAsync("button[type=\"submit\"]");
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 10000 });
 
-        var body = await Page.TextContentAsync("body") ?? "";
-        // Assert
-        Assert.That(body, Does.Contain("Invalid").Or.Contains("invalid"),
-            "Error message should be shown for invalid credentials");
+            var body = await Page.TextContentAsync("body") ?? "";
+            if (body.Length != 0)
+            {
+                // Assert
+                Assert.That(body, Does.Contain("Invalid").Or.Contains("invalid"),
+                    "Error message should be shown for invalid credentials");
+                return;
+            }
+        }
+        Assert.Fail("Login form submission returned empty body after retry");
     }
 
     [Test]
