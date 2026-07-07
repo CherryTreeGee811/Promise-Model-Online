@@ -72,6 +72,10 @@ jobs:
         shell: bash
         run: dotnet build Promise-Model-Online.sln
 
+      - name: Enforce .NET code style (dotnet format)
+        shell: bash
+        run: dotnet format Promise-Model-Online.sln --verify-no-changes
+
       - name: Check .NET packages for known vulnerabilities
         shell: bash
         run: |

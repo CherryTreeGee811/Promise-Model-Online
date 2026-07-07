@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.E2E.Tests;
+﻿namespace PromiseModelOnline.E2E.Tests;
 
 [TestFixture]
 public class ResponsiveE2ETests : E2ETestBase
