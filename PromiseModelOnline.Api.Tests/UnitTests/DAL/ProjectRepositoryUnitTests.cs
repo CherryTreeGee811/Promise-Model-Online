@@ -24,11 +24,15 @@ public class ProjectRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_FUN_003_GetProjectsOwnedByUserAsync_ReturnsMatchingProjects()
     {
         // Arrange
+        var owner1 = new User { Id = 100, Name = "Owner1", Email = "o1@test.com" };
+        var owner2 = new User { Id = 200, Name = "Owner2", Email = "o2@test.com" };
+        Context.Users.AddRange(owner1, owner2);
+
         var projects = new List<Project>
             {
-                new Project { Id = 1, Name = "Alpha", Slug = "alpha", OwnerId = 100 },
-                new Project { Id = 2, Name = "Beta", Slug = "beta", OwnerId = 200 },
-                new Project { Id = 3, Name = "Gamma", Slug = "gamma", OwnerId = 100 }
+                new Project { Id = 1, Name = "Alpha", Slug = "alpha", OwnerId = 100, Owner = owner1 },
+                new Project { Id = 2, Name = "Beta", Slug = "beta", OwnerId = 200, Owner = owner2 },
+                new Project { Id = 3, Name = "Gamma", Slug = "gamma", OwnerId = 100, Owner = owner1 }
             };
         Context.Projects.AddRange(projects);
         await Context.SaveChangesAsync();

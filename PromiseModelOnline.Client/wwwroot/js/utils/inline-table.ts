@@ -10,6 +10,17 @@ interface TableConfig {
 }
 
 /**
+ * Create a table row element from an HTML string rendered from controlled data.
+ * @param {string} html - The row HTML content.
+ * @returns {HTMLTableRowElement | null} The created row element, or null if input is empty.
+ */
+function createRowFromHtml(html: string): HTMLTableRowElement | null {
+    const parser = new DOMParser();
+    const parsedDocument = parser.parseFromString(`<table><tbody>${html}</tbody></table>`, 'text/html');
+    return parsedDocument.querySelector('tr');
+}
+
+/**
  * Render a full table into the given container with headers, item rows, and
  * an optional inline add-row at the bottom. Handles empty state.
  * @param {HTMLElement} container - Target DOM element to render into.
@@ -53,10 +64,8 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
     const tbody = document.createElement('tbody');
 
     if (items && items.length > 0) {
-        const parser = new DOMParser();
         for (const item of items) {
-            const document_ = parser.parseFromString(`<table><tbody>${renderItemRow(item)}</tbody></table>`, 'text/html');
-            const row = document_.querySelector('tr');
+            const row = createRowFromHtml(renderItemRow(item));
             if (row) tbody.append(row);
         }
     } else if (emptyConfig) {
@@ -74,9 +83,7 @@ export function renderTableWithInlineAddRow(container: HTMLElement, {
 
     const rowHtmlText = renderAddRow();
     if (rowHtmlText) {
-        const parser = new DOMParser();
-        const document_ = parser.parseFromString(`<table><tbody>${rowHtmlText}</tbody></table>`, 'text/html');
-        const row = document_.querySelector('tr');
+        const row = createRowFromHtml(rowHtmlText);
         if (row) tbody.append(row);
     }
 

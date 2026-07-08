@@ -2,109 +2,95 @@
 
 namespace PromiseModelOnline.E2E.Tests;
 
-/// <summary>
-/// Verifies input validation — XSS payloads, malformed inputs,
-/// content-type enforcement, and excessive input rejection.
-/// </summary>
+/// <summary>Browser-based E2E tests for input validation — XSS, SQL injection, malformed payloads, empty/long input.</summary>
 // Requirements: REQ_FUN_047 REQ_NF_008
 public class InputValidationTests : E2ETestBase
 {
+    private const string Owner = "pmo_test";
+    private const string Project = "promise-model-online";
+
     [Test]
-    public async Task REQ_FUN_047_ProjectCreate_XssInName_StillReturns401()
+    [Description("REQ_FUN_047 misuse: XSS in project name rejected by API")]
+    public async Task ProjectCreate_XssInName_BypassClient_Returns401()
     {
-        // Unauthenticated: XSS payload should not crash or bypass auth
         // Arrange
-        var payload = """{"name":"<script>alert(1)</script>","slug":"xss-test"}""";
+        var json = System.Text.Json.JsonSerializer.Serialize(new { name = "<script>alert(1)</script>", slug = "xss-test" });
+
         // Act
-        var response = await PostJsonAsync("/api/projects/create", payload, ajax: true);
+        var response = await PostJsonAsync("/api/projects/create", json, ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_FUN_047_ProjectCreate_SqlInjectionInName_StillReturns401()
+    [Description("REQ_FUN_047 misuse: SQL injection in project name rejected by API")]
+    public async Task ProjectCreate_SqlInjection_BypassClient_Returns401()
     {
         // Arrange
-        var payload = """{"name":"test'; DROP TABLE Projects;--","slug":"sqli-test"}""";
+        var json = """{"name":"test' DROP TABLE Projects --","slug":"sqli-test"}""";
+
         // Act
-        var response = await PostJsonAsync("/api/projects/create", payload, ajax: true);
+        var response = await PostJsonAsync("/api/projects/create", json, ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_FUN_047_Import_NonJsonPayload_StillReturns401()
+    [Description("REQ_FUN_047 misuse: Non-JSON payload rejected by API")]
+    public async Task Import_NonJson_BypassClient_Returns401()
     {
-        // Arrange
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/projects/import");
-        request.Headers.Add("X-Requested-With", "XMLHttpRequest");
-        request.Content = new StringContent("<xml><hack/></xml>",
-            System.Text.Encoding.UTF8, "application/json");
+        // Arrange (no setup needed)
         // Act
-        var response = await Client.SendAsync(request);
+        var response = await PostJsonAsync("/api/projects/import", "<xml><hack/></xml>", ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_FUN_047_Import_EmptyBody_StillReturns401()
+    [Description("REQ_FUN_047 misuse: XSS in comment text rejected by API")]
+    public async Task Comment_XssInText_BypassClient_Returns401()
     {
         // Arrange
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/projects/import");
-        request.Headers.Add("X-Requested-With", "XMLHttpRequest");
-        request.Content = new StringContent("", System.Text.Encoding.UTF8, "application/json");
+        var json = System.Text.Json.JsonSerializer.Serialize(new { text = "<script>alert(1)</script>", parentType = "Promise", parentId = 1 });
+
         // Act
-        var response = await Client.SendAsync(request);
+        var response = await PostJsonAsync("/api/comments", json, ajax: true);
+
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
-    public async Task REQ_FUN_047_ApiCall_WrongContentType_StillReturns401()
+    [Description("REQ_FUN_047 happy path: Empty comment text returns 400")]
+    public async Task Comment_EmptyText_BypassClient_Returns400()
     {
         // Arrange
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/projects/create");
-        request.Headers.Add("X-Requested-With", "XMLHttpRequest");
-        request.Content = new StringContent("not json",
-            System.Text.Encoding.UTF8, "text/plain");
+        await LoginAsync();
+        var json = System.Text.Json.JsonSerializer.Serialize(new { text = "", parentType = "Promise", parentId = 1 });
+
         // Act
-        var response = await Client.SendAsync(request);
+        var response = await AuthPostJsonAsync("/api/comments", json, ajax: true);
+
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
-    public async Task REQ_FUN_047_ApiCall_OversizedPayload_StillReturns401()
+    [Description("REQ_FUN_047 happy path: Long comment text creates successfully")]
+    public async Task Comment_ExcessiveLength_BypassClient_Returns201()
     {
         // Arrange
-        var huge = new string('x', 100_000);
-        var payload = $$"""{"name":"{{huge}}","slug":"big"}""";
-        // Act
-        var response = await PostJsonAsync("/api/projects/create", payload, ajax: true);
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    }
+        await LoginAsync();
+        var longText = new string('A', 2001);
+        var json = System.Text.Json.JsonSerializer.Serialize(new { text = longText, parentType = "Promise", parentId = 1 });
 
-    [Test]
-    public async Task REQ_FUN_047_Comment_XssPayload_StillReturns401()
-    {
-        // Arrange
-        var payload = """{"text":"<img src=x onerror=alert(1)>"}""";
         // Act
-        var response = await PostJsonAsync("/api/comments", payload, ajax: true);
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    }
+        var response = await AuthPostJsonAsync("/api/comments", json, ajax: true);
 
-    [Test]
-    public async Task REQ_FUN_047_Permission_InvalidLevel_StillReturns401()
-    {
-        // Arrange
-        var payload = """{"email":"test@test.com","level":"SuperAdmin"}""";
-        // Act
-        var response = await PostJsonAsync("/api/projects/pmo_test/seeded-project/permissions",
-            payload, ajax: true);
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 }

@@ -334,6 +334,11 @@ button {
   background: #1f2b38;
 }
 
+.graph-btn .bi {
+  font-size: 1.1em;
+  color: #fff;
+}
+
 /*********************************************
   10. Status Badges
 **********************************************/
@@ -1569,8 +1574,6 @@ button {
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);
   margin: var(--spacing-md) 0;
-  display: none;
-  /* shown by JS */;
 }
 
 #error-text {

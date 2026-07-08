@@ -45,11 +45,12 @@ public class ProjectMomentsController(
     /// <param name="seq">The moment's sequence number within its flow.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="200">Returns the matching moment as a DTO.</response>
     /// <response code="404">No moment with the given sequence number exists in the project.</response>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{seq}")]
-    public async Task<ActionResult<MomentDto>> GetBySeq(int seq, string owner, string project)
+    public async Task<ActionResult<MomentDto>> GetBySeq(int seq, string owner, string project, [FromQuery] int flowId = 0)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
@@ -57,7 +58,7 @@ public class ProjectMomentsController(
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();
@@ -94,13 +95,14 @@ public class ProjectMomentsController(
     /// <param name="dto">The updated moment data.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="204">The moment was updated successfully.</response>
     /// <response code="400">The entity ID does not match the sequence number.</response>
     /// <response code="404">The moment or project was not found.</response>
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] UpdateMomentRequestDto dto, string owner, string project)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdateMomentRequestDto dto, string owner, string project, [FromQuery] int flowId = 0)
     {
         if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -108,8 +110,11 @@ public class ProjectMomentsController(
         if (projectEntity is null)
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         var existing = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (existing is null)
             return NotFound();
@@ -138,20 +143,24 @@ public class ProjectMomentsController(
     /// <param name="seq">The moment's sequence number to delete.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="204">The moment was deleted successfully.</response>
     /// <response code="404">The moment or project was not found.</response>
     /// <returns>NoContent on success, or NotFound if not found.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete("{seq}")]
-    public async Task<IActionResult> Delete(int seq, string owner, string project)
+    public async Task<IActionResult> Delete(int seq, string owner, string project, [FromQuery] int flowId = 0)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();
@@ -177,6 +186,9 @@ public class ProjectMomentsController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         if (request is null)
             return BadRequest("Request body is required.");
@@ -207,7 +219,7 @@ public class ProjectMomentsController(
         };
 
         await _momentService.AddAsync(moment);
-        return CreatedAtAction(nameof(GetBySeq), new { owner, project, seq = moment.SequenceNumber }, _mapper.Map(moment, _momentService));
+        return CreatedAtAction(nameof(GetBySeq), new { owner, project, seq = moment.SequenceNumber, flowId = moment.FlowId }, _mapper.Map(moment, _momentService));
     }
 
     /// <summary>Return moments for a project with optional stride, flow sequence, or iteration filters.</summary>
@@ -279,6 +291,7 @@ public class ProjectMomentsController(
     /// <param name="request">The stride assignment request containing the target stride ID.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="200">Returns the updated moment.</response>
     /// <response code="400">Invalid request or stride not associated with an iteration.</response>
     /// <response code="403">User does not have Edit permission.</response>
@@ -286,14 +299,14 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/stride-assignment")]
-    public async Task<ActionResult<MomentDto>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project)
+    public async Task<ActionResult<MomentDto>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project, [FromQuery] int flowId = 0)
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();
@@ -338,20 +351,21 @@ public class ProjectMomentsController(
     /// <param name="request">The status update request containing the new status.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="200">Returns the updated moment.</response>
     /// <response code="403">User does not have Edit permission.</response>
     /// <response code="404">Moment or project not found.</response>
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/status")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project)
+    public async Task<ActionResult<MomentDto>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project, [FromQuery] int flowId = 0)
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();
@@ -392,20 +406,21 @@ public class ProjectMomentsController(
     /// <param name="request">The description update request.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="200">Returns the updated moment.</response>
     /// <response code="403">User does not have Edit permission.</response>
     /// <response code="404">Moment or project not found.</response>
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/description")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
+    public async Task<ActionResult<MomentDto>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project, [FromQuery] int flowId = 0)
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();
@@ -451,20 +466,21 @@ public class ProjectMomentsController(
     /// <param name="request">The estimate update request.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="200">Returns the updated moment.</response>
     /// <response code="403">User does not have Edit permission.</response>
     /// <response code="404">Moment or project not found.</response>
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/estimate")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project)
+    public async Task<ActionResult<MomentDto>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project, [FromQuery] int flowId = 0)
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();
@@ -505,20 +521,21 @@ public class ProjectMomentsController(
     /// <param name="request">The type update request.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="200">Returns the updated moment.</response>
     /// <response code="403">User does not have Edit permission.</response>
     /// <response code="404">Moment or project not found.</response>
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/type")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project)
+    public async Task<ActionResult<MomentDto>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project, [FromQuery] int flowId = 0)
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();
@@ -562,20 +579,21 @@ public class ProjectMomentsController(
     /// <param name="request">The owner assignment request containing the user ID.</param>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="flowId">The moment's parent flow ID, used to disambiguate when multiple flows share the same sequence number.</param>
     /// <response code="200">Returns the updated moment.</response>
     /// <response code="403">User does not have Edit permission.</response>
     /// <response code="404">Moment or project not found.</response>
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/owner")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project)
+    public async Task<ActionResult<MomentDto>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project, [FromQuery] int flowId = 0)
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == seq);
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
             return NotFound();

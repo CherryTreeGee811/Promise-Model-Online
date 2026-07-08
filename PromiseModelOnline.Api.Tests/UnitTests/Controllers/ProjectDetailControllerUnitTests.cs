@@ -117,6 +117,7 @@ public class ProjectDetailControllerTests
 
         var user = new User { Id = 2, Email = "x@y.com" };
         _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("x@y.com", It.IsAny<string?>())).ReturnsAsync(user);
+        _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project> { project });
 
         var members = new List<ProjectMemberDto> { new ProjectMemberDto { UserId = 5, Email = "m1@e" } };
         _mockProjectService.Setup(s => s.GetProjectMembersAsync(99)).ReturnsAsync(members);
@@ -147,7 +148,7 @@ public class ProjectDetailControllerTests
     }
 
     [Test]
-    public async Task REQ_FUN_003_GetMembers_MissingEmail_ReturnsOkResult()
+    public async Task REQ_FUN_003_GetMembers_MissingEmail_ReturnsForbidden()
     {
         // Arrange - email is null but user is still authenticated with projects.read scope
         var owner = new User { Id = 1, Slug = OwnerSlug, Email = "o@x.com" };
@@ -156,7 +157,7 @@ public class ProjectDetailControllerTests
         // Act
         var result = await _controller.GetMembers(OwnerSlug, ProjectSlug);
         // Assert
-        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 
     [Test]
@@ -207,6 +208,15 @@ public class ProjectDetailControllerTests
                    .Returns<Project, IGenericService<Project>>((p, svc) => new ProjectDto { Id = p.Id, Name = p.Name, Slug = p.Slug, OwnerSlug = p.Owner?.Slug ?? "" });
 
         SetControllerUser("u@u.com");
+
+        var updateUser = new User { Id = 2, Email = "u@u.com" };
+        _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("u@u.com", It.IsAny<string?>())).ReturnsAsync(updateUser);
+        var updateServices = new Mock<IServiceProvider>();
+        updateServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        updateServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepo.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = updateServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(updateUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
+
         var request = new UpdateProjectDetailsRequestDto { Name = "Updated", Description = "New desc" };
         // Act
         var result = await _controller.UpdateDetails(OwnerSlug, ProjectSlug, request);
@@ -251,7 +261,7 @@ public class ProjectDetailControllerTests
     }
 
     [Test]
-    public async Task REQ_FUN_003_Export_MissingEmail_ReturnsUnauthorized()
+    public async Task REQ_FUN_003_Export_MissingEmail_ReturnsForbidden()
     {
         // Arrange
         var owner = new User { Id = 77, Slug = OwnerSlug, Email = "o@x.com" };
@@ -260,7 +270,7 @@ public class ProjectDetailControllerTests
         // Act
         var result = await _controller.Export(OwnerSlug, ProjectSlug);
         // Assert
-        Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
+        Assert.That(result, Is.InstanceOf<ForbidResult>());
     }
 
     [Test]
@@ -369,6 +379,7 @@ public class ProjectDetailControllerTests
 
         var user = new User { Id = 2, Email = "user@x.com" };
         _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("user@x.com", It.IsAny<string?>())).ReturnsAsync(user);
+        _mockProjectService.Setup(s => s.GetAccessibleProjectsAsync(user.Id)).ReturnsAsync(new List<Project> { project });
 
         var promises = new List<Promise>
             {
@@ -384,5 +395,75 @@ public class ProjectDetailControllerTests
 
         // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+    }
+
+    [Test]
+    public async Task REQ_FUN_003_Delete_Valid_ReturnsNoContent()
+    {
+        var project = new Project { Id = 1, Name = "P", Slug = ProjectSlug, OwnerId = 1 };
+        SetUpProjectResolve(project);
+        SetControllerUser("u@u.com");
+        var deleteUser = new User { Id = 2, Email = "u@u.com" };
+        _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("u@u.com", It.IsAny<string?>())).ReturnsAsync(deleteUser);
+        var svc = new Mock<IServiceProvider>();
+        svc.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        svc.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepo.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = svc.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(deleteUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
+        _mockGenericService.Setup(s => s.DeleteByIdAsync(project.Id)).ReturnsAsync(true);
+
+        var result = await _controller.Delete(OwnerSlug, ProjectSlug);
+
+        Assert.That(result, Is.InstanceOf<NoContentResult>());
+    }
+
+    [Test]
+    public async Task REQ_FUN_003_Delete_ProjectNotFound_Returns404()
+    {
+        SetUpProjectResolve(null);
+        SetControllerUser("u@u.com");
+
+        var result = await _controller.Delete(OwnerSlug, ProjectSlug);
+
+        Assert.That(result, Is.InstanceOf<NotFoundResult>());
+    }
+
+    [Test]
+    public async Task REQ_FUN_003_Delete_NoPermission_ReturnsForbid()
+    {
+        var project = new Project { Id = 1, Name = "P", Slug = ProjectSlug, OwnerId = 1 };
+        SetUpProjectResolve(project);
+        SetControllerUser("u@u.com");
+        var deleteUser = new User { Id = 2, Email = "u@u.com" };
+        _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("u@u.com", It.IsAny<string?>())).ReturnsAsync(deleteUser);
+        var svc = new Mock<IServiceProvider>();
+        svc.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        svc.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepo.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = svc.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(deleteUser.Id, project.Id)).ReturnsAsync(PermissionLevel.View);
+
+        var result = await _controller.Delete(OwnerSlug, ProjectSlug);
+
+        Assert.That(result, Is.InstanceOf<ForbidResult>());
+    }
+
+    [Test]
+    public async Task REQ_FUN_003_Delete_DeleteFails_Returns404()
+    {
+        var project = new Project { Id = 1, Name = "P", Slug = ProjectSlug, OwnerId = 1 };
+        SetUpProjectResolve(project);
+        SetControllerUser("u@u.com");
+        var deleteUser = new User { Id = 2, Email = "u@u.com" };
+        _mockUserRepo.Setup(r => r.GetOrCreateUserByEmailAsync("u@u.com", It.IsAny<string?>())).ReturnsAsync(deleteUser);
+        var svc = new Mock<IServiceProvider>();
+        svc.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        svc.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepo.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = svc.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(deleteUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
+        _mockGenericService.Setup(s => s.DeleteByIdAsync(project.Id)).ReturnsAsync(false);
+
+        var result = await _controller.Delete(OwnerSlug, ProjectSlug);
+
+        Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 }

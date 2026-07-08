@@ -1,0 +1,9 @@
+---
+- name: Destroy Docker Compose stack
+  hosts: vm_host
+  tasks:
+    - name: Stop and remove stack with volumes
+      ansible.builtin.shell:
+        cmd: docker compose down -v
+        chdir: /home/pmo_admin/promise-model-online
+      register: destroy_result

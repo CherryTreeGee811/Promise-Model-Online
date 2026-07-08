@@ -129,8 +129,6 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         if (loadingElement) loadingElement.hidden = true;
 
-        detailDiv!.replaceChildren();
-
         const cardDiv = document.createElement('div');
         cardDiv.className = 'detail-card promise-detail-card';
 

@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ public class ForgotPasswordControllerUnitTests
     private Mock<IEmailService> _emailServiceMock = null!;
     private Mock<ILogger<ForgotPasswordController>> _loggerMock = null!;
     private Mock<IUrlHelper> _urlHelperMock = null!;
+    private Mock<IWebHostEnvironment> _envMock = null!;
     private ForgotPasswordController _controller = null!;
 
     [SetUp]
@@ -30,10 +32,12 @@ public class ForgotPasswordControllerUnitTests
         _emailServiceMock = new Mock<IEmailService>();
         _loggerMock = new Mock<ILogger<ForgotPasswordController>>();
         _urlHelperMock = new Mock<IUrlHelper>();
+        _envMock = new Mock<IWebHostEnvironment>();
         _controller = new ForgotPasswordController(
             _userManagerMock.Object,
             _emailServiceMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            _envMock.Object);
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext()

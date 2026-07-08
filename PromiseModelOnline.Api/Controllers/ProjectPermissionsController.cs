@@ -46,7 +46,7 @@ public class ProjectPermissionsController(
 
     private readonly ILogger<ProjectPermissionsController> _logger = logger;
 
-    /// <summary>Return all permission records for a project.</summary>
+    /// <summary>Return all permission records for a project (requires Edit permission).</summary>
     /// <param name="owner">The project owner's URL-safe slug.</param>
     /// <param name="project">The project's URL-safe slug.</param>
     /// <returns>A list of permission DTOs.</returns>
@@ -56,15 +56,14 @@ public class ProjectPermissionsController(
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
-
         if (projectEntity is null)
-
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         var permissions = await _permissionService.GetPermissionsByProjectAsync(projectEntity.Id);
-
         return Ok(permissions);
-
     }
 
     /// <summary>Invite a user to a project.</summary>
@@ -86,17 +85,19 @@ public class ProjectPermissionsController(
 
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+
+            return Forbid();
+
         var userId = await GetCurrentUserIdByEmailAsync();
 
         if (userId == null) return Unauthorized();
-
-        request.ProjectId = projectEntity.Id;
 
         try
 
         {
 
-            var result = await _permissionService.InviteUserAsync(request, userId.Value);
+            var result = await _permissionService.InviteUserAsync(projectEntity.Id, request.Email, request.Level, userId.Value);
 
             _logger.LogInformation(
 
@@ -108,7 +109,7 @@ public class ProjectPermissionsController(
 
                 DateTime.UtcNow,
 
-                new { request.ProjectId, request.Email, request.Level });
+                new { projectEntity.Id, request.Email, request.Level });
 
             return CreatedAtAction(nameof(GetPermissions), new { owner, project }, result);
 
@@ -137,6 +138,10 @@ public class ProjectPermissionsController(
         if (projectEntity is null)
 
             return NotFound();
+
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+
+            return Forbid();
 
         var userId = await GetCurrentUserIdByEmailAsync();
 

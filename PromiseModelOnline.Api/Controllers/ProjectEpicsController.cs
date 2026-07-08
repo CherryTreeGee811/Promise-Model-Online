@@ -130,6 +130,9 @@ public class ProjectEpicsController(
         if (projectEntity is null)
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         var existing = await _context.Epics
             .FirstOrDefaultAsync(e => e.ProductPromise.ProjectId == projectEntity.Id && e.SequenceNumber == seq);
 
@@ -165,6 +168,9 @@ public class ProjectEpicsController(
         if (projectEntity is null)
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         var epic = await _context.Epics
             .FirstOrDefaultAsync(e => e.ProductPromise.ProjectId == projectEntity.Id && e.SequenceNumber == seq);
 
@@ -189,6 +195,9 @@ public class ProjectEpicsController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         if (request is null)
             return BadRequest("Request is required.");
@@ -230,6 +239,9 @@ public class ProjectEpicsController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         if (request is null)
             return BadRequest("Request body is required.");

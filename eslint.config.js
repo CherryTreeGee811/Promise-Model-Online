@@ -19,6 +19,7 @@ const importRules = {
 };
 
 export default tseslint.config(
+  { ignores: ['**/bin/**', '**/node_modules/**', '**/.playwright/**'] },
   {
     files: ['PromiseModelOnline.Client/wwwroot/js/**/*.mjs'],
     languageOptions: {

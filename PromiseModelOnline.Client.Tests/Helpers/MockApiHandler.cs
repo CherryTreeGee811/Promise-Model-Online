@@ -11,7 +11,9 @@ namespace PromiseModelOnline.Client.Tests.Helpers;
 /// </remarks>
 public static partial class MockApiHandler
 {
-    private static readonly string WwwRoot;
+    private static readonly string WwwRoot = Path.GetFullPath(Path.Combine(
+        AppContext.BaseDirectory, "..", "..", "..", "..",
+        "PromiseModelOnline.Client", "wwwroot"));
 
     private static readonly Dictionary<string, MockResponse> StaticFileCache = [];
 
@@ -39,13 +41,6 @@ public static partial class MockApiHandler
             return "other-session";
 
         return null;
-    }
-
-    static MockApiHandler()
-    {
-        WwwRoot = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..",
-            "PromiseModelOnline.Client", "wwwroot"));
     }
 
     private static MockResponse? GetStaticFileResponse(string path)

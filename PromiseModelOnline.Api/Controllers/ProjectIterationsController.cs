@@ -101,7 +101,9 @@ public class ProjectIterationsController(
 
             return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
 
+            return Forbid();
 
         entity.ProjectId = projectEntity.Id;
 

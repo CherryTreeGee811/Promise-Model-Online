@@ -305,7 +305,7 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
         backButton.append(backSpan, ' Back');
         detailCard.append(backButton);
 
-        if (detailDiv) detailDiv.replaceChildren(detailCard);
+        if (detailDiv) detailDiv.append(detailCard);
 
         const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
         const descViewElement = document.querySelector('#description-view') as HTMLElement;

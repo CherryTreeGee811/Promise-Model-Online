@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Auth.Services;
+﻿namespace PromiseModelOnline.Auth.Services;
 
 /// <summary>
 /// Fallback email service used when SendGrid is not configured.

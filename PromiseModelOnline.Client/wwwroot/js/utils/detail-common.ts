@@ -120,7 +120,7 @@ export function buildInlineEditUI(descTd: HTMLTableCellElement, idPrefix: string
     descTextarea.rows = 4;
     descTextarea.className = 'form-control detail-textarea';
     descTextarea.setAttribute('aria-label', 'Description');
-    descTextarea.style.display = 'none';
+    descTextarea.classList.add('d-none');
     descTextarea.textContent = description || '';
     inlineEditWrapper.append(descTextarea);
     descTd.append(inlineEditWrapper);
@@ -132,7 +132,7 @@ export function buildInlineEditUI(descTd: HTMLTableCellElement, idPrefix: string
     cancelButton.id = idPrefix + 'cancel-desc';
     cancelButton.className = 'btn btn-outline-secondary btn-sm';
     cancelButton.type = 'button';
-    cancelButton.style.display = 'none';
+    cancelButton.classList.add('d-none');
     cancelButton.textContent = 'Cancel';
     fieldActions.append(cancelButton);
 

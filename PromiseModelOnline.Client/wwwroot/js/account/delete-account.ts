@@ -120,7 +120,7 @@ export function initDeleteAccountPage() {
                     function showDeleteSuccess(): void {
                         successElement.textContent = 'Your account and all associated data have been permanently deleted. You will be redirected shortly.';
                         successElement.classList.remove('d-none');
-                        form.style.display = 'none';
+                        form.classList.add('d-none');
                         setTimeout(() => { location.assign('/'); }, 3000);
                     }
             } else if (authResponse.status === 401) {

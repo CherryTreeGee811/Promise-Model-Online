@@ -89,6 +89,7 @@ services:
       dockerfile: PromiseModelOnline.Api/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "http://localhost:8000/health"]
+      start_period: 90s
       interval: 15s
       timeout: 5s
       retries: 3

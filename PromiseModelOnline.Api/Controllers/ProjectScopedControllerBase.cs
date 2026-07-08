@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 using System.Threading.Tasks;
 
@@ -24,4 +25,21 @@ public abstract class ProjectScopedControllerBase(IProjectService projectService
     /// <param name="projectSlug">The project's URL-safe slug.</param>
     /// <returns>The matching <see cref="Project"/>, or <c>null</c> if not found.</returns>
     protected async Task<Project?> ResolveProjectAsync(string ownerSlug, string projectSlug) => await _projectService.GetByOwnerAndSlugAsync(ownerSlug, projectSlug);
+
+    /// <summary>Check the current user has Edit permission on the given project and return Forbid() if not.</summary>
+    protected async Task<bool> RequireProjectEditPermissionAsync(Project project)
+    {
+        var permissionService = HttpContext.RequestServices.GetRequiredService<IPermissionService>();
+        var userRepository = HttpContext.RequestServices.GetRequiredService<DAL.Interfaces.IUserRepository>();
+
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                 ?? User.FindFirst("email")?.Value;
+        if (string.IsNullOrEmpty(email)) return false;
+
+        var username = User.FindFirst("nameid")?.Value;
+        var user = await userRepository.GetOrCreateUserByEmailAsync(email, username);
+
+        var level = await permissionService.GetUserPermissionAsync(user.Id, project.Id);
+        return level == PermissionLevel.Edit;
+    }
 }

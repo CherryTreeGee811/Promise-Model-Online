@@ -12,6 +12,7 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests;
@@ -22,6 +23,9 @@ public class ReactionsControllerUnitTests
 {
     private Mock<IReactionService> _reactionServiceMock = null!;
     private Mock<IUserRepository> _userRepositoryMock = null!;
+    private Mock<ICommentRepository> _commentRepositoryMock = null!;
+    private Mock<IPermissionService> _permissionServiceMock = null!;
+    private Mock<IReactionRepository> _reactionRepositoryMock = null!;
     private Mock<ILogger<ReactionsController>> _loggerMock = null!;
     private ReactionsController _controller = null!;
 
@@ -30,10 +34,16 @@ public class ReactionsControllerUnitTests
     {
         _reactionServiceMock = new Mock<IReactionService>();
         _userRepositoryMock = new Mock<IUserRepository>();
+        _commentRepositoryMock = new Mock<ICommentRepository>();
+        _permissionServiceMock = new Mock<IPermissionService>();
+        _reactionRepositoryMock = new Mock<IReactionRepository>();
         _loggerMock = new Mock<ILogger<ReactionsController>>();
         _controller = new ReactionsController(
             _reactionServiceMock.Object,
             _userRepositoryMock.Object,
+            _commentRepositoryMock.Object,
+            _permissionServiceMock.Object,
+            _reactionRepositoryMock.Object,
             _loggerMock.Object);
     }
 
@@ -113,6 +123,9 @@ public class ReactionsControllerUnitTests
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
+
         // Act
         var result = await _controller.CreateReaction(request);
 
@@ -152,15 +165,22 @@ public class ReactionsControllerUnitTests
     {
         // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com", Name = "User" };
+        var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
 
         _userRepositoryMock
             .Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null))
             .ReturnsAsync(currentUser);
+        _reactionRepositoryMock
+            .Setup(r => r.GetByIdAsync(15))
+            .ReturnsAsync(reaction);
         _reactionServiceMock
             .Setup(s => s.RemoveReactionAsync(15, currentUser.Id))
             .Returns(Task.CompletedTask);
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
 
         // Act
         var result = await _controller.DeleteReaction(15);
@@ -192,15 +212,22 @@ public class ReactionsControllerUnitTests
     {
         // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com", Name = "User" };
+        var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
 
         _userRepositoryMock
             .Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null))
             .ReturnsAsync(currentUser);
+        _reactionRepositoryMock
+            .Setup(r => r.GetByIdAsync(15))
+            .ReturnsAsync(reaction);
         _reactionServiceMock
             .Setup(s => s.RemoveReactionAsync(15, currentUser.Id))
-            .ThrowsAsync(new System.Exception("remove failed"));
+            .ThrowsAsync(new System.InvalidOperationException("remove failed"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
 
         // Act
         var result = await _controller.DeleteReaction(15);
@@ -212,5 +239,76 @@ public class ReactionsControllerUnitTests
         Assert.That(badRequest!.Value, Is.EqualTo("Cannot remove reaction."));
         _reactionServiceMock.Verify(s => s.RemoveReactionAsync(15, currentUser.Id), Times.Once);
         _loggerMock.VerifyLog(LogLevel.Warning, "Failed to delete reaction");
+    }
+
+    [Test]
+    public async Task REQ_SYS_004_UpdateReaction_Valid_ReturnsOk()
+    {
+        var currentUser = new User { Id = 5, Email = "user@example.com" };
+        var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
+        var request = new UpdateReactionRequestDto { Emote = "heart" };
+        var updatedDto = new ReactionDto { Id = 15, Emote = "heart" };
+
+        _userRepositoryMock.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null)).ReturnsAsync(currentUser);
+        _reactionRepositoryMock.Setup(r => r.GetByIdAsync(15)).ReturnsAsync(reaction);
+        _reactionServiceMock.Setup(s => s.UpdateReactionAsync(15, request, currentUser.Id)).ReturnsAsync(updatedDto);
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        var result = await _controller.UpdateReaction(15, request);
+
+        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+    }
+
+    [Test]
+    public async Task REQ_SYS_004_UpdateReaction_NullBody_Returns400()
+    {
+        var currentUser = new User { Id = 5, Email = "user@example.com" };
+        _userRepositoryMock.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null)).ReturnsAsync(currentUser);
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        var result = await _controller.UpdateReaction(1, null!);
+
+        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+    }
+
+    [Test]
+    public async Task REQ_SYS_004_UpdateReaction_Unauthorized_Returns401()
+    {
+        ControllerTestHelpers.SetControllerUser(_controller, null);
+
+        var result = await _controller.UpdateReaction(1, new UpdateReactionRequestDto());
+
+        Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
+    }
+
+    [Test]
+    public async Task REQ_SYS_004_UpdateReaction_NotFound_Returns404()
+    {
+        var currentUser = new User { Id = 5, Email = "user@example.com" };
+        _userRepositoryMock.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null)).ReturnsAsync(currentUser);
+        _reactionRepositoryMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Reaction?)null);
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        var result = await _controller.UpdateReaction(999, new UpdateReactionRequestDto { Emote = "heart" });
+
+        Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public async Task REQ_SYS_004_UpdateReaction_NoPermission_ReturnsForbid()
+    {
+        var currentUser = new User { Id = 5, Email = "user@example.com" };
+        var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
+        _userRepositoryMock.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null)).ReturnsAsync(currentUser);
+        _reactionRepositoryMock.Setup(r => r.GetByIdAsync(15)).ReturnsAsync(reaction);
+        _commentRepositoryMock.Setup(r => r.ResolveProjectIdAsync("Promise", 42)).ReturnsAsync(1);
+        _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.View);
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+
+        var result = await _controller.UpdateReaction(15, new UpdateReactionRequestDto { Emote = "heart" });
+
+        Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 }

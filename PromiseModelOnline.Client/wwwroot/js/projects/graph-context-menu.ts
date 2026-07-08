@@ -589,6 +589,8 @@ function buildMomentStatusFormElement(
         return;
     }
 
+    const flowId = (nodeData?.payload as Record<string, unknown> | undefined)?.flowId;
+
     const form = document.createElement('form');
     form.className = 'graph-context-menu-form graph-context-menu-form--moment';
 
@@ -633,7 +635,7 @@ function buildMomentStatusFormElement(
         submitButton.textContent = 'Saving Status...';
 
         try {
-            await updateMomentStatus(_contextState.owner, _contextState.project, momentSeq as string | number, statusField.select.value);
+            await updateMomentStatus(_contextState.owner, _contextState.project, momentSeq as string | number, statusField.select.value, flowId as number | undefined);
             closeMenus();
             await onGraphMutated?.();
         } catch (error) {
@@ -790,7 +792,7 @@ function buildCreateFormElement(
  * @param {{ permission?: string } | null | undefined} permission - The current user's permission object.
  * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} The action list.
  */
-function buildMenuActions(
+export function buildMenuActions(
     nodeData: Record<string, unknown>,
     owner: string,
     project: string,

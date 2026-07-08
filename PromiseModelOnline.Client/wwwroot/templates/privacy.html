@@ -61,7 +61,7 @@
   <li>Project names, task descriptions, comments, or any user-generated content</li>
   <li>Session tokens or authentication material</li>
 </ul>
-<p>The telemetry module respects the <strong>Global Privacy Control (GPC)</strong> signal. Users may also opt out at any time by adding <code>&lt;meta name="telemetry" content="off"&gt;</code> to the page, which can be configured by the deploying organization. There is no persistent storage, no queuing, and no retry on delivery failure — all data is sent on a best-effort basis via the Beacon API.</p>
+<p>The telemetry module respects the <strong>Global Privacy Control (GPC)</strong> signal. Users may opt out at any time from the <a href="/preferences">Preferences</a> page. Deploying organizations may also configure a blanket opt-out by adding <code>&lt;meta name="telemetry" content="off"&gt;</code> to the page. There is no persistent storage, no queuing, and no retry on delivery failure — all data is sent on a best-effort basis via the Beacon API.</p>
 
 <h3>3.5 Analytics (Optional)</h3>
 <p>The deployment may include self-hosted Umami analytics. When configured, Umami collects:</p>

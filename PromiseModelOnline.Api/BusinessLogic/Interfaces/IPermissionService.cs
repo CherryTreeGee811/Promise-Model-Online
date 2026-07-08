@@ -18,10 +18,12 @@ public interface IPermissionService
     Task<IEnumerable<PermissionDto>> GetPermissionsByProjectAsync(int projectId);
 
     /// <summary>Invite a user to a project.</summary>
-    /// <param name="request">The invitation details (project, user, role).</param>
+    /// <param name="projectId">The project ID (resolved by the controller from route slugs).</param>
+    /// <param name="email">Email address of the user to invite.</param>
+    /// <param name="level">Access level to grant.</param>
     /// <param name="ownerUserId">The requesting user ID for authorization.</param>
     /// <returns>The created permission DTO.</returns>
-    Task<PermissionDto> InviteUserAsync(CreatePermissionRequestDto request, int ownerUserId);
+    Task<PermissionDto> InviteUserAsync(int projectId, string email, PermissionLevel level, int ownerUserId);
 
     /// <summary>Accept a pending invitation.</summary>
     /// <param name="permissionId">The permission/invitation ID.</param>

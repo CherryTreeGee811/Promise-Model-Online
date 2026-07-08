@@ -980,6 +980,10 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
         })
         .classed('graph-node', true)
         .classed('is-root', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'root')
+        .classed('is-promise', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'promise')
+        .classed('is-epic', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'epic')
+        .classed('is-journey', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'journey')
+        .classed('is-flow', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'flow')
         .classed('is-moment', (current: Record<string, unknown>) => (current.data as Record<string, unknown>).nodeType === 'moment')
         .classed('is-collapsed', (current: Record<string, unknown>) => Boolean((current.data as Record<string, unknown>)._isCollapsed))
         .classed('is-search-matched', (current: Record<string, unknown>) => Boolean((current.data as Record<string, unknown>)._searchMatched))
@@ -994,13 +998,13 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
     if (onContextMenu) {
         (node.on as (event: string, handler: (...eventData: unknown[]) => void) => unknown)('contextmenu', ((_event: unknown, _current: Record<string, unknown>) => {
             (_event as MouseEvent).preventDefault();
-            (onContextMenu as (...eventData: unknown[]) => void)(_event, _current);
+            (onContextMenu as (...eventData: unknown[]) => void)(_event, (_current as Record<string, unknown>).data as Record<string, unknown>);
         }) as (...eventData: unknown[]) => void);
 
         (node.on as (event: string, handler: (...eventData: unknown[]) => void) => unknown)('keydown', ((_event: unknown, _current: Record<string, unknown>) => {
             if (!['Enter', ' ', 'Space'].includes((_event as KeyboardEvent).key)) return;
             (_event as KeyboardEvent).preventDefault();
-            (onContextMenu as (...eventData: unknown[]) => void)(_event, _current);
+            (onContextMenu as (...eventData: unknown[]) => void)(_event, (_current as Record<string, unknown>).data as Record<string, unknown>);
         }) as (...eventData: unknown[]) => void);
     }
 

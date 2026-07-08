@@ -71,14 +71,18 @@ public class ProjectDetailController(
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
-
-        var user = await GetCurrentUserAsync();
-        if (user is null) return Unauthorized();
-
-        var accessibleProjects = await _projectService.GetAccessibleProjectsAsync(user.Id);
-        if (!accessibleProjects.Any(p => p.Id == projectEntity.Id)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
 
         return Ok(_mapper.Map(projectEntity, _service));
+    }
+
+    /// <summary>Check the current user has read access to the project (is owner or has a permission record).</summary>
+    private async Task<bool> UserCanReadProjectAsync(Project projectEntity)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user is null) return false;
+        var accessible = await _projectService.GetAccessibleProjectsAsync(user.Id);
+        return accessible.Any(p => p.Id == projectEntity.Id);
     }
 
     /// <summary>Return members of a project.</summary>
@@ -92,6 +96,7 @@ public class ProjectDetailController(
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
+        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
 
         var members = await _projectService.GetProjectMembersAsync(projectEntity.Id);
         return Ok(members);
@@ -108,6 +113,7 @@ public class ProjectDetailController(
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
+        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
 
         var promises = await _projectService.GetProductPromisesAsync(projectEntity.Id);
         var result = promises.OrderBy(p => p.DisplayOrder)
@@ -126,6 +132,7 @@ public class ProjectDetailController(
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
+        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
 
         var entityMap = new List<object>();
         var promises = await _context.Promises
@@ -203,6 +210,9 @@ public class ProjectDetailController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
 
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
+
         projectEntity.Name = request.Name.Trim();
         projectEntity.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
         await _service.UpdateAsync(projectEntity);
@@ -221,6 +231,9 @@ public class ProjectDetailController(
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
+
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         var deleted = await _service.DeleteByIdAsync(projectEntity.Id);
         if (!deleted) return NotFound();
@@ -241,12 +254,7 @@ public class ProjectDetailController(
     {
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
-
-        var user = await GetCurrentUserAsync();
-        if (user is null) return Unauthorized();
-
-        var accessibleProjects = await _projectService.GetAccessibleProjectsAsync(user.Id);
-        if (!accessibleProjects.Any(p => p.Id == projectEntity.Id)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
 
         try
         {
@@ -274,6 +282,7 @@ public class ProjectDetailController(
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null) return NotFound();
+        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
 
         if (take <= 0) take = 100;
         else if (take > 500) take = 500;

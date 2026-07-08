@@ -16,6 +16,7 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 
@@ -33,6 +34,8 @@ public class ProjectStridesControllerUnitTests
     private Mock<IPromiseModelOnlineContext> _mockContext = null!;
     private Mock<IProjectService> _mockProjectService = null!;
     private Mock<ILogger<ProjectStridesController>> _mockLogger = null!;
+    private Mock<IPermissionService> _mockPermissionService = null!;
+    private Mock<IUserRepository> _mockUserRepository = null!;
     private ProjectStridesController _controller = null!;
 
     private const string OwnerSlug = "testowner";
@@ -47,6 +50,8 @@ public class ProjectStridesControllerUnitTests
         _mockContext = new Mock<IPromiseModelOnlineContext>();
         _mockProjectService = new Mock<IProjectService>();
         _mockLogger = new Mock<ILogger<ProjectStridesController>>();
+        _mockPermissionService = new Mock<IPermissionService>();
+        _mockUserRepository = new Mock<IUserRepository>();
         _controller = new ProjectStridesController(
             _mockStrideService.Object,
             _mockMomentService.Object,
@@ -156,6 +161,15 @@ public class ProjectStridesControllerUnitTests
             .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
             .Returns(Task.CompletedTask);
 
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+        var patchUser = new User { Id = 1, Email = "user@example.com" };
+        _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", It.IsAny<string?>())).ReturnsAsync(patchUser);
+        var patchServices = new Mock<IServiceProvider>();
+        patchServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        patchServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = patchServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(patchUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
+
         var request = new UpdateStrideRequestDto { ProgressUnfinishedMoments = true };
 
         // Act
@@ -190,6 +204,15 @@ public class ProjectStridesControllerUnitTests
         _mockMomentService
             .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
             .ThrowsAsync(ex);
+
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+        var patchUser = new User { Id = 1, Email = "user@example.com" };
+        _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", It.IsAny<string?>())).ReturnsAsync(patchUser);
+        var patchServices = new Mock<IServiceProvider>();
+        patchServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        patchServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = patchServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(patchUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
 
         var request = new UpdateStrideRequestDto { ProgressUnfinishedMoments = true };
 
@@ -243,6 +266,15 @@ public class ProjectStridesControllerUnitTests
             .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
             .Returns(Task.CompletedTask);
 
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+        var progressUser = new User { Id = 1, Email = "user@example.com" };
+        _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", It.IsAny<string?>())).ReturnsAsync(progressUser);
+        var progressServices = new Mock<IServiceProvider>();
+        progressServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        progressServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = progressServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(progressUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
+
         // Act
         var result = await _controller.ProgressStride(strideId, OwnerSlug, ProjectSlug);
 
@@ -275,6 +307,15 @@ public class ProjectStridesControllerUnitTests
         _mockMomentService
             .Setup(s => s.MoveUnfinishedMomentsToNextStrideAsync(strideId))
             .ThrowsAsync(ex);
+
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+        var progressUser = new User { Id = 1, Email = "user@example.com" };
+        _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", It.IsAny<string?>())).ReturnsAsync(progressUser);
+        var progressServices = new Mock<IServiceProvider>();
+        progressServices.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        progressServices.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = progressServices.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(progressUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
 
         // Act
         var result = await _controller.ProgressStride(strideId, OwnerSlug, ProjectSlug);
@@ -371,6 +412,109 @@ public class ProjectStridesControllerUnitTests
 
         public T Current => _inner.Current;
     }
+    #endregion
+
+    #region GetById Tests
+
+    [Test]
+    [Description("REQ_USE_012: Valid owner and project slugs and existing stride return Ok")]
+    public async Task GetById_Valid_ReturnsOk()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+
+        var strides = new List<Stride>
+        {
+            new Stride { Id = 10, Name = "S1", Iteration = new Iteration { ProjectId = 1 } }
+        };
+        var mockDbSet = CreateMockDbSet(strides);
+        _mockContext.Setup(c => c.Strides).Returns(mockDbSet.Object);
+
+        _mockMapper.Setup(m => m.Map(It.IsAny<Stride>(), _mockStrideService.Object))
+            .Returns<Stride, IGenericService<Stride>>((s, svc) => new StrideDto { Id = s.Id, Name = s.Name });
+
+        var result = await _controller.GetById(10, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Missing stride returns 404")]
+    public async Task GetById_NotFound_Returns404()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+
+        var mockDbSet = CreateMockDbSet(new List<Stride>());
+        _mockContext.Setup(c => c.Strides).Returns(mockDbSet.Object);
+
+        var result = await _controller.GetById(999, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Missing project returns 404")]
+    public async Task GetById_ProjectNotFound_Returns404()
+    {
+        SetUpProjectResolve(null);
+
+        var result = await _controller.GetById(10, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+    }
 
     #endregion
+
+    #region Create Tests
+
+    [Test]
+    [Description("REQ_USE_012: Valid create request returns Created")]
+    public async Task Create_Valid_ReturnsCreated()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+        var user = new User { Id = 1, Email = "user@example.com" };
+        _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", It.IsAny<string?>())).ReturnsAsync(user);
+        var svc = new Mock<IServiceProvider>();
+        svc.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        svc.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = svc.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
+        _mockStrideService.Setup(s => s.AddAsync(It.IsAny<Stride>())).Returns(Task.CompletedTask);
+        _mockMapper.Setup(m => m.Map(It.IsAny<Stride>(), _mockStrideService.Object))
+            .Returns<Stride, IGenericService<Stride>>((s, svc) => new StrideDto { Id = s.Id, Name = s.Name });
+
+        var dto = new CreateStrideRequestDto { Name = "New Stride", StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(14), DurationDays = 14 };
+        var result = await _controller.Create(dto, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Null body returns 400")]
+    public async Task Create_NullBody_Returns400()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+
+        var result = await _controller.Create(null!, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Missing project returns 404")]
+    public async Task Create_ProjectNotFound_Returns404()
+    {
+        SetUpProjectResolve(null);
+
+        var result = await _controller.Create(new CreateStrideRequestDto(), OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+    }
+
+    #endregion
+
 }

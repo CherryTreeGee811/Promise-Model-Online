@@ -686,10 +686,11 @@ function findMomentRow(momentId: number | string): HTMLElement | null {
  */
 async function handleStatusChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = Number(select.dataset.momentId!);
+    const flowId = Number((select.closest('[data-flow-id]') as HTMLElement | null)?.dataset.flowId) || undefined;
     const previous = select.value;
     const restoreSelect = select;
     try {
-        const updated = await updateMomentStatus(owner, project, momentId, select.value) as Record<string, unknown>;
+        const updated = await updateMomentStatus(owner, project, momentId, select.value, flowId) as Record<string, unknown>;
         const row = findMomentRow(momentId);
         if (row) updateStatusBadge(row, updated.status as string);
     } catch {
@@ -707,11 +708,12 @@ async function handleStatusChange(select: HTMLSelectElement, owner: string, proj
  */
 async function handleEstimateChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = Number(select.dataset.momentId!);
+    const flowId = Number((select.closest('[data-flow-id]') as HTMLElement | null)?.dataset.flowId) || undefined;
     const previous = select.value;
     const restoreSelect = select;
     try {
         const estimate = select.value === '' ? undefined : select.value;
-        await updateMomentEstimate(owner, project, momentId, estimate);
+        await updateMomentEstimate(owner, project, momentId, estimate, flowId);
         const row = findMomentRow(momentId);
         const card = row?.closest('.stride-card') as HTMLElement | null;
         if (card) updateStrideTotalEffortFromDom(card);
@@ -730,12 +732,13 @@ async function handleEstimateChange(select: HTMLSelectElement, owner: string, pr
  */
 async function handleOwnerChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = Number(select.dataset.momentId!);
+    const flowId = Number((select.closest('[data-flow-id]') as HTMLElement | null)?.dataset.flowId) || undefined;
     const previous = select.value;
     const restoreSelect = select;
     try {
         let newOwnerId: number | undefined;
         if (select.value) newOwnerId = Number(select.value);
-        const updated = await updateMomentOwner(owner, project, momentId, newOwnerId ?? 0) as Record<string, unknown>;
+        const updated = await updateMomentOwner(owner, project, momentId, newOwnerId ?? 0, flowId) as Record<string, unknown>;
         restoreSelect.value = String(updated.ownerId ?? '');
     } catch {
         restoreSelect.value = previous;
@@ -752,11 +755,12 @@ async function handleOwnerChange(select: HTMLSelectElement, owner: string, proje
  */
 async function handleTypeChange(select: HTMLSelectElement, owner: string, project: string): Promise<void> {
     const momentId = Number(select.dataset.momentId!);
+    const flowId = Number((select.closest('[data-flow-id]') as HTMLElement | null)?.dataset.flowId) || undefined;
     const newType = select.value;
     const writeTo = select;
     const previous = select.dataset.currentType || newType;
     try {
-        await updateMomentType(owner, project, momentId, newType);
+        await updateMomentType(owner, project, momentId, newType, flowId);
         writeTo.dataset.currentType = newType;
     } catch {
         writeTo.value = previous;
@@ -790,8 +794,9 @@ async function handleViewNav(event: MouseEvent, navContentDiv: HTMLElement, cont
  */
 export async function handleMoveToBacklog(button: HTMLElement, owner: string, project: string): Promise<void> {
     const momentId = Number(button.dataset.momentId!);
+    const flowId = Number((button.closest('[data-flow-id]') as HTMLElement | null)?.dataset.flowId) || undefined;
     promptMoveToBacklog(momentId, async () => {
-        const updated = await assignMomentToStride(owner, project, momentId, undefined) as Record<string, unknown>;
+        const updated = await assignMomentToStride(owner, project, momentId, undefined, flowId) as Record<string, unknown>;
         preserveScroll(() => {
             const row = findMomentRow(momentId);
             const origCard = row?.closest('.stride-card') as HTMLElement | null;
@@ -815,13 +820,14 @@ export async function handleMoveToBacklog(button: HTMLElement, owner: string, pr
  */
 export async function handleMoveToStride(button: HTMLElement, owner: string, project: string): Promise<void> {
     const momentId = Number(button.dataset.momentId!);
+    const flowId = Number((button.closest('[data-flow-id]') as HTMLElement | null)?.dataset.flowId) || undefined;
     const row = button.closest('tr') as HTMLElement | null;
     const select = row?.querySelector('.backlog-target-stride') as HTMLSelectElement | null;
     let strideId: number | undefined;
     if (select) strideId = Number(select.value);
     if (!strideId) return;
     promptMoveToStride(momentId, async () => {
-        const updated = await assignMomentToStride(owner, project, momentId, strideId) as Record<string, unknown>;
+        const updated = await assignMomentToStride(owner, project, momentId, strideId, flowId) as Record<string, unknown>;
         preserveScroll(() => {
             findMomentRow(momentId)?.remove();
             const tbody = ensureStrideTbody(strideId);
@@ -944,6 +950,7 @@ function ensureBacklogTbody(): HTMLElement | undefined {
 function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
     const tr = document.createElement('tr');
     tr.dataset.momentId = String(moment.sequenceNumber);
+    tr.dataset.flowId = String(moment.flowId ?? '');
 
     const tdStatement = document.createElement('td');
     tdStatement.textContent = moment.statement as string;
@@ -1021,6 +1028,7 @@ function ensureStrideTbody(strideId: number | string): HTMLElement | undefined {
 function createStrideRow(moment: Record<string, unknown>): HTMLElement {
     const tr = document.createElement('tr');
     tr.dataset.momentId = String(moment.sequenceNumber);
+    tr.dataset.flowId = String(moment.flowId ?? '');
 
     const tdStatement = document.createElement('td');
     tdStatement.textContent = moment.statement as string;
@@ -1302,6 +1310,7 @@ function renderMomentRow(
 ): HTMLElement {
     const tr = document.createElement('tr');
     tr.dataset.momentId = String(m.sequenceNumber);
+    tr.dataset.flowId = String(m.flowId ?? '');
 
     const tdStatement = document.createElement('td');
     tdStatement.textContent = m.statement as string;
@@ -1457,6 +1466,7 @@ function renderBacklogRow(
 ): HTMLElement {
     const tr = document.createElement('tr');
     tr.dataset.momentId = String(m.sequenceNumber);
+    tr.dataset.flowId = String(m.flowId ?? '');
 
     const tdStatement = document.createElement('td');
     tdStatement.textContent = m.statement as string;

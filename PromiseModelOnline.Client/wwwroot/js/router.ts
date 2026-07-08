@@ -1,4 +1,5 @@
 import { initDeleteAccountPage } from './account/delete-account.ts';
+import { initPreferencesPage } from './account/preferences.ts';
 import { checkSession } from './api.ts';
 import { requireAuth } from './guards.ts';
 import { loadHomePage } from './home.ts';
@@ -134,6 +135,14 @@ const ROUTES: {
       initDeleteAccountPage();
     },
   },
+  {
+    test: (p: string) => p === '/preferences',
+    guard: requireAuth,
+    handler: async (_nav: HTMLElement, contentDiv: HTMLElement) => {
+      await loadTemplate('account/preferences.html', contentDiv);
+      initPreferencesPage();
+    },
+  },
 ];
 
 /**
@@ -219,6 +228,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/invitations': 'Invitations',
   '/knowledge-base': 'Knowledge Base',
   '/moments/my-tasks': 'My Tasks',
+  '/preferences': 'Preferences',
 };
 
 /**

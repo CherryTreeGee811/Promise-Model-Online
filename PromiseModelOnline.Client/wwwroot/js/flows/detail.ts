@@ -49,9 +49,10 @@ interface Journey {
  * Handle moment type <select> changes by updating via the API.
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
  * @returns {void}
  */
-function setupMomentTypeChangeHandler(owner: string, project: string): void {
+function setupMomentTypeChangeHandler(owner: string, project: string, flowId: string): void {
     const momentsList = document.querySelector('#flow-moments-list') as HTMLElement;
     if (momentsList) {
         momentsList.addEventListener('change', async (event) => {
@@ -61,7 +62,7 @@ function setupMomentTypeChangeHandler(owner: string, project: string): void {
                 const newType = (target as HTMLSelectElement).value;
                 const previous = target.dataset.currentType || newType;
                 try {
-                    await updateMomentType(owner, project, momentId, newType);
+                    await updateMomentType(owner, project, momentId, newType, Number(flowId));
                     target.dataset.currentType = newType;
                 } catch (error) {
                     (target as HTMLSelectElement).value = previous;
@@ -191,7 +192,7 @@ async function loadFlowMoments(owner: string, project: string, flowId: string, f
             items: moments as unknown as Record<string, unknown>[],
         });
 
-        setupMomentTypeChangeHandler(owner, project);
+        setupMomentTypeChangeHandler(owner, project, flowId);
         bindLinkClickHandlers(momentsList, 'a[moment-id]', 'moment-seq', 'moments', owner, project, navContentDiv, contentDiv);
     } catch {
         momentsList?.replaceChildren();
@@ -334,7 +335,7 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
         backButton.append(backSpan, ' Back');
         detailCard.append(backButton);
 
-        if (detailDiv) detailDiv.replaceChildren(detailCard);
+        if (detailDiv) detailDiv.append(detailCard);
 
         const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
         const descViewElement = document.querySelector('#description-view') as HTMLElement;

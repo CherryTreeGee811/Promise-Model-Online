@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.DTOs;

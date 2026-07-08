@@ -40,21 +40,23 @@ public class PermissionService(
     }
 
     /// <summary>Invite a user to a project with owner authorization.</summary>
-    /// <param name="request">The invitation details.</param>
+    /// <param name="projectId">The project ID (resolved by the controller from route slugs).</param>
+    /// <param name="email">Email address of the user to invite.</param>
+    /// <param name="level">Access level to grant.</param>
     /// <param name="ownerUserId">The requesting user ID for owner authorization.</param>
     /// <returns>The created permission DTO.</returns>
     /// <exception cref="InvalidOperationException">Project not found, user not found, or already has permission.</exception>
     /// <exception cref="UnauthorizedAccessException">Requester is not the project owner.</exception>
-    public async Task<PermissionDto> InviteUserAsync(CreatePermissionRequestDto request, int ownerUserId)
+    public async Task<PermissionDto> InviteUserAsync(int projectId, string email, PermissionLevel level, int ownerUserId)
     {
-        var project = await _projectRepo.GetByIdAsync(request.ProjectId)
+        var project = await _projectRepo.GetByIdAsync(projectId)
                       ?? throw new InvalidOperationException("Project not found");
 
         if (project.OwnerId != ownerUserId)
             throw new UnauthorizedAccessException("Only the project owner can invite users.");
 
-        var invitedUser = await FindInvitedUserAsync(request.Email)
-                          ?? throw new InvalidOperationException($"User '{request.Email}' not found. Please use their registered email address.");
+        var invitedUser = await FindInvitedUserAsync(email)
+                          ?? throw new InvalidOperationException($"User '{email}' not found. Please use their registered email address.");
 
         var existing = await _permissionRepo.GetByUserAndProjectAsync(invitedUser.Id, project.Id);
         if (existing != null)
@@ -64,7 +66,7 @@ public class PermissionService(
         {
             UserId = invitedUser.Id,
             ProjectId = project.Id,
-            Level = request.Level,
+            Level = level,
             Status = PermissionStatus.Pending
         };
 
@@ -74,7 +76,7 @@ public class PermissionService(
         await _notificationService.CreateNotificationAsync(
             invitedUser.Id,
             NotificationType.Invitation,
-            $"You have been invited to project '{project.Name}' with {request.Level} access.",
+            $"You have been invited to project '{project.Name}' with {level} access.",
             "/invitations"
         );
 

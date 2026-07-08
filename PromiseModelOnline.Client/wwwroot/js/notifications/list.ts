@@ -18,16 +18,16 @@ function setBadgeCount(count: number) {
 
     if (safeCount > 0) {
         badge.textContent = String(safeCount);
-        badge.style.display = 'inline';
+        badge.classList.remove('d-none');
     } else {
-        badge.style.display = 'none';
+        badge.classList.add('d-none');
     }
 }
 
 /** Decrement the badge count by one if the badge is visible. */
 function decrementBadgeIfVisible() {
     const badge = document.querySelector('#notification-badge') as HTMLElement | null;
-    if (!badge || badge.style.display === 'none') return;
+    if (!badge || badge.classList.contains('d-none')) return;
 
     const current = Number(badge.textContent || '0');
 

@@ -100,7 +100,7 @@ export function loadReactions(container: HTMLElement, parentType: string, parent
                 const y = window.scrollY;
                 const updated = (state.myReactionId
                     ? await updateReaction(owner, project, state.myReactionId, emote)
-                    : await addReaction(owner, project, { parentType, parentId, emote })) as Record<string, unknown> | null;
+                    : await addReaction(owner, project, { stackItemType: parentType, stackItemId: Number(parentId), emote })) as Record<string, unknown> | null;
 
                 const previous = state.myEmote;
                 const next = (updated?.emote as string) ?? emote;

@@ -90,6 +90,8 @@ public class ProjectPromisesController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         var existing = await _context.Promises
             .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq);
@@ -125,6 +127,8 @@ public class ProjectPromisesController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         var promise = await _context.Promises
             .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq);
@@ -150,6 +154,8 @@ public class ProjectPromisesController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         if (request is null)
             return BadRequest("Request body is required.");
@@ -185,6 +191,8 @@ public class ProjectPromisesController(
         var projectEntity = await ResolveProjectAsync(owner, project);
         if (projectEntity is null)
             return NotFound();
+        if (!await RequireProjectEditPermissionAsync(projectEntity))
+            return Forbid();
 
         if (request is null)
             return BadRequest("Request body is required.");

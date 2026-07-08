@@ -52,11 +52,13 @@ beforeEach(async () => {
     writable: true,
   });
 
-  // Mock localStorage/sessionStorage (jsdom requires --localstorage-file flag)
-  if (typeof localStorage !== 'undefined') vi.spyOn(localStorage, 'setItem');
-  if (typeof sessionStorage !== 'undefined') vi.spyOn(sessionStorage, 'setItem');
   // Also clear any prior cookie spy
   vi.restoreAllMocks();
+
+  // Clear localStorage to prevent cross-test leakage from telemetry:disabled
+  if (typeof localStorage !== 'undefined') {
+    localStorage.clear();
+  }
 
   // Reload the telemetry module fresh so it picks up our mocked globals
   vi.resetModules();
@@ -174,6 +176,12 @@ describe('GDPR / PIPEDA compliance claims', () => {
 // ============================================================================
 
 describe('opt-out flow', () => {
+  it('blocks telemetry when localStorage telemetry:disabled is true', () => {
+    localStorage.setItem('telemetry:disabled', 'true');
+    initTelemetry();
+    expect(navigator.sendBeacon).not.toHaveBeenCalled();
+  });
+
   it('blocks telemetry when GPC signal is true', () => {
     Object.defineProperty(window.navigator, 'globalPrivacyControl', {
       value: true, configurable: true, writable: true,

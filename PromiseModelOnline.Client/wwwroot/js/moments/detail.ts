@@ -27,6 +27,7 @@ interface MomentTask {
 
 interface Moment {
     id: number;
+    flowId: number;
     sequenceNumber: number;
     statement: string;
     description?: string;
@@ -198,7 +199,7 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
         backButton.append(backSpan, ' Back');
         detailCard.append(backButton);
 
-        detailDiv.replaceChildren(detailCard);}
+        detailDiv.append(detailCard);}
 
 
 /**
@@ -233,14 +234,16 @@ function gateMomentDetailControls(permission: Record<string, unknown>): void {
  * @returns {Promise<void>}
  */
 async function setupEstimateHandler(owner: string, project: string, momentId: string, moment: Record<string, unknown>): Promise<void> {
+    const flowId = moment.flowId as number;
+    const sequenceNumber = moment.sequenceNumber;
     const estSelectElement = document.querySelector('#moment-estimate-select') as HTMLSelectElement;
     if (estSelectElement) {
         estSelectElement.addEventListener('change', async () => {
             const estimate = estSelectElement.value === '-' ? undefined : estSelectElement.value;
             try {
-                await updateMomentEstimate(owner, project, momentId, estimate);
+                await updateMomentEstimate(owner, project, momentId, estimate, flowId);
                 moment.effortEstimate = estimate;
-                patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { effortEstimate: estimate });
+                patchDetailStackGraphNode('moment-' + sequenceNumber, { effortEstimate: estimate });
             } catch (error) { showToast('Failed to update estimate', 'error'); console.error(error); }
         });
     }
@@ -271,7 +274,7 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
             strideSelectElement.addEventListener('change', async () => {
                 const value = strideSelectElement.value === '' ? undefined : Number(strideSelectElement.value);
                 try {
-                    const updated = await assignMomentToStride(owner, project, momentId, value) as Record<string, unknown>;
+                    const updated = await assignMomentToStride(owner, project, momentId, value, (moment as Record<string, unknown>).flowId as number) as Record<string, unknown>;
                     assignStrideResult(updated);
                 } catch (error) { showToast('Failed to update assigned stride', 'error'); console.error(error); }
             });
@@ -317,15 +320,17 @@ function setupMomentEditDescriptionHandler(
     moment: Moment,
     editor?: ReturnType<typeof setupInlineEdit>,
 ): void {
+    const flowId = moment.flowId;
+    const sequenceNumber = moment.sequenceNumber;
     saveButton.addEventListener('click', async () => {
         messageElement.textContent = '';
         (saveButton as HTMLButtonElement).disabled = true;
 
         const newDescription = input.value;
         try {
-            const updated = await updateMomentDescription(owner, project, momentId, newDescription) as Record<string, unknown>;
+            const updated = await updateMomentDescription(owner, project, momentId, newDescription, flowId) as Record<string, unknown>;
             moment.description = (updated?.description as string) ?? (newDescription.trim() ? newDescription : undefined);
-            patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
+            patchDetailStackGraphNode(`moment-${sequenceNumber}`, {
                 description: moment.description,
             });
             if (editor) editor.showSavedPopover(formatCommentText(moment.description || ''));
@@ -354,18 +359,20 @@ function setupMomentStatusChangeHandler(
     moment: Moment,
     completedCell: HTMLElement | null,
 ): void {
+    const flowId = moment.flowId;
     select.addEventListener('change', async () => {
         const previous = select.value;
         const writeTo = select;
         try {
-            const updated = await updateMomentStatus(owner, project, momentId, select.value) as Record<string, unknown>;
-            moment.status = updated.status as string;
-            moment.statusColor = updated.statusColor as string;
-            moment.completedAt = updated.completedAt as string;
-            writeTo.value = updated.status as string;
+            const updated = await updateMomentStatus(owner, project, momentId, select.value, flowId) as Record<string, unknown>;
+            const updatedData = updated as Record<string, unknown>;
+            moment.status = updatedData.status as string;
+            moment.statusColor = updatedData.statusColor as string;
+            moment.completedAt = updatedData.completedAt as string;
+            writeTo.value = updatedData.status as string;
             await refreshDetailStackGraph();
-            if (updated.completedAt) {
-                const d = new Date(updated.completedAt as string);
+            if (updatedData.completedAt) {
+                const d = new Date(updatedData.completedAt as string);
                 if (completedCell) completedCell.textContent = d.toLocaleDateString('en-CA');
             } else {
                 if (completedCell) completedCell.textContent = '\u{2013}';
@@ -391,20 +398,23 @@ function setupMomentTypeChangeHandler(
     momentId: string,
     moment: Moment,
 ): void {
+    const flowId = moment.flowId;
+    const currentType = moment.type;
+    const sequenceNumber = moment.sequenceNumber;
     select.addEventListener('change', async () => {
         const newType = select.value;
         const writeTo = select;
         try {
-            const updated = await updateMomentType(owner, project, momentId, newType) as Record<string, unknown>;
+            const updated = await updateMomentType(owner, project, momentId, newType, flowId) as Record<string, unknown>;
             if (updated && updated.type) {
                 moment.type = updated.type as string;
                 writeTo.value = updated.type as string;
-                patchDetailStackGraphNode(`moment-${moment.sequenceNumber}`, {
+                patchDetailStackGraphNode(`moment-${sequenceNumber}`, {
                     type: updated.type,
                 });
             }
         } catch {
-            writeTo.value = moment.type;
+            writeTo.value = currentType;
             showToast('Failed to update type', 'error');
         }
     });
@@ -627,7 +637,7 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
                     name,
                     description: taskDescriptionInput.value.trim(),
                     isCompleted: taskCompletedInput.checked,
-                }) as MomentTask;
+                }, moment.flowId) as MomentTask;
 
                 if (created) {
                     removeInlineEmptyRow(tbody);
@@ -709,7 +719,7 @@ async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, proj
     const isPreviousChecked = !checkbox.checked;
     checkbox.disabled = true;
     try {
-        const updated = await updateTaskCompletion(owner, project, momentId, taskId, checkbox.checked) as Record<string, unknown>;
+        const updated = await updateTaskCompletion(owner, project, momentId, taskId, checkbox.checked, moment.flowId) as Record<string, unknown>;
         applyCheckResult(checkbox, label, updated, isPreviousChecked, moment, momentId, taskId);
     } catch (error) {
         checkbox.checked = isPreviousChecked;

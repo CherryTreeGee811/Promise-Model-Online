@@ -13,6 +13,7 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Controllers;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
+using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.Tests;
@@ -24,6 +25,7 @@ public class CommentsControllerUnitTests
     private Mock<ICommentService> _mockCommentService = null!;
     private Mock<IUserRepository> _mockUserRepository = null!;
     private Mock<ICommentRepository> _mockCommentRepository = null!;
+    private Mock<IPermissionService> _mockPermissionService = null!;
     private Mock<ILogger<CommentsController>> _mockLogger = null!;
     private CommentsController _controller = null!;
 
@@ -33,11 +35,13 @@ public class CommentsControllerUnitTests
         _mockCommentService = new Mock<ICommentService>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockCommentRepository = new Mock<ICommentRepository>();
+        _mockPermissionService = new Mock<IPermissionService>();
         _mockLogger = new Mock<ILogger<CommentsController>>();
         _controller = new CommentsController(
             _mockCommentService.Object,
             _mockUserRepository.Object,
             _mockCommentRepository.Object,
+            _mockPermissionService.Object,
             _mockLogger.Object);
     }
 
@@ -226,6 +230,9 @@ public class CommentsControllerUnitTests
 
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com", "testuser");
 
+        _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5)).ReturnsAsync(1);
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(1, 1)).ReturnsAsync(PermissionLevel.Comment);
+
         // Act
         var result = await _controller.CreateComment(createDto);
 
@@ -269,6 +276,9 @@ public class CommentsControllerUnitTests
 
         ControllerTestHelpers.SetControllerUser(_controller, "replier@example.com");
 
+        _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5)).ReturnsAsync(1);
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(2, 1)).ReturnsAsync(PermissionLevel.Comment);
+
         // Act
         var result = await _controller.CreateComment(createDto);
 
@@ -308,6 +318,9 @@ public class CommentsControllerUnitTests
             .ReturnsAsync(createdComment);
 
         ControllerTestHelpers.SetControllerUser(_controller, "epic@example.com");
+
+        _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Epic", 15)).ReturnsAsync(1);
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(3, 1)).ReturnsAsync(PermissionLevel.Comment);
 
         // Act
         var result = await _controller.CreateComment(createDto);
@@ -366,9 +379,12 @@ public class CommentsControllerUnitTests
 
         var exceptionMessage = "Parent entity not found";
         _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
-            .ThrowsAsync(new System.Exception(exceptionMessage));
+            .ThrowsAsync(new System.InvalidOperationException(exceptionMessage));
 
         ControllerTestHelpers.SetControllerUser(_controller, "error@example.com");
+
+        _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 5)).ReturnsAsync(1);
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(1, 1)).ReturnsAsync(PermissionLevel.Comment);
 
         // Act
         var result = await _controller.CreateComment(createDto);
@@ -399,9 +415,12 @@ public class CommentsControllerUnitTests
             .ReturnsAsync(user);
 
         _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
-            .ThrowsAsync(new System.Exception("Promise with ID 999 not found"));
+            .ThrowsAsync(new System.InvalidOperationException("Promise with ID 999 not found"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "invalid@example.com");
+
+        _mockCommentRepository.Setup(r => r.ResolveProjectIdAsync("Promise", 999)).ReturnsAsync(1);
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(1, 1)).ReturnsAsync(PermissionLevel.Comment);
 
         // Act
         var result = await _controller.CreateComment(createDto);
@@ -429,7 +448,7 @@ public class CommentsControllerUnitTests
             .ReturnsAsync(user);
 
         _mockCommentService.Setup(s => s.CreateCommentAsync(createDto, user.Id))
-            .ThrowsAsync(new System.Exception("Comment text cannot be empty"));
+            .ThrowsAsync(new System.InvalidOperationException("Comment text cannot be empty"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "empty@example.com");
 
@@ -454,7 +473,7 @@ public class CommentsControllerUnitTests
         };
 
         _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("failing@example.com", It.IsAny<string?>()))
-            .ThrowsAsync(new System.Exception("Database connection failed"));
+            .ThrowsAsync(new System.InvalidOperationException("Database connection failed"));
 
         ControllerTestHelpers.SetControllerUser(_controller, "failing@example.com");
 

@@ -58,25 +58,25 @@ public class EmailService : IEmailService
     {
         try
         {
-        var client = new SendGridClient(_apiKey);
-        var from = new EmailAddress(FromEmail, FromName);
-        var to = new EmailAddress(email, username);
-        var subject = "Your verification code for Promise Model Online";
+            var client = new SendGridClient(_apiKey);
+            var from = new EmailAddress(FromEmail, FromName);
+            var to = new EmailAddress(email, username);
+            var subject = "Your verification code for Promise Model Online";
 
-        var plainTextContent =
-            $"Hi {username},\n\n" +
-            $"Thank you for creating an account with Promise Model Online.\n\n" +
-            $"Your verification code is: {verificationCode}\n\n" +
-            $"Enter this code on the website to activate your account.\n" +
-            $"This code expires in 24 hours.\n\n" +
-            $"If you did not create this account, you can safely ignore this email.\n\n" +
-            $"Thank you,\n" +
-            $"The Promise Model Online Team\n" +
-            $"Waterloo, Ontario, Canada";
+            var plainTextContent =
+                $"Hi {username},\n\n" +
+                $"Thank you for creating an account with Promise Model Online.\n\n" +
+                $"Your verification code is: {verificationCode}\n\n" +
+                $"Enter this code on the website to activate your account.\n" +
+                $"This code expires in 24 hours.\n\n" +
+                $"If you did not create this account, you can safely ignore this email.\n\n" +
+                $"Thank you,\n" +
+                $"The Promise Model Online Team\n" +
+                $"Waterloo, Ontario, Canada";
 
-        var spacedCode = string.Join(" ", verificationCode.ToCharArray());
+            var spacedCode = string.Join(" ", verificationCode.ToCharArray());
 
-        var htmlContent = $"""
+            var htmlContent = $"""
             <!DOCTYPE html>
             <html lang="en-CA">
             <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Your verification code</title></head>
@@ -98,35 +98,35 @@ public class EmailService : IEmailService
             </html>
             """;
 
-        var msg = new SendGridMessage
+            var msg = new SendGridMessage
+            {
+                From = from,
+                Subject = subject,
+                PlainTextContent = plainTextContent,
+                HtmlContent = htmlContent
+            };
+            msg.AddTo(to);
+
+            msg.SetClickTracking(false, false);
+            msg.SetOpenTracking(false);
+            msg.SetGoogleAnalytics(false);
+            msg.SetSubscriptionTracking(false);
+
+            var response = await client.SendEmailAsync(msg);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Body.ReadAsStringAsync();
+                _logger.LogWarning(
+                    "SendGrid returned {StatusCode} when sending verification to {Email}. Body: {Body}",
+                    (int)response.StatusCode, email, body);
+            }
+        }
+        catch (Exception ex)
         {
-            From = from,
-            Subject = subject,
-            PlainTextContent = plainTextContent,
-            HtmlContent = htmlContent
-        };
-        msg.AddTo(to);
-
-        msg.SetClickTracking(false, false);
-        msg.SetOpenTracking(false);
-        msg.SetGoogleAnalytics(false);
-        msg.SetSubscriptionTracking(false);
-
-        var response = await client.SendEmailAsync(msg);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var body = await response.Body.ReadAsStringAsync();
-            _logger.LogWarning(
-                "SendGrid returned {StatusCode} when sending verification to {Email}. Body: {Body}",
-                (int)response.StatusCode, email, body);
+            _logger.LogWarning(ex, "SendGrid unavailable — verification email to {Email} not sent", email);
         }
     }
-    catch (Exception ex)
-    {
-        _logger.LogWarning(ex, "SendGrid unavailable — verification email to {Email} not sent", email);
-    }
-}
 
     /// <summary>Send a password reset email with a secure reset link.</summary>
     /// <param name="email">The recipient's email address.</param>

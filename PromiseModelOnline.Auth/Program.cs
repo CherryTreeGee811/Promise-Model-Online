@@ -48,7 +48,7 @@ builder.Services.AddCors(options =>
             .Select(o => new Uri(o.Trim()).GetLeftPart(UriPartial.Authority));
 
         policy.WithOrigins(
-            [AppUrls.BaseUrl, "https://promisemodelonline.bff:8010", ..extraOrigins])
+            [AppUrls.BaseUrl, "https://promisemodelonline.bff:8010", .. extraOrigins])
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -233,5 +233,33 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapDefaultControllerRoute();
+
+// Development-only endpoint to reset Identity lockout for test users.
+// Not exposed in production — guarded by IsDevelopment().
+if (app.Environment.IsDevelopment())
+{
+    app.MapPost("/account/dev/reset-lockout", async (
+        string username,
+        string? password,
+        UserManager<IdentityUser> userManager) =>
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return Results.BadRequest("Username is required.");
+        var user = await userManager.FindByNameAsync(username);
+        if (user is null)
+            return Results.NotFound($"User '{username}' not found.");
+        await userManager.ResetAccessFailedCountAsync(user);
+        await userManager.SetLockoutEndDateAsync(user, null);
+        if (!string.IsNullOrWhiteSpace(password))
+        {
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await userManager.ResetPasswordAsync(user, token, password);
+            if (!result.Succeeded)
+                return Results.Problem(
+                    $"Password reset failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+        return Results.Ok(new { username, status = "lockout_reset", passwordReset = password is not null });
+    }).AllowAnonymous();
+}
 
 await app.RunAsync();
