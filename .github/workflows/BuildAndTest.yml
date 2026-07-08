@@ -376,7 +376,7 @@ jobs:
       - name: Security — OWASP ZAP DAST scan
         shell: bash
         run: |
-          mkdir -p /tmp/zap-home
+          mkdir -p -m 0777 /tmp/zap-home
           docker run --rm \
             --network host \
             -v /tmp/zap-home:/home/zap:rw \
