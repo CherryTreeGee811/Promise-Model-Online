@@ -412,6 +412,109 @@ public class ProjectStridesControllerUnitTests
 
         public T Current => _inner.Current;
     }
+    #endregion
+
+    #region GetById Tests
+
+    [Test]
+    [Description("REQ_USE_012: Valid owner and project slugs and existing stride return Ok")]
+    public async Task GetById_Valid_ReturnsOk()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+
+        var strides = new List<Stride>
+        {
+            new Stride { Id = 10, Name = "S1", Iteration = new Iteration { ProjectId = 1 } }
+        };
+        var mockDbSet = CreateMockDbSet(strides);
+        _mockContext.Setup(c => c.Strides).Returns(mockDbSet.Object);
+
+        _mockMapper.Setup(m => m.Map(It.IsAny<Stride>(), _mockStrideService.Object))
+            .Returns<Stride, IGenericService<Stride>>((s, svc) => new StrideDto { Id = s.Id, Name = s.Name });
+
+        var result = await _controller.GetById(10, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Missing stride returns 404")]
+    public async Task GetById_NotFound_Returns404()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+
+        var mockDbSet = CreateMockDbSet(new List<Stride>());
+        _mockContext.Setup(c => c.Strides).Returns(mockDbSet.Object);
+
+        var result = await _controller.GetById(999, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Missing project returns 404")]
+    public async Task GetById_ProjectNotFound_Returns404()
+    {
+        SetUpProjectResolve(null);
+
+        var result = await _controller.GetById(10, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+    }
 
     #endregion
+
+    #region Create Tests
+
+    [Test]
+    [Description("REQ_USE_012: Valid create request returns Created")]
+    public async Task Create_Valid_ReturnsCreated()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+        ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
+        var user = new User { Id = 1, Email = "user@example.com" };
+        _mockUserRepository.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", It.IsAny<string?>())).ReturnsAsync(user);
+        var svc = new Mock<IServiceProvider>();
+        svc.Setup(s => s.GetService(typeof(IPermissionService))).Returns(_mockPermissionService.Object);
+        svc.Setup(s => s.GetService(typeof(IUserRepository))).Returns(_mockUserRepository.Object);
+        _controller.ControllerContext.HttpContext.RequestServices = svc.Object;
+        _mockPermissionService.Setup(p => p.GetUserPermissionAsync(user.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
+        _mockStrideService.Setup(s => s.AddAsync(It.IsAny<Stride>())).Returns(Task.CompletedTask);
+        _mockMapper.Setup(m => m.Map(It.IsAny<Stride>(), _mockStrideService.Object))
+            .Returns<Stride, IGenericService<Stride>>((s, svc) => new StrideDto { Id = s.Id, Name = s.Name });
+
+        var dto = new CreateStrideRequestDto { Name = "New Stride", StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(14), DurationDays = 14 };
+        var result = await _controller.Create(dto, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Null body returns 400")]
+    public async Task Create_NullBody_Returns400()
+    {
+        var project = new Project { Id = 1, Slug = ProjectSlug };
+        SetUpProjectResolve(project);
+
+        var result = await _controller.Create(null!, OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+    }
+
+    [Test]
+    [Description("REQ_USE_012: Missing project returns 404")]
+    public async Task Create_ProjectNotFound_Returns404()
+    {
+        SetUpProjectResolve(null);
+
+        var result = await _controller.Create(new CreateStrideRequestDto(), OwnerSlug, ProjectSlug);
+
+        Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
+    }
+
+    #endregion
+
 }
