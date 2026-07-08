@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using NUnit.Framework;
 using PromiseModelOnline.Auth.Middleware;
 using System.Threading.Tasks;

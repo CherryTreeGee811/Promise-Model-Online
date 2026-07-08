@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -54,14 +54,20 @@ public class ProjectEpicsControllerUnitTests
 
     private static Promise Promise(int id = 10, int projectId = 1, int seq = 1) => new()
     {
-        Id = id, ProjectId = projectId, Statement = $"P{seq}",
-        SequenceNumber = seq, DisplayOrder = seq
+        Id = id,
+        ProjectId = projectId,
+        Statement = $"P{seq}",
+        SequenceNumber = seq,
+        DisplayOrder = seq
     };
 
     private static Epic Epic(int id = 20, int promiseId = 10, int seq = 1) => new()
     {
-        Id = id, ProductPromiseId = promiseId, Statement = $"E{seq}",
-        SequenceNumber = seq, DisplayOrder = seq
+        Id = id,
+        ProductPromiseId = promiseId,
+        Statement = $"E{seq}",
+        SequenceNumber = seq,
+        DisplayOrder = seq
     };
 
     private void SetupEditPermission()

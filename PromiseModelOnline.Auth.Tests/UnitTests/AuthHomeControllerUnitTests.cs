@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using NUnit.Framework;
 using PromiseModelOnline.Auth.Controllers;
 

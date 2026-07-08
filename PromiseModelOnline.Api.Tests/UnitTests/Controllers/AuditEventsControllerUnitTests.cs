@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -42,8 +42,12 @@ public class AuditEventsControllerUnitTests
     {
         _context.AuditEvents.Add(new AuditEvent
         {
-            Id = 1, ProjectId = 1, EntityType = "Moment", EntityId = 1,
-            ActionType = "Created", OccurredAtUtc = System.DateTime.UtcNow
+            Id = 1,
+            ProjectId = 1,
+            EntityType = "Moment",
+            EntityId = 1,
+            ActionType = "Created",
+            OccurredAtUtc = System.DateTime.UtcNow
         });
         await _context.SaveChangesAsync();
 
@@ -65,8 +69,12 @@ public class AuditEventsControllerUnitTests
     {
         _context.AuditEvents.Add(new AuditEvent
         {
-            Id = 1, ProjectId = 1, EntityType = "Moment", EntityId = 42,
-            ActionType = "Updated", OccurredAtUtc = System.DateTime.UtcNow,
+            Id = 1,
+            ProjectId = 1,
+            EntityType = "Moment",
+            EntityId = 42,
+            ActionType = "Updated",
+            OccurredAtUtc = System.DateTime.UtcNow,
             ChangesJson = "{\"Status\":{\"Before\":\"Todo\",\"After\":\"InProgress\"}}"
         });
         await _context.SaveChangesAsync();
@@ -89,13 +97,21 @@ public class AuditEventsControllerUnitTests
     {
         _context.AuditEvents.Add(new AuditEvent
         {
-            Id = 1, ProjectId = 1, EntityType = "Moment", EntityId = 1,
-            ActionType = "Created", OccurredAtUtc = System.DateTime.UtcNow
+            Id = 1,
+            ProjectId = 1,
+            EntityType = "Moment",
+            EntityId = 1,
+            ActionType = "Created",
+            OccurredAtUtc = System.DateTime.UtcNow
         });
         _context.AuditEvents.Add(new AuditEvent
         {
-            Id = 2, ProjectId = 1, EntityType = "Moment", EntityId = 1,
-            ActionType = "Updated", OccurredAtUtc = System.DateTime.UtcNow
+            Id = 2,
+            ProjectId = 1,
+            EntityType = "Moment",
+            EntityId = 1,
+            ActionType = "Updated",
+            OccurredAtUtc = System.DateTime.UtcNow
         });
         await _context.SaveChangesAsync();
 
@@ -111,8 +127,12 @@ public class AuditEventsControllerUnitTests
         {
             _context.AuditEvents.Add(new AuditEvent
             {
-                Id = i, ProjectId = 1, EntityType = "Moment", EntityId = i,
-                ActionType = "Created", OccurredAtUtc = System.DateTime.UtcNow
+                Id = i,
+                ProjectId = 1,
+                EntityType = "Moment",
+                EntityId = i,
+                ActionType = "Created",
+                OccurredAtUtc = System.DateTime.UtcNow
             });
         }
         await _context.SaveChangesAsync();
