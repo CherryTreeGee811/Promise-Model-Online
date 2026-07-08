@@ -994,13 +994,13 @@ function appendGraphNodes(d3: D3Module, layer: D3Sel, renderable: Record<string,
     if (onContextMenu) {
         (node.on as (event: string, handler: (...eventData: unknown[]) => void) => unknown)('contextmenu', ((_event: unknown, _current: Record<string, unknown>) => {
             (_event as MouseEvent).preventDefault();
-            (onContextMenu as (...eventData: unknown[]) => void)(_event, _current);
+            (onContextMenu as (...eventData: unknown[]) => void)(_event, (_current as Record<string, unknown>).data as Record<string, unknown>);
         }) as (...eventData: unknown[]) => void);
 
         (node.on as (event: string, handler: (...eventData: unknown[]) => void) => unknown)('keydown', ((_event: unknown, _current: Record<string, unknown>) => {
             if (!['Enter', ' ', 'Space'].includes((_event as KeyboardEvent).key)) return;
             (_event as KeyboardEvent).preventDefault();
-            (onContextMenu as (...eventData: unknown[]) => void)(_event, _current);
+            (onContextMenu as (...eventData: unknown[]) => void)(_event, (_current as Record<string, unknown>).data as Record<string, unknown>);
         }) as (...eventData: unknown[]) => void);
     }
 

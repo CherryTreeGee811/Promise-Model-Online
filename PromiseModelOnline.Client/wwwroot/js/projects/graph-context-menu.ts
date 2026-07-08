@@ -792,7 +792,7 @@ function buildCreateFormElement(
  * @param {{ permission?: string } | null | undefined} permission - The current user's permission object.
  * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} The action list.
  */
-function buildMenuActions(
+export function buildMenuActions(
     nodeData: Record<string, unknown>,
     owner: string,
     project: string,

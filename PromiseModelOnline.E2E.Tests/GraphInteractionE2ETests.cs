@@ -168,4 +168,68 @@ public class GraphInteractionE2ETests : E2ETestBase
         Assert.That(Page.Url, Is.Not.EqualTo(currentUrl), "Node click should navigate to detail page");
         AssertNoCspViolations();
     }
+
+    [Test]
+    [Description("REQ_FUN_003 happy path: Graph context menu on promise node shows Create New Epic and Delete")]
+    public async Task Graph_ContextMenu_ShowsCreateActions()
+    {
+        // Arrange
+        await LoginAsync();
+        await Page.GotoAsync($"/{Owner}/{Project}/graph");
+        await Page.WaitForSelectorAsync("#graph-content svg", new() { Timeout = 15000 });
+        await Page.WaitForFunctionAsync("() => { const n = document.querySelector('.graph-node.is-promise'); return n && n.getBoundingClientRect().width > 0; }", options: new() { Timeout = 10000 });
+
+        // Act — right-click a promise node
+        var menuOpened = await Page.EvaluateAsync<bool>(@"
+            (() => {
+                const node = document.querySelector('.graph-node.is-promise');
+                if (!node) return false;
+                node.dispatchEvent(new MouseEvent('contextmenu', {
+                    bubbles: true, cancelable: true, clientX: 100, clientY: 100, button: 2
+                }));
+                return true;
+            })();
+        ");
+        Assert.That(menuOpened, Is.True, "Context menu event should be dispatched");
+
+        await Page.WaitForSelectorAsync(".tippy-box[data-theme~='graph-menu']", new() { Timeout = 5000 });
+
+        // Assert — menu contains create and delete actions
+        var menuItems = await Page.Locator(".tippy-box[data-theme~='graph-menu'] .graph-context-menu__item").AllTextContentsAsync();
+        Assert.That(menuItems, Has.Member("Create New Epic"), "Context menu should contain Create New Epic");
+        Assert.That(menuItems, Has.Member("Delete"), "Context menu should contain Delete");
+        AssertNoCspViolations();
+    }
+
+    [Test]
+    [Description("REQ_FUN_003 happy path: Graph context menu on moment node shows Change Status but no Create New")]
+    public async Task Graph_ContextMenu_MomentShowsStatusAction()
+    {
+        // Arrange
+        await LoginAsync();
+        await Page.GotoAsync($"/{Owner}/{Project}/graph");
+        await Page.WaitForSelectorAsync("#graph-content svg", new() { Timeout = 15000 });
+        await Page.WaitForFunctionAsync("() => { const n = document.querySelector('.graph-node.is-moment'); return n && n.getBoundingClientRect().width > 0; }", options: new() { Timeout = 10000 });
+
+        // Act — right-click a moment node
+        var menuOpened = await Page.EvaluateAsync<bool>(@"
+            (() => {
+                const node = document.querySelector('.graph-node.is-moment');
+                if (!node) return false;
+                node.dispatchEvent(new MouseEvent('contextmenu', {
+                    bubbles: true, cancelable: true, clientX: 100, clientY: 100, button: 2
+                }));
+                return true;
+            })();
+        ");
+        Assert.That(menuOpened, Is.True, "Context menu event should be dispatched");
+
+        await Page.WaitForSelectorAsync(".tippy-box[data-theme~='graph-menu']", new() { Timeout = 5000 });
+
+        // Assert — menu contains change status but not create new
+        var menuItems = await Page.Locator(".tippy-box[data-theme~='graph-menu'] .graph-context-menu__item").AllTextContentsAsync();
+        Assert.That(menuItems, Has.Member("Change Status"), "Context menu should contain Change Status");
+        Assert.That(menuItems, Has.No.Member("Create New"), "Context menu should not contain Create New action");
+        AssertNoCspViolations();
+    }
 }
