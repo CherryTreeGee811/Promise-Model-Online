@@ -463,7 +463,7 @@ jobs:
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
           exit-code: "0"
-          args: "--skip-dirs node_modules"
+          skip-dirs: "node_modules"
 
       - name: Scan Docker images
         uses: aquasecurity/trivy-action@master
@@ -543,7 +543,7 @@ jobs:
           format: "cyclonedx"
           output: "sbom-source.cdx.json"
           exit-code: "0"
-          args: "--skip-dirs node_modules"
+          skip-dirs: "node_modules"
 
       - name: Generate SBOM (API container — includes OS packages)
         uses: aquasecurity/trivy-action@master
