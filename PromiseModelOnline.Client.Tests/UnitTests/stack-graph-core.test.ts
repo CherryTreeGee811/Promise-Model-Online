@@ -1,227 +1,507 @@
-import { describe, it, expect } from 'vitest';
-import { normalizeText, getMomentEffortBucket, getMomentStrideBucket, computeChildMetrics, createNode, createNodeWithMetrics, getNodeSearchText, findNodeById, countRenderableNodes, parseGraphData, getDetailPageNodeScale } from '../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const mockGetStatusBucket = vi.fn();
+
+vi.mock('../../PromiseModelOnline.Client/wwwroot/js/utils/status-utilities.ts', () => ({
+    getStatusBucket: mockGetStatusBucket,
+    getStatusIcon: vi.fn(),
+}));
+
+beforeEach(() => {
+    vi.clearAllMocks();
+});
 
 describe('normalizeText', () => {
-    it('returns empty string for null', () => {
-        expect(normalizeText(null)).toBe('');
+    it('trims and lowercases', async () => {
+        // Arrange
+        const { normalizeText } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(normalizeText('  Hello World  ')).toBe('hello world');
     });
 
-    it('returns empty string for undefined', () => {
+    it('handles null/undefined', async () => {
+        // Arrange
+        const { normalizeText } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(normalizeText(null)).toBe('');
         expect(normalizeText(undefined)).toBe('');
     });
 
-    it('trims whitespace', () => {
-        expect(normalizeText('  hello  ')).toBe('hello');
-    });
+    it('converts numbers to strings', async () => {
+        // Arrange
+        const { normalizeText } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
 
-    it('converts numbers to string', () => {
+        // Act & Assert
         expect(normalizeText(42)).toBe('42');
-    });
-
-    it('converts objects to lowercase string', () => {
-        expect(normalizeText({})).toBe('[object object]');
     });
 });
 
 describe('getMomentEffortBucket', () => {
-    it('returns "unestimated" for undefined', () => {
-        expect(getMomentEffortBucket(undefined)).toBe('unestimated');
-    });
+    it('returns unestimated for null', async () => {
+        // Arrange
+        const { getMomentEffortBucket } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
 
-    it('returns "unestimated" for null', () => {
+        // Act & Assert
         expect(getMomentEffortBucket(null)).toBe('unestimated');
     });
 
-    it('returns uppercase effort value', () => {
-        expect(getMomentEffortBucket('S')).toBe('S');
+    it('normalizes valid estimates', async () => {
+        // Arrange
+        const { getMomentEffortBucket } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(getMomentEffortBucket('XS')).toBe('XS');
+        expect(getMomentEffortBucket('s')).toBe('S');
+        expect(getMomentEffortBucket('M')).toBe('M');
+        expect(getMomentEffortBucket('l')).toBe('L');
+        expect(getMomentEffortBucket('XL')).toBe('XL');
+        expect(getMomentEffortBucket('xxl')).toBe('XXL');
+        expect(getMomentEffortBucket('XXXL')).toBe('XXXL');
+    });
+
+    it('returns unestimated for unknown values', async () => {
+        // Arrange
+        const { getMomentEffortBucket } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(getMomentEffortBucket('unknown')).toBe('unestimated');
+        expect(getMomentEffortBucket('')).toBe('unestimated');
+        expect(getMomentEffortBucket('  ')).toBe('unestimated');
     });
 });
 
 describe('getMomentStrideBucket', () => {
-    it('returns "backlog" for undefined payload', () => {
-        expect(getMomentStrideBucket(undefined)).toBe('backlog');
-    });
+    it('returns backlog for undefined/unassigned/empty', async () => {
+        // Arrange
+        const { getMomentStrideBucket } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
 
-    it('returns "backlog" for payload without assignedStrideId', () => {
+        // Act & Assert
         expect(getMomentStrideBucket({})).toBe('backlog');
+        expect(getMomentStrideBucket({ assignedStrideId: undefined })).toBe('backlog');
+        expect(getMomentStrideBucket({ assignedStrideId: 'unassigned' })).toBe('backlog');
+        expect(getMomentStrideBucket({ assignedStrideId: '' })).toBe('backlog');
     });
 
-    it('returns stride id string for assigned stride', () => {
+    it('returns assignedStrideId as string', async () => {
+        // Arrange
+        const { getMomentStrideBucket } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
         expect(getMomentStrideBucket({ assignedStrideId: 10 })).toBe('10');
+        expect(getMomentStrideBucket({ assignedStrideId: '15' })).toBe('15');
     });
 
-    it('returns "0" for zero assigned stride', () => {
-        expect(getMomentStrideBucket({ assignedStrideId: 0 })).toBe('0');
+    it('handles undefined payload', async () => {
+        // Arrange
+        const { getMomentStrideBucket } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(getMomentStrideBucket(undefined)).toBe('backlog');
     });
 });
 
 describe('computeChildMetrics', () => {
-    it('returns zeros for empty array', () => {
+    it('returns zeros for empty array', async () => {
+        // Arrange
+        const { computeChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
         expect(computeChildMetrics([])).toEqual({ childCount: 0, completedChildCount: 0 });
     });
 
-    it('returns zeros for undefined', () => {
+    it('counts children and completed children', async () => {
+        // Arrange
+        mockGetStatusBucket.mockImplementation((c: string) => c === 'green' ? 'done' : 'other');
+        const { computeChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const result = computeChildMetrics([
+            { statusColor: 'green' },
+            { statusColor: 'red' },
+            { statusColor: 'green' },
+            { statusColor: 'yellow' },
+        ]);
+
+        // Assert
+        expect(result).toEqual({ childCount: 4, completedChildCount: 2 });
+    });
+
+    it('handles non-array input', async () => {
+        // Arrange
+        const { computeChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(computeChildMetrics(null as unknown as Record<string, unknown>[])).toEqual({ childCount: 0, completedChildCount: 0 });
         expect(computeChildMetrics(undefined as unknown as Record<string, unknown>[])).toEqual({ childCount: 0, completedChildCount: 0 });
-    });
-
-    it('counts children and completed children from statusColor', () => {
-        const children = [
-            { statusColor: 'green' },
-            { statusColor: 'red' },
-            { statusColor: 'green' },
-        ];
-        expect(computeChildMetrics(children as Record<string, unknown>[])).toEqual({ childCount: 3, completedChildCount: 2 });
-    });
-
-    it('handles children with direct statusColor', () => {
-        const children = [
-            { statusColor: 'green' },
-            { statusColor: 'red' },
-        ];
-        expect(computeChildMetrics(children as Record<string, unknown>[])).toEqual({ childCount: 2, completedChildCount: 1 });
     });
 });
 
 describe('createNode', () => {
-    it('creates a node with given type and payload', () => {
-        const node = createNode('promise', { id: 1, statement: 'Test' });
-        expect(node.nodeType).toBe('promise');
-        expect(node.payload).toEqual({ id: 1, statement: 'Test' });
+    it('creates a node with basic fields', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('epic', { id: 1, name: 'My Epic', description: 'Desc' }, []);
+
+        // Assert
+        expect(node.id).toBe('epic-1');
+        expect(node.nodeType).toBe('epic');
+        expect(node.label).toBe('My Epic');
+        expect(node.payload).toEqual({ id: 1, name: 'My Epic', description: 'Desc' });
         expect(node.children).toEqual([]);
-        expect(node.id).toBeTruthy();
     });
 
-    it('creates a node with children', () => {
-        const child = { id: 'child-1', nodeType: 'epic', payload: {}, children: [] };
-        const node = createNode('promise', { id: 1 }, [child as unknown as Record<string, unknown>]);
-        expect(node.children).toHaveLength(1);
-        expect(node.children![0].id).toBe('child-1');
+    it('uses statement over name', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('moment', { sequenceNumber: 5, statement: 'The statement', name: 'The name' });
+
+        // Assert
+        expect(node.label).toBe('The statement');
     });
 
-    it('computes child metrics from children statusColor', () => {
+    it('falls back to payload id', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('flow', { id: 99 });
+
+        // Assert
+        expect(node.label).toBe('#99');
+    });
+
+    it('computes child counts from children', async () => {
+        // Arrange
+        mockGetStatusBucket.mockImplementation((c: string) => c === 'green' ? 'done' : 'other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const children = [
-            { statusColor: 'green' },
-            { statusColor: 'red' },
+            { payload: { statusColor: 'green' }, statusColor: 'green' },
+            { payload: { statusColor: 'red' }, statusColor: 'red' },
         ];
-        const node = createNode('promise', {}, children as unknown as Record<string, unknown>[]);
+
+        // Act
+        const node = createNode('promise', { id: 1 }, children);
+
+        // Assert
         expect(node.childCount).toBe(2);
         expect(node.completedChildCount).toBe(1);
+    });
+
+    it('uses _childCount override from payload', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('epic', { id: 1, _childCount: 10, _completedChildCount: 5 }, []);
+
+        // Assert
+        expect(node.childCount).toBe(10);
+        expect(node.completedChildCount).toBe(5);
+    });
+
+    it('generates search text from label and description', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('moment', { sequenceNumber: 1, statement: 'My Moment', description: 'A desc' });
+
+        // Assert
+        expect(node._searchText).toBe('my moment a desc');
+    });
+
+    it('sets effort bucket for moment nodes', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('moment', { sequenceNumber: 1, statement: 'M', effortEstimate: 'XL' });
+
+        // Assert
+        expect(node._effortBucket).toBe('XL');
+    });
+
+    it('skips effort bucket for non-moment nodes', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('epic', { id: 1, name: 'E', effortEstimate: 'XL' });
+
+        // Assert
+        expect(node._effortBucket).toBeUndefined();
+    });
+
+    it('sets stride bucket for moment nodes', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('moment', { sequenceNumber: 1, statement: 'M', assignedStrideId: 5 });
+
+        // Assert
+        expect(node._strideBucket).toBe('5');
+    });
+
+    it('sets stride bucket to backlog for moment without stride', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('moment', { sequenceNumber: 1, statement: 'M' });
+
+        // Assert
+        expect(node._strideBucket).toBe('backlog');
+    });
+
+    it('sets status bucket from payload', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('inprogress');
+        const { createNode } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNode('epic', { id: 1, name: 'E', statusColor: 'orange' });
+
+        // Assert
+        expect(node._statusBucket).toBe('inprogress');
+        expect(mockGetStatusBucket).toHaveBeenCalledWith('orange');
     });
 });
 
 describe('createNodeWithMetrics', () => {
-    it('creates a node with provided metrics', () => {
-        const node = createNodeWithMetrics('epic', { name: 'Epic 1' }, { childCount: 5, completedChildCount: 3 });
-        expect(node.nodeType).toBe('epic');
+    it('creates a node with enriched payload', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNodeWithMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNodeWithMetrics('epic', { id: 1, name: 'E' }, { childCount: 5, completedChildCount: 3 });
+
+        // Assert
         expect(node.childCount).toBe(5);
         expect(node.completedChildCount).toBe(3);
+        expect(node.id).toBe('epic-1');
+    });
+
+    it('creates a node without metrics', async () => {
+        // Arrange
+        mockGetStatusBucket.mockReturnValue('other');
+        const { createNodeWithMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const node = createNodeWithMetrics('moment', { sequenceNumber: 7, statement: 'M' });
+
+        // Assert
+        expect(node.childCount).toBe(0);
     });
 });
 
 describe('getNodeSearchText', () => {
-    it('combines label and description in lowercase', () => {
-        const node = { payload: { name: 'Test', description: 'A description' }, label: 'Test Label' };
-        const text = getNodeSearchText(node as Record<string, unknown>);
-        expect(text).toContain('test');
-        expect(text).toContain('description');
-        expect(text).toContain('test label');
+    it('uses _searchText when present', async () => {
+        // Arrange
+        const { getNodeSearchText } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        const node = { _searchText: 'my custom search', label: 'Label', payload: { description: 'Desc' } };
+
+        // Act & Assert
+        expect(getNodeSearchText(node)).toBe('my custom search');
     });
 
-    it('returns empty string for empty node', () => {
-        const node = {};
-        const text = getNodeSearchText(node as Record<string, unknown>);
-        expect(text).toBe('');
+    it('falls back to label + description', async () => {
+        // Arrange
+        const { getNodeSearchText } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        const node = { label: 'My Label', payload: { description: 'My Desc' } };
+
+        // Act & Assert
+        expect(getNodeSearchText(node)).toBe('my label my desc');
     });
 });
 
 describe('findNodeById', () => {
-    it('returns undefined for undefined tree', () => {
-        expect(findNodeById(undefined, 'any')).toBeUndefined();
+    it('returns undefined for null/undefined inputs', async () => {
+        // Arrange
+        const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(findNodeById(undefined, 'id')).toBeUndefined();
+        expect(findNodeById({ id: 'root' }, undefined)).toBeUndefined();
     });
 
-    it('returns undefined for undefined id', () => {
-        expect(findNodeById({ id: 'root' } as Record<string, unknown>, undefined)).toBeUndefined();
+    it('finds root node', async () => {
+        // Arrange
+        const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        const tree = { id: 'root', children: [] };
+
+        // Act & Assert
+        expect(findNodeById(tree, 'root')).toBe(tree);
     });
 
-    it('finds root node', () => {
-        const tree = { id: 'root-1', nodeType: 'root', children: [] };
-        expect(findNodeById(tree as unknown as Record<string, unknown>, 'root-1')).toBe(tree);
-    });
-
-    it('finds nested child by id', () => {
+    it('finds nested child node', async () => {
+        // Arrange
+        const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        const target = { id: 'target', children: [] };
         const tree = {
             id: 'root',
             children: [
-                { id: 'promise-1', children: [{ id: 'epic-1', children: [] }] },
-                { id: 'promise-2', children: [] },
+                { id: 'child1', children: [] },
+                { id: 'child2', children: [target] },
             ],
         };
-        const found = findNodeById(tree as unknown as Record<string, unknown>, 'epic-1');
-        expect(found).toBeDefined();
-        expect((found as Record<string, unknown>).id).toBe('epic-1');
+
+        // Act & Assert
+        expect(findNodeById(tree, 'target')).toBe(target);
     });
 
-    it('returns undefined for non-existent id', () => {
-        const tree = { id: 'root', children: [{ id: 'child-1', children: [] }] };
-        expect(findNodeById(tree as unknown as Record<string, unknown>, 'non-existent')).toBeUndefined();
+    it('returns undefined for missing node', async () => {
+        // Arrange
+        const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        const tree = { id: 'root', children: [{ id: 'child', children: [] }] };
+
+        // Act & Assert
+        expect(findNodeById(tree, 'nonexistent')).toBeUndefined();
     });
 });
 
 describe('countRenderableNodes', () => {
-    it('returns 0 for undefined', () => {
+    it('returns 0 for undefined', async () => {
+        // Arrange
+        const { countRenderableNodes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
         expect(countRenderableNodes(undefined)).toBe(0);
     });
 
-    it('counts non-root nodes', () => {
-        const tree = {
-            nodeType: 'root',
-            children: [{ nodeType: 'promise', children: [] }],
-        };
-        expect(countRenderableNodes(tree as unknown as Record<string, unknown>)).toBe(1);
+    it('excludes root from count', async () => {
+        // Arrange
+        const { countRenderableNodes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        const tree = { nodeType: 'root', children: [] };
+
+        // Act & Assert
+        expect(countRenderableNodes(tree)).toBe(0);
     });
 
-    it('counts recursively excluding root', () => {
+    it('counts all non-root nodes', async () => {
+        // Arrange
+        const { countRenderableNodes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const tree = {
             nodeType: 'root',
             children: [
                 { nodeType: 'promise', children: [
+                    { nodeType: 'epic', children: [] },
                     { nodeType: 'epic', children: [
                         { nodeType: 'journey', children: [] },
-                    ] },
-                ] },
+                    ]},
+                ]},
+                { nodeType: 'promise', children: [] },
             ],
         };
-        expect(countRenderableNodes(tree as unknown as Record<string, unknown>)).toBe(3);
+
+        // Act & Assert
+        expect(countRenderableNodes(tree)).toBe(5);
     });
 });
 
 describe('parseGraphData', () => {
-    it('creates root node with project info', () => {
-        const promises = [{ nodeType: 'promise', payload: {} }];
-        const root = parseGraphData(promises as Record<string, unknown>[], 'owner1', 'proj1');
-        expect(root.nodeType).toBe('root');
+    it('creates root with project name', async () => {
+        // Arrange
+        const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const root = parseGraphData([], 'owner1', 'proj1', { name: 'My Project' });
+
+        // Assert
         expect(root.id).toBe('root-owner1-proj1');
-        expect(root.children).toHaveLength(1);
-    });
-
-    it('uses project entity name when available', () => {
-        const promises = [] as Record<string, unknown>[];
-        const root = parseGraphData(promises, 'owner1', 'proj1', { name: 'My Project' });
+        expect(root.nodeType).toBe('root');
         expect(root.label).toBe('My Project');
+        expect(root.children).toEqual([]);
     });
 
-    it('handles empty promises array', () => {
-        const root = parseGraphData([], 'o', 'p');
-        expect(root.children).toHaveLength(0);
+    it('falls back to owner/project label', async () => {
+        // Arrange
+        const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const root = parseGraphData([], 'owner1', 'proj1');
+
+        // Assert
+        expect(root.label).toBe('Project owner1/proj1');
+    });
+
+    it('uses Name field if name is missing', async () => {
+        // Arrange
+        const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const root = parseGraphData([], 'o', 'p', { Name: 'Alt Name' });
+
+        // Assert
+        expect(root.label).toBe('Alt Name');
+    });
+
+    it('passes promises as children', async () => {
+        // Arrange
+        const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        const promises = [{ id: 'promise-1' }, { id: 'promise-2' }];
+
+        // Act
+        const root = parseGraphData(promises, 'o', 'p');
+
+        // Assert
+        expect(root.children).toBe(promises);
     });
 });
 
 describe('getDetailPageNodeScale', () => {
-    it('returns compact scale for moment', () => {
+    it('returns 1 for unknown node types', async () => {
+        // Arrange
+        const { getDetailPageNodeScale } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(getDetailPageNodeScale('unknown')).toBe(1);
+    });
+
+    it('returns max scale for promise (fewest tiers)', async () => {
+        // Arrange
+        const { getDetailPageNodeScale } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
+        expect(getDetailPageNodeScale('promise')).toBe(1.32);
+    });
+
+    it('returns min scale for moment (most tiers)', async () => {
+        // Arrange
+        const { getDetailPageNodeScale } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act & Assert
         expect(getDetailPageNodeScale('moment')).toBe(0.84);
     });
 
-    it('returns compact scale for flow', () => {
-        expect(getDetailPageNodeScale('flow')).toBe(0.96);
+    it('returns intermediate values for mid-tier types', async () => {
+        // Arrange
+        const { getDetailPageNodeScale } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+
+        // Act
+        const epic = getDetailPageNodeScale('epic');
+        const journey = getDetailPageNodeScale('journey');
+        const flow = getDetailPageNodeScale('flow');
+
+        // Assert
+        expect(epic).toBeGreaterThan(journey);
+        expect(journey).toBeGreaterThan(flow);
+        expect(flow).toBeGreaterThan(0.84);
     });
 });

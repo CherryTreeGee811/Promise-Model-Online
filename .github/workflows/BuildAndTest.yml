@@ -114,7 +114,7 @@ jobs:
           npm run typecheck
           npm run lint:dry
           npm run lint:dead
-          npm run test
+          npm run test -- --coverage
           npm run build
 
       - name: Source code import boundary (Layer 2)
@@ -152,7 +152,8 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName!~IntegrationTests"
+            --filter "FullyQualifiedName!~IntegrationTests" \
+            --threshold 70 --threshold-type line --threshold-type branch --threshold-stat minimum
 
       - name: Run API Unit Tests
         shell: bash
@@ -163,7 +164,8 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./ApiUnitTestResults \
             --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName!~IntegrationTests"
+            --filter "FullyQualifiedName!~IntegrationTests" \
+            --threshold 70 --threshold-type line --threshold-type branch --threshold-stat minimum
 
       - name: Run Auth Integration Tests
         shell: bash
@@ -173,7 +175,8 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests"
+            --filter "FullyQualifiedName~IntegrationTests" \
+            --threshold 30 --threshold-type line
 
       - name: Run BFF Integration Tests
         shell: bash
@@ -184,7 +187,8 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./BffTestResults \
             --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests"
+            --filter "FullyQualifiedName~IntegrationTests" \
+            --threshold 30 --threshold-type line
 
       - name: Run API Integration Tests
         shell: bash
@@ -195,7 +199,8 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./ApiIntegrationTestResults \
             --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests"
+            --filter "FullyQualifiedName~IntegrationTests" \
+            --threshold 30 --threshold-type line
 
       - name: Run Client UI Test Environment
         shell: bash
@@ -442,10 +447,25 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload .NET coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: dotnet
+          files: |
+            ./AuthTestResults/*/coverage.cobertura.xml
+            ./ApiUnitTestResults/*/coverage.cobertura.xml
+            ./ApiIntegrationTestResults/*/coverage.cobertura.xml
+            ./BffTestResults/*/coverage.cobertura.xml
+            ./ClientTestResults/*/coverage.cobertura.xml
+            ./E2eTestResults/*/coverage.cobertura.xml
+
+      - name: Upload TS coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: typescript
+          files: ./coverage/clover.xml
 
       - name: Hadolint (all Dockerfiles)
         shell: bash

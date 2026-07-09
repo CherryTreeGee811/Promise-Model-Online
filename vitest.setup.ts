@@ -3,6 +3,11 @@ import { vi } from 'vitest';
 // Polyfill CSS.escape for jsdom (not available in jsdom)
 (globalThis as Record<string, unknown>).CSS ??= { escape: (value: string) => value.replace(/[!"#$%&'()*+,.\/:;<=>?@[\]^`{|}~]/g, '\\$&') } as { escape: (value: string) => string };
 
+// Polyfill scrollIntoView for jsdom (not available in jsdom)
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+    (Element.prototype as Record<string, unknown>).scrollIntoView = vi.fn();
+}
+
 globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     status: 200,

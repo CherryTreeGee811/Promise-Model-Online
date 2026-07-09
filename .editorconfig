@@ -3,6 +3,10 @@ root = true
 [*]
 end_of_line = lf
 insert_final_newline = true
+indent_style = space
+
+[*.{ts,mjs,js,jsx,tsx,json,html,css,yml,yaml,md}]
+indent_size = 4
 
 [*.{cs,csproj}]
 charset = utf-8-bom

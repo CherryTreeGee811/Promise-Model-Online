@@ -6,4 +6,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
   },
+  coverage: {
+    provider: 'v8',
+    reporter: ['text', 'clover'],
+    reportsDirectory: './coverage',
+    include: ['PromiseModelOnline.Client/wwwroot/js/**/*.ts'],
+    exclude: ['**/*.test.ts', '**/*.d.ts'],
+  },
 });

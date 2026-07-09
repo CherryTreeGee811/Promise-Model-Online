@@ -1,4 +1,3 @@
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { getJourneyById } from '../journeys/api.ts';
 import { createMoment, updateMomentType } from '../moments/api.ts';
 import {
@@ -8,11 +7,10 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
-import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
 import { getFlow, getMoments, updateFlowDescription } from './api.ts';
@@ -227,27 +225,19 @@ function upsertFlowGraphViewButton(detailDiv: HTMLElement, flow: Flow): void {
  */
 export async function loadFlowDetail(owner: string, project: string, flowId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
     const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
     if (!detailDiv) return;
-    if (loadingElement) loadingElement.hidden = false;
-    if (errorElement) errorElement.textContent = '';
+    setElementText('#error-text', '');
+    setElementVisibility('#flow-detail-loading', false);
 
     try {
         const flow = await getFlow(owner, project, flowId) as Flow;
         if (!flow) return;
         await loadEntityLookupMap('Flow', flow.id, owner, project);
+        setElementVisibility('#flow-detail-loading', true);
 
-        if (loadingElement) loadingElement.hidden = true;
-
-        void mountDetailStackGraph({
-            nodeType: 'flow',
-            nodeId: flowId,
-            owner,
-            project,
-        });
+        void mountDetailStackGraph({ nodeType: 'flow', nodeId: flowId, owner, project });
 
         const detailCard = document.createElement('div');
         detailCard.className = 'detail-card flow-detail-card';
@@ -313,7 +303,6 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
         const momentsHeading = document.createElement('h3');
         momentsHeading.textContent = 'Moments';
         detailCard.append(momentsHeading);
-
         const momentsList = document.createElement('div');
         momentsList.id = 'flow-moments-list';
         const loadingP = document.createElement('p');
@@ -329,43 +318,28 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
         backButton.id = 'back-link';
         backButton.className = 'btn btn-outline-secondary btn-sm';
         backButton.type = 'button';
-        const backSpan = document.createElement('span');
-        backSpan.setAttribute('aria-hidden', 'true');
-        backSpan.textContent = '\u{2190}';
-        backButton.append(backSpan, ' Back');
+        backButton.innerHTML = '<span aria-hidden="true">\u{2190}</span> Back';
         detailCard.append(backButton);
 
-        if (detailDiv) detailDiv.append(detailCard);
+        detailDiv.append(detailCard);
 
-        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
-        const descViewElement = document.querySelector('#description-view') as HTMLElement;
-        const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
-        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
-        const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
-        if (descInput && descViewElement && editButton) {
-            createCommentAutocomplete(descInput, 'Flow', flow.id);
-            const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
-            (flow as unknown as Record<string, unknown>).__editor = editor;
-        }
+        setupDetailInlineEdit('#description-input', '#description-view', '#edit-desc-btn', 'Flow', flow.id, '#save-desc', '#cancel-desc');
 
         bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
 
         await loadFlowMoments(owner, project, flowId, flow as unknown as Record<string, unknown>, navContentDiv, contentDiv);
 
         initBackLink();
-
         await loadFlowJourneyName(owner, project, flow, navContentDiv, contentDiv);
 
         setupDescriptionHandler(owner, project, flowId, 'flow', flow, updateFlowDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
 
         gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-moment-statement', '#add-moment-submit', '#add-moment-type']);
-
         loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
-
         upsertFlowGraphViewButton(detailDiv, flow);
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
-        if (errorElement) errorElement.textContent = 'Failed to load flow details.';
+        setElementVisibility('#flow-detail-loading', true);
+        setElementText('#error-text', 'Failed to load flow details.');
         console.error(error);
     }
 }
