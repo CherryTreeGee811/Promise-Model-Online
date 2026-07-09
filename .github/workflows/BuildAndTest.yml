@@ -153,27 +153,7 @@ jobs:
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~IntegrationTests"
-          python3 << 'PYEOF'
-import xml.etree.ElementTree as ET, glob, sys, os
-exit_code = 0
-for f in glob.glob('./AuthTestResults/*/coverage.cobertura.xml'):
-    if not os.path.isfile(f): continue
-    root = ET.parse(f).getroot()
-    lr = float(root.get('line-rate', 0))
-    br = float(root.get('branch-rate', 0))
-    total = covered = 0
-    for m in root.findall('.//method'):
-        total += 1
-        if float(m.get('line-rate', 0)) > 0: covered += 1
-    mr = covered / total if total else 0
-    ok = lr >= 0.70 and br >= 0.70 and mr >= 0.70
-    name = os.path.basename(os.path.dirname(f))
-    print(f'  [{name}] line={lr:.2%} branch={br:.2%} method={mr:.2%}')
-    if not ok:
-        print(f'  FAIL ({name}: line {lr:.2%} branch {br:.2%} method {mr:.2%})')
-        exit_code = 1
-sys.exit(exit_code)
-PYEOF
+          bash scripts/check-coverage.sh ./AuthTestResults 0.70 0.70 0.70
 
 
 
@@ -187,27 +167,7 @@ PYEOF
             --results-directory ./ApiUnitTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~IntegrationTests"
-          python3 << 'PYEOF'
-import xml.etree.ElementTree as ET, glob, sys, os
-exit_code = 0
-for f in glob.glob('./ApiUnitTestResults/*/coverage.cobertura.xml'):
-    if not os.path.isfile(f): continue
-    root = ET.parse(f).getroot()
-    lr = float(root.get('line-rate', 0))
-    br = float(root.get('branch-rate', 0))
-    total = covered = 0
-    for m in root.findall('.//method'):
-        total += 1
-        if float(m.get('line-rate', 0)) > 0: covered += 1
-    mr = covered / total if total else 0
-    ok = lr >= 0.70 and br >= 0.70 and mr >= 0.70
-    name = os.path.basename(os.path.dirname(f))
-    print(f'  [{name}] line={lr:.2%} branch={br:.2%} method={mr:.2%}')
-    if not ok:
-        print(f'  FAIL ({name}: line {lr:.2%} branch {br:.2%} method {mr:.2%})')
-        exit_code = 1
-sys.exit(exit_code)
-PYEOF
+          bash scripts/check-coverage.sh ./ApiUnitTestResults 0.70 0.70 0.70
 
 
       - name: Run Auth Integration Tests
@@ -220,21 +180,7 @@ PYEOF
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
-          python3 << 'PYEOF'
-import xml.etree.ElementTree as ET, glob, sys, os
-exit_code = 0
-for f in glob.glob('./AuthTestResults/*/coverage.cobertura.xml'):
-    if not os.path.isfile(f): continue
-    root = ET.parse(f).getroot()
-    lr = float(root.get('line-rate', 0))
-    ok = lr >= 0.30
-    name = os.path.basename(os.path.dirname(f))
-    print(f'  [{name}] line={lr:.2%}')
-    if not ok:
-        print(f'  FAIL ({name}: line {lr:.2%} < 30%)')
-        exit_code = 1
-sys.exit(exit_code)
-PYEOF
+          bash scripts/check-coverage.sh ./AuthTestResults 0.30
 
 
       - name: Run BFF Integration Tests
@@ -247,21 +193,7 @@ PYEOF
             --results-directory ./BffTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
-          python3 << 'PYEOF'
-import xml.etree.ElementTree as ET, glob, sys, os
-exit_code = 0
-for f in glob.glob('./BffTestResults/*/coverage.cobertura.xml'):
-    if not os.path.isfile(f): continue
-    root = ET.parse(f).getroot()
-    lr = float(root.get('line-rate', 0))
-    ok = lr >= 0.30
-    name = os.path.basename(os.path.dirname(f))
-    print(f'  [{name}] line={lr:.2%}')
-    if not ok:
-        print(f'  FAIL ({name}: line {lr:.2%} < 30%)')
-        exit_code = 1
-sys.exit(exit_code)
-PYEOF
+          bash scripts/check-coverage.sh ./BffTestResults 0.30
 
 
       - name: Run API Integration Tests
@@ -274,21 +206,7 @@ PYEOF
             --results-directory ./ApiIntegrationTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
-          python3 << 'PYEOF'
-import xml.etree.ElementTree as ET, glob, sys, os
-exit_code = 0
-for f in glob.glob('./ApiIntegrationTestResults/*/coverage.cobertura.xml'):
-    if not os.path.isfile(f): continue
-    root = ET.parse(f).getroot()
-    lr = float(root.get('line-rate', 0))
-    ok = lr >= 0.30
-    name = os.path.basename(os.path.dirname(f))
-    print(f'  [{name}] line={lr:.2%}')
-    if not ok:
-        print(f'  FAIL ({name}: line {lr:.2%} < 30%)')
-        exit_code = 1
-sys.exit(exit_code)
-PYEOF
+          bash scripts/check-coverage.sh ./ApiIntegrationTestResults 0.30
 
 
       - name: Run Client UI Test Environment
