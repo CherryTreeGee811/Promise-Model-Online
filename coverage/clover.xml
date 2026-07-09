@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1783616861531" clover="3.2.0">
-  <project timestamp="1783616861531" name="All files">
-    <metrics statements="6503" coveredstatements="5766" conditionals="3348" coveredconditionals="2344" methods="975" coveredmethods="765" elements="10826" coveredelements="8875" complexity="0" loc="6503" ncloc="6503" packages="19" files="74" classes="74"/>
+<coverage generated="1783617914535" clover="3.2.0">
+  <project timestamp="1783617914535" name="All files">
+    <metrics statements="6509" coveredstatements="5768" conditionals="3350" coveredconditionals="2345" methods="975" coveredmethods="765" elements="10834" coveredelements="8878" complexity="0" loc="6509" ncloc="6509" packages="19" files="74" classes="74"/>
     <package name="js">
       <metrics statements="275" coveredstatements="270" conditionals="145" coveredconditionals="134" methods="66" coveredmethods="65"/>
       <file name="api.ts" path="/home/JacobSeed/Desktop/Promise-Model-Online/PromiseModelOnline.Client/wwwroot/js/api.ts">
@@ -2267,7 +2267,7 @@
       </file>
     </package>
     <package name="js.projects">
-      <metrics statements="2581" coveredstatements="2066" conditionals="1673" coveredconditionals="1023" methods="452" coveredmethods="300"/>
+      <metrics statements="2587" coveredstatements="2068" conditionals="1675" coveredconditionals="1024" methods="452" coveredmethods="300"/>
       <file name="add.ts" path="/home/JacobSeed/Desktop/Promise-Model-Online/PromiseModelOnline.Client/wwwroot/js/projects/add.ts">
         <metrics statements="165" coveredstatements="162" conditionals="101" coveredconditionals="82" methods="22" coveredmethods="16"/>
         <line num="32" count="22" type="stmt"/>
@@ -2500,7 +2500,7 @@
         <line num="247" count="2" type="stmt"/>
       </file>
       <file name="audit.ts" path="/home/JacobSeed/Desktop/Promise-Model-Online/PromiseModelOnline.Client/wwwroot/js/projects/audit.ts">
-        <metrics statements="60" coveredstatements="52" conditionals="51" coveredconditionals="41" methods="21" coveredmethods="21"/>
+        <metrics statements="66" coveredstatements="54" conditionals="53" coveredconditionals="42" methods="21" coveredmethods="21"/>
         <line num="33" count="9" type="cond" truecount="4" falsecount="0"/>
         <line num="34" count="3" type="stmt"/>
         <line num="41" count="7" type="stmt"/>
@@ -2556,11 +2556,17 @@
         <line num="300" count="14" type="stmt"/>
         <line num="309" count="7" type="stmt"/>
         <line num="310" count="7" type="stmt"/>
-        <line num="319" count="14" type="cond" truecount="3" falsecount="1"/>
-        <line num="320" count="0" type="stmt"/>
-        <line num="323" count="14" type="cond" truecount="1" falsecount="1"/>
-        <line num="324" count="0" type="stmt"/>
-        <line num="327" count="14" type="stmt"/>
+        <line num="311" count="7" type="cond" truecount="1" falsecount="1"/>
+        <line num="312" count="7" type="stmt"/>
+        <line num="314" count="0" type="stmt"/>
+        <line num="315" count="0" type="stmt"/>
+        <line num="316" count="0" type="stmt"/>
+        <line num="319" count="0" type="stmt"/>
+        <line num="328" count="14" type="cond" truecount="3" falsecount="1"/>
+        <line num="329" count="0" type="stmt"/>
+        <line num="332" count="14" type="cond" truecount="1" falsecount="1"/>
+        <line num="333" count="0" type="stmt"/>
+        <line num="336" count="14" type="stmt"/>
       </file>
       <file name="detail-stack-graph.ts" path="/home/JacobSeed/Desktop/Promise-Model-Online/PromiseModelOnline.Client/wwwroot/js/projects/detail-stack-graph.ts">
         <metrics statements="164" coveredstatements="128" conditionals="97" coveredconditionals="68" methods="19" coveredmethods="16"/>
@@ -5314,13 +5320,13 @@
         <line num="381" count="1" type="stmt"/>
         <line num="382" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="384" count="1" type="stmt"/>
-        <line num="392" count="22" type="stmt"/>
-        <line num="393" count="22" type="cond" truecount="2" falsecount="0"/>
-        <line num="395" count="22" type="stmt"/>
-        <line num="396" count="37" type="stmt"/>
-        <line num="397" count="37" type="stmt"/>
-        <line num="398" count="37" type="cond" truecount="1" falsecount="1"/>
-        <line num="399" count="37" type="stmt"/>
+        <line num="392" count="20" type="stmt"/>
+        <line num="393" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="395" count="20" type="stmt"/>
+        <line num="396" count="35" type="stmt"/>
+        <line num="397" count="35" type="stmt"/>
+        <line num="398" count="35" type="cond" truecount="1" falsecount="1"/>
+        <line num="399" count="35" type="stmt"/>
         <line num="407" count="36" type="cond" truecount="2" falsecount="0"/>
         <line num="409" count="3" type="stmt"/>
         <line num="410" count="3" type="stmt"/>
