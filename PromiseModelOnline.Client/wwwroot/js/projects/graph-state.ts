@@ -145,7 +145,7 @@ function expandAllNodes(): void {
     graphState.collapsedNodeIds.clear();
 }
 
-export type { StrideInfo, GraphState };
+export type { StrideInfo };
 export {
     graphState,
     isNodeCollapsed,

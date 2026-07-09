@@ -41,7 +41,8 @@ import {
     D3Module,
 } from './stack-graph-core.ts';
 
-export type { GraphFilters, FilterMetrics, GraphNode } from './graph-core.ts';
+
+
 export {
     getHiddenDescendantCount,
     createDefaultFilters,
