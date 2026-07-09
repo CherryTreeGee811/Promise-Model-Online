@@ -115,4 +115,87 @@ public class ExternalLoginControllerUnitTests
 
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
     }
+
+    [Test]
+    public void Challenge_WhitespaceProvider_ReturnsBadRequest()
+    {
+        var result = _controller.Challenge(" ", "/");
+
+        Assert.That(result, Is.InstanceOf<BadRequestResult>());
+    }
+
+    [Test]
+    public async Task Callback_UserNotFound_CreatesUser_AddLoginSucceeds()
+    {
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, "user@example.com") }));
+        var info = new ExternalLoginInfo(claimsPrincipal, "Google", "key", "display");
+        _signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync()).ReturnsAsync(info);
+        _signInManagerMock.Setup(s => s.ExternalLoginSignInAsync("Google", "key", false))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        _userManagerMock.Setup(u => u.FindByEmailAsync("user@example.com")).ReturnsAsync((IdentityUser?)null);
+        _userManagerMock.Setup(u => u.CreateAsync(It.Is<IdentityUser>(x => x.Email == "user@example.com")))
+            .ReturnsAsync(IdentityResult.Success);
+        _userManagerMock.Setup(u => u.AddLoginAsync(It.IsAny<IdentityUser>(), info))
+            .ReturnsAsync(IdentityResult.Success);
+        _signInManagerMock.Setup(s => s.SignInAsync(It.IsAny<IdentityUser>(), false, null))
+            .Returns(Task.CompletedTask);
+
+        var result = await _controller.Callback();
+
+        Assert.That(result, Is.InstanceOf<RedirectResult>());
+    }
+
+    [Test]
+    public async Task Callback_UserNotFound_CreateUserFails()
+    {
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, "user@example.com") }));
+        var info = new ExternalLoginInfo(claimsPrincipal, "Google", "key", "display");
+        _signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync()).ReturnsAsync(info);
+        _signInManagerMock.Setup(s => s.ExternalLoginSignInAsync("Google", "key", false))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        _userManagerMock.Setup(u => u.FindByEmailAsync("user@example.com")).ReturnsAsync((IdentityUser?)null);
+        _userManagerMock.Setup(u => u.CreateAsync(It.Is<IdentityUser>(x => x.Email == "user@example.com")))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Create failed" }));
+
+        var result = await _controller.Callback();
+
+        Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
+    }
+
+    [Test]
+    public async Task Callback_UserNotFound_AddLoginFails()
+    {
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, "user@example.com") }));
+        var info = new ExternalLoginInfo(claimsPrincipal, "Google", "key", "display");
+        _signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync()).ReturnsAsync(info);
+        _signInManagerMock.Setup(s => s.ExternalLoginSignInAsync("Google", "key", false))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        _userManagerMock.Setup(u => u.FindByEmailAsync("user@example.com")).ReturnsAsync((IdentityUser?)null);
+        _userManagerMock.Setup(u => u.CreateAsync(It.Is<IdentityUser>(x => x.Email == "user@example.com")))
+            .ReturnsAsync(IdentityResult.Success);
+        _userManagerMock.Setup(u => u.AddLoginAsync(It.IsAny<IdentityUser>(), info))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "AddLogin failed" }));
+
+        var result = await _controller.Callback();
+
+        Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
+    }
+
+    [Test]
+    public async Task Callback_ExistingUser_AddLoginFails()
+    {
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, "user@example.com") }));
+        var info = new ExternalLoginInfo(claimsPrincipal, "Google", "key", "display");
+        var existingUser = new IdentityUser { Id = "1", Email = "user@example.com" };
+        _signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync()).ReturnsAsync(info);
+        _signInManagerMock.Setup(s => s.ExternalLoginSignInAsync("Google", "key", false))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        _userManagerMock.Setup(u => u.FindByEmailAsync("user@example.com")).ReturnsAsync(existingUser);
+        _userManagerMock.Setup(u => u.AddLoginAsync(existingUser, info))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "AddLogin failed" }));
+
+        var result = await _controller.Callback();
+
+        Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
+    }
 }

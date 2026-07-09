@@ -149,6 +149,7 @@ jobs:
           mkdir -p AuthTestResults
           dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
@@ -163,6 +164,7 @@ jobs:
           mkdir -p ApiUnitTestResults
           dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./ApiUnitTestResults \
             --logger "console;verbosity=normal" \
@@ -176,6 +178,7 @@ jobs:
           mkdir -p AuthTestResults
           dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
@@ -189,6 +192,7 @@ jobs:
           mkdir -p BffTestResults
           dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./BffTestResults \
             --logger "console;verbosity=normal" \
@@ -202,6 +206,7 @@ jobs:
           mkdir -p ApiIntegrationTestResults
           dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./ApiIntegrationTestResults \
             --logger "console;verbosity=normal" \

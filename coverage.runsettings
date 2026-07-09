@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <ExcludeByFile>
+            **/Migrations/*.cs,
+            **/Views/**,
+            **/DesignTimeDbContextFactory.cs,
+            **/NoOpEmailService.cs,
+            **/OpenIddictSeeder.cs,
+            **/Program.cs
+          </ExcludeByFile>
+          <ExcludeByAttribute>
+            GeneratedCodeAttribute,
+            CompilerGeneratedCodeAttribute,
+            CompilerGeneratedAttribute
+          </ExcludeByAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

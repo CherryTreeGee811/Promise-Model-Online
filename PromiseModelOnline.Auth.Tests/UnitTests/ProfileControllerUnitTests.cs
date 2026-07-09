@@ -158,4 +158,21 @@ public class ProfileControllerUnitTests
 
         Assert.That(result, Is.TypeOf<ChallengeResult>());
     }
+
+    [Test]
+    public async Task Update_UpdateFailed_ReturnsViewWithErrors()
+    {
+        var user = CreateTestUser();
+        SetAuthenticatedUser(user);
+        _userManagerMock.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        _userManagerMock.Setup(x => x.FindByNameAsync("newname")).ReturnsAsync((IdentityUser?)null);
+        _userManagerMock.Setup(x => x.UpdateAsync(It.IsAny<IdentityUser>()))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Update failed" }));
+
+        var model = new ProfileViewModel { Username = "newname", Email = "test@example.com", EmailConfirmed = true };
+        var result = await _controller.Update(model);
+
+        Assert.That(result, Is.TypeOf<ViewResult>());
+        Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage, Is.EqualTo("Update failed"));
+    }
 }
