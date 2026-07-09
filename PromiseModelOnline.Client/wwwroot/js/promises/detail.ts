@@ -119,7 +119,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
     destroyDetailStackGraph();
     if (!detailDiv || !errorElement) return;
-    if (loadingElement) loadingElement.hidden = false;
+    if (loadingElement) loadingElement.style.display = '';
     errorElement.textContent = '';
 
     try {
@@ -127,7 +127,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         if (!promise) return;
         await loadEntityLookupMap('Promise', promise.id as number, owner, project);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) loadingElement.style.display = 'none';
 
         const cardDiv = document.createElement('div');
         cardDiv.className = 'detail-card promise-detail-card';
@@ -194,7 +194,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         detailDiv!.append(cardDiv);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) loadingElement.style.display = 'none';
 
         const descInput = document.querySelector('#description-input') as HTMLTextAreaElement | null;
         const descView = document.querySelector('#description-view') as HTMLElement | null;
@@ -227,9 +227,9 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         setupDescriptionHandler(owner, project, promiseId, 'promise', promise as unknown as { sequenceNumber: number; description?: string }, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) loadingElement.style.display = 'none';
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) loadingElement.style.display = 'none';
         if (errorElement) errorElement.textContent = 'Failed to load promise details.';
         console.error(error);
     }

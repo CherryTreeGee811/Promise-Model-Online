@@ -233,7 +233,7 @@ describe('loadEpicDetail', () => {
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const loading = document.querySelector('#epic-detail-loading') as HTMLElement;
-        expect(loading.hidden).toBe(true);
+        expect(loading.style.display).toBe('none');
     });
 
     it('hides loading and shows error on API failure', async () => {
@@ -244,7 +244,7 @@ describe('loadEpicDetail', () => {
 
         const loading = document.querySelector('#epic-detail-loading') as HTMLElement;
         const error = document.querySelector('#error-text') as HTMLElement;
-        expect(loading.hidden).toBe(true);
+        expect(loading.style.display).toBe('none');
         expect(error.textContent).toContain('Failed to load epic details.');
     });
 

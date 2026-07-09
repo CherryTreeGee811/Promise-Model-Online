@@ -150,17 +150,17 @@ describe('setElementVisibility', () => {
     });
 
     it('hides element', () => {
-        const mockEl = { hidden: false } as any;
+        const mockEl = { style: { display: '' } } as any;
         (document.querySelector as any).mockReturnValue(mockEl);
         setElementVisibility('#test', true);
-        expect(mockEl.hidden).toBe(true);
+        expect(mockEl.style.display).toBe('none');
     });
 
     it('shows element', () => {
-        const mockEl = { hidden: true } as any;
+        const mockEl = { style: { display: 'none' } } as any;
         (document.querySelector as any).mockReturnValue(mockEl);
         setElementVisibility('#test', false);
-        expect(mockEl.hidden).toBe(false);
+        expect(mockEl.style.display).toBe('');
     });
 
     it('handles missing element', () => {

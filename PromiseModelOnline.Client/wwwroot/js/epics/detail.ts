@@ -184,7 +184,7 @@ export async function loadEpicDetail(owner: string, project: string, epicId: str
 
     destroyDetailStackGraph();
     if (!detailDiv) return;
-    if (loadingElement) loadingElement.hidden = false;
+    if (loadingElement) loadingElement.style.display = '';
     if (errorElement) errorElement.textContent = '';
 
     try {
@@ -192,7 +192,7 @@ export async function loadEpicDetail(owner: string, project: string, epicId: str
         if (!epic) return;
         await loadEntityLookupMap('Epic', epic.id, owner, project);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) loadingElement.style.display = 'none';
 
         void mountDetailStackGraph({
             nodeType: 'epic',
@@ -293,7 +293,7 @@ export async function loadEpicDetail(owner: string, project: string, epicId: str
 
         upsertEpicGraphViewButton(detailDiv, epic);
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) loadingElement.style.display = 'none';
         if (errorElement) errorElement.textContent = 'Failed to load epic details.';
         console.error(error);
     }
