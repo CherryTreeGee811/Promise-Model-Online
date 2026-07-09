@@ -143,57 +143,152 @@ jobs:
             printf '%s' "${{ secrets.DB_SA_PASSWORD }}" > secrets/db_sa_password.txt
             printf '%s' "${{ secrets.AUTH__REG_KEY }}" > secrets/auth_registration_key.txt
 
-      - name: Install dotnet-coverage
-        shell: bash
-        run: dotnet tool install -g dotnet-coverage
-
       - name: Run Auth Unit Tests
         shell: bash
         run: |
           mkdir -p AuthTestResults
-          dotnet coverage test "dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName!~IntegrationTests'" \
-            -o ./AuthTestResults/coverage.cobertura.xml \
-            --threshold "line>=70" \
-            --threshold "branch>=70" \
-            --threshold "method>=70"
+          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./AuthTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~IntegrationTests"
+          python3 << 'PYEOF'
+import xml.etree.ElementTree as ET, glob, sys, os
+exit_code = 0
+for f in glob.glob('./AuthTestResults/*/coverage.cobertura.xml'):
+    if not os.path.isfile(f): continue
+    root = ET.parse(f).getroot()
+    lr = float(root.get('line-rate', 0))
+    br = float(root.get('branch-rate', 0))
+    total = covered = 0
+    for m in root.findall('.//method'):
+        total += 1
+        if float(m.get('line-rate', 0)) > 0: covered += 1
+    mr = covered / total if total else 0
+    ok = lr >= 0.70 and br >= 0.70 and mr >= 0.70
+    name = os.path.basename(os.path.dirname(f))
+    print(f'  [{name}] line={lr:.2%} branch={br:.2%} method={mr:.2%}')
+    if not ok:
+        print(f'  FAIL ({name}: line {lr:.2%} branch {br:.2%} method {mr:.2%})')
+        exit_code = 1
+sys.exit(exit_code)
+PYEOF
+
 
 
       - name: Run API Unit Tests
         shell: bash
         run: |
           mkdir -p ApiUnitTestResults
-          dotnet coverage test "dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName!~IntegrationTests'" \
-            -o ./ApiUnitTestResults/coverage.cobertura.xml \
-            --threshold "line>=70" \
-            --threshold "branch>=70" \
-            --threshold "method>=70"
+          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ApiUnitTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName!~IntegrationTests"
+          python3 << 'PYEOF'
+import xml.etree.ElementTree as ET, glob, sys, os
+exit_code = 0
+for f in glob.glob('./ApiUnitTestResults/*/coverage.cobertura.xml'):
+    if not os.path.isfile(f): continue
+    root = ET.parse(f).getroot()
+    lr = float(root.get('line-rate', 0))
+    br = float(root.get('branch-rate', 0))
+    total = covered = 0
+    for m in root.findall('.//method'):
+        total += 1
+        if float(m.get('line-rate', 0)) > 0: covered += 1
+    mr = covered / total if total else 0
+    ok = lr >= 0.70 and br >= 0.70 and mr >= 0.70
+    name = os.path.basename(os.path.dirname(f))
+    print(f'  [{name}] line={lr:.2%} branch={br:.2%} method={mr:.2%}')
+    if not ok:
+        print(f'  FAIL ({name}: line {lr:.2%} branch {br:.2%} method {mr:.2%})')
+        exit_code = 1
+sys.exit(exit_code)
+PYEOF
 
 
       - name: Run Auth Integration Tests
         shell: bash
         run: |
           mkdir -p AuthTestResults
-          dotnet coverage test "dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName~IntegrationTests'" \
-            -o ./AuthTestResults/coverage-integration.cobertura.xml \
-            --threshold "line>=30"
+          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./AuthTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+          python3 << 'PYEOF'
+import xml.etree.ElementTree as ET, glob, sys, os
+exit_code = 0
+for f in glob.glob('./AuthTestResults/*/coverage.cobertura.xml'):
+    if not os.path.isfile(f): continue
+    root = ET.parse(f).getroot()
+    lr = float(root.get('line-rate', 0))
+    ok = lr >= 0.30
+    name = os.path.basename(os.path.dirname(f))
+    print(f'  [{name}] line={lr:.2%}')
+    if not ok:
+        print(f'  FAIL ({name}: line {lr:.2%} < 30%)')
+        exit_code = 1
+sys.exit(exit_code)
+PYEOF
 
 
       - name: Run BFF Integration Tests
         shell: bash
         run: |
           mkdir -p BffTestResults
-          dotnet coverage test "dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName~IntegrationTests'" \
-            -o ./BffTestResults/coverage.cobertura.xml \
-            --threshold "line>=30"
+          dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./BffTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+          python3 << 'PYEOF'
+import xml.etree.ElementTree as ET, glob, sys, os
+exit_code = 0
+for f in glob.glob('./BffTestResults/*/coverage.cobertura.xml'):
+    if not os.path.isfile(f): continue
+    root = ET.parse(f).getroot()
+    lr = float(root.get('line-rate', 0))
+    ok = lr >= 0.30
+    name = os.path.basename(os.path.dirname(f))
+    print(f'  [{name}] line={lr:.2%}')
+    if not ok:
+        print(f'  FAIL ({name}: line {lr:.2%} < 30%)')
+        exit_code = 1
+sys.exit(exit_code)
+PYEOF
 
 
       - name: Run API Integration Tests
         shell: bash
         run: |
           mkdir -p ApiIntegrationTestResults
-          dotnet coverage test "dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName~IntegrationTests'" \
-            -o ./ApiIntegrationTestResults/coverage.cobertura.xml \
-            --threshold "line>=30"
+          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./ApiIntegrationTestResults \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTests"
+          python3 << 'PYEOF'
+import xml.etree.ElementTree as ET, glob, sys, os
+exit_code = 0
+for f in glob.glob('./ApiIntegrationTestResults/*/coverage.cobertura.xml'):
+    if not os.path.isfile(f): continue
+    root = ET.parse(f).getroot()
+    lr = float(root.get('line-rate', 0))
+    ok = lr >= 0.30
+    name = os.path.basename(os.path.dirname(f))
+    print(f'  [{name}] line={lr:.2%}')
+    if not ok:
+        print(f'  FAIL ({name}: line {lr:.2%} < 30%)')
+        exit_code = 1
+sys.exit(exit_code)
+PYEOF
 
 
       - name: Run Client UI Test Environment
@@ -447,11 +542,10 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: dotnet
           files: |
-            ./AuthTestResults/coverage.cobertura.xml
-            ./AuthTestResults/coverage-integration.cobertura.xml
-            ./ApiUnitTestResults/coverage.cobertura.xml
-            ./ApiIntegrationTestResults/coverage.cobertura.xml
-            ./BffTestResults/coverage.cobertura.xml
+            ./AuthTestResults/*/coverage.cobertura.xml
+            ./ApiUnitTestResults/*/coverage.cobertura.xml
+            ./ApiIntegrationTestResults/*/coverage.cobertura.xml
+            ./BffTestResults/*/coverage.cobertura.xml
             ./ClientTestResults/*/coverage.cobertura.xml
             ./E2eTestResults/*/coverage.cobertura.xml
 
