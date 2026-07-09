@@ -143,64 +143,58 @@ jobs:
             printf '%s' "${{ secrets.DB_SA_PASSWORD }}" > secrets/db_sa_password.txt
             printf '%s' "${{ secrets.AUTH__REG_KEY }}" > secrets/auth_registration_key.txt
 
+      - name: Install dotnet-coverage
+        shell: bash
+        run: dotnet tool install -g dotnet-coverage
+
       - name: Run Auth Unit Tests
         shell: bash
         run: |
           mkdir -p AuthTestResults
-          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./AuthTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName!~IntegrationTests" \
-            --threshold 70 --threshold-type line --threshold-type branch --threshold-stat minimum
+          dotnet coverage test "dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName!~IntegrationTests'" \
+            -o ./AuthTestResults/coverage.cobertura.xml \
+            --threshold "line>=70" \
+            --threshold "branch>=70" \
+            --threshold "method>=70"
+
 
       - name: Run API Unit Tests
         shell: bash
         run: |
           mkdir -p ApiUnitTestResults
-          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ApiUnitTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName!~IntegrationTests" \
-            --threshold 70 --threshold-type line --threshold-type branch --threshold-stat minimum
+          dotnet coverage test "dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName!~IntegrationTests'" \
+            -o ./ApiUnitTestResults/coverage.cobertura.xml \
+            --threshold "line>=70" \
+            --threshold "branch>=70" \
+            --threshold "method>=70"
+
 
       - name: Run Auth Integration Tests
         shell: bash
         run: |
-          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./AuthTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests" \
-            --threshold 30 --threshold-type line
+          mkdir -p AuthTestResults
+          dotnet coverage test "dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName~IntegrationTests'" \
+            -o ./AuthTestResults/coverage-integration.cobertura.xml \
+            --threshold "line>=30"
+
 
       - name: Run BFF Integration Tests
         shell: bash
         run: |
           mkdir -p BffTestResults
-          dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./BffTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests" \
-            --threshold 30 --threshold-type line
+          dotnet coverage test "dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName~IntegrationTests'" \
+            -o ./BffTestResults/coverage.cobertura.xml \
+            --threshold "line>=30"
+
 
       - name: Run API Integration Tests
         shell: bash
         run: |
           mkdir -p ApiIntegrationTestResults
-          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ApiIntegrationTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests" \
-            --threshold 30 --threshold-type line
+          dotnet coverage test "dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj --no-build --logger 'console;verbosity=normal' --filter 'FullyQualifiedName~IntegrationTests'" \
+            -o ./ApiIntegrationTestResults/coverage.cobertura.xml \
+            --threshold "line>=30"
+
 
       - name: Run Client UI Test Environment
         shell: bash
@@ -453,10 +447,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: dotnet
           files: |
-            ./AuthTestResults/*/coverage.cobertura.xml
-            ./ApiUnitTestResults/*/coverage.cobertura.xml
-            ./ApiIntegrationTestResults/*/coverage.cobertura.xml
-            ./BffTestResults/*/coverage.cobertura.xml
+            ./AuthTestResults/coverage.cobertura.xml
+            ./AuthTestResults/coverage-integration.cobertura.xml
+            ./ApiUnitTestResults/coverage.cobertura.xml
+            ./ApiIntegrationTestResults/coverage.cobertura.xml
+            ./BffTestResults/coverage.cobertura.xml
             ./ClientTestResults/*/coverage.cobertura.xml
             ./E2eTestResults/*/coverage.cobertura.xml
 
