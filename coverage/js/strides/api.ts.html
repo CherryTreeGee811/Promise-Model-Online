@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">45% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/20</span>
+                <span class='fraction'>20/20</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">22.22% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">58.33% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/12</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -112,8 +112,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -123,20 +123,20 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { apiGet, apiGetList, apiPost,  } from '../api.ts';
 &nbsp;
-export const <span class="fstat-no" title="function not covered" >getStridesByIteration = (o</span>wner: string, project: string, <span class="cstat-no" title="statement not covered" >iterationId: string | number) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides?iterationId=${iterationId}`);</span>
+export const getStridesByIteration = (owner: string, project: string, iterationId: string | number) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides?iterationId=${iterationId}`);
 export const getStrides = (owner: string, project: string) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides`);
-export const <span class="fstat-no" title="function not covered" >getMomentsByStride = (o</span>wner: string, project: string, <span class="cstat-no" title="statement not covered" >strideId: string | number) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?strideId=${strideId}`);</span>
-export const <span class="fstat-no" title="function not covered" >getMomentsByIteration = (o</span>wner: string, project: string, iterationId: string | number, isUnassigned = <span class="cstat-no" title="statement not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >false) =&gt; a</span>piGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?iterationId=${iterationId}${isUnassigned ? '&amp;unassigned=true' : ''}`);</span>
-export const <span class="fstat-no" title="function not covered" >getIterations = (o</span>wner: string, <span class="cstat-no" title="statement not covered" >project: string) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`);</span>
-export const <span class="fstat-no" title="function not covered" >createStride = (o</span>wner: string, project: string, <span class="cstat-no" title="statement not covered" >data: Record&lt;string, unknown&gt;) =&gt; apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides`, data);</span>
+export const getMomentsByStride = (owner: string, project: string, strideId: string | number) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?strideId=${strideId}`);
+export const getMomentsByIteration = (owner: string, project: string, iterationId: string | number, isUnassigned = false) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments?iterationId=${iterationId}${isUnassigned ? '&amp;unassigned=true' : ''}`);
+export const getIterations = (owner: string, project: string) =&gt; apiGetList(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/iterations`);
+export const createStride = (owner: string, project: string, data: Record&lt;string, unknown&gt;) =&gt; apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides`, data);
 &nbsp;
 /**
  * Fetches the list of members for a project via GET API.
@@ -144,9 +144,9 @@ export const <span class="fstat-no" title="function not covered" >createStride =
  * @param {string} project - The project slug.
  * @returns {Promise&lt;unknown[]&gt;} The list of project members, or an empty array if none.
  */
-export async function <span class="fstat-no" title="function not covered" >getProjectMembers(o</span>wner: string, project: string) {
-    const response = <span class="cstat-no" title="statement not covered" >await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);</span>
-<span class="cstat-no" title="statement not covered" >    return response ?? [];</span>
+export async function getProjectMembers(owner: string, project: string) {
+    const response = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/members`);
+    return response ?? [];
 }
 &nbsp;
 /**
@@ -155,10 +155,10 @@ export async function <span class="fstat-no" title="function not covered" >getPr
  * @param {string} project - The project slug.
  * @returns {Promise&lt;unknown | undefined&gt;} The permission value, or undefined if the request fails.
  */
-export async function <span class="fstat-no" title="function not covered" >getMyPermission(o</span>wner: string, project: string) {
-    const response = <span class="cstat-no" title="statement not covered" >await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);</span>
-<span class="cstat-no" title="statement not covered" >    if (!response) <span class="cstat-no" title="statement not covered" >return;</span></span>
-<span class="cstat-no" title="statement not covered" >    return (response as Record&lt;string, unknown&gt;).permission;</span>
+export async function getMyPermission(owner: string, project: string) {
+    const response = await apiGet(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/my-permission`);
+    if (!response) return;
+    return (response as Record&lt;string, unknown&gt;).permission;
 }
 &nbsp;
 export const progressStride = (owner: string, project: string, strideId: string | number) =&gt; apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/strides/${strideId}/progress`, {});
@@ -169,7 +169,7 @@ export const progressStride = (owner: string, project: string, strideId: string 
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-09T01:42:36.371Z
+                at 2026-07-09T02:31:29.229Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

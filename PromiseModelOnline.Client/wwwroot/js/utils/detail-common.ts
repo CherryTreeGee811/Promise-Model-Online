@@ -87,7 +87,7 @@ export function setupDetailInlineEdit(
     viewSelector: string,
     editSelector: string,
     entityType: string,
-    entityId: string,
+    entityId: string | number,
     saveSelector?: string,
     cancelSelector?: string,
 ): ReturnType<typeof setupInlineEdit> | undefined {

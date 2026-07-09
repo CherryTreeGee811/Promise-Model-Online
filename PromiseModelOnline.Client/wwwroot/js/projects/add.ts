@@ -47,8 +47,11 @@ function getAddProjectElements(): AddProjectElements | undefined {
     const importSummaryPanel = document.querySelector('#project-import-summary-panel') as HTMLElement | null;
     const errorTextElement = document.querySelector('#error-text') as HTMLElement | null;
     const successTextElement = document.querySelector('#success-text') as HTMLElement | null;
-    if ([form, nameInput, descriptionInput, firstPromisePanel, firstPromiseInput, newButtonElement, newButtonSpinnerElement, newButtonLabelElement, importButton, importButtonSpinner, importButtonIcon, importButtonLabel, clearImportButton, importInput, importSummaryPanel, errorTextElement, successTextElement].some(element => !element)) return;
-    return { form, cancelLink, nameInput, descriptionInput, firstPromisePanel, firstPromiseInput, newButtonElement, newButtonSpinnerElement, newButtonLabelElement, importButton, importButtonSpinner, importButtonIcon, importButtonLabel, clearImportButton, importInput, importSummaryPanel, errorTextElement, successTextElement };
+    const allElements = [form, nameInput, descriptionInput, firstPromisePanel, firstPromiseInput, newButtonElement, newButtonSpinnerElement, newButtonLabelElement, importButton, importButtonSpinner, importButtonIcon, importButtonLabel, clearImportButton, importInput, importSummaryPanel, errorTextElement, successTextElement];
+    for (const element of allElements) {
+        if (!element) return;
+    }
+    return { form: form!, cancelLink, nameInput: nameInput!, descriptionInput: descriptionInput!, firstPromisePanel: firstPromisePanel!, firstPromiseInput: firstPromiseInput!, newButtonElement: newButtonElement!, newButtonSpinnerElement: newButtonSpinnerElement!, newButtonLabelElement: newButtonLabelElement!, importButton: importButton!, importButtonSpinner: importButtonSpinner!, importButtonIcon: importButtonIcon!, importButtonLabel: importButtonLabel!, clearImportButton: clearImportButton!, importInput: importInput!, importSummaryPanel: importSummaryPanel!, errorTextElement: errorTextElement!, successTextElement: successTextElement! };
 }
 
 /**
@@ -57,8 +60,9 @@ function getAddProjectElements(): AddProjectElements | undefined {
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const element = getAddProjectElements();
-    if (!element) return;
+    const maybeElement = getAddProjectElements();
+    if (!maybeElement) return;
+    const element: AddProjectElements = maybeElement;
 
     let currentMode: 'scratch' | 'import' = 'scratch';
     let isBusy = false;
@@ -274,6 +278,8 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
 
 /**
  * @param {object} document_ - The parsed import document
+ * @param {string} [document_.schemaVersion] - The schema version of the export
+ * @param {string} [document_.exportedAt] - The export timestamp
  * @param {object} document_.project - The project data from the imported document
  * @param {string} [document_.project.name] - The project name
  * @param {string} [document_.project.description] - The project description
@@ -281,7 +287,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
  * @param {Array} [document_.project.iterations] - The iterations array
  * @param {HTMLElement} panel - The panel element to render the summary table into
  */
-function renderImportPreview(document_: { project: { name?: string; description?: string; productPromises?: unknown[]; iterations?: unknown[] } }, panel: HTMLElement): void {
+function renderImportPreview(document_: { schemaVersion?: unknown; exportedAt?: unknown; project: { name?: string; description?: string; productPromises?: unknown[]; iterations?: unknown[] } }, panel: HTMLElement): void {
     const project = document_.project;
     const promises = Array.isArray(project.productPromises) ? project.productPromises : [];
     const epics = promises.flatMap(p => Array.isArray((p as Record<string, unknown>).epics) ? (p as Record<string, unknown>).epics as unknown[] : []);
@@ -292,8 +298,8 @@ function renderImportPreview(document_: { project: { name?: string; description?
     const strides = iterations.flatMap(index => Array.isArray((index as Record<string, unknown>).strides) ? (index as Record<string, unknown>).strides as unknown[] : []);
     const total = promises.length + epics.length + journeys.length + flows.length + moments.length;
     renderSummaryTable(panel, [
-        { label: 'Schema Version', value: document_.schemaVersion ?? 'Unknown' },
-        { label: 'Exported At', value: document_.exportedAt ? new Date(document_.exportedAt).toLocaleString() : 'Unknown' },
+        { label: 'Schema Version', value: (document_.schemaVersion as string | number) ?? 'Unknown' },
+        { label: 'Exported At', value: document_.exportedAt ? new Date(document_.exportedAt as string | number | Date).toLocaleString() : 'Unknown' },
         { label: 'Project Name', value: project.name ?? '' },
         { label: 'Project Description', value: project.description ?? '' },
         { label: 'Promises', value: promises.length },

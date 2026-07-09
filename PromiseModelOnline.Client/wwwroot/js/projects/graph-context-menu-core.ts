@@ -238,14 +238,14 @@ function buildCreateChildAction(
  * @param {Record<string, unknown>} nodeData - The node data.
  * @param {((nodeData: Record<string, unknown>, isHidden: boolean) => void) | undefined} setNodeChildrenHidden - Children visibility toggle.
  * @param {boolean} isChildrenHidden - Whether children are currently hidden.
- * @param {boolean} canEdit - Whether the user has edit permission.
+ * @param {boolean} _canEdit - Whether the user has edit permission.
  * @returns {ContextMenuAction} The toggle action definition.
  */
 function buildToggleChildrenAction(
     nodeData: Record<string, unknown>,
     setNodeChildrenHidden: ((nodeData: Record<string, unknown>, isHidden: boolean) => void) | undefined,
     isChildrenHidden: boolean,
-    canEdit: boolean,
+    _canEdit: boolean,
 ): ContextMenuAction {
     return {
         id: isChildrenHidden ? 'reveal-children' : 'hide-children',

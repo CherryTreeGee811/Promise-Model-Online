@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.76% </span>
+                <span class="strong">90.86% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>167/184</span>
+                <span class='fraction'>169/186</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.91% </span>
+                <span class="strong">72.72% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>17/23</span>
+                <span class='fraction'>16/22</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.44% </span>
+                <span class="strong">94.54% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>153/162</span>
+                <span class='fraction'>156/165</span>
             </div>
         
             
@@ -372,7 +372,13 @@
 <a name='L307'></a><a href='#L307'>307</a>
 <a name='L308'></a><a href='#L308'>308</a>
 <a name='L309'></a><a href='#L309'>309</a>
-<a name='L310'></a><a href='#L310'>310</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L310'></a><a href='#L310'>310</a>
+<a name='L311'></a><a href='#L311'>311</a>
+<a name='L312'></a><a href='#L312'>312</a>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a>
+<a name='L316'></a><a href='#L316'>316</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -403,6 +409,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
@@ -422,6 +430,7 @@
 <span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">222x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">13x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -433,6 +442,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">13x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">13x</span>
 <span class="cline-any cline-yes">13x</span>
@@ -644,6 +654,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">13x</span>
 <span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -730,8 +742,11 @@ function getAddProjectElements(): AddProjectElements | undefined {
     const importSummaryPanel = document.querySelector('#project-import-summary-panel') as HTMLElement | null;
     const errorTextElement = document.querySelector('#error-text') as HTMLElement | null;
     const successTextElement = document.querySelector('#success-text') as HTMLElement | null;
-    if ([form, nameInput, descriptionInput, firstPromisePanel, firstPromiseInput, newButtonElement, newButtonSpinnerElement, newButtonLabelElement, importButton, importButtonSpinner, importButtonIcon, importButtonLabel, clearImportButton, importInput, importSummaryPanel, errorTextElement, successTextElement].some(element =&gt; !element)) return;
-    return { form, cancelLink, nameInput, descriptionInput, firstPromisePanel, firstPromiseInput, newButtonElement, newButtonSpinnerElement, newButtonLabelElement, importButton, importButtonSpinner, importButtonIcon, importButtonLabel, clearImportButton, importInput, importSummaryPanel, errorTextElement, successTextElement };
+    const allElements = [form, nameInput, descriptionInput, firstPromisePanel, firstPromiseInput, newButtonElement, newButtonSpinnerElement, newButtonLabelElement, importButton, importButtonSpinner, importButtonIcon, importButtonLabel, clearImportButton, importInput, importSummaryPanel, errorTextElement, successTextElement];
+    for (const element of allElements) {
+        if (!element) return;
+    }
+    return { form: form!, cancelLink, nameInput: nameInput!, descriptionInput: descriptionInput!, firstPromisePanel: firstPromisePanel!, firstPromiseInput: firstPromiseInput!, newButtonElement: newButtonElement!, newButtonSpinnerElement: newButtonSpinnerElement!, newButtonLabelElement: newButtonLabelElement!, importButton: importButton!, importButtonSpinner: importButtonSpinner!, importButtonIcon: importButtonIcon!, importButtonLabel: importButtonLabel!, clearImportButton: clearImportButton!, importInput: importInput!, importSummaryPanel: importSummaryPanel!, errorTextElement: errorTextElement!, successTextElement: successTextElement! };
 }
 &nbsp;
 /**
@@ -740,8 +755,9 @@ function getAddProjectElements(): AddProjectElements | undefined {
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLElement): void {
-    const element = getAddProjectElements();
-    if (!element) return;
+    const maybeElement = getAddProjectElements();
+    if (!maybeElement) return;
+    const element: AddProjectElements = maybeElement;
 &nbsp;
     let currentMode: 'scratch' | 'import' = 'scratch';
     let isBusy = false;
@@ -957,6 +973,8 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
 &nbsp;
 /**
  * @param {object} document_ - The parsed import document
+ * @param {string} [document_.schemaVersion] - The schema version of the export
+ * @param {string} [document_.exportedAt] - The export timestamp
  * @param {object} document_.project - The project data from the imported document
  * @param {string} [document_.project.name] - The project name
  * @param {string} [document_.project.description] - The project description
@@ -964,7 +982,7 @@ export function loadAddProjectForm(navContentDiv: HTMLElement, contentDiv: HTMLE
  * @param {Array} [document_.project.iterations] - The iterations array
  * @param {HTMLElement} panel - The panel element to render the summary table into
  */
-function renderImportPreview(document_: { project: { name?: string; description?: string; productPromises?: unknown[]; iterations?: unknown[] } }, panel: HTMLElement): void {
+function renderImportPreview(document_: { schemaVersion?: unknown; exportedAt?: unknown; project: { name?: string; description?: string; productPromises?: unknown[]; iterations?: unknown[] } }, panel: HTMLElement): void {
     const project = document_.project;
     const promises = Array.isArray(project.productPromises) ? <span class="branch-0 cbranch-no" title="branch not covered" >project.productPromises : [</span>];
     const epics = promises.<span class="fstat-no" title="function not covered" >flatMap(p</span> =&gt; <span class="cstat-no" title="statement not covered" >Array.isArray((p as Record&lt;string, unknown&gt;).epics) ? (p as Record&lt;string, unknown&gt;).epics as unknown[] : [])</span>;
@@ -975,8 +993,8 @@ function renderImportPreview(document_: { project: { name?: string; description?
     const strides = iterations.<span class="fstat-no" title="function not covered" >flatMap(i</span>ndex =&gt; <span class="cstat-no" title="statement not covered" >Array.isArray((index as Record&lt;string, unknown&gt;).strides) ? (index as Record&lt;string, unknown&gt;).strides as unknown[] : [])</span>;
     const total = promises.length + epics.length + journeys.length + flows.length + moments.length;
     renderSummaryTable(panel, [
-        { label: 'Schema Version', value: document_.schemaVersion ?? 'Unknown' },
-        { label: 'Exported At', value: document_.exportedAt ? new Date(document_.exportedAt).toLocaleString() : 'Unknown' },
+        { label: 'Schema Version', value: (document_.schemaVersion as string | number) ?? 'Unknown' },
+        { label: 'Exported At', value: document_.exportedAt ? new Date(document_.exportedAt as string | number | Date).toLocaleString() : 'Unknown' },
         { label: 'Project Name', value: project.name ?? <span class="branch-1 cbranch-no" title="branch not covered" >'' }</span>,
         { label: 'Project Description', value: project.description ?? <span class="branch-1 cbranch-no" title="branch not covered" >'' }</span>,
         { label: 'Promises', value: promises.length },
@@ -997,7 +1015,7 @@ function renderImportPreview(document_: { project: { name?: string; description?
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-09T01:42:36.371Z
+                at 2026-07-09T02:31:29.229Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

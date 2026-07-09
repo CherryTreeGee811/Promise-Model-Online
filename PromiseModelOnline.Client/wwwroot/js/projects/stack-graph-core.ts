@@ -1714,43 +1714,20 @@ function getNodeOptions(contentOffsetX: number, contentOffsetY: number, cardClip
 }
 
 /**
- * Render the full promise stack graph into a content container.
- * @param {HTMLElement | undefined} contentDiv - The container element.
- * @param {object} d3 - The D3 module instance.
- * @param {object} treeData - The hierarchy tree data.
- * @param {object} [options] - Rendering options.
- * @param {string} [options.owner] - The project owner slug.
- * @param {string} [options.project] - The project slug.
- * @param {string} [options.focusNodeId] - The focused node identifier.
- * @param {object} [options.focusNodeData] - The focused node data object.
- * @param {boolean} [options.enableZoom] - Whether zoom is enabled.
- * @param {boolean} [options.compact] - Whether compact mode is active.
- * @param {object} [options.restoreTransform] - A previously saved zoom transform to restore.
- * @param {HTMLElement} [options.viewportElement] - Element used for viewport measurement.
- * @param {string} [options.clipPathIdPrefix] - Prefix for the clip path ID.
- * @param {string} [options.ariaLabel] - The SVG aria-label.
- * @param {string} [options.emptyMessage] - Message when no cards to display.
- * @param {(transform: object, meta: {user?: boolean}) => void} [options.onZoom] - Zoom event callback.
- * @param {(event: MouseEvent | KeyboardEvent | object, data: object) => void} [options.onContextMenu] - Context menu callback.
- * @param {number} [options.minGraphWidth] - Minimum graph width.
- * @param {number} [options.minGraphHeight] - Minimum graph height.
- * @param {number} [options.uniformNodeScale] - Uniform node scale factor.
- * @param {boolean} [options.renderRootCard] - Whether to render the root card.
- * @param {boolean} [options.enableLinks] - Whether links are enabled.
- * @param {boolean} [options.animate] - Whether to animate transitions.
- * @param {number} [options.animationSpeed] - Animation speed multiplier.
- * @param prefix
- * @param ownerSlug
- * @param projectSlug
- * @returns {({ node: SVGElement | null; zoom: object | null } | null | void)} The SVG node and zoom behavior (if enabled), or null/undefined.
+ * Build a clip path ID from a prefix and optional owner/project slugs.
+ * @param {string} prefix - The clip path ID prefix.
+ * @param {string | undefined} ownerSlug - The project owner slug.
+ * @param {string | undefined} projectSlug - The project slug.
+ * @returns {string} The constructed clip path ID.
  */
 function buildCardClipPathId(prefix: string, ownerSlug: string | undefined, projectSlug: string | undefined): string {
     return `${prefix}-${ownerSlug ?? 'stack'}-${projectSlug ?? 'stack'}`;
 }
 
 /**
- *
- * @param compact
+ * Get the render margin based on compact mode.
+ * @param {boolean} isCompact - Whether compact mode is active.
+ * @returns {{ top: number; right: number; bottom: number; left: number }} The margin values.
  */
 function getRenderMargin(isCompact: boolean): { top: number; right: number; bottom: number; left: number } {
     return isCompact
@@ -1759,106 +1736,112 @@ function getRenderMargin(isCompact: boolean): { top: number; right: number; bott
 }
 
 /**
- *
- * @param focusNodeId
- * @param focusNodeData
+ * Resolve the focus node ID from either a direct ID or data object.
+ * @param {string | undefined} focusNodeId - The focus node identifier.
+ * @param {Record<string, unknown> | null | undefined} focusNodeData - The focus node data object.
+ * @returns {string | undefined} The resolved focus node ID.
  */
 function resolveFocusId(focusNodeId: string | undefined, focusNodeData: Record<string, unknown> | null | undefined): string | undefined {
-    return focusNodeId ?? (focusNodeData as Record<string, unknown> | null)?.id;
+    return focusNodeId ?? (focusNodeData as Record<string, unknown> | null)?.id as string | undefined;
 }
 
 /**
- *
- * @param rawOffset
+ * Compute a safe content offset, defaulting to 0 if not finite.
+ * @param {number} rawOffset - The raw offset value.
+ * @returns {number} The computed offset.
  */
 function computeContentOffset(rawOffset: number): number {
     return Number.isFinite(rawOffset) ? rawOffset : 0;
 }
 
 /**
- *
- * @param owner
- * @param project
- * @param focusNodeId
- * @param onContextMenu
- * @param enableZoom
- * @param enableLinks
- * @param compact
- * @param cardScale
- * @param isAnimating
- * @param animationSpeed
+ * Build the node options payload for getNodeOptions.
+ * @param {unknown} owner - The project owner slug.
+ * @param {unknown} project - The project slug.
+ * @param {unknown} focusNodeId - The focus node ID.
+ * @param {unknown} onContextMenu - Context menu callback.
+ * @param {unknown} isZoomEnabled - Whether zoom is enabled.
+ * @param {unknown} isLinksEnabled - Whether links are enabled.
+ * @param {unknown} isCompact - Whether compact mode is active.
+ * @param {unknown} cardScale - The card scale factor.
+ * @param {unknown} isAnimating - Whether animation is active.
+ * @param {unknown} animationSpeed - Animation speed multiplier.
+ * @returns {NodeOptionsParameters} The node options parameters.
  */
 function buildNodeOptionsPayload(
     owner: unknown, project: unknown, focusNodeId: unknown,
     onContextMenu: unknown, isZoomEnabled: unknown, isLinksEnabled: unknown,
     isCompact: unknown, cardScale: unknown, isAnimating: unknown, animationSpeed: unknown,
-): Record<string, unknown> {
+): NodeOptionsParameters {
     return {
         owner: owner as string | undefined,
         project: project as string | undefined,
-        focusNodeId,
+        focusNodeId: focusNodeId as string | undefined,
         onContextMenu: onContextMenu as ((event: MouseEvent | KeyboardEvent | Record<string, unknown>, data: Record<string, unknown>) => void) | undefined,
         enableZoom: isZoomEnabled as boolean,
         enableLinks: isLinksEnabled as boolean | undefined,
-        uniformNodeScale: (isCompact as boolean) ? cardScale : undefined,
-        isAnimating,
+        uniformNodeScale: (isCompact as boolean) ? cardScale as number : undefined,
+        isAnimating: isAnimating as boolean,
         animationSpeed: animationSpeed as number,
     };
 }
 
 /**
- *
- * @param node
- * @param node.data
- * @param renderRootCard
+ * Check whether a node should be rendered.
+ * @param {{ data: Record<string, unknown> }} node - The hierarchy node.
+ * @param {Record<string, unknown>} node.data - The node data record.
+ * @param {boolean} isRenderRootCard - Whether the root card should be rendered.
+ * @returns {boolean} Whether the node is renderable.
  */
 function isNodeRenderable(node: { data: Record<string, unknown> }, isRenderRootCard: boolean): boolean {
     return isRenderRootCard || (node.data as Record<string, unknown> | undefined)?.nodeType !== 'root';
 }
 
 /**
- *
- * @param l
- * @param l.source
- * @param l.target
- * @param hasRootCard
+ * Check whether a link should be rendered.
+ * @param {{ source: Record<string, unknown>; target: Record<string, unknown> }} l - The link object.
+ * @param {Record<string, unknown>} l.source - The link source node.
+ * @param {Record<string, unknown>} l.target - The link target node.
+ * @param {boolean} isRootCardVisible - Whether the root card is visible.
+ * @returns {boolean} Whether the link is renderable.
  */
 function isLinkRenderable(l: { source: Record<string, unknown>; target: Record<string, unknown> }, isRootCardVisible: boolean): boolean {
     return isRootCardVisible || (((l.source as Record<string, unknown> | undefined)?.data as Record<string, unknown> | undefined)?.nodeType !== 'root' && ((l.target as Record<string, unknown> | undefined)?.data as Record<string, unknown> | undefined)?.nodeType !== 'root');
 }
 
 /**
- *
- * @param d3
- * @param contentDiv
- * @param svg
- * @param existingSvgElement
- * @param enableZoom
- * @param compact
- * @param vw
- * @param vh
- * @param graphWidth
- * @param graphHeight
- * @param contentOffsetX
- * @param contentOffsetY
- * @param cardScale
- * @param root
- * @param root.descendants
- * @param root.links
- * @param focusNodeData
- * @param resolvedFocusNodeId
- * @param renderable
- * @param links
- * @param onZoom
- * @param restoreTransform
- * @param viewportElement_
- * @param owner
- * @param project
- * @param onContextMenu
- * @param enableLinks
- * @param isAnimating
- * @param animationSpeed
- * @param cardClipPathId
+ * Finalize the graph content by appending nodes and setting up zoom.
+ * @param {D3Module} d3 - The D3 module instance.
+ * @param {HTMLElement} contentDiv - The container element.
+ * @param {D3Sel} svg - The SVG selection.
+ * @param {Element | undefined} existingSvgElement - An existing SVG element to reuse.
+ * @param {boolean} isZoomEnabled - Whether zoom is enabled.
+ * @param {boolean} isCompact - Whether compact mode is active.
+ * @param {number} vw - Viewport width.
+ * @param {number} vh - Viewport height.
+ * @param {number} graphWidth - The computed graph width.
+ * @param {number} graphHeight - The computed graph height.
+ * @param {number} contentOffsetX - X content offset.
+ * @param {number} contentOffsetY - Y content offset.
+ * @param {number} cardScale - The card scale factor.
+ * @param {{ descendants: () => unknown[]; links: () => unknown[] }} root - The hierarchy root node.
+ * @param {() => unknown[]} root.descendants - The descendants function of the root node.
+ * @param {() => unknown[]} root.links - The links function of the root node.
+ * @param {Record<string, unknown> | undefined} focusNodeData - The focus node data.
+ * @param {string | undefined} resolvedFocusNodeId - The resolved focus node ID.
+ * @param {unknown[]} renderable - The list of renderable nodes.
+ * @param {unknown[]} links - The list of links.
+ * @param {unknown} onZoom - The zoom callback.
+ * @param {Record<string, unknown> | undefined} restoreTransform - A saved zoom transform to restore.
+ * @param {HTMLElement} viewportElement_ - The viewport element.
+ * @param {string | undefined} owner - The project owner slug.
+ * @param {string | undefined} project - The project slug.
+ * @param {unknown} onContextMenu - The context menu callback.
+ * @param {boolean | undefined} isLinksEnabled - Whether links are enabled.
+ * @param {boolean} isAnimating - Whether animation is active.
+ * @param {number} animationSpeed - Animation speed multiplier.
+ * @param {string} cardClipPathId - The clip path ID.
+ * @returns {{ node: SVGElement | null; zoom: unknown | null }} The SVG node and zoom behavior.
  */
 function finalizeGraphContent(
     d3: D3Module, contentDiv: HTMLElement, svg: D3Sel, existingSvgElement: Element | undefined,
@@ -1882,14 +1865,14 @@ function finalizeGraphContent(
         zoom = zoomBehavior as { transform: unknown };
         focusedHierarchyNode = findFocusedHierarchyNode(root, focusNodeData, resolvedFocusNodeId);
         logFocusNodeStatus(focusedHierarchyNode, resolvedFocusNodeId, focusNodeData, renderable.length);
-        const { initialTransform } = computeInitialTransforms(d3, focusedHierarchyNode, vw, vh, contentOffsetX, contentOffsetY, cardScale, graphWidth, graphHeight, initialScale, existingSvgElement, svg, restoreTransform);
+        const { initialTransform } = computeInitialTransforms(d3, focusedHierarchyNode, vw, vh, contentOffsetX, contentOffsetY, cardScale, graphWidth, graphHeight, initialScale, existingSvgElement as SVGElement | undefined, svg, restoreTransform);
         svg.call(zoom!.transform, initialTransform);
-        scheduleFocusRefinement(d3, svg, zoom!, focusedHierarchyNode, viewportElement_, contentOffsetX, contentOffsetY, cardScale, existingSvgElement);
-        appendGraphNodes(d3, zoomLayer, renderable, links, nodeOptions as never);
+        scheduleFocusRefinement(d3, svg, zoom!, focusedHierarchyNode, viewportElement_, contentOffsetX, contentOffsetY, cardScale, existingSvgElement as SVGElement | undefined);
+        appendGraphNodes(d3, zoomLayer, renderable as Record<string, unknown>[], links as Record<string, unknown>[], nodeOptions as never);
     } else {
-        const fitTransform = renderGraphWithoutZoom(d3, graphLayer, renderable, vw, vh, graphWidth, graphHeight, contentOffsetX, contentOffsetY, isCompact, cardScale);
+        const fitTransform = renderGraphWithoutZoom(d3, graphLayer, renderable as Record<string, unknown>[], vw, vh, graphWidth, graphHeight, contentOffsetX, contentOffsetY, isCompact, cardScale);
         graphLayer.attr('transform', fitTransform as string);
-        appendGraphNodes(d3, graphLayer, renderable, links, nodeOptions as never);
+        appendGraphNodes(d3, graphLayer, renderable as Record<string, unknown>[], links as Record<string, unknown>[], nodeOptions as never);
     }
 
     if (!existingSvgElement) contentDiv.append(svg.node() as Node);
@@ -1901,12 +1884,13 @@ function finalizeGraphContent(
 }
 
 /**
- *
- * @param contentDiv
- * @param viewportElement
- * @param options
- * @param d3
- * @param treeData
+ * Compute the render viewport dimensions and element.
+ * @param {HTMLElement | undefined} contentDiv - The content container element.
+ * @param {HTMLElement | undefined} viewportElement - The viewport element.
+ * @param {Record<string, unknown>} options - The rendering options.
+ * @param {D3Module} d3 - The D3 module instance.
+ * @param {Record<string, unknown>} treeData - The hierarchy tree data.
+ * @returns {{ viewportElement_: HTMLElement; vw: number; vh: number; retryCount: number } | undefined} The viewport info, or undefined if no valid viewport.
  */
 function computeRenderViewport(contentDiv: HTMLElement | undefined, viewportElement: HTMLElement | undefined, options: Record<string, unknown>, d3: D3Module, treeData: Record<string, unknown>): { viewportElement_: HTMLElement; vw: number; vh: number; retryCount: number } | undefined {
     if (!contentDiv) return;
@@ -1920,11 +1904,12 @@ function computeRenderViewport(contentDiv: HTMLElement | undefined, viewportElem
 }
 
 /**
- *
- * @param contentDiv
- * @param d3
- * @param treeData
- * @param options
+ * Render the full promise stack graph into a content container.
+ * @param {HTMLElement | undefined} contentDiv - The container element.
+ * @param {D3Module} d3 - The D3 module instance.
+ * @param {Record<string, unknown>} treeData - The hierarchy tree data.
+ * @param {Record<string, unknown>} [options] - Rendering options.
+ * @returns {{ node: SVGElement | null; zoom: unknown | null } | null | undefined} The SVG node and zoom behavior, or null/undefined.
  */
 export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Module, treeData: Record<string, unknown>, options: Record<string, unknown> = {}): { node: SVGElement | null; zoom: unknown | null } | null | undefined {
     const {
@@ -1955,7 +1940,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
     if (!viewport) return;
     const { viewportElement_, vw, vh } = viewport;
 
-    const { existingSvgElement, isAnimating } = resolveAnimationOptions(contentDiv, animate as boolean);
+    const { existingSvgElement, isAnimating } = resolveAnimationOptions(contentDiv!, animate as boolean);
     const margin = getRenderMargin(isCompact as boolean);
 
     const root = d3.hierarchy(treeData);
@@ -1977,7 +1962,7 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
     }
 
     const isRootCardVisible = isRenderRootCard as boolean;
-    const links = root.links().filter(l => isLinkRenderable(l, isRootCardVisible));
+    const links = root.links().filter(l => isLinkRenderable(l as { source: Record<string, unknown>; target: Record<string, unknown> }, isRootCardVisible));
     const resolvedFocusNodeId = resolveFocusId(focusNodeId as string | undefined, focusNodeData as Record<string, unknown> | null | undefined);
     const { minX, maxX, minY, maxY, graphWidth, graphHeight } = computeGraphDimensions(d3, renderable, cardScale, margin as unknown as { top: number; right: number; bottom: number; left: number }, vw, vh, foreheadGap, isCompact as boolean, minGraphWidth as number | undefined, minGraphHeight as number | undefined);
 
@@ -2003,10 +1988,10 @@ export function renderStackGraph(contentDiv: HTMLElement | undefined, d3: D3Modu
     const contentOffsetX = computeContentOffset((margin as unknown as { left: number }).left - minY);
     const contentOffsetY = computeContentOffset((margin as unknown as { top: number }).top - minX + foreheadGap);
     const cardClipPathId = buildCardClipPathId(clipPathIdPrefix as string, owner as string | undefined, project as string | undefined);
-    const svg = setupSvgContainer(d3, contentDiv, existingSvgElement, graphWidth, graphHeight, isCompact as boolean, vh, isZoomEnabled as boolean, ariaLabel as string, cardClipPathId);
+    const svg = setupSvgContainer(d3, contentDiv!, existingSvgElement, graphWidth, graphHeight, isCompact as boolean, vh, isZoomEnabled as boolean, ariaLabel as string, cardClipPathId);
 
     const result = finalizeGraphContent(
-        d3, contentDiv, svg, existingSvgElement, isZoomEnabled as boolean, isCompact as boolean,
+        d3, contentDiv!, svg, existingSvgElement, isZoomEnabled as boolean, isCompact as boolean,
         vw, vh, graphWidth, graphHeight, contentOffsetX, contentOffsetY, cardScale,
         root, focusNodeData as Record<string, unknown> | undefined, resolvedFocusNodeId,
         renderable, links, onZoom, restoreTransform as Record<string, unknown> | undefined,

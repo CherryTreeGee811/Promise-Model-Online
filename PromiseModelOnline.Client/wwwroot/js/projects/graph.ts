@@ -675,6 +675,7 @@ function applyFilters(): void {
 
 /**
  * Reload the full graph data from the server and re-render.
+ * @returns {Promise<{ rootPromises: GraphNode[]; rawTree: GraphNode }>} The loaded graph data.
  */
 async function loadGraphData(): Promise<{ rootPromises: GraphNode[]; rawTree: GraphNode }> {
     const graphData = await getGraphData(graphState.owner ?? '', graphState.project ?? '') as Record<string, unknown>;

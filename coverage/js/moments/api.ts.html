@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">65.38% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>17/26</span>
+                <span class='fraction'>26/26</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">25% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/4</span>
+                <span class='fraction'>3/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">33.33% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>4/12</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">86.66% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>13/15</span>
+                <span class='fraction'>15/15</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -85,14 +85,14 @@
 <a name='L20'></a><a href='#L20'>20</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">27x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">27x</span>
 <span class="cline-any cline-yes">27x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">27x</span>
 <span class="cline-any cline-yes">27x</span>
 <span class="cline-any cline-yes">27x</span>
@@ -104,22 +104,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { apiGet, apiPost, apiPatch } from '../api.ts';
 &nbsp;
 const withFlowId = (url: string, flowId?: number): string =&gt; {
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (flowId === undefined) return url;
-    const separator = <span class="cstat-no" title="statement not covered" >url.includes('?') ? '&amp;' : '?';</span>
+    if (flowId === undefined) return url;
+    const separator = url.includes('?') ? <span class="branch-0 cbranch-no" title="branch not covered" >'&amp;' : '</span>?';
     return `${url}${separator}flowId=${flowId}`;
 };
 &nbsp;
 export const getMoment = (owner: string, project: string, momentSeq: string | number, flowId?: number) =&gt; apiGet(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}`, flowId));
-export const <span class="fstat-no" title="function not covered" >createMoment = (o</span>wner: string, project: string, <span class="cstat-no" title="statement not covered" >data: Record&lt;string, unknown&gt;) =&gt; apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/create`, data);</span>
-export const <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >getMyAssignedMoments = () =&gt; a</span>piGet('/api/moments/assigned-to-me');</span>
-export const <span class="fstat-no" title="function not covered" >assignMomentToStride = (o</span>wner: string, project: string, momentSeq: string | number, strideId: string | number | undefined, <span class="cstat-no" title="statement not covered" >flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/stride-assignment`, flowId), { strideId });</span>
+export const createMoment = (owner: string, project: string, data: Record&lt;string, unknown&gt;) =&gt; apiPost(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/create`, data);
+export const getMyAssignedMoments = () =&gt; apiGet('/api/moments/assigned-to-me');
+export const assignMomentToStride = (owner: string, project: string, momentSeq: string | number, strideId: string | number | undefined, flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/stride-assignment`, flowId), { strideId });
 export const updateMomentStatus = (owner: string, project: string, momentSeq: string | number, status: string, flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/status`, flowId), { newStatus: status });
-export const <span class="fstat-no" title="function not covered" >updateMomentEstimate = (o</span>wner: string, project: string, momentSeq: string | number, estimate: string | undefined, <span class="cstat-no" title="statement not covered" >flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/estimate`, flowId), { estimate });</span>
-export const <span class="fstat-no" title="function not covered" >updateMomentType = (o</span>wner: string, project: string, momentSeq: string | number, type: string, <span class="cstat-no" title="statement not covered" >flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/type`, flowId), { newType: type });</span>
-export const <span class="fstat-no" title="function not covered" >updateMomentOwner = (o</span>wner: string, project: string, momentSeq: string | number, userId: string | number, <span class="cstat-no" title="statement not covered" >flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/owner`, flowId), { userId });</span>
-export const <span class="fstat-no" title="function not covered" >updateMomentDescription = (o</span>wner: string, project: string, momentSeq: string | number, description: string, <span class="cstat-no" title="statement not covered" >flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/description`, flowId), { description });</span>
+export const updateMomentEstimate = (owner: string, project: string, momentSeq: string | number, estimate: string | undefined, flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/estimate`, flowId), { estimate });
+export const updateMomentType = (owner: string, project: string, momentSeq: string | number, type: string, flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/type`, flowId), { newType: type });
+export const updateMomentOwner = (owner: string, project: string, momentSeq: string | number, userId: string | number, flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/owner`, flowId), { userId });
+export const updateMomentDescription = (owner: string, project: string, momentSeq: string | number, description: string, flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/description`, flowId), { description });
 export const createTask = (owner: string, project: string, momentSeq: string | number, data: Record&lt;string, unknown&gt;, flowId?: number) =&gt; apiPost(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/tasks`, flowId), data);
-export const <span class="fstat-no" title="function not covered" >updateTaskCompletion = (o</span>wner: string, project: string, momentSeq: string | number, taskId: string | number, isCompleted: boolean, <span class="cstat-no" title="statement not covered" >flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/tasks/${taskId}/completion`, flowId), { isCompleted });</span>
+export const updateTaskCompletion = (owner: string, project: string, momentSeq: string | number, taskId: string | number, isCompleted: boolean, flowId?: number) =&gt; apiPatch(withFlowId(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/moments/${momentSeq}/tasks/${taskId}/completion`, flowId), { isCompleted });
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -127,7 +127,7 @@ export const <span class="fstat-no" title="function not covered" >updateTaskComp
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-09T01:42:36.371Z
+                at 2026-07-09T02:31:29.229Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
