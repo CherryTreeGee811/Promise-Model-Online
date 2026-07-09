@@ -114,7 +114,7 @@ jobs:
           npm run typecheck
           npm run lint:dry
           npm run lint:dead
-          npm run test -- --coverage
+          npm run test -- --coverage --coverage.thresholds.lines=70 --coverage.thresholds.branches=70 --coverage.thresholds.functions=70 --coverage.thresholds.statements=70 2>&1 | tee /tmp/vitest-coverage.log; if grep -q "ERROR: Coverage for" /tmp/vitest-coverage.log; then echo "Coverage thresholds not met!"; grep "ERROR: Coverage for" /tmp/vitest-coverage.log; exit 1; fi
           npm run build
 
       - name: Source code import boundary (Layer 2)
