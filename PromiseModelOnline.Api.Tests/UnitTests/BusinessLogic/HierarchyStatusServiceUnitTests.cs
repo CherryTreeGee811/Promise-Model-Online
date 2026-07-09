@@ -120,4 +120,31 @@ public class HierarchyStatusServiceUnitTests
         var updatedFlow = await _context.Flows.FindAsync(40);
         Assert.That(updatedFlow!.StatusColor, Is.EqualTo(StatusColorRules.Blocked));
     }
+
+    [Test]
+    public async Task RecalculateFromFlowAsync_InvalidJourneyId_ThrowsKeyNotFound()
+    {
+        // Arrange
+        var project = new Project { Id = 3, Name = "Project 3" };
+        var promise = new Promise { Id = 3, Statement = "Promise 3", ProjectId = 3, Project = project, StatusColor = StatusColorRules.Todo };
+        var epic = new Epic { Id = 30, Statement = "Epic", ProductPromiseId = 3, ProductPromise = promise, StatusColor = StatusColorRules.Todo };
+        var flow = new Flow { Id = 50, Statement = "Flow", JourneyId = 999, StatusColor = StatusColorRules.Todo };
+
+        _context.Projects.Add(project);
+        _context.Promises.Add(promise);
+        _context.Epics.Add(epic);
+        _context.Flows.Add(flow);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.RecalculateFromFlowAsync(50));
+    }
+
+    [Test]
+    public void RecalculateFromJourneyAsync_InvalidJourneyId_ThrowsKeyNotFound() =>
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.RecalculateFromJourneyAsync(999));
+
+    [Test]
+    public void RecalculateFromEpicAsync_InvalidEpicId_ThrowsKeyNotFound() =>
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.RecalculateFromEpicAsync(999));
 }

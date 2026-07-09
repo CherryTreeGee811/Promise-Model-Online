@@ -7,6 +7,9 @@
           <ExcludeByFile>
             **/Migrations/*.cs,
             **/Views/**,
+            **/DTOs/**,
+            **/Models/*.cs,
+            **/Extensions/**,
             **/DesignTimeDbContextFactory.cs,
             **/NoOpEmailService.cs,
             **/OpenIddictSeeder.cs,

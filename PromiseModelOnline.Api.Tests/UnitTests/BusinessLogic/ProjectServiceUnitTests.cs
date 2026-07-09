@@ -242,4 +242,32 @@ public class ProjectServiceUnitTests
     }
 
     #endregion
+
+    #region GenerateProjectSlugAsync
+
+    [Test]
+    public async Task GenerateProjectSlugAsync_EmptyAfterNormalization_DefaultsToProject()
+    {
+        _userRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new User { Id = 1 });
+        _projectRepoMock.Setup(r => r.GetByOwnerAndSlugAsync("", "project")).ReturnsAsync((Project?)null);
+
+        var result = await _service.GenerateProjectSlugAsync("@#$%", 1);
+
+        Assert.That(result, Is.EqualTo("project"));
+    }
+
+    [Test]
+    public async Task GenerateProjectSlugAsync_Collision_AppendsSuffix()
+    {
+        _userRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new User { Id = 1 });
+        _projectRepoMock.SetupSequence(r => r.GetByOwnerAndSlugAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new Project { Id = 1 })
+            .ReturnsAsync((Project?)null);
+
+        var result = await _service.GenerateProjectSlugAsync("My Project", 1);
+
+        Assert.That(result, Is.EqualTo("my-project-2"));
+    }
+
+    #endregion
 }
