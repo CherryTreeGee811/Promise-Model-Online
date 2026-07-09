@@ -127,4 +127,94 @@ describe('loadProjectAuditHistoryPage', () => {
         // Act & Assert
         expect(() => loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p')).not.toThrow();
     });
+
+    it('renders pagination with next/previous buttons', async () => {
+        mockGetProject.mockResolvedValue({ name: 'P' });
+        mockGetAuditEvents.mockResolvedValue({ items: [{ id: 1 }], totalCount: 50 });
+        mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td></tr></tbody></table>');
+        const { loadProjectAuditHistoryPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/history.ts');
+        loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
+        await vi.waitFor(() => {
+            const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
+            expect(nextBtn).not.toBeNull();
+            expect(nextBtn.disabled).toBe(false);
+        });
+    });
+
+    it('navigates to next page on next button click', async () => {
+        mockGetProject.mockResolvedValue({ name: 'P' });
+        mockGetAuditEvents.mockResolvedValue({ items: [{ id: 1 }], totalCount: 50 });
+        mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td></tr></tbody></table>');
+        const { loadProjectAuditHistoryPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/history.ts');
+        loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
+        await vi.waitFor(() => {
+            const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
+            if (nextBtn) nextBtn.click();
+            expect(mockGetAuditEvents).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    it('navigates to previous page on previous button click', async () => {
+        mockGetProject.mockResolvedValue({ name: 'P' });
+        mockGetAuditEvents.mockResolvedValue({ items: [{ id: 1 }], totalCount: 50 });
+        mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td></tr></tbody></table>');
+        const { loadProjectAuditHistoryPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/history.ts');
+        loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
+        await vi.waitFor(() => {
+            expect(mockGetAuditEvents).toHaveBeenCalledTimes(1);
+        });
+        const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
+        nextBtn.click();
+        await vi.waitFor(() => {
+            expect(mockGetAuditEvents).toHaveBeenCalledTimes(2);
+        });
+        mockGetAuditEvents.mockResolvedValue({ items: [{ id: 1 }], totalCount: 50 });
+        mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event - page 2</td></tr></tbody></table>');
+        await vi.waitFor(() => {
+            const prevBtn = document.querySelector('[data-page-action="previous"]') as HTMLButtonElement;
+            expect(prevBtn).not.toBeNull();
+            expect(prevBtn.disabled).toBe(false);
+            prevBtn.click();
+        });
+        await vi.waitFor(() => {
+            expect(mockGetAuditEvents).toHaveBeenCalledTimes(3);
+        });
+    });
+
+    it('opens audit details on detail link click', async () => {
+        mockGetProject.mockResolvedValue({ name: 'P' });
+        const auditItem = { id: 1, action: 'update' };
+        mockGetAuditEvents.mockResolvedValue({ items: [auditItem], totalCount: 1 });
+        mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td><td><a href="#" class="audit-show-details-link">Details</a></td></tr></tbody></table>');
+        const { loadProjectAuditHistoryPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/history.ts');
+        loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
+        await vi.waitFor(() => {
+            const link = document.querySelector('.audit-show-details-link') as HTMLAnchorElement;
+            if (link) link.click();
+            const modalTitle = document.querySelector('#audit-details-modal-title') as HTMLElement;
+            expect(modalTitle).not.toBeNull();
+            expect(modalTitle.textContent).toBe('Detail');
+        });
+        expect(mockGetAuditDetailsPayload).toHaveBeenCalledWith(auditItem);
+    });
+
+    it('shows error on failed subsequent load', async () => {
+        mockGetProject.mockResolvedValue({ name: 'P' });
+        mockGetAuditEvents.mockResolvedValueOnce({ items: [{ id: 1 }], totalCount: 50 });
+        mockGetAuditEvents.mockRejectedValueOnce(new Error('fail'));
+        mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td></tr></tbody></table>');
+        const { loadProjectAuditHistoryPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/history.ts');
+        loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
+        await vi.waitFor(() => {
+            const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
+            expect(nextBtn).not.toBeNull();
+            expect(nextBtn.disabled).toBe(false);
+        });
+        const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
+        nextBtn.click();
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to load more audit history.');
+        });
+    });
 });

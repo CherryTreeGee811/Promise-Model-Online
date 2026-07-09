@@ -157,8 +157,20 @@ beforeEach(() => {
     });
     mockSetupDetailInlineEdit.mockReturnValue({ showSavedPopover: vi.fn() });
     mockRenderTableWithInlineAddRow.mockImplementation((_container: HTMLElement, _opts: Record<string, unknown>) => {
-        _container.innerHTML = '<table><tbody></tbody></table>';
+        const opts = _opts as { items?: unknown[]; renderItemRow?: (item: unknown) => string; renderAddRow?: () => string; headers?: string[] };
+        let html = '<table><thead><tr>';
+        if (opts.headers) opts.headers.forEach(h => { html += '<th>' + h + '</th>'; });
+        html += '</tr></thead><tbody>';
+        if (opts.items) opts.items.forEach(item => { html += opts.renderItemRow?.(item); });
+        if (opts.renderAddRow) html += opts.renderAddRow();
+        html += '</tbody></table>';
+        _container.innerHTML = html;
         return _container.querySelector('tbody');
+    });
+    mockSetupAddChildForm.mockImplementation((_opts: Record<string, unknown>) => {
+        const opts = _opts as { onCreate?: (statement: string, type?: string) => Promise<unknown>; getRowHtml?: (created: Record<string, unknown>) => string };
+        if (opts.onCreate) void opts.onCreate('test statement', 'Story');
+        if (opts.getRowHtml) opts.getRowHtml({ statement: 'test', sequenceNumber: 1, id: 1, type: 'Story', status: 'Todo' });
     });
     mockSetElementText.mockImplementation((selector: string, text: string) => {
         const el = document.querySelector(selector) as HTMLElement | null;
@@ -568,5 +580,248 @@ describe('loadFlowDetail', () => {
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         expect(mockUpsertGraphViewButton).toHaveBeenCalled();
+    });
+});
+
+describe('loadFlowJourneyName', () => {
+    it('navigates on link click', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', navDiv, contentDiv, { permission: 'Edit' });
+
+        const link = document.querySelector('#flow-journey-cell a.detail-link')!;
+        link.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(mockNavigate).toHaveBeenCalledWith('/o/p/journeys/3', navDiv, contentDiv);
+    });
+
+    it('does not navigate on ctrl+click', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const link = document.querySelector('#flow-journey-cell a.detail-link')!;
+        link.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('does not navigate on middle-click', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const link = document.querySelector('#flow-journey-cell a.detail-link')!;
+        link.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 1 }));
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('handles API error gracefully', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockRejectedValue(new Error('network'));
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const journeyCell = document.querySelector('#flow-journey-cell')!;
+        expect(journeyCell.textContent).toContain('Journey 7');
+    });
+});
+
+describe('loadFlowMoments', () => {
+    it('renders empty state when no moments exist', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue([]);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockRenderTableWithInlineAddRow).toHaveBeenCalledWith(
+            expect.any(HTMLElement),
+            expect.objectContaining({
+                items: [],
+                emptyMessage: 'No moments found for this flow.',
+            }),
+        );
+    });
+
+    it('handles moment type change via change event', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const select = document.querySelector('.moment-type-select') as HTMLSelectElement;
+        expect(select).not.toBeNull();
+        mockUpdateMomentType.mockResolvedValue(undefined);
+        select.value = 'Job';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        expect(mockUpdateMomentType).toHaveBeenCalledWith('o', 'p', 1, 'Job', 42);
+    });
+
+    it('reverts select value when updateMomentType rejects', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const select = document.querySelector('.moment-type-select') as HTMLSelectElement;
+        const originalValue = select.value;
+        const newValue = originalValue === 'Story' ? 'Job' : 'Story';
+        mockUpdateMomentType.mockRejectedValue(new Error('network'));
+        select.value = newValue;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(select.value).toBe(originalValue);
+    });
+});
+
+describe('upsertFlowGraphViewButton', () => {
+    it('does not insert when owner is empty', async () => {
+        mockGetOwnerProjectFromPath.mockReturnValue({ owner: '', project: 'p' });
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
+        expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
+    });
+
+    it('does not insert when project is empty', async () => {
+        mockGetOwnerProjectFromPath.mockReturnValue({ owner: 'o', project: '' });
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
+        expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
+    });
+
+    it('does not insert when href is null', async () => {
+        mockBuildGraphViewHref.mockReturnValue(null);
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockBuildGraphViewHref).toHaveBeenCalledWith('o', 'p', 'flow-1');
+        expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
+    });
+});
+
+describe('additional edge case coverage', () => {
+    it('handles flow with empty description', async () => {
+        mockGetFlow.mockResolvedValue({ ...defaultFlow, description: '' });
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockBuildInlineEditUI).toHaveBeenCalledWith(expect.any(HTMLElement), '', '');
+    });
+
+    it('handles flow with null statusColor', async () => {
+        mockGetFlow.mockResolvedValue({ ...defaultFlow, statusColor: null });
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockGetStatusIcon).toHaveBeenCalledWith('');
+        expect(mockGetStatusLabel).toHaveBeenCalledWith('');
+    });
+
+    it('handles null moments from API', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(null);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockRenderTableWithInlineAddRow).toHaveBeenCalledWith(
+            expect.any(HTMLElement),
+            expect.objectContaining({ items: [] }),
+        );
+    });
+
+    it('ignores change events on non-select elements', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue(defaultJourney);
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        document.querySelector('#flow-moments-list')!.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(mockUpdateMomentType).not.toHaveBeenCalled();
+    });
+
+    it('handles journey with null statusColor', async () => {
+        mockGetFlow.mockResolvedValue(defaultFlow);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetMoments.mockResolvedValue(defaultMoments);
+        mockGetJourneyById.mockResolvedValue({ ...defaultJourney, statusColor: null });
+
+        const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockGetStatusIcon).toHaveBeenCalledWith('');
+        expect(mockGetStatusLabel).toHaveBeenCalledWith('');
     });
 });

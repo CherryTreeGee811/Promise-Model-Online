@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">8% </span>
+                <span class="strong">0.8% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/125</span>
+                <span class='fraction'>1/125</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">6.52% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/46</span>
+                <span class='fraction'>0/46</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">22.22% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/9</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">7.75% </span>
+                <span class="strong">0.86% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/116</span>
+                <span class='fraction'>1/116</span>
             </div>
         
             
@@ -302,7 +302,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -485,10 +485,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -509,14 +509,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -527,7 +527,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { showToast } from '../ui/toast.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
@@ -717,11 +717,11 @@ function <span class="fstat-no" title="function not covered" >renderNotification
 }
 &nbsp;
 /** Refresh the notifications page by fetching all notifications and re-rendering. */
-async function refreshNotificationsPage() {
-    const listDiv = document.querySelector('#notifications-list') as HTMLElement | null;
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+async function <span class="fstat-no" title="function not covered" >refreshNotificationsPage() {</span>
+    const listDiv = <span class="cstat-no" title="statement not covered" >document.querySelector('#notifications-list') as HTMLElement | null;</span>
+    const errorElement = <span class="cstat-no" title="statement not covered" >document.querySelector('#error-text') as HTMLElement | null;</span>
 &nbsp;
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (!listDiv || <span class="branch-1 cbranch-no" title="branch not covered" >!errorElement) r</span>eturn;
+<span class="cstat-no" title="statement not covered" >    if (!listDiv || !errorElement) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    errorElement.textContent = '';</span>
 &nbsp;
@@ -741,13 +741,13 @@ async function refreshNotificationsPage() {
  * Load the notifications listing page.
  * @param {HTMLElement} _contentDiv - The main content container element.
  */
-export function loadNotificationsPage(_contentDiv: HTMLElement) {
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (!_listState.isLiveListenerRegistered) {
-        _listState.isLiveListenerRegistered = true;
+export function <span class="fstat-no" title="function not covered" >loadNotificationsPage(_</span>contentDiv: HTMLElement) {
+<span class="cstat-no" title="statement not covered" >    if (!_listState.isLiveListenerRegistered) {</span>
+<span class="cstat-no" title="statement not covered" >        _listState.isLiveListenerRegistered = true;</span>
 &nbsp;
-        const eventName = getUnreadNotificationsEventName();
+        const <span class="cstat-no" title="statement not covered" >eventName = getUnreadNotificationsEventName();</span>
 &nbsp;
-        addEventListener(<span class="fstat-no" title="function not covered" >eventName, (e</span>vent: Event) =&gt; {
+<span class="cstat-no" title="statement not covered" >        addEventListener(<span class="fstat-no" title="function not covered" >eventName, (e</span>vent: Event) =&gt; {</span>
             const listDiv = <span class="cstat-no" title="statement not covered" >document.querySelector('#notifications-list') as HTMLElement;</span>
 <span class="cstat-no" title="statement not covered" >            if (!listDiv) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -760,7 +760,7 @@ export function loadNotificationsPage(_contentDiv: HTMLElement) {
         });
     }
 &nbsp;
-    void refreshNotificationsPage();
+<span class="cstat-no" title="statement not covered" >    void refreshNotificationsPage();</span>
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -769,7 +769,7 @@ export function loadNotificationsPage(_contentDiv: HTMLElement) {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-09T03:18:03.120Z
+                at 2026-07-09T17:07:41.451Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

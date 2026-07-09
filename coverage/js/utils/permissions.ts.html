@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">20% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">30% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">22.22% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -116,7 +116,7 @@
 <a name='L51'></a><a href='#L51'>51</a>
 <a name='L52'></a><a href='#L52'>52</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -135,7 +135,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">34x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -151,18 +151,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { getMyPermission } from '../projects/api.ts';
@@ -186,7 +186,7 @@ const PERMISSION_HIERARCHY: Record&lt;string, number&gt; = { View: 0, Comment: 1
  * @returns {boolean} True if the user's level is at least the minimum.
  */
 export function isAtLeast(permissionLevel: string, minimum: string): boolean {
-    return (PERMISSION_HIERARCHY[permissionLevel] ?? 0) &gt;= (PERMISSION_HIERARCHY[minimum] ?? <span class="branch-1 cbranch-no" title="branch not covered" >0);</span>
+    return (PERMISSION_HIERARCHY[permissionLevel] ?? 0) &gt;= (PERMISSION_HIERARCHY[minimum] ?? 0);
 }
 &nbsp;
 interface PermissionResult {
@@ -201,19 +201,19 @@ interface PermissionResult {
  * @param {string} project - Project slug.
  * @returns {Promise&lt;PermissionResult&gt;} A PermissionResult with permission level and owner flag.
  */
-export async function <span class="fstat-no" title="function not covered" >fetchMyPermission(o</span>wner: string, project: string): Promise&lt;PermissionResult&gt; {
-<span class="cstat-no" title="statement not covered" >    try {</span>
-        const data = <span class="cstat-no" title="statement not covered" >await getMyPermission(owner, project);</span>
-<span class="cstat-no" title="statement not covered" >        if (!data) <span class="cstat-no" title="statement not covered" >return { permission: undefined, isOwner: false };</span></span>
-<span class="cstat-no" title="statement not covered" >        if (typeof data === 'string') {</span>
-<span class="cstat-no" title="statement not covered" >            return { permission: data, isOwner: data === 'Owner' };</span>
+export async function fetchMyPermission(owner: string, project: string): Promise&lt;PermissionResult&gt; {
+    try {
+        const data = await getMyPermission(owner, project);
+        if (!data) return { permission: undefined, isOwner: false };
+        if (typeof data === 'string') {
+            return { permission: data, isOwner: data === 'Owner' };
         }
-<span class="cstat-no" title="statement not covered" >        return {</span>
+        return {
             permission: data.permission ?? undefined,
             isOwner: data.isOwner === true,
         };
     } catch {
-<span class="cstat-no" title="statement not covered" >        return { permission: undefined, isOwner: false };</span>
+        return { permission: undefined, isOwner: false };
     }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -223,7 +223,7 @@ export async function <span class="fstat-no" title="function not covered" >fetch
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-09T03:18:03.120Z
+                at 2026-07-09T17:07:41.451Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

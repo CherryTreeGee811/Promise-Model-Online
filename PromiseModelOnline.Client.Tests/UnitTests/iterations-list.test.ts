@@ -337,4 +337,87 @@ describe('loadIterationHistory', () => {
         // Act & Assert
         await expect(loadIterationHistory('o', 'p', { permission: 'View' })).resolves.toBeUndefined();
     });
+
+    it('calls openIterationCreateModal when create button is clicked', async () => {
+        // Arrange
+        mockGetProject.mockResolvedValue({ name: 'Test' });
+        mockGetIterations.mockResolvedValue([]);
+        await loadHistory();
+        const createBtn = document.querySelector('#create-iteration-btn') as HTMLElement;
+        // Act
+        createBtn.click();
+        // Assert
+        expect(mockOpenIterationCreateModal).toHaveBeenCalledTimes(1);
+        expect(mockOpenIterationCreateModal).toHaveBeenCalledWith(
+            'owner1',
+            'proj1',
+            expect.any(Function),
+        );
+        // Also verify the reload callback is a function
+        const callback = mockOpenIterationCreateModal.mock.calls[0][2];
+        expect(typeof callback).toBe('function');
+    });
+
+    it('does not call openIterationCreateModal for non-Edit permission', async () => {
+        // Arrange
+        mockGetProject.mockResolvedValue({ name: 'Test' });
+        mockGetIterations.mockResolvedValue([]);
+        await loadHistory({ permission: 'View' });
+        const createBtn = document.querySelector('#create-iteration-btn') as HTMLElement;
+        // Act
+        createBtn.click();
+        // Assert
+        expect(mockOpenIterationCreateModal).not.toHaveBeenCalled();
+    });
+
+    it('calls drawBurndownChart when burndown data exists and canvas is present', async () => {
+        // Arrange
+        mockGetProject.mockResolvedValue({ name: 'Test' });
+        mockGetIterations.mockResolvedValue([{ id: 1, name: 'S1', createdAt: '2024-01-01T00:00:00Z' }]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetBurndown.mockResolvedValue([{ date: '2024-01-01', remainingEffort: 10 }]);
+        // Act
+        await loadHistory();
+        (document.querySelector('.view-iteration-btn') as HTMLButtonElement).click();
+        // Assert
+        await vi.waitFor(() => {
+            expect(mockDrawBurndownChart).toHaveBeenCalledTimes(1);
+            const burndownCanvas = document.querySelector('#burndown-canvas');
+            expect(mockDrawBurndownChart).toHaveBeenCalledWith(burndownCanvas, [{ date: '2024-01-01', remainingEffort: 10 }]);
+        });
+    });
+
+    it('does not crash when burndownCanvas is null but burndown data exists', async () => {
+        // Arrange - burndown-canvas is removed from DOM
+        const burndownCanvasEl = document.querySelector('#burndown-canvas')!;
+        burndownCanvasEl.remove();
+        mockGetProject.mockResolvedValue({ name: 'Test' });
+        mockGetIterations.mockResolvedValue([{ id: 1, name: 'S1', createdAt: '2024-01-01T00:00:00Z' }]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetBurndown.mockResolvedValue([{ date: '2024-01-01', remainingEffort: 10 }]);
+        // Act & Assert
+        await loadHistory();
+        (document.querySelector('.view-iteration-btn') as HTMLButtonElement).click();
+        await vi.waitFor(() => {
+            expect(mockDrawBurndownChart).not.toHaveBeenCalled();
+        });
+    });
+
+    it('does not crash when burndownCanvas is null and burndown returns empty data', async () => {
+        // Arrange - burndown-canvas is removed from DOM
+        const burndownCanvasEl = document.querySelector('#burndown-canvas')!;
+        burndownCanvasEl.remove();
+        mockGetProject.mockResolvedValue({ name: 'Test' });
+        mockGetIterations.mockResolvedValue([{ id: 1, name: 'S1', createdAt: '2024-01-01T00:00:00Z' }]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetBurndown.mockResolvedValue([]);
+        // Act & Assert - should not throw
+        await loadHistory();
+        await expect(
+            (async () => {
+                (document.querySelector('.view-iteration-btn') as HTMLButtonElement).click();
+                await vi.waitFor(() => { /* wait for async operations to settle */ });
+            })(),
+        ).resolves.toBeUndefined();
+    });
 });

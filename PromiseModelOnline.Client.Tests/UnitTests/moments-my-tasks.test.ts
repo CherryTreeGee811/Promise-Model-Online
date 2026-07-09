@@ -172,4 +172,54 @@ describe('loadMyTasksPage', () => {
         // Act & Assert
         await expect(loadMyTasksPage(document.createElement('div'), document.createElement('div'))).resolves.toBeUndefined();
     });
+
+    it('logs error when type change event fires without owner or project', async () => {
+        // Arrange — moment without ownerSlug/projectSlug (the else branch in createTaskRow, line 94)
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        mockGetMyAssignedMoments.mockResolvedValue([
+            { sequenceNumber: 1, flowId: 10, statement: 'T', type: 'Story', status: 'Active', effortEstimate: 'M' },
+        ]);
+        const { loadMyTasksPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/my-tasks.ts');
+        await loadMyTasksPage(document.createElement('div'), document.createElement('div'));
+        // Act — change the type dropdown
+        const select = document.querySelector('.moment-type-select') as HTMLSelectElement;
+        select.value = 'Job';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        // Assert — hits line 112-113: console.error + early return, no API call
+        await vi.waitFor(() => {
+            expect(consoleSpy).toHaveBeenCalledWith('Cannot determine project for moment type update');
+        });
+        expect(mockUpdateMomentType).not.toHaveBeenCalled();
+        consoleSpy.mockRestore();
+    });
+
+    it('does not navigate on ctrl+click or middle-click (line 138 true branch)', async () => {
+        // Arrange
+        mockGetMyAssignedMoments.mockResolvedValue([
+            { sequenceNumber: 5, flowId: 10, statement: 'T', type: 'Story', status: 'Active', ownerSlug: 'o', projectSlug: 'p' },
+        ]);
+        const { loadMyTasksPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/my-tasks.ts');
+        await loadMyTasksPage(document.createElement('div'), document.createElement('div'));
+        const link = document.querySelector('a[moment-seq="5"]') as HTMLAnchorElement;
+        // Act — ctrl+click
+        link.dispatchEvent(new MouseEvent('click', { ctrlKey: true, bubbles: true }));
+        // Assert
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('navigates on normal link click (covers lines 139-143)', async () => {
+        // Arrange
+        mockGetMyAssignedMoments.mockResolvedValue([
+            { sequenceNumber: 7, flowId: 10, statement: 'T', type: 'Story', status: 'Active', ownerSlug: 'owner', projectSlug: 'proj' },
+        ]);
+        const { loadMyTasksPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/my-tasks.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadMyTasksPage(navDiv, contentDiv);
+        const link = document.querySelector('a[moment-seq="7"]') as HTMLAnchorElement;
+        // Act — normal left-click
+        link.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        // Assert — line 143: navigate called with built path
+        expect(mockNavigate).toHaveBeenCalledWith('/owner/proj/moments/7', navDiv, contentDiv);
+    });
 });

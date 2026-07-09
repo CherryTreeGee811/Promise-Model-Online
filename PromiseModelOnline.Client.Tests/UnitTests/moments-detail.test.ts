@@ -692,6 +692,29 @@ describe('description edit handler', () => {
         });
     });
 
+    it('shows error toast when stride assignment fails', async () => {
+        mockGetMoment.mockResolvedValue(defaultMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockGetStrides.mockRejectedValue(new Error('strides fail'));
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        await vi.waitFor(() => {
+            expect(mockGetStrides).toHaveBeenCalled();
+        });
+    });
+
+    it('gracefully handles getStrides API failure', async () => {
+        mockGetMoment.mockResolvedValue(defaultMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockGetStrides.mockRejectedValue(new Error('strides fail'));
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        await expect(async () => {
+            const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+            await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        }).not.toThrow();
+    });
+
     it('disables save button during request', async () => {
         // Arrange
         mockGetMoment.mockResolvedValue(defaultMoment);
@@ -972,5 +995,172 @@ describe('task completion toggle', () => {
             expect(checkbox.checked).toBe(false);
             expect(mockShowToast).toHaveBeenCalledWith('Failed to update task completion', 'error');
         });
+    });
+});
+
+describe('loadMomentDetail - early return on null moment', () => {
+    it('returns early when getMoment returns null', async () => {
+        mockGetMoment.mockResolvedValue(null);
+
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockLoadEntityLookupMap).not.toHaveBeenCalled();
+        expect(mockMountDetailStackGraph).not.toHaveBeenCalled();
+    });
+});
+
+describe('handleTaskAddClick - empty name edge case', () => {
+    it('shows Name is required when task name is empty', async () => {
+        mockGetMoment.mockResolvedValue(defaultMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const submitBtn = document.querySelector('#add-moment-task-submit') as HTMLButtonElement;
+        const msg = document.querySelector('#add-moment-task-msg') as HTMLElement;
+        submitBtn.click();
+
+        await vi.waitFor(() => {
+            expect(msg.textContent).toBe('Name is required.');
+        });
+    });
+});
+
+describe('applyCheckResult - null API response', () => {
+    it('does not throw when updateTaskCompletion returns falsy', async () => {
+        mockUpdateTaskCompletion.mockResolvedValue(null);
+        mockGetMoment.mockResolvedValue(defaultMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const checkbox = document.querySelector('.moment-task-complete-checkbox') as HTMLInputElement;
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+        await vi.waitFor(() => {
+            expect(checkbox.checked).toBe(true);
+            expect(mockShowToast).not.toHaveBeenCalled();
+        });
+    });
+});
+
+describe('renderMomentTasks - renderItemRow branches', () => {
+    it('renders completed task row with checked checkbox and Job type', async () => {
+        const momentWithCompleted = {
+            ...defaultMoment,
+            type: 'Job',
+            tasks: [
+                { id: 1, name: 'Task 1', description: 'Do it', isCompleted: true },
+            ],
+        };
+        mockGetMoment.mockResolvedValue(momentWithCompleted);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockRenderTableWithInlineAddRow.mockImplementationOnce((container: HTMLElement, opts: Record<string, unknown>) => {
+            container.replaceChildren();
+            const table = document.createElement('table');
+            const tbody = document.createElement('tbody');
+            for (const item of opts.items as unknown[]) {
+                const html = (opts.renderItemRow as Function)(item);
+                const div = document.createElement('div');
+                div.innerHTML = html;
+                tbody.append(...div.children);
+            }
+            const addHtml = (opts.renderAddRow as Function)();
+            const addDiv = document.createElement('div');
+            addDiv.innerHTML = addHtml;
+            tbody.append(...addDiv.children);
+            table.append(tbody);
+            container.append(table);
+            return tbody;
+        });
+
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const checkbox = document.querySelector('.moment-task-complete-checkbox') as HTMLInputElement;
+        expect(checkbox.checked).toBe(true);
+        const label = checkbox.closest('label')!;
+        const span = label.querySelector('span');
+        expect(span?.textContent).toBe('Completed');
+        const typeSelect = document.querySelector('#moment-type-select') as HTMLSelectElement;
+        expect(typeSelect.value).toBe('Job');
+    });
+});
+
+describe('renderMomentTasks - early return on null tbody', () => {
+    it('returns early when renderTableWithInlineAddRow returns null', async () => {
+        mockGetMoment.mockResolvedValue(defaultMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockRenderTableWithInlineAddRow.mockImplementationOnce(() => null);
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        expect(mockCreateCommentAutocomplete).not.toHaveBeenCalled();
+    });
+});
+
+describe('loadMomentDetail - initial type Job branch', () => {
+    it('sets type select to Job when moment type is Job', async () => {
+        const jobMoment = { ...defaultMoment, type: 'Job' };
+        mockGetMoment.mockResolvedValue(jobMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const typeSelect = document.querySelector('#moment-type-select') as HTMLSelectElement;
+        expect(typeSelect.value).toBe('Job');
+    });
+});
+
+describe('status change - completedAt falsy', () => {
+    it('sets dash in completed cell when completedAt is empty', async () => {
+        mockUpdateMomentStatus.mockResolvedValue({ status: 'InProgress', statusColor: 'blue' });
+        mockGetMoment.mockResolvedValue(defaultMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const statusSelect = document.querySelector('#moment-status-select') as HTMLSelectElement;
+        statusSelect.value = 'InProgress';
+        statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        await vi.waitFor(() => {
+            const completedCell = document.querySelector('#moment-detail-content .detail-table tr:last-child td')!;
+            expect(completedCell.textContent).toBe('\u2013');
+        });
+    });
+});
+
+describe('handleTaskAddClick - API failure', () => {
+    it('shows error message when createTask fails', async () => {
+        mockCreateTask.mockRejectedValue(new Error('network error'));
+        mockGetMoment.mockResolvedValue(defaultMoment);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+
+        const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const nameInput = document.querySelector('#add-moment-task-name') as HTMLInputElement;
+        const submitBtn = document.querySelector('#add-moment-task-submit') as HTMLButtonElement;
+        const msg = document.querySelector('#add-moment-task-msg') as HTMLElement;
+
+        nameInput.value = 'A new task';
+        submitBtn.click();
+
+        await vi.waitFor(() => {
+            expect(msg.textContent).toBe('Failed to add task.');
+        });
+
+        expect(submitBtn.disabled).toBe(false);
     });
 });

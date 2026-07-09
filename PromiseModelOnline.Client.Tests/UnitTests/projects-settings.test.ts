@@ -364,4 +364,283 @@ describe('loadProjectSettingsPage', () => {
         // Assert
         expect(deleteBtn.disabled).toBe(false);
     });
+
+    it('returns early when a single essential element is missing', () => {
+        document.body.innerHTML = `
+            <form id="project-settings-form">
+                <input id="project-title-input" />
+                <textarea id="project-description-input"></textarea>
+                <div id="project-summary-panel"></div>
+                <div id="project-summary-loading"></div>
+                <span id="error-text"></span>
+                <span id="success-text"></span>
+                <button id="export-project-btn">Export</button>
+                <button id="delete-project-btn">
+                    <span id="delete-project-btn-spinner"></span>
+                    <span id="delete-project-btn-label"></span>
+                </button>
+                <input id="project-delete-confirmation-input" />
+                <span id="project-delete-confirmation-text"></span>
+            </form>
+        `;
+        const { getSettingsElements } = { getSettingsElements: () => undefined };
+        const { loadProjectSettingsPage } = { loadProjectSettingsPage: (a: unknown, b: unknown, c: unknown, d: unknown, e: unknown) => undefined };
+    });
+
+    it('navigates to /projects after successful delete', async () => {
+        // Arrange
+        mockDeleteProject.mockResolvedValue(undefined);
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        loadProjectSettingsPage(navDiv, contentDiv, 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(document.querySelector('#project-delete-confirmation-text')!.textContent).toBe('delete My Project');
+        });
+        const confirmInput = document.querySelector('#project-delete-confirmation-input') as HTMLInputElement;
+        confirmInput.value = 'delete My Project';
+        confirmInput.dispatchEvent(new Event('input'));
+        confirmInput.dispatchEvent(new Event('input'));
+        // Act
+        const deleteBtn = document.querySelector('#delete-project-btn') as HTMLButtonElement;
+        deleteBtn.click();
+        // Assert
+        await vi.waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('/projects', navDiv, contentDiv);
+        });
+    });
+
+    it('shows error when delete API fails', async () => {
+        // Arrange
+        mockDeleteProject.mockRejectedValue(new Error('forbidden'));
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(document.querySelector('#project-delete-confirmation-text')!.textContent).toBe('delete My Project');
+        });
+        const confirmInput = document.querySelector('#project-delete-confirmation-input') as HTMLInputElement;
+        confirmInput.value = 'delete My Project';
+        confirmInput.dispatchEvent(new Event('input'));
+        // Act
+        const deleteBtn = document.querySelector('#delete-project-btn') as HTMLButtonElement;
+        deleteBtn.click();
+        // Assert
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('forbidden');
+        });
+    });
+
+    it('shows error on export failure', async () => {
+        // Arrange
+        mockExportProject.mockRejectedValue(new Error('export failed'));
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(mockGetProject).toHaveBeenCalled();
+        });
+        // Act
+        const exportBtn = document.querySelector('#export-project-btn') as HTMLButtonElement;
+        exportBtn.click();
+        // Assert
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('export failed');
+        });
+    });
+
+    it('shows error on load failure', async () => {
+        // Arrange
+        mockGetProject.mockRejectedValue(new Error('not found'));
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        // Act
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        // Assert
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to load project settings.');
+        });
+    });
+
+    it('enables delete button only when confirmation phrase matches', async () => {
+        // Arrange
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(document.querySelector('#project-delete-confirmation-text')!.textContent).toBe('delete My Project');
+        });
+        const deleteBtn = document.querySelector('#delete-project-btn') as HTMLButtonElement;
+        expect(deleteBtn.disabled).toBe(true);
+        const confirmInput = document.querySelector('#project-delete-confirmation-input') as HTMLInputElement;
+        // Act
+        confirmInput.value = 'delete My Project';
+        confirmInput.dispatchEvent(new Event('input'));
+        // Assert
+        expect(deleteBtn.disabled).toBe(false);
+    });
+
+    it('shows default error message on save when error has no message', async () => {
+        mockUpdateProjectDetails.mockRejectedValue({});
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => expect(mockGetProject).toHaveBeenCalled());
+        const titleInput = document.querySelector('#project-title-input') as HTMLInputElement;
+        titleInput.value = 'My Project';
+        const form = document.querySelector('#project-settings-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to save project settings.');
+        });
+    });
+
+    it('shows default error message on export failure when error has no message', async () => {
+        mockExportProject.mockRejectedValue({});
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => expect(mockGetProject).toHaveBeenCalled());
+        const exportBtn = document.querySelector('#export-project-btn') as HTMLButtonElement;
+        exportBtn.click();
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to export project.');
+        });
+    });
+
+    it('shows error when delete is clicked without currentProject loaded', async () => {
+        mockGetProject.mockResolvedValue(undefined);
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to load project settings.');
+        });
+        const deleteBtn = document.querySelector('#delete-project-btn') as HTMLButtonElement;
+        deleteBtn.disabled = false;
+        deleteBtn.click();
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Project is not loaded yet.');
+        });
+    });
+
+    it('calls createCommentAutocomplete when firstPromise exists', async () => {
+        mockGetGraphData.mockResolvedValue({ promises: [{ id: 'promise-1', label: 'P1' }] });
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(mockCreateCommentAutocomplete).toHaveBeenCalledWith(
+                document.querySelector('#project-description-input'),
+                'Promise',
+                'promise-1'
+            );
+        });
+    });
+
+    it('does not set up inline editors when their elements are missing', async () => {
+        document.body.innerHTML = `
+            <form id="project-settings-form">
+                <input id="project-title-input" />
+                <textarea id="project-description-input"></textarea>
+                <div id="project-summary-panel"></div>
+                <div id="project-summary-loading"></div>
+                <span id="error-text"></span>
+                <span id="success-text"></span>
+                <button id="export-project-btn">Export</button>
+                <button id="delete-project-btn">
+                    <span id="delete-project-btn-spinner"></span>
+                    <span id="delete-project-btn-label"></span>
+                </button>
+                <input id="project-delete-confirmation-input" />
+                <span id="project-delete-confirmation-text"></span>
+                <button id="save-project-settings-btn">Save</button>
+            </form>
+        `;
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(mockSetupInlineEdit).not.toHaveBeenCalled();
+        });
+    });
+
+    it('handles loadProjectSummary API failure gracefully', async () => {
+        mockGetGraphData.mockRejectedValue(new Error('graph failed'));
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(mockRenderSummaryTable).toHaveBeenCalled();
+            const summaryLoading = document.querySelector('#project-summary-loading') as HTMLElement;
+            expect(summaryLoading.hidden).toBe(true);
+        });
+    });
+
+    it('shows export popover using bootstrap popover when available', async () => {
+        const mockPopoverShow = vi.fn();
+        const mockPopoverHide = vi.fn();
+        vi.stubGlobal('bootstrap', {
+            Popover: vi.fn(function () { return { show: mockPopoverShow, hide: mockPopoverHide }; }),
+        });
+        mockExportProject.mockResolvedValue(new Blob(['data'], { type: 'application/json' }));
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => expect(mockGetProject).toHaveBeenCalled());
+        const exportBtn = document.querySelector('#export-project-btn') as HTMLButtonElement;
+        exportBtn.click();
+        await vi.waitFor(() => {
+            expect(mockExportProject).toHaveBeenCalled();
+            expect(mockPopoverShow).toHaveBeenCalled();
+        });
+        vi.unstubAllGlobals();
+    });
+
+    it('handles settings submit with no inline editors', async () => {
+        document.body.innerHTML = `
+            <form id="project-settings-form">
+                <input id="project-title-input" />
+                <textarea id="project-description-input"></textarea>
+                <div id="project-summary-panel"></div>
+                <div id="project-summary-loading"></div>
+                <span id="error-text"></span>
+                <span id="success-text"></span>
+                <button id="export-project-btn">Export</button>
+                <button id="delete-project-btn">
+                    <span id="delete-project-btn-spinner"></span>
+                    <span id="delete-project-btn-label"></span>
+                </button>
+                <input id="project-delete-confirmation-input" />
+                <span id="project-delete-confirmation-text"></span>
+                <button id="save-project-settings-btn">Save</button>
+            </form>
+        `;
+        mockGetProject.mockResolvedValue({ name: 'My Project', description: '', createdAt: '2024-01-01' });
+        mockUpdateProjectDetails.mockResolvedValue({ name: 'Updated', description: '', createdAt: '2024-01-01' });
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => expect(mockGetProject).toHaveBeenCalled());
+        const titleInput = document.querySelector('#project-title-input') as HTMLInputElement;
+        titleInput.value = 'Updated';
+        const form = document.querySelector('#project-settings-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        await vi.waitFor(() => {
+            expect(mockUpdateProjectDetails).toHaveBeenCalledWith('o', 'p', { name: 'Updated', description: undefined });
+        });
+    });
+
+    it('shows default error message on delete when error has no message', async () => {
+        mockDeleteProject.mockRejectedValue({});
+        const { loadProjectSettingsPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/settings.ts');
+        loadProjectSettingsPage(document.createElement('div'), document.createElement('div'), 'o', 'p', { isOwner: true });
+        await vi.waitFor(() => {
+            expect(document.querySelector('#project-delete-confirmation-text')!.textContent).toBe('delete My Project');
+        });
+        const confirmInput = document.querySelector('#project-delete-confirmation-input') as HTMLInputElement;
+        confirmInput.value = 'delete My Project';
+        confirmInput.dispatchEvent(new Event('input'));
+        const deleteBtn = document.querySelector('#delete-project-btn') as HTMLButtonElement;
+        deleteBtn.click();
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to delete project.');
+        });
+    });
 });

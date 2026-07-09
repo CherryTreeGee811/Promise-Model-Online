@@ -539,4 +539,261 @@ describe('loadJourneyDetail', () => {
             expect(descMsg.textContent).toBe('Save failed');
         });
     });
+
+    it('handles null/undefined permission in gateDetailControls', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), undefined);
+
+        expect(mockGateDetailControls).toHaveBeenCalledWith(
+            undefined,
+            ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit'],
+        );
+    });
+
+    it('shows error when loadParentEpic fails', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockRejectedValue(new Error('fail'));
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+
+        await expect(loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' })).resolves.toBeUndefined();
+    });
+
+    it('creates status row with journey statusColor', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockCreateStatusRow).toHaveBeenCalledWith('green');
+    });
+
+    it('creates date rows for created and updated dates', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockCreateDateRow).toHaveBeenCalledWith('Created', '2024-01-15T10:00:00Z');
+        expect(mockCreateDateRow).toHaveBeenCalledWith('Updated', '2024-01-16T10:00:00Z');
+    });
+
+    it('builds description row even when description is empty', async () => {
+        const journeyEmptyDesc = { ...defaultJourney, description: '' };
+        mockGetJourney.mockResolvedValue(journeyEmptyDesc);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockBuildInlineEditUI).toHaveBeenCalledWith(expect.any(HTMLElement), '', '');
+    });
+
+    it('loads epic cell content after parent epic fetch', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const epicLink = document.querySelector('#journey-epic-cell a') as HTMLAnchorElement;
+        expect(epicLink.textContent).toBe('Parent epic');
+    });
+
+    it('calls upsertGraphViewButton with correct href', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const detailDiv = document.querySelector('#journey-detail-content') as HTMLElement;
+        expect(mockUpsertGraphViewButton).toHaveBeenCalledWith(detailDiv, '/graph/journey-1');
+    });
+
+    it('calls gateDetailControls with null permission', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), null);
+
+        expect(mockGateDetailControls).toHaveBeenCalledWith(
+            null,
+            ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit'],
+        );
+    });
+
+    it('renderItemRow callback builds correct HTML for a flow item', async () => {
+        mockEscapeHtml.mockImplementation((s: string) => '__escaped_' + s);
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const opts = mockRenderTableWithInlineAddRow.mock.calls[0][1] as Record<string, unknown>;
+        const renderItemRow = opts.renderItemRow as (item: unknown) => string;
+        const html = renderItemRow({ id: 99, sequenceNumber: 3, statement: 'Test flow' });
+
+        expect(html).toContain('data-flow-id="99"');
+        expect(html).toContain('flow-seq="3"');
+        expect(html).toContain('__escaped_Test flow');
+    });
+
+    it('renderAddRow callback builds correct HTML', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const opts = mockRenderTableWithInlineAddRow.mock.calls[0][1] as Record<string, unknown>;
+        const renderAddRow = opts.renderAddRow as () => string;
+        const html = renderAddRow();
+
+        expect(html).toContain('data-inline-add-row="1"');
+        expect(html).toContain('id="add-flow-form"');
+        expect(html).toContain('id="add-flow-submit"');
+    });
+
+    it('onCreate callback calls createFlow with correct params', async () => {
+        mockCreateFlow.mockResolvedValue({ id: 1, sequenceNumber: 10, statement: 'New flow' });
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const opts = mockSetupAddChildForm.mock.calls[0][0] as Record<string, unknown>;
+        const onCreate = opts.onCreate as (statement: string) => Promise<Record<string, unknown> | null>;
+        await onCreate('New flow');
+
+        expect(mockCreateFlow).toHaveBeenCalledWith('o', 'p', {
+            statement: 'New flow',
+            journeyId: 42,
+            displayOrder: defaultFlows.length + 1,
+        });
+    });
+
+    it('getRowHtml callback builds correct HTML for created flow', async () => {
+        mockEscapeHtml.mockImplementation((s: string) => '__escaped_' + s);
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const opts = mockSetupAddChildForm.mock.calls[0][0] as Record<string, unknown>;
+        const getRowHtml = opts.getRowHtml as (created: Record<string, unknown>) => string;
+        const html = getRowHtml({ id: 88, sequenceNumber: 7, statement: 'Created flow' });
+
+        expect(html).toContain('flow-seq="7"');
+        expect(html).toContain('__escaped_Created flow');
+    });
+
+    it('returns early when getJourney returns null', async () => {
+        mockGetJourney.mockResolvedValue(null);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockGetFlows).not.toHaveBeenCalled();
+        expect(mockGetEpicById).not.toHaveBeenCalled();
+        expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
+        expect(mockLoadEntityLookupMap).not.toHaveBeenCalled();
+        const detailCard = document.querySelector('.journey-detail-card');
+        expect(detailCard).toBeNull();
+    });
+
+    it('does not navigate when epic link is clicked with Ctrl held', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const epicLink = document.querySelector('#journey-epic-cell a') as HTMLAnchorElement;
+        expect(epicLink).not.toBeNull();
+
+        const ctrlClickEvent = new MouseEvent('click', { ctrlKey: true, bubbles: true });
+        epicLink.dispatchEvent(ctrlClickEvent);
+
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('renders flows table with empty array when getFlows returns null', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(null);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockPatchChildMetrics).toHaveBeenCalledWith('journey-1', null);
+        expect(mockRenderTableWithInlineAddRow).toHaveBeenCalled();
+        const opts = mockRenderTableWithInlineAddRow.mock.calls[0][1] as Record<string, unknown>;
+        expect(opts.items).toEqual([]);
+    });
+
+    it('does not call buildGraphViewHref when owner is empty', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+        mockGetOwnerProjectFromPath.mockReturnValue({ owner: '', project: 'p' });
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
+        expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
+    });
 });

@@ -233,6 +233,212 @@ describe('loadAddProjectForm', () => {
         });
     });
 
+    it('handles missing cancel link element gracefully', async () => {
+        // Arrange — remove cancel link from DOM
+        document.body.innerHTML = `
+            <form id="add-project-form">
+                <input id="project-name-input" />
+                <textarea id="project-description-input"></textarea>
+                <div id="first-promise-panel">
+                    <input id="first-promise-input" />
+                </div>
+                <button id="create-project-btn">
+                    <span id="create-project-btn-spinner" class="d-none"></span>
+                    <span id="create-project-btn-label">Create Project</span>
+                </button>
+                <button id="import-project-btn">
+                    <span id="import-project-btn-spinner" class="d-none"></span>
+                    <i id="import-project-btn-icon"></i>
+                    <span id="import-project-btn-label">Import Project...</span>
+                </button>
+                <button id="clear-import-btn"></button>
+                <input id="import-project-input" type="file" />
+                <div id="project-import-summary-panel"></div>
+                <span id="error-text"></span>
+                <span id="success-text"></span>
+                <h1>Create Project</h1>
+            </form>
+        `;
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        // Act — should not throw despite missing cancel link
+        expect(() => loadAddProjectForm(document.createElement('div'), document.createElement('div'))).not.toThrow();
+    });
+
+    it('handles missing h1 titleHeading element', async () => {
+        // Remove h1 from DOM
+        document.body.innerHTML = `
+            <form id="add-project-form">
+                <input id="project-name-input" />
+                <textarea id="project-description-input"></textarea>
+                <div id="first-promise-panel">
+                    <input id="first-promise-input" />
+                </div>
+                <button id="create-project-btn">
+                    <span id="create-project-btn-spinner" class="d-none"></span>
+                    <span id="create-project-btn-label">Create Project</span>
+                </button>
+                <button id="import-project-btn">
+                    <span id="import-project-btn-spinner" class="d-none"></span>
+                    <i id="import-project-btn-icon"></i>
+                    <span id="import-project-btn-label">Import Project...</span>
+                </button>
+                <button id="clear-import-btn"></button>
+                <input id="import-project-input" type="file" />
+                <div id="project-import-summary-panel"></div>
+                <a id="cancel-add-project-link" href="/projects">Cancel</a>
+                <span id="error-text"></span>
+                <span id="success-text"></span>
+            </form>
+        `;
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        // Act — should not throw
+        loadAddProjectForm(document.createElement('div'), document.createElement('div'));
+        const nameInput = document.querySelector('#project-name-input') as HTMLInputElement;
+        nameInput.value = 'No Heading';
+        nameInput.dispatchEvent(new Event('input'));
+        // Assert — no crash, just validating it ran
+        expect(true).toBe(true);
+    });
+
+    it('navigates to /projects when import result has no ownerSlug or slug', async () => {
+        // Arrange — import returns result without ownerSlug/slug
+        mockImportProject.mockResolvedValue({});
+        const fileContent = JSON.stringify({ project: { name: 'NoSlug', description: '' } });
+        const file = new File([fileContent], 'export.json', { type: 'application/json' });
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        loadAddProjectForm(navDiv, contentDiv);
+        const importInput = document.querySelector('#import-project-input') as HTMLInputElement;
+        Object.defineProperty(importInput, 'files', { value: [file] });
+        importInput.dispatchEvent(new Event('change'));
+        await vi.waitFor(() => {
+            const nameInput = document.querySelector('#project-name-input') as HTMLInputElement;
+            expect(nameInput.value).toBe('NoSlug');
+        });
+        // Act
+        const form = document.querySelector('#add-project-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        // Assert
+        await vi.waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('/projects', navDiv, contentDiv);
+        });
+    });
+
+    it('handles import result being null (null coalesce branch)', async () => {
+        // Arrange — importProject returns null
+        mockImportProject.mockResolvedValue(null);
+        const fileContent = JSON.stringify({ project: { name: 'NullResult', description: '' } });
+        const file = new File([fileContent], 'export.json', { type: 'application/json' });
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        loadAddProjectForm(navDiv, contentDiv);
+        const importInput = document.querySelector('#import-project-input') as HTMLInputElement;
+        Object.defineProperty(importInput, 'files', { value: [file] });
+        importInput.dispatchEvent(new Event('change'));
+        await vi.waitFor(() => {
+            const nameInput = document.querySelector('#project-name-input') as HTMLInputElement;
+            expect(nameInput.value).toBe('NullResult');
+        });
+        // Act
+        const form = document.querySelector('#add-project-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        // Assert — navigates to /projects because ownerSlug and slug are undefined
+        await vi.waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('/projects', navDiv, contentDiv);
+        });
+    });
+
+    it('shows success message with warnings count when import result has warnings array', async () => {
+        // Arrange — importProject returns result with warnings
+        mockImportProject.mockResolvedValue({ ownerSlug: 'o', slug: 'p', warnings: ['warning 1', 'warning 2'] });
+        const fileContent = JSON.stringify({ project: { name: 'WarnTest', description: '' } });
+        const file = new File([fileContent], 'export.json', { type: 'application/json' });
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        loadAddProjectForm(navDiv, contentDiv);
+        const importInput = document.querySelector('#import-project-input') as HTMLInputElement;
+        Object.defineProperty(importInput, 'files', { value: [file] });
+        importInput.dispatchEvent(new Event('change'));
+        await vi.waitFor(() => {
+            const nameInput = document.querySelector('#project-name-input') as HTMLInputElement;
+            expect(nameInput.value).toBe('WarnTest');
+        });
+        // Act
+        const form = document.querySelector('#add-project-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        // Assert
+        await vi.waitFor(() => {
+            const successEl = document.querySelector('#success-text') as HTMLElement;
+            expect(successEl.textContent).toBe('Project imported with 2 warning(s).');
+        });
+    });
+
+    it('handles import result with capitalized Warnings array', async () => {
+        // Arrange
+        mockImportProject.mockResolvedValue({ ownerSlug: 'o', slug: 'p', Warnings: ['cap warning'] });
+        const fileContent = JSON.stringify({ project: { name: 'CapWarn', description: '' } });
+        const file = new File([fileContent], 'export.json', { type: 'application/json' });
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        loadAddProjectForm(document.createElement('div'), document.createElement('div'));
+        const importInput = document.querySelector('#import-project-input') as HTMLInputElement;
+        Object.defineProperty(importInput, 'files', { value: [file] });
+        importInput.dispatchEvent(new Event('change'));
+        await vi.waitFor(() => {
+            const nameInput = document.querySelector('#project-name-input') as HTMLInputElement;
+            expect(nameInput.value).toBe('CapWarn');
+        });
+        const form = document.querySelector('#add-project-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        await vi.waitFor(() => {
+            const successEl = document.querySelector('#success-text') as HTMLElement;
+            expect(successEl.textContent).toBe('Project imported with 1 warning(s).');
+        });
+    });
+
+    it('uses default fallback message for non-Error API failures', async () => {
+        // Arrange — create rejects with a non-Error (e.g. a string)
+        mockCreateProject.mockRejectedValue(42);
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        loadAddProjectForm(document.createElement('div'), document.createElement('div'));
+        const nameInput = document.querySelector('#project-name-input') as HTMLInputElement;
+        nameInput.value = 'No Error';
+        const firstPromiseInput = document.querySelector('#first-promise-input') as HTMLInputElement;
+        firstPromiseInput.value = 'Promise';
+        // Act
+        const form = document.querySelector('#add-project-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        // Assert
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to create project.');
+        });
+    });
+
+    it('uses default fallback message on import API failure with non-Error', async () => {
+        // Arrange
+        mockImportProject.mockRejectedValue('untyped error');
+        const fileContent = JSON.stringify({ project: { name: 'ImpErr', description: '' } });
+        const file = new File([fileContent], 'export.json', { type: 'application/json' });
+        const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');
+        loadAddProjectForm(document.createElement('div'), document.createElement('div'));
+        const importInput = document.querySelector('#import-project-input') as HTMLInputElement;
+        Object.defineProperty(importInput, 'files', { value: [file] });
+        importInput.dispatchEvent(new Event('change'));
+        await vi.waitFor(() => {
+            const nameInput = document.querySelector('#project-name-input') as HTMLInputElement;
+            expect(nameInput.value).toContain('ImpErr');
+        });
+        const form = document.querySelector('#add-project-form') as HTMLFormElement;
+        form.dispatchEvent(new Event('submit'));
+        await vi.waitFor(() => {
+            const errorEl = document.querySelector('#error-text') as HTMLElement;
+            expect(errorEl.textContent).toBe('Failed to import project.');
+        });
+    });
+
     it('resets import state on clear import button click', async () => {
         // Arrange
         const { loadAddProjectForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/add.ts');

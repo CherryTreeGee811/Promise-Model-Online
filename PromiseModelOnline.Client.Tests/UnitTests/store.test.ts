@@ -80,4 +80,13 @@ describe('createStore', () => {
         expect(before.count).toBe(0);
         expect(after.count).toBe(1);
     });
+
+    it('skips non-function listeners to cover typeof branch', () => {
+        const store = createStore({ x: 1 });
+        store.subscribe(null as unknown as () => void);
+        const listener = vi.fn();
+        store.subscribe(listener);
+        store.set({ x: 2 });
+        expect(listener).toHaveBeenCalledTimes(1);
+    });
 });

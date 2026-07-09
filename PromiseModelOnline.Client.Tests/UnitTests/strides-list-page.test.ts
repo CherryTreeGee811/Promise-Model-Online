@@ -480,4 +480,151 @@ describe('loadStridesList', () => {
         // Assert
         expect(mockNavigate).toHaveBeenCalled();
     });
+
+    it('handles getMyPermission rejection gracefully', async () => {
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+        mockGetMyPermission.mockRejectedValue(new Error('permission error'));
+
+        const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
+
+        const board = document.querySelector('#stride-board')!;
+        expect(board).toBeTruthy();
+    });
+
+    it('updates countdown with ended stride', async () => {
+        const pastDate = new Date(Date.now() - 86400000 * 5).toISOString();
+        document.body.innerHTML += `<span class="stride-countdown" data-end-date="${pastDate}"></span>`;
+
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+
+        const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
+
+        const el = document.querySelector('.stride-countdown')!;
+        expect(el.textContent).toBe('Ended');
+        expect(el.classList.contains('stride-countdown--ended')).toBe(true);
+    });
+
+    it('updates countdown with ending today stride', async () => {
+        const todayDate = new Date(Date.now()).toISOString();
+        document.body.innerHTML += `<span class="stride-countdown" data-end-date="${todayDate}"></span>`;
+
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+
+        const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
+
+        const el = document.querySelector('.stride-countdown')!;
+        expect(el.textContent).toBe('Ends today');
+    });
+
+    it('updates countdown with ending soon stride (within 3 days)', async () => {
+        const soonDate = new Date(Date.now() + 86400000 * 2).toISOString();
+        document.body.innerHTML += `<span class="stride-countdown" data-end-date="${soonDate}"></span>`;
+
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+
+        const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
+
+        const el = document.querySelector('.stride-countdown')!;
+        expect(el.textContent).toMatch(/\d+ days? left/);
+    });
+
+    it('updates countdown with healthy stride', async () => {
+        const farDate = new Date(Date.now() + 86400000 * 10).toISOString();
+        document.body.innerHTML += `<span class="stride-countdown" data-end-date="${farDate}"></span>`;
+
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+
+        const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
+
+        const el = document.querySelector('.stride-countdown')!;
+        expect(el.textContent).toMatch(/\d+ days left/);
+        expect(el.classList.contains('stride-countdown--healthy')).toBe(true);
+    });
+
+    it('navigates to history page on history link click', async () => {
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+
+        await loadList();
+
+        const historyLink = document.querySelector('#iteration-history-link') as HTMLAnchorElement;
+        historyLink.click();
+
+        expect(mockNavigate).toHaveBeenCalledWith('/owner1/proj1/iterations', expect.any(HTMLElement), expect.any(HTMLElement));
+    });
+
+    it('handles getProjectMembers rejection gracefully', async () => {
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+        mockGetProjectMembers.mockRejectedValue(new Error('members error'));
+
+        const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
+
+        const board = document.querySelector('#stride-board')!;
+        expect(board).toBeTruthy();
+    });
+
+    it('handles getProject rejection in tryFetchProjectData', async () => {
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+        mockGetProject.mockRejectedValue(new Error('project error'));
+
+        const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const navDiv = document.createElement('div');
+        const contentDiv = document.createElement('div');
+        await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
+
+        const board = document.querySelector('#stride-board')!;
+        expect(board).toBeTruthy();
+    });
+
+    it('opens stride create modal with onCreated callback when create button clicked', async () => {
+        mockGetIterations.mockResolvedValue([defaultIteration]);
+        mockGetStridesByIteration.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+        let capturedOnCreated: (() => void) | undefined;
+        mockOpenStrideCreateModal.mockImplementation((opts: Record<string, unknown>) => {
+            capturedOnCreated = opts.onCreated as () => void;
+        });
+
+        await loadList();
+
+        const createBtn = document.querySelector('#create-stride-btn') as HTMLElement;
+        createBtn.click();
+
+        expect(mockOpenStrideCreateModal).toHaveBeenCalled();
+        expect(capturedOnCreated).toBeDefined();
+        expect(typeof capturedOnCreated).toBe('function');
+    });
 });
