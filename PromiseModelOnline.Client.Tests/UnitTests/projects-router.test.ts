@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/stores/project.ts', () => ({ projectStore: { set: vi.fn() } }));
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/utils/permissions.ts', () => ({ fetchMyPermission: vi.fn().mockResolvedValue({ permission: 'Edit', isOwner: false }) }));
@@ -6,8 +6,12 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/utils/permissions.ts', () =>
 beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '<div id="content"></div><ul id="main-menu"></ul><div id="error-text"></div><div id="detail-stack-graph"></div>';
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}), text: () => Promise.resolve('<div>mock</div>') });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}), text: () => Promise.resolve('<div>mock</div>') }));
     (globalThis as Record<string, unknown>).tippy ??= vi.fn().mockReturnValue({ show: vi.fn(), hide: vi.fn(), destroy: vi.fn(), setProps: vi.fn() });
+});
+
+afterEach(() => {
+    vi.unstubAllGlobals();
 });
 
 describe('handleLegacyProjectRoutes', () => {

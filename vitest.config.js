@@ -5,6 +5,12 @@ export default defineConfig({
     include: ['PromiseModelOnline.Client.Tests/UnitTests/**/*.test.ts'],
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: false,
+      },
+    },
   },
   coverage: {
     provider: 'v8',

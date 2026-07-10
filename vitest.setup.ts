@@ -8,12 +8,12 @@ if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
     (Element.prototype as Record<string, unknown>).scrollIntoView = vi.fn();
 }
 
-globalThis.fetch = vi.fn().mockResolvedValue({
+vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true,
     status: 200,
     text: () => Promise.resolve('<div>mock</div>'),
     json: () => Promise.resolve({}),
-});
+}));
 
 Object.defineProperty(globalThis, 'location', {
     value: { pathname: '/test', href: 'https://test.local/test', assign: vi.fn() },
