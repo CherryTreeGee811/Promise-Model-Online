@@ -179,8 +179,6 @@ function upsertEpicGraphViewButton(detailDiv: HTMLElement, epic: Epic): void {
  */
 export async function loadEpicDetail(owner: string, project: string, epicId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
     const detailDiv = document.querySelector('#epic-detail-content') as HTMLElement | null;
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#epic-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
     if (!detailDiv) return;

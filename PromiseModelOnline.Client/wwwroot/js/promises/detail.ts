@@ -115,7 +115,6 @@ function upsertPromiseGraphViewButton(detailDiv: HTMLElement | null, promise: Re
 export async function loadPromiseDetail(owner: string, project: string, promiseId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): Promise<void> {
     const detailDiv = document.querySelector('#promise-detail-content') as HTMLElement | null;
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#promise-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
     if (!detailDiv || !errorElement) return;
