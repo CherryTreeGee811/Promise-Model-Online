@@ -15,7 +15,7 @@ public class PermissionMapperTests
     public void Map_WithUser_MapsAllProperties()
     {
         // Arrange
-        var user = new User { Id = 1, Name = "Alice" };
+        var user = new User { Id = 1, Name = "Alice", Slug = "alice", Email = "alice@example.com" };
         var permission = new Permission
         {
             Id = 1,
@@ -35,7 +35,7 @@ public class PermissionMapperTests
         {
             Assert.That(result.Id, Is.EqualTo(1));
             Assert.That(result.UserId, Is.EqualTo(1));
-            Assert.That(result.UserName, Is.EqualTo("Alice"));
+            Assert.That(result.UserName, Is.EqualTo("alice"));
             Assert.That(result.ProjectId, Is.EqualTo(5));
             Assert.That(result.Level, Is.EqualTo("Edit"));
             Assert.That(result.Status, Is.EqualTo("Active"));
