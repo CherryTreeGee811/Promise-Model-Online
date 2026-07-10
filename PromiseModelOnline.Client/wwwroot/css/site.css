@@ -339,6 +339,12 @@ button {
   color: #fff;
 }
 
+.settings-btn, .share-btn, .audit-log-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /*********************************************
   10. Status Badges
 **********************************************/
@@ -2476,15 +2482,25 @@ button:disabled,
 }
 
 [data-bs-theme="dark"] .btn-outline-secondary {
-  color: #8b949e;
-  border-color: #8b949e;
+  --bs-btn-color: #e6edf3;
+  --bs-btn-border-color: #30363d;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #1f2937;
+  --bs-btn-hover-border-color: #4b5563;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #2d3748;
+  --bs-btn-active-border-color: #4b5563;
+  --bs-btn-disabled-color: #484f58;
+  --bs-btn-disabled-border-color: #21262d;
+  color: var(--bs-btn-color);
+  border-color: var(--bs-btn-border-color);
 }
 
 [data-bs-theme="dark"] .btn-outline-secondary:hover,
 [data-bs-theme="dark"] .btn-outline-secondary:focus-visible {
-  color: #fff;
-  background: #8b949e;
-  border-color: #8b949e;
+  color: var(--bs-btn-hover-color);
+  background: var(--bs-btn-hover-bg);
+  border-color: var(--bs-btn-hover-border-color);
 }
 
 [data-bs-theme="dark"] .btn-outline-danger {
