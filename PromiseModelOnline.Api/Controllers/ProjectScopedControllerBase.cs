@@ -1,3 +1,4 @@
+using System.Security.Claims;
 ﻿using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Enums;
@@ -36,7 +37,7 @@ public abstract class ProjectScopedControllerBase(IProjectService projectService
                  ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return false;
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
         var user = await userRepository.GetOrCreateUserByEmailAsync(email, username);
 
         var level = await permissionService.GetUserPermissionAsync(user.Id, project.Id);

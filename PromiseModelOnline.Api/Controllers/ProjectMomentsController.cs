@@ -637,7 +637,7 @@ public class ProjectMomentsController(
                  ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
         return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
     }
 

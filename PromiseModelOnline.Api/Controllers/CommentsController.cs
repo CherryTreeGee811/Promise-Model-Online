@@ -1,3 +1,4 @@
+using System.Security.Claims;
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -77,7 +78,7 @@ public class CommentsController(ICommentService commentService,
         if (string.IsNullOrEmpty(email))
             return Unauthorized("Missing email claim");
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
         try
         {

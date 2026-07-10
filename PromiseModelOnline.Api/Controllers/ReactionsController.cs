@@ -178,7 +178,7 @@ public class ReactionsController(IReactionService reactionService,
 
         if (string.IsNullOrEmpty(email)) return null;
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
         var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
 
