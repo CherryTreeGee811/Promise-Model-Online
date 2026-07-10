@@ -6,7 +6,7 @@ import {
     patchChildMetrics,
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
-import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
@@ -119,15 +119,15 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
     destroyDetailStackGraph();
     if (!detailDiv || !errorElement) return;
-    if (loadingElement) loadingElement.style.display = '';
-    errorElement.textContent = '';
+    setElementVisibility('#promise-detail-loading', false);
+    setElementText('#error-text', '');
 
     try {
         const promise = await getPromise(owner, project, promiseId) as Record<string, unknown>;
         if (!promise) return;
         await loadEntityLookupMap('Promise', promise.id as number, owner, project);
 
-        if (loadingElement) loadingElement.style.display = 'none';
+        setElementVisibility('#promise-detail-loading', true);
 
         const cardDiv = document.createElement('div');
         cardDiv.className = 'detail-card promise-detail-card';
@@ -194,7 +194,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         detailDiv!.append(cardDiv);
 
-        if (loadingElement) loadingElement.style.display = 'none';
+        setElementVisibility('#promise-detail-loading', true);
 
         const descInput = document.querySelector('#description-input') as HTMLTextAreaElement | null;
         const descView = document.querySelector('#description-view') as HTMLElement | null;
@@ -227,10 +227,10 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         setupDescriptionHandler(owner, project, promiseId, 'promise', promise as unknown as { sequenceNumber: number; description?: string }, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
 
-        if (loadingElement) loadingElement.style.display = 'none';
+        setElementVisibility('#promise-detail-loading', true);
     } catch (error) {
-        if (loadingElement) loadingElement.style.display = 'none';
-        if (errorElement) errorElement.textContent = 'Failed to load promise details.';
+        setElementVisibility('#promise-detail-loading', true);
+        setElementText('#error-text', 'Failed to load promise details.');
         console.error(error);
     }
 }
