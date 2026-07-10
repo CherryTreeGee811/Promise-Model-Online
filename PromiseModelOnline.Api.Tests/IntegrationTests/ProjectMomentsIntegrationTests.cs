@@ -1,5 +1,7 @@
 ﻿using System.Net;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PMO.Core.Models;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
@@ -555,5 +557,40 @@ public class ProjectMomentsIntegrationTests : ApiIntegrationTestBase
             new { newStatus = "InProgress" });
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
+    [Description("PMO-179: Deleting a moment removes its tasks")]
+    public async Task DeleteMoment_CascadesToTasks()
+    {
+        // Arrange
+        var seeded = await SeedMomentAsync("Cascade task test");
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+            db.Set<MomentTask>().Add(new MomentTask
+            {
+                Name = "Cascade test task",
+                Description = "Should be removed",
+                MomentId = seeded.Id,
+                IsCompleted = false,
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        SetAuthHeader(OwnerToken);
+
+        // Act — delete the moment
+        var deleteResponse = await Client.DeleteAsync(
+            $"/api/projects/{Owner}/{Project}/moments/{seeded.SequenceNumber}");
+        Assert.That(deleteResponse.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Assert — tasks are gone
+        using var verifyScope = Factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+        var remainingTasks = await verifyDb.Set<MomentTask>()
+            .Where(t => t.MomentId == seeded.Id)
+            .ToListAsync();
+        Assert.That(remainingTasks, Is.Empty, "Moment tasks should be cascade-deleted");
     }
 }

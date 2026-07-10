@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using PMO.Core.Models;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
@@ -95,6 +96,36 @@ public class PromiseModelOnlineContext(
     /// Gets or sets the DbSet for entity-scoped sequence counters.
     /// </summary>
     public DbSet<EntitySequence> EntitySequences { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for moment task records.
+    /// </summary>
+    public DbSet<MomentTask> MomentTasks { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for moment assignment records.
+    /// </summary>
+    public DbSet<MomentAssignment> MomentAssignments { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for bug/rework task records.
+    /// </summary>
+    public DbSet<BugReworkTask> BugReworkTasks { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for comment records.
+    /// </summary>
+    public DbSet<Comment> Comments { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for comment mention records.
+    /// </summary>
+    public DbSet<CommentMention> CommentMentions { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for permission records.
+    /// </summary>
+    public DbSet<Permission> Permissions { get; set; } = null!;
 
     /// <summary>
     /// Atomically allocates the next sequence number for a given parent

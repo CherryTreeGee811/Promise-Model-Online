@@ -8,3 +8,50 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
+
+## Database Schema — Index Inventory
+
+### Hierarchy (Project → Promise → Epic → Journey → Flow → Moment → Task)
+
+All FK columns have indexes (auto-created by EF Core). Additional covering indexes added in migration `AddMissingPerformanceIndexes`:
+
+| Table | Index | Columns | Purpose |
+|-------|-------|---------|---------|
+| Promises | `IX_Promises_ProjectId_DisplayOrder` | ProjectId, DisplayOrder | Stack-graph sort |
+| Epics | `IX_Epics_ProductPromiseId_DisplayOrder` | ProductPromiseId, DisplayOrder | Stack-graph sort |
+| Journeys | `IX_Journeys_EpicId_DisplayOrder` | EpicId, DisplayOrder | Stack-graph sort |
+| Flows | `IX_Flows_JourneyId_DisplayOrder` | JourneyId, DisplayOrder | Stack-graph sort |
+| Moments | `IX_Moments_AssignedStrideId_Status` | AssignedStrideId, Status | Stride board filter |
+
+### AuditEvents (no indexes existed prior to migration)
+
+| Index | Columns | Query Pattern |
+|-------|---------|---------------|
+| `IX_AuditEvents_ProjectId_OccurredAtUtc` | ProjectId, OccurredAtUtc | History listing |
+| `IX_AuditEvents_EntityType_EntityId` | EntityType, EntityId | Detail modal lookup |
+
+### Notifications, Reactions
+
+| Table | Index | Columns | Query Pattern |
+|-------|-------|---------|---------------|
+| Notification | `IX_Notification_UserId_IsRead` | UserId, IsRead | Unread badge count |
+| Reactions | `IX_Reactions_StackItemType_StackItemId` | StackItemType, StackItemId | Polymorphic reaction display |
+
+### Task Queries
+
+| Table | Index | Columns | Query Pattern |
+|-------|-------|---------|---------------|
+| MomentTask | `IX_MomentTask_OwnerId_IsCompleted` | OwnerId, IsCompleted | My Tasks page |
+| BugReworkTask | `IX_BugReworkTask_SourceCommentId` | SourceCommentId | Bug rework lookup |
+
+### Automation
+
+| Table | Index | Columns | Filter | Query Pattern |
+|-------|-------|---------|--------|---------------|
+| Strides | `IX_Strides_EndDate` | EndDate | `WHERE IterationId IS NOT NULL` | Overdue stride detection |
+
+### Migration
+
+- Name: `AddMissingPerformanceIndexes`
+- Timestamp: `20260709120000`
+- DDL only — no schema changes, no data movement
