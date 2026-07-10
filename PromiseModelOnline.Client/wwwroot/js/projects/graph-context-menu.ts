@@ -1,89 +1,19 @@
-import { apiFetch } from '../api.ts';
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { updateMomentStatus } from '../moments/api.ts';
-import { ensureModal, createConfirmationPromise } from '../utils/html.ts';
 import { STATUS_OPTIONS } from '../utils/status-utilities.ts';
 
+import { normalizeNodeType, requestJson, buildMenuActions } from './graph-context-menu-core.ts';
 
+export { requestJson, buildMenuActions } from './graph-context-menu-core.ts';
 
 const _contextState: { owner: string; project: string; permission: Record<string, unknown> | undefined } = { owner: '', project: '', permission: undefined };
 
-const NODE_CHILD_LABELS: Record<string, string> = {
-    root: 'Promise',
-    promise: 'Epic',
-    epic: 'Journey',
-    journey: 'Flow',
-    flow: 'Moment',
-};
-
 /**
- * Get the API route for deleting a graph node by its type and ID.
- * @param {string} nodeType - The node type.
- * @param {string|number} nodeId - The node's ID.
- * @returns {string} The delete API route, or null if invalid.
+ * Determine the action metadata for creating a new child node based on the parent's node type.
+ * @param {Record<string, unknown>} nodeData - The parent node's data.
+ * @returns {{entityLabel: string, endpoint: string, parentField: string} | undefined} The metadata or undefined if no creation action is available.
  */
-function getDeleteRoute(nodeType: string, nodeId?: string | number): string | undefined {
-    const normalizedType = normalizeNodeType(nodeType);
-
-    if (normalizedType === 'root') {
-        return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}`;
-    }
-
-    const numericId = Math.trunc(Number(nodeId));
-    if (Number.isNaN(numericId)) return;
-
-    switch (normalizedType) {
-        case 'promise': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/promises/${numericId}`;
-        }
-        case 'epic': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/epics/${numericId}`;
-        }
-        case 'journey': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/journeys/${numericId}`;
-        }
-        case 'flow': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/flows/${numericId}`;
-        }
-        case 'moment': { return `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}/moments/${numericId}`;
-        }
-        default: { return;
-        }
-    }
-}
-
-/**
- * Normalize a node type string to lowercase trimmed form.
- * @param {string} nodeType - The raw node type.
- * @returns {string} The normalized node type.
- */
-function normalizeNodeType(nodeType: string): string {
-    return (nodeType ?? '').trim().toLowerCase();
-}
-
-/**
- * Get the display label for a graph node.
- * @param {object} nodeData - The node data.
- * @returns {string} The node's label text.
- */
-function getNodeLabel(nodeData: Record<string, unknown>): string {
-    const payload = (nodeData?.payload ?? {}) as Record<string, unknown>;
-    return String(payload.statement ?? payload.name ?? `#${payload.id ?? ''}`).trim();
-}
-
-/**
- * Get the label for the child type of a given node type.
- * @param {string} nodeType - The parent node type.
- * @returns {string} The child type label, or null if none.
- */
-function getChildLabel(nodeType: string): string | undefined {
-    return NODE_CHILD_LABELS[normalizeNodeType(nodeType)];
-}
-
-
-
-/**
- * Get the API metadata for creating a child entity under a given node.
- * @param {object} nodeData - The parent node data.
- * @returns {{entityLabel: string, endpoint: string, parentField: string}} The create action metadata, or null.
- */
-function getCreateActionMeta(nodeData: Record<string, unknown>): { entityLabel: string; endpoint: string; parentField: string } | undefined {
+export function getCreateActionMeta(nodeData: Record<string, unknown>): { entityLabel: string; endpoint: string; parentField: string } | undefined {
     const normalizedType = normalizeNodeType(nodeData.nodeType as string);
 
     const base = `/api/projects/${encodeURIComponent(_contextState.owner)}/${encodeURIComponent(_contextState.project)}`;
@@ -110,11 +40,11 @@ function getCreateActionMeta(nodeData: Record<string, unknown>): { entityLabel: 
 }
 
 /**
- * Get default values for the create form based on the parent node type.
- * @param {object} nodeData - The parent node data.
- * @returns {object} Default form values (statement, description, displayOrder), or null.
+ * Determine the default form values for creating a new child based on the parent's node type.
+ * @param {Record<string, unknown>} nodeData - The parent node's data.
+ * @returns {Record<string, unknown> | undefined} The default values or undefined.
  */
-function getCreateFormDefaults(nodeData: Record<string, unknown>): Record<string, unknown> | undefined {
+export function getCreateFormDefaults(nodeData: Record<string, unknown>): Record<string, unknown> | undefined {
     const normalizedType = normalizeNodeType(nodeData.nodeType as string);
     const childCount = Math.trunc(Number(nodeData.childCount ?? 0)) || 0;
     const nextDisplayOrder = childCount + 1;
@@ -162,94 +92,11 @@ function getCreateFormDefaults(nodeData: Record<string, unknown>): Record<string
 }
 
 /**
- * Make an authenticated JSON API request.
- * @param {string} url - The request URL.
- * @param {object} [options] - Fetch options (headers, method, body, etc.).
- * @returns {Promise<object|null>} The parsed JSON response, or null for 204.
- * @throws {Error} If the request fails or returns a non-OK status.
- */
-export async function requestJson(url: string, options: Record<string, unknown>): Promise<unknown> {
-    const existingHeaders = (options.headers as Record<string, unknown> | undefined) ?? {};
-    const response = await apiFetch(url, {
-        mode: 'cors',
-        ...options,
-        headers: {
-            'Accept': 'application/json',
-            'Accept-Language': 'en-CA',
-            ...existingHeaders,
-        },
-    });
-
-    if (response.ok) {
-        if (response.status === 204) {
-            return;
-        }
-        return response.json();
-    }
-
-    if (response.status === 401) {
-        (document.querySelector('#login-link') as HTMLElement)?.click();
-    }
-
-    let message = `HTTP error! status: ${response.status}`;
-    try {
-        const body = await response.json();
-        message = body?.message || body?.title || body?.detail || message;
-    } catch {
-        // Ignore body parsing errors and fall back to the status-based message.
-    }
-
-    throw new Error(message);
-}
-
-/**
- * Open a Bootstrap modal to confirm deletion of an item.
- * @param {string} label - The label of the item to delete.
- * @returns {Promise<boolean>} Resolves to true if confirmed, false otherwise.
- */
-function openDeleteConfirmationModal(label: string): Promise<boolean> {
-    const modalElement = ensureModal('graph-delete-confirmation-modal', `
-        <div class="modal fade" id="graph-delete-confirmation-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="graph-delete-confirmation-modal-title">Delete item</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body" id="graph-delete-confirmation-modal-body"></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-danger" id="graph-delete-confirmation-confirm">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `);
-
-    if (!modalElement) {
-        return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
-    }
-
-    const titleElement = modalElement.querySelector('#graph-delete-confirmation-modal-title') as HTMLElement | null;
-    const bodyElement = modalElement.querySelector('#graph-delete-confirmation-modal-body') as HTMLElement | null;
-    const confirmButton = modalElement.querySelector('#graph-delete-confirmation-confirm') as HTMLButtonElement | null;
-
-    if (!titleElement || !bodyElement || !confirmButton) {
-        return Promise.resolve(confirm(`Delete ${label}? This cannot be undone.`));
-    }
-
-    titleElement.textContent = `Delete ${label}`;
-    bodyElement.textContent = `Delete ${label}? This cannot be undone.`;
-
-    return createConfirmationPromise(modalElement, confirmButton);
-}
-
-/**
  * Create a form input field element.
  * @param {{name: string, label: string, type?: string, value?: string, placeholder?: string, rows?: number}} config - The field configuration.
  * @returns {{field: HTMLLabelElement, input: HTMLInputElement|HTMLTextAreaElement}} The field and input elements.
  */
-function createInputField({ name, label, type = 'text', value = '', placeholder = '', rows = 3 }: {
+export function createInputField({ name, label, type = 'text', value = '', placeholder = '', rows = 3 }: {
     name: string;
     label: string;
     type?: string;
@@ -287,7 +134,7 @@ function createInputField({ name, label, type = 'text', value = '', placeholder 
  * @param {{name: string, label: string, value?: string, options?: {value: string, label: string}[]}} config - The field configuration.
  * @returns {{field: HTMLLabelElement, select: HTMLSelectElement}} The field and select elements.
  */
-function createSelectField({ name, label, value = '', options = [] }: {
+export function createSelectField({ name, label, value = '', options = [] }: {
     name: string;
     label: string;
     value?: string;
@@ -320,7 +167,7 @@ function createSelectField({ name, label, value = '', options = [] }: {
  * Get the option list for moment types (Story, Job).
  * @returns {{value: string, label: string}[]} The moment type options.
  */
-function getMomentTypeOptions(): Array<{ value: string; label: string }> {
+export function getMomentTypeOptions(): Array<{ value: string; label: string }> {
     return [
         { value: 'Story', label: 'Story' },
         { value: 'Job', label: 'Job' },
@@ -328,34 +175,42 @@ function getMomentTypeOptions(): Array<{ value: string; label: string }> {
 }
 
 /**
+ * Mapping of color keywords to canonical moment status values.
+ */
+const STATUS_COLOR_MAP: ReadonlyArray<{ keywords: readonly string[]; status: string }> = [
+    { keywords: ['green', 'done'], status: 'Done' },
+    { keywords: ['black', 'blocked'], status: 'Blocked' },
+    { keywords: ['orange', 'yellow', 'amber', 'inprogress', 'in-progress'], status: 'InProgress' },
+    { keywords: ['red', 'todo'], status: 'Todo' },
+] as const;
+
+/**
  * Get the current status value of a moment node, mapping statusColor to a canonical status.
- * @param {object} nodeData - The node data.
+ * @param {Record<string, unknown>} nodeData - The node data.
  * @returns {string} The canonical status value (Done, Blocked, InProgress, or not started).
  */
-function getMomentStatusValue(nodeData: Record<string, unknown>): string {
+export function getMomentStatusValue(nodeData: Record<string, unknown>): string {
     const payload = (nodeData?.payload ?? {}) as Record<string, unknown>;
     const status = String(payload.status ?? payload.Status ?? '').trim();
     if (status) {
-        const match = STATUS_OPTIONS.find((option: { value: string; icon: string; label: string }) => option.value.toLowerCase() === status.toLowerCase());
+        const match = STATUS_OPTIONS.find(
+            (option: { value: string; icon: string; label: string }) => option.value.toLowerCase() === status.toLowerCase()
+        );
         if (match) {
             return match.value;
         }
     }
 
     const statusColor = String(payload.statusColor ?? payload.StatusColor ?? '').trim().toLowerCase();
-    if (statusColor.includes('green') || statusColor.includes('done')) return 'Done';
-    if (statusColor.includes('black') || statusColor.includes('blocked')) return 'Blocked';
-    if (statusColor.includes('orange') || statusColor.includes('yellow') || statusColor.includes('amber') || statusColor.includes('inprogress') || statusColor.includes('in-progress')) return 'InProgress';
-    if (statusColor.includes('red') || statusColor.includes('todo')) return 'Todo';
-
-    return 'Todo';
+    const matched = STATUS_COLOR_MAP.find(entry => entry.keywords.some(kw => statusColor.includes(kw)));
+    return matched?.status ?? 'Todo';
 }
 
 /**
  * Get the option list for moment effort estimates.
  * @returns {{value: string, label: string}[]} The estimate options.
  */
-function getMomentEstimateOptions(): Array<{ value: string; label: string }> {
+export function getMomentEstimateOptions(): Array<{ value: string; label: string }> {
     return [
         { value: '-', label: '-' },
         { value: 'XS', label: 'XS' },
@@ -373,7 +228,7 @@ function getMomentEstimateOptions(): Array<{ value: string; label: string }> {
  * @param {object[]} [strides] - The available strides.
  * @returns {{value: string, label: string}[]} The stride options.
  */
-function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): Array<{ value: string; label: string }> {
+export function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): Array<{ value: string; label: string }> {
     return [
         { value: '', label: 'Backlog' },
         ...strides.map(stride => ({
@@ -400,7 +255,7 @@ function getStrideOptions(strides: Array<{ id: number; name?: string }> = []): A
  * @param {string} submitText - The text for the submit button.
  * @returns {{ cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement }} The created button elements.
  */
-function createFormActionsBar(closeMenus: () => void, submitText: string): { cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement } {
+export function createFormActionsBar(closeMenus: () => void, submitText: string): { cancelButton: HTMLButtonElement; submitButton: HTMLButtonElement } {
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
     cancelButton.className = 'graph-context-menu-form__button graph-context-menu-form__button--secondary';
@@ -579,7 +434,7 @@ export function buildMomentFormElement(
  * @param {() => void} closeMenus - Function to close all context menus.
  * @returns {HTMLFormElement|undefined} The form element, or undefined if the moment sequence number is missing.
  */
-function buildMomentStatusFormElement(
+export function buildMomentStatusFormElement(
     nodeData: Record<string, unknown>,
     onGraphMutated: ((...arguments_: Record<string, unknown>[]) => unknown) | undefined,
     closeMenus: () => void,
@@ -659,7 +514,7 @@ function buildMomentStatusFormElement(
  * @param {() => void} closeMenus - Function to close all context menus.
  * @returns {HTMLFormElement|undefined} The form element, or undefined if creation metadata is missing.
  */
-function buildCreateFormElement(
+export function buildCreateFormElement(
     nodeData: Record<string, unknown>,
     owner: string,
     project: string,
@@ -777,147 +632,11 @@ function buildCreateFormElement(
 }
 
 /**
- * Build the list of actions for the context menu based on node type and permissions.
- * @param {object} nodeData - The node data for which to build actions.
- * @param {string} owner - The project owner's slug.
- * @param {string} project - The project's slug.
- * @param {(() => void) | undefined} onGraphMutated - Callback after any mutation.
- * @param {(() => void) | undefined} onProjectDeleted - Callback when the project is deleted.
- * @param {() => void} closeMenus - Function to close all context menus.
- * @param {(nodeData: object, owner: string, project: string, refreshGraph: (() => void) | undefined) => void} openCreateForm - Function to open the create form.
- * @param {(nodeData: object, refreshGraph: (() => void) | undefined) => void} openMomentStatusForm - Function to open the moment status form.
- * @param {((nodeData: object) => boolean) | undefined} isNodeChildrenHidden - Function to check if a node's children are hidden.
- * @param {((nodeData: object, hidden: boolean) => void) | undefined} setNodeChildrenHidden - Function to toggle children visibility.
- * @param {((nodeData: object) => void) | undefined} revealNextLevel - Function to reveal the next level of children.
- * @param {{ permission?: string } | null | undefined} permission - The current user's permission object.
- * @returns {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} The action list.
- */
-export function buildMenuActions(
-    nodeData: Record<string, unknown>,
-    owner: string,
-    project: string,
-    onGraphMutated: (() => void) | undefined,
-    onProjectDeleted: (() => void) | undefined,
-    closeMenus: () => void,
-    openCreateForm: (nodeData: Record<string, unknown>, owner: string, project: string, refreshGraph: (() => void) | undefined) => void,
-    openMomentStatusForm: (nodeData: Record<string, unknown>, refreshGraph: (() => void) | undefined) => void,
-    isNodeChildrenHidden: ((nodeData: Record<string, unknown>) => boolean) | undefined,
-    setNodeChildrenHidden: ((nodeData: Record<string, unknown>, isHidden: boolean) => void) | undefined,
-    revealNextLevel: ((nodeData: Record<string, unknown>) => void) | undefined,
-    permission: { permission?: string } | null | undefined,
-): Array<{
-    id: string;
-    label: string;
-    danger: boolean;
-    disabled?: boolean;
-    disabledReason?: string;
-    handler: () => Promise<void>;
-}> {
-    const canEdit = permission?.permission === 'Edit';
-    const actions: Array<{
-        id: string;
-        label: string;
-        danger: boolean;
-        disabled?: boolean;
-        disabledReason?: string;
-        handler: () => Promise<void>;
-    }> = [];
-    const childLabel = getChildLabel(nodeData.nodeType as string);
-    const childCount = Math.trunc(Number(nodeData?.childCount ?? 0)) || 0;
-    const hiddenDescendantCount = Math.trunc(Number(nodeData?._hiddenDescendantCount ?? 0)) || 0;
-    const canToggleChildren = childCount > 0 || hiddenDescendantCount > 0;
-    const isChildrenHidden = canToggleChildren && Boolean(isNodeChildrenHidden?.(nodeData));
-
-    if (childLabel) {
-        actions.push({
-            id: 'create-child',
-            label: `Create New ${childLabel}`,
-            danger: false,
-            disabled: !canEdit,
-            disabledReason: 'Requires Edit permission.',
-            handler: async () => {
-                openCreateForm(nodeData, owner, project, onGraphMutated);
-            },
-        });
-    }
-
-    if (canToggleChildren) {
-        actions.push({
-            id: isChildrenHidden ? 'reveal-children' : 'hide-children',
-            label: isChildrenHidden ? 'Reveal Children' : 'Hide Children',
-            danger: false,
-            handler: async () => {
-                await setNodeChildrenHidden?.(nodeData, !isChildrenHidden);
-            },
-        });
-    }
-
-    if (isChildrenHidden && hiddenDescendantCount > 0) {
-        actions.push({
-            id: 'reveal-next-level',
-            label: 'Reveal Next Level',
-            danger: false,
-            handler: async () => {
-                await revealNextLevel?.(nodeData);
-            },
-        });
-    }
-
-    if (normalizeNodeType(nodeData.nodeType as string) === 'moment') {
-        actions.push({
-            id: 'change-status',
-            label: 'Change Status',
-            danger: false,
-            disabled: !canEdit,
-            disabledReason: 'Requires Edit permission.',
-            handler: async () => {
-                openMomentStatusForm(nodeData, onGraphMutated);
-            },
-        });
-    }
-
-    actions.push({
-        id: 'delete',
-        label: 'Delete',
-        danger: true,
-        disabled: !canEdit,
-        disabledReason: 'Requires Edit permission.',
-        handler: async () => {
-            const label = getNodeLabel(nodeData) || normalizeNodeType(nodeData.nodeType as string) || 'item';
-            const confirmationLabel = (nodeData.nodeType as string) === 'root' ? 'project' : label;
-            closeMenus?.();
-
-            const isConfirmed = await openDeleteConfirmationModal(confirmationLabel);
-            if (!isConfirmed) {
-                return;
-            }
-
-            if (normalizeNodeType(nodeData.nodeType as string) === 'root') {
-                const endpointUrl = getDeleteRoute('root')!;
-                await requestJson(endpointUrl, { method: 'DELETE' });
-                await onProjectDeleted?.();
-                return;
-            }
-
-            const endpointUrl = getDeleteRoute(nodeData.nodeType as string, (nodeData.payload as Record<string, unknown> | undefined)?.id as string | number | undefined);
-            if (!endpointUrl) {
-                throw new Error('Unable to determine the delete route for this node.');
-            }
-
-            await requestJson(endpointUrl, { method: 'DELETE' });
-            await onGraphMutated?.();
-        },
-    });
-
-    return actions;
-}
-
-/**
  * Build the DOM element for the context menu from a list of actions.
  * @param {{id: string, label: string, danger: boolean, disabled?: boolean, disabledReason?: string, handler: () => Promise<void>}[]} actions - The action definitions.
  * @returns {HTMLDivElement} The menu element.
  */
-function buildMenuElement(actions: Array<{
+export function buildMenuElement(actions: Array<{
     id: string;
     label: string;
     danger: boolean;

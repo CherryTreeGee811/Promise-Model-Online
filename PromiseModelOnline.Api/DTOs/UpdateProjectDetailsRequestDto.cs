@@ -6,9 +6,10 @@ namespace PromiseModelOnline.Api.DTOs;
 public class UpdateProjectDetailsRequestDto
 {
     /// <summary>New display name. Required.</summary>
-    [Required]
+    [Required, MaxLength(200)]
     public string Name { get; set; } = string.Empty;
 
     /// <summary>New description. Optional.</summary>
+    [MaxLength(1000)]
     public string? Description { get; set; }
 }

@@ -158,6 +158,16 @@ describe('apiPatch', () => {
         const callBody = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body;
         expect(callBody).toBeUndefined();
     });
+
+    it('throws on non-ok response for PATCH', async () => {
+        mockFetch(500, {}, false);
+        await expect(apiPatch('/api/update', {})).rejects.toThrow('HTTP 500');
+    });
+
+    it('throws on network error for PATCH', async () => {
+        mockFetchError('Network failure');
+        await expect(apiPatch('/api/update', {})).rejects.toThrow('Network failure');
+    });
 });
 
 describe('checkSession', () => {

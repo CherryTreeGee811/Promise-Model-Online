@@ -1,5 +1,7 @@
 ﻿using System.Net;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PMO.Core.Models;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
@@ -67,6 +69,20 @@ public class ProjectDetailIntegrationTests : ApiIntegrationTestBase
                 StatusColor = "red",
             };
             db.Flows.Add(flow);
+            await db.SaveChangesAsync();
+
+            var momentSeq = await db.GetNextMomentSequenceAsync(flow.Id);
+            var moment = new Moment
+            {
+                Statement = "Root moment",
+                FlowId = flow.Id,
+                Type = MomentType.Story,
+                Status = MomentStatus.Todo,
+                SequenceNumber = momentSeq,
+                DisplayOrder = 0,
+                StatusColor = "red",
+            };
+            db.Moments.Add(moment);
             await db.SaveChangesAsync();
 
             _flowId = flow.Id;
@@ -398,5 +414,42 @@ public class ProjectDetailIntegrationTests : ApiIntegrationTestBase
         Assert.That(response.Headers.Contains("X-Total-Count"), Is.True);
         var events = await ReadJsonAsync<List<AuditTimelineItemDto>>(response);
         Assert.That(events, Is.Not.Null);
+    }
+
+    [Test]
+    [Description("PMO-179: Deleting a project cascades through full hierarchy")]
+    public async Task DeleteProject_CascadesFullHierarchy()
+    {
+        // Arrange — SeedHierarchyAsync creates promise->epic->journey->flow->moment
+        // Add a moment task for full cascade verification
+        using (var setupScope = Factory.Services.CreateScope())
+        {
+            var setupDb = setupScope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+            var moment = await setupDb.Moments.FirstAsync();
+            setupDb.Set<MomentTask>().Add(new MomentTask
+            {
+                Name = "Cascade test task",
+                Description = "Should be removed with project",
+                MomentId = moment.Id,
+                IsCompleted = false,
+                CreatedAt = DateTime.UtcNow
+            });
+            await setupDb.SaveChangesAsync();
+        }
+        SetAuthHeader(OwnerToken);
+
+        // Act — delete the project
+        var deleteResponse = await Client.DeleteAsync($"/api/projects/{Owner}/{Project}");
+        Assert.That(deleteResponse.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Assert — all hierarchy levels are gone
+        using var verifyScope = Factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+        Assert.That(await verifyDb.Promises.AnyAsync(), Is.False, "Promises should be cascade-deleted");
+        Assert.That(await verifyDb.Epics.AnyAsync(), Is.False, "Epics should be cascade-deleted");
+        Assert.That(await verifyDb.Journeys.AnyAsync(), Is.False, "Journeys should be cascade-deleted");
+        Assert.That(await verifyDb.Flows.AnyAsync(), Is.False, "Flows should be cascade-deleted");
+        Assert.That(await verifyDb.Moments.AnyAsync(), Is.False, "Moments should be cascade-deleted");
+        Assert.That(await verifyDb.Set<MomentTask>().AnyAsync(), Is.False, "MomentTasks should be cascade-deleted");
     }
 }

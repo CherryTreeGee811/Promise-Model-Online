@@ -6,7 +6,7 @@ import {
     patchChildMetrics,
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
-import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
@@ -250,12 +250,27 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
     if (!detailDiv) return;
 
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+<<<<<<< HEAD
     if (!errorElement) return;
 
     const loadingElement = document.querySelector('#promise-detail-loading') as HTMLElement | null;
+||||||| 4594080
+    const loadingElement = document.querySelector('#promise-detail-loading') as HTMLElement | null;
+=======
+>>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
 
+<<<<<<< HEAD
     hideLoading(loadingElement, false);
     errorElement.textContent = '';
+||||||| 4594080
+    if (!detailDiv || !errorElement) return;
+    if (loadingElement) loadingElement.hidden = false;
+    errorElement.textContent = '';
+=======
+    if (!detailDiv || !errorElement) return;
+    setElementVisibility('#promise-detail-loading', false);
+    setElementText('#error-text', '');
+>>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
 
     try {
         destroyDetailStackGraph();

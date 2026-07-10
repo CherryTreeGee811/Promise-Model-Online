@@ -17,6 +17,7 @@ public class ProfileViewModel
     /// <summary>The user's email address. Read-only on the profile form. Required, must be a valid email format.</summary>
     [Required]
     [EmailAddress]
+    [StringLength(254)]
     public string Email { get; set; } = string.Empty;
 
     /// <summary>Indicates whether the user's email has been verified. Read-only.</summary>

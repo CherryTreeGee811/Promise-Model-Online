@@ -7,6 +7,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreatePromiseRequestDto
 {
     /// <summary>Short description of the entity.</summary>
+    [Required, MaxLength(500)]
     public string Statement { get; set; } = string.Empty;
     /// <summary>ID of the project.</summary>
     public int? ProjectId { get; set; }
@@ -14,5 +15,6 @@ public class CreatePromiseRequestDto
     [JsonRequired]
     public int DisplayOrder { get; set; }
     /// <summary>Optional description.</summary>
+    [MaxLength(2000)]
     public string? Description { get; set; }
 }

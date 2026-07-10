@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cloneSubtree, filterTree } from '../../PromiseModelOnline.Client/wwwroot/js/projects/graph.ts';
+import { cloneSubtree, filterTree } from '../../PromiseModelOnline.Client/wwwroot/js/projects/graph-core.ts';
 
 function makeNode(id: string, nodeType = 'epic', children: Record<string, unknown>[] = []): Record<string, unknown> {
     return { id, nodeType, children, _searchText: `node-${id}`, payload: { statement: `Node ${id}`, statusColor: 'green' }, _statusBucket: 'todo' };
@@ -11,7 +11,7 @@ describe('cloneSubtree', () => {
         const metrics = { visibleNodes: 0, hiddenNodes: 0 };
         const result = cloneSubtree(node, metrics, new Set()) as Record<string, unknown>;
         expect(result.id).toBe('n1');
-        expect(result._searchMatched).toBe(false);
+        expect(result._isSearchMatched).toBe(false);
         expect(result._isCollapsed).toBe(false);
         expect(metrics.visibleNodes).toBe(1);
     });
@@ -72,7 +72,7 @@ describe('filterTree', () => {
         const node = { ...makeNode('p1', 'promise', [makeNode('c1', 'epic')]), _searchText: 'match-here' };
         const metrics = { visibleNodes: 0, directMatches: 0, hiddenNodes: 0 };
         const result = filterTree(node, filters, metrics, false, new Set()) as Record<string, unknown>;
-        expect(result?._searchMatched).toBe(true);
+        expect(result?._isSearchMatched).toBe(true);
         expect(metrics.directMatches).toBe(1);
     });
 

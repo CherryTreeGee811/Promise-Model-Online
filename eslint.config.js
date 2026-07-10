@@ -125,6 +125,7 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
+      'complexity': ['error', 15],
       'no-secrets/no-secrets': 'error',
     },
   },

@@ -165,20 +165,22 @@ public class PermissionService(
         return null;
     }
 
-    /// <summary>Find a user by email first, then by name, for invitation resolution.</summary>
-    /// <param name="emailOrName">The email address or display name to search for.</param>
+    /// <summary>Find a user by email, display name, or slug for invitation resolution.</summary>
+    /// <param name="emailOrName">The email address, display name, or username slug to search for.</param>
     /// <returns>The matching user, or <c>null</c> if not found.</returns>
     private async Task<User?> FindInvitedUserAsync(string emailOrName)
     {
         var users = await _userRepo.FindByEmailAsync(emailOrName);
         var user = users.FirstOrDefault();
+        if (user != null) return user;
 
-        if (user == null)
-        {
-            var nameMatches = await _userRepo.GetUsersByNameAsync(emailOrName);
-            user = nameMatches.FirstOrDefault();
-        }
+        var nameMatches = await _userRepo.GetUsersByNameAsync(emailOrName);
+        user = nameMatches.FirstOrDefault();
+        if (user != null) return user;
 
-        return user;
+        var slugUser = await _userRepo.GetBySlugAsync(emailOrName);
+        if (slugUser != null) return slugUser;
+
+        return null;
     }
 }

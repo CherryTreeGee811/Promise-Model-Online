@@ -50,6 +50,9 @@ public class EmailService : IEmailService
         _apiKey = apiKey;
     }
 
+    /// <summary>Factory for creating the SendGrid client. Override in tests.</summary>
+    protected virtual ISendGridClient CreateSendGridClient() => new SendGridClient(_apiKey);
+
     /// <summary>Compose and send a verification code email with a styled HTML template.</summary>
     /// <param name="email">The recipient's email address.</param>
     /// <param name="username">The recipient's display name for personalization.</param>
@@ -58,7 +61,7 @@ public class EmailService : IEmailService
     {
         try
         {
-            var client = new SendGridClient(_apiKey);
+            var client = CreateSendGridClient();
             var from = new EmailAddress(FromEmail, FromName);
             var to = new EmailAddress(email, username);
             var subject = "Your verification code for Promise Model Online";
@@ -134,7 +137,7 @@ public class EmailService : IEmailService
     /// <param name="resetLink">The full URL to the password reset page with token.</param>
     public async Task SendResetPasswordEmailAsync(string email, string username, string resetLink)
     {
-        var client = new SendGridClient(_apiKey);
+        var client = CreateSendGridClient();
         var from = new EmailAddress(FromEmail, FromName);
         var to = new EmailAddress(email, username);
         var subject = "Reset your Promise Model Online password";

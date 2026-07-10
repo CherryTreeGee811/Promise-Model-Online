@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Auth.Controllers;
+using PromiseModelOnline.Auth.Models;
 using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
 
@@ -110,8 +111,8 @@ public class EmailVerificationControllerUnitTests
 
         _cache.Set("verify_code:1", "123456");
 
-        var model = new VerifyEmailViewModel { UserId = "1", Code = "123456" };
-        var result = await _controller.Confirm(model);
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
 
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;
@@ -127,8 +128,8 @@ public class EmailVerificationControllerUnitTests
 
         _cache.Set("verify_code:1", "000000");
 
-        var model = new VerifyEmailViewModel { UserId = "1", Code = "123456" };
-        var result = await _controller.Confirm(model);
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
 
         Assert.That(result, Is.InstanceOf<ViewResult>());
     }
@@ -176,5 +177,64 @@ public class EmailVerificationControllerUnitTests
         var result = _controller.GetVerificationCode(userId);
 
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
+    }
+
+    [Test]
+    public async Task Index_WithResentParam_SetsViewBag()
+    {
+        var user = new IdentityUser { Id = "1", Email = "u@t.com" };
+        _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
+
+        var result = await _controller.Index("1", "true");
+
+        Assert.That(result, Is.InstanceOf<ViewResult>());
+        Assert.That(_controller.ViewBag.Resent, Is.True);
+    }
+
+    [Test]
+    public async Task Confirm_UserNotFound_ReturnsRedirect()
+    {
+        _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync((IdentityUser?)null);
+
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
+
+        Assert.That(result, Is.InstanceOf<RedirectResult>());
+    }
+
+    [Test]
+    public async Task Confirm_EmailAlreadyConfirmed_ReturnsRedirect()
+    {
+        var user = new IdentityUser { Id = "1", Email = "u@t.com" };
+        _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
+
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
+
+        Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
+        var redirect = (RedirectToActionResult)result;
+        Assert.That(redirect.ActionName, Is.EqualTo("Index"));
+    }
+
+    [Test]
+    public async Task Confirm_ConfirmEmailFails_ReturnsView()
+    {
+        var user = new IdentityUser { Id = "1", Email = "u@t.com" };
+        _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
+        _userManagerMock.Setup(u => u.GenerateEmailConfirmationTokenAsync(user)).ReturnsAsync("token");
+        _userManagerMock.Setup(u => u.ConfirmEmailAsync(user, "token"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Confirm failed" }));
+
+        _cache.Set("verify_code:1", "123456");
+
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
+
+        Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
+        var redirect = (RedirectToActionResult)result;
+        Assert.That(redirect.ActionName, Is.EqualTo("Index"));
     }
 }

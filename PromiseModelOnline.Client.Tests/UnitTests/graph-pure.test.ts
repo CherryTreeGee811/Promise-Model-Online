@@ -6,7 +6,7 @@ import {
     getHiddenDescendantCount, normalizeTypeSelection, getAssignmentFilterValue,
     buildMomentNode, buildFlowNode, buildJourneyNode, buildEpicNode, buildPromiseNode,
     findFirstSearchMatch,
-} from '../../PromiseModelOnline.Client/wwwroot/js/projects/graph.ts';
+} from '../../PromiseModelOnline.Client/wwwroot/js/projects/graph-core.ts';
 
 describe('hasNodeChildren', () => {
     it('returns true for node with children', () => {
@@ -190,13 +190,13 @@ describe('buildPromiseNode', () => {
 });
 
 describe('findFirstSearchMatch', () => {
-    it('returns the first node with _searchMatched true', () => {
-        const tree = { _searchMatched: false, children: [{ _searchMatched: false, children: [] }, { _searchMatched: true, id: 'found', children: [] }] };
+    it('returns the first node with _isSearchMatched true', () => {
+        const tree = { _isSearchMatched: false, children: [{ _isSearchMatched: false, children: [] }, { _isSearchMatched: true, id: 'found', children: [] }] };
         const result = findFirstSearchMatch(tree as never);
         expect(result?.id).toBe('found');
     });
     it('returns undefined when no match', () => {
-        const tree = { _searchMatched: false, children: [{ _searchMatched: false, children: [] }] };
+        const tree = { _isSearchMatched: false, children: [{ _isSearchMatched: false, children: [] }] };
         expect(findFirstSearchMatch(tree as never)).toBeUndefined();
     });
 });

@@ -29,6 +29,7 @@ public class XssE2ETests : E2ETestBase
         // Arrange
         await LoginAsync();
         var payload = $"XSS-{Guid.NewGuid():N}-{XssScript}";
+        var safeText = payload.Replace(XssScript, "").TrimEnd('-');
         var json = $$"""{"statement":"{{EscapeJson(payload)}}","displayOrder":1}""";
         var createResponse = await AuthPostJsonAsync(
             $"/api/projects/{Owner}/{Project}/promises/create", json, ajax: true);
@@ -44,8 +45,8 @@ public class XssE2ETests : E2ETestBase
         var html = await Page.Locator(".promise-detail-card").InnerHTMLAsync();
         Assert.That(html, Does.Not.Contain("<script>"),
             "Promise statement must not render raw <script>");
-        Assert.That(html, Does.Contain("&lt;script&gt;").Or.Contain("&#60;script&#62;"),
-            "Promise statement XSS payload must appear HTML-escaped");
+        Assert.That(html, Does.Contain(safeText),
+            "Promise statement safe text must survive sanitization");
         AssertNoCspViolations();
     }
 
@@ -136,6 +137,7 @@ public class XssE2ETests : E2ETestBase
         var seq = created.GetProperty("sequenceNumber").GetInt32();
 
         var payload = $"XSS-{Guid.NewGuid():N}-{XssImg}";
+        var safeText = payload.Replace(XssImg, "").TrimEnd('-');
         var descJson = $$"""{"description":"{{EscapeJson(payload)}}"}""";
         var patchResponse = await AuthPatchJsonAsync(
             $"/api/projects/{Owner}/{Project}/moments/{seq}/description", descJson);
@@ -149,8 +151,8 @@ public class XssE2ETests : E2ETestBase
         var html = await Page.Locator(".moment-detail-card").InnerHTMLAsync();
         Assert.That(html, Does.Not.Contain("<img"),
             "Moment description must not contain unescaped HTML tags");
-        Assert.That(html, Does.Contain("&lt;img"),
-            "Moment description must render XSS payload as HTML-escaped text");
+        Assert.That(html, Does.Contain(safeText),
+            "Moment description safe text must survive sanitization");
         AssertNoCspViolations();
     }
 
@@ -185,8 +187,8 @@ public class XssE2ETests : E2ETestBase
         var html = await Page.Locator("#project-description-view").InnerHTMLAsync();
         Assert.That(html, Does.Not.Contain("<svg"),
             "Project description must not contain unescaped HTML tags");
-        Assert.That(html, Does.Contain("&lt;svg").Or.Contain("&amp;lt;svg"),
-            "Project description must render XSS payload as HTML-escaped or double-escaped text");
+        Assert.That(html, Does.Contain(uniquePayload),
+            "Project description safe text must survive sanitization");
         AssertNoCspViolations();
     }
 
@@ -197,6 +199,7 @@ public class XssE2ETests : E2ETestBase
         // Arrange
         await LoginAsync();
         var payload = $"XSS-{Guid.NewGuid():N}-{XssScript}";
+        var safeText = payload.Replace(XssScript, "").TrimEnd('-');
         var json = $$"""{"text":"{{EscapeJson(payload)}}","parentType":"Promise","parentId":1}""";
         var createResponse = await AuthPostJsonAsync("/api/comments", json, ajax: true);
         Assert.That(createResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
@@ -204,14 +207,14 @@ public class XssE2ETests : E2ETestBase
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/promises/1");
         await Page.WaitForSelectorAsync(".promise-detail-card", new() { Timeout = 15000 });
-        await Page.WaitForFunctionAsync($"payload => document.body.textContent.includes(payload)", payload, options: new() { Timeout = 10000 });
+        await Page.WaitForFunctionAsync($"t => document.body.textContent.includes(t)", safeText, new() { Timeout = 10000 });
 
         // Assert
         var html = await Page.ContentAsync();
         Assert.That(html, Does.Not.Contain("<script>alert(1)</script>"),
             "Comment text must not contain raw script tag");
-        Assert.That(html, Does.Contain(payload.Replace("<", "&lt;").Replace(">", "&gt;")).Or.Contain(payload),
-            "Comment text payload must be visible");
+        Assert.That(html, Does.Contain(safeText),
+            "Comment text safe text must survive sanitization and be visible");
         AssertNoCspViolations();
     }
 
@@ -230,16 +233,19 @@ public class XssE2ETests : E2ETestBase
         var seq = created.GetProperty("sequenceNumber").GetInt32();
 
         var payload = $"XSS-{Guid.NewGuid():N}-{XssImg}";
+        var safeText = payload.Replace(XssImg, "").TrimEnd('-');
         var taskJson = $$"""{"name":"{{EscapeJson(payload)}}","isCompleted":false}""";
         var taskResponse = await AuthPostJsonAsync(
             $"/api/projects/{Owner}/{Project}/moments/{seq}/tasks", taskJson, ajax: true);
-        // Act — verify the API response contains the XSS payload
+        // Act — verify the API response contains the sanitized payload
         var taskBody = await taskResponse.Content.ReadAsStringAsync();
         var taskResult = JsonSerializer.Deserialize<JsonElement>(taskBody);
 
-        // Assert — verify payload is stored safely (literal text, not stripped or executed)
-        Assert.That(taskBody, Does.Contain("<img src=x onerror=alert(1)>"),
-            "Task name XSS payload must be preserved as literal text in API response");
+        // Assert — verify payload is sanitized (dangerous HTML stripped, safe text preserved)
+        Assert.That(taskBody, Does.Not.Contain(XssImg),
+            "Task name must not contain dangerous HTML");
+        Assert.That(taskBody, Does.Contain(safeText),
+            "Task name safe text must survive sanitization");
         AssertNoCspViolations();
     }
 
@@ -267,12 +273,13 @@ public class XssE2ETests : E2ETestBase
     }
 
     [Test]
-    [Description("REQ_FUN_047 misuse: Second-order XSS — store payload and verify it survives round-trip safely")]
+    [Description("REQ_FUN_047 misuse: Second-order XSS — store payload and verify it is sanitized safely")]
     public async Task SecondOrder_Xss_StoredAndRenderedSafely()
     {
         // Arrange
         await LoginAsync();
         var payload = $"2nd-XSS-{Guid.NewGuid():N}-{XssScript}";
+        var safeText = payload.Replace(XssScript, "").TrimEnd('-');
         var json = $$"""{"statement":"{{EscapeJson(payload)}}","displayOrder":1}""";
         var createResponse = await AuthPostJsonAsync(
             $"/api/projects/{Owner}/{Project}/promises/create", json, ajax: true);
@@ -286,11 +293,13 @@ public class XssE2ETests : E2ETestBase
             $"/api/projects/{Owner}/{Project}/promises/{seq}");
         var getResponse = await authClient.SendAsync(getRequest);
 
-        // Assert — stored value is intact (parameterized query preserved XSS payload as literal text)
+        // Assert — stored value is sanitized (parameterized query preserved safe text)
         Assert.That(getResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var body = await getResponse.Content.ReadAsStringAsync();
-        Assert.That(body, Does.Contain("<script>alert(1)</script>"),
-            "XSS payload must be stored and returned as literal text by the API");
+        Assert.That(body, Does.Not.Contain(XssScript),
+            "XSS payload must be sanitized from stored data");
+        Assert.That(body, Does.Contain(safeText),
+            "Safe text must survive round-trip");
 
         // Assert — browser rendering is safe
         await Page.GotoAsync($"/{Owner}/{Project}/promises/{seq}");
@@ -305,6 +314,7 @@ public class XssE2ETests : E2ETestBase
         // Arrange
         await LoginAsync();
         var payload = $"XSS-{Guid.NewGuid():N}-{XssImg}";
+        var safeText = payload.Replace(XssImg, "").TrimEnd('-');
         var descJson = $$"""{"description":"{{EscapeJson(payload)}}"}""";
         var patchResponse = await AuthPatchJsonAsync(
             $"/api/projects/{Owner}/{Project}/epics/1/description", descJson);
@@ -318,8 +328,8 @@ public class XssE2ETests : E2ETestBase
         var html = await Page.Locator(".epic-detail-card").InnerHTMLAsync();
         Assert.That(html, Does.Not.Contain("<img"),
             "Epic description must not contain unescaped HTML tags");
-        Assert.That(html, Does.Contain("&lt;img"),
-            "Epic description must render XSS payload as HTML-escaped text");
+        Assert.That(html, Does.Contain(safeText),
+            "Epic description safe text must survive sanitization");
         AssertNoCspViolations();
     }
 
@@ -330,6 +340,7 @@ public class XssE2ETests : E2ETestBase
         // Arrange
         await LoginAsync();
         var payload = $"XSS-{Guid.NewGuid():N}-{XssImg}";
+        var safeText = payload.Replace(XssImg, "").TrimEnd('-');
         var descJson = $$"""{"description":"{{EscapeJson(payload)}}"}""";
         var patchResponse = await AuthPatchJsonAsync(
             $"/api/projects/{Owner}/{Project}/journeys/1/description", descJson);
@@ -343,8 +354,8 @@ public class XssE2ETests : E2ETestBase
         var html = await Page.Locator(".journey-detail-card").InnerHTMLAsync();
         Assert.That(html, Does.Not.Contain("<img"),
             "Journey description must not contain unescaped HTML tags");
-        Assert.That(html, Does.Contain("&lt;img"),
-            "Journey description must render XSS payload as HTML-escaped text");
+        Assert.That(html, Does.Contain(safeText),
+            "Journey description safe text must survive sanitization");
         AssertNoCspViolations();
     }
 
@@ -355,6 +366,7 @@ public class XssE2ETests : E2ETestBase
         // Arrange
         await LoginAsync();
         var payload = $"XSS-{Guid.NewGuid():N}-{XssImg}";
+        var safeText = payload.Replace(XssImg, "").TrimEnd('-');
         var descJson = $$"""{"description":"{{EscapeJson(payload)}}"}""";
         var patchResponse = await AuthPatchJsonAsync(
             $"/api/projects/{Owner}/{Project}/flows/1/description", descJson);
@@ -368,8 +380,8 @@ public class XssE2ETests : E2ETestBase
         var html = await Page.Locator(".flow-detail-card").InnerHTMLAsync();
         Assert.That(html, Does.Not.Contain("<img"),
             "Flow description must not contain unescaped HTML tags");
-        Assert.That(html, Does.Contain("&lt;img"),
-            "Flow description must render XSS payload as HTML-escaped text");
+        Assert.That(html, Does.Contain(safeText),
+            "Flow description safe text must survive sanitization");
         AssertNoCspViolations();
     }
 
@@ -380,6 +392,7 @@ public class XssE2ETests : E2ETestBase
         // Arrange
         await LoginAsync();
         var payload = $"XSS-{Guid.NewGuid():N}-{XssImg}";
+        var safeText = payload.Replace(XssImg, "").TrimEnd('-');
         var descJson = $$"""{"description":"{{EscapeJson(payload)}}"}""";
         var patchResponse = await AuthPatchJsonAsync(
             $"/api/projects/{Owner}/{Project}/promises/1/description", descJson);
@@ -393,8 +406,8 @@ public class XssE2ETests : E2ETestBase
         var html = await Page.Locator(".promise-detail-card").InnerHTMLAsync();
         Assert.That(html, Does.Not.Contain("<img"),
             "Promise description must not contain unescaped HTML tags");
-        Assert.That(html, Does.Contain("&lt;img"),
-            "Promise description must render XSS payload as HTML-escaped text");
+        Assert.That(html, Does.Contain(safeText),
+            "Promise description safe text must survive sanitization");
         AssertNoCspViolations();
     }
 

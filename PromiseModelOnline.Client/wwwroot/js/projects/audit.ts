@@ -307,7 +307,16 @@ function isIgnoredField(fieldName: string): boolean {
  */
 function encodeAuditDetails(item: AuditItem): string {
     const json = JSON.stringify(getAuditDetailsPayload(item));
-    return new TextEncoder().encode(json).toBase64();
+    const bytes = new TextEncoder().encode(json) as Uint8Array & { toBase64?: () => string };
+    if (typeof bytes.toBase64 === 'function') {
+        return bytes.toBase64();
+    }
+    let binary = '';
+    for (const byte of bytes) {
+        binary += String.fromCodePoint(byte);
+    }
+    // eslint-disable-next-line unicorn/prefer-uint8array-base64 -- fallback when Uint8Array.toBase64() is unavailable
+    return btoa(binary);
 }
 
 /**
