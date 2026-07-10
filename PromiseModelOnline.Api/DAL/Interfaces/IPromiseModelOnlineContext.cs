@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using Microsoft.EntityFrameworkCore;
-using PMO.Core.Models;
 using PromiseModelOnline.Api.Models;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces;
@@ -47,24 +46,6 @@ public interface IPromiseModelOnlineContext
 
     /// <summary>Gets or sets the <see cref="DbSet{T}"/> for entity-scoped sequence counters.</summary>
     DbSet<EntitySequence> EntitySequences { get; set; }
-
-    /// <summary>Gets or sets the <see cref="DbSet{T}"/> for moment task records.</summary>
-    DbSet<MomentTask> MomentTasks { get; set; }
-
-    /// <summary>Gets or sets the <see cref="DbSet{T}"/> for moment assignment records.</summary>
-    DbSet<MomentAssignment> MomentAssignments { get; set; }
-
-    /// <summary>Gets or sets the <see cref="DbSet{T}"/> for bug/rework task records.</summary>
-    DbSet<BugReworkTask> BugReworkTasks { get; set; }
-
-    /// <summary>Gets or sets the <see cref="DbSet{T}"/> for comment records.</summary>
-    DbSet<Comment> Comments { get; set; }
-
-    /// <summary>Gets or sets the <see cref="DbSet{T}"/> for comment mention records.</summary>
-    DbSet<CommentMention> CommentMentions { get; set; }
-
-    /// <summary>Gets or sets the <see cref="DbSet{T}"/> for permission records.</summary>
-    DbSet<Permission> Permissions { get; set; }
 
     /// <summary>Atomically allocate the next sequence number for a promise within its project.</summary>
     /// <param name="projectId">The parent project ID. Must be greater than zero.</param>
