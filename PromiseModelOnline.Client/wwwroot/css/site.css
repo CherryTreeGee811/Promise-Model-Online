@@ -2628,6 +2628,9 @@ button:disabled,
 
 [data-bs-theme="dark"] .graph-card {
   fill: #1f2937;
+}
+
+[data-bs-theme="dark"] .graph-node:not(.is-focused) .graph-card {
   stroke: #30363d;
 }
 
@@ -2913,4 +2916,8 @@ button:disabled,
   --bs-table-active-color: #e6edf3;
   --bs-table-hover-bg: #283141;
   --bs-table-hover-color: #e6edf3;
+}
+
+[data-bs-theme="dark"] *:focus-visible {
+  outline-color: #e8a317;
 }
