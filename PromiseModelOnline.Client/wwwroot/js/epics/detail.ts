@@ -170,6 +170,133 @@ function upsertEpicGraphViewButton(detailDiv: HTMLElement, epic: Epic): void {
 }
 
 /**
+ * @param {HTMLElement | null} element - The loading element
+ * @param {boolean} [isHidden] - Whether to hide
+ */
+function hideLoading(element: HTMLElement | null, isHidden = true): void {
+  if (!element) return;
+  element.hidden = isHidden;
+  if (isHidden) element.classList.add('d-none');
+}
+
+/**
+ * @param {HTMLElement | null} element - The error element
+ * @param {string} message - The error message
+ */
+function setErrorMessage(element: HTMLElement | null, message: string): void {
+  if (element) element.textContent = message;
+}
+
+/**
+ * Render the epic detail card and wire up all interactions.
+ * @param {Epic} epic - The epic data
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} epicId - The epic ID
+ * @param {HTMLElement} detailDiv - The detail container
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {{ permission: string } | undefined} permission - Permission object
+ */
+async function renderEpicDetail(epic: Epic, owner: string, project: string, epicId: string, detailDiv: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
+  void mountDetailStackGraph({
+    nodeType: 'epic',
+    nodeId: epicId,
+    owner,
+    project,
+  });
+
+  const detailCard = document.createElement('div');
+  detailCard.className = 'detail-card epic-detail-card';
+
+  const heading = document.createElement('h2');
+  heading.textContent = epic.statement;
+  detailCard.append(heading);
+
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-striped align-middle detail-table';
+
+  const descRow = document.createElement('tr');
+  const descTh = document.createElement('th');
+  descTh.scope = 'row';
+  const descLabel = document.createElement('label');
+  descLabel.htmlFor = 'description-input';
+  descLabel.textContent = 'Description';
+  descTh.append(descLabel);
+  descRow.append(descTh);
+  const descTd = document.createElement('td');
+  buildInlineEditUI(descTd, '', epic.description || '');
+  descRow.append(descTd);
+  table.append(descRow);
+
+  const parentRow = document.createElement('tr');
+  const parentTh = document.createElement('th');
+  parentTh.textContent = 'Parent Promise';
+  parentRow.append(parentTh);
+  const parentTd = document.createElement('td');
+  parentTd.id = 'epic-parent-promise';
+  parentTd.textContent = 'Loading\u{2026}';
+  parentRow.append(parentTd);
+  table.append(parentRow);
+
+  table.append(createStatusRow(epic.statusColor));
+  table.append(createDateRow('Created', epic.createdAt));
+  table.append(createDateRow('Updated', epic.updatedAt));
+
+  detailCard.append(table);
+
+  const journeysHeading = document.createElement('h3');
+  journeysHeading.textContent = 'Journeys';
+  detailCard.append(journeysHeading);
+
+  const journeysList = document.createElement('div');
+  journeysList.id = 'epic-journeys-list';
+  const loadingP = document.createElement('p');
+  loadingP.textContent = 'Loading journeys\u{2026}';
+  journeysList.append(loadingP);
+  detailCard.append(journeysList);
+
+  const commentsDiv = document.createElement('div');
+  commentsDiv.id = 'epic-comments';
+  detailCard.append(commentsDiv);
+
+  const backButton = document.createElement('button');
+  backButton.id = 'back-link';
+  backButton.className = 'btn btn-outline-secondary btn-sm';
+  backButton.type = 'button';
+  const backSpan = document.createElement('span');
+  backSpan.setAttribute('aria-hidden', 'true');
+  backSpan.textContent = '\u{2190}';
+  backButton.append(backSpan, ' Back');
+  detailCard.append(backButton);
+
+  detailDiv.append(detailCard);
+
+  const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
+  const descViewElement = document.querySelector('#description-view') as HTMLElement;
+  const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
+  const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
+  const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
+  if (descInput && descViewElement && editButton) {
+    createCommentAutocomplete(descInput, 'Epic', epic.id);
+    const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
+    (epic as unknown as Record<string, unknown>).__editor = editor;
+  }
+
+  await loadParentPromise(owner, project, epic, navContentDiv, contentDiv);
+  await loadEpicJourneys(owner, project, epicId, epic as unknown as Record<string, unknown>, navContentDiv, contentDiv);
+
+  initBackLink();
+  gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-journey-statement', '#add-journey-submit']);
+
+  loadCommentsAndReactions(detailDiv, 'Epic', epic.id, owner, project, permission);
+
+  setupDescriptionHandler(owner, project, epicId, 'epic', epic, updateEpicDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
+
+  upsertEpicGraphViewButton(detailDiv, epic);
+}
+
+/**
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
  * @param {string} epicId - The epic ID
@@ -179,126 +306,29 @@ function upsertEpicGraphViewButton(detailDiv: HTMLElement, epic: Epic): void {
  */
 export async function loadEpicDetail(owner: string, project: string, epicId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
     const detailDiv = document.querySelector('#epic-detail-content') as HTMLElement | null;
+    if (!detailDiv) return;
+
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#epic-detail-loading') as HTMLElement | null;
 
-    if (!detailDiv) return;
-    if (loadingElement) loadingElement.hidden = false;
-    if (errorElement) errorElement.textContent = '';
+    hideLoading(loadingElement, false);
+    setErrorMessage(errorElement, '');
 
     try {
         destroyDetailStackGraph();
         const epic = await getEpic(owner, project, epicId) as Epic;
         if (!epic) {
-            if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-            if (errorElement) errorElement.textContent = 'Epic not found.';
+            hideLoading(loadingElement);
+            setErrorMessage(errorElement, 'Epic not found.');
             return;
         }
         await loadEntityLookupMap('Epic', epic.id, owner, project);
+        hideLoading(loadingElement);
 
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-
-        void mountDetailStackGraph({
-            nodeType: 'epic',
-            nodeId: epicId,
-            owner,
-            project,
-        });
-
-        const detailCard = document.createElement('div');
-        detailCard.className = 'detail-card epic-detail-card';
-
-        const heading = document.createElement('h2');
-        heading.textContent = epic.statement;
-        detailCard.append(heading);
-
-        const table = document.createElement('table');
-        table.className = 'table table-sm table-striped align-middle detail-table';
-
-        const descRow = document.createElement('tr');
-        const descTh = document.createElement('th');
-        descTh.scope = 'row';
-        const descLabel = document.createElement('label');
-        descLabel.htmlFor = 'description-input';
-        descLabel.textContent = 'Description';
-        descTh.append(descLabel);
-        descRow.append(descTh);
-        const descTd = document.createElement('td');
-        buildInlineEditUI(descTd, '', epic.description || '');
-        descRow.append(descTd);
-        table.append(descRow);
-
-        const parentRow = document.createElement('tr');
-        const parentTh = document.createElement('th');
-        parentTh.textContent = 'Parent Promise';
-        parentRow.append(parentTh);
-        const parentTd = document.createElement('td');
-        parentTd.id = 'epic-parent-promise';
-        parentTd.textContent = 'Loading\u{2026}';
-        parentRow.append(parentTd);
-        table.append(parentRow);
-
-        table.append(createStatusRow(epic.statusColor));
-
-        table.append(createDateRow('Created', epic.createdAt));
-
-        table.append(createDateRow('Updated', epic.updatedAt));
-
-        detailCard.append(table);
-
-        const journeysHeading = document.createElement('h3');
-        journeysHeading.textContent = 'Journeys';
-        detailCard.append(journeysHeading);
-
-        const journeysList = document.createElement('div');
-        journeysList.id = 'epic-journeys-list';
-        const loadingP = document.createElement('p');
-        loadingP.textContent = 'Loading journeys\u{2026}';
-        journeysList.append(loadingP);
-        detailCard.append(journeysList);
-
-        const commentsDiv = document.createElement('div');
-        commentsDiv.id = 'epic-comments';
-        detailCard.append(commentsDiv);
-
-        const backButton = document.createElement('button');
-        backButton.id = 'back-link';
-        backButton.className = 'btn btn-outline-secondary btn-sm';
-        backButton.type = 'button';
-        const backSpan = document.createElement('span');
-        backSpan.setAttribute('aria-hidden', 'true');
-        backSpan.textContent = '\u{2190}';
-        backButton.append(backSpan, ' Back');
-        detailCard.append(backButton);
-
-        if (detailDiv) detailDiv.append(detailCard);
-
-        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
-        const descViewElement = document.querySelector('#description-view') as HTMLElement;
-        const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
-        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
-        const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
-        if (descInput && descViewElement && editButton) {
-            createCommentAutocomplete(descInput, 'Epic', epic.id);
-            const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
-            (epic as unknown as Record<string, unknown>).__editor = editor;
-        }
-
-        await loadParentPromise(owner, project, epic, navContentDiv, contentDiv);
-
-        await loadEpicJourneys(owner, project, epicId, epic as unknown as Record<string, unknown>, navContentDiv, contentDiv);
-
-        initBackLink();
-        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-journey-statement', '#add-journey-submit']);
-
-        loadCommentsAndReactions(detailDiv, 'Epic', epic.id, owner, project, permission);
-
-        setupDescriptionHandler(owner, project, epicId, 'epic', epic, updateEpicDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
-
-        upsertEpicGraphViewButton(detailDiv, epic);
+        await renderEpicDetail(epic, owner, project, epicId, detailDiv, navContentDiv, contentDiv, permission);
     } catch (error) {
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-        if (errorElement) errorElement.textContent = 'Failed to load epic details.';
+        hideLoading(loadingElement);
+        setErrorMessage(errorElement, 'Failed to load epic details.');
         console.error(error);
     }
 }

@@ -8,8 +8,8 @@ import { handleKnowledgeBaseRoutes } from './knowledge-base/router.ts';
 import { loadMyTasksPage } from './moments/my-tasks.ts';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts';
 import { handleNotificationsRoutes } from './notifications/router.ts';
-import { initTelemetry } from './telemetry.ts';
 import { initTheme, toggleTheme } from './stores/theme.ts';
+import { initTelemetry } from './telemetry.ts';
 
 /**
  * @typedef {{ allowed: true } | { allowed: false; redirect?: string }} GuardResult
@@ -174,7 +174,7 @@ async function initApp(): Promise<true> {
   initTelemetry();
   initTheme();
 
-  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+  document.querySelector('#theme-toggle')?.addEventListener('click', toggleTheme);
 
   initNavEventDelegation(navContentDiv, contentDiv);
 

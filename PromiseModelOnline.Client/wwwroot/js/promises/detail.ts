@@ -112,129 +112,166 @@ function upsertPromiseGraphViewButton(detailDiv: HTMLElement | null, promise: Re
  * @param {{ permission?: string } | null} permission - The user's permission object
  * @returns {Promise<void>}
  */
+/**
+ * @param {HTMLElement | null} element - The loading element
+ * @param {boolean} [isHidden] - Whether to hide
+ */
+function hideLoading(element: HTMLElement | null, isHidden = true): void {
+  if (!element) return;
+  element.hidden = isHidden;
+  if (isHidden) element.classList.add('d-none');
+}
+
+/**
+ * @param {HTMLElement | null} element - The error element
+ * @param {string} message - The error message
+ */
+function setErrorMessage(element: HTMLElement | null, message: string): void {
+  if (element) element.textContent = message;
+}
+
+/**
+ * Render the promise detail card and wire up all interactions.
+ * @param {Record<string, unknown>} promise - The promise data
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} promiseId - The promise ID
+ * @param {HTMLElement} detailDiv - The detail container
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {{ permission?: string } | null} permission - Permission object
+ */
+async function renderPromiseDetail(promise: Record<string, unknown>, owner: string, project: string, promiseId: string, detailDiv: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): Promise<void> {
+  const cardDiv = document.createElement('div');
+  cardDiv.className = 'detail-card promise-detail-card';
+
+  const cardH2 = document.createElement('h2');
+  cardH2.textContent = promise.statement as string | null;
+  cardDiv.append(cardH2);
+
+  const detailTable = document.createElement('table');
+  detailTable.className = 'table table-sm table-striped align-middle detail-table';
+
+  const descTr = document.createElement('tr');
+  const descTh = document.createElement('th');
+  descTh.scope = 'row';
+  const descLabel = document.createElement('label');
+  descLabel.htmlFor = 'description-input';
+  descLabel.textContent = 'Description';
+  descTh.append(descLabel);
+  const descTd = document.createElement('td');
+  buildInlineEditUI(descTd, '', (promise.description as string) || '');
+  descTr.append(descTh, descTd);
+  detailTable.append(descTr);
+
+  const statusTr = document.createElement('tr');
+  const statusTh = document.createElement('th');
+  statusTh.scope = 'row';
+  statusTh.textContent = 'Status';
+  const statusTd = document.createElement('td');
+  const statusParser = new DOMParser();
+  const statusDocument = statusParser.parseFromString(getStatusHtml(promise.statusColor as string), 'text/html');
+  statusTd.append(...statusDocument.body.childNodes);
+  statusTr.append(statusTh, statusTd);
+  detailTable.append(statusTr);
+
+  detailTable.append(createDateRow('Created', promise.createdAt as string | undefined));
+  detailTable.append(createDateRow('Updated', promise.updatedAt as string | undefined));
+
+  cardDiv.append(detailTable);
+
+  const epicsH3 = document.createElement('h3');
+  epicsH3.textContent = 'Epics';
+  cardDiv.append(epicsH3);
+
+  const epicsListDiv = document.createElement('div');
+  epicsListDiv.id = 'promise-epics-list';
+  const loadingP = document.createElement('p');
+  loadingP.textContent = 'Loading epics\u{2026}';
+  epicsListDiv.append(loadingP);
+  cardDiv.append(epicsListDiv);
+
+  const commentsDiv = document.createElement('div');
+  commentsDiv.id = 'promise-comments';
+  cardDiv.append(commentsDiv);
+
+  const backButton = document.createElement('button');
+  backButton.id = 'back-link';
+  backButton.className = 'btn btn-outline-secondary btn-sm';
+  backButton.type = 'button';
+  const backSpan = document.createElement('span');
+  backSpan.setAttribute('aria-hidden', 'true');
+  backSpan.textContent = '\u{2190}';
+  backButton.append(backSpan, ' Back');
+  cardDiv.append(backButton);
+
+  detailDiv.append(cardDiv);
+
+  const descInput = document.querySelector('#description-input') as HTMLTextAreaElement | null;
+  const descView = document.querySelector('#description-view') as HTMLElement | null;
+  const editButton = document.querySelector('#edit-desc-btn') as HTMLButtonElement | null;
+  const saveButton = document.querySelector('#save-desc') as HTMLButtonElement | null;
+  const cancelButton = document.querySelector('#cancel-desc') as HTMLButtonElement | null;
+  if (descInput && descView && editButton) {
+    createCommentAutocomplete(descInput, 'Promise', promise.id as number);
+    const editor = setupInlineEdit(descInput, descView, editButton, saveButton!, cancelButton!);
+    (promise as Record<string, unknown>).__editor = editor;
+  }
+
+  void mountDetailStackGraph({
+    nodeType: 'promise',
+    nodeId: promiseId,
+    owner,
+    project,
+  });
+  await loadPromiseEpics(owner, project, promiseId, promise, navContentDiv, contentDiv);
+
+  gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-epic-statement', '#add-epic-submit']);
+
+  loadCommentsAndReactions(detailDiv, 'Promise', promise.id as number, owner, project, permission!);
+
+  upsertPromiseGraphViewButton(detailDiv, promise);
+
+  initBackLink();
+
+  setupDescriptionHandler(owner, project, promiseId, 'promise', promise as unknown as { sequenceNumber: number; description?: string }, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
+}
+
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} promiseId - The promise ID
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {{ permission?: string } | null} permission - Permission object
+ */
 export async function loadPromiseDetail(owner: string, project: string, promiseId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): Promise<void> {
     const detailDiv = document.querySelector('#promise-detail-content') as HTMLElement | null;
+    if (!detailDiv) return;
+
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    if (!errorElement) return;
+
     const loadingElement = document.querySelector('#promise-detail-loading') as HTMLElement | null;
 
-    if (!detailDiv || !errorElement) return;
-    if (loadingElement) loadingElement.hidden = false;
+    hideLoading(loadingElement, false);
     errorElement.textContent = '';
 
     try {
         destroyDetailStackGraph();
         const promise = await getPromise(owner, project, promiseId) as Record<string, unknown>;
         if (!promise) {
-            if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-            if (errorElement) errorElement.textContent = 'Promise not found.';
+            hideLoading(loadingElement);
+            setErrorMessage(errorElement, 'Promise not found.');
             return;
         }
         await loadEntityLookupMap('Promise', promise.id as number, owner, project);
+        hideLoading(loadingElement);
 
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'detail-card promise-detail-card';
-
-        const cardH2 = document.createElement('h2');
-        cardH2.textContent = promise.statement as string | null;
-        cardDiv.append(cardH2);
-
-        const detailTable = document.createElement('table');
-        detailTable.className = 'table table-sm table-striped align-middle detail-table';
-
-        const descTr = document.createElement('tr');
-        const descTh = document.createElement('th');
-        descTh.scope = 'row';
-        const descLabel = document.createElement('label');
-        descLabel.htmlFor = 'description-input';
-        descLabel.textContent = 'Description';
-        descTh.append(descLabel);
-        const descTd = document.createElement('td');
-        buildInlineEditUI(descTd, '', (promise.description as string) || '');
-        descTr.append(descTh, descTd);
-        detailTable.append(descTr);
-
-        const statusTr = document.createElement('tr');
-        const statusTh = document.createElement('th');
-        statusTh.scope = 'row';
-        statusTh.textContent = 'Status';
-        const statusTd = document.createElement('td');
-        const statusParser = new DOMParser();
-        const statusDocument = statusParser.parseFromString(getStatusHtml(promise.statusColor as string), 'text/html');
-        statusTd.append(...statusDocument.body.childNodes);
-        statusTr.append(statusTh, statusTd);
-        detailTable.append(statusTr);
-
-        detailTable.append(createDateRow('Created', promise.createdAt as string | undefined));
-        detailTable.append(createDateRow('Updated', promise.updatedAt as string | undefined));
-
-        cardDiv.append(detailTable);
-
-        const epicsH3 = document.createElement('h3');
-        epicsH3.textContent = 'Epics';
-        cardDiv.append(epicsH3);
-
-        const epicsListDiv = document.createElement('div');
-        epicsListDiv.id = 'promise-epics-list';
-        const loadingP = document.createElement('p');
-        loadingP.textContent = 'Loading epics\u{2026}';
-        epicsListDiv.append(loadingP);
-        cardDiv.append(epicsListDiv);
-
-        const commentsDiv = document.createElement('div');
-        commentsDiv.id = 'promise-comments';
-        cardDiv.append(commentsDiv);
-
-        const backButton = document.createElement('button');
-        backButton.id = 'back-link';
-        backButton.className = 'btn btn-outline-secondary btn-sm';
-        backButton.type = 'button';
-        const backSpan = document.createElement('span');
-        backSpan.setAttribute('aria-hidden', 'true');
-        backSpan.textContent = '\u{2190}';
-        backButton.append(backSpan, ' Back');
-        cardDiv.append(backButton);
-
-        detailDiv!.append(cardDiv);
-
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-
-        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement | null;
-        const descView = document.querySelector('#description-view') as HTMLElement | null;
-        const editButton = document.querySelector('#edit-desc-btn') as HTMLButtonElement | null;
-        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement | null;
-        const cancelButton = document.querySelector('#cancel-desc') as HTMLButtonElement | null;
-        if (descInput && descView && editButton) {
-            createCommentAutocomplete(descInput, 'Promise', promise.id as number);
-            const editor = setupInlineEdit(descInput, descView, editButton, saveButton!, cancelButton!);
-            (promise as Record<string, unknown>).__editor = editor;
-        }
-
-        void mountDetailStackGraph({
-            nodeType: 'promise',
-            nodeId: promiseId,
-            owner,
-            project,
-        });
-        await loadPromiseEpics(owner, project, promiseId, promise, navContentDiv, contentDiv);
-
-
-        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-epic-statement', '#add-epic-submit']);
-
-        loadCommentsAndReactions(detailDiv!, 'Promise', promise.id as number, owner, project, permission!);
-
-        upsertPromiseGraphViewButton(detailDiv, promise);
-
-
-        initBackLink();
-
-        setupDescriptionHandler(owner, project, promiseId, 'promise', promise as unknown as { sequenceNumber: number; description?: string }, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
-
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
+        await renderPromiseDetail(promise, owner, project, promiseId, detailDiv, navContentDiv, contentDiv, permission);
     } catch (error) {
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-        if (errorElement) errorElement.textContent = 'Failed to load promise details.';
+        hideLoading(loadingElement);
+        setErrorMessage(errorElement, 'Failed to load promise details.');
         console.error(error);
     }
 }

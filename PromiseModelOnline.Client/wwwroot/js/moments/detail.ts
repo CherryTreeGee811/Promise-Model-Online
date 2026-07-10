@@ -462,6 +462,89 @@ function upsertMomentGraphViewButton(detailDiv: HTMLElement, sequenceNumber: num
 }
 
 /**
+ * @param {HTMLElement | null} element - The loading element
+ * @param {boolean} [isHidden] - Whether to hide
+ */
+function hideLoading(element: HTMLElement | null, isHidden = true): void {
+  if (!element) return;
+  element.hidden = isHidden;
+  if (isHidden) element.classList.add('d-none');
+}
+
+/**
+ * @param {HTMLElement | null} element - The error element
+ * @param {string} message - The error message
+ */
+function setErrorMessage(element: HTMLElement | null, message: string): void {
+  if (element) element.textContent = message;
+}
+
+/**
+ * Wire up all post-render interactions for a moment detail page.
+ * @param {Moment} moment - The moment data
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {HTMLElement} detailDiv - The detail container
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {Record<string, unknown>} permission - Permission object
+ */
+async function setupMomentInteractions(
+  moment: Moment,
+  owner: string,
+  project: string,
+  momentId: string,
+  detailDiv: HTMLElement,
+  navContentDiv: HTMLElement,
+  contentDiv: HTMLElement,
+  permission: Record<string, unknown>,
+): Promise<void> {
+  const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
+  const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
+  const momentEditButton = document.querySelector('#moment-edit-desc-btn') as HTMLElement;
+  const descriptionSaveButton = document.querySelector('#moment-save-desc') as HTMLElement;
+  const momentDescriptionCancelButton = document.querySelector('#moment-cancel-desc') as HTMLElement;
+  let momentEditor: ReturnType<typeof setupInlineEdit> | undefined;
+  if (momentDescInput && momentDescView && momentEditButton) {
+    createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
+    momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditButton, descriptionSaveButton, momentDescriptionCancelButton);
+  }
+
+  gateMomentDetailControls(permission);
+
+  renderMomentTasks(document.querySelector('#moment-tasks') as HTMLElement, momentId, moment.tasks ?? [], moment, permission, owner, project);
+
+  const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
+  const descriptionMessage = document.querySelector('#moment-desc-save-msg') as HTMLElement;
+  if (descriptionSaveButton && descriptionInput && descriptionMessage) {
+    setupMomentEditDescriptionHandler(descriptionSaveButton, descriptionInput, descriptionMessage, owner, project, momentId, moment, momentEditor);
+  }
+
+  bindFlowNavigationHandler(detailDiv, owner, project, navContentDiv, contentDiv);
+
+  void setupEstimateHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
+
+  await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
+
+  const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
+  const completedCell = detailDiv.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null;
+  if (statusSelectElement) {
+    setupMomentStatusChangeHandler(statusSelectElement, owner, project, momentId, moment, completedCell);
+  }
+
+  const typeSelectElement = document.querySelector('#moment-type-select') as HTMLSelectElement;
+  if (typeSelectElement) {
+    setupMomentTypeChangeHandler(typeSelectElement, owner, project, momentId, moment);
+  }
+
+  initBackLink();
+  loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
+
+  upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
+}
+
+/**
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
  * @param {string} momentId - The moment ID
@@ -472,23 +555,26 @@ function upsertMomentGraphViewButton(detailDiv: HTMLElement, sequenceNumber: num
  */
 export async function loadMomentDetail(owner: string, project: string, momentId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
     const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement | null;
+    if (!detailDiv) return;
+
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
+    if (!errorElement) return;
+
     const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement | null;
 
-    if (!detailDiv || !errorElement) return;
-    if (loadingElement) loadingElement.hidden = false;
+    hideLoading(loadingElement, false);
     errorElement.textContent = '';
 
     try {
         destroyDetailStackGraph();
         const moment = await getMoment(owner, project, momentId) as Moment;
         if (!moment) {
-            if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-            if (errorElement) errorElement.textContent = 'Moment not found.';
+            hideLoading(loadingElement);
+            setErrorMessage(errorElement, 'Moment not found.');
             return;
         }
         await loadEntityLookupMap('Moment', moment.id, owner, project);
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
+        hideLoading(loadingElement);
 
         void mountDetailStackGraph({
             nodeType: 'moment',
@@ -502,52 +588,10 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
 
         buildMomentUI(moment as unknown as Record<string, unknown>, detailCard, detailDiv, navContentDiv, contentDiv, owner, project);
 
-
-        const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
-        const momentEditButton = document.querySelector('#moment-edit-desc-btn') as HTMLElement;
-        const descriptionSaveButton = document.querySelector('#moment-save-desc') as HTMLElement;
-        const momentDescriptionCancelButton = document.querySelector('#moment-cancel-desc') as HTMLElement;
-        let momentEditor: ReturnType<typeof setupInlineEdit> | undefined;
-        if (momentDescInput && momentDescView && momentEditButton) {
-            createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
-            momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditButton, descriptionSaveButton, momentDescriptionCancelButton);
-        }
-
-        gateMomentDetailControls(permission);
-
-        renderMomentTasks(document.querySelector('#moment-tasks') as HTMLElement, momentId, moment.tasks ?? [], moment, permission, owner, project);
-
-        const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const descriptionMessage = document.querySelector('#moment-desc-save-msg') as HTMLElement;
-        if (descriptionSaveButton && descriptionInput && descriptionMessage) {
-            setupMomentEditDescriptionHandler(descriptionSaveButton, descriptionInput, descriptionMessage, owner, project, momentId, moment, momentEditor);
-        }
-
-        bindFlowNavigationHandler(detailDiv, owner, project, navContentDiv, contentDiv);
-
-        void setupEstimateHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
-
-        await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
-
-        const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
-        const completedCell = detailDiv?.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null;
-        if (statusSelectElement) {
-            setupMomentStatusChangeHandler(statusSelectElement, owner, project, momentId, moment, completedCell);
-        }
-
-        const typeSelectElement = document.querySelector('#moment-type-select') as HTMLSelectElement;
-        if (typeSelectElement) {
-            setupMomentTypeChangeHandler(typeSelectElement, owner, project, momentId, moment);
-        }
-
-        initBackLink();
-        loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
-
-        upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
+        await setupMomentInteractions(moment, owner, project, momentId, detailDiv, navContentDiv, contentDiv, permission);
     } catch (error) {
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-        if (errorElement) errorElement.textContent = 'Failed to load moment details.';
+        hideLoading(loadingElement);
+        setErrorMessage(errorElement, 'Failed to load moment details.');
         console.error(error);
     }
 }
