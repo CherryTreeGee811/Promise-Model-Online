@@ -22,6 +22,8 @@ const mockBuildInlineEditUI = vi.fn();
 const mockCreateDateRow = vi.fn();
 const mockInitBackLink = vi.fn();
 const mockLoadCommentsAndReactions = vi.fn();
+const mockSetElementVisibility = vi.fn();
+const mockSetElementText = vi.fn();
 
 const mockLoadEntityLookupMap = vi.fn();
 
@@ -66,6 +68,8 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/utils/detail-common.ts', () 
     createDateRow: mockCreateDateRow,
     initBackLink: mockInitBackLink,
     loadCommentsAndReactions: mockLoadCommentsAndReactions,
+    setElementVisibility: mockSetElementVisibility,
+    setElementText: mockSetElementText,
 }));
 
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/utils/entity-reference.ts', () => ({
@@ -160,6 +164,14 @@ beforeEach(() => {
         if (opts.getRowHtml) opts.getRowHtml({ statement: 'test', sequenceNumber: 1, id: 1 });
     });
     mockSetupInlineEdit.mockReturnValue({ showSavedPopover: vi.fn() });
+    mockSetElementVisibility.mockImplementation((selector: string, hidden: boolean) => {
+        const el = document.querySelector(selector) as HTMLElement | null;
+        if (el) el.hidden = hidden;
+    });
+    mockSetElementText.mockImplementation((selector: string, text: string) => {
+        const el = document.querySelector(selector) as HTMLElement | null;
+        if (el) el.textContent = text;
+    });
     document.body.innerHTML = `
         <div id="promise-detail-content"></div>
         <div id="error-text"></div>
@@ -200,7 +212,7 @@ describe('loadPromiseDetail', () => {
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const loading = document.querySelector('#promise-detail-loading') as HTMLElement;
-        expect(loading.style.display).toBe('none');
+        expect(loading.hidden).toBe(true);
     });
 
     it('hides loading and shows error on API failure', async () => {
@@ -211,7 +223,7 @@ describe('loadPromiseDetail', () => {
 
         const loading = document.querySelector('#promise-detail-loading') as HTMLElement;
         const error = document.querySelector('#error-text') as HTMLElement;
-        expect(loading.style.display).toBe('none');
+        expect(loading.hidden).toBe(true);
         expect(error.textContent).toContain('Failed to load promise details.');
     });
 
