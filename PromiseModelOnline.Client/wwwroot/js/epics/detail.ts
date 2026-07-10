@@ -8,7 +8,7 @@ import {
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { getPromiseById } from '../promises/api.ts';
 import { navigate } from '../router.ts';
-import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
@@ -179,20 +179,18 @@ function upsertEpicGraphViewButton(detailDiv: HTMLElement, epic: Epic): void {
  */
 export async function loadEpicDetail(owner: string, project: string, epicId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
     const detailDiv = document.querySelector('#epic-detail-content') as HTMLElement | null;
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#epic-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
     if (!detailDiv) return;
-    if (loadingElement) loadingElement.hidden = false;
-    if (errorElement) errorElement.textContent = '';
+    setElementVisibility('#epic-detail-loading', false);
+    setElementText('#error-text', '');
 
     try {
         const epic = await getEpic(owner, project, epicId) as Epic;
         if (!epic) return;
         await loadEntityLookupMap('Epic', epic.id, owner, project);
 
-        if (loadingElement) loadingElement.hidden = true;
+        setElementVisibility('#epic-detail-loading', true);
 
         void mountDetailStackGraph({
             nodeType: 'epic',
@@ -293,8 +291,8 @@ export async function loadEpicDetail(owner: string, project: string, epicId: str
 
         upsertEpicGraphViewButton(detailDiv, epic);
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
-        if (errorElement) errorElement.textContent = 'Failed to load epic details.';
+        setElementVisibility('#epic-detail-loading', true);
+        setElementText('#error-text', 'Failed to load epic details.');
         console.error(error);
     }
 }

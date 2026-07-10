@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Filters;
+using PromiseModelOnline.Api.Middleware;
+using PromiseModelOnline.Api.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -41,7 +43,9 @@ builder.Services.AddCors(options =>
 // Kestrel HTTPS with certificate file (cert.pem / key.pem) or fallback to HTTP.
 var configuredUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
 #pragma warning disable S1075 // Hardcoded URI default fallback
+#pragma warning disable S5332 // HTTP used only for container-internal traffic behind nginx TLS termination; external traffic always uses HTTPS
 var defaultHttpUrl = configuredUrl ?? "http://+:8000";
+#pragma warning restore S5332
 #pragma warning restore S1075
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
 var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
@@ -127,10 +131,13 @@ builder.Services.AddAuthorization(options =>
 
 // SignalR, DI registration, MVC controllers, and Swagger.
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<IHtmlInputSanitizer, HtmlInputSanitizer>();
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers(options =>
     {
         options.Filters.Add<AuditLoggingActionFilter>();
+        options.Filters.Add<StandardErrorEnvelopeFilter>();
+        options.Filters.Add<InputSanitizationFilter>();
     })
     .AddJsonOptions(options =>
     {
@@ -184,7 +191,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
-// Forwarded headers (behind nginx reverse proxy) and global exception handler.
+// Forwarded headers (behind nginx reverse proxy), global exception handler.
 if (!app.Environment.IsEnvironment("Testing"))
 {
     app.UseForwardedHeaders(new ForwardedHeadersOptions
@@ -192,25 +199,7 @@ if (!app.Environment.IsEnvironment("Testing"))
         ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
     });
 
-    app.UseExceptionHandler(exceptionHandlerApp =>
-    {
-        exceptionHandlerApp.Run(async context =>
-        {
-            var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-            if (exception != null)
-            {
-                var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("GlobalExceptionHandler");
-                logger.LogError(exception, "Unhandled exception processing {Method} {Path}",
-                    context.Request.Method, context.Request.Path);
-
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                context.Response.ContentType = "application/problem+json";
-                await context.Response.WriteAsync(
-                    """{"type":"https://tools.ietf.org/html/rfc7231#section-6.6.1","title":"Internal Server Error","status":500}""");
-            }
-        });
-    });
+    app.UseMiddleware<GlobalExceptionMiddleware>();
 }
 
 // CORS, Swagger UI, authentication, authorization, and endpoint mapping.

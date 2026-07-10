@@ -1,3 +1,4 @@
+import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { loadComments } from '../comments/comments.ts';
 import { patchDetailStackGraphNode } from '../projects/detail-stack-graph.ts';
 import { loadReactions } from '../reactions/reactions.ts';
@@ -5,6 +6,7 @@ import { navigate } from '../router.ts';
 
 import { formatCommentText } from './entity-reference.ts';
 import { htmlToNodes } from './html.ts';
+import { setupInlineEdit } from './inline-edit.ts';
 import { getStatusIcon, getStatusLabel } from './status-utilities.ts';
 
 /**
@@ -50,7 +52,60 @@ export function bindLinkClickHandlers(container: HTMLElement, linkSelector: stri
 }
 
 /**
- * Wire up the #back-link element to navigate browser history back on click.
+ * Set the hidden state of an element identified by selector.
+ * @param {string} selector - CSS selector for the element.
+ * @param {boolean} isHidden - Whether to hide the element.
+ */
+export function setElementVisibility(selector: string, isHidden: boolean): void {
+    const element = document.querySelector(selector) as HTMLElement | null;
+    if (element) {
+        element.hidden = isHidden;
+        element.style.display = isHidden ? 'none' : '';
+    }
+}
+
+/**
+ * Set the text content of an element identified by selector.
+ * @param {string} selector - CSS selector for the element.
+ * @param {string} text - The text to set.
+ */
+export function setElementText(selector: string, text: string): void {
+    const element = document.querySelector(selector) as HTMLElement | null;
+    if (element) element.textContent = text;
+}
+
+/**
+ * Wire up inline edit for a detail description field.
+ * @param {string} inputSelector - CSS selector for the textarea element.
+ * @param {string} viewSelector - CSS selector for the view element.
+ * @param {string} editSelector - CSS selector for the edit button.
+ * @param {string} entityType - Entity type for autocomplete.
+ * @param {string} entityId - Entity ID for autocomplete.
+ * @param {string} [saveSelector] - Optional CSS selector for the save button.
+ * @param {string} [cancelSelector] - Optional CSS selector for the cancel button.
+ * @returns {ReturnType<typeof setupInlineEdit> | undefined} The inline edit instance, or undefined if elements missing.
+ */
+export function setupDetailInlineEdit(
+    inputSelector: string,
+    viewSelector: string,
+    editSelector: string,
+    entityType: string,
+    entityId: string | number,
+    saveSelector?: string,
+    cancelSelector?: string,
+): ReturnType<typeof setupInlineEdit> | undefined {
+    const input = document.querySelector(inputSelector) as HTMLTextAreaElement;
+    const view = document.querySelector(viewSelector) as HTMLElement;
+    const editButton = document.querySelector(editSelector) as HTMLElement;
+    if (!input || !view || !editButton) return;
+    createCommentAutocomplete(input, entityType, entityId);
+    const save = saveSelector ? document.querySelector(saveSelector) as HTMLElement : undefined;
+    const cancel = cancelSelector ? document.querySelector(cancelSelector) as HTMLElement : undefined;
+    return setupInlineEdit(input, view, editButton, save, cancel);
+}
+
+/**
+ *
  */
 export function initBackLink(): void {
     const backLink = document.querySelector('#back-link');

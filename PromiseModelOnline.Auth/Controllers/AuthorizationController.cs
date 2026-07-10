@@ -32,7 +32,9 @@ public class AuthorizationController(ILogger<AuthorizationController> logger) : 
     /// <response code="302">Redirects unauthenticated users to the login page.</response>
     /// <response code="400">The <c>openid</c> scope is missing or PKCE S256 is not used.</response>
     [HttpGet, HttpPost]
+#pragma warning disable S4502 // CSRF not applicable — OpenIddict validates state/nonce/PKCE challenge at the OIDC protocol layer before issuing authorization codes
     [IgnoreAntiforgeryToken]
+#pragma warning restore S4502
     public async Task<IActionResult> Authorize()
     {
         var feature = HttpContext.Features.Get<OpenIddictServerAspNetCoreFeature>()

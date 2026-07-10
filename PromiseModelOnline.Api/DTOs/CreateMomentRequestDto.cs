@@ -8,6 +8,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreateMomentRequestDto
 {
     /// <summary>Short description of the entity.</summary>
+    [Required, MaxLength(500)]
     public string Statement { get; set; } = string.Empty;
     /// <summary>Foreign key to the parent <see cref="Models.Flow"/>.</summary>
     [JsonRequired]
@@ -24,5 +25,6 @@ public class CreateMomentRequestDto
     [JsonRequired]
     public int DisplayOrder { get; set; }
     /// <summary>Optional description.</summary>
+    [MaxLength(2000)]
     public string? Description { get; set; }
 }

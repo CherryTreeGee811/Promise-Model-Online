@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -277,7 +278,7 @@ public class ProjectMomentTasksController(
 
 
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
         return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
 

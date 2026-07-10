@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Moq;
@@ -287,5 +288,19 @@ public class ProjectImportServiceUnitTests
         Assert.That(_addedTask!.OwnerId, Is.EqualTo(42));
         Assert.That(_addedIteration!.ProjectId, Is.EqualTo(100));
         Assert.That(_addedStride!.IterationId, Is.EqualTo(170));
+    }
+
+    [Test]
+    public async Task ImportAsync_NullProjectSection_ThrowsInvalidDataException()
+    {
+        var document = new ProjectExportDocument
+        {
+            SchemaVersion = "1.0",
+#pragma warning disable CS8625
+            Project = null
+#pragma warning restore CS8625
+        };
+
+        Assert.That(async () => await _service.ImportAsync(document, 42), Throws.TypeOf<InvalidDataException>());
     }
 }

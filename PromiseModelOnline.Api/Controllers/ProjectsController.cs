@@ -25,7 +25,9 @@ namespace PromiseModelOnline.Api.Controllers;
 /// <param name="projectImportService">The project import service.</param>
 /// <param name="projectImportValidationService">The project import validation service.</param>
 [Route("api/projects")]
+#pragma warning disable S4502 // CSRF not applicable — API controllers use JWT Bearer token authentication (browsers never auto-attach Authorization header); compensating controls: CORS whitelist + projects.read/write authorization policies
 [IgnoreAntiforgeryToken]
+#pragma warning restore S4502
 public class UserProjectsController(
     IProjectService projectService,
     IUserRepository userRepository,
@@ -123,7 +125,7 @@ public class UserProjectsController(
     {
         var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
         return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
     }
 }

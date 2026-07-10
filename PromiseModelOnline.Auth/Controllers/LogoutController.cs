@@ -23,7 +23,9 @@ public class LogoutController(ILogger<LogoutController> logger) : ControllerBase
     /// <summary>Sign out the current user and process the end_session request.</summary>
     [Authorize]
     [HttpGet, HttpPost]
+#pragma warning disable S4502 // CSRF not applicable — OpenIddict validates id_token_hint and post_logout_redirect_uri against registered clients, providing session-termination CSRF protection at the OIDC protocol layer
     [IgnoreAntiforgeryToken]
+#pragma warning restore S4502
     public async Task<IActionResult> Logout()
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value

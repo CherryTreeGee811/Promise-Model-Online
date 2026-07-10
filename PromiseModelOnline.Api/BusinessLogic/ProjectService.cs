@@ -26,6 +26,11 @@ public class ProjectService(
     IPermissionRepository permissionRepo,
     IUserRepository userRepo) : GenericService<Project>(projectRepo), IProjectService
 {
+    private static readonly Regex SlugInvalidChars = new(
+        @"[^a-z0-9\s-]",
+        RegexOptions.None,
+        TimeSpan.FromMilliseconds(500));
+
     private readonly IProjectRepository _projectRepo = projectRepo;
     private readonly IPermissionRepository _permissionRepo = permissionRepo;
     private readonly IUserRepository _userRepo = userRepo;
@@ -108,7 +113,7 @@ public class ProjectService(
     /// <returns>A unique slug string.</returns>
     public async Task<string> GenerateProjectSlugAsync(string name, int ownerId)
     {
-        var baseSlug = Regex.Replace(name.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
+        var baseSlug = SlugInvalidChars.Replace(name.ToLowerInvariant(), "")
             .Replace(" ", "-")
             .Replace("--", "-")
             .Trim('-');

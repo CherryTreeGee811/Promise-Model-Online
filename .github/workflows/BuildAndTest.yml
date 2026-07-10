@@ -114,7 +114,7 @@ jobs:
           npm run typecheck
           npm run lint:dry
           npm run lint:dead
-          npm run test
+          npm run test -- --coverage --coverage.thresholds.lines=70 --coverage.thresholds.branches=70 --coverage.thresholds.functions=70 --coverage.thresholds.statements=70 2>&1 | tee /tmp/vitest-coverage.log; if grep -q "ERROR: Coverage for" /tmp/vitest-coverage.log; then echo "Coverage thresholds not met!"; grep "ERROR: Coverage for" /tmp/vitest-coverage.log; exit 1; fi
           npm run build
 
       - name: Source code import boundary (Layer 2)
@@ -149,10 +149,12 @@ jobs:
           mkdir -p AuthTestResults
           dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~IntegrationTests"
+          bash scripts/check-coverage.sh ./AuthTestResults 0.70 0.70 0.70
 
       - name: Run API Unit Tests
         shell: bash
@@ -160,20 +162,25 @@ jobs:
           mkdir -p ApiUnitTestResults
           dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./ApiUnitTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~IntegrationTests"
+          bash scripts/check-coverage.sh ./ApiUnitTestResults 0.70 0.70 0.70
 
       - name: Run Auth Integration Tests
         shell: bash
         run: |
+          mkdir -p AuthTestResults
           dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./AuthTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
+          bash scripts/check-coverage.sh ./AuthTestResults 0.30
 
       - name: Run BFF Integration Tests
         shell: bash
@@ -181,10 +188,12 @@ jobs:
           mkdir -p BffTestResults
           dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./BffTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
+          bash scripts/check-coverage.sh ./BffTestResults 0.30
 
       - name: Run API Integration Tests
         shell: bash
@@ -192,10 +201,12 @@ jobs:
           mkdir -p ApiIntegrationTestResults
           dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
             --no-build \
+            --settings coverage.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory ./ApiIntegrationTestResults \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IntegrationTests"
+          bash scripts/check-coverage.sh ./ApiIntegrationTestResults 0.30
 
       - name: Run Client UI Test Environment
         shell: bash
@@ -442,10 +453,25 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline down -v
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload .NET coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: dotnet
+          files: |
+            ./AuthTestResults/*/coverage.cobertura.xml
+            ./ApiUnitTestResults/*/coverage.cobertura.xml
+            ./ApiIntegrationTestResults/*/coverage.cobertura.xml
+            ./BffTestResults/*/coverage.cobertura.xml
+            ./ClientTestResults/*/coverage.cobertura.xml
+            ./E2eTestResults/*/coverage.cobertura.xml
+
+      - name: Upload TS coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: typescript
+          files: ./coverage/clover.xml
 
       - name: Hadolint (all Dockerfiles)
         shell: bash

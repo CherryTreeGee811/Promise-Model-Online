@@ -9,7 +9,7 @@ import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } fr
 import { navigate } from '../router.ts';
 import { getStrides } from '../strides/api.ts';
 import { showToast } from '../ui/toast.ts';
-import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow } from '../utils/detail-common.ts';
+import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml, htmlToNodes } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
@@ -360,16 +360,18 @@ function setupMomentStatusChangeHandler(
     completedCell: HTMLElement | null,
 ): void {
     const flowId = moment.flowId;
+    let previousValue = select.value;
     select.addEventListener('change', async () => {
-        const previous = select.value;
+        const newValue = select.value;
         const writeTo = select;
         try {
-            const updated = await updateMomentStatus(owner, project, momentId, select.value, flowId) as Record<string, unknown>;
+            const updated = await updateMomentStatus(owner, project, momentId, newValue, flowId) as Record<string, unknown>;
             const updatedData = updated as Record<string, unknown>;
             moment.status = updatedData.status as string;
             moment.statusColor = updatedData.statusColor as string;
             moment.completedAt = updatedData.completedAt as string;
             writeTo.value = updatedData.status as string;
+            previousValue = updatedData.status as string;
             await refreshDetailStackGraph();
             if (updatedData.completedAt) {
                 const d = new Date(updatedData.completedAt as string);
@@ -378,7 +380,7 @@ function setupMomentStatusChangeHandler(
                 if (completedCell) completedCell.textContent = '\u{2013}';
             }
         } catch {
-            writeTo.value = previous;
+            writeTo.value = previousValue;
             showToast('Failed to update status', 'error');
         }
     });
@@ -399,7 +401,7 @@ function setupMomentTypeChangeHandler(
     moment: Moment,
 ): void {
     const flowId = moment.flowId;
-    const currentType = moment.type;
+    let currentType = moment.type;
     const sequenceNumber = moment.sequenceNumber;
     select.addEventListener('change', async () => {
         const newType = select.value;
@@ -408,6 +410,7 @@ function setupMomentTypeChangeHandler(
             const updated = await updateMomentType(owner, project, momentId, newType, flowId) as Record<string, unknown>;
             if (updated && updated.type) {
                 moment.type = updated.type as string;
+                currentType = updated.type as string;
                 writeTo.value = updated.type as string;
                 patchDetailStackGraphNode(`moment-${sequenceNumber}`, {
                     type: updated.type,
@@ -472,43 +475,26 @@ function upsertMomentGraphViewButton(detailDiv: HTMLElement, sequenceNumber: num
  */
 export async function loadMomentDetail(owner: string, project: string, momentId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
     const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement | null;
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement | null;
 
     destroyDetailStackGraph();
-    if (!detailDiv || !errorElement) return;
-    if (loadingElement) loadingElement.hidden = false;
-    errorElement.textContent = '';
+    if (!detailDiv) return;
+    setElementVisibility('#moment-detail-loading', false);
+    setElementText('#error-text', '');
 
     try {
         const moment = await getMoment(owner, project, momentId) as Moment;
         if (!moment) return;
         await loadEntityLookupMap('Moment', moment.id, owner, project);
-        if (loadingElement) loadingElement.hidden = true;
+        setElementVisibility('#moment-detail-loading', true);
 
-        void mountDetailStackGraph({
-            nodeType: 'moment',
-            nodeId: momentId,
-            owner,
-            project,
-        });
+        void mountDetailStackGraph({ nodeType: 'moment', nodeId: momentId, owner, project });
 
         const detailCard = document.createElement('div');
         detailCard.className = 'detail-card moment-detail-card';
 
         buildMomentUI(moment as unknown as Record<string, unknown>, detailCard, detailDiv, navContentDiv, contentDiv, owner, project);
 
-
-        const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
-        const momentEditButton = document.querySelector('#edit-moment-desc-btn') as HTMLElement;
-        const descriptionSaveButton = document.querySelector('#moment-description-save') as HTMLElement;
-        const momentDescriptionCancelButton = document.querySelector('#moment-description-cancel') as HTMLElement;
-        let momentEditor: ReturnType<typeof setupInlineEdit> | undefined;
-        if (momentDescInput && momentDescView && momentEditButton) {
-            createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
-            momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditButton, descriptionSaveButton, momentDescriptionCancelButton);
-        }
+        const momentEditor = setupDetailInlineEdit('#moment-description-input', '#moment-description-view', '#edit-moment-desc-btn', 'Moment', moment.id, '#moment-description-save', '#moment-description-cancel');
 
         gateMomentDetailControls(permission);
 
@@ -516,6 +502,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
 
         const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
         const descriptionMessage = document.querySelector('#moment-description-msg') as HTMLElement;
+        const descriptionSaveButton = document.querySelector('#moment-description-save') as HTMLElement;
         if (descriptionSaveButton && descriptionInput && descriptionMessage) {
             setupMomentEditDescriptionHandler(descriptionSaveButton, descriptionInput, descriptionMessage, owner, project, momentId, moment, momentEditor);
         }
@@ -523,13 +510,11 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         bindFlowNavigationHandler(detailDiv, owner, project, navContentDiv, contentDiv);
 
         void setupEstimateHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
-
         await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
 
         const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
-        const completedCell = detailDiv?.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null;
         if (statusSelectElement) {
-            setupMomentStatusChangeHandler(statusSelectElement, owner, project, momentId, moment, completedCell);
+            setupMomentStatusChangeHandler(statusSelectElement, owner, project, momentId, moment, detailDiv?.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null);
         }
 
         const typeSelectElement = document.querySelector('#moment-type-select') as HTMLSelectElement;
@@ -539,21 +524,131 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
 
         initBackLink();
         loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
-
         upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
-        if (errorElement) errorElement.textContent = 'Failed to load moment details.';
+        setElementVisibility('#moment-detail-loading', true);
+        setElementText('#error-text', 'Failed to load moment details.');
         console.error(error);
     }
 }
 
 /**
+ * Gate task form inputs based on user permission.
+ * @param {Record<string, unknown>} permission - The user's permission object
+ * @param {object} elements - The form elements to gate
+ * @param {HTMLInputElement} [elements.nameInput] - The task name input element
+ * @param {HTMLInputElement} [elements.descInput] - The task description input element
+ * @param {HTMLInputElement} [elements.completedInput] - The task completed checkbox element
+ * @param {HTMLButtonElement} [elements.submitButton] - The task submit button element
+ */
+function gateTaskForm(permission: Record<string, unknown>, elements: { nameInput?: HTMLInputElement; descInput?: HTMLInputElement; completedInput?: HTMLInputElement; submitButton?: HTMLButtonElement }): void {
+    const canEdit = isAtLeast(permission?.permission as string, 'Edit');
+    if (canEdit) return;
+    if (elements.nameInput) elements.nameInput.disabled = true;
+    if (elements.descInput) elements.descInput.disabled = true;
+    if (elements.completedInput) elements.completedInput.disabled = true;
+    if (elements.submitButton) { elements.submitButton.disabled = true; elements.submitButton.title = 'Requires Edit permission.'; }
+}
+
+/**
+ * Handle the task add button click event.
+ * @param {HTMLElement} tbody - The table body element
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment data object
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {HTMLInputElement} taskNameInput - The task name input element
+ * @param {HTMLInputElement} taskDescriptionInput - The task description input element
+ * @param {HTMLInputElement} taskCompletedInput - The task completed checkbox element
+ * @param {HTMLButtonElement} taskSubmitButton - The task submit button element
+ * @param {HTMLElement} taskMessageElement - The task message element
+ * @returns {Promise<void>}
+ */
+async function handleTaskAddClick(
+    tbody: HTMLElement,
+    momentId: string,
+    moment: Moment,
+    owner: string,
+    project: string,
+    taskNameInput: HTMLInputElement,
+    taskDescriptionInput: HTMLInputElement,
+    taskCompletedInput: HTMLInputElement,
+    taskSubmitButton: HTMLButtonElement,
+    taskMessageElement: HTMLElement,
+): Promise<void> {
+    taskMessageElement.textContent = '';
+    const name = taskNameInput.value.trim();
+    if (!name) {
+        taskMessageElement.textContent = 'Name is required.';
+        return;
+    }
+
+    taskSubmitButton.disabled = true;
+
+    try {
+        const created = await createTask(owner, project, momentId, {
+            name,
+            description: taskDescriptionInput.value.trim(),
+            isCompleted: taskCompletedInput.checked,
+        }, moment.flowId) as MomentTask;
+
+        if (created) {
+            removeInlineEmptyRow(tbody);
+            const row = document.createElement('tr');
+            row.dataset.momentTaskId = String(created.id);
+
+            const tdName = document.createElement('td');
+            tdName.textContent = created.name || '';
+            row.append(tdName);
+
+            const tdDesc = document.createElement('td');
+            tdDesc.append(...htmlToNodes(formatCommentText(created.description || '')));
+            row.append(tdDesc);
+
+            const tdCompletion = document.createElement('td');
+            const label = document.createElement('label');
+            label.className = 'moment-task-completion';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'moment-task-complete-checkbox';
+            checkbox.dataset.momentTaskId = String(created.id);
+            if (created.isCompleted) checkbox.checked = true;
+            label.append(checkbox);
+            const statusSpan = document.createElement('span');
+            statusSpan.textContent = created.isCompleted ? 'Completed' : 'Open';
+            label.append(statusSpan);
+            tdCompletion.append(label);
+            row.append(tdCompletion);
+
+            insertRowBeforeAddRow(tbody, row);
+
+            const nameInputField = taskNameInput;
+            const descInputField = taskDescriptionInput;
+            const completedInputField = taskCompletedInput;
+            nameInputField.value = '';
+            descInputField.value = '';
+            completedInputField.checked = false;
+
+            if (!Array.isArray(moment.tasks)) moment.tasks = [];
+            moment.tasks.push(created);
+            syncMomentTasksToStackGraph(momentId, moment);
+            bindMomentTaskCompletionToggle(tbody, momentId, moment, {}, owner, project);
+        }
+    } catch (error) {
+        taskMessageElement.textContent = 'Failed to add task.';
+        console.error(error);
+    } finally {
+        taskSubmitButton.disabled = false;
+    }
+}
+
+/**
+ * Render the moment tasks table.
  * @param {HTMLElement} container - The container element
  * @param {string} momentId - The moment ID
  * @param {MomentTask[]} tasks - The task list
- * @param {Moment} moment - The moment object
- * @param {Record<string, unknown>} permission - Permission object
+ * @param {Moment} moment - The moment data object
+ * @param {Record<string, unknown>} permission - The user's permission object
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
  */
@@ -612,84 +707,14 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
 
     if (taskDescriptionInput) createCommentAutocomplete(taskDescriptionInput as unknown as HTMLTextAreaElement, 'Moment', moment.id);
 
-    const canEdit = isAtLeast(permission?.permission as string, 'Edit');
-    if (!canEdit) {
-        if (taskNameInput) taskNameInput.disabled = true;
-        if (taskDescriptionInput) taskDescriptionInput.disabled = true;
-        if (taskCompletedInput) taskCompletedInput.disabled = true;
-        if (taskSubmitButton) { taskSubmitButton.disabled = true; taskSubmitButton.title = 'Requires Edit permission.'; }
-    }
+    gateTaskForm(permission, { nameInput: taskNameInput, descInput: taskDescriptionInput, completedInput: taskCompletedInput, submitButton: taskSubmitButton });
 
     if (taskSubmitButton && taskNameInput && taskDescriptionInput && taskCompletedInput && taskMessageElement) {
-        taskSubmitButton.addEventListener('click', async () => {
-            taskMessageElement.textContent = '';
-
-            const name = taskNameInput.value.trim();
-            if (!name) {
-                taskMessageElement.textContent = 'Name is required.';
-                return;
-            }
-
-            taskSubmitButton.disabled = true;
-
-            try {
-                const created = await createTask(owner, project, momentId, {
-                    name,
-                    description: taskDescriptionInput.value.trim(),
-                    isCompleted: taskCompletedInput.checked,
-                }, moment.flowId) as MomentTask;
-
-                if (created) {
-                    removeInlineEmptyRow(tbody);
-                    const row = document.createElement('tr');
-                    row.dataset.momentTaskId = String(created.id);
-
-                    const tdName = document.createElement('td');
-                    tdName.textContent = created.name || '';
-                    row.append(tdName);
-
-                    const tdDesc = document.createElement('td');
-                    tdDesc.append(...htmlToNodes(formatCommentText(created.description || '')));
-                    row.append(tdDesc);
-
-                    const tdCompletion = document.createElement('td');
-                    const label = document.createElement('label');
-                    label.className = 'moment-task-completion';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.className = 'moment-task-complete-checkbox';
-                    checkbox.dataset.momentTaskId = String(created.id);
-                    if (created.isCompleted) checkbox.checked = true;
-                    label.append(checkbox);
-                    const statusSpan = document.createElement('span');
-                    statusSpan.textContent = created.isCompleted ? 'Completed' : 'Open';
-                    label.append(statusSpan);
-                    tdCompletion.append(label);
-                    row.append(tdCompletion);
-
-                    insertRowBeforeAddRow(tbody, row);
-                    resetTaskForm();
-
-                    /**
-                     * Resets the new-task form inputs to their default state after a successful task creation.
-                     */
-                    function resetTaskForm(): void {
-                        taskNameInput.value = '';
-                        taskDescriptionInput.value = '';
-                        taskCompletedInput.checked = false;
-                    }
-                    if (!Array.isArray(moment.tasks)) moment.tasks = [];
-                    moment.tasks.push(created);
-                    syncMomentTasksToStackGraph(momentId, moment);
-                    bindMomentTaskCompletionToggle(tbody, momentId, moment, {}, owner, project);
-                }
-            } catch (error) {
-                taskMessageElement.textContent = 'Failed to add task.';
-                console.error(error);
-            } finally {
-                taskSubmitButton.disabled = false;
-            }
-        });
+        taskSubmitButton.addEventListener('click', () => handleTaskAddClick(
+            tbody, momentId, moment, owner, project,
+            taskNameInput, taskDescriptionInput, taskCompletedInput,
+            taskSubmitButton, taskMessageElement,
+        ));
     }
 
     bindMomentTaskCompletionToggle(tbody, momentId, moment, permission, owner, project);

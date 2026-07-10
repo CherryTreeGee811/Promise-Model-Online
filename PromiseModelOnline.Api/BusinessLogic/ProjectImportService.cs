@@ -32,6 +32,11 @@ public sealed class ProjectImportService(
     IStrideRepository strideRepository,
     IUserRepository userRepository) : IProjectImportService
 {
+    private static readonly System.Text.RegularExpressions.Regex SlugInvalidChars = new(
+        @"[^a-z0-9\s-]",
+        System.Text.RegularExpressions.RegexOptions.None,
+        TimeSpan.FromMilliseconds(500));
+
     private readonly IPromiseModelOnlineContext _context = context;
     private readonly IProjectRepository _projectRepository = projectRepository;
     private readonly IGenericRepository<Promise> _promiseRepository = promiseRepository;
@@ -426,7 +431,7 @@ public sealed class ProjectImportService(
     private static string Slugify(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return "project";
-        var slug = System.Text.RegularExpressions.Regex.Replace(text.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
+        var slug = SlugInvalidChars.Replace(text.ToLowerInvariant(), "")
             .Replace(" ", "-")
             .Replace("--", "-")
             .Trim('-');

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DTOs;
@@ -503,5 +504,42 @@ public class ProjectPromisesIntegrationTests : ApiIntegrationTestBase
         var response = await GetAsync($"/api/projects/{Owner}/{Project}/promises/{seeded.SequenceNumber}/total-effort");
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    [Description("PMO-179: Deleting a promise removes its child epics")]
+    public async Task DeletePromise_RemovesChildEpics()
+    {
+        // Arrange — seed promise with an epic
+        var seeded = await SeedPromiseAsync("Cascade epic test");
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+            var promise = await db.Promises.FindAsync(seeded.Id);
+            var epicSeq = await db.GetNextEpicSequenceAsync(seeded.Id);
+            db.Epics.Add(new Epic
+            {
+                Statement = "Cascade test epic",
+                ProductPromiseId = seeded.Id,
+                SequenceNumber = epicSeq,
+                DisplayOrder = 0,
+                StatusColor = "red",
+            });
+            await db.SaveChangesAsync();
+        }
+        SetAuthHeader(OwnerToken);
+
+        // Act — delete the promise
+        var deleteResponse = await Client.DeleteAsync(
+            $"/api/projects/{Owner}/{Project}/promises/{seeded.SequenceNumber}");
+        Assert.That(deleteResponse.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Assert — epics are gone
+        using var verifyScope = Factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<PromiseModelOnlineContext>();
+        var remainingEpics = await verifyDb.Epics
+            .Where(e => e.ProductPromiseId == seeded.Id)
+            .ToListAsync();
+        Assert.That(remainingEpics, Is.Empty, "Child epics should be cascade-deleted when the promise is deleted");
     }
 }

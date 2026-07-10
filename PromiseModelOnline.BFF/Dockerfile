@@ -17,7 +17,7 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends curl=8.5.0-2ubuntu10.10 \
+RUN apt-get update && apt-get install -y --no-install-recommends curl=8.5.0-2ubuntu10.11 \
     && rm -rf /var/lib/apt/lists/*
 USER app
 COPY --from=build /app/publish .

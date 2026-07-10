@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PromiseModelOnline.Api.DTOs;
 
@@ -6,7 +7,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreateStrideRequestDto
 {
     /// <summary>Display name of the stride.</summary>
-    [JsonRequired]
+    [JsonRequired, Required, MaxLength(200)]
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Foreign key to the parent iteration, or null for unassigned strides.</summary>

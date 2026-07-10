@@ -208,7 +208,7 @@ public class ProjectPermissionsController(
 
             return null;
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
         var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
 

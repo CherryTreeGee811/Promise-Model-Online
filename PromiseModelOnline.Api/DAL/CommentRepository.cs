@@ -20,6 +20,16 @@ namespace PromiseModelOnline.Api.DAL;
 /// <param name="context">The EF Core database context.</param>
 public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepository
 {
+    private static readonly System.Text.RegularExpressions.Regex EntityRefPattern = new(
+        @"^(promise|epic|journey|flow|moment)[-\s]?(\d+)$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase,
+        TimeSpan.FromMilliseconds(500));
+
+    private static readonly System.Text.RegularExpressions.Regex EntityTypePattern = new(
+        @"^(promise|epic|journey|flow|moment)$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase,
+        TimeSpan.FromMilliseconds(500));
+
     private readonly PromiseModelOnlineContext _context = context;
 
     /// <summary>Return top-level comments (not replies) for a parent entity, eagerly loading users, mentions, and threaded replies.</summary>
@@ -201,18 +211,12 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
     private static (string? type, int? seq) ParseEntityReference(string searchTerm)
     {
         var trimmed = searchTerm.Trim();
-        var match = System.Text.RegularExpressions.Regex.Match(
-            trimmed,
-            @"^(promise|epic|journey|flow|moment)[-\s]?(\d+)$",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var match = EntityRefPattern.Match(trimmed);
 
         if (match.Success)
             return (match.Groups[1].Value.ToLowerInvariant(), int.Parse(match.Groups[2].Value));
 
-        var typeMatch = System.Text.RegularExpressions.Regex.Match(
-            trimmed,
-            @"^(promise|epic|journey|flow|moment)$",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var typeMatch = EntityTypePattern.Match(trimmed);
 
         if (typeMatch.Success)
             return (typeMatch.Groups[1].Value.ToLowerInvariant(), null);

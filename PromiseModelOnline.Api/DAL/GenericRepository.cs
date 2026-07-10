@@ -292,9 +292,14 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
             .Where(task => task.MomentId == moment.Id)
             .ToListAsync();
 
+        var reactions = await _context.Set<Reaction>()
+            .Where(r => r.StackItemType == "moment" && r.StackItemId == moment.Id)
+            .ToListAsync();
+
         _context.RemoveRange(assignments);
         _context.RemoveRange(tasks);
         _context.RemoveRange(bugReworkTasks);
+        _context.RemoveRange(reactions);
 
         await RemoveCommentsForEntityAsync("moment", moment.Id);
         _context.Remove(moment);

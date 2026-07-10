@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
@@ -14,7 +15,9 @@ namespace PromiseModelOnline.Api.Controllers;
 /// </remarks>
 /// <remarks>Initializes the controller with the project service.</remarks>
 /// <param name="projectService">The project service for slug-based lookups.</param>
+#pragma warning disable S4502 // CSRF not applicable — all derived controllers use JWT Bearer token authentication; compensating controls: CORS whitelist + authorization policies
 [IgnoreAntiforgeryToken]
+#pragma warning restore S4502
 public abstract class ProjectScopedControllerBase(IProjectService projectService) : ControllerBase
 {
     /// <summary>Service for project lookups by slug.</summary>
@@ -36,7 +39,7 @@ public abstract class ProjectScopedControllerBase(IProjectService projectService
                  ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return false;
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
         var user = await userRepository.GetOrCreateUserByEmailAsync(email, username);
 
         var level = await permissionService.GetUserPermissionAsync(user.Id, project.Id);

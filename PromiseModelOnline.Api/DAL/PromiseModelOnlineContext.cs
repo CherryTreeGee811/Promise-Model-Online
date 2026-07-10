@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using PMO.Core.Models;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Enums;
 using PromiseModelOnline.Api.Models;
@@ -213,6 +214,27 @@ public class PromiseModelOnlineContext(
         modelBuilder.Entity<Moment>(entity =>
         {
             entity.HasIndex(e => new { e.FlowId, e.SequenceNumber }).IsUnique();
+            entity.HasIndex(e => new { e.AssignedStrideId, e.Status });
+        });
+
+        modelBuilder.Entity<Promise>(entity =>
+        {
+            entity.HasIndex(e => new { e.ProjectId, e.DisplayOrder });
+        });
+
+        modelBuilder.Entity<Epic>(entity =>
+        {
+            entity.HasIndex(e => new { e.ProductPromiseId, e.DisplayOrder });
+        });
+
+        modelBuilder.Entity<Journey>(entity =>
+        {
+            entity.HasIndex(e => new { e.EpicId, e.DisplayOrder });
+        });
+
+        modelBuilder.Entity<Flow>(entity =>
+        {
+            entity.HasIndex(e => new { e.JourneyId, e.DisplayOrder });
         });
 
         modelBuilder.Entity<EntitySequence>(entity =>
@@ -221,6 +243,42 @@ public class PromiseModelOnlineContext(
             entity.Property(e => e.ParentId).ValueGeneratedNever();
             entity.Property(e => e.Scope).HasMaxLength(50);
             entity.Property(e => e.NextSequenceNumber).HasDefaultValue(1);
+        });
+
+        modelBuilder.Entity<AuditEvent>(entity =>
+        {
+            entity.HasIndex(e => new { e.ProjectId, e.OccurredAtUtc });
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+        });
+
+        modelBuilder.Entity<PMO.Core.Models.MomentTask>(entity =>
+        {
+            entity.ToTable("MomentTask");
+            entity.HasIndex(e => new { e.OwnerId, e.IsCompleted });
+        });
+
+        modelBuilder.Entity<BugReworkTask>(entity =>
+        {
+            entity.ToTable("BugReworkTask");
+        });
+
+        modelBuilder.Entity<Stride>(entity =>
+        {
+            entity.ToTable("Strides");
+            entity.HasIndex(e => e.EndDate)
+                .HasFilter("[IterationId] IS NOT NULL");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("Notification");
+            entity.HasIndex(e => new { e.UserId, e.IsRead });
+        });
+
+        modelBuilder.Entity<Reaction>(entity =>
+        {
+            entity.ToTable("Reactions");
+            entity.HasIndex(e => new { e.StackItemType, e.StackItemId });
         });
     }
 

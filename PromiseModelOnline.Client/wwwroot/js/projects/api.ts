@@ -167,7 +167,14 @@ export async function inviteUser(owner: string, project: string, data: Record<st
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+            const body = await response.json();
+            if (body?.error) message = body.error;
+        } catch { /* ignore JSON parse errors */ }
+        throw new Error(message);
+    }
     return response.json();
 }
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -138,7 +139,7 @@ public class MomentTasksController(
                  ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
 
-        var username = User.FindFirst("nameid")?.Value;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
         return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
     }
 
