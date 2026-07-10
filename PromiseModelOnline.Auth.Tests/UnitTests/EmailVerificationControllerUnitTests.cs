@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using PromiseModelOnline.Auth.Controllers;
+using PromiseModelOnline.Auth.Models;
 using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
 
@@ -110,8 +111,8 @@ public class EmailVerificationControllerUnitTests
 
         _cache.Set("verify_code:1", "123456");
 
-        var model = new VerifyEmailViewModel { UserId = "1", Code = "123456" };
-        var result = await _controller.Confirm(model);
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
 
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;
@@ -127,8 +128,8 @@ public class EmailVerificationControllerUnitTests
 
         _cache.Set("verify_code:1", "000000");
 
-        var model = new VerifyEmailViewModel { UserId = "1", Code = "123456" };
-        var result = await _controller.Confirm(model);
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
 
         Assert.That(result, Is.InstanceOf<ViewResult>());
     }
@@ -196,8 +197,8 @@ public class EmailVerificationControllerUnitTests
     {
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync((IdentityUser?)null);
 
-        var model = new VerifyEmailViewModel { UserId = "1", Code = "123456" };
-        var result = await _controller.Confirm(model);
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
 
         Assert.That(result, Is.InstanceOf<RedirectResult>());
     }
@@ -209,8 +210,8 @@ public class EmailVerificationControllerUnitTests
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
 
-        var model = new VerifyEmailViewModel { UserId = "1", Code = "123456" };
-        var result = await _controller.Confirm(model);
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
 
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;
@@ -229,8 +230,8 @@ public class EmailVerificationControllerUnitTests
 
         _cache.Set("verify_code:1", "123456");
 
-        var model = new VerifyEmailViewModel { UserId = "1", Code = "123456" };
-        var result = await _controller.Confirm(model);
+        var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+        var result = await _controller.Confirm(request);
 
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;

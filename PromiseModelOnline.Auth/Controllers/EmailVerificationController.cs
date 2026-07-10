@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using PromiseModelOnline.Auth.Models;
 using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
 
@@ -91,35 +92,33 @@ public class EmailVerificationController(
     }
 
     /// <summary>Validate the verification code from cache and confirm the user's email.</summary>
-    /// <param name="model">The verification form containing user ID and 6-digit code.</param>
+    /// <param name="request">The verification request containing user ID and 6-digit code.</param>
     /// <returns>A redirect to the login page on success, or the verification view with errors.</returns>
     [AllowAnonymous]
     [HttpPost("confirm")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Confirm([Bind("UserId,Code")] VerifyEmailViewModel model)
+    public async Task<IActionResult> Confirm([FromForm] ConfirmEmailRequest request)
     {
         ViewBag.Resent = false;
 
-        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.UserId))
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.UserId))
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
+            var user = await _userManager.FindByIdAsync(request.UserId);
             if (user == null) return Redirect("/account/login");
-            model.Email = user.Email ?? "";
-            return View("Index", model);
+            return View("Index", new VerifyEmailViewModel { Email = user.Email ?? "", UserId = request.UserId });
         }
 
-        var user2 = await _userManager.FindByIdAsync(model.UserId);
+        var user2 = await _userManager.FindByIdAsync(request.UserId);
         if (user2 == null) return Redirect("/account/login");
 
         if (await _userManager.IsEmailConfirmedAsync(user2))
             return RedirectToAction("Index", "Login", new { verified = "true" });
 
         var cacheKey = $"{VerificationCodePrefix}{user2.Id}";
-        if (!_cache.TryGetValue(cacheKey, out string? storedCode) || storedCode != model.Code)
+        if (!_cache.TryGetValue(cacheKey, out string? storedCode) || storedCode != request.Code)
         {
-            ModelState.AddModelError(nameof(model.Code), "Invalid or expired verification code. Request a new one below.");
-            model.Email = user2.Email ?? "";
-            return View("Index", model);
+            ModelState.AddModelError(nameof(request.Code), "Invalid or expired verification code. Request a new one below.");
+            return View("Index", new VerifyEmailViewModel { Email = user2.Email ?? "", UserId = request.UserId });
         }
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user2);
