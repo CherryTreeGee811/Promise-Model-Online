@@ -5,7 +5,9 @@ namespace PromiseModelOnline.Auth.ViewModels;
 /// <summary>View model for the email verification form.</summary>
 public class VerifyEmailViewModel
 {
-    /// <summary>Email address to verify (display-only when re-rendering the form).</summary>
+    /// <summary>Email address to verify.</summary>
+    [Required]
+    [EmailAddress]
     [StringLength(254)]
     public string Email { get; set; } = string.Empty;
 

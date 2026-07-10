@@ -96,7 +96,7 @@ public class EmailVerificationController(
     [AllowAnonymous]
     [HttpPost("confirm")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Confirm(VerifyEmailViewModel model)
+    public async Task<IActionResult> Confirm([Bind("UserId,Code")] VerifyEmailViewModel model)
     {
         ViewBag.Resent = false;
 

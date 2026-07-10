@@ -282,7 +282,7 @@ public class AccountManagementIntegrationTests : IntegrationTestBase
         var verifyAntiforgery = await GetAntiforgeryData($"/account/verify-email?userId={userId}");
         var confirmResponse = await Client.SendAsync(CreatePostWithAntiforgery(
             "/account/verify-email/confirm", verifyAntiforgery,
-            new Dictionary<string, string> { { "UserId", userId }, { "Email", uniqueEmail }, { "Code", verificationCode! } }));
+            new Dictionary<string, string> { { "UserId", userId }, { "Code", verificationCode! } }));
         Assert.That(confirmResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
 
         // Login as the new user
