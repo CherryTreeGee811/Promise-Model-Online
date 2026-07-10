@@ -41,3 +41,4 @@ puppeteer/
 *.7z
 
 .opencode/
+.codegraph/
