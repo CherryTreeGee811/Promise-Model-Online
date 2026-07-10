@@ -23,7 +23,7 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
     /// <summary>Find users by exact display name match.</summary>
     /// <param name="name">The display name to match. Not null.</param>
     /// <returns>Users whose name matches exactly.</returns>
-    public async Task<IEnumerable<User>> GetUsersByNameAsync(string name) => await FindAsync(u => u.Name == name);
+    public async Task<IEnumerable<User>> GetUsersByNameAsync(string name) => await FindAsync(u => u.Name.ToLower() == name.ToLower());
 
     /// <summary>Find users by exact email address match.</summary>
     /// <param name="email">The email address to look up. Not null.</param>

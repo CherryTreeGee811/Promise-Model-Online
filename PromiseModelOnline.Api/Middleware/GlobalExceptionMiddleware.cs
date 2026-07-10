@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.Middleware;
+﻿namespace PromiseModelOnline.Api.Middleware;
 
 /// <summary>Catches all unhandled exceptions, logs full details to Serilog, returns a sanitized JSON error response.</summary>
 /// <remarks>No exception details or stack traces are exposed to the client — only a generic error message.</remarks>
