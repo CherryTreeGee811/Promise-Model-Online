@@ -39,4 +39,34 @@ public class StatusColorRulesUnitTests
         // Assert
         Assert.That(StatusColorRules.Normalize("Todo"), Is.EqualTo(StatusColorRules.Todo));
     }
+
+    [Test]
+    public void Normalize_NullInput_ReturnsEmpty()
+    {
+        // Arrange (no setup needed)
+        // Act
+        var result = StatusColorRules.Normalize(null);
+        // Assert
+        Assert.That(result, Is.EqualTo(string.Empty));
+    }
+
+    [Test]
+    public void RollUp_EmptyChildren_ReturnsTodo()
+    {
+        // Arrange (no setup needed)
+        // Act
+        var result = StatusColorRules.RollUp(Array.Empty<string>());
+        // Assert
+        Assert.That(result, Is.EqualTo(StatusColorRules.Todo));
+    }
+
+    [Test]
+    public void RollUp_AllDone_ReturnsDone()
+    {
+        // Arrange (no setup needed)
+        // Act
+        var result = StatusColorRules.RollUp(new[] { StatusColorRules.Done, StatusColorRules.Done });
+        // Assert
+        Assert.That(result, Is.EqualTo(StatusColorRules.Done));
+    }
 }

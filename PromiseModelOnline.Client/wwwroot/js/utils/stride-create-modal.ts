@@ -91,6 +91,117 @@ function computeEndDate(durationInput: HTMLInputElement, startInput: HTMLInputEl
  * @param {Array<{ endDate?: string }>} options.existingStrides - Existing strides for auto-calculating date defaults.
  * @param {() => Promise<void> | void} options.onCreated - Async callback invoked after successful creation.
  */
+interface StrideFormElements {
+    form: HTMLFormElement;
+    nameInput: HTMLInputElement;
+    iterationSelect: HTMLSelectElement;
+    durationInput: HTMLInputElement;
+    startInput: HTMLInputElement;
+    endInput: HTMLInputElement;
+    errorElement: HTMLElement;
+    submitButton: HTMLButtonElement;
+}
+
+/**
+ * Query stride create modal for all form elements.
+ * @param {HTMLElement} modalElement - The modal root element.
+ * @returns {StrideFormElements | undefined} The form elements object, or undefined if any element is missing.
+ */
+function getStrideFormElements(modalElement: HTMLElement): StrideFormElements | undefined {
+    const form = modalElement.querySelector('#stride-create-form') as HTMLFormElement | null;
+    const nameInput = modalElement.querySelector('#stride-create-name') as HTMLInputElement | null;
+    const iterationSelect = modalElement.querySelector('#stride-create-iteration') as HTMLSelectElement | null;
+    const durationInput = modalElement.querySelector('#stride-create-duration') as HTMLInputElement | null;
+    const startInput = modalElement.querySelector('#stride-create-start') as HTMLInputElement | null;
+    const endInput = modalElement.querySelector('#stride-create-end') as HTMLInputElement | null;
+    const errorElement = modalElement.querySelector('#stride-create-error') as HTMLElement | null;
+    const submitButton = modalElement.querySelector('#stride-create-submit') as HTMLButtonElement | null;
+    if (!form || !nameInput || !iterationSelect || !durationInput || !startInput || !endInput || !errorElement || !submitButton) return;
+    return { form, nameInput, iterationSelect, durationInput, startInput, endInput, errorElement, submitButton };
+}
+
+/**
+ * Populate an iteration select dropdown with options.
+ * @param {HTMLSelectElement} select - The select element to populate.
+ * @param {Array<{ id: number; name: string }>} iterations - Available iterations.
+ * @param {number} selectedId - The ID of the iteration to pre-select.
+ */
+function populateIterationSelect(select: HTMLSelectElement, iterations: Array<{ id: number; name: string }>, selectedId: number): void {
+    select.replaceChildren();
+    for (const iteration of iterations) {
+        const opt = document.createElement('option');
+        opt.value = String(iteration.id);
+        if (String(iteration.id) === String(selectedId)) opt.selected = true;
+        opt.textContent = iteration.name;
+        select.append(opt);
+    }
+}
+
+/**
+ * Handle stride create form submission.
+ * @param {Event} event - The form submit event.
+ * @param {StrideFormElements} elements - Validated form elements.
+ * @param {string} owner - Project owner slug.
+ * @param {string} project - Project slug.
+ * @param {HTMLElement} modalElement - The modal element to hide on success.
+ * @param {(() => Promise<void> | void) | undefined} onCreated - Optional async callback after creation.
+ */
+async function handleStrideSubmit(
+    event: Event,
+    elements: StrideFormElements,
+    owner: string,
+    project: string,
+    modalElement: HTMLElement,
+    onCreated: (() => Promise<void> | void) | undefined,
+): Promise<void> {
+    event.preventDefault();
+    const { errorElement, submitButton } = elements;
+    const name = elements.nameInput.value.trim();
+
+    if (!name) {
+        errorElement.textContent = 'Stride name is required.';
+        errorElement.classList.remove('d-none');
+        elements.nameInput.focus();
+        return;
+    }
+
+    const selectedIterationId = Number(elements.iterationSelect.value);
+    if (!selectedIterationId) {
+        errorElement.textContent = 'Select an iteration for this stride.';
+        errorElement.classList.remove('d-none');
+        elements.iterationSelect.focus();
+        return;
+    }
+
+    const durationDays = Math.max(1, Number(elements.durationInput.value) || 1);
+    submitButton.disabled = true;
+    submitButton.textContent = 'Creating...';
+
+    try {
+        await createStride(owner, project, {
+            name,
+            iterationId: selectedIterationId,
+            startDate: elements.startInput.value,
+            endDate: elements.endInput.value,
+            durationDays,
+            isActive: true,
+        });
+        bootstrap?.Modal?.getOrCreateInstance(modalElement)?.hide();
+        await onCreated?.();
+    } catch (error: unknown) {
+        errorElement.textContent = (error as Record<string, unknown> | undefined)?.message as string || 'Failed to create stride.';
+        errorElement.classList.remove('d-none');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Create Stride';
+    }
+}
+
+/**
+ * Open a Bootstrap modal for creating a new stride.
+ * The modal DOM is created on first invocation and reused.
+ * @param {StrideCreateOptions} options - Configuration options.
+ */
 export function openStrideCreateModal({
     owner,
     project,
@@ -143,97 +254,31 @@ export function openStrideCreateModal({
         </div>
     `);
 
-    const form = modalElement?.querySelector('#stride-create-form');
-    const nameInput = modalElement?.querySelector('#stride-create-name') as HTMLInputElement | null;
-    const iterationSelect = modalElement?.querySelector('#stride-create-iteration') as HTMLSelectElement | null;
-    const durationInput = modalElement?.querySelector('#stride-create-duration') as HTMLInputElement | null;
-    const startInput = modalElement?.querySelector('#stride-create-start') as HTMLInputElement | null;
-    const endInput = modalElement?.querySelector('#stride-create-end') as HTMLInputElement | null;
-    const errorElement = modalElement?.querySelector('#stride-create-error');
-    const submitButton = modalElement?.querySelector('#stride-create-submit') as HTMLButtonElement | null;
-    if (!form || !nameInput || !iterationSelect || !durationInput || !startInput || !endInput || !errorElement || !submitButton) return;
+    if (!modalElement) return;
+    const elements = getStrideFormElements(modalElement);
+    if (!elements) return;
 
-    form.replaceWith(form.cloneNode(true));
-
-    const liveForm = modalElement!.querySelector('#stride-create-form') as HTMLFormElement;
-    const liveNameInput = modalElement!.querySelector('#stride-create-name') as HTMLInputElement;
-    const liveIterationSelect = modalElement!.querySelector('#stride-create-iteration') as HTMLSelectElement;
-    const liveDurationInput = modalElement!.querySelector('#stride-create-duration') as HTMLInputElement;
-    const liveStartInput = modalElement!.querySelector('#stride-create-start') as HTMLInputElement;
-    const liveEndInput = modalElement!.querySelector('#stride-create-end') as HTMLInputElement;
-    const liveErrorElement = modalElement!.querySelector('#stride-create-error') as HTMLElement;
-    const liveSubmitButton = modalElement!.querySelector('#stride-create-submit') as HTMLButtonElement;
+    elements.form.replaceWith(elements.form.cloneNode(true));
+    const freshElements = getStrideFormElements(modalElement);
+    if (!freshElements) return;
 
     const iterationList = Array.isArray(iterations) ? iterations : [];
-    liveIterationSelect.replaceChildren();
-    for (const iteration of iterationList) {
-        const opt = document.createElement('option');
-        opt.value = String(iteration.id);
-        if (String(iteration.id) === String(iterationId)) opt.selected = true;
-        opt.textContent = iteration.name;
-        liveIterationSelect.append(opt);
-    }
+    populateIterationSelect(freshElements.iterationSelect, iterationList, iterationId);
 
     const defaults = getNewStrideDefaults(existingStrides);
-    liveNameInput.value = '';
-    liveDurationInput.value = String(defaults.durationDays);
-    liveStartInput.value = defaults.startDate;
-    liveEndInput.value = defaults.endDate;
-    liveErrorElement.textContent = '';
-    liveErrorElement.classList.add('d-none');
-    liveSubmitButton.disabled = false;
-    liveSubmitButton.textContent = 'Create Stride';
+    freshElements.nameInput.value = '';
+    freshElements.durationInput.value = String(defaults.durationDays);
+    freshElements.startInput.value = defaults.startDate;
+    freshElements.endInput.value = defaults.endDate;
+    freshElements.errorElement.textContent = '';
+    freshElements.errorElement.classList.add('d-none');
+    freshElements.submitButton.disabled = false;
+    freshElements.submitButton.textContent = 'Create Stride';
 
-    liveDurationInput.addEventListener('input', () => computeEndDate(liveDurationInput, liveStartInput, liveEndInput));
-    liveStartInput.addEventListener('change', () => computeEndDate(liveDurationInput, liveStartInput, liveEndInput));
+    freshElements.durationInput.addEventListener('input', () => computeEndDate(freshElements.durationInput, freshElements.startInput, freshElements.endInput));
+    freshElements.startInput.addEventListener('change', () => computeEndDate(freshElements.durationInput, freshElements.startInput, freshElements.endInput));
 
-    liveForm.addEventListener('submit', async event => {
-        event.preventDefault();
+    freshElements.form.addEventListener('submit', event => handleStrideSubmit(event, freshElements, owner, project, modalElement, onCreated));
 
-        const name = liveNameInput.value.trim();
-
-        if (!name) {
-            liveErrorElement.textContent = 'Stride name is required.';
-            liveErrorElement.classList.remove('d-none');
-            liveNameInput.focus();
-            return;
-        }
-
-        const selectedIterationId = Number(liveIterationSelect.value);
-
-        if (!selectedIterationId) {
-            liveErrorElement.textContent = 'Select an iteration for this stride.';
-            liveErrorElement.classList.remove('d-none');
-            liveIterationSelect.focus();
-            return;
-        }
-
-        const durationDays = Math.max(1, Number(liveDurationInput.value) || 1);
-        const startDate = liveStartInput.value;
-        const endDate = liveEndInput.value;
-        liveSubmitButton.disabled = true;
-        liveSubmitButton.textContent = 'Creating...';
-
-        try {
-            await createStride(owner, project, {
-                name,
-                iterationId: selectedIterationId,
-                startDate,
-                endDate,
-                durationDays,
-                isActive: true,
-            });
-
-            bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.hide();
-            await onCreated?.();
-        } catch (error: unknown) {
-            liveErrorElement.textContent = (error as Record<string, unknown> | undefined)?.message as string || 'Failed to create stride.';
-            liveErrorElement.classList.remove('d-none');
-        } finally {
-            liveSubmitButton.disabled = false;
-            liveSubmitButton.textContent = 'Create Stride';
-        }
-    });
-
-    bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
+    bootstrap?.Modal?.getOrCreateInstance(modalElement)?.show();
 }

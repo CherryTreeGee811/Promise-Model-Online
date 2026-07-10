@@ -68,7 +68,7 @@ public class ProjectScopedControllerBaseUnitTests
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim(ClaimTypes.Email, "admin@test.com"),
-            new Claim("nameid", "admin-123"),
+            new Claim(ClaimTypes.Name, "admin-123"),
         }, "test"));
 
         _controller.ControllerContext = new ControllerContext

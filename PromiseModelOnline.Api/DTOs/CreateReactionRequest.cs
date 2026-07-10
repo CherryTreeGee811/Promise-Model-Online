@@ -7,8 +7,10 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreateReactionRequest
 {
     /// <summary>Emoji reaction string.</summary>
+    [Required, MaxLength(20)]
     public string Emote { get; set; } = string.Empty;
     /// <summary>Type discriminator for the target entity.</summary>
+    [Required, MaxLength(20)]
     public string StackItemType { get; set; } = string.Empty;
     /// <summary>Foreign key to the target entity.</summary>
     [JsonRequired]

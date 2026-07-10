@@ -59,9 +59,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("MomentId");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("OwnerId", "IsCompleted");
 
-                    b.ToTable("MomentTask");
+                    b.ToTable("MomentTask", (string)null);
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.AuditEvent", b =>
@@ -114,6 +114,10 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.HasIndex("ProjectId", "OccurredAtUtc");
+
                     b.ToTable("AuditEvents");
                 });
 
@@ -160,7 +164,7 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("SourceCommentId");
 
-                    b.ToTable("BugReworkTask");
+                    b.ToTable("BugReworkTask", (string)null);
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Comment", b =>
@@ -308,7 +312,7 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.HasIndex("ProductPromiseId");
+                    b.HasIndex("ProductPromiseId", "DisplayOrder");
 
                     b.ToTable("Epics");
                 });
@@ -355,9 +359,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("JourneyId");
-
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("JourneyId", "DisplayOrder");
 
                     b.ToTable("Flows");
                 });
@@ -430,9 +434,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EpicId");
-
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("EpicId", "DisplayOrder");
 
                     b.ToTable("Journeys");
                 });
@@ -500,9 +504,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssignedStrideId");
-
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("AssignedStrideId", "Status");
 
                     b.HasIndex("FlowId", "SequenceNumber")
                         .IsUnique();
@@ -575,9 +579,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "IsRead");
 
-                    b.ToTable("Notification");
+                    b.ToTable("Notification", (string)null);
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Permission", b =>
@@ -689,7 +693,7 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.HasIndex("ProjectId");
+                    b.HasIndex("ProjectId", "DisplayOrder");
 
                     b.ToTable("Promises");
                 });
@@ -725,7 +729,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reactions");
+                    b.HasIndex("StackItemType", "StackItemId");
+
+                    b.ToTable("Reactions", (string)null);
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Stride", b =>
@@ -764,11 +770,14 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EndDate")
+                        .HasFilter("[IterationId] IS NOT NULL");
+
                     b.HasIndex("IterationId");
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Strides");
+                    b.ToTable("Strides", (string)null);
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.User", b =>

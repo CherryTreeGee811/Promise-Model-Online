@@ -7,6 +7,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreateFlowRequestDto
 {
     /// <summary>Short description of the entity.</summary>
+    [Required, MaxLength(500)]
     public string Statement { get; set; } = string.Empty;
     /// <summary>Foreign key to the parent <see cref="Models.Journey"/>.</summary>
     [JsonRequired]
@@ -15,5 +16,6 @@ public class CreateFlowRequestDto
     [JsonRequired]
     public int DisplayOrder { get; set; }
     /// <summary>Optional description.</summary>
+    [MaxLength(2000)]
     public string? Description { get; set; }
 }

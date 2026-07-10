@@ -6,9 +6,13 @@ namespace PromiseModelOnline.Auth.ViewModels;
 public class VerifyEmailViewModel
 {
     /// <summary>Email address to verify.</summary>
+    [Required]
+    [EmailAddress]
+    [StringLength(254)]
     public string Email { get; set; } = string.Empty;
 
     /// <summary>User ID associated with the verification.</summary>
+    [Required]
     public string UserId { get; set; } = string.Empty;
 
     /// <summary>6-digit verification code. Required, must match pattern <c>\d{6}</c>.</summary>

@@ -6,7 +6,7 @@ import {
     patchChildMetrics,
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
-import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
@@ -115,11 +115,10 @@ function upsertPromiseGraphViewButton(detailDiv: HTMLElement | null, promise: Re
 export async function loadPromiseDetail(owner: string, project: string, promiseId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission?: string } | null): Promise<void> {
     const detailDiv = document.querySelector('#promise-detail-content') as HTMLElement | null;
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#promise-detail-loading') as HTMLElement | null;
 
     if (!detailDiv || !errorElement) return;
-    if (loadingElement) loadingElement.hidden = false;
-    errorElement.textContent = '';
+    setElementVisibility('#promise-detail-loading', false);
+    setElementText('#error-text', '');
 
     try {
         destroyDetailStackGraph();

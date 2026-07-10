@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.Enums;
@@ -15,6 +16,11 @@ namespace PromiseModelOnline.Api.Extensions;
 /// </remarks>
 public static class PromiseHierarchySeeder
 {
+    private static readonly Regex SlugInvalidChars = new(
+        @"[^a-z0-9\s-]",
+        RegexOptions.None,
+        TimeSpan.FromMilliseconds(500));
+
     private const string TestUserEmail = "pmo@gmail.com";
     private const string TestUserName = "pmo_test";
     private const string TestUserEmail2 = "pmo2@gmail.com";
@@ -670,7 +676,7 @@ public static class PromiseHierarchySeeder
     {
         if (string.IsNullOrWhiteSpace(text)) return "project";
 
-        var slug = System.Text.RegularExpressions.Regex.Replace(text.ToLowerInvariant(), @"[^a-z0-9\s-]", "")
+        var slug = SlugInvalidChars.Replace(text.ToLowerInvariant(), "")
             .Replace(" ", "-")
             .Replace("--", "-")
             .Trim('-');

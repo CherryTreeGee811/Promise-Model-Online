@@ -7,9 +7,11 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreateCommentDto
 {
     /// <summary>Comment body text.</summary>
+    [Required, MaxLength(50000)]
     public string Text { get; set; } = string.Empty;
 
     /// <summary>Parent entity type: <c>"promise"</c>, <c>"epic"</c>, <c>"journey"</c>, <c>"flow"</c>, or <c>"moment"</c>.</summary>
+    [Required]
     public string ParentType { get; set; } = string.Empty;
 
     /// <summary>Parent entity ID.</summary>

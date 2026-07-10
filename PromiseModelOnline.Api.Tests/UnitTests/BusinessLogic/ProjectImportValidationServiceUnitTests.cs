@@ -206,6 +206,48 @@ public class ProjectImportValidationServiceUnitTests
         Assert.That(result.Errors, Has.Some.Contains("references project 999"));
     }
 
+    [Test]
+    public async Task ValidateAsync_NullProjectSection_ReturnsError()
+    {
+        var document = new ProjectExportDocument
+        {
+            SchemaVersion = "1.0",
+#pragma warning disable CS8625
+            Project = null
+#pragma warning restore CS8625
+        };
+
+        await using var stream = CreateStream(document);
+        var result = await _service.ValidateAsync(stream);
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors, Has.Some.Contains("Project section is missing"));
+    }
+
+    [Test]
+    public async Task ValidateHierarchy_DuplicatePromiseId_ReturnsError()
+    {
+        var document = new ProjectExportDocument
+        {
+            SchemaVersion = "1.0",
+            Project = new ProjectExportProject
+            {
+                Id = 1,
+                Name = "Project",
+                ProductPromises =
+                [
+                    new ProjectExportPromise { Id = 10, ProjectId = 1, Statement = "Promise 1", Epics = [] },
+                    new ProjectExportPromise { Id = 10, ProjectId = 1, Statement = "Promise 2", Epics = [] }
+                ]
+            }
+        };
+
+        await using var stream = CreateStream(document);
+        var result = await _service.ValidateAsync(stream);
+
+        Assert.That(result.Errors, Has.Some.Contains("Duplicate promise id '10'"));
+    }
+
     private static MemoryStream CreateStream(ProjectExportDocument document)
     {
         var json = JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true });
