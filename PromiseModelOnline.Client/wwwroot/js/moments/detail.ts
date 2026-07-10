@@ -208,8 +208,8 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
 function gateMomentDetailControls(permission: Record<string, unknown>): void {
     const canEdit = isAtLeast(permission?.permission as string, 'Edit');
     if (!canEdit) {
-        const editButton = document.querySelector('#edit-moment-desc-btn') as HTMLButtonElement | null;
-        const saveButton = document.querySelector('#moment-description-save') as HTMLButtonElement | null;
+        const editButton = document.querySelector('#moment-edit-desc-btn') as HTMLButtonElement | null;
+        const saveButton = document.querySelector('#moment-save-desc') as HTMLButtonElement | null;
         const descInput = document.querySelector('#moment-description-input') as HTMLInputElement | null;
         if (editButton) { editButton.disabled = true; editButton.title = 'Requires Edit permission.'; }
         if (saveButton) { saveButton.disabled = true; saveButton.title = 'Requires Edit permission.'; }
@@ -475,14 +475,18 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement | null;
 
-    destroyDetailStackGraph();
     if (!detailDiv || !errorElement) return;
     if (loadingElement) loadingElement.hidden = false;
     errorElement.textContent = '';
 
     try {
+        destroyDetailStackGraph();
         const moment = await getMoment(owner, project, momentId) as Moment;
-        if (!moment) return;
+        if (!moment) {
+            if (loadingElement) loadingElement.hidden = true;
+            if (errorElement) errorElement.textContent = 'Moment not found.';
+            return;
+        }
         await loadEntityLookupMap('Moment', moment.id, owner, project);
         if (loadingElement) loadingElement.hidden = true;
 
@@ -501,9 +505,9 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
 
         const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
         const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
-        const momentEditButton = document.querySelector('#edit-moment-desc-btn') as HTMLElement;
-        const descriptionSaveButton = document.querySelector('#moment-description-save') as HTMLElement;
-        const momentDescriptionCancelButton = document.querySelector('#moment-description-cancel') as HTMLElement;
+        const momentEditButton = document.querySelector('#moment-edit-desc-btn') as HTMLElement;
+        const descriptionSaveButton = document.querySelector('#moment-save-desc') as HTMLElement;
+        const momentDescriptionCancelButton = document.querySelector('#moment-cancel-desc') as HTMLElement;
         let momentEditor: ReturnType<typeof setupInlineEdit> | undefined;
         if (momentDescInput && momentDescView && momentEditButton) {
             createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
@@ -515,7 +519,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         renderMomentTasks(document.querySelector('#moment-tasks') as HTMLElement, momentId, moment.tasks ?? [], moment, permission, owner, project);
 
         const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const descriptionMessage = document.querySelector('#moment-description-msg') as HTMLElement;
+        const descriptionMessage = document.querySelector('#moment-desc-save-msg') as HTMLElement;
         if (descriptionSaveButton && descriptionInput && descriptionMessage) {
             setupMomentEditDescriptionHandler(descriptionSaveButton, descriptionInput, descriptionMessage, owner, project, momentId, moment, momentEditor);
         }

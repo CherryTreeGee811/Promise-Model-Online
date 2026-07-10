@@ -230,14 +230,18 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement | null;
 
-    destroyDetailStackGraph();
     if (!detailDiv) return;
     if (loadingElement) loadingElement.hidden = false;
     if (errorElement) errorElement.textContent = '';
 
     try {
+        destroyDetailStackGraph();
         const flow = await getFlow(owner, project, flowId) as Flow;
-        if (!flow) return;
+        if (!flow) {
+            if (loadingElement) loadingElement.hidden = true;
+            if (errorElement) errorElement.textContent = 'Flow not found.';
+            return;
+        }
         await loadEntityLookupMap('Flow', flow.id, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;

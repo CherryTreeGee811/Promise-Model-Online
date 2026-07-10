@@ -83,13 +83,17 @@ public class UserProjectsController(
     }
 
     /// <summary>Validate a project import JSON before committing.</summary>
+    /// <param name="file">The uploaded JSON export file.</param>
     /// <returns>The validation result.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("import/validate")]
-    public async Task<ActionResult<ProjectImportValidationResult>> ValidateImport()
+    public async Task<ActionResult<ProjectImportValidationResult>> ValidateImport([FromForm] IFormFile file)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         using var stream = new System.IO.MemoryStream();
-        await Request.Body.CopyToAsync(stream);
+        await file.CopyToAsync(stream);
         stream.Position = 0;
 
         var result = await _projectImportValidationService.ValidateAsync(stream);
@@ -98,16 +102,20 @@ public class UserProjectsController(
     }
 
     /// <summary>Import a project from a validated export document.</summary>
+    /// <param name="file">The uploaded JSON export file.</param>
     /// <returns>The import result.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("import")]
-    public async Task<ActionResult<ProjectImportResult>> Import()
+    public async Task<ActionResult<ProjectImportResult>> Import([FromForm] IFormFile file)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         var user = await GetCurrentUserAsync();
         if (user is null) return Unauthorized();
 
         using var stream = new System.IO.MemoryStream();
-        await Request.Body.CopyToAsync(stream);
+        await file.CopyToAsync(stream);
         stream.Position = 0;
 
         var validationResult = await _projectImportValidationService.ValidateAsync(stream);

@@ -117,14 +117,18 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#promise-detail-loading') as HTMLElement | null;
 
-    destroyDetailStackGraph();
     if (!detailDiv || !errorElement) return;
     if (loadingElement) loadingElement.hidden = false;
     errorElement.textContent = '';
 
     try {
+        destroyDetailStackGraph();
         const promise = await getPromise(owner, project, promiseId) as Record<string, unknown>;
-        if (!promise) return;
+        if (!promise) {
+            if (loadingElement) loadingElement.hidden = true;
+            if (errorElement) errorElement.textContent = 'Promise not found.';
+            return;
+        }
         await loadEntityLookupMap('Promise', promise.id as number, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;

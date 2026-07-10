@@ -1753,7 +1753,6 @@ input, button, a, label, select, textarea {
 }
 
 .comment-autocomplete {
-  display: none;
   position: fixed;
   z-index: 99999;
   min-width: 180px;

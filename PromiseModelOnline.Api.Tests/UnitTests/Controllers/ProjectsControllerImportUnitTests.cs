@@ -45,16 +45,28 @@ public class ProjectsControllerImportUnitTests
             _mockProjectImportValidationService.Object);
     }
 
+    private static Mock<IFormFile> CreateFileMock(string content)
+    {
+        var bytes = Encoding.UTF8.GetBytes(content);
+        var stream = new MemoryStream(bytes);
+        var fileMock = new Mock<IFormFile>();
+        fileMock.Setup(f => f.FileName).Returns("test.json");
+        fileMock.Setup(f => f.Length).Returns(bytes.Length);
+        fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
+        fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .Returns<Stream, CancellationToken>((target, ct) => stream.CopyToAsync(target, ct));
+        return fileMock;
+    }
+
     [Test]
     public async Task REQ_FUN_039_Import_NotAuthenticated_ReturnsUnauthorized()
     {
         // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
-        var jsonBytes = Encoding.UTF8.GetBytes("{}");
-        _controller.HttpContext.Request.Body = new MemoryStream(jsonBytes);
+        var fileMock = CreateFileMock("{}");
         // Act
-        var result = await _controller.Import();
+        var result = await _controller.Import(fileMock.Object);
 
         // Assert
         Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
@@ -70,8 +82,7 @@ public class ProjectsControllerImportUnitTests
         ControllerTestHelpers.SetControllerUser(_controller, "importer@x.com");
 
         var json = "{\"schemaVersion\":\"1.0\",\"project\":{\"id\":1,\"name\":\"Test\"}}";
-        var jsonBytes = Encoding.UTF8.GetBytes(json);
-        _controller.HttpContext.Request.Body = new MemoryStream(jsonBytes);
+        var fileMock = CreateFileMock(json);
 
         var validationResult = new ProjectImportValidationResult
         {
@@ -85,7 +96,7 @@ public class ProjectsControllerImportUnitTests
         _mockProjectImportService.Setup(s => s.ImportAsync(It.IsAny<ProjectExportDocument>(), 1)).ReturnsAsync(new ProjectImportResult { ProjectId = 1 });
 
         // Act
-        var result = await _controller.Import();
+        var result = await _controller.Import(fileMock.Object);
 
         // Assert
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());

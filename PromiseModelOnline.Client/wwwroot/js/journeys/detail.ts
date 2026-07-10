@@ -215,14 +215,18 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#journey-detail-loading') as HTMLElement | null;
 
-    destroyDetailStackGraph();
     if (!detailDiv) return;
     if (loadingElement) loadingElement.hidden = false;
     if (errorElement) errorElement.textContent = '';
 
     try {
+        destroyDetailStackGraph();
         const journey = await getJourney(owner, project, journeyId) as Journey;
-        if (!journey) return;
+        if (!journey) {
+            if (loadingElement) loadingElement.hidden = true;
+            if (errorElement) errorElement.textContent = 'Journey not found.';
+            return;
+        }
         await loadEntityLookupMap('Journey', journey.id, owner, project);
         if (loadingElement) loadingElement.hidden = true;
 

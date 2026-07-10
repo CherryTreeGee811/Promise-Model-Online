@@ -182,14 +182,18 @@ export async function loadEpicDetail(owner: string, project: string, epicId: str
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#epic-detail-loading') as HTMLElement | null;
 
-    destroyDetailStackGraph();
     if (!detailDiv) return;
     if (loadingElement) loadingElement.hidden = false;
     if (errorElement) errorElement.textContent = '';
 
     try {
+        destroyDetailStackGraph();
         const epic = await getEpic(owner, project, epicId) as Epic;
-        if (!epic) return;
+        if (!epic) {
+            if (loadingElement) loadingElement.hidden = true;
+            if (errorElement) errorElement.textContent = 'Epic not found.';
+            return;
+        }
         await loadEntityLookupMap('Epic', epic.id, owner, project);
 
         if (loadingElement) loadingElement.hidden = true;
