@@ -15,7 +15,9 @@ namespace PromiseModelOnline.Api.Controllers;
 /// </remarks>
 /// <remarks>Initializes the controller with the project service.</remarks>
 /// <param name="projectService">The project service for slug-based lookups.</param>
+#pragma warning disable S4502 // CSRF not applicable — all derived controllers use JWT Bearer token authentication; compensating controls: CORS whitelist + authorization policies
 [IgnoreAntiforgeryToken]
+#pragma warning restore S4502
 public abstract class ProjectScopedControllerBase(IProjectService projectService) : ControllerBase
 {
     /// <summary>Service for project lookups by slug.</summary>

@@ -24,7 +24,9 @@ namespace PromiseModelOnline.Api.Controllers;
 /// <param name="permissionService">The permission service for project-level authorization.</param>
 /// <param name="reactionRepository">The repository for reaction data access.</param>
 [Route("api/reactions")]
+#pragma warning disable S4502 // CSRF not applicable — API controller uses JWT Bearer token authentication; compensating controls: CORS whitelist + projects.read/write authorization policies
 [IgnoreAntiforgeryToken]
+#pragma warning restore S4502
 public class ReactionsController(IReactionService reactionService,
                            IUserRepository userRepository,
                            ICommentRepository commentRepository,

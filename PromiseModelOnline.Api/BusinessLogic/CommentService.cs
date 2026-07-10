@@ -25,6 +25,11 @@ public class CommentService(
     IGenericMapper<Comment, CommentDto> mapper,
     INotificationService notificationService) : ICommentService
 {
+    private static readonly Regex MentionPattern = new(
+        @"@(\w+)",
+        RegexOptions.None,
+        TimeSpan.FromMilliseconds(500));
+
     private readonly ICommentRepository _commentRepo = commentRepo;
     private readonly IUserRepository _userRepo = userRepo;
     private readonly IGenericMapper<Comment, CommentDto> _mapper = mapper;
@@ -73,7 +78,7 @@ public class CommentService(
         var currentUser = await _userRepo.GetByIdAsync(userId);
         var currentUserName = currentUser?.Name ?? "Unknown";
 
-        var mentions = Regex.Matches(dto.Text, @"@(\w+)")
+        var mentions = MentionPattern.Matches(dto.Text)
                             .Select(m => m.Groups[1].Value)
                             .Distinct();
         foreach (var mentionedUsername in mentions)

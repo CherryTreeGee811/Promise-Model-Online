@@ -25,12 +25,10 @@ public static class KestrelExtensions
         }
         else
         {
-            var defaultUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
-            var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? defaultUrl;
-#pragma warning disable S1075 // Hardcoded URI default fallback
-            if (string.IsNullOrEmpty(urls)) urls = "http://+:8060";
-#pragma warning restore S1075
-            builder.WebHost.UseUrls(urls.Replace("https://", "http://"));
+            var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")
+                       ?? builder.Configuration["Kestrel:Endpoints:Http:Url"];
+            if (!string.IsNullOrEmpty(urls))
+                builder.WebHost.UseUrls(urls);
         }
     }
 }

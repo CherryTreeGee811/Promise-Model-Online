@@ -43,7 +43,9 @@ builder.Services.AddCors(options =>
 // Kestrel HTTPS with certificate file (cert.pem / key.pem) or fallback to HTTP.
 var configuredUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
 #pragma warning disable S1075 // Hardcoded URI default fallback
+#pragma warning disable S5332 // HTTP used only for container-internal traffic behind nginx TLS termination; external traffic always uses HTTPS
 var defaultHttpUrl = configuredUrl ?? "http://+:8000";
+#pragma warning restore S5332
 #pragma warning restore S1075
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
 var keyPath = Path.Combine(Directory.GetCurrentDirectory(), "key.pem");
