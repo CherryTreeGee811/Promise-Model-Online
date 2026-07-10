@@ -1,15 +1,20 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace PromiseModelOnline.Api.Filters;
 
 /// <summary>Wraps all non-success API responses in a consistent <c>{"error":"..."}</c> JSON envelope.</summary>
 /// <remarks>
-///   Ensures every error response has a uniform shape for the frontend to consume.
-///   Success responses (2xx) are passed through unchanged.
+///   Uses <see cref="ContentResult"/> (not <see cref="ObjectResult"/>) to bypass content
+///   negotiation, ensuring the error envelope is always returned as JSON regardless of the
+///   client's <c>Accept</c> header. The same <see cref="JsonSerializerOptions"/> configured
+///   for the application's controllers are used for serialization.
 /// </remarks>
-public class StandardErrorEnvelopeFilter : IResultFilter
+public class StandardErrorEnvelopeFilter(IOptions<JsonOptions> jsonOptions) : IResultFilter
 {
+    private readonly JsonSerializerOptions _jsonOptions = jsonOptions.Value.JsonSerializerOptions;
 
     /// <inheritdoc />
     public void OnResultExecuting(ResultExecutingContext context)
@@ -25,15 +30,18 @@ public class StandardErrorEnvelopeFilter : IResultFilter
             // ValidationProblemDetails (ModelState errors)
             if (objectResult.Value is ProblemDetails problem && statusCode == 400)
             {
-                var errors = new Dictionary<string, object?>();
+                var errors = new Dictionary<string, object?>
+                {
+                    ["error"] = "Validation failed."
+                };
                 if (problem.Extensions.TryGetValue("errors", out var rawErrors))
                     errors["errors"] = rawErrors!;
 
-                errors["error"] = "Validation failed.";
-                context.Result = new ObjectResult(errors)
+                context.Result = new ContentResult
                 {
-                    StatusCode = statusCode,
-                    ContentTypes = { "application/json; charset=utf-8" }
+                    Content = JsonSerializer.Serialize(errors, _jsonOptions),
+                    ContentType = "application/json; charset=utf-8",
+                    StatusCode = statusCode
                 };
                 return;
             }
@@ -41,10 +49,11 @@ public class StandardErrorEnvelopeFilter : IResultFilter
             // String message (e.g. BadRequest("message"), NotFound("message"))
             if (objectResult.Value is string message)
             {
-                context.Result = new ObjectResult(new { error = message })
+                context.Result = new ContentResult
                 {
-                    StatusCode = statusCode,
-                    ContentTypes = { "application/json; charset=utf-8" }
+                    Content = JsonSerializer.Serialize(new { error = message }, _jsonOptions),
+                    ContentType = "application/json; charset=utf-8",
+                    StatusCode = statusCode
                 };
                 return;
             }
@@ -52,10 +61,11 @@ public class StandardErrorEnvelopeFilter : IResultFilter
             // Other object results — wrap if non-success
             if (objectResult.Value is not null)
             {
-                context.Result = new ObjectResult(new { error = objectResult.Value })
+                context.Result = new ContentResult
                 {
-                    StatusCode = statusCode,
-                    ContentTypes = { "application/json; charset=utf-8" }
+                    Content = JsonSerializer.Serialize(new { error = objectResult.Value }, _jsonOptions),
+                    ContentType = "application/json; charset=utf-8",
+                    StatusCode = statusCode
                 };
                 return;
             }
@@ -75,10 +85,11 @@ public class StandardErrorEnvelopeFilter : IResultFilter
                 _ => "An error occurred."
             };
 
-            context.Result = new ObjectResult(new { error = message })
+            context.Result = new ContentResult
             {
-                StatusCode = statusCodeResult.StatusCode,
-                ContentTypes = { "application/json; charset=utf-8" }
+                Content = JsonSerializer.Serialize(new { error = message }, _jsonOptions),
+                ContentType = "application/json; charset=utf-8",
+                StatusCode = statusCodeResult.StatusCode
             };
             return;
         }
