@@ -39,3 +39,5 @@ chrome/
 puppeteer/
 *.zip
 *.7z
+
+.opencode/
