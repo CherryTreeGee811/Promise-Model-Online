@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Filters;
+using PromiseModelOnline.Auth.Attributes;
 using PromiseModelOnline.Auth.Services;
 using System.Collections;
 
@@ -51,6 +52,8 @@ public class InputSanitizationFilter(IHtmlInputSanitizer sanitizer) : IAsyncActi
 
         foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
         {
+            if (prop.GetCustomAttributes(typeof(DoNotSanitizeAttribute), false).Length > 0)
+                continue;
             if (prop.PropertyType == typeof(string) && prop.CanRead && prop.CanWrite)
             {
                 var value = prop.GetValue(obj) as string;

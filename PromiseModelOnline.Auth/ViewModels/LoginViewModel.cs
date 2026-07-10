@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using PromiseModelOnline.Auth.Attributes;
 
 namespace PromiseModelOnline.Auth.ViewModels;
 
@@ -17,5 +18,6 @@ public class LoginViewModel
     public string Password { get; set; } = string.Empty;
 
     /// <summary>Optional URL to redirect to after successful login.</summary>
+    [DoNotSanitize]
     public string? ReturnUrl { get; set; }
 }
