@@ -125,13 +125,13 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
         destroyDetailStackGraph();
         const promise = await getPromise(owner, project, promiseId) as Record<string, unknown>;
         if (!promise) {
-            if (loadingElement) loadingElement.hidden = true;
+            if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
             if (errorElement) errorElement.textContent = 'Promise not found.';
             return;
         }
         await loadEntityLookupMap('Promise', promise.id as number, owner, project);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
 
         const cardDiv = document.createElement('div');
         cardDiv.className = 'detail-card promise-detail-card';
@@ -198,7 +198,7 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         detailDiv!.append(cardDiv);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
 
         const descInput = document.querySelector('#description-input') as HTMLTextAreaElement | null;
         const descView = document.querySelector('#description-view') as HTMLElement | null;
@@ -231,9 +231,9 @@ export async function loadPromiseDetail(owner: string, project: string, promiseI
 
         setupDescriptionHandler(owner, project, promiseId, 'promise', promise as unknown as { sequenceNumber: number; description?: string }, updatePromiseDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
         if (errorElement) errorElement.textContent = 'Failed to load promise details.';
         console.error(error);
     }

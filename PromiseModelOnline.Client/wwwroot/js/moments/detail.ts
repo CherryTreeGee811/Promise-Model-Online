@@ -483,12 +483,12 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         destroyDetailStackGraph();
         const moment = await getMoment(owner, project, momentId) as Moment;
         if (!moment) {
-            if (loadingElement) loadingElement.hidden = true;
+            if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
             if (errorElement) errorElement.textContent = 'Moment not found.';
             return;
         }
         await loadEntityLookupMap('Moment', moment.id, owner, project);
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
 
         void mountDetailStackGraph({
             nodeType: 'moment',
@@ -546,7 +546,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
 
         upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
         if (errorElement) errorElement.textContent = 'Failed to load moment details.';
         console.error(error);
     }

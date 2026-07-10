@@ -238,13 +238,13 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
         destroyDetailStackGraph();
         const flow = await getFlow(owner, project, flowId) as Flow;
         if (!flow) {
-            if (loadingElement) loadingElement.hidden = true;
+            if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
             if (errorElement) errorElement.textContent = 'Flow not found.';
             return;
         }
         await loadEntityLookupMap('Flow', flow.id, owner, project);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
 
         void mountDetailStackGraph({
             nodeType: 'flow',
@@ -368,7 +368,7 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
 
         upsertFlowGraphViewButton(detailDiv, flow);
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
         if (errorElement) errorElement.textContent = 'Failed to load flow details.';
         console.error(error);
     }

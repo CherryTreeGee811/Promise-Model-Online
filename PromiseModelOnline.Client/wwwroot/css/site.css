@@ -2921,3 +2921,11 @@ button:disabled,
 [data-bs-theme="dark"] *:focus-visible {
   outline-color: #e8a317;
 }
+
+#moment-detail-loading[hidden],
+#promise-detail-loading[hidden],
+#epic-detail-loading[hidden],
+#journey-detail-loading[hidden],
+#flow-detail-loading[hidden] {
+  display: none !important;
+}

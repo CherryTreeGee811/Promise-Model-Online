@@ -223,12 +223,12 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
         destroyDetailStackGraph();
         const journey = await getJourney(owner, project, journeyId) as Journey;
         if (!journey) {
-            if (loadingElement) loadingElement.hidden = true;
+            if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
             if (errorElement) errorElement.textContent = 'Journey not found.';
             return;
         }
         await loadEntityLookupMap('Journey', journey.id, owner, project);
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
 
         void mountDetailStackGraph({
             nodeType: 'journey',
@@ -347,9 +347,9 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
 
         upsertJourneyGraphViewButton(detailDiv, journey);
 
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
     } catch (error) {
-        if (loadingElement) loadingElement.hidden = true;
+        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
         if (errorElement) errorElement.textContent = 'Failed to load journey details.';
         console.error(error);
     }
