@@ -27,6 +27,7 @@ public class FullLifecycleE2ETests : E2ETestBase
         await Page.FillAsync("#first-promise-input", "E2E lifecycle promise.");
         await Page.ClickAsync("#create-project-btn");
         await Page.WaitForURLAsync("**/graph", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync("#graph-content svg", new() { Timeout = 15000 });
         var urlParts = Page.Url.TrimEnd('/').Split('/');
         var slug = urlParts[^2];
         var graphNodeCount = await Page.Locator(".graph-node").CountAsync();

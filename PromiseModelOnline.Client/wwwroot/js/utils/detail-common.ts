@@ -59,6 +59,7 @@ export function bindLinkClickHandlers(container: HTMLElement, linkSelector: stri
 export function setElementVisibility(selector: string, isHidden: boolean): void {
     const element = document.querySelector(selector) as HTMLElement | null;
     if (element) {
+        element.hidden = isHidden;
         element.style.display = isHidden ? 'none' : '';
     }
 }
