@@ -18,6 +18,15 @@
     <link href="/lib/css/bootstrap.min.css" rel="stylesheet">
     <link href="/lib/css/bootstrap-icons.min.css" rel="stylesheet">
     <link href="/css/site.css" rel="stylesheet" type="text/css" />
+    <script>
+    (function() {
+      var theme = localStorage.getItem('pmo.theme');
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.bsTheme = theme;
+    })();
+    </script>
     <link href="/images/favicon.ico" rel="shortcut icon" type="image/x-icon" />
     <link rel="apple-touch-icon" href="/images/PromiseModelOnline_Logo_180x180.png">
     <link rel="icon" href="/images/icon.svg" type="image/svg+xml">
@@ -62,6 +71,13 @@
                 <div class="collapse navbar-collapse" id="main-nav">
                     <ul id="main-menu" class="navbar-nav ms-auto align-items-md-center">
                         <!--Dynamic-->
+                    </ul>
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <button class="nav-link" id="theme-toggle" aria-label="Toggle dark mode" type="button">
+                                <i id="theme-toggle-icon" class="bi bi-brightness-high"></i>
+                            </button>
+                        </li>
                     </ul>
                 </div>
             </div>

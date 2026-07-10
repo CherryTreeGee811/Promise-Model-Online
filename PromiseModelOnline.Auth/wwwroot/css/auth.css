@@ -938,6 +938,75 @@ input, button, a, label, select, textarea {
   }
 }
 
+/* ===========================================
+   Dark Mode
+   =========================================== */
+[data-bs-theme="dark"] {
+  --color-primary: #0f172a;
+  --color-primary-light: #1e293b;
+  --color-accent: #818cf8;
+  --color-accent-hover: #6366f1;
+  --color-accent-ring: rgba(129, 140, 248, 0.25);
+  --color-bg-start: #0d1117;
+  --color-bg-end: #161b22;
+  --color-card-bg: #1c2333;
+  --color-text: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #6b7280;
+  --color-border: #30363d;
+  --color-border-hover: #4b5563;
+  --color-border-focus: #818cf8;
+  --color-error-bg: rgba(248, 81, 73, 0.12);
+  --color-error-border: rgba(248, 81, 73, 0.3);
+  --color-error-text: #f85149;
+  --color-success-bg: rgba(63, 185, 80, 0.12);
+  --color-success-border: rgba(63, 185, 80, 0.3);
+  --color-success-text: #3fb950;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 10px 25px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+[data-bs-theme="dark"] .field-group .field-input {
+  background: #0d1117;
+  color: var(--color-text);
+}
+
+[data-bs-theme="dark"] .external-provider-btn {
+  background: #1c2333;
+  color: var(--color-text);
+}
+
+[data-bs-theme="dark"] .external-provider-btn:hover {
+  background: #1f2937;
+  border-color: var(--color-border-hover);
+}
+
+[data-bs-theme="dark"] .external-provider-btn:active {
+  background: #2d3748;
+}
+
+[data-bs-theme="dark"] .form-div {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-bs-theme="dark"] .footer {
+  border-top-color: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+}
+
+[data-bs-theme="dark"] .verify-card .verify-code-input {
+  background: #0d1117;
+  color: var(--color-text);
+}
+
+[data-bs-theme="dark"] .verify-card .verify-email-address {
+  border-color: var(--color-border);
+}
+
+[data-bs-theme="dark"] .verify-card .auth-link {
+  border-top-color: var(--color-border);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

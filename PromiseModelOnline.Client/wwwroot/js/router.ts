@@ -9,6 +9,7 @@ import { loadMyTasksPage } from './moments/my-tasks.ts';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts';
 import { handleNotificationsRoutes } from './notifications/router.ts';
 import { initTelemetry } from './telemetry.ts';
+import { initTheme, toggleTheme } from './stores/theme.ts';
 
 /**
  * @typedef {{ allowed: true } | { allowed: false; redirect?: string }} GuardResult
@@ -171,6 +172,9 @@ async function initApp(): Promise<true> {
   await checkSession();
 
   initTelemetry();
+  initTheme();
+
+  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
 
   initNavEventDelegation(navContentDiv, contentDiv);
 
