@@ -796,4 +796,43 @@ describe('loadJourneyDetail', () => {
         expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
+
+    it('skips graph view button when buildGraphViewHref returns null', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+        mockBuildGraphViewHref.mockReturnValue(null);
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        expect(mockBuildGraphViewHref).toHaveBeenCalledWith('o', 'p', 'journey-1');
+        expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
+    });
+
+    it('handles empty description save when API returns no description field', async () => {
+        mockGetJourney.mockResolvedValue(defaultJourney);
+        mockLoadEntityLookupMap.mockResolvedValue(undefined);
+        mockMountDetailStackGraph.mockResolvedValue(undefined);
+        mockGetFlows.mockResolvedValue(defaultFlows);
+        mockGetEpicById.mockResolvedValue(defaultEpic);
+        mockUpdateJourneyDescription.mockResolvedValue({});
+
+        const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
+        const saveBtn = document.querySelector('#save-desc') as HTMLButtonElement;
+        descInput.value = '';
+        saveBtn.click();
+
+        await vi.waitFor(() => {
+            expect(mockUpdateJourneyDescription).toHaveBeenCalledWith('o', 'p', '42', '');
+            expect(mockPatchDetailStackGraphNode).toHaveBeenCalledWith('journey-1', {
+                description: undefined,
+            });
+        });
+    });
 });

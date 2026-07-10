@@ -73,12 +73,6 @@ public partial class AddMissingPerformanceIndexes : Migration
             table: "Strides",
             columns: new[] { "EndDate" },
             filter: "[IterationId] IS NOT NULL");
-
-        // BugReworkTask — source comment lookup
-        migrationBuilder.CreateIndex(
-            name: "IX_BugReworkTask_SourceCommentId",
-            table: "BugReworkTask",
-            columns: new[] { "SourceCommentId" });
     }
 
     /// <inheritdoc />
@@ -95,6 +89,5 @@ public partial class AddMissingPerformanceIndexes : Migration
         migrationBuilder.DropIndex(name: "IX_Moments_AssignedStrideId_Status", table: "Moments");
         migrationBuilder.DropIndex(name: "IX_MomentTask_OwnerId_IsCompleted", table: "MomentTask");
         migrationBuilder.DropIndex(name: "IX_Strides_EndDate", table: "Strides");
-        migrationBuilder.DropIndex(name: "IX_BugReworkTask_SourceCommentId", table: "BugReworkTask");
     }
 }

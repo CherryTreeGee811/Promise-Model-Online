@@ -260,7 +260,6 @@ public class PromiseModelOnlineContext(
         modelBuilder.Entity<BugReworkTask>(entity =>
         {
             entity.ToTable("BugReworkTask");
-            entity.HasIndex(e => e.SourceCommentId);
         });
 
         modelBuilder.Entity<Stride>(entity =>
