@@ -8,6 +8,7 @@ using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Filters;
 using PromiseModelOnline.Api.Middleware;
+using PromiseModelOnline.Api.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -128,11 +129,13 @@ builder.Services.AddAuthorization(options =>
 
 // SignalR, DI registration, MVC controllers, and Swagger.
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<IHtmlInputSanitizer, HtmlInputSanitizer>();
 builder.Services.AddPromiseModelOnlineScopes(builder.Configuration);
 builder.Services.AddControllers(options =>
     {
         options.Filters.Add<AuditLoggingActionFilter>();
         options.Filters.Add<StandardErrorEnvelopeFilter>();
+        options.Filters.Add<InputSanitizationFilter>();
     })
     .AddJsonOptions(options =>
     {

@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.DTOs;
@@ -7,6 +8,7 @@ namespace PromiseModelOnline.Api.DTOs;
 public class CreatePermissionRequestDto
 {
     /// <summary>Email address of the user to invite.</summary>
+    [Required, EmailAddress, MaxLength(256)]
     public string Email { get; set; } = string.Empty;
     /// <summary>Access level to grant.</summary>
     [JsonRequired]

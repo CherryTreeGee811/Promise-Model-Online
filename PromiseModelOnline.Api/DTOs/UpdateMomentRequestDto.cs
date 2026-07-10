@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using PromiseModelOnline.Api.Enums;
 
 namespace PromiseModelOnline.Api.DTOs;
@@ -11,10 +12,11 @@ public class UpdateMomentRequestDto
     public int Id { get; set; }
 
     /// <summary>Short description of the moment.</summary>
-    [JsonRequired]
+    [JsonRequired, MaxLength(500)]
     public string Statement { get; set; } = string.Empty;
 
     /// <summary>Optional longer description.</summary>
+    [MaxLength(2000)]
     public string? Description { get; set; }
 
     /// <summary>Foreign key to the parent flow.</summary>
@@ -41,6 +43,7 @@ public class UpdateMomentRequestDto
     public int DisplayOrder { get; set; }
 
     /// <summary>Status display color.</summary>
+    [MaxLength(20)]
     public string StatusColor { get; set; } = "red";
 
     /// <summary>Foreign key to the responsible user, or null.</summary>

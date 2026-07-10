@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using PromiseModelOnline.Auth.Common;
 using PromiseModelOnline.Auth.DAL;
 using PromiseModelOnline.Auth.Extensions;
+using PromiseModelOnline.Auth.Filters;
 using PromiseModelOnline.Auth.Middleware;
 using PromiseModelOnline.Auth.Services;
 
@@ -172,7 +173,15 @@ else
 
 // Kestrel HTTPS with certificate file support; MVC controllers and views.
 builder.ConfigureHttps();
-builder.Services.AddControllersWithViews();
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 102_400; // 100 KB
+});
+builder.Services.AddSingleton<IHtmlInputSanitizer, HtmlInputSanitizer>();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<InputSanitizationFilter>();
+});
 
 var app = builder.Build();
 
