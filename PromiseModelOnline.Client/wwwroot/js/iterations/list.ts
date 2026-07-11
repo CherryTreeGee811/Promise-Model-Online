@@ -178,6 +178,10 @@ async function loadIterationData(owner: string, project: string, errorElement: H
  */
 function renderIterationList(iterations: Iteration[], listDiv: HTMLElement | null, formatDate: (d: string) => string, showDetail: (iteration: Iteration) => Promise<void>): void {
     try {
+        if (!Array.isArray(iterations) || iterations.length === 0) {
+            if (listDiv) listDiv.replaceChildren();
+            return;
+        }
         iterations.sort((a, b) => b.id - a.id);
         const table = buildIterationsTable(iterations, formatDate);
         if (listDiv) listDiv.replaceChildren(table);
