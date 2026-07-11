@@ -40,7 +40,7 @@ public class MyMomentsE2ETests : E2ETestBase
 
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/moments/1");
-        await Page.WaitForSelectorAsync("#moment-detail-loading[hidden]", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync(".moment-detail-card", new() { Timeout = 30000 });
         await Page.WaitForSelectorAsync("#add-moment-task-name", new() { Timeout = 10000 });
         await Page.FillAsync("#add-moment-task-name", "Browser E2E Task");
         await Page.ClickAsync("#add-moment-task-submit");
@@ -68,7 +68,7 @@ public class MyMomentsE2ETests : E2ETestBase
         await Page.GotoAsync($"/{Owner}/{Project}/moments/1");
 
         // Assert
-        await Page.WaitForSelectorAsync("#moment-detail-loading[hidden]", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync(".moment-detail-card", new() { Timeout = 30000 });
         var errorText = await Page.Locator("#error-text").InnerTextAsync();
         Assert.That(errorText, Is.Empty.Or.EqualTo(""));
         AssertNoCspViolations();

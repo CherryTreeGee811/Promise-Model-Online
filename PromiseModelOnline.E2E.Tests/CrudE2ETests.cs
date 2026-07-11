@@ -627,7 +627,10 @@ public class CrudE2ETests : E2ETestBase
             }
         });
         using var client = await GetAuthClientAsync();
-        using var content = new StringContent(importJson, Encoding.UTF8, "application/json");
+        using var content = new MultipartFormDataContent
+        {
+            { new ByteArrayContent(Encoding.UTF8.GetBytes(importJson)), "file", "import.json" }
+        };
 
         // Act
         var response = await client.PostAsync($"/api/projects/import", content);
