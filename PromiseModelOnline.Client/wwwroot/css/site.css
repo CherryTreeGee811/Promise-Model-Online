@@ -120,6 +120,14 @@ button {
   justify-content: center;
 }
 
+#theme-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .navbar-dark .navbar-nav .nav-link {
   color: #adafb2;
 }
