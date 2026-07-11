@@ -17,7 +17,8 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends curl=7.* \
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 USER app
 COPY --from=build /app/publish .
