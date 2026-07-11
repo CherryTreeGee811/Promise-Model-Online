@@ -8,6 +8,7 @@ import { handleKnowledgeBaseRoutes } from './knowledge-base/router.ts';
 import { loadMyTasksPage } from './moments/my-tasks.ts';
 import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts';
 import { handleNotificationsRoutes } from './notifications/router.ts';
+import { initTheme, toggleTheme } from './stores/theme.ts';
 import { initTelemetry } from './telemetry.ts';
 
 /**
@@ -72,7 +73,7 @@ const ROUTES: {
         const { handleLegacyProjectRoutes } = await loadProjectRoutes();
         handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
       } catch {
-        void loadTemplateWithError(contentDiv, 'projects')();
+        await loadTemplateWithError(contentDiv, 'projects')();
       }
     },
   },
@@ -84,7 +85,7 @@ const ROUTES: {
         await loadTemplate('moments/my-tasks.html', contentDiv);
         void loadMyTasksPage(navContentDiv, contentDiv);
       } catch {
-        void loadTemplateWithError(contentDiv, 'my tasks')();
+        await loadTemplateWithError(contentDiv, 'my tasks')();
       }
     },
   },
@@ -171,6 +172,9 @@ async function initApp(): Promise<true> {
   await checkSession();
 
   initTelemetry();
+  initTheme();
+
+  document.querySelector('#theme-toggle')?.addEventListener('click', toggleTheme);
 
   initNavEventDelegation(navContentDiv, contentDiv);
 
@@ -444,6 +448,8 @@ async function handleProjectScopedPath(path: string, segments: string[], navCont
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    if (!contentDiv) return;
+    contentDiv.replaceChildren();
     const path = location.pathname;
 
     if (['/login', '/logout', '/register'].includes(path)) {

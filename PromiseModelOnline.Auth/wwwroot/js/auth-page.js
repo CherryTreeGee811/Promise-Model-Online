@@ -1,5 +1,56 @@
 'use strict';
 
+// ---------- Theme ----------
+const THEME_STORAGE_KEY = 'pmo.theme';
+
+function getPreferredTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {}
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.bsTheme = theme;
+  const icon = document.getElementById('theme-toggle-icon');
+  if (icon) {
+    icon.className = theme === 'dark'
+      ? 'bi bi-brightness-high-fill'
+      : 'bi bi-brightness-high';
+  }
+}
+
+function saveTheme(theme) {
+  try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch {}
+}
+
+function setTheme(theme) {
+  applyTheme(theme);
+  saveTheme(theme);
+  document.getElementById('theme-toggle')?.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+function toggleTheme() {
+  const current = document.documentElement.dataset.bsTheme || 'light';
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function initTheme() {
+  const theme = getPreferredTheme();
+  setTheme(theme);
+
+  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+
+  try {
+    if (!localStorage.getItem(THEME_STORAGE_KEY)) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        setTheme(e.matches ? 'dark' : 'light');
+      });
+    }
+  } catch {}
+}
+
 // ---------- Mobile Menu ----------
 let menuOpen = false;
 
@@ -96,6 +147,7 @@ function initMessageDismiss() {
 }
 
 // ---------- Initialize ----------
+initTheme();
 initMobileMenu();
 initPasswordToggles();
 initFormLoading();

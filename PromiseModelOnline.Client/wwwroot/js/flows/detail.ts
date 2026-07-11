@@ -216,6 +216,132 @@ function upsertFlowGraphViewButton(detailDiv: HTMLElement, flow: Flow): void {
 }
 
 /**
+ * Render the flow detail card and wire up all interactions.
+ * @param {Flow} flow - The flow data
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} flowId - The flow ID
+ * @param {HTMLElement} detailDiv - The detail container
+ * @param {HTMLElement} navContentDiv - Navigation container
+ * @param {HTMLElement} contentDiv - Content container
+ * @param {{ permission: string } | undefined} permission - Permission object
+ */
+async function renderFlowDetail(flow: Flow, owner: string, project: string, flowId: string, detailDiv: HTMLElement, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
+  void mountDetailStackGraph({
+    nodeType: 'flow',
+    nodeId: flowId,
+    owner,
+    project,
+  });
+
+  const detailCard = document.createElement('div');
+  detailCard.className = 'detail-card flow-detail-card';
+
+  const heading = document.createElement('h2');
+  heading.textContent = flow.statement;
+  detailCard.append(heading);
+
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-striped align-middle detail-table';
+
+  const descRow = document.createElement('tr');
+  const descTh = document.createElement('th');
+  descTh.scope = 'row';
+  const descLabel = document.createElement('label');
+  descLabel.htmlFor = 'description-input';
+  descLabel.textContent = 'Description';
+  descTh.append(descLabel);
+  descRow.append(descTh);
+  const descTd = document.createElement('td');
+  buildInlineEditUI(descTd, '', flow.description || '');
+  descRow.append(descTd);
+  table.append(descRow);
+
+  const journeyRow = document.createElement('tr');
+  const journeyTh = document.createElement('th');
+  journeyTh.textContent = 'Journey';
+  journeyRow.append(journeyTh);
+  const journeyTd = document.createElement('td');
+  journeyTd.id = 'flow-journey-cell';
+  const journeyLink = document.createElement('a');
+  journeyLink.href = `/${owner}/${project}/journeys/${flow.journeyId}`;
+  journeyLink.className = 'detail-link link-primary text-decoration-none fw-semibold';
+  journeyLink.setAttribute('journey-id', String(flow.journeyId));
+  journeyLink.setAttribute('journey-seq', String(flow.journeyId));
+  journeyLink.textContent = `Journey ${flow.journeyId}`;
+  journeyTd.append(journeyLink);
+  journeyRow.append(journeyTd);
+  table.append(journeyRow);
+
+  const statusRow = document.createElement('tr');
+  const statusTh = document.createElement('th');
+  statusTh.scope = 'row';
+  statusTh.textContent = 'Status';
+  statusRow.append(statusTh);
+  const statusTd = document.createElement('td');
+  const statusIconSpan = document.createElement('span');
+  statusIconSpan.setAttribute('aria-hidden', 'true');
+  statusIconSpan.textContent = getStatusIcon(flow.statusColor ?? '');
+  statusTd.append(statusIconSpan);
+  const statusSrSpan = document.createElement('span');
+  statusSrSpan.className = 'sr-only';
+  statusSrSpan.textContent = getStatusLabel(flow.statusColor ?? '');
+  statusTd.append(statusSrSpan);
+  statusRow.append(statusTd);
+  table.append(statusRow);
+
+  table.append(createDateRow('Created', flow.createdAt));
+  table.append(createDateRow('Updated', flow.updatedAt));
+
+  detailCard.append(table);
+
+  const momentsHeading = document.createElement('h3');
+  momentsHeading.textContent = 'Moments';
+  detailCard.append(momentsHeading);
+
+  const momentsList = document.createElement('div');
+  momentsList.id = 'flow-moments-list';
+  const loadingP = document.createElement('p');
+  loadingP.textContent = 'Loading moments...';
+  momentsList.append(loadingP);
+  detailCard.append(momentsList);
+
+  const commentsDiv = document.createElement('div');
+  commentsDiv.id = 'flow-comments';
+  detailCard.append(commentsDiv);
+
+  const backButton = document.createElement('button');
+  backButton.id = 'back-link';
+  backButton.className = 'btn btn-outline-secondary btn-sm';
+  backButton.type = 'button';
+  const backSpan = document.createElement('span');
+  backSpan.setAttribute('aria-hidden', 'true');
+  backSpan.textContent = '\u{2190}';
+  backButton.append(backSpan, ' Back');
+  detailCard.append(backButton);
+
+  detailDiv.append(detailCard);
+
+  setupDetailInlineEdit('#description-input', '#description-view', '#edit-desc-btn', 'Flow', flow.id, '#save-desc', '#cancel-desc');
+
+  bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
+
+  await loadFlowMoments(owner, project, flowId, flow as unknown as Record<string, unknown>, navContentDiv, contentDiv);
+
+  initBackLink();
+
+  await loadFlowJourneyName(owner, project, flow, navContentDiv, contentDiv);
+
+  setupDescriptionHandler(owner, project, flowId, 'flow', flow, updateFlowDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
+
+  gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-moment-statement', '#add-moment-submit', '#add-moment-type']);
+
+  loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
+
+  upsertFlowGraphViewButton(detailDiv, flow);
+}
+
+/**
  * @param {string} owner - The project owner
  * @param {string} project - The project slug
  * @param {string} flowId - The flow ID
@@ -224,119 +350,25 @@ function upsertFlowGraphViewButton(detailDiv: HTMLElement, flow: Flow): void {
  * @param {{ permission: string } | undefined} permission - Permission object
  */
 export async function loadFlowDetail(owner: string, project: string, flowId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
-    const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
-
     destroyDetailStackGraph();
+
+    const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
     if (!detailDiv) return;
-    setElementText('#error-text', '');
+
     setElementVisibility('#flow-detail-loading', false);
+    setElementText('#error-text', '');
 
     try {
         const flow = await getFlow(owner, project, flowId) as Flow;
-        if (!flow) return;
+        if (!flow) {
+            setElementVisibility('#flow-detail-loading', true);
+            setElementText('#error-text', 'Flow not found.');
+            return;
+        }
         await loadEntityLookupMap('Flow', flow.id, owner, project);
         setElementVisibility('#flow-detail-loading', true);
 
-        void mountDetailStackGraph({ nodeType: 'flow', nodeId: flowId, owner, project });
-
-        const detailCard = document.createElement('div');
-        detailCard.className = 'detail-card flow-detail-card';
-
-        const heading = document.createElement('h2');
-        heading.textContent = flow.statement;
-        detailCard.append(heading);
-
-        const table = document.createElement('table');
-        table.className = 'table table-sm table-striped align-middle detail-table';
-
-        const descRow = document.createElement('tr');
-        const descTh = document.createElement('th');
-        descTh.scope = 'row';
-        const descLabel = document.createElement('label');
-        descLabel.htmlFor = 'description-input';
-        descLabel.textContent = 'Description';
-        descTh.append(descLabel);
-        descRow.append(descTh);
-        const descTd = document.createElement('td');
-        buildInlineEditUI(descTd, '', flow.description || '');
-        descRow.append(descTd);
-        table.append(descRow);
-
-        const journeyRow = document.createElement('tr');
-        const journeyTh = document.createElement('th');
-        journeyTh.textContent = 'Journey';
-        journeyRow.append(journeyTh);
-        const journeyTd = document.createElement('td');
-        journeyTd.id = 'flow-journey-cell';
-        const journeyLink = document.createElement('a');
-        journeyLink.href = `/${owner}/${project}/journeys/${flow.journeyId}`;
-        journeyLink.className = 'detail-link link-primary text-decoration-none fw-semibold';
-        journeyLink.setAttribute('journey-id', String(flow.journeyId));
-        journeyLink.setAttribute('journey-seq', String(flow.journeyId));
-        journeyLink.textContent = `Journey ${flow.journeyId}`;
-        journeyTd.append(journeyLink);
-        journeyRow.append(journeyTd);
-        table.append(journeyRow);
-
-        const statusRow = document.createElement('tr');
-        const statusTh = document.createElement('th');
-        statusTh.scope = 'row';
-        statusTh.textContent = 'Status';
-        statusRow.append(statusTh);
-        const statusTd = document.createElement('td');
-        const statusIconSpan = document.createElement('span');
-        statusIconSpan.setAttribute('aria-hidden', 'true');
-        statusIconSpan.textContent = getStatusIcon(flow.statusColor ?? '');
-        statusTd.append(statusIconSpan);
-        const statusSrSpan = document.createElement('span');
-        statusSrSpan.className = 'sr-only';
-        statusSrSpan.textContent = getStatusLabel(flow.statusColor ?? '');
-        statusTd.append(statusSrSpan);
-        statusRow.append(statusTd);
-        table.append(statusRow);
-
-        table.append(createDateRow('Created', flow.createdAt));
-        table.append(createDateRow('Updated', flow.updatedAt));
-
-        detailCard.append(table);
-
-        const momentsHeading = document.createElement('h3');
-        momentsHeading.textContent = 'Moments';
-        detailCard.append(momentsHeading);
-        const momentsList = document.createElement('div');
-        momentsList.id = 'flow-moments-list';
-        const loadingP = document.createElement('p');
-        loadingP.textContent = 'Loading moments...';
-        momentsList.append(loadingP);
-        detailCard.append(momentsList);
-
-        const commentsDiv = document.createElement('div');
-        commentsDiv.id = 'flow-comments';
-        detailCard.append(commentsDiv);
-
-        const backButton = document.createElement('button');
-        backButton.id = 'back-link';
-        backButton.className = 'btn btn-outline-secondary btn-sm';
-        backButton.type = 'button';
-        backButton.innerHTML = '<span aria-hidden="true">\u{2190}</span> Back';
-        detailCard.append(backButton);
-
-        detailDiv.append(detailCard);
-
-        setupDetailInlineEdit('#description-input', '#description-view', '#edit-desc-btn', 'Flow', flow.id, '#save-desc', '#cancel-desc');
-
-        bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
-
-        await loadFlowMoments(owner, project, flowId, flow as unknown as Record<string, unknown>, navContentDiv, contentDiv);
-
-        initBackLink();
-        await loadFlowJourneyName(owner, project, flow, navContentDiv, contentDiv);
-
-        setupDescriptionHandler(owner, project, flowId, 'flow', flow, updateFlowDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
-
-        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-moment-statement', '#add-moment-submit', '#add-moment-type']);
-        loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
-        upsertFlowGraphViewButton(detailDiv, flow);
+        await renderFlowDetail(flow, owner, project, flowId, detailDiv, navContentDiv, contentDiv, permission);
     } catch (error) {
         setElementVisibility('#flow-detail-loading', true);
         setElementText('#error-text', 'Failed to load flow details.');

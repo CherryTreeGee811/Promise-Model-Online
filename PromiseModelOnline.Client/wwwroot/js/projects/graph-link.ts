@@ -64,6 +64,7 @@ export function upsertGraphViewButton(detailContainer: HTMLElement | null, href:
         }
     }
 
+    button.href = href;
 }
 
 /**

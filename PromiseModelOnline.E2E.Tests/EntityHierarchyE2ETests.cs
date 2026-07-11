@@ -18,7 +18,7 @@ public class EntityHierarchyE2ETests : E2ETestBase
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/promises/1");
         // Assert
-        await Page.WaitForSelectorAsync("#promise-detail-loading[hidden]", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync(".promise-detail-card", new() { Timeout = 30000 });
     }
 
     [Test]
@@ -30,7 +30,7 @@ public class EntityHierarchyE2ETests : E2ETestBase
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/epics/1");
         // Assert
-        await Page.WaitForSelectorAsync("#epic-detail-loading[hidden]", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync(".epic-detail-card", new() { Timeout = 30000 });
     }
 
     [Test]
@@ -42,7 +42,7 @@ public class EntityHierarchyE2ETests : E2ETestBase
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/journeys/1");
         // Assert
-        await Page.WaitForSelectorAsync("#journey-detail-loading[hidden]", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync(".journey-detail-card", new() { Timeout = 30000 });
     }
 
     [Test]
@@ -54,7 +54,7 @@ public class EntityHierarchyE2ETests : E2ETestBase
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/flows/1");
         // Assert
-        await Page.WaitForSelectorAsync("#flow-detail-loading[hidden]", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync(".flow-detail-card", new() { Timeout = 30000 });
     }
 
     [Test]
@@ -66,7 +66,7 @@ public class EntityHierarchyE2ETests : E2ETestBase
         // Act
         await Page.GotoAsync($"/{Owner}/{Project}/moments/1");
         // Assert
-        await Page.WaitForSelectorAsync("#moment-detail-loading[hidden]", new() { Timeout = 30000 });
+        await Page.WaitForSelectorAsync(".moment-detail-card", new() { Timeout = 30000 });
     }
 
     [Test]
