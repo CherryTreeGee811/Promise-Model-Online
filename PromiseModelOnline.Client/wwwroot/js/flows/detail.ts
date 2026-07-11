@@ -1,4 +1,3 @@
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { getJourneyById } from '../journeys/api.ts';
 import { createMoment, updateMomentType } from '../moments/api.ts';
 import {
@@ -8,11 +7,10 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
-import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
 import { getFlow, getMoments, updateFlowDescription } from './api.ts';
@@ -218,24 +216,6 @@ function upsertFlowGraphViewButton(detailDiv: HTMLElement, flow: Flow): void {
 }
 
 /**
- * @param {HTMLElement | null} element - The loading element
- * @param {boolean} [isHidden] - Whether to hide
- */
-function hideLoading(element: HTMLElement | null, isHidden = true): void {
-  if (!element) return;
-  element.hidden = isHidden;
-  if (isHidden) element.classList.add('d-none');
-}
-
-/**
- * @param {HTMLElement | null} element - The error element
- * @param {string} message - The error message
- */
-function setErrorMessage(element: HTMLElement | null, message: string): void {
-  if (element) element.textContent = message;
-}
-
-/**
  * Render the flow detail card and wire up all interactions.
  * @param {Flow} flow - The flow data
  * @param {string} owner - The project owner
@@ -342,16 +322,7 @@ async function renderFlowDetail(flow: Flow, owner: string, project: string, flow
 
   detailDiv.append(detailCard);
 
-  const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
-  const descViewElement = document.querySelector('#description-view') as HTMLElement;
-  const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
-  const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
-  const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
-  if (descInput && descViewElement && editButton) {
-    createCommentAutocomplete(descInput, 'Flow', flow.id);
-    const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
-    (flow as unknown as Record<string, unknown>).__editor = editor;
-  }
+  setupDetailInlineEdit('#description-input', '#description-view', '#edit-desc-btn', 'Flow', flow.id, '#save-desc', '#cancel-desc');
 
   bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
 
@@ -382,27 +353,24 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
     const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
     if (!detailDiv) return;
 
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement | null;
-
-    hideLoading(loadingElement, false);
-    setErrorMessage(errorElement, '');
+    setElementVisibility('#flow-detail-loading', false);
+    setElementText('#error-text', '');
 
     try {
         destroyDetailStackGraph();
         const flow = await getFlow(owner, project, flowId) as Flow;
         if (!flow) {
-            hideLoading(loadingElement);
-            setErrorMessage(errorElement, 'Flow not found.');
+            setElementVisibility('#flow-detail-loading', true);
+            setElementText('#error-text', 'Flow not found.');
             return;
         }
         await loadEntityLookupMap('Flow', flow.id, owner, project);
-        hideLoading(loadingElement);
+        setElementVisibility('#flow-detail-loading', true);
 
         await renderFlowDetail(flow, owner, project, flowId, detailDiv, navContentDiv, contentDiv, permission);
     } catch (error) {
-        hideLoading(loadingElement);
-        setErrorMessage(errorElement, 'Failed to load flow details.');
+        setElementVisibility('#flow-detail-loading', true);
+        setElementText('#error-text', 'Failed to load flow details.');
         console.error(error);
     }
 }

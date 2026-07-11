@@ -15,7 +15,8 @@ function loadFromStorage(): ThemeState {
   } catch {
     // Ignore storage errors
   }
-  const isPrefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  // eslint-disable-next-line unicorn/prefer-global-this
+  const isPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   return { theme: isPrefersDark ? 'dark' : 'light' };
 }
 
@@ -66,7 +67,8 @@ export function initTheme() {
 
   try {
     if (!localStorage.getItem(THEME_STORAGE_KEY)) {
-      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+      // eslint-disable-next-line unicorn/prefer-global-this
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
         setTheme(event.matches ? 'dark' : 'light');
       });
     }

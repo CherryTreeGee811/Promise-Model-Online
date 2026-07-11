@@ -587,49 +587,6 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         buildMomentUI(moment as unknown as Record<string, unknown>, detailCard, detailDiv, navContentDiv, contentDiv, owner, project);
 
         await setupMomentInteractions(moment, owner, project, momentId, detailDiv, navContentDiv, contentDiv, permission);
-
-        const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
-        const momentEditButton = document.querySelector('#moment-edit-desc-btn') as HTMLElement;
-        const descriptionSaveButton = document.querySelector('#moment-save-desc') as HTMLElement;
-        const momentDescriptionCancelButton = document.querySelector('#moment-cancel-desc') as HTMLElement;
-        let momentEditor: ReturnType<typeof setupInlineEdit> | undefined;
-        if (momentDescInput && momentDescView && momentEditButton) {
-            createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
-            momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditButton, descriptionSaveButton, momentDescriptionCancelButton);
-        }
-
-        gateMomentDetailControls(permission);
-
-        renderMomentTasks(document.querySelector('#moment-tasks') as HTMLElement, momentId, moment.tasks ?? [], moment, permission, owner, project);
-
-        const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const descriptionMessage = document.querySelector('#moment-desc-save-msg') as HTMLElement;
-        if (descriptionSaveButton && descriptionInput && descriptionMessage) {
-            setupMomentEditDescriptionHandler(descriptionSaveButton, descriptionInput, descriptionMessage, owner, project, momentId, moment, momentEditor);
-        }
-
-        bindFlowNavigationHandler(detailDiv, owner, project, navContentDiv, contentDiv);
-
-        void setupEstimateHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
-
-        await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
-
-        const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
-        const completedCell = detailDiv?.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null;
-        if (statusSelectElement) {
-            setupMomentStatusChangeHandler(statusSelectElement, owner, project, momentId, moment, completedCell);
-        }
-
-        const typeSelectElement = document.querySelector('#moment-type-select') as HTMLSelectElement;
-        if (typeSelectElement) {
-            setupMomentTypeChangeHandler(typeSelectElement, owner, project, momentId, moment);
-        }
-
-        initBackLink();
-        loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
-
-        upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
     } catch (error) {
         hideLoading(loadingElement);
         setErrorMessage(errorElement, 'Failed to load moment details.');

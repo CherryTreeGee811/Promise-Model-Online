@@ -1,4 +1,3 @@
-import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { getEpicById } from '../epics/api.ts';
 import { createFlow } from '../flows/api.ts';
 import {
@@ -9,11 +8,10 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
-import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
 import { getJourney, getFlows, updateJourneyDescription } from './api.ts';
@@ -202,24 +200,6 @@ async function loadJourneyFlows(owner: string, project: string, journeyId: strin
     }
 }
 /**
- * @param {HTMLElement | null} element - The loading element
- * @param {boolean} [isHidden] - Whether to hide
- */
-function hideLoading(element: HTMLElement | null, isHidden = true): void {
-  if (!element) return;
-  element.hidden = isHidden;
-  if (isHidden) element.classList.add('d-none');
-}
-
-/**
- * @param {HTMLElement | null} element - The error element
- * @param {string} message - The error message
- */
-function setErrorMessage(element: HTMLElement | null, message: string): void {
-  if (element) element.textContent = message;
-}
-
-/**
  * Render the journey detail card and wire up all interactions.
  * @param {Journey} journey - The journey data
  * @param {string} owner - The project owner
@@ -310,26 +290,9 @@ async function renderJourneyDetail(journey: Journey, owner: string, project: str
 
   detailDiv.append(detailCard);
 
-  const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
-  const descViewElement = document.querySelector('#description-view') as HTMLElement;
-  const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
-  const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
-  const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
-  let editor: { showSavedPopover?: (html: string) => void } | undefined;
-  if (descInput && descViewElement && editButton) {
-    createCommentAutocomplete(descInput, 'Journey', journey.id);
-    editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
-  }
+  const editor = setupDetailInlineEdit('#description-input', '#description-view', '#edit-desc-btn', 'Journey', journey.id, '#save-desc', '#cancel-desc');
 
-  const epicLinkElement = detailDiv.querySelector('a.detail-link[epic-id]') as HTMLElement;
-  if (epicLinkElement) {
-    epicLinkElement.addEventListener('click', (event) => {
-      const me = event as MouseEvent;
-      if (me.ctrlKey || me.metaKey || me.button === 1) return;
-      event.preventDefault();
-      void navigate('/' + owner + '/' + project + '/epics/' + epicLinkElement.getAttribute('epic-seq'), navContentDiv, contentDiv);
-    });
-  }
+  bindLinkClickHandlers(document.body, 'a.detail-link[epic-id]', 'epic-seq', 'epics', owner, project, navContentDiv, contentDiv);
 
   await loadJourneyFlows(owner, project, journeyId, journey, navContentDiv, contentDiv, flowsList);
 
@@ -338,6 +301,7 @@ async function renderJourneyDetail(journey: Journey, owner: string, project: str
   await loadParentEpic(owner, project, journey, navContentDiv, contentDiv);
 
   const descMessage = document.querySelector('#desc-save-msg') as HTMLElement;
+  const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
   await setupJourneyDescriptionHandler(journey, owner, project, journeyId, saveButton, descMessage, editor);
 
   gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit']);
@@ -359,27 +323,24 @@ export async function loadJourneyDetail(owner: string, project: string, journeyI
     const detailDiv = document.querySelector('#journey-detail-content') as HTMLElement | null;
     if (!detailDiv) return;
 
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#journey-detail-loading') as HTMLElement | null;
-
-    hideLoading(loadingElement, false);
-    setErrorMessage(errorElement, '');
+    setElementVisibility('#journey-detail-loading', false);
+    setElementText('#error-text', '');
 
     try {
         destroyDetailStackGraph();
         const journey = await getJourney(owner, project, journeyId) as Journey;
         if (!journey) {
-            hideLoading(loadingElement);
-            setErrorMessage(errorElement, 'Journey not found.');
+            setElementVisibility('#journey-detail-loading', true);
+            setElementText('#error-text', 'Journey not found.');
             return;
         }
         await loadEntityLookupMap('Journey', journey.id, owner, project);
-        hideLoading(loadingElement);
+        setElementVisibility('#journey-detail-loading', true);
 
         await renderJourneyDetail(journey, owner, project, journeyId, detailDiv, navContentDiv, contentDiv, permission);
     } catch (error) {
-        hideLoading(loadingElement);
-        setErrorMessage(errorElement, 'Failed to load journey details.');
+        setElementVisibility('#journey-detail-loading', true);
+        setElementText('#error-text', 'Failed to load journey details.');
         console.error(error);
     }
 }
