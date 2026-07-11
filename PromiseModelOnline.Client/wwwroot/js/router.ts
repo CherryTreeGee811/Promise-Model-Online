@@ -448,6 +448,7 @@ async function handleProjectScopedPath(path: string, segments: string[], navCont
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    if (!contentDiv) return;
     contentDiv.replaceChildren();
     const path = location.pathname;
 

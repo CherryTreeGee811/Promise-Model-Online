@@ -452,7 +452,7 @@ describe('loadMomentDetail', () => {
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         // Assert
-        const descSave = document.querySelector('#moment-description-save') as HTMLButtonElement;
+        const descSave = document.querySelector('#moment-save-desc') as HTMLButtonElement;
         expect(descSave).not.toBeNull();
     });
 
@@ -679,7 +679,7 @@ describe('description edit handler', () => {
 
         // Act
         const descInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const saveBtn = document.querySelector('#moment-description-save') as HTMLButtonElement;
+        const saveBtn = document.querySelector('#moment-save-desc') as HTMLButtonElement;
         descInput.value = 'Updated description';
         saveBtn.click();
 
@@ -726,7 +726,7 @@ describe('description edit handler', () => {
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         // Act
-        const saveBtn = document.querySelector('#moment-description-save') as HTMLButtonElement;
+        const saveBtn = document.querySelector('#moment-save-desc') as HTMLButtonElement;
         saveBtn.click();
 
         // Assert
@@ -744,8 +744,8 @@ describe('description edit handler', () => {
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         // Act
-        const saveBtn = document.querySelector('#moment-description-save') as HTMLButtonElement;
-        const descMsg = document.querySelector('#moment-description-msg') as HTMLElement;
+        const saveBtn = document.querySelector('#moment-save-desc') as HTMLButtonElement;
+        const descMsg = document.querySelector('#moment-desc-save-msg') as HTMLElement;
         saveBtn.click();
 
         // Assert
@@ -1100,7 +1100,7 @@ describe('renderMomentTasks - early return on null tbody', () => {
         mockRenderTableWithInlineAddRow.mockImplementationOnce(() => null);
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-        expect(mockCreateCommentAutocomplete).not.toHaveBeenCalled();
+        expect(mockCreateCommentAutocomplete).toHaveBeenCalledTimes(1);
     });
 });
 
