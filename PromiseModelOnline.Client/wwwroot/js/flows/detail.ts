@@ -350,6 +350,8 @@ async function renderFlowDetail(flow: Flow, owner: string, project: string, flow
  * @param {{ permission: string } | undefined} permission - Permission object
  */
 export async function loadFlowDetail(owner: string, project: string, flowId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
+    destroyDetailStackGraph();
+
     const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
     if (!detailDiv) return;
 
@@ -357,7 +359,6 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
     setElementText('#error-text', '');
 
     try {
-        destroyDetailStackGraph();
         const flow = await getFlow(owner, project, flowId) as Flow;
         if (!flow) {
             setElementVisibility('#flow-detail-loading', true);

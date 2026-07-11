@@ -73,7 +73,7 @@ const ROUTES: {
         const { handleLegacyProjectRoutes } = await loadProjectRoutes();
         handleLegacyProjectRoutes(path, navContentDiv, contentDiv);
       } catch {
-        void loadTemplateWithError(contentDiv, 'projects')();
+        await loadTemplateWithError(contentDiv, 'projects')();
       }
     },
   },
@@ -85,7 +85,7 @@ const ROUTES: {
         await loadTemplate('moments/my-tasks.html', contentDiv);
         void loadMyTasksPage(navContentDiv, contentDiv);
       } catch {
-        void loadTemplateWithError(contentDiv, 'my tasks')();
+        await loadTemplateWithError(contentDiv, 'my tasks')();
       }
     },
   },
@@ -448,6 +448,7 @@ async function handleProjectScopedPath(path: string, segments: string[], navCont
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    contentDiv.replaceChildren();
     const path = location.pathname;
 
     if (['/login', '/logout', '/register'].includes(path)) {

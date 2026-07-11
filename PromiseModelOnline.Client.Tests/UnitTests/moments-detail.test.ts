@@ -170,10 +170,10 @@ beforeEach(() => {
         _container.innerHTML = `
             <textarea id="moment-description-input">${_value}</textarea>
             <div id="moment-description-view"></div>
-            <button id="edit-moment-desc-btn">Edit</button>
-            <button id="moment-description-save" type="button">Save</button>
-            <button id="moment-description-cancel" type="button">Cancel</button>
-            <span id="moment-description-msg"></span>
+            <button id="moment-edit-desc-btn">Edit</button>
+            <button id="moment-save-desc" type="button">Save</button>
+            <button id="moment-cancel-desc" type="button">Cancel</button>
+            <span id="moment-desc-save-msg"></span>
         `;
     });
     mockRenderTableWithInlineAddRow.mockImplementation((_container: HTMLElement, opts: Record<string, unknown>) => {
