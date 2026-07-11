@@ -9,7 +9,7 @@ import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } fr
 import { navigate } from '../router.ts';
 import { getStrides } from '../strides/api.ts';
 import { showToast } from '../ui/toast.ts';
-import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
+import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml, htmlToNodes } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
@@ -558,18 +558,12 @@ async function setupMomentInteractions(
  */
 export async function loadMomentDetail(owner: string, project: string, momentId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: Record<string, unknown>): Promise<void> {
     const detailDiv = document.querySelector('#moment-detail-content') as HTMLElement | null;
-<<<<<<< HEAD
     if (!detailDiv) return;
 
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     if (!errorElement) return;
 
     const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement | null;
-||||||| 4594080
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#moment-detail-loading') as HTMLElement | null;
-=======
->>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
 
     hideLoading(loadingElement, false);
     errorElement.textContent = '';
@@ -592,9 +586,7 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
 
         buildMomentUI(moment as unknown as Record<string, unknown>, detailCard, detailDiv, navContentDiv, contentDiv, owner, project);
 
-<<<<<<< HEAD
         await setupMomentInteractions(moment, owner, project, momentId, detailDiv, navContentDiv, contentDiv, permission);
-||||||| 4594080
 
         const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
         const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
@@ -638,48 +630,6 @@ export async function loadMomentDetail(owner: string, project: string, momentId:
         loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
 
         upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
-=======
-
-        const momentDescInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const momentDescView = document.querySelector('#moment-description-view') as HTMLElement;
-        const momentEditButton = document.querySelector('#moment-edit-desc-btn') as HTMLElement;
-        const descriptionSaveButton = document.querySelector('#moment-save-desc') as HTMLElement;
-        const momentDescriptionCancelButton = document.querySelector('#moment-cancel-desc') as HTMLElement;
-        let momentEditor: ReturnType<typeof setupInlineEdit> | undefined;
-        if (momentDescInput && momentDescView && momentEditButton) {
-            createCommentAutocomplete(momentDescInput, 'Moment', moment.id);
-            momentEditor = setupInlineEdit(momentDescInput, momentDescView, momentEditButton, descriptionSaveButton, momentDescriptionCancelButton);
-        }
-
-        gateMomentDetailControls(permission);
-
-        renderMomentTasks(document.querySelector('#moment-tasks') as HTMLElement, momentId, moment.tasks ?? [], moment, permission, owner, project);
-
-        const descriptionInput = document.querySelector('#moment-description-input') as HTMLTextAreaElement;
-        const descriptionMessage = document.querySelector('#moment-desc-save-msg') as HTMLElement;
-        if (descriptionSaveButton && descriptionInput && descriptionMessage) {
-            setupMomentEditDescriptionHandler(descriptionSaveButton, descriptionInput, descriptionMessage, owner, project, momentId, moment, momentEditor);
-        }
-
-        bindFlowNavigationHandler(detailDiv, owner, project, navContentDiv, contentDiv);
-
-        void setupEstimateHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
-        await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
-
-        const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
-        if (statusSelectElement) {
-            setupMomentStatusChangeHandler(statusSelectElement, owner, project, momentId, moment, detailDiv?.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null);
-        }
-
-        const typeSelectElement = document.querySelector('#moment-type-select') as HTMLSelectElement;
-        if (typeSelectElement) {
-            setupMomentTypeChangeHandler(typeSelectElement, owner, project, momentId, moment);
-        }
-
-        initBackLink();
-        loadCommentsAndReactions(detailDiv, 'Moment', moment.id, owner, project, permission);
-        upsertMomentGraphViewButton(detailDiv, moment.sequenceNumber);
->>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
     } catch (error) {
         hideLoading(loadingElement);
         setErrorMessage(errorElement, 'Failed to load moment details.');

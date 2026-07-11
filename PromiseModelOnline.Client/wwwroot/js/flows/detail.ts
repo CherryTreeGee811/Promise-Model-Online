@@ -1,3 +1,4 @@
+import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { getJourneyById } from '../journeys/api.ts';
 import { createMoment, updateMomentType } from '../moments/api.ts';
 import {
@@ -7,10 +8,11 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
+import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
+import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
 import { getFlow, getMoments, updateFlowDescription } from './api.ts';
@@ -378,29 +380,13 @@ async function renderFlowDetail(flow: Flow, owner: string, project: string, flow
  */
 export async function loadFlowDetail(owner: string, project: string, flowId: string, navContentDiv: HTMLElement, contentDiv: HTMLElement, permission: { permission: string } | undefined): Promise<void> {
     const detailDiv = document.querySelector('#flow-detail-content') as HTMLElement | null;
-<<<<<<< HEAD
     if (!detailDiv) return;
 
     const errorElement = document.querySelector('#error-text') as HTMLElement | null;
     const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement | null;
-||||||| 4594080
-    const errorElement = document.querySelector('#error-text') as HTMLElement | null;
-    const loadingElement = document.querySelector('#flow-detail-loading') as HTMLElement | null;
-=======
->>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
 
-<<<<<<< HEAD
     hideLoading(loadingElement, false);
     setErrorMessage(errorElement, '');
-||||||| 4594080
-    if (!detailDiv) return;
-    if (loadingElement) loadingElement.hidden = false;
-    if (errorElement) errorElement.textContent = '';
-=======
-    if (!detailDiv) return;
-    setElementText('#error-text', '');
-    setElementVisibility('#flow-detail-loading', false);
->>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
 
     try {
         destroyDetailStackGraph();
@@ -411,248 +397,9 @@ export async function loadFlowDetail(owner: string, project: string, flowId: str
             return;
         }
         await loadEntityLookupMap('Flow', flow.id, owner, project);
-<<<<<<< HEAD
         hideLoading(loadingElement);
-||||||| 4594080
-=======
-        setElementVisibility('#flow-detail-loading', true);
->>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
 
-<<<<<<< HEAD
         await renderFlowDetail(flow, owner, project, flowId, detailDiv, navContentDiv, contentDiv, permission);
-||||||| 4594080
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-
-        void mountDetailStackGraph({
-            nodeType: 'flow',
-            nodeId: flowId,
-            owner,
-            project,
-        });
-
-        const detailCard = document.createElement('div');
-        detailCard.className = 'detail-card flow-detail-card';
-
-        const heading = document.createElement('h2');
-        heading.textContent = flow.statement;
-        detailCard.append(heading);
-
-        const table = document.createElement('table');
-        table.className = 'table table-sm table-striped align-middle detail-table';
-
-        const descRow = document.createElement('tr');
-        const descTh = document.createElement('th');
-        descTh.scope = 'row';
-        const descLabel = document.createElement('label');
-        descLabel.htmlFor = 'description-input';
-        descLabel.textContent = 'Description';
-        descTh.append(descLabel);
-        descRow.append(descTh);
-        const descTd = document.createElement('td');
-        buildInlineEditUI(descTd, '', flow.description || '');
-        descRow.append(descTd);
-        table.append(descRow);
-
-        const journeyRow = document.createElement('tr');
-        const journeyTh = document.createElement('th');
-        journeyTh.textContent = 'Journey';
-        journeyRow.append(journeyTh);
-        const journeyTd = document.createElement('td');
-        journeyTd.id = 'flow-journey-cell';
-        const journeyLink = document.createElement('a');
-        journeyLink.href = `/${owner}/${project}/journeys/${flow.journeyId}`;
-        journeyLink.className = 'detail-link link-primary text-decoration-none fw-semibold';
-        journeyLink.setAttribute('journey-id', String(flow.journeyId));
-        journeyLink.setAttribute('journey-seq', String(flow.journeyId));
-        journeyLink.textContent = `Journey ${flow.journeyId}`;
-        journeyTd.append(journeyLink);
-        journeyRow.append(journeyTd);
-        table.append(journeyRow);
-
-        const statusRow = document.createElement('tr');
-        const statusTh = document.createElement('th');
-        statusTh.scope = 'row';
-        statusTh.textContent = 'Status';
-        statusRow.append(statusTh);
-        const statusTd = document.createElement('td');
-        const statusIconSpan = document.createElement('span');
-        statusIconSpan.setAttribute('aria-hidden', 'true');
-        statusIconSpan.textContent = getStatusIcon(flow.statusColor ?? '');
-        statusTd.append(statusIconSpan);
-        const statusSrSpan = document.createElement('span');
-        statusSrSpan.className = 'sr-only';
-        statusSrSpan.textContent = getStatusLabel(flow.statusColor ?? '');
-        statusTd.append(statusSrSpan);
-        statusRow.append(statusTd);
-        table.append(statusRow);
-
-        table.append(createDateRow('Created', flow.createdAt));
-        table.append(createDateRow('Updated', flow.updatedAt));
-
-        detailCard.append(table);
-
-        const momentsHeading = document.createElement('h3');
-        momentsHeading.textContent = 'Moments';
-        detailCard.append(momentsHeading);
-
-        const momentsList = document.createElement('div');
-        momentsList.id = 'flow-moments-list';
-        const loadingP = document.createElement('p');
-        loadingP.textContent = 'Loading moments...';
-        momentsList.append(loadingP);
-        detailCard.append(momentsList);
-
-        const commentsDiv = document.createElement('div');
-        commentsDiv.id = 'flow-comments';
-        detailCard.append(commentsDiv);
-
-        const backButton = document.createElement('button');
-        backButton.id = 'back-link';
-        backButton.className = 'btn btn-outline-secondary btn-sm';
-        backButton.type = 'button';
-        const backSpan = document.createElement('span');
-        backSpan.setAttribute('aria-hidden', 'true');
-        backSpan.textContent = '\u{2190}';
-        backButton.append(backSpan, ' Back');
-        detailCard.append(backButton);
-
-        if (detailDiv) detailDiv.append(detailCard);
-
-        const descInput = document.querySelector('#description-input') as HTMLTextAreaElement;
-        const descViewElement = document.querySelector('#description-view') as HTMLElement;
-        const editButton = document.querySelector('#edit-desc-btn') as HTMLElement;
-        const saveButton = document.querySelector('#save-desc') as HTMLButtonElement;
-        const cancelButton = document.querySelector('#cancel-desc') as HTMLElement;
-        if (descInput && descViewElement && editButton) {
-            createCommentAutocomplete(descInput, 'Flow', flow.id);
-            const editor = setupInlineEdit(descInput, descViewElement, editButton, saveButton, cancelButton);
-            (flow as unknown as Record<string, unknown>).__editor = editor;
-        }
-
-        bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
-
-        await loadFlowMoments(owner, project, flowId, flow as unknown as Record<string, unknown>, navContentDiv, contentDiv);
-
-        initBackLink();
-
-        await loadFlowJourneyName(owner, project, flow, navContentDiv, contentDiv);
-
-        setupDescriptionHandler(owner, project, flowId, 'flow', flow, updateFlowDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
-
-        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-moment-statement', '#add-moment-submit', '#add-moment-type']);
-
-        loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
-
-        upsertFlowGraphViewButton(detailDiv, flow);
-=======
-        if (loadingElement) { loadingElement.hidden = true; loadingElement.classList.add('d-none'); };
-
-        void mountDetailStackGraph({
-            nodeType: 'flow',
-            nodeId: flowId,
-            owner,
-            project,
-        });
-
-        const detailCard = document.createElement('div');
-        detailCard.className = 'detail-card flow-detail-card';
-
-        const heading = document.createElement('h2');
-        heading.textContent = flow.statement;
-        detailCard.append(heading);
-
-        const table = document.createElement('table');
-        table.className = 'table table-sm table-striped align-middle detail-table';
-
-        const descRow = document.createElement('tr');
-        const descTh = document.createElement('th');
-        descTh.scope = 'row';
-        const descLabel = document.createElement('label');
-        descLabel.htmlFor = 'description-input';
-        descLabel.textContent = 'Description';
-        descTh.append(descLabel);
-        descRow.append(descTh);
-        const descTd = document.createElement('td');
-        buildInlineEditUI(descTd, '', flow.description || '');
-        descRow.append(descTd);
-        table.append(descRow);
-
-        const journeyRow = document.createElement('tr');
-        const journeyTh = document.createElement('th');
-        journeyTh.textContent = 'Journey';
-        journeyRow.append(journeyTh);
-        const journeyTd = document.createElement('td');
-        journeyTd.id = 'flow-journey-cell';
-        const journeyLink = document.createElement('a');
-        journeyLink.href = `/${owner}/${project}/journeys/${flow.journeyId}`;
-        journeyLink.className = 'detail-link link-primary text-decoration-none fw-semibold';
-        journeyLink.setAttribute('journey-id', String(flow.journeyId));
-        journeyLink.setAttribute('journey-seq', String(flow.journeyId));
-        journeyLink.textContent = `Journey ${flow.journeyId}`;
-        journeyTd.append(journeyLink);
-        journeyRow.append(journeyTd);
-        table.append(journeyRow);
-
-        const statusRow = document.createElement('tr');
-        const statusTh = document.createElement('th');
-        statusTh.scope = 'row';
-        statusTh.textContent = 'Status';
-        statusRow.append(statusTh);
-        const statusTd = document.createElement('td');
-        const statusIconSpan = document.createElement('span');
-        statusIconSpan.setAttribute('aria-hidden', 'true');
-        statusIconSpan.textContent = getStatusIcon(flow.statusColor ?? '');
-        statusTd.append(statusIconSpan);
-        const statusSrSpan = document.createElement('span');
-        statusSrSpan.className = 'sr-only';
-        statusSrSpan.textContent = getStatusLabel(flow.statusColor ?? '');
-        statusTd.append(statusSrSpan);
-        statusRow.append(statusTd);
-        table.append(statusRow);
-
-        table.append(createDateRow('Created', flow.createdAt));
-        table.append(createDateRow('Updated', flow.updatedAt));
-
-        detailCard.append(table);
-
-        const momentsHeading = document.createElement('h3');
-        momentsHeading.textContent = 'Moments';
-        detailCard.append(momentsHeading);
-        const momentsList = document.createElement('div');
-        momentsList.id = 'flow-moments-list';
-        const loadingP = document.createElement('p');
-        loadingP.textContent = 'Loading moments...';
-        momentsList.append(loadingP);
-        detailCard.append(momentsList);
-
-        const commentsDiv = document.createElement('div');
-        commentsDiv.id = 'flow-comments';
-        detailCard.append(commentsDiv);
-
-        const backButton = document.createElement('button');
-        backButton.id = 'back-link';
-        backButton.className = 'btn btn-outline-secondary btn-sm';
-        backButton.type = 'button';
-        backButton.innerHTML = '<span aria-hidden="true">\u{2190}</span> Back';
-        detailCard.append(backButton);
-
-        detailDiv.append(detailCard);
-
-        setupDetailInlineEdit('#description-input', '#description-view', '#edit-desc-btn', 'Flow', flow.id, '#save-desc', '#cancel-desc');
-
-        bindLinkClickHandlers(document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', owner, project, navContentDiv, contentDiv);
-
-        await loadFlowMoments(owner, project, flowId, flow as unknown as Record<string, unknown>, navContentDiv, contentDiv);
-
-        initBackLink();
-        await loadFlowJourneyName(owner, project, flow, navContentDiv, contentDiv);
-
-        setupDescriptionHandler(owner, project, flowId, 'flow', flow, updateFlowDescription as (owner: string, project: string, id: string, desc: string) => Promise<Record<string, unknown> | undefined>);
-
-        gateDetailControls(permission, ['#edit-desc-btn', '#save-desc', '#description-input', '#add-moment-statement', '#add-moment-submit', '#add-moment-type']);
-        loadCommentsAndReactions(detailDiv, 'Flow', flow.id, owner, project, permission);
-        upsertFlowGraphViewButton(detailDiv, flow);
->>>>>>> 14320ac2f3f231769761f8e43b27f0a7d92b900f
     } catch (error) {
         hideLoading(loadingElement);
         setErrorMessage(errorElement, 'Failed to load flow details.');
