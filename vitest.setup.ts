@@ -48,6 +48,11 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/notifications/badge.ts', () 
     startNotificationPolling: vi.fn(), getUnreadNotificationsEventName: vi.fn(), updateNotificationBadge: vi.fn(),
 }));
 
+// Polyfill window.matchMedia for jsdom (not available in jsdom, needed by theme.ts)
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+    window.matchMedia = (() => ({ matches: false, media: '', onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() })) as typeof window.matchMedia;
+}
+
 // Provide localStorage mock (jsdom requires --localstorage-file flag otherwise)
 if (typeof globalThis.localStorage === 'undefined') {
     const store = new Map<string, string>();
