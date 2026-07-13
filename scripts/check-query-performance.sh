@@ -29,19 +29,28 @@ for candidate in sqlcmd /opt/mssql-tools18/bin/sqlcmd /opt/mssql-tools/bin/sqlcm
     fi
 done
 
+# If sqlcmd not found on host, try docker exec into the SQL Server container
 if [ -z "$SQLCMD" ]; then
-    echo "ERROR: sqlcmd not found. Install mssql-tools18 (https://learn.microsoft.com/sql/tools/sqlcmd/go-sqlcmd-utility)"
-    echo ""
-    echo "  Quick install (Ubuntu):"
-    echo "    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -"
-    echo '    curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list'
-    echo "    sudo apt-get update && ACCEPT_EULA=Y sudo apt-get install -y mssql-tools18 unixodbc-dev"
-    echo '    export PATH="$PATH:/opt/mssql-tools18/bin"'
-    exit 1
+    CONTAINER="promisemodelonlinedb"
+    if command -v docker &>/dev/null && docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd -? >/dev/null 2>&1; then
+        echo "sqlcmd not found on host; using docker exec into $CONTAINER container"
+        SQLCMD_BASE=(docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd -S "$SERVER" -U "$USER" -d "$DATABASE" -C)
+    else
+        echo "ERROR: sqlcmd not found and docker exec into '$CONTAINER' container failed."
+        echo ""
+        echo "  Install mssql-tools18 on the host (https://learn.microsoft.com/sql/tools/sqlcmd/go-sqlcmd-utility):"
+        echo "    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -"
+        echo '    curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list'
+        echo "    sudo apt-get update && ACCEPT_EULA=Y sudo apt-get install -y mssql-tools18 unixodbc-dev"
+        echo '    export PATH="$PATH:/opt/mssql-tools18/bin"'
+        echo ""
+        echo "  Or ensure the Docker Compose stack is running (the $CONTAINER container must exist)."
+        exit 1
+    fi
+else
+    SQLCMD_BASE=("$SQLCMD" -S "$SERVER" -U "$USER" -d "$DATABASE" -C)
 fi
 
-# --- Build sqlcmd base command ---
-SQLCMD_BASE=("$SQLCMD" -S "$SERVER" -U "$USER" -d "$DATABASE" -C)
 if [ -n "$PASSWORD" ]; then
     SQLCMD_BASE+=(-P "$PASSWORD")
 else

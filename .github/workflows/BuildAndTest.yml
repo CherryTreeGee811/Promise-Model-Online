@@ -387,10 +387,6 @@ jobs:
       - name: Database query performance verification
         shell: bash
         run: |
-          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add - 2>/dev/null || true
-          curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list >/dev/null
-          sudo apt-get update -qq && ACCEPT_EULA=Y sudo apt-get install -y -qq mssql-tools18 unixodbc-dev 2>&1 | tail -3
-          export PATH="/opt/mssql-tools18/bin:$PATH"
           PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}" \
             bash scripts/check-query-performance.sh
 
