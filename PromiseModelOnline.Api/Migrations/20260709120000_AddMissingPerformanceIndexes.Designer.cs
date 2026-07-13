@@ -613,6 +613,8 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("UserId", "Status");
+
                     b.ToTable("Permission");
                 });
 

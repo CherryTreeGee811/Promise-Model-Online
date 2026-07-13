@@ -30,6 +30,12 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 | `IX_AuditEvents_ProjectId_OccurredAtUtc` | ProjectId, OccurredAtUtc | History listing |
 | `IX_AuditEvents_EntityType_EntityId` | EntityType, EntityId | Detail modal lookup |
 
+### Permissions
+
+| Index | Columns | Query Pattern |
+|-------|---------|---------------|
+| `IX_Permission_UserId_Status` | UserId, Status | Pending invitations, active project IDs |
+
 ### Notifications, Reactions
 
 | Table | Index | Columns | Query Pattern |
@@ -55,3 +61,16 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 - Name: `AddMissingPerformanceIndexes`
 - Timestamp: `20260709120000`
 - DDL only — no schema changes, no data movement
+
+### CI Verification
+
+- **Script**: `scripts/check-query-performance.sh` — runs every query 3×, averages CPU time, fails if >500ms
+- **Trigger**: Runs automatically in CI (`BuildAndTest.yml`) after E2E core tests, before OWASP ZAP
+- **Credentials**: Uses `pmo_api` user with password from `${{ secrets.PMO_API_DB_PASSWORD }}`
+- **sqlcmd**: Installed on CI runner via `mssql-tools18` Ubuntu package
+- **Empty tables**: Skipped gracefully with a `SKIP (table empty)` message
+
+### Notes
+
+- `IX_BugReworkTask_SourceCommentId` is an EF Core auto-generated FK index from the initial migration, NOT added by `AddMissingPerformanceIndexes`.
+- `IX_Moments_OwnerId` likewise exists as an auto-generated FK index from the initial migration.

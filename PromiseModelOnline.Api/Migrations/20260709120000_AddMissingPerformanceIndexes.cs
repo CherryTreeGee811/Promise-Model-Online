@@ -73,6 +73,12 @@ public partial class AddMissingPerformanceIndexes : Migration
             table: "Strides",
             columns: new[] { "EndDate" },
             filter: "[IterationId] IS NOT NULL");
+
+        // Permissions — pending invitations & user's active projects (UserId + Status)
+        migrationBuilder.CreateIndex(
+            name: "IX_Permission_UserId_Status",
+            table: "Permission",
+            columns: new[] { "UserId", "Status" });
     }
 
     /// <inheritdoc />
@@ -89,5 +95,6 @@ public partial class AddMissingPerformanceIndexes : Migration
         migrationBuilder.DropIndex(name: "IX_Moments_AssignedStrideId_Status", table: "Moments");
         migrationBuilder.DropIndex(name: "IX_MomentTask_OwnerId_IsCompleted", table: "MomentTask");
         migrationBuilder.DropIndex(name: "IX_Strides_EndDate", table: "Strides");
+        migrationBuilder.DropIndex(name: "IX_Permission_UserId_Status", table: "Permission");
     }
 }
