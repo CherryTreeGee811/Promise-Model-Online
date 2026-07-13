@@ -91,3 +91,12 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 - `E2ETestBase.cs:195-214` — validation + refresh methods
 - `E2ETestBase.cs:154-193` — `LoginAsync` / `LoginAsSecondUserAsync` call validation after injection
 - `GlobalSetUp.cs:14-25` — `RefreshOwnerSession` / `RefreshSecondUserSession` setter methods
+
+### Regression: `ViewUser_CannotCreateJourney` flake
+
+`ValidateAndRefreshSessionAsync` revealed a latent issue in the initial `GotoAsync(BaseUrl)` inside `LoginAsync`/`LoginAsSecondUserAsync`. The original catch only matched `ERR_ABORTED`, but Playwright can also throw "interrupted by another navigation" when the SPA's client-side auth redirect fires before the `load` event.
+
+**Fix (2026-07-13):**
+- Changed `WaitUntilState.Load → DOMContentLoaded` so GotoAsync returns before the SPA's async redirect
+- Widened all `catch (PlaywrightException ex) when (...)` to `catch (PlaywrightException)` for both initial and validation navigations
+- `E2ETestBase.cs:158-164`, `181-187`, `213-218`

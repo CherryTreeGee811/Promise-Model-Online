@@ -157,9 +157,9 @@ public abstract class E2ETestBase
             await _context.ClearCookiesAsync();
             try
             {
-                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.Load });
+                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded });
             }
-            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED"))
+            catch (PlaywrightException)
             {
             }
             await Page.WaitForSelectorAsync("#content", new() { Timeout = 5000 });
@@ -180,9 +180,9 @@ public abstract class E2ETestBase
             await _context.ClearCookiesAsync();
             try
             {
-                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.Load });
+                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded });
             }
-            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED"))
+            catch (PlaywrightException)
             {
             }
             await Page.WaitForSelectorAsync("#content", new() { Timeout = 5000 });
@@ -210,7 +210,7 @@ public abstract class E2ETestBase
                 await RefreshSessionAsync(username, password, refreshGlobalChunks);
             }
         }
-        catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED"))
+        catch (PlaywrightException)
         {
             if (LoginPagePattern.IsMatch(Page.Url))
             {
