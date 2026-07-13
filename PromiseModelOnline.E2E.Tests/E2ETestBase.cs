@@ -157,13 +157,14 @@ public abstract class E2ETestBase
             await _context.ClearCookiesAsync();
             try
             {
-                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.Load });
+                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded });
             }
-            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED"))
+            catch (PlaywrightException)
             {
             }
             await Page.WaitForSelectorAsync("#content", new() { Timeout = 5000 });
             await InjectSessionCookiesAsync(_currentSessionChunks);
+            await ValidateAndRefreshSessionAsync(TestUsername, TestPassword, GlobalSetUp.RefreshOwnerSession);
             return;
         }
         _currentSessionChunks = null;
@@ -179,17 +180,51 @@ public abstract class E2ETestBase
             await _context.ClearCookiesAsync();
             try
             {
-                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.Load });
+                await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded });
             }
-            catch (PlaywrightException ex) when (ex.Message.Contains("ERR_ABORTED"))
+            catch (PlaywrightException)
             {
             }
             await Page.WaitForSelectorAsync("#content", new() { Timeout = 5000 });
             await InjectSessionCookiesAsync(_currentSessionChunks);
+            await ValidateAndRefreshSessionAsync(SecondUsername, SecondPassword, GlobalSetUp.RefreshSecondUserSession);
             return;
         }
         _currentSessionChunks = null;
         await LoginAsUser(SecondUsername, SecondPassword);
+    }
+
+    /// <summary>
+    /// After injecting session cookies, validate the session is still active by navigating
+    /// to the app root. If the server redirects to the login page (session expired), fall
+    /// back to a full browser login and refresh the global session cache so subsequent
+    /// tests also benefit.
+    /// </summary>
+    private async Task ValidateAndRefreshSessionAsync(string username, string password, Action<IReadOnlyDictionary<string, string>?> refreshGlobalChunks)
+    {
+        try
+        {
+            await Page.GotoAsync(BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 5000 });
+            if (LoginPagePattern.IsMatch(Page.Url))
+            {
+                await RefreshSessionAsync(username, password, refreshGlobalChunks);
+            }
+        }
+        catch (PlaywrightException)
+        {
+            if (LoginPagePattern.IsMatch(Page.Url))
+            {
+                await RefreshSessionAsync(username, password, refreshGlobalChunks);
+            }
+        }
+    }
+
+    /// <summary>Fall back to full browser login and refresh the global session cache.</summary>
+    private async Task RefreshSessionAsync(string username, string password, Action<IReadOnlyDictionary<string, string>?> refreshGlobalChunks)
+    {
+        _currentSessionChunks = null;
+        await LoginAsUser(username, password);
+        refreshGlobalChunks(_currentSessionChunks);
     }
 
     private static readonly System.Text.RegularExpressions.Regex LoginPagePattern = new("account/login|connect/authorize", System.Text.RegularExpressions.RegexOptions.IgnoreCase);

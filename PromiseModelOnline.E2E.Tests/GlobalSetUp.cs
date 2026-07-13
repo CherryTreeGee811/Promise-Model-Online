@@ -11,6 +11,18 @@ public class GlobalSetUp
     public static IReadOnlyDictionary<string, string>? OwnerSessionChunks { get; private set; }
     public static IReadOnlyDictionary<string, string>? SecondUserSessionChunks { get; private set; }
 
+    public static void RefreshOwnerSession(IReadOnlyDictionary<string, string>? chunks)
+    {
+        OwnerSessionChunks = chunks;
+        OwnerSessionValue = chunks?.Values.FirstOrDefault();
+    }
+
+    public static void RefreshSecondUserSession(IReadOnlyDictionary<string, string>? chunks)
+    {
+        SecondUserSessionChunks = chunks;
+        SecondUserSessionValue = chunks?.Values.FirstOrDefault();
+    }
+
     [OneTimeSetUp]
     public async Task CaptureSessionCookies()
     {

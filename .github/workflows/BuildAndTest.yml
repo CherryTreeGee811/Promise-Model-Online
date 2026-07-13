@@ -384,6 +384,12 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName!~RateLimitingTests"
 
+      - name: Database query performance verification
+        shell: bash
+        run: |
+          PMO_API_DB_PASSWORD="${{ secrets.PMO_API_DB_PASSWORD }}" \
+            bash scripts/check-query-performance.sh
+
       - name: Security — OWASP ZAP DAST scan
         shell: bash
         run: |

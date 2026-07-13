@@ -269,6 +269,12 @@ public class PromiseModelOnlineContext(
                 .HasFilter("[IterationId] IS NOT NULL");
         });
 
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.ToTable("Permission");
+            entity.HasIndex(e => new { e.UserId, e.Status });
+        });
+
         modelBuilder.Entity<Notification>(entity =>
         {
             entity.ToTable("Notification");

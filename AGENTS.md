@@ -30,6 +30,12 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 | `IX_AuditEvents_ProjectId_OccurredAtUtc` | ProjectId, OccurredAtUtc | History listing |
 | `IX_AuditEvents_EntityType_EntityId` | EntityType, EntityId | Detail modal lookup |
 
+### Permissions
+
+| Index | Columns | Query Pattern |
+|-------|---------|---------------|
+| `IX_Permission_UserId_Status` | UserId, Status | Pending invitations, active project IDs |
+
 ### Notifications, Reactions
 
 | Table | Index | Columns | Query Pattern |
@@ -53,5 +59,44 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 ### Migration
 
 - Name: `AddMissingPerformanceIndexes`
-- Timestamp: `20260709120000`
+- Timestamp: `20260713033412`
 - DDL only — no schema changes, no data movement
+
+### CI Verification
+
+- **Script**: `scripts/check-query-performance.sh` — runs every query 3×, averages CPU time, fails if >500ms
+- **Trigger**: Runs automatically in CI (`BuildAndTest.yml`) after E2E core tests, before OWASP ZAP
+- **Credentials**: Uses `pmo_api` user with password from `${{ secrets.PMO_API_DB_PASSWORD }}`
+- **sqlcmd**: Installed on CI runner via `mssql-tools18` Ubuntu package
+- **Empty tables**: Skipped gracefully with a `SKIP (table empty)` message
+
+### Notes
+
+- `IX_BugReworkTask_SourceCommentId` is an EF Core auto-generated FK index from the initial migration, NOT added by `AddMissingPerformanceIndexes`.
+- `IX_Moments_OwnerId` likewise exists as an auto-generated FK index from the initial migration.
+
+## E2E Session Refresh
+
+### Problem
+`ViewUser_CannotCreateStride` flakes because pre-captured session cookies (stored in `GlobalSetUp.OwnerSessionChunks` / `SecondUserSessionChunks`) expire during a long test run. By the time the 13th test executes, the injected cookies are stale, so API calls via `SendWithSessionCookieAsync` return 401 instead of `Forbidden`.
+
+### Fix
+`ValidateAndRefreshSessionAsync` in `E2ETestBase.cs` runs after cookie injection:
+1. Navigates to `BaseUrl` with `WaitUntilState.DOMContentLoaded`
+2. If the URL matches the login page pattern (`account/login|connect/authorize`), the session has expired
+3. Falls back to a full browser `LoginAsUser` which captures fresh cookies
+4. Updates the global `GlobalSetUp` static chunks so subsequent tests benefit from the refresh
+
+### Files
+- `E2ETestBase.cs:195-214` — validation + refresh methods
+- `E2ETestBase.cs:154-193` — `LoginAsync` / `LoginAsSecondUserAsync` call validation after injection
+- `GlobalSetUp.cs:14-25` — `RefreshOwnerSession` / `RefreshSecondUserSession` setter methods
+
+### Regression: `ViewUser_CannotCreateJourney` flake
+
+`ValidateAndRefreshSessionAsync` revealed a latent issue in the initial `GotoAsync(BaseUrl)` inside `LoginAsync`/`LoginAsSecondUserAsync`. The original catch only matched `ERR_ABORTED`, but Playwright can also throw "interrupted by another navigation" when the SPA's client-side auth redirect fires before the `load` event.
+
+**Fix (2026-07-13):**
+- Changed `WaitUntilState.Load → DOMContentLoaded` so GotoAsync returns before the SPA's async redirect
+- Widened all `catch (PlaywrightException ex) when (...)` to `catch (PlaywrightException)` for both initial and validation navigations
+- `E2ETestBase.cs:158-164`, `181-187`, `213-218`
