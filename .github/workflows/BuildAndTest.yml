@@ -104,26 +104,26 @@ jobs:
         shell: bash
         run: bash scripts/check-prod-deps.sh
 
-      # - name: ESLint & Quality (client JS/CSS/HTML)
-      #   shell: bash
-      #   run: |
-      #     npm run lint
-      #     npm run lint:html
-      #     npm run lint:css
-      #     npm run lint:nginx
-      #     npm run typecheck
-      #     npm run lint:dry
-      #     npm run lint:dead
-      #     npm run test -- --coverage --coverage.thresholds.lines=70 --coverage.thresholds.branches=70 --coverage.thresholds.functions=70 --coverage.thresholds.statements=70 2>&1 | tee /tmp/vitest-coverage.log; if grep -q "ERROR: Coverage for" /tmp/vitest-coverage.log; then echo "Coverage thresholds not met!"; grep "ERROR: Coverage for" /tmp/vitest-coverage.log; exit 1; fi
-      #     npm run build
+      - name: ESLint & Quality (client JS/CSS/HTML)
+        shell: bash
+        run: |
+          npm run lint
+          npm run lint:html
+          npm run lint:css
+          npm run lint:nginx
+          npm run typecheck
+          npm run lint:dry
+          npm run lint:dead
+          npm run test -- --coverage --coverage.thresholds.lines=70 --coverage.thresholds.branches=70 --coverage.thresholds.functions=70 --coverage.thresholds.statements=70 2>&1 | tee /tmp/vitest-coverage.log; if grep -q "ERROR: Coverage for" /tmp/vitest-coverage.log; then echo "Coverage thresholds not met!"; grep "ERROR: Coverage for" /tmp/vitest-coverage.log; exit 1; fi
+          npm run build
 
-      # - name: Source code import boundary (Layer 2)
-      #   shell: bash
-      #   run: bash scripts/check-source-imports.sh
+      - name: Source code import boundary (Layer 2)
+        shell: bash
+        run: bash scripts/check-source-imports.sh
 
-      # - name: Bundle boundary audit (Layer 3)
-      #   shell: bash
-      #   run: bash scripts/check-bundle.sh
+      - name: Bundle boundary audit (Layer 3)
+        shell: bash
+        run: bash scripts/check-bundle.sh
 
       - name: Generate dev certs for volume mounts
         shell: bash
@@ -208,21 +208,21 @@ jobs:
       #       --filter "FullyQualifiedName~IntegrationTests"
       #     bash scripts/check-coverage.sh ./ApiIntegrationTestResults 0.30
 
-      # - name: Run Client UI Test Environment
-      #   shell: bash
-      #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d --build
+      - name: Run Client UI Test Environment
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d --build
 
-      # - name: Wait for Client (Nginx)
-      #   shell: bash
-      #   run: |
-      #     for i in $(seq 1 15); do
-      #       STATUS=$(docker exec promisemodelonlineclient sh -c "test -f /tmp/nginx.pid && echo 200 || echo 000" 2>/dev/null || true)
-      #       if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
-      #       sleep 2
-      #     done
-      #     echo "ERROR: Client not healthy within 30s"
-      #     docker logs promisemodelonlineclient --tail 30 2>&1
-      #     exit 1
+      - name: Wait for Client (Nginx)
+        shell: bash
+        run: |
+          for i in $(seq 1 15); do
+            STATUS=$(docker exec promisemodelonlineclient sh -c "test -f /tmp/nginx.pid && echo 200 || echo 000" 2>/dev/null || true)
+            if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi
+            sleep 2
+          done
+          echo "ERROR: Client not healthy within 30s"
+          docker logs promisemodelonlineclient --tail 30 2>&1
+          exit 1
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -331,10 +331,10 @@ jobs:
       #     URL=https://localhost:9000 node scripts/check-memory-leaks-iterative.cjs \
       #       --chromium-binary "$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)"
 
-      # - name: Teardown Client UI Test Environment
-      #   if: always()
-      #   shell: bash
-      #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
+      - name: Teardown Client UI Test Environment
+        if: always()
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
       - name: Start E2E Stack (without rate limiting)
         shell: bash
