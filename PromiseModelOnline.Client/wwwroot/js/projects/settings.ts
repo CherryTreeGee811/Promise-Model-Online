@@ -312,6 +312,10 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
     void (async () => {
         try {
             const projectData = await getProject(owner, project);
+            if (!projectData) {
+                elements.errorText.textContent = 'Failed to load project settings.';
+                return;
+            }
             currentProject = projectData;
             options.currentProject = projectData;
             elements.titleInput.value = projectData.name ?? '';
