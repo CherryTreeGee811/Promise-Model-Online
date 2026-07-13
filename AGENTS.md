@@ -74,3 +74,20 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 
 - `IX_BugReworkTask_SourceCommentId` is an EF Core auto-generated FK index from the initial migration, NOT added by `AddMissingPerformanceIndexes`.
 - `IX_Moments_OwnerId` likewise exists as an auto-generated FK index from the initial migration.
+
+## E2E Session Refresh
+
+### Problem
+`ViewUser_CannotCreateStride` flakes because pre-captured session cookies (stored in `GlobalSetUp.OwnerSessionChunks` / `SecondUserSessionChunks`) expire during a long test run. By the time the 13th test executes, the injected cookies are stale, so API calls via `SendWithSessionCookieAsync` return 401 instead of `Forbidden`.
+
+### Fix
+`ValidateAndRefreshSessionAsync` in `E2ETestBase.cs` runs after cookie injection:
+1. Navigates to `BaseUrl` with `WaitUntilState.DOMContentLoaded`
+2. If the URL matches the login page pattern (`account/login|connect/authorize`), the session has expired
+3. Falls back to a full browser `LoginAsUser` which captures fresh cookies
+4. Updates the global `GlobalSetUp` static chunks so subsequent tests benefit from the refresh
+
+### Files
+- `E2ETestBase.cs:195-214` — validation + refresh methods
+- `E2ETestBase.cs:154-193` — `LoginAsync` / `LoginAsSecondUserAsync` call validation after injection
+- `GlobalSetUp.cs:14-25` — `RefreshOwnerSession` / `RefreshSecondUserSession` setter methods
