@@ -9,10 +9,10 @@ using PromiseModelOnline.Api.DAL;
 
 #nullable disable
 
-namespace PromiseModelOnline.Api.Migrations
-{
+namespace PromiseModelOnline.Api.Migrations;
+
     [DbContext(typeof(PromiseModelOnlineContext))]
-    [Migration("20260709120000_AddMissingPerformanceIndexes")]
+    [Migration("20260713033412_AddMissingPerformanceIndexes")]
     partial class AddMissingPerformanceIndexes
     {
         /// <inheritdoc />
@@ -611,11 +611,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.HasIndex("UserId");
-
                     b.HasIndex("UserId", "Status");
 
-                    b.ToTable("Permission");
+                    b.ToTable("Permission", (string)null);
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Project", b =>
@@ -1211,4 +1209,3 @@ namespace PromiseModelOnline.Api.Migrations
 #pragma warning restore 612, 618
         }
     }
-}

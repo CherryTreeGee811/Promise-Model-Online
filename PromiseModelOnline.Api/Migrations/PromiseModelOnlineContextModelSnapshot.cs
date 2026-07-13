@@ -608,11 +608,9 @@ namespace PromiseModelOnline.Api.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.HasIndex("UserId");
-
                     b.HasIndex("UserId", "Status");
 
-                    b.ToTable("Permission");
+                    b.ToTable("Permission", (string)null);
                 });
 
             modelBuilder.Entity("PromiseModelOnline.Api.Models.Project", b =>

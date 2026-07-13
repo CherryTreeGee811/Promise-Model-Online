@@ -59,7 +59,7 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 ### Migration
 
 - Name: `AddMissingPerformanceIndexes`
-- Timestamp: `20260709120000`
+- Timestamp: `20260713033412`
 - DDL only — no schema changes, no data movement
 
 ### CI Verification
