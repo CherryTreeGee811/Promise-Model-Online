@@ -184,7 +184,9 @@ public class ProjectPermissionsController(
 
             return Unauthorized();
 
-        var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
+
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
 
         var permissionLevel = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id);
 

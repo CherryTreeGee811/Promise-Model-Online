@@ -1,5 +1,6 @@
-import { searchUsers, searchPromises } from './autocomplete.api.ts';
 import { getStatusIcon } from '../utils/status-utilities.ts';
+
+import { searchUsers, searchPromises } from './autocomplete.api.ts';
 
 interface AutocompleteItem {
   name?: string;
@@ -49,21 +50,24 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
     const value = textarea.value;
 
     let wordStart = -1;
-    for (let i = pos - 1; i >= 0; i--) {
-      if (value[i] === '#' || value[i] === '@') {
-        wordStart = i;
-        break;
-      }
+    for (let index = pos - 1; index >= 0; index--) {
+      if (value[index] !== '#' && value[index] !== '@') continue;
+
+      wordStart = index;
+      break;
     }
 
     if (wordStart < 0) return;
 
     const word = value.slice(wordStart, pos);
 
-    if (word.length > 0 && (word[0] === '@' || word[0] === '#')) {
-      if (word[0] === '#' && word.length < 2) return;
-      return { trigger: word[0], query: word.slice(1), start: wordStart };
-    }
+    if (word.length === 0) return;
+
+    const firstChar = word.at(0);
+    if (firstChar !== '@' && firstChar !== '#') return;
+
+    if (firstChar === '#' && word.length < 2) return;
+    return { trigger: firstChar, query: word.slice(1), start: wordStart };
 
   }
 

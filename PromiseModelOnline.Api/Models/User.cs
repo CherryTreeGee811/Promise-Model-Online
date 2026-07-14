@@ -28,6 +28,10 @@ public class User
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Auth system username (IdentityUser.UserName). Populated from JWT name claim on each login. Null for legacy users until their next API call.</summary>
+    [MaxLength(256)]
+    public string? Username { get; set; }
+
     /// <summary>URL-safe unique slug. Required, max 100 characters.</summary>
     [Required]
     [MaxLength(100)]

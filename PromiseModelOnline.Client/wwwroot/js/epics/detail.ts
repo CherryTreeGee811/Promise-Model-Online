@@ -14,6 +14,7 @@ import { escapeHtml } from '../utils/html.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
+import { createHelpTooltip } from '../utils/tooltip.ts';
 
 import { getEpic, getJourneys, updateEpicDescription } from './api.ts';
 
@@ -211,6 +212,7 @@ async function renderEpicDetail(epic: Epic, owner: string, project: string, epic
 
   const heading = document.createElement('h2');
   heading.textContent = epic.statement;
+  createHelpTooltip(heading, 'Epic Statement', 'A major capability required to fulfill the parent promise. It answers: WHAT must be possible?', 'right');
   detailCard.append(heading);
 
   const table = document.createElement('table');
@@ -222,6 +224,7 @@ async function renderEpicDetail(epic: Epic, owner: string, project: string, epic
   const descLabel = document.createElement('label');
   descLabel.htmlFor = 'description-input';
   descLabel.textContent = 'Description';
+  createHelpTooltip(descTh, 'Description', 'Optional context on what this epic involves &mdash; boundaries, acceptance criteria, and key dependencies.', 'right');
   descTh.append(descLabel);
   descRow.append(descTh);
   const descTd = document.createElement('td');
@@ -247,6 +250,7 @@ async function renderEpicDetail(epic: Epic, owner: string, project: string, epic
 
   const journeysHeading = document.createElement('h3');
   journeysHeading.textContent = 'Journeys';
+  createHelpTooltip(journeysHeading, 'Journeys', 'Circumstances where value is delivered. Limit 3-5 per epic. Each answers: WHEN is this valuable?', 'right');
   detailCard.append(journeysHeading);
 
   const journeysList = document.createElement('div');

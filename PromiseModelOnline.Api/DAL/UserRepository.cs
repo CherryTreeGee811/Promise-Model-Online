@@ -53,26 +53,30 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
 
         if (existing is not null)
         {
+            var modified = false;
+
             if (!string.IsNullOrEmpty(username))
             {
-                if (existing.Name == existing.Email)
+                if ((existing.Name == existing.Email || existing.Name == existing.Username) && existing.Name != username)
                 {
                     existing.Name = username;
+                    modified = true;
+                }
+
+                if (existing.Username != username)
+                {
+                    existing.Username = username;
+                    modified = true;
                 }
 
                 if (string.IsNullOrEmpty(existing.Slug))
                 {
                     existing.Slug = username;
+                    modified = true;
                 }
             }
 
-            if (!string.IsNullOrEmpty(username) && existing.Name == existing.Email)
-            {
-                existing.Name = username;
-                Update(existing);
-                await SaveChangesAsync();
-            }
-            else if (string.IsNullOrEmpty(existing.Slug) && !string.IsNullOrEmpty(username))
+            if (modified)
             {
                 Update(existing);
                 await SaveChangesAsync();
@@ -155,7 +159,7 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
 
         var lower = searchTerm.ToLower();
         return await _dbSet
-            .Where(u => u.Name.ToLower().Contains(lower) || u.Email.ToLower().Contains(lower))
+            .Where(u => u.Name.ToLower().Contains(lower) || u.Email.ToLower().Contains(lower) || (u.Username != null && u.Username.ToLower().Contains(lower)))
             .Take(maxResults)
             .ToListAsync();
     }

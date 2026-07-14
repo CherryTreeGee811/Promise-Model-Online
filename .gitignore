@@ -42,3 +42,4 @@ puppeteer/
 
 .opencode/
 .codegraph/
+coverage/

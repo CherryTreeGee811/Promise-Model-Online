@@ -15,6 +15,7 @@ import { escapeHtml, htmlToNodes } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 import { isAtLeast } from '../utils/permissions.ts';
+import { createHelpTooltip } from '../utils/tooltip.ts';
 
 import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
 
@@ -53,6 +54,7 @@ interface Moment {
 function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement, detailDiv: HTMLElement, _navContentDiv: HTMLElement, _contentDiv: HTMLElement, _owner: string, _project: string): void {
         const heading = document.createElement('h2');
         heading.textContent = moment.statement as string;
+        createHelpTooltip(heading, 'Moment Statement', 'An implementation unit that assigns responsibility. It answers: WHO does what?', 'right');
         detailCard.append(heading);
 
         const table = document.createElement('table');
@@ -65,6 +67,7 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
         const descLabel = document.createElement('label');
         descLabel.htmlFor = 'moment-description-input';
         descLabel.textContent = 'Description';
+        createHelpTooltip(descTh, 'Description', 'Optional details on what this moment entails &mdash; acceptance criteria, technical notes, and context.', 'right');
         descTh.append(descLabel);
         descRow.append(descTh);
         const descTd = document.createElement('td');
@@ -79,6 +82,7 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
         const typeLabel = document.createElement('label');
         typeLabel.htmlFor = 'moment-type-select';
         typeLabel.textContent = 'Type';
+        createHelpTooltip(typeTh, 'Moment Type', '<strong>Story:</strong> Single persona, user-visible value. <strong>Job:</strong> Multi-persona or system coordination.', 'right');
         typeTh.append(typeLabel);
         typeRow.append(typeTh);
         const typeTd = document.createElement('td');
@@ -130,6 +134,7 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
         const estLabel = document.createElement('label');
         estLabel.htmlFor = 'moment-estimate-select';
         estLabel.textContent = 'Effort Estimate';
+        createHelpTooltip(estTh, 'Effort Estimate', 'Relative size: XS=hours, S=days, M=week, L=2w, XL=month, XXL=6w, XXXL=quarter+.', 'right');
         estTh.append(estLabel);
         estRow.append(estTh);
         const estTd = document.createElement('td');
@@ -179,6 +184,7 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
 
         const tasksHeading = document.createElement('h3');
         tasksHeading.textContent = 'Moment Tasks';
+        createHelpTooltip(tasksHeading, 'Moment Tasks', 'Break down the moment into concrete tasks. Each task can be assigned, tracked, and marked complete.', 'right');
         detailCard.append(tasksHeading);
 
         const tasksContainer = document.createElement('div');

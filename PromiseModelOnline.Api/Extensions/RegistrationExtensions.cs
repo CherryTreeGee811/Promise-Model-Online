@@ -8,6 +8,7 @@ using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.BusinessLogic;
 using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Mappers;
+using PromiseModelOnline.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
@@ -71,5 +72,14 @@ public static class RegistrationExtensions
         services.AddStrideAutomation();
         services.AddScoped<IReactionRepository, ReactionRepository>();
         services.AddScoped<IReactionService, ReactionService>();
+
+        var authConnectionString = (configuration.GetConnectionString("AuthDB") ?? "").ResolveSecrets();
+        services.AddScoped<IAuthUserLookupService>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<AuthUserLookupService>>();
+            return new AuthUserLookupService(authConnectionString, logger);
+        });
+
+        services.AddScoped<IInvitationEmailService, InvitationEmailService>();
     }
 }
