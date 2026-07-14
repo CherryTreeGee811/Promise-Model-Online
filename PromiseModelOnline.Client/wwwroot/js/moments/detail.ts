@@ -12,10 +12,10 @@ import { showToast } from '../ui/toast.ts';
 import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml, htmlToNodes } from '../utils/html.ts';
-import { createHelpTooltip } from '../utils/tooltip.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 import { isAtLeast } from '../utils/permissions.ts';
+import { createHelpTooltip } from '../utils/tooltip.ts';
 
 import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
 

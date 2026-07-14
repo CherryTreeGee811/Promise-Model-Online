@@ -11,10 +11,10 @@ import { navigate } from '../router.ts';
 import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
-import { createHelpTooltip } from '../utils/tooltip.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
+import { createHelpTooltip } from '../utils/tooltip.ts';
 
 import { getEpic, getJourneys, updateEpicDescription } from './api.ts';
 

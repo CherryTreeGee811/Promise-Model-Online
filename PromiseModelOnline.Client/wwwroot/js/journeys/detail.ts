@@ -11,9 +11,9 @@ import { navigate } from '../router.ts';
 import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
-import { createHelpTooltip } from '../utils/tooltip.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
+import { createHelpTooltip } from '../utils/tooltip.ts';
 
 import { getJourney, getFlows, updateJourneyDescription } from './api.ts';
 

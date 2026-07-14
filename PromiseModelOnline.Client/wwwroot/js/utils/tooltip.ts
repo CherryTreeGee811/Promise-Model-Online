@@ -3,7 +3,7 @@
  * @param {Element} target - The DOM element to attach the tooltip to.
  * @param {string} title - The bold title of the tooltip.
  * @param {string} body - The body text of the tooltip.
- * @param {'top' | 'bottom' | 'left' | 'right'} [placement='top'] - Tooltip placement.
+ * @param {'top' | 'bottom' | 'left' | 'right'} placement - Tooltip placement (default 'top').
  */
 export function createHelpTooltip(
   target: Element,
