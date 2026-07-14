@@ -35,7 +35,7 @@ public class PermissionMapperTests
         {
             Assert.That(result.Id, Is.EqualTo(1));
             Assert.That(result.UserId, Is.EqualTo(1));
-            Assert.That(result.UserName, Is.EqualTo("alice"));
+            Assert.That(result.UserName, Is.EqualTo("Alice"));
             Assert.That(result.ProjectId, Is.EqualTo(5));
             Assert.That(result.Level, Is.EqualTo("Edit"));
             Assert.That(result.Status, Is.EqualTo("Active"));

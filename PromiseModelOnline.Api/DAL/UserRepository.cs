@@ -57,7 +57,7 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
 
             if (!string.IsNullOrEmpty(username))
             {
-                if ((existing.Name == existing.Email || existing.Name == existing.Username || existing.Username is null) && existing.Name != username)
+                if ((existing.Name == existing.Email || existing.Name == existing.Username) && existing.Name != username)
                 {
                     existing.Name = username;
                     modified = true;
