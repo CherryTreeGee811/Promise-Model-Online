@@ -104,16 +104,6 @@ jobs:
         shell: bash
         run: bash scripts/check-prod-deps.sh
 
-      - name: Diagnostics — dump file content at flagged lines
-        shell: bash
-        run: |
-          echo "=== autocomplete.ts lines 49-68 ==="
-          sed -n '49,68p' PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts | cat -n
-          echo "=== inline-edit.ts lines 17-21 ==="
-          sed -n '17,21p' PromiseModelOnline.Client/wwwroot/js/utils/inline-edit.ts | cat -n
-          echo "=== file hashes ==="
-          md5sum PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts PromiseModelOnline.Client/wwwroot/js/utils/inline-edit.ts
-
       - name: ESLint & Quality (client JS/CSS/HTML)
         shell: bash
         run: |
