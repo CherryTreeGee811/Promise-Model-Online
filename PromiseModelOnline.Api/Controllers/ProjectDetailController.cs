@@ -307,7 +307,7 @@ public class ProjectDetailController(
         return new AuditTimelineItemDto
         {
             Id = auditEvent.Id,
-            OccurredAtUtc = auditEvent.OccurredAtUtc,
+            OccurredAtUtc = DateTime.SpecifyKind(auditEvent.OccurredAtUtc, DateTimeKind.Utc),
             ActorUserId = auditEvent.ActorUserId,
             ActorEmail = auditEvent.ActorEmail,
             ActorSubject = auditEvent.ActorSubject,
