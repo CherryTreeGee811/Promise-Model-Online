@@ -288,6 +288,54 @@ describe('createCommentAutocomplete', () => {
         expect(textarea.value).toContain('#Promise-5');
     });
 
+    it('searches # trigger with multi-word query', async () => {
+        // Arrange
+        mockSearchPromises.mockResolvedValue([{ entityType: 'Epic', sequenceNumber: 2, statement: 'Improve the login flow' }]);
+        const { createCommentAutocomplete } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts');
+        controller = createCommentAutocomplete(textarea, 'Moment', '100');
+        textarea.value = 'see #improve the login';
+        textarea.selectionStart = 23;
+        textarea.selectionEnd = 23;
+        // Act
+        textarea.dispatchEvent(new Event('input'));
+        await delay(300);
+        // Assert
+        expect(mockSearchPromises).toHaveBeenCalledWith('Moment', '100', 'improve the login');
+    });
+
+    it('triggers @ autocomplete with dotted names', async () => {
+        // Arrange
+        mockSearchUsers.mockResolvedValue([{ name: 'jane.doe', userId: 1 }]);
+        mockSearchPromises.mockResolvedValue([]);
+        const { createCommentAutocomplete } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts');
+        controller = createCommentAutocomplete(textarea, 'Moment', '100');
+        textarea.value = 'contact @jane.doe';
+        textarea.selectionStart = 17;
+        textarea.selectionEnd = 17;
+        // Act
+        textarea.dispatchEvent(new Event('input'));
+        await delay(300);
+        // Assert
+        expect(mockSearchUsers).toHaveBeenCalledWith('Moment', '100', 'jane.doe');
+    });
+
+    it('shows status color emoji in # dropdown items', async () => {
+        // Arrange
+        mockSearchPromises.mockResolvedValue([{ entityType: 'Promise', sequenceNumber: 1, statement: 'Fix login', statusColor: 'green' }]);
+        const { createCommentAutocomplete } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts');
+        controller = createCommentAutocomplete(textarea, 'Moment', '100');
+        textarea.value = '#fix';
+        textarea.selectionStart = 4;
+        textarea.selectionEnd = 4;
+        textarea.dispatchEvent(new Event('input'));
+        await delay(300);
+        // Act
+        const items = document.querySelectorAll('.comment-autocomplete__item');
+        // Assert
+        expect(items.length).toBe(1);
+        expect(items[0].textContent).toContain('\u{1F7E2}');
+    });
+
     it('handles API error gracefully during search', async () => {
         // Arrange
         mockSearchUsers.mockRejectedValue(new Error('network error'));

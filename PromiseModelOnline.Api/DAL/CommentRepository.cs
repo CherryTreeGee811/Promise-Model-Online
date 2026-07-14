@@ -25,8 +25,9 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         System.Text.RegularExpressions.RegexOptions.IgnoreCase,
         TimeSpan.FromMilliseconds(500));
 
-    private static readonly System.Text.RegularExpressions.Regex EntityTypePattern = new(
-        @"^(promise|epic|journey|flow|moment)$",
+    /// <summary>Matches a known entity type followed by a separator with no number (e.g. "moment-", "epic ").</summary>
+    private static readonly System.Text.RegularExpressions.Regex EntityTypePrefixPattern = new(
+        @"^(promise|epic|journey|flow|moment)[-\s]$",
         System.Text.RegularExpressions.RegexOptions.IgnoreCase,
         TimeSpan.FromMilliseconds(500));
 
@@ -113,17 +114,32 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         bool matchesType(string type) =>
             typeOnly && parsedType == type;
 
+        // Prefix-boost sort: statements starting with the search term (or the parsed type name
+        // for type-only searches like "moment-") appear first, then alphabetically.
+        IOrderedEnumerable<StackSearchResult> RankResults(IEnumerable<StackSearchResult> source) =>
+            source.OrderBy(r =>
+                r.Statement.StartsWith(lowerSearch, StringComparison.OrdinalIgnoreCase)
+                || (typeOnly && r.Statement.StartsWith(parsedType!, StringComparison.OrdinalIgnoreCase))
+                    ? 0 : 1)
+            .ThenBy(r => r.Statement);
+
         var promises = await _context.Set<Promise>()
             .Where(p => p.ProjectId == projectId && (
                 p.Statement.ToLower().Contains(lowerSearch) ||
-                (parsedType == "promise" && p.SequenceNumber == parsedSeq) ||
-                (typeOnly && parsedType != "promise")))
-            .Take(typeOnly && parsedType != "promise" ? int.MaxValue : maxResults)
+                (parsedType == "promise" && parsedSeq != null && (
+                    p.SequenceNumber == parsedSeq ||
+                    (p.SequenceNumber >= parsedSeq * 10 && p.SequenceNumber < (parsedSeq + 1) * 10) ||
+                    (p.SequenceNumber >= parsedSeq * 100 && p.SequenceNumber < (parsedSeq + 1) * 100) ||
+                    (p.SequenceNumber >= parsedSeq * 1000 && p.SequenceNumber < (parsedSeq + 1) * 1000))) ||
+                (typeOnly && parsedType == "promise") ||
+                (typeOnly && parsedType != "promise" && p.Statement.ToLower().Contains(parsedType!))))
+            .OrderBy(p => p.Statement)
+            .Take(typeOnly && parsedType == "promise" ? int.MaxValue : maxResults)
             .ToListAsync();
         results.AddRange(promises.Select(p => new StackSearchResult("promise", p.Id, p.SequenceNumber, p.Statement, p.StatusColor)));
 
         if (matchesType("promise"))
-            return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
+            return RankResults(results).Take(maxResults).ToList();
 
         var promiseIds = await _context.Set<Promise>()
             .Where(p => p.ProjectId == projectId)
@@ -133,14 +149,20 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         var epics = await _context.Set<Epic>()
             .Where(e => promiseIds.Contains(e.ProductPromiseId) && (
                 e.Statement.ToLower().Contains(lowerSearch) ||
-                (parsedType == "epic" && e.SequenceNumber == parsedSeq) ||
-                (typeOnly && parsedType != "epic")))
-            .Take(typeOnly && parsedType != "epic" ? int.MaxValue : maxResults)
+                (parsedType == "epic" && parsedSeq != null && (
+                    e.SequenceNumber == parsedSeq ||
+                    (e.SequenceNumber >= parsedSeq * 10 && e.SequenceNumber < (parsedSeq + 1) * 10) ||
+                    (e.SequenceNumber >= parsedSeq * 100 && e.SequenceNumber < (parsedSeq + 1) * 100) ||
+                    (e.SequenceNumber >= parsedSeq * 1000 && e.SequenceNumber < (parsedSeq + 1) * 1000))) ||
+                (typeOnly && parsedType == "epic") ||
+                (typeOnly && parsedType != "epic" && e.Statement.ToLower().Contains(parsedType!))))
+            .OrderBy(e => e.Statement)
+            .Take(typeOnly && parsedType == "epic" ? int.MaxValue : maxResults)
             .ToListAsync();
         results.AddRange(epics.Select(e => new StackSearchResult("epic", e.Id, e.SequenceNumber, e.Statement, e.StatusColor)));
 
         if (matchesType("epic"))
-            return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
+            return RankResults(results).Take(maxResults).ToList();
 
         var epicIds = epics.Select(e => e.Id)
             .Concat(await _context.Set<Epic>()
@@ -153,14 +175,20 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         var journeys = await _context.Set<Journey>()
             .Where(j => epicIds.Contains(j.EpicId) && (
                 j.Statement.ToLower().Contains(lowerSearch) ||
-                (parsedType == "journey" && j.SequenceNumber == parsedSeq) ||
-                (typeOnly && parsedType != "journey")))
-            .Take(typeOnly && parsedType != "journey" ? int.MaxValue : maxResults)
+                (parsedType == "journey" && parsedSeq != null && (
+                    j.SequenceNumber == parsedSeq ||
+                    (j.SequenceNumber >= parsedSeq * 10 && j.SequenceNumber < (parsedSeq + 1) * 10) ||
+                    (j.SequenceNumber >= parsedSeq * 100 && j.SequenceNumber < (parsedSeq + 1) * 100) ||
+                    (j.SequenceNumber >= parsedSeq * 1000 && j.SequenceNumber < (parsedSeq + 1) * 1000))) ||
+                (typeOnly && parsedType == "journey") ||
+                (typeOnly && parsedType != "journey" && j.Statement.ToLower().Contains(parsedType!))))
+            .OrderBy(j => j.Statement)
+            .Take(typeOnly && parsedType == "journey" ? int.MaxValue : maxResults)
             .ToListAsync();
         results.AddRange(journeys.Select(j => new StackSearchResult("journey", j.Id, j.SequenceNumber, j.Statement, j.StatusColor)));
 
         if (matchesType("journey"))
-            return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
+            return RankResults(results).Take(maxResults).ToList();
 
         var journeyIds = journeys.Select(j => j.Id)
             .Concat(await _context.Set<Journey>()
@@ -173,14 +201,20 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         var flows = await _context.Set<Flow>()
             .Where(f => journeyIds.Contains(f.JourneyId) && (
                 f.Statement.ToLower().Contains(lowerSearch) ||
-                (parsedType == "flow" && f.SequenceNumber == parsedSeq) ||
-                (typeOnly && parsedType != "flow")))
-            .Take(typeOnly && parsedType != "flow" ? int.MaxValue : maxResults)
+                (parsedType == "flow" && parsedSeq != null && (
+                    f.SequenceNumber == parsedSeq ||
+                    (f.SequenceNumber >= parsedSeq * 10 && f.SequenceNumber < (parsedSeq + 1) * 10) ||
+                    (f.SequenceNumber >= parsedSeq * 100 && f.SequenceNumber < (parsedSeq + 1) * 100) ||
+                    (f.SequenceNumber >= parsedSeq * 1000 && f.SequenceNumber < (parsedSeq + 1) * 1000))) ||
+                (typeOnly && parsedType == "flow") ||
+                (typeOnly && parsedType != "flow" && f.Statement.ToLower().Contains(parsedType!))))
+            .OrderBy(f => f.Statement)
+            .Take(typeOnly && parsedType == "flow" ? int.MaxValue : maxResults)
             .ToListAsync();
         results.AddRange(flows.Select(f => new StackSearchResult("flow", f.Id, f.SequenceNumber, f.Statement, f.StatusColor)));
 
         if (matchesType("flow"))
-            return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
+            return RankResults(results).Take(maxResults).ToList();
 
         var flowIds = flows.Select(f => f.Id)
             .Concat(await _context.Set<Flow>()
@@ -193,18 +227,23 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         var moments = await _context.Set<Moment>()
             .Where(m => flowIds.Contains(m.FlowId) && (
                 m.Statement.ToLower().Contains(lowerSearch) ||
-                (parsedType == "moment" && m.SequenceNumber == parsedSeq) ||
+                (parsedType == "moment" && parsedSeq != null && (
+                    m.SequenceNumber == parsedSeq ||
+                    (m.SequenceNumber >= parsedSeq * 10 && m.SequenceNumber < (parsedSeq + 1) * 10) ||
+                    (m.SequenceNumber >= parsedSeq * 100 && m.SequenceNumber < (parsedSeq + 1) * 100) ||
+                    (m.SequenceNumber >= parsedSeq * 1000 && m.SequenceNumber < (parsedSeq + 1) * 1000))) ||
                 (typeOnly && parsedType == "moment")))
-            .Take(maxResults)
+            .OrderBy(m => m.Statement)
+            .Take(typeOnly && parsedType == "moment" ? int.MaxValue : maxResults)
             .ToListAsync();
         results.AddRange(moments.Select(m => new StackSearchResult("moment", m.Id, m.SequenceNumber, m.Statement, m.StatusColor)));
 
-        return results.OrderBy(r => r.Statement).Take(maxResults).ToList();
+        return RankResults(results).Take(maxResults).ToList();
     }
     /// <summary>Parse a search term as a type-prefixed entity reference or bare type name.</summary>
     /// <remarks>
     ///   Supports formats like <c>"epic-3"</c>, <c>"promise 42"</c> (type + sequence),
-    ///   or <c>"moment"</c> (type-only).
+    ///   or <c>"moment-"</c> (type with trailing separator).
     /// </remarks>
     /// <param name="searchTerm">The raw search input.</param>
     /// <returns>A tuple of (entity type, sequence number) if parsed; otherwise <c>(null, null)</c>.</returns>
@@ -216,10 +255,10 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         if (match.Success)
             return (match.Groups[1].Value.ToLowerInvariant(), int.Parse(match.Groups[2].Value));
 
-        var typeMatch = EntityTypePattern.Match(trimmed);
+        var prefixMatch = EntityTypePrefixPattern.Match(trimmed);
 
-        if (typeMatch.Success)
-            return (typeMatch.Groups[1].Value.ToLowerInvariant(), null);
+        if (prefixMatch.Success)
+            return (prefixMatch.Groups[1].Value.ToLowerInvariant(), null);
 
         return (null, null);
     }
