@@ -28,15 +28,15 @@ public class PermissionService(
     ILogger<PermissionService> logger,
     IAuthUserLookupService authUserLookup,
     IInvitationEmailService invitationEmailService) : IPermissionService
-    {
-        private readonly IPermissionRepository _permissionRepo = permissionRepo;
-        private readonly IUserRepository _userRepo = userRepo;
-        private readonly IGenericRepository<Project> _projectRepo = projectRepo;
-        private readonly IGenericMapper<Permission, PermissionDto> _mapper = mapper;
-        private readonly INotificationService _notificationService = notificationService;
-        private readonly ILogger<PermissionService> _logger = logger;
-        private readonly IAuthUserLookupService _authUserLookup = authUserLookup;
-        private readonly IInvitationEmailService _invitationEmailService = invitationEmailService;
+{
+    private readonly IPermissionRepository _permissionRepo = permissionRepo;
+    private readonly IUserRepository _userRepo = userRepo;
+    private readonly IGenericRepository<Project> _projectRepo = projectRepo;
+    private readonly IGenericMapper<Permission, PermissionDto> _mapper = mapper;
+    private readonly INotificationService _notificationService = notificationService;
+    private readonly ILogger<PermissionService> _logger = logger;
+    private readonly IAuthUserLookupService _authUserLookup = authUserLookup;
+    private readonly IInvitationEmailService _invitationEmailService = invitationEmailService;
 
     /// <summary>Return all permission records for a project as DTOs.</summary>
     /// <param name="projectId">The project ID.</param>

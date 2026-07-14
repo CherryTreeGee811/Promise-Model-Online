@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
+﻿namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
 
 /// <summary>Lookup result from the auth system's Identity database.</summary>
 public class AuthUserInfo
