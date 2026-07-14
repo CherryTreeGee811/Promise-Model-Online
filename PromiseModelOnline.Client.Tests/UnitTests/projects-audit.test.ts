@@ -32,7 +32,7 @@ describe('formatTimestamp', () => {
         // Arrange
         const { formatTimestamp } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/audit.ts');
         // Act
-        const result = formatTimestamp('2024-01-15T10:30:00Z');
+        const result = formatTimestamp('2024-01-15T10:30:00.0000000');
         // Assert
         expect(result).toContain('2024');
         expect(result).toContain('01');
