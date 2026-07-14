@@ -11,6 +11,7 @@ import { navigate } from '../router.ts';
 import { gateDetailControls, getStatusIcon, getStatusLabel, bindLinkClickHandlers, buildInlineEditUI, createStatusRow, createDateRow, initBackLink, loadCommentsAndReactions, setElementText, setElementVisibility, setupDetailInlineEdit } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
+import { createHelpTooltip } from '../utils/tooltip.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
 
@@ -223,6 +224,7 @@ async function renderJourneyDetail(journey: Journey, owner: string, project: str
 
   const heading = document.createElement('h2');
   heading.textContent = journey.statement;
+  createHelpTooltip(heading, 'Journey Statement', 'A circumstance or situation where value is delivered to a user. It answers: WHEN is this valuable?', 'right');
   detailCard.append(heading);
 
   const table = document.createElement('table');
@@ -234,6 +236,7 @@ async function renderJourneyDetail(journey: Journey, owner: string, project: str
   const descLabel = document.createElement('label');
   descLabel.htmlFor = 'description-input';
   descLabel.textContent = 'Description';
+  createHelpTooltip(descTh, 'Description', 'Optional details about the circumstance, including user goals, context, and expected outcomes.', 'right');
   descTh.append(descLabel);
   descRow.append(descTh);
   const descTd = document.createElement('td');
@@ -265,6 +268,7 @@ async function renderJourneyDetail(journey: Journey, owner: string, project: str
 
   const flowsHeading = document.createElement('h3');
   flowsHeading.textContent = 'Flows';
+  createHelpTooltip(flowsHeading, 'Flows', 'Sequential process steps that deliver the journey. Limit 3-5 per journey. Each answers: HOW does this happen?', 'right');
   detailCard.append(flowsHeading);
 
   const flowsList = document.createElement('div');

@@ -9,6 +9,7 @@ import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } fr
 import { gateDetailControls, getStatusHtml, bindLinkClickHandlers, setupDescriptionHandler, buildInlineEditUI, createDateRow, initBackLink, loadCommentsAndReactions } from '../utils/detail-common.ts';
 import { loadEntityLookupMap } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
+import { createHelpTooltip } from '../utils/tooltip.ts';
 import { setupAddChildForm } from '../utils/inline-add-form.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
 import { renderTableWithInlineAddRow } from '../utils/inline-table.ts';
@@ -147,6 +148,7 @@ async function renderPromiseDetail(promise: Record<string, unknown>, owner: stri
 
   const cardH2 = document.createElement('h2');
   cardH2.textContent = promise.statement as string | null;
+  createHelpTooltip(cardH2, 'Promise Statement', 'A concise value proposition that defines WHY this product or feature exists. It should be customer-focused and measurable.', 'right');
   cardDiv.append(cardH2);
 
   const detailTable = document.createElement('table');
@@ -158,6 +160,7 @@ async function renderPromiseDetail(promise: Record<string, unknown>, owner: stri
   const descLabel = document.createElement('label');
   descLabel.htmlFor = 'description-input';
   descLabel.textContent = 'Description';
+  createHelpTooltip(descTh, 'Description', 'Optional elaboration &mdash; what success looks like, key metrics, and scope boundaries for this promise.', 'right');
   descTh.append(descLabel);
   const descTd = document.createElement('td');
   buildInlineEditUI(descTd, '', (promise.description as string) || '');
@@ -168,6 +171,7 @@ async function renderPromiseDetail(promise: Record<string, unknown>, owner: stri
   const statusTh = document.createElement('th');
   statusTh.scope = 'row';
   statusTh.textContent = 'Status';
+  createHelpTooltip(statusTh, 'Status', 'Current health of this promise. Reflects whether its epics are on track, at risk, or blocked.', 'right');
   const statusTd = document.createElement('td');
   const statusParser = new DOMParser();
   const statusDocument = statusParser.parseFromString(getStatusHtml(promise.statusColor as string), 'text/html');
@@ -182,6 +186,7 @@ async function renderPromiseDetail(promise: Record<string, unknown>, owner: stri
 
   const epicsH3 = document.createElement('h3');
   epicsH3.textContent = 'Epics';
+  createHelpTooltip(epicsH3, 'Epics', 'Major capabilities that fulfill this promise. Limit 3-5 per promise. Each answers: WHAT must be possible?', 'right');
   cardDiv.append(epicsH3);
 
   const epicsListDiv = document.createElement('div');

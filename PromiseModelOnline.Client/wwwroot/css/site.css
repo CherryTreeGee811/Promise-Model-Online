@@ -1369,6 +1369,27 @@ button {
   border-radius: 18px;
 }
 
+.tippy-box[data-theme~='help-tooltip'] {
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  padding: 2px;
+}
+
+.tippy-box[data-theme~='help-tooltip'] > .tippy-content {
+  padding: 6px 10px;
+}
+
+.tippy-box[data-theme~='help-tooltip'] strong {
+  font-weight: 600;
+}
+
+.tippy-box[data-theme~='help-tooltip'] > .tippy-arrow {
+  color: var(--color-accent);
+}
+
 .graph-context-menu {
   min-width: 240px;
   display: flex;
@@ -2669,6 +2690,16 @@ button:disabled,
   background: linear-gradient(180deg, rgb(31 41 55 / 98%) 0%, rgb(22 27 34 / 98%) 100%);
   color: #e6edf3;
   border-color: rgb(48 54 61 / 50%);
+}
+
+[data-bs-theme="dark"] .tippy-box[data-theme~='help-tooltip'] {
+  background: linear-gradient(180deg, rgb(31 41 55 / 98%) 0%, rgb(22 27 34 / 98%) 100%);
+  color: #e6edf3;
+  border: 1px solid rgb(48 54 61 / 50%);
+}
+
+[data-bs-theme="dark"] .tippy-box[data-theme~='help-tooltip'] > .tippy-arrow {
+  color: #161b22;
 }
 
 [data-bs-theme="dark"] .graph-context-menu__item {

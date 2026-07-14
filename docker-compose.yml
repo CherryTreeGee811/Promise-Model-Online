@@ -74,9 +74,14 @@ services:
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__AuthDB=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
+      - App__BaseUrl=${APP_BASE_URL}
     secrets:
       - api_db_password
+      - auth_db_password
       - auth_registration_key
+      - sendgrid_api_key
     depends_on:
       promisemodelonline.auth:
         condition: service_started

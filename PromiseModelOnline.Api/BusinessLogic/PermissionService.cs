@@ -1,4 +1,5 @@
-﻿using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Enums;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 
 namespace PromiseModelOnline.Api.BusinessLogic;
 
@@ -22,13 +24,19 @@ public class PermissionService(
     IUserRepository userRepo,
     IGenericRepository<Project> projectRepo,
     IGenericMapper<Permission, PermissionDto> mapper,
-    INotificationService notificationService) : IPermissionService
-{
-    private readonly IPermissionRepository _permissionRepo = permissionRepo;
-    private readonly IUserRepository _userRepo = userRepo;
-    private readonly IGenericRepository<Project> _projectRepo = projectRepo;
-    private readonly IGenericMapper<Permission, PermissionDto> _mapper = mapper;
-    private readonly INotificationService _notificationService = notificationService;
+    INotificationService notificationService,
+    ILogger<PermissionService> logger,
+    IAuthUserLookupService authUserLookup,
+    IInvitationEmailService invitationEmailService) : IPermissionService
+    {
+        private readonly IPermissionRepository _permissionRepo = permissionRepo;
+        private readonly IUserRepository _userRepo = userRepo;
+        private readonly IGenericRepository<Project> _projectRepo = projectRepo;
+        private readonly IGenericMapper<Permission, PermissionDto> _mapper = mapper;
+        private readonly INotificationService _notificationService = notificationService;
+        private readonly ILogger<PermissionService> _logger = logger;
+        private readonly IAuthUserLookupService _authUserLookup = authUserLookup;
+        private readonly IInvitationEmailService _invitationEmailService = invitationEmailService;
 
     /// <summary>Return all permission records for a project as DTOs.</summary>
     /// <param name="projectId">The project ID.</param>
@@ -49,18 +57,32 @@ public class PermissionService(
     /// <exception cref="UnauthorizedAccessException">Requester is not the project owner.</exception>
     public async Task<PermissionDto> InviteUserAsync(int projectId, string email, PermissionLevel level, int ownerUserId)
     {
-        var project = await _projectRepo.GetByIdAsync(projectId)
-                      ?? throw new InvalidOperationException("Project not found");
+        var project = await _projectRepo.GetByIdAsync(projectId);
+        if (project is null)
+        {
+            _logger.LogWarning("Invitation failed: project {ProjectId} not found (requested by owner {OwnerUserId})", projectId, ownerUserId);
+            throw new InvalidOperationException("Project not found");
+        }
 
         if (project.OwnerId != ownerUserId)
+        {
+            _logger.LogWarning("Invitation failed: user {OwnerUserId} is not owner of project {ProjectId}", ownerUserId, projectId);
             throw new UnauthorizedAccessException("Only the project owner can invite users.");
+        }
 
-        var invitedUser = await FindInvitedUserAsync(email)
-                          ?? throw new InvalidOperationException($"User '{email}' not found. Please use their registered email address.");
+        var invitedUser = await FindInvitedUserAsync(email);
+        if (invitedUser is null)
+        {
+            _logger.LogWarning("Invitation failed: user '{EmailOrName}' not found for project {ProjectId} by owner {OwnerUserId}", email, projectId, ownerUserId);
+            throw new InvalidOperationException($"User '{email}' not found. Please use their registered email address.");
+        }
 
         var existing = await _permissionRepo.GetByUserAndProjectAsync(invitedUser.Id, project.Id);
         if (existing != null)
+        {
+            _logger.LogWarning("Invitation failed: user {UserId} ('{EmailOrName}') already has permission for project {ProjectId}", invitedUser.Id, email, projectId);
             throw new InvalidOperationException("User already has a permission for this project.");
+        }
 
         var permission = new Permission
         {
@@ -80,11 +102,20 @@ public class PermissionService(
             "/invitations"
         );
 
+        if (!string.IsNullOrEmpty(invitedUser.Email))
+        {
+            await _invitationEmailService.SendInvitationEmailAsync(
+                invitedUser.Email,
+                invitedUser.Name ?? invitedUser.Username ?? "User",
+                project.Name
+            );
+        }
+
         return new PermissionDto
         {
             Id = permission.Id,
             UserId = invitedUser.Id,
-            UserName = invitedUser.Name,
+            UserName = invitedUser.Name ?? invitedUser.Username ?? "Unknown",
             ProjectId = project.Id,
             Level = permission.Level.ToString(),
             Status = permission.Status.ToString()
@@ -180,6 +211,21 @@ public class PermissionService(
 
         var slugUser = await _userRepo.GetBySlugAsync(emailOrName);
         if (slugUser != null) return slugUser;
+
+        var searchResults = await _userRepo.SearchUsersAsync(emailOrName, maxResults: 1);
+        user = searchResults.FirstOrDefault();
+        if (user != null)
+        {
+            _logger.LogInformation("Invited user '{EmailOrName}' resolved via partial search to user {UserId} ('{UserName}')", emailOrName, user.Id, user.Name);
+            return user;
+        }
+
+        var authUser = await _authUserLookup.FindByUsernameOrEmailAsync(emailOrName);
+        if (authUser is not null)
+        {
+            _logger.LogInformation("Invited user '{EmailOrName}' resolved via auth DB lookup to '{UserName}' ({Email})", emailOrName, authUser.UserName, authUser.Email);
+            return await _userRepo.GetOrCreateUserByEmailAsync(authUser.Email, authUser.UserName);
+        }
 
         return null;
     }
