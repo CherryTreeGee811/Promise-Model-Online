@@ -1,6 +1,8 @@
 import { navigate } from '../router.ts';
 
-import { getAuditEvents, getProject } from './api.ts';
+import { downloadBlob } from '../utils/download.ts';
+
+import { exportAuditEvents, getAuditEvents, getProject } from './api.ts';
 import { getAuditDetailsPayload, renderAuditDetailsModal, renderAuditTable } from './audit.ts';
 
 const PAGE_SIZE = 25;
@@ -230,6 +232,29 @@ export function loadProjectAuditHistoryPage(navContentDiv: HTMLElement, contentD
         await loadProjectName();
         void loadEntries(true);
     })();
+
+    const exportCsvBtn = document.querySelector('#export-csv-btn') as HTMLButtonElement | null;
+    const exportJsonBtn = document.querySelector('#export-json-btn') as HTMLButtonElement | null;
+
+    async function handleExport(format: 'csv' | 'json', button: HTMLButtonElement): Promise<void> {
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = 'Exporting...';
+        errorElement!.textContent = '';
+        try {
+            const blob = await exportAuditEvents(owner, project, format);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            downloadBlob(blob, `audit-${owner}-${project}-${timestamp}.${format}`);
+        } catch (error) {
+            errorElement!.textContent = (error as Error).message || `Failed to export ${format.toUpperCase()}.`;
+        } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+
+    exportCsvBtn?.addEventListener('click', () => void handleExport('csv', exportCsvBtn));
+    exportJsonBtn?.addEventListener('click', () => void handleExport('json', exportJsonBtn));
 
     backButton.addEventListener('click', () => {
         void navigate('/projects', navContentDiv, contentDiv);

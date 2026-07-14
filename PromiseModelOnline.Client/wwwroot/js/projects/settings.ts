@@ -1,6 +1,7 @@
 import { createCommentAutocomplete } from '../comments/autocomplete.ts';
 import { navigate } from '../router.ts';
 import { getProjectMembers } from '../strides/api.ts';
+import { downloadBlob } from '../utils/download.ts';
 import { formatCommentText } from '../utils/entity-reference.ts';
 import { escapeHtml } from '../utils/html.ts';
 import { setupInlineEdit } from '../utils/inline-edit.ts';
@@ -343,22 +344,6 @@ export function loadProjectSettingsPage(navContentDiv: HTMLElement, contentDiv: 
  */
 function getDeletePhrase(projectName: string): string {
     return `delete ${projectName}`;
-}
-
-/**
- * Trigger a browser download of a blob with the given filename.
- * @param {Blob} blob - The blob data to download.
- * @param {string} filename - The filename for the download.
- */
-function downloadBlob(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /**

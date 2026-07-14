@@ -97,6 +97,24 @@ export async function exportProject(owner: string, project: string) {
 }
 
 /**
+ * Export all audit events for a project as a downloadable blob.
+ * @param {string} owner - The project owner's slug.
+ * @param {string} project - The project's slug.
+ * @param {'csv' | 'json'} format - The export format.
+ * @returns {Promise<Blob>} The exported audit log as a blob.
+ */
+export async function exportAuditEvents(owner: string, project: string, format: 'csv' | 'json'): Promise<Blob> {
+    const response = await authFetch(`/api/projects/${encodeURIComponent(owner)}/${encodeURIComponent(project)}/audit-events/export?format=${format}`);
+
+    if (!response.ok) {
+        const body = await safeParse(response);
+        throw new Error(body?.message || body?.title || `HTTP ${response.status}`);
+    }
+
+    return response.blob();
+}
+
+/**
  * Fetch paginated audit events for a project.
  * @param {string} owner - The project owner's slug.
  * @param {string} project - The project's slug.

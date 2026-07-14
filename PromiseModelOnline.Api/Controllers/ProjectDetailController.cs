@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -8,6 +10,7 @@ using PromiseModelOnline.Api.Mappers.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
@@ -296,6 +299,115 @@ public class ProjectDetailController(
 
         var events = await query.Skip(skip).Take(take).ToListAsync();
         return Ok(events.Select(MapToAuditDto));
+    }
+
+    /// <summary>Export all audit events for a project as CSV or JSON.</summary>
+    /// <param name="owner">The project owner's URL-safe slug.</param>
+    /// <param name="project">The project's URL-safe slug.</param>
+    /// <param name="format">Export format: <c>csv</c> or <c>json</c> (default <c>json</c>).</param>
+    /// <response code="200">Returns the audit log as a downloadable file.</response>
+    /// <response code="404">Project not found.</response>
+    /// <returns>A file download in the requested format.</returns>
+    [Authorize(Policy = "projects.read")]
+    [HttpGet("audit-events/export")]
+    public async Task<IActionResult> ExportAuditEvents(
+        string owner, string project,
+        [FromQuery] string format = "json")
+    {
+        var projectEntity = await ResolveProjectAsync(owner, project);
+        if (projectEntity is null) return NotFound();
+        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
+
+        var events = await _context.AuditEvents
+            .Where(entry => entry.ProjectId == projectEntity.Id)
+            .OrderByDescending(entry => entry.OccurredAtUtc)
+            .ThenByDescending(entry => entry.Id)
+            .ToListAsync();
+
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        var slug = projectEntity.Slug;
+
+        if (string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
+        {
+            var rows = events.SelectMany(MapToExportRows).ToList();
+            return ExportCsv(rows, slug, timestamp);
+        }
+
+        return ExportJson(events, slug, timestamp);
+    }
+
+    /// <summary>Export audit events as a CSV file download.</summary>
+    private static IActionResult ExportCsv(List<AuditEventExportRowDto> rows, string slug, string timestamp)
+    {
+        using var writer = new StringWriter();
+        var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            ShouldQuote = args => true,
+        };
+        using var csv = new CsvWriter(writer, csvConfig);
+        csv.Context.RegisterClassMap<AuditEventExportRowMap>();
+        csv.WriteRecords(rows);
+        csv.Flush();
+
+        var bytes = Encoding.UTF8.GetBytes(writer.ToString());
+        return new FileContentResult(bytes, "text/csv")
+        {
+            FileDownloadName = $"audit-{slug}-{timestamp}.csv",
+        };
+    }
+
+    /// <summary>Export audit events as a JSON file download.</summary>
+    private IActionResult ExportJson(List<AuditEvent> events, string slug, string timestamp)
+    {
+        var dtos = events.Select(MapToAuditDto).ToList();
+        var json = JsonSerializer.Serialize(dtos, new JsonSerializerOptions { WriteIndented = true });
+        var bytes = Encoding.UTF8.GetBytes(json);
+        return new FileContentResult(bytes, "application/json")
+        {
+            FileDownloadName = $"audit-{slug}-{timestamp}.json",
+        };
+    }
+
+    /// <summary>Flatten an audit event into export rows (one per field change).</summary>
+    private static List<AuditEventExportRowDto> MapToExportRows(AuditEvent auditEvent)
+    {
+        var changes = DeserializeAuditChanges(auditEvent.ChangesJson);
+        var summary = BuildAuditSummary(auditEvent, changes);
+
+        if (changes.Count == 0)
+        {
+            return
+            [
+                new AuditEventExportRowDto
+                {
+                    Id = auditEvent.Id,
+                    OccurredAtUtc = DateTime.SpecifyKind(auditEvent.OccurredAtUtc, DateTimeKind.Utc),
+                    ActorEmail = auditEvent.ActorEmail,
+                    ActorUserId = auditEvent.ActorUserId,
+                    ActorSubject = auditEvent.ActorSubject,
+                    EntityType = auditEvent.EntityType,
+                    EntityId = auditEvent.EntityId,
+                    ActionType = auditEvent.ActionType,
+                    Summary = summary,
+                }
+            ];
+        }
+
+        return changes.Select(change => new AuditEventExportRowDto
+        {
+            Id = auditEvent.Id,
+            OccurredAtUtc = DateTime.SpecifyKind(auditEvent.OccurredAtUtc, DateTimeKind.Utc),
+            ActorEmail = auditEvent.ActorEmail,
+            ActorUserId = auditEvent.ActorUserId,
+            ActorSubject = auditEvent.ActorSubject,
+            EntityType = auditEvent.EntityType,
+            EntityId = auditEvent.EntityId,
+            ActionType = auditEvent.ActionType,
+            Summary = summary,
+            FieldName = change.FieldName,
+            BeforeValue = change.Before?.ToString(),
+            AfterValue = change.After?.ToString(),
+        }).ToList();
     }
 
     /// <summary>Map an AuditEvent to its timeline DTO.</summary>
