@@ -16,7 +16,7 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
    * @param {string} value - The HTML content to display.
    */
   function showView(value: string): void {
-    viewElement.textContent = value || '';
+    viewElement.innerHTML = value || '';
     viewElement.classList.remove('d-none');
     inputElement.classList.add('d-none');
     if (saveButton) saveButton.classList.add('d-none');
@@ -29,7 +29,7 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
    */
   function showEdit(): void {
     cancelValue = (inputElement as HTMLInputElement).value;
-    cancelViewHtml = viewElement.textContent || '';
+    cancelViewHtml = viewElement.innerHTML || '';
     viewElement.classList.add('d-none');
     inputElement.classList.remove('d-none');
     editButton.classList.add('d-none');
