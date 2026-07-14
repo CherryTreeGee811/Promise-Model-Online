@@ -1,4 +1,5 @@
 import { searchUsers, searchPromises } from './autocomplete.api.ts';
+import { getStatusIcon } from '../utils/status-utilities.ts';
 
 interface AutocompleteItem {
   name?: string;
@@ -6,6 +7,7 @@ interface AutocompleteItem {
   sequenceNumber?: number;
   id?: number | string;
   statement?: string;
+  statusColor?: string;
 }
 
 interface AutocompleteState {
@@ -46,22 +48,21 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
     const pos = textarea.selectionStart;
     const value = textarea.value;
 
-    let wordStart = pos;
-    while (wordStart > 0 && !/\s/.test(value[wordStart - 1])) {
-      wordStart--;
+    let wordStart = -1;
+    for (let i = pos - 1; i >= 0; i--) {
+      if (value[i] === '#' || value[i] === '@') {
+        wordStart = i;
+        break;
+      }
     }
+
+    if (wordStart < 0) return;
 
     const word = value.slice(wordStart, pos);
 
-    if (word.length > 0 && (word.at(0) === '@' || word.at(0) === '#')) {
-      const trigger = word.at(0);
-      const query = word.slice(1);
-      if (trigger === '@' && /^\w*$/.test(query)) {
-        return { trigger, query, start: wordStart };
-      }
-      if (trigger === '#') {
-        return { trigger, query, start: wordStart };
-      }
+    if (word.length > 0 && (word[0] === '@' || word[0] === '#')) {
+      if (word[0] === '#' && word.length < 2) return;
+      return { trigger: word[0], query: word.slice(1), start: wordStart };
     }
 
   }
@@ -184,7 +185,7 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
       element.role = 'option';
       element.ariaSelected = String(index === state.highlightedIndex);
 
-      element.textContent = state.trigger === '@' ? item.name ?? '' : '#' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '') + ' \u{2014} ' + (item.statement ?? '');
+      element.textContent = state.trigger === '@' ? item.name ?? '' : getStatusIcon(item.statusColor ?? '') + '  #' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '') + ' \u{2014} ' + (item.statement ?? '');
 
       element.dataset.index = String(index);
       element.addEventListener('mousedown', function (event) {
