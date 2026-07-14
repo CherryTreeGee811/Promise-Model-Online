@@ -177,6 +177,8 @@ function formatAuditDetailsTitle(item: AuditItem): string {
  */
 function formatAuditDetailsHtml(item: AuditItem): string {
     return `
+        <div class="mb-3">${renderChanges(item.changes)}</div>
+        <hr class="my-2">
         <dl class="row mb-0">
             <dt class="col-sm-3">Time</dt>
             <dd class="col-sm-9"><time title="${escapeHtml(formatTimestamp(item.occurredAtUtc))}">${escapeHtml(formatTimestamp(item.occurredAtUtc))}</time></dd>
@@ -188,8 +190,6 @@ function formatAuditDetailsHtml(item: AuditItem): string {
             <dd class="col-sm-9">${escapeHtml(formatChange(item))}</dd>
             <dt class="col-sm-3">Items Affected</dt>
             <dd class="col-sm-9">${escapeHtml(formatEntity(item))}</dd>
-            <dt class="col-sm-3">Details</dt>
-            <dd class="col-sm-9">${renderChanges(item.changes)}</dd>
         </dl>
     `;
 }
