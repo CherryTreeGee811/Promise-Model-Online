@@ -106,7 +106,7 @@ public class GlobalSetUp
                     await page.WaitForURLAsync(new Regex(".+"), new() { Timeout = 20000 });
                     break;
                 }
-                catch (TimeoutException) when (attempt < 3)
+                catch (Exception ex) when ((ex is TimeoutException or PlaywrightException) && attempt < 3)
                 {
                     await page.ReloadAsync(new() { Timeout = 15000 });
                     await Task.Delay(3000);
@@ -125,7 +125,7 @@ public class GlobalSetUp
                     await page.WaitForSelectorAsync("#user-dropdown", new() { Timeout = 20000 });
                     break;
                 }
-                catch (TimeoutException) when (attempt < 3)
+                catch (Exception ex) when ((ex is TimeoutException or PlaywrightException) && attempt < 3)
                 {
                     // Re-establish the Identity cookie before retrying the OIDC flow.
                     for (var retry = 1; retry <= 3; retry++)
@@ -140,7 +140,7 @@ public class GlobalSetUp
                             await page.WaitForURLAsync(new Regex(".+"), new() { Timeout = 20000 });
                             break;
                         }
-                        catch (TimeoutException) when (retry < 3)
+                        catch (Exception innerEx) when ((innerEx is TimeoutException or PlaywrightException) && retry < 3)
                         {
                             await Task.Delay(3000);
                         }

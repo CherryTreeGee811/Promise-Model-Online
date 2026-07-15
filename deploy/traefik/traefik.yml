@@ -1,13 +1,12 @@
 # Traefik static configuration — entrypoints, providers, TLS
-# Dev mode (compose): swarmMode=false, uses Docker provider
-# Production (stack): swarmMode=true, overridden via command-line flag
+# Dev mode (compose): uses Docker provider (swarmMode defaults to false)
+# Production (stack): overridden via command-line flag if needed
 
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: promisemodelonline-net
-    swarmMode: false
   file:
     directory: /etc/traefik/dynamic
     watch: true
@@ -15,8 +14,6 @@ providers:
 entryPoints:
   websecure:
     address: ":9000"
-  web:
-    address: ":8080"
 
 api:
   dashboard: true
@@ -29,3 +26,6 @@ accessLog: {}
 
 metrics:
   prometheus: {}
+
+serversTransport:
+  insecureSkipVerify: true
