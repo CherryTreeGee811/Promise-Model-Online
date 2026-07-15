@@ -21,8 +21,8 @@ echo "=== Nginx Configuration Validation ==="
 
 CONFIG_PAIRS=()
 
-if [ -f "PromiseModelOnline.Client/nginx.conf" ] && [ -f "PromiseModelOnline.Client/default.conf" ]; then
-  CONFIG_PAIRS+=("production|PromiseModelOnline.Client/nginx.conf|PromiseModelOnline.Client/default.conf")
+if [ -f "PromiseModelOnline.Client/nginx.conf" ] && [ -f "PromiseModelOnline.Client/spa.conf" ]; then
+  CONFIG_PAIRS+=("production|PromiseModelOnline.Client/nginx.conf|PromiseModelOnline.Client/spa.conf")
 fi
 
 if [ -f "infrastructure/tests/nginx-test.conf" ] && [ -f "infrastructure/tests/default-test.conf" ]; then
