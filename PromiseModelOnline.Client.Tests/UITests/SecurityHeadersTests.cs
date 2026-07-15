@@ -282,7 +282,7 @@ public class SecurityHeadersTests
 
     private string ReadNginxConfig()
     {
-        var path = Path.Combine(SolutionDir, "PromiseModelOnline.Client", "default.conf");
+        var path = Path.Combine(SolutionDir, "PromiseModelOnline.Client", "spa.conf");
         Assert.That(File.Exists(path), Is.True, $"Nginx config not found at {path}");
         return File.ReadAllText(path);
     }
