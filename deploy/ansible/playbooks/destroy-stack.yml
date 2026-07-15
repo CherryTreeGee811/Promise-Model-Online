@@ -1,9 +1,38 @@
 ---
-- name: Destroy Docker Compose stack
+- name: Destroy Docker Swarm stack
   hosts: vm_host
+  vars:
+    stack_name: promisemodelonline
+
   tasks:
-    - name: Stop and remove stack with volumes
+    - name: Remove stack (services, networks, but keeps volumes)
       ansible.builtin.shell:
-        cmd: docker compose down -v
+        cmd: docker stack rm "{{ stack_name }}"
         chdir: /home/pmo_admin/promise-model-online
       register: destroy_result
+      failed_when: false
+
+    - name: Wait for stack teardown
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 30); do
+            if ! docker stack ls | grep -q "{{ stack_name }}"; then
+              echo "Stack removed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "WARNING: Stack may still be tearing down"
+
+    - name: Leave Docker Swarm
+      ansible.builtin.shell:
+        cmd: docker swarm leave --force
+      failed_when: false
+
+    - name: Remove Swarm secrets
+      ansible.builtin.shell:
+        cmd: |
+          for secret in $(docker secret ls --format "{{ '{{' }}.Name{{ '}}' }}"); do
+            docker secret rm "$secret"
+          done
+      failed_when: false

@@ -1,0 +1,8 @@
+http:
+  middlewares:
+    sticky-hubs:
+      stickyCookie:
+        name: traefik_hub_route
+        httpOnly: true
+        secure: true
+        sameSite: lax

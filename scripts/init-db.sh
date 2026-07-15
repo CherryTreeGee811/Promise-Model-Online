@@ -1,5 +1,11 @@
 #!/bin/sh
 
+SENTINEL="/var/opt/mssql/.db-initialized"
+if [ -f "$SENTINEL" ]; then
+    echo "[db-init] Database already initialized (sentinel found). Skipping."
+    exit 0
+fi
+
 read_secret_file() {
     if [ ! -f "$1" ]; then
         echo "FATAL: Secret file $1 not found. Mount a Docker secret at this path." >&2
@@ -118,3 +124,6 @@ fi
 "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "ALTER LOGIN sa DISABLE;"
 
 echo 'Database application accounts created, SA disabled, and initialization verified.'
+
+touch "$SENTINEL"
+echo "[db-init] Sentinel file created at $SENTINEL"

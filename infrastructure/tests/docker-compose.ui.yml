@@ -1,5 +1,5 @@
 services:
-  promisemodelonline.client:
+  nginx-spa:
     container_name: promisemodelonlineclient
     hostname: localhost
     ports:
@@ -11,7 +11,7 @@ services:
       dockerfile: PromiseModelOnline.Client/Dockerfile
     volumes:
       - ./nginx-test.conf:/etc/nginx/nginx.conf
-      - ./default-test.conf:/etc/nginx/conf.d/default.conf
+      - ./default-test.conf:/etc/nginx/conf.d/spa.conf
       - ../../keys/client/cert.pem:/etc/nginx/cert.pem:ro
       - ../../keys/client/key.pem:/etc/nginx/key.pem:ro
 

@@ -16,7 +16,7 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
    * @param {string} value - The HTML content to display.
    */
   function showView(value: string): void {
-    viewElement.innerHTML = value || '';
+    viewElement.textContent = value || '';
     viewElement.classList.remove('d-none');
     inputElement.classList.add('d-none');
     if (saveButton) saveButton.classList.add('d-none');

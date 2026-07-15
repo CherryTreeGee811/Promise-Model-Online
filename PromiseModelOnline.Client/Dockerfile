@@ -24,7 +24,7 @@ RUN chown -R appuser:appgroup /var/cache/nginx /var/run
 
 COPY PromiseModelOnline.Client/mime.types /etc/nginx/mime.types
 COPY PromiseModelOnline.Client/nginx.conf /etc/nginx/nginx.conf
-COPY PromiseModelOnline.Client/default.conf /etc/nginx/conf.d/default.conf
+COPY PromiseModelOnline.Client/spa.conf /etc/nginx/conf.d/spa.conf
 
 USER appuser
 

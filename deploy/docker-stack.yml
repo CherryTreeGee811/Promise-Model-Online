@@ -1,39 +1,84 @@
 services:
   traefik:
     image: traefik:v3.3
-    container_name: traefik
     command:
       - "--configFile=/etc/traefik/traefik.yml"
+      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.exposedByDefault=false"
+      - "--providers.docker.network=promisemodelonline-net"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entryPoints.websecure.address=:9000"
+      - "--entryPoints.web.address=:8080"
+      - "--log.level=INFO"
     ports:
-      - "127.0.0.1:9000:9000"
+      - target: 9000
+        published: 9000
+        protocol: tcp
+        mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./deploy/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./deploy/traefik/dynamic:/etc/traefik/dynamic:ro
       - ./keys/client/cert.pem:/certs/cert.pem:ro
       - ./keys/client/key.pem:/certs/key.pem:ro
+    configs:
+      - source: traefik_dynamic_ratelimit
+        target: /etc/traefik/dynamic/middleware-ratelimit.yml
+      - source: traefik_dynamic_headers
+        target: /etc/traefik/dynamic/middleware-headers.yml
+      - source: traefik_dynamic_sticky
+        target: /etc/traefik/dynamic/middleware-sticky.yml
+      - source: traefik_dynamic_tls
+        target: /etc/traefik/dynamic/tls.yml
     networks:
       - promisemodelonline-net
-    depends_on:
-      - promisemodelonline.bff
-      - promisemodelonline.auth
     healthcheck:
       test: ["CMD", "traefik", "healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
 
-  nginx-spa:
-    image: ${DOCKER_REGISTRY-}promisemodelonlineclient
-    container_name: promisemodelonlineclient
-    hostname: localhost
-    expose:
-      - "8080"
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.1
+    command: tunnel --no-autoupdate run
+    secrets:
+      - source: pmo_cloudflare_tunnel_token
+        target: cloudflare_tunnel_token
+        mode: 0444
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/cloudflare_tunnel_token
     networks:
       - promisemodelonline-net
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.Client/Dockerfile
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+
+  nginx-spa:
+    image: cherrytree811/promisemodelonlineclient
+    hostname: localhost
+    networks:
+      - promisemodelonline-net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.spa.rule=PathPrefix(`/`)"
@@ -46,12 +91,19 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+    deploy:
+      mode: replicated
+      replicas: 2
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
 
   promisemodelonline.bff:
-    image: ${DOCKER_REGISTRY-}promisemodelonlinebff
-    container_name: promisemodelonlinebff
-    ports:
-      - "127.0.0.1:8010:8010/tcp"
+    image: cherrytree811/promisemodelonlinebff
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:8010
@@ -64,11 +116,6 @@ services:
       - bff-dp-keys:/app/dp-keys
       - ./keys/bff/cert.pem:/app/cert.pem:ro
       - ./keys/bff/key.pem:/app/key.pem:ro
-    depends_on:
-      promisemodelonline.api:
-        condition: service_healthy
-      promisemodelonline.auth:
-        condition: service_healthy
     networks:
       - promisemodelonline-net
     labels:
@@ -90,9 +137,6 @@ services:
       - "traefik.http.routers.bff-auth-internal.middlewares=ratelimit-login@file,security-headers@file"
       - "traefik.http.services.bff.loadbalancer.server.port=8010"
       - "traefik.http.services.bff.loadbalancer.server.scheme=https"
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.BFF/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "https://localhost:8010/health"]
       interval: 15s
@@ -100,17 +144,21 @@ services:
       retries: 3
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
       restart_policy:
         condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
       resources:
         limits:
           cpus: '1'
           memory: 512M
 
   promisemodelonline.api:
-    image: ${DOCKER_REGISTRY-}promisemodelonlineapi
-    container_name: promisemodelonlineapi
+    image: cherrytree811/promisemodelonlineapi
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:8000
@@ -119,34 +167,34 @@ services:
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
-      - ConnectionStrings__AuthDB=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
-      - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
-      - App__BaseUrl=${APP_BASE_URL}
     secrets:
-      - api_db_password
-      - auth_db_password
-      - auth_registration_key
-      - sendgrid_api_key
-    depends_on:
-      promisemodelonline.auth:
-        condition: service_started
-      promisemodelonline.db-init:
-        condition: service_completed_successfully
+      - source: pmo_api_db_password
+        target: api_db_password
+        mode: 0444
+      - source: pmo_auth_registration_key
+        target: auth_registration_key
+        mode: 0444
     networks:
       - promisemodelonline-net
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.Api/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "http://localhost:8000/health"]
-      start_period: 90s
       interval: 15s
       timeout: 5s
       retries: 3
-    
+      start_period: 90s
+    deploy:
+      mode: replicated
+      replicas: 2
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+
   promisemodelonline.auth:
-    image: ${DOCKER_REGISTRY-}promisemodelonlineauth
-    container_name: promisemodelonlineauth
+    image: cherrytree811/promisemodelonlineauth
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:8060
@@ -164,13 +212,18 @@ services:
       - ./keys/auth/key.pem:/app/key.pem:ro
       - ./keys/auth/cert.pfx:/app/cert.pfx:ro
     secrets:
-      - auth_db_password
-      - cert_password
-      - google_client_secret
-      - sendgrid_api_key
-    depends_on:
-      promisemodelonline.db-init:
-        condition: service_completed_successfully
+      - source: pmo_auth_db_password
+        target: auth_db_password
+        mode: 0444
+      - source: pmo_cert_password
+        target: cert_password
+        mode: 0444
+      - source: pmo_google_client_secret
+        target: google_client_secret
+        mode: 0444
+      - source: pmo_sendgrid_api_key
+        target: sendgrid_api_key
+        mode: 0444
     networks:
       - promisemodelonline-net
     labels:
@@ -206,69 +259,89 @@ services:
       - "traefik.http.routers.auth-signin-google.priority=30"
       - "traefik.http.services.auth.loadbalancer.server.port=8060"
       - "traefik.http.services.auth.loadbalancer.server.scheme=https"
-    build:
-      context: .
-      dockerfile: PromiseModelOnline.Auth/Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-kf", "https://localhost:8060/health"]
       interval: 20s
       timeout: 5s
       retries: 3
+    deploy:
+      mode: replicated
+      replicas: 2
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
 
   promisemodelonline.db:
     image: mcr.microsoft.com/mssql/server:2025-latest
-    container_name: promisemodelonlinedb
-    networks:
-      - promisemodelonline-net
-    ports:
-      - "127.0.0.1:1433:1433/tcp"
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD_FILE: /run/secrets/db_sa_password
     secrets:
-      - db_sa_password
+      - source: pmo_db_sa_password
+        target: db_sa_password
+        mode: 0444
     volumes:
       - mssql-data:/var/opt/mssql
+    networks:
+      - promisemodelonline-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.role == manager
 
   promisemodelonline.db-init:
     image: mcr.microsoft.com/mssql-tools
-    container_name: promisemodelonlinedbinit
-    depends_on:
-      - promisemodelonline.db
-    networks:
-      - promisemodelonline-net
     secrets:
-      - auth_db_password
-      - api_db_password
-      - db_sa_password
+      - source: pmo_auth_db_password
+        target: auth_db_password
+        mode: 0444
+      - source: pmo_api_db_password
+        target: api_db_password
+        mode: 0444
+      - source: pmo_db_sa_password
+        target: db_sa_password
+        mode: 0444
     environment:
       PMO_API_DB_USER: ${PMO_API_DB_USER}
       PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER}
     volumes:
       - mssql-data:/var/opt/mssql:rw
-      - ./scripts/init-db.sh:/init/init-db.sh:ro
+    networks:
+      - promisemodelonline-net
+    configs:
+      - source: init_db_script
+        target: /init/init-db.sh
+        mode: 0555
     entrypoint:
       - /bin/sh
       - -c
       - set -e; tr -d '\r' < /init/init-db.sh > /tmp/init-db.lf && /bin/sh /tmp/init-db.lf
-    restart: "no"
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: none
 
   umami:
     image: docker.umami.is/umami-software/umami:postgresql-latest
-    container_name: umami
-    ports:
-      - "127.0.0.1:3000:3000/tcp"
-    entrypoint: /init/umami-entrypoint.sh
     environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
       DATABASE_TYPE: postgresql
       TRACKER_SCRIPT_NAME: script.js
     secrets:
-      - umami_db_password
-    volumes:
-      - ./scripts/umami-entrypoint.sh:/init/umami-entrypoint.sh:ro
-    depends_on:
-      umami-db:
-        condition: service_healthy
+      - source: pmo_umami_db_password
+        target: umami_db_password
+        mode: 0444
     networks:
       - promisemodelonline-net
     labels:
@@ -284,17 +357,22 @@ services:
       - "traefik.http.middlewares.umami-strip-prefix.stripprefix.prefixes=/umami/api"
       - "traefik.http.routers.umami-api.middlewares=umami-strip-prefix"
       - "traefik.http.services.umami.loadbalancer.server.port=3000"
-    restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
 
   umami-db:
     image: postgres:16-alpine
-    container_name: umami-db
     environment:
       POSTGRES_DB: umami
       POSTGRES_USER: umami
       POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
     secrets:
-      - umami_db_password
+      - source: pmo_umami_db_password
+        target: umami_db_password
+        mode: 0444
     volumes:
       - umami-db:/var/lib/postgresql/data
     networks:
@@ -304,11 +382,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager
 
   umami-init:
     image: postgres:16-alpine
-    container_name: umami-init
     entrypoint: >
       /bin/sh -c "
       apk add --no-cache apache2-utils > /dev/null 2>&1 &&
@@ -321,20 +405,28 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
       UMAMI_ADMIN_USERNAME: ${UMAMI_ADMIN_USERNAME}
     secrets:
-      - umami_db_password
-      - umami_admin_password
-    volumes:
-      - ./scripts/umami-init.sh:/init/umami-init.sh:ro
-    depends_on:
-      umami:
-        condition: service_started
+      - source: pmo_umami_db_password
+        target: umami_db_password
+        mode: 0444
+      - source: pmo_umami_admin_password
+        target: umami_admin_password
+        mode: 0444
     networks:
       - promisemodelonline-net
-    restart: "no"
+    configs:
+      - source: umami_init_script
+        target: /init/umami-init.sh
+        mode: 0555
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: none
 
 networks:
   promisemodelonline-net:
-    driver: bridge
+    driver: overlay
+    attachable: true
 
 volumes:
   mssql-data:
@@ -351,21 +443,37 @@ volumes:
     driver: local
 
 secrets:
-  auth_db_password:
-    file: ./secrets/auth_db_password.txt
-  api_db_password:
-    file: ./secrets/api_db_password.txt
-  google_client_secret:
-    file: ./secrets/google_client_secret.txt
-  sendgrid_api_key:
-    file: ./secrets/sendgrid_api_key.txt
-  umami_db_password:
-    file: ./secrets/umami_db_password.txt
-  umami_admin_password:
-    file: ./secrets/umami_admin_password.txt
-  db_sa_password:
-    file: ./secrets/db_sa_password.txt
-  auth_registration_key:
-    file: ./secrets/auth_registration_key.txt
-  cert_password:
-    file: ./secrets/cert_password.txt
+  pmo_db_sa_password:
+    external: true
+  pmo_api_db_password:
+    external: true
+  pmo_auth_db_password:
+    external: true
+  pmo_google_client_secret:
+    external: true
+  pmo_sendgrid_api_key:
+    external: true
+  pmo_cert_password:
+    external: true
+  pmo_umami_db_password:
+    external: true
+  pmo_umami_admin_password:
+    external: true
+  pmo_cloudflare_tunnel_token:
+    external: true
+  pmo_auth_registration_key:
+    external: true
+
+configs:
+  traefik_dynamic_ratelimit:
+    file: ./traefik/dynamic/middleware-ratelimit.yml
+  traefik_dynamic_headers:
+    file: ./traefik/dynamic/middleware-headers.yml
+  traefik_dynamic_sticky:
+    file: ./traefik/dynamic/middleware-sticky.yml
+  traefik_dynamic_tls:
+    file: ./traefik/dynamic/tls.yml
+  init_db_script:
+    file: ./scripts/init-db.sh
+  umami_init_script:
+    file: ./scripts/umami-init.sh
