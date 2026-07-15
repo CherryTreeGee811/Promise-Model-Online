@@ -46,27 +46,26 @@ const BFF_PATHS = [
 ];
 
 swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
-  event.waitUntil(
-    (async () => {
-      try {
-        const cache = await caches.open(CACHE);
-        await Promise.allSettled(
-          PRECACHE.map(url =>
-            fetch(url)
-              .then(response => {
-                if (response.ok) return cache.put(url, response);
-              })
-              .catch(() => {
-                // Precache entry unavailable (e.g. self-signed cert in Firefox) — skip
-              })
-          )
-        );
-      } catch (error_) {
-        console.error('SW install precache error:', error_);
-      }
-      swSelf.skipWaiting();
-    })()
-  );
+  // Activation must never be blocked — resolve immediately
+  event.waitUntil(Promise.resolve());
+  swSelf.skipWaiting();
+
+  // Best-effort background precache — failures are logged but never block activation
+  caches.open(CACHE).then(async cache => {
+    await Promise.allSettled(
+      PRECACHE.map(url =>
+        fetch(url)
+          .then(response => {
+            if (response.ok) return cache.put(url, response);
+          })
+          .catch(() => {
+            // Precache entry unavailable — skip
+          })
+      )
+    );
+  }).catch(error_ => {
+    console.error('SW background precache failed:', error_);
+  });
 });
 
 swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
