@@ -48,18 +48,22 @@ const BFF_PATHS = [
 swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
   event.waitUntil(
     (async () => {
-      const cache = await caches.open(CACHE);
-      await Promise.allSettled(
-        PRECACHE.map(url =>
-          fetch(url)
-            .then(response => {
-              if (response.ok) return cache.put(url, response);
-            })
-            .catch(() => {
-              // Precache entry unavailable (e.g. self-signed cert in Firefox) — skip
-            })
-        )
-      );
+      try {
+        const cache = await caches.open(CACHE);
+        await Promise.allSettled(
+          PRECACHE.map(url =>
+            fetch(url)
+              .then(response => {
+                if (response.ok) return cache.put(url, response);
+              })
+              .catch(() => {
+                // Precache entry unavailable (e.g. self-signed cert in Firefox) — skip
+              })
+          )
+        );
+      } catch (error_) {
+        console.error('SW install precache error:', error_);
+      }
       swSelf.skipWaiting();
     })()
   );
