@@ -47,11 +47,22 @@ const BFF_PATHS = [
 
 swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
   event.waitUntil(
-    caches.open(CACHE).then(async cache => {
-      await Promise.allSettled(PRECACHE.map(url => cache.add(url)));
-    })
+    (async () => {
+      const cache = await caches.open(CACHE);
+      await Promise.allSettled(
+        PRECACHE.map(url =>
+          fetch(url)
+            .then(response => {
+              if (response.ok) return cache.put(url, response);
+            })
+            .catch(() => {
+              // Precache entry unavailable (e.g. self-signed cert in Firefox) — skip
+            })
+        )
+      );
+      swSelf.skipWaiting();
+    })()
   );
-  swSelf.skipWaiting();
 });
 
 swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {

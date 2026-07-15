@@ -300,11 +300,11 @@ public abstract class PlaywrightTestBase
 
     /// <summary>Pre-populate the service worker cache from local files.</summary>
     /// <remarks>
-    ///   Workaround for Firefox where SW-scope fetch() fails with self-signed
-    ///   SSL certs even with IgnoreHTTPSErrors. Uses the page context's
-    ///   fetch() (which goes through Playwright route interception or nginx)
-    ///   to obtain real HTTP Response objects that Firefox's font/image
-    ///   rendering engines can properly consume.
+    ///   Works in all browsers. Uses the page context's fetch() (which goes through
+    ///   Playwright route interception with IgnoreHTTPSErrors) to populate the SW's
+    ///   cache, bypassing Firefox's SW-scope fetch() limitation with self-signed certs.
+    ///   The SW's install handler is also resilient to individual precache failures,
+    ///   so activation always proceeds even when SW-scope fetch() fails.
     /// </remarks>
     private async Task PopulateSwCacheAsync()
     {
@@ -312,38 +312,31 @@ public abstract class PlaywrightTestBase
         if (!File.Exists(swPath)) return;
 
         var swContent = File.ReadAllText(swPath);
+
+        // Extract the SW's cache name from the source (default: 'pmo-v6')
+        var cacheName = "pmo-v6";
+        var cacheMatch = System.Text.RegularExpressions.Regex.Match(swContent, @"const CACHE\s*=\s*'([^']+)'");
+        if (cacheMatch.Success)
+            cacheName = cacheMatch.Groups[1].Value;
+
+        // Extract the PRECACHE array from the SW source
         var start = swContent.IndexOf("PRECACHE = [", StringComparison.Ordinal);
         start = swContent.IndexOf('[', start);
         var end = swContent.IndexOf(']', start);
         var arrayContent = swContent[start..(end + 1)];
         var json = arrayContent.Replace('\'', '"').Replace(",]", "]");
         var precacheEntries = JsonSerializer.Deserialize<string[]>(json) ?? [];
-
         if (precacheEntries.Length == 0) return;
 
-        // Wait up to 5s for the SW to register and activate
-        var swReady = false;
-        for (var i = 0; i < 10; i++)
-        {
-            swReady = await Page.EvaluateAsync<bool>(@"
-                navigator.serviceWorker.getRegistration().then(r =>
-                    r !== undefined && r.active !== null
-                )");
-            if (swReady) break;
-            await Task.Delay(500);
-        }
-        if (!swReady) return;
-
         // Fetch each PRECACHE entry from the page context and store in the SW cache.
-        // Using fetch() preserves real HTTP response headers/properties so that
-        // Firefox's font/image engines can properly consume them.
+        // Page-context fetch() uses Playwright's IgnoreHTTPSErrors, so it succeeds
+        // in all browsers (including Firefox where SW-scope fetch fails on self-signed
+        // certs). Real HTTP Response objects also satisfy Firefox's font/image engines.
         var baseUrl = BaseUrl;
         await Page.EvaluateAsync<object?>(@"
             (precacheJson => {
                 const urls = JSON.parse(precacheJson);
-                return caches.keys().then(async keys => {
-                    const cacheName = keys.find(k => k.startsWith('pmo-')) || 'pmo-v4';
-                    const cache = await caches.open(cacheName);
+                return caches.open('" + cacheName + @"').then(async cache => {
                     await Promise.all(urls.map(async (url) => {
                         try {
                             const response = await fetch(url);
@@ -356,11 +349,26 @@ public abstract class PlaywrightTestBase
             })
         ", System.Text.Json.JsonSerializer.Serialize(precacheEntries));
 
-        // Signal the SW that cache is ready
-        await Page.EvaluateAsync(@"
-            navigator.serviceWorker.getRegistration().then(r => {
-                if (r && r.active) r.active.postMessage({ type: 'CACHE_READY' });
-            })");
+        // Wait up to 5s for the SW to register and activate.
+        // The SW's install handler is now resilient — activation always proceeds
+        // even when individual precache fetches fail (e.g. Firefox + self-signed certs).
+        for (var i = 0; i < 10; i++)
+        {
+            var swReady = await Page.EvaluateAsync<bool>(@"
+                navigator.serviceWorker.getRegistration().then(r =>
+                    r !== undefined && r.active !== null
+                )");
+            if (swReady)
+            {
+                // Signal the SW that the cache is pre-populated
+                await Page.EvaluateAsync(@"
+                    navigator.serviceWorker.getRegistration().then(r => {
+                        if (r && r.active) r.active.postMessage({ type: 'CACHE_READY' });
+                    })");
+                break;
+            }
+            await Task.Delay(500);
+        }
     }
 
     private static string GetWwwRoot() => Path.GetFullPath(Path.Combine(
