@@ -69,13 +69,17 @@ swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>
 });
 
 swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
+  // Activation must never be blocked — cache cleanup is best-effort
+  event.waitUntil(Promise.resolve());
   swSelf.clients.claim();
   _cacheReady = true;
+
+  // Best-effort background cache cleanup — failures never block activation
+  caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ).catch(() => {
+    // Cache cleanup unavailable — skip
+  });
 });
 
 /**
