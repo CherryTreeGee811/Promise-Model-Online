@@ -154,8 +154,8 @@ async function initServiceWorker(): Promise<void> {
     try {
       await navigator.serviceWorker.register('/sw.mjs', { scope: '/' });
     } catch (error) {
-      const e = error as Error;
-      console.warn(`SW registration failed: ${e?.name ?? 'Unknown'} — ${e?.message ?? String(e)}`);
+      const error_ = error as Error;
+      console.warn(`SW registration failed: ${error_?.name ?? 'Unknown'} — ${error_?.message ?? String(error_)}`);
     }
   }
 }
