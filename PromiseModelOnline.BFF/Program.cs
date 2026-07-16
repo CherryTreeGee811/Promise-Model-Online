@@ -24,14 +24,17 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
-    ?? throw new InvalidOperationException("AUTH_PUBLIC_ISSUER is required.");
+var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"];
+if (string.IsNullOrEmpty(publicIssuer))
+    throw new InvalidOperationException("AUTH_PUBLIC_ISSUER is required and must not be empty.");
 
-var metadataAddress = builder.Configuration["AUTH_METADATA_ADDRESS"]
-    ?? throw new InvalidOperationException("AUTH_METADATA_ADDRESS is required.");
+var metadataAddress = builder.Configuration["AUTH_METADATA_ADDRESS"];
+if (string.IsNullOrEmpty(metadataAddress))
+    throw new InvalidOperationException("AUTH_METADATA_ADDRESS is required and must not be empty.");
 
-var appBaseUrl = builder.Configuration["APP_BASE_URL"]
-    ?? throw new InvalidOperationException("APP_BASE_URL is required.");
+var appBaseUrl = builder.Configuration["APP_BASE_URL"];
+if (string.IsNullOrEmpty(appBaseUrl))
+    throw new InvalidOperationException("APP_BASE_URL is required and must not be empty.");
 
 var internalAuthority = builder.Configuration["AUTH_INTERNAL_AUTHORITY"]
     ?? publicIssuer;
