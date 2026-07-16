@@ -1,2 +1,0 @@
-# Sticky sessions moved to service-level config in v3.7
-# See docker-compose.yml labels on BFF service
