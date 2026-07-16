@@ -1,8 +1,2 @@
-http:
-  middlewares:
-    sticky-hubs:
-      stickyCookie:
-        name: traefik_hub_route
-        httpOnly: true
-        secure: true
-        sameSite: lax
+# Sticky sessions moved to service-level config in v3.7
+# See docker-compose.yml labels on BFF service

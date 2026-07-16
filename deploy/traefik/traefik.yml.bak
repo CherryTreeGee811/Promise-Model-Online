@@ -4,7 +4,7 @@
 
 providers:
   docker:
-    endpoint: "unix:///var/run/docker.sock"
+    endpoint: "tcp://docker-socket-proxy:2375"
     exposedByDefault: false
     network: promisemodelonline-net
   file:
@@ -19,10 +19,8 @@ api:
   dashboard: true
   insecure: false
 
-ping: {}
-
 log:
-  level: DEBUG
+  level: INFO
 
 accessLog: {}
 

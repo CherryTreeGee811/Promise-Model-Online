@@ -43,3 +43,7 @@ puppeteer/
 .opencode/
 .codegraph/
 coverage/
+
+# Docker Compose local overrides (machine-specific, not committed)
+docker-compose.override.yml
+*.override.yml
