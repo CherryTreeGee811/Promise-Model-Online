@@ -143,25 +143,6 @@ jobs:
             printf '%s' "${{ secrets.DB_SA_PASSWORD }}" > secrets/db_sa_password.txt
             printf '%s' "${{ secrets.AUTH__REG_KEY }}" > secrets/auth_registration_key.txt
 
-      - name: Generate .env for CI
-        shell: bash
-        run: |
-          cat > .env << EOF
-          ASPNETCORE_ENVIRONMENT=Development
-          API_DB_USER=pmo_api
-          AUTH_DB_USER=pmo_auth
-          PMO_API_DB_USER=pmo_api
-          PMO_AUTH_DB_USER=pmo_auth
-          APP_BASE_URL=https://localhost:9000
-          AUTH_AUTHORITY=https://localhost:9000
-          AUTH_INTERNAL_AUTHORITY=https://promisemodelonline.auth:8060
-          AUTH_PUBLIC_ISSUER=https://localhost:9000
-          AUTH_METADATA_ADDRESS=https://promisemodelonline.auth:8060/.well-known/openid-configuration
-          DATA_PROTECTION_KEYS_PATH=/app/dp-keys
-          UMAMI_ADMIN_USERNAME=pmo_admin
-          AUTH_GOOGLE_CLIENT_ID=placeholder
-          EOF
-
       - name: Run Auth Unit Tests
         shell: bash
         run: |
