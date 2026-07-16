@@ -24,6 +24,8 @@ public class ProjectFlowsControllerUnitTests
     private Mock<IProjectService> _projectServiceMock = null!;
     private Mock<IGenericService<Flow>> _serviceMock = null!;
     private Mock<IGenericMapper<Flow, FlowDto>> _mapperMock = null!;
+    private Mock<IFlowRepository> _flowRepoMock = null!;
+    private Mock<IJourneyRepository> _journeyRepoMock = null!;
     private PromiseModelOnlineContext _context = null!;
     private ProjectFlowsController _controller = null!;
 
@@ -33,6 +35,8 @@ public class ProjectFlowsControllerUnitTests
         _projectServiceMock = new Mock<IProjectService>();
         _serviceMock = new Mock<IGenericService<Flow>>();
         _mapperMock = new Mock<IGenericMapper<Flow, FlowDto>>();
+        _flowRepoMock = new Mock<IFlowRepository>();
+        _journeyRepoMock = new Mock<IJourneyRepository>();
 
         var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -43,7 +47,9 @@ public class ProjectFlowsControllerUnitTests
             _serviceMock.Object,
             _mapperMock.Object,
             _context,
-            _projectServiceMock.Object);
+            _projectServiceMock.Object,
+            _flowRepoMock.Object,
+            _journeyRepoMock.Object);
         ControllerTestHelpers.SetControllerUser(_controller, "u@test.com");
     }
 

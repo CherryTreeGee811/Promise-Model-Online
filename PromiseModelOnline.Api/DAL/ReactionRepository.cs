@@ -3,6 +3,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -21,10 +22,10 @@ public class ReactionRepository(PromiseModelOnlineContext context) : GenericRepo
     /// <param name="stackItemType">The type of the target entity (e.g., <c>"moment"</c>, <c>"flow"</c>). Not null.</param>
     /// <param name="stackItemId">The target entity's ID. Must be greater than zero.</param>
     /// <returns>Reactions with <see cref="Reaction.User"/> eagerly loaded.</returns>
-    public async Task<IEnumerable<Reaction>> GetReactionsForItemAsync(string stackItemType, int stackItemId) => await _dbSet
+    public async Task<IEnumerable<Reaction>> GetReactionsForItemAsync(string stackItemType, int stackItemId, CancellationToken cancellationToken = default) => await _dbSet
             .Include(r => r.User)
             .Where(r => r.StackItemType == stackItemType && r.StackItemId == stackItemId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Return a specific user's reaction on a specific stack item.</summary>
     /// <remarks>
@@ -34,6 +35,6 @@ public class ReactionRepository(PromiseModelOnlineContext context) : GenericRepo
     /// <param name="stackItemType">The type of the target entity. Not null.</param>
     /// <param name="stackItemId">The target entity's ID. Must be greater than zero.</param>
     /// <returns>The user's reaction, or <c>null</c> if they have not reacted.</returns>
-    public async Task<Reaction?> GetUserReactionAsync(int userId, string stackItemType, int stackItemId) => await _dbSet
-            .FirstOrDefaultAsync(r => r.UserId == userId && r.StackItemType == stackItemType && r.StackItemId == stackItemId);
+    public async Task<Reaction?> GetUserReactionAsync(int userId, string stackItemType, int stackItemId, CancellationToken cancellationToken = default) => await _dbSet
+            .FirstOrDefaultAsync(r => r.UserId == userId && r.StackItemType == stackItemType && r.StackItemId == stackItemId, cancellationToken);
 }

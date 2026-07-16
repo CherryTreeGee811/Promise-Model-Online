@@ -48,12 +48,12 @@ public class CommentsController(ICommentService commentService,
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CommentDto>>> GetComments(
         [FromQuery] string? type,
-        [FromQuery] int parentId)
+        [FromQuery] int parentId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(type) || parentId <= 0)
             return BadRequest("Type and parentId are required.");
 
-        var comments = await _commentService.GetCommentsAsync(type, parentId);
+        var comments = await _commentService.GetCommentsAsync(type, parentId, cancellationToken);
         return Ok(comments);
     }
 
@@ -65,7 +65,7 @@ public class CommentsController(ICommentService commentService,
     /// <response code="403">User does not have Comment-level permission on the project.</response>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<CommentDto>> CreateComment([FromBody] CreateCommentDto dto)
+    public async Task<ActionResult<CommentDto>> CreateComment([FromBody] CreateCommentDto dto, CancellationToken cancellationToken = default)
     {
         if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -82,12 +82,12 @@ public class CommentsController(ICommentService commentService,
 
         try
         {
-            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
 
             int projectId;
             try
             {
-                projectId = await _commentRepository.ResolveProjectIdAsync(dto.ParentType, dto.ParentId);
+                projectId = await _commentRepository.ResolveProjectIdAsync(dto.ParentType, dto.ParentId, cancellationToken);
             }
             catch (ArgumentException ex)
             {
@@ -95,11 +95,11 @@ public class CommentsController(ICommentService commentService,
                 return NotFound("Parent entity not found.");
             }
 
-            var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId);
+            var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId, cancellationToken);
             if (level == null || level < PermissionLevel.Comment)
                 return Forbid();
 
-            var comment = await _commentService.CreateCommentAsync(dto, user.Id);
+            var comment = await _commentService.CreateCommentAsync(dto, user.Id, cancellationToken);
 
             return CreatedAtAction(nameof(GetComments),
                 new { type = dto.ParentType, parentId = dto.ParentId }, comment);
@@ -122,15 +122,15 @@ public class CommentsController(ICommentService commentService,
     public async Task<ActionResult<IEnumerable<object>>> SearchUsers(
         [FromQuery] string? parentType,
         [FromQuery] int parentId,
-        [FromQuery] string? search)
+        [FromQuery] string? search, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(parentType) || parentId <= 0 || string.IsNullOrWhiteSpace(search))
             return Ok(Array.Empty<object>());
 
         try
         {
-            var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
-            var users = await _userRepository.SearchUsersByProjectAsync(projectId, search);
+            var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId, cancellationToken);
+            var users = await _userRepository.SearchUsersByProjectAsync(projectId, search, cancellationToken: cancellationToken);
             return Ok(users.Select(u => new { u.Id, u.Name }));
         }
         catch (ArgumentException ex)
@@ -151,15 +151,15 @@ public class CommentsController(ICommentService commentService,
     public async Task<ActionResult<IEnumerable<StackSearchResult>>> SearchPromises(
         [FromQuery] string? parentType,
         [FromQuery] int parentId,
-        [FromQuery] string? search)
+        [FromQuery] string? search, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(parentType) || parentId <= 0 || string.IsNullOrWhiteSpace(search))
             return Ok(Enumerable.Empty<StackSearchResult>());
 
         try
         {
-            var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
-            var results = await _commentRepository.SearchStackByStatementAsync(projectId, search);
+            var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId, cancellationToken);
+            var results = await _commentRepository.SearchStackByStatementAsync(projectId, search, cancellationToken: cancellationToken);
             return Ok(results);
         }
         catch (ArgumentException ex)

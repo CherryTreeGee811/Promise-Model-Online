@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -33,49 +34,54 @@ public class NotificationService(
 
     /// <summary>Return a user's unread notifications as DTOs.</summary>
     /// <param name="userId">The recipient's user ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Unread notification DTOs.</returns>
-    public async Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int userId)
+    public async Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var notifications = await _notificationRepo.GetUnreadByUserIdAsync(userId);
+        var notifications = await _notificationRepo.GetUnreadByUserIdAsync(userId, cancellationToken);
         return notifications.Select(n => _mapper.Map(n, null!));
     }
 
     /// <summary>Return all notifications (read and unread) for a user as DTOs.</summary>
     /// <param name="userId">The recipient's user ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All notification DTOs for the user.</returns>
-    public async Task<IEnumerable<NotificationDto>> GetAllNotificationsAsync(int userId)
+    public async Task<IEnumerable<NotificationDto>> GetAllNotificationsAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var notifications = await _notificationRepo.GetAllByUserIdAsync(userId);
+        var notifications = await _notificationRepo.GetAllByUserIdAsync(userId, cancellationToken);
         return notifications.Select(n => _mapper.Map(n, null!));
     }
 
     /// <summary>Mark a notification as read with user ownership validation.</summary>
     /// <param name="notificationId">The notification ID.</param>
     /// <param name="userId">The recipient's user ID for authorization.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="InvalidOperationException">Notification not found or access denied.</exception>
-    public async Task MarkAsReadAsync(int notificationId, int userId)
+    public async Task MarkAsReadAsync(int notificationId, int userId, CancellationToken cancellationToken = default)
     {
-        var notification = await _notificationRepo.GetByIdAsync(notificationId);
+        var notification = await _notificationRepo.GetByIdAsync(notificationId, cancellationToken);
         if (notification is null || notification.UserId != userId)
             throw new InvalidOperationException("Notification not found or access denied.");
 
-        await _notificationRepo.MarkAsReadAsync(notificationId);
+        await _notificationRepo.MarkAsReadAsync(notificationId, cancellationToken);
     }
 
     /// <summary>Mark all of a user's unread notifications as read.</summary>
     /// <param name="userId">The recipient's user ID.</param>
-    public async Task MarkAllAsReadAsync(int userId) => await _notificationRepo.MarkAllAsReadAsync(userId);
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public async Task MarkAllAsReadAsync(int userId, CancellationToken cancellationToken = default) => await _notificationRepo.MarkAllAsReadAsync(userId, cancellationToken);
 
     /// <summary>Create a notification and deliver it in real-time via SignalR.</summary>
     /// <param name="userId">The recipient's user ID.</param>
     /// <param name="type">The notification type.</param>
     /// <param name="message">The notification message.</param>
     /// <param name="link">Optional navigation link.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>
     ///   Persists the notification and sends it to the recipient's SignalR group
     ///   (<c>"user-{userId}"</c>) as a <c>ReceiveNotification</c> event.
     /// </remarks>
-    public async Task CreateNotificationAsync(int userId, NotificationType type, string message, string? link = null)
+    public async Task CreateNotificationAsync(int userId, NotificationType type, string message, string? link = null, CancellationToken cancellationToken = default)
     {
         var notification = new Notification
         {
@@ -85,10 +91,10 @@ public class NotificationService(
             Link = link,
             CreatedAt = DateTime.UtcNow
         };
-        await _notificationRepo.AddAsync(notification);
-        await _notificationRepo.SaveChangesAsync();
+        await _notificationRepo.AddAsync(notification, cancellationToken);
+        await _notificationRepo.SaveChangesAsync(cancellationToken);
 
         var dto = _mapper.Map(notification, null!);
-        await _hubContext.Clients.Group($"user-{userId}").SendAsync("ReceiveNotification", dto);
+        await _hubContext.Clients.Group($"user-{userId}").SendAsync("ReceiveNotification", dto, cancellationToken);
     }
 }

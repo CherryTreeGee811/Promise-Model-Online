@@ -24,6 +24,8 @@ public class ProjectJourneysControllerUnitTests
     private Mock<IProjectService> _projectServiceMock = null!;
     private Mock<IGenericService<Journey>> _serviceMock = null!;
     private Mock<IGenericMapper<Journey, JourneyDto>> _mapperMock = null!;
+    private Mock<IJourneyRepository> _journeyRepoMock = null!;
+    private Mock<IEpicRepository> _epicRepoMock = null!;
     private PromiseModelOnlineContext _context = null!;
     private ProjectJourneysController _controller = null!;
 
@@ -33,6 +35,8 @@ public class ProjectJourneysControllerUnitTests
         _projectServiceMock = new Mock<IProjectService>();
         _serviceMock = new Mock<IGenericService<Journey>>();
         _mapperMock = new Mock<IGenericMapper<Journey, JourneyDto>>();
+        _journeyRepoMock = new Mock<IJourneyRepository>();
+        _epicRepoMock = new Mock<IEpicRepository>();
 
         var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -43,7 +47,9 @@ public class ProjectJourneysControllerUnitTests
             _serviceMock.Object,
             _mapperMock.Object,
             _context,
-            _projectServiceMock.Object);
+            _projectServiceMock.Object,
+            _journeyRepoMock.Object,
+            _epicRepoMock.Object);
         ControllerTestHelpers.SetControllerUser(_controller, "u@test.com");
     }
 

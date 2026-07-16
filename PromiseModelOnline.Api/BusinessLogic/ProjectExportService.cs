@@ -6,6 +6,7 @@ using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -48,11 +49,12 @@ public sealed class ProjectExportService(
 
     /// <summary>Build a complete export document for a project, including all hierarchy entities and metadata.</summary>
     /// <param name="projectId">The project ID to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A fully populated <see cref="ProjectExportDocument"/>.</returns>
     /// <exception cref="KeyNotFoundException">Project not found.</exception>
-    public async Task<ProjectExportDocument> BuildExportAsync(int projectId)
+    public async Task<ProjectExportDocument> BuildExportAsync(int projectId, CancellationToken cancellationToken = default)
     {
-        var project = await _projectRepository.GetByIdAsync(projectId)
+        var project = await _projectRepository.GetByIdAsync(projectId, cancellationToken)
                       ?? throw new KeyNotFoundException($"Project with ID {projectId} was not found.");
 
         var document = new ProjectExportDocument
@@ -71,16 +73,16 @@ public sealed class ProjectExportService(
             }
         };
 
-        var promises = await _projectRepository.GetProductPromisesByProjectAsync(projectId);
+        var promises = await _projectRepository.GetProductPromisesByProjectAsync(projectId, cancellationToken);
         foreach (var promise in OrderByDisplayOrder(promises))
         {
-            document.Project.ProductPromises.Add(await BuildPromiseAsync(promise));
+            document.Project.ProductPromises.Add(await BuildPromiseAsync(promise, cancellationToken));
         }
 
-        var iterations = await _iterationRepository.GetIterationsByProjectAsync(projectId);
+        var iterations = await _iterationRepository.GetIterationsByProjectAsync(projectId, cancellationToken);
         foreach (var iteration in OrderByIteration(iterations))
         {
-            document.Project.Iterations.Add(await BuildIterationAsync(iteration));
+            document.Project.Iterations.Add(await BuildIterationAsync(iteration, cancellationToken));
         }
 
         return document;
@@ -88,8 +90,9 @@ public sealed class ProjectExportService(
 
     /// <summary>Build an export promise node including its child epics.</summary>
     /// <param name="promise">The promise entity to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An export promise DTO with nested epics.</returns>
-    private async Task<ProjectExportPromise> BuildPromiseAsync(Promise promise)
+    private async Task<ProjectExportPromise> BuildPromiseAsync(Promise promise, CancellationToken cancellationToken = default)
     {
         var exportPromise = new ProjectExportPromise
         {
@@ -105,10 +108,10 @@ public sealed class ProjectExportService(
             Epics = new List<ProjectExportEpic>()
         };
 
-        var epics = await _epicRepository.GetEpicsByPromiseAsync(promise.Id);
+        var epics = await _epicRepository.GetEpicsByPromiseAsync(promise.Id, cancellationToken);
         foreach (var epic in OrderByDisplayOrder(epics))
         {
-            exportPromise.Epics.Add(await BuildEpicAsync(epic));
+            exportPromise.Epics.Add(await BuildEpicAsync(epic, cancellationToken));
         }
 
         return exportPromise;
@@ -116,8 +119,9 @@ public sealed class ProjectExportService(
 
     /// <summary>Build an export epic node including its child journeys.</summary>
     /// <param name="epic">The epic entity to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An export epic DTO with nested journeys.</returns>
-    private async Task<ProjectExportEpic> BuildEpicAsync(Epic epic)
+    private async Task<ProjectExportEpic> BuildEpicAsync(Epic epic, CancellationToken cancellationToken = default)
     {
         var exportEpic = new ProjectExportEpic
         {
@@ -133,10 +137,10 @@ public sealed class ProjectExportService(
             Journeys = new List<ProjectExportJourney>()
         };
 
-        var journeys = await _journeyRepository.GetJourneysByEpicAsync(epic.Id);
+        var journeys = await _journeyRepository.GetJourneysByEpicAsync(epic.Id, cancellationToken);
         foreach (var journey in OrderByDisplayOrder(journeys))
         {
-            exportEpic.Journeys.Add(await BuildJourneyAsync(journey));
+            exportEpic.Journeys.Add(await BuildJourneyAsync(journey, cancellationToken));
         }
 
         return exportEpic;
@@ -144,8 +148,9 @@ public sealed class ProjectExportService(
 
     /// <summary>Build an export journey node including its child flows.</summary>
     /// <param name="journey">The journey entity to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An export journey DTO with nested flows.</returns>
-    private async Task<ProjectExportJourney> BuildJourneyAsync(Journey journey)
+    private async Task<ProjectExportJourney> BuildJourneyAsync(Journey journey, CancellationToken cancellationToken = default)
     {
         var exportJourney = new ProjectExportJourney
         {
@@ -161,10 +166,10 @@ public sealed class ProjectExportService(
             Flows = new List<ProjectExportFlow>()
         };
 
-        var flows = await _flowRepository.GetFlowsByJourneyAsync(journey.Id);
+        var flows = await _flowRepository.GetFlowsByJourneyAsync(journey.Id, cancellationToken);
         foreach (var flow in OrderByDisplayOrder(flows))
         {
-            exportJourney.Flows.Add(await BuildFlowAsync(flow));
+            exportJourney.Flows.Add(await BuildFlowAsync(flow, cancellationToken));
         }
 
         return exportJourney;
@@ -172,8 +177,9 @@ public sealed class ProjectExportService(
 
     /// <summary>Build an export flow node including its child moments.</summary>
     /// <param name="flow">The flow entity to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An export flow DTO with nested moments.</returns>
-    private async Task<ProjectExportFlow> BuildFlowAsync(Flow flow)
+    private async Task<ProjectExportFlow> BuildFlowAsync(Flow flow, CancellationToken cancellationToken = default)
     {
         var exportFlow = new ProjectExportFlow
         {
@@ -189,10 +195,10 @@ public sealed class ProjectExportService(
             Moments = new List<ProjectExportMoment>()
         };
 
-        var moments = await _momentRepository.GetMomentsByFlowAsync(flow.Id);
+        var moments = await _momentRepository.GetMomentsByFlowAsync(flow.Id, cancellationToken);
         foreach (var moment in OrderByDisplayOrder(moments))
         {
-            exportFlow.Moments.Add(await BuildMomentAsync(moment));
+            exportFlow.Moments.Add(await BuildMomentAsync(moment, cancellationToken));
         }
 
         return exportFlow;
@@ -200,10 +206,11 @@ public sealed class ProjectExportService(
 
     /// <summary>Build an export moment node including its sub-tasks.</summary>
     /// <param name="moment">The moment entity to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An export moment DTO with nested tasks.</returns>
-    private async Task<ProjectExportMoment> BuildMomentAsync(Moment moment)
+    private async Task<ProjectExportMoment> BuildMomentAsync(Moment moment, CancellationToken cancellationToken = default)
     {
-        var tasks = await _momentTaskRepository.GetTasksByMomentAsync(moment.Id);
+        var tasks = await _momentTaskRepository.GetTasksByMomentAsync(moment.Id, cancellationToken);
 
         return new ProjectExportMoment
         {
@@ -229,8 +236,9 @@ public sealed class ProjectExportService(
 
     /// <summary>Build an export iteration node including its child strides.</summary>
     /// <param name="iteration">The iteration entity to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An export iteration DTO with nested strides.</returns>
-    private async Task<ProjectExportIteration> BuildIterationAsync(Iteration iteration)
+    private async Task<ProjectExportIteration> BuildIterationAsync(Iteration iteration, CancellationToken cancellationToken = default)
     {
         var exportIteration = new ProjectExportIteration
         {
@@ -241,10 +249,10 @@ public sealed class ProjectExportService(
             Strides = new List<ProjectExportStride>()
         };
 
-        var strides = await _strideRepository.GetStridesByIterationAsync(iteration.Id);
+        var strides = await _strideRepository.GetStridesByIterationAsync(iteration.Id, cancellationToken);
         foreach (var stride in OrderByStride(strides))
         {
-            exportIteration.Strides.Add(await BuildStrideAsync(stride));
+            exportIteration.Strides.Add(await BuildStrideAsync(stride, cancellationToken));
         }
 
         return exportIteration;
@@ -252,10 +260,11 @@ public sealed class ProjectExportService(
 
     /// <summary>Build an export stride node including associated moment IDs.</summary>
     /// <param name="stride">The stride entity to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An export stride DTO with associated moment IDs.</returns>
-    private async Task<ProjectExportStride> BuildStrideAsync(Stride stride)
+    private async Task<ProjectExportStride> BuildStrideAsync(Stride stride, CancellationToken cancellationToken = default)
     {
-        var moments = await _momentRepository.GetMomentsByStrideAsync(stride.Id);
+        var moments = await _momentRepository.GetMomentsByStrideAsync(stride.Id, cancellationToken);
 
         return new ProjectExportStride
         {

@@ -1,6 +1,7 @@
 ﻿using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -18,5 +19,5 @@ public class JourneyRepository(PromiseModelOnlineContext context) : GenericRepos
     /// <summary>Return all journeys belonging to an epic.</summary>
     /// <param name="epicId">The parent epic ID. Must be greater than zero.</param>
     /// <returns>All journeys under the given epic. Empty if none exist.</returns>
-    public async Task<IEnumerable<Journey>> GetJourneysByEpicAsync(int epicId) => await FindAsync(j => j.EpicId == epicId);
+    public async Task<IEnumerable<Journey>> GetJourneysByEpicAsync(int epicId, CancellationToken cancellationToken = default) => await FindAsync(j => j.EpicId == epicId, cancellationToken);
 }

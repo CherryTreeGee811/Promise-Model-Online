@@ -1,4 +1,5 @@
 ﻿using PromiseModelOnline.Api.DTOs;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -12,6 +13,7 @@ public interface IProjectExportService
 {
     /// <summary>Build a complete export document for a project.</summary>
     /// <param name="projectId">The project ID to export.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A <see cref="ProjectExportDocument"/> containing the full hierarchy.</returns>
-    Task<ProjectExportDocument> BuildExportAsync(int projectId);
+    Task<ProjectExportDocument> BuildExportAsync(int projectId, CancellationToken cancellationToken = default);
 }

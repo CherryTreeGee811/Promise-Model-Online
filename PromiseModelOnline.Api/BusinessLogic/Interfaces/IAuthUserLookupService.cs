@@ -1,4 +1,7 @@
-﻿namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
 
 /// <summary>Lookup result from the auth system's Identity database.</summary>
 public class AuthUserInfo
@@ -15,6 +18,7 @@ public interface IAuthUserLookupService
 {
     /// <summary>Search the auth DB by username or email (case-insensitive exact match on normalized values).</summary>
     /// <param name="searchTerm">Username or email to search for.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The matching auth user, or <c>null</c> if not found.</returns>
-    Task<AuthUserInfo?> FindByUsernameOrEmailAsync(string searchTerm);
+    Task<AuthUserInfo?> FindByUsernameOrEmailAsync(string searchTerm, CancellationToken cancellationToken = default);
 }

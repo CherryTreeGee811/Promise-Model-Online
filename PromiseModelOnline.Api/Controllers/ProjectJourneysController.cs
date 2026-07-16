@@ -23,11 +23,15 @@ public class ProjectJourneysController(
     IGenericService<Journey> service,
     IGenericMapper<Journey, JourneyDto> mapper,
     IPromiseModelOnlineContext context,
-    IProjectService projectService) : ProjectScopedControllerBase(projectService)
+    IProjectService projectService,
+    IJourneyRepository journeyRepo,
+    IEpicRepository epicRepo) : ProjectScopedControllerBase(projectService)
 {
     private readonly IGenericService<Journey> _service = service;
     private readonly IGenericMapper<Journey, JourneyDto> _mapper = mapper;
     private readonly IPromiseModelOnlineContext _context = context;
+    private readonly IJourneyRepository _journeyRepo = journeyRepo;
+    private readonly IEpicRepository _epicRepo = epicRepo;
 
     /// <summary>Return all journeys for a project, optionally filtered by epic.</summary>
     /// <param name="owner">The project owner's URL-safe slug.</param>
@@ -36,10 +40,10 @@ public class ProjectJourneysController(
     /// <returns>A list of journey DTOs.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<JourneyDto>>> GetAll(string owner, string project, [FromQuery] int? epicSeq = null)
+    public async Task<ActionResult<IEnumerable<JourneyDto>>> GetAll(string owner, string project, [FromQuery] int? epicSeq = null, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
@@ -48,20 +52,19 @@ public class ProjectJourneysController(
         if (epicSeq.HasValue)
         {
             var epic = await _context.Epics
-                .FirstOrDefaultAsync(e => e.ProductPromise.ProjectId == projectEntity.Id && e.SequenceNumber == epicSeq.Value);
+                .FirstOrDefaultAsync(e => e.ProductPromise.ProjectId == projectEntity.Id && e.SequenceNumber == epicSeq.Value, cancellationToken);
 
             if (epic is null)
                 return NotFound("Epic not found.");
 
-            journeys = await _context.Journeys
-                .Where(j => j.EpicId == epic.Id)
-                .ToListAsync();
+            journeys = await _journeyRepo
+                .GetJourneysByEpicAsync(epic.Id, cancellationToken);
         }
         else
         {
             journeys = await _context.Journeys
                 .Where(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         var result = new List<JourneyDto>();
@@ -77,15 +80,15 @@ public class ProjectJourneysController(
     /// <returns>The matching journey as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{seq}")]
-    public async Task<ActionResult<JourneyDto>> GetBySeq(int seq, string owner, string project)
+    public async Task<ActionResult<JourneyDto>> GetBySeq(int seq, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var journey = await _context.Journeys
-            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq);
+            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq, cancellationToken);
 
         if (journey is null)
             return NotFound();
@@ -99,17 +102,25 @@ public class ProjectJourneysController(
     /// <returns>The matching journey as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("by-id/{id}")]
-    public async Task<ActionResult<JourneyDto>> GetById(int id, string owner, string project)
+    public async Task<ActionResult<JourneyDto>> GetById(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        var journey = await _context.Journeys
-            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.Id == id);
+        var journey = await _journeyRepo.GetByIdAsync(id, cancellationToken);
 
         if (journey is null)
+            return NotFound();
+
+        var epic = await _epicRepo.GetByIdAsync(journey.EpicId, cancellationToken);
+        if (epic is null)
+            return NotFound();
+
+        var promise = await _context.Promises
+            .FirstOrDefaultAsync(p => p.Id == epic.ProductPromiseId && p.ProjectId == projectEntity.Id, cancellationToken);
+        if (promise is null)
             return NotFound();
 
         return Ok(_mapper.Map(journey, _service));
@@ -122,19 +133,19 @@ public class ProjectJourneysController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] UpdateJourneyRequestDto dto, string owner, string project)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdateJourneyRequestDto dto, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var existing = await _context.Journeys
-            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq);
+            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq, cancellationToken);
 
         if (existing is null)
             return NotFound();
@@ -151,7 +162,7 @@ public class ProjectJourneysController(
         existing.OwnerId = dto.OwnerId;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        await _service.UpdateAsync(existing);
+        await _service.UpdateAsync(existing, cancellationToken);
         return NoContent();
     }
     /// <summary>Delete a journey by its sequence number.</summary>
@@ -161,23 +172,23 @@ public class ProjectJourneysController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete("{seq}")]
-    public async Task<IActionResult> Delete(int seq, string owner, string project)
+    public async Task<IActionResult> Delete(int seq, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var journey = await _context.Journeys
-            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq);
+            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq, cancellationToken);
 
         if (journey is null)
             return NotFound();
 
-        var deleted = await _service.DeleteByIdAsync(journey.Id);
+        var deleted = await _service.DeleteByIdAsync(journey.Id, cancellationToken);
         if (!deleted)
             return NotFound();
 
@@ -190,13 +201,13 @@ public class ProjectJourneysController(
     /// <returns>The created journey as a DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("create")]
-    public async Task<ActionResult<JourneyDto>> CreateFromDto([FromBody] CreateJourneyRequestDto request, string owner, string project)
+    public async Task<ActionResult<JourneyDto>> CreateFromDto([FromBody] CreateJourneyRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -205,13 +216,17 @@ public class ProjectJourneysController(
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var epic = await _context.Epics
-            .FirstOrDefaultAsync(e => e.ProductPromise.ProjectId == projectEntity.Id && e.Id == request.EpicId);
+        var epic = await _epicRepo.GetByIdAsync(request.EpicId, cancellationToken);
 
         if (epic is null)
             return NotFound("Epic not found.");
 
-        var nextSeq = await _context.GetNextJourneySequenceAsync(epic.Id);
+        var promise = await _context.Promises
+            .FirstOrDefaultAsync(p => p.Id == epic.ProductPromiseId && p.ProjectId == projectEntity.Id, cancellationToken);
+        if (promise is null)
+            return NotFound("Epic not found.");
+
+        var nextSeq = await _context.GetNextJourneySequenceAsync(epic.Id, cancellationToken);
 
         var journey = new Journey
         {
@@ -223,7 +238,7 @@ public class ProjectJourneysController(
             StatusColor = "red"
         };
 
-        await _service.AddAsync(journey);
+        await _service.AddAsync(journey, cancellationToken);
         return CreatedAtAction(nameof(GetBySeq), new { owner, project, seq = journey.SequenceNumber }, _mapper.Map(journey, _service));
     }
     /// <summary>Update a journey's description.</summary>
@@ -234,13 +249,13 @@ public class ProjectJourneysController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/description")]
-    public async Task<ActionResult<JourneyDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
+    public async Task<ActionResult<JourneyDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -250,7 +265,7 @@ public class ProjectJourneysController(
             return ValidationProblem(ModelState);
 
         var journey = await _context.Journeys
-            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq);
+            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == seq, cancellationToken);
 
         if (journey is null)
             return NotFound();
@@ -260,7 +275,7 @@ public class ProjectJourneysController(
             : request.Description.Trim();
         journey.UpdatedAt = DateTime.UtcNow;
 
-        await _service.UpdateAsync(journey);
+        await _service.UpdateAsync(journey, cancellationToken);
         return Ok(_mapper.Map(journey, _service));
     }
 }

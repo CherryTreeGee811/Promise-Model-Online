@@ -45,9 +45,9 @@ public class MomentTasksController(
     /// <returns>The created task DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<MomentTaskDto>> Create(int momentId, [FromBody] CreateMomentTaskRequestDto request)
+    public async Task<ActionResult<MomentTaskDto>> Create(int momentId, [FromBody] CreateMomentTaskRequestDto request, CancellationToken cancellationToken = default)
     {
-        if (!await UserCanEditMomentAsync(momentId))
+        if (!await UserCanEditMomentAsync(momentId, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -56,7 +56,7 @@ public class MomentTasksController(
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var moment = await _momentService.GetByIdAsync(momentId);
+        var moment = await _momentService.GetByIdAsync(momentId, cancellationToken);
         if (moment is null)
             return NotFound($"Moment with ID {momentId} not found.");
 
@@ -70,7 +70,7 @@ public class MomentTasksController(
             CompletedAt = request.IsCompleted ? DateTime.UtcNow : null,
         };
 
-        await _momentTaskService.CreateAsync(task);
+        await _momentTaskService.CreateAsync(task, cancellationToken);
 
         _logger.LogInformation(
             "Created MomentTask {MomentTaskId} for Moment {MomentId} at {UtcTimestamp}",
@@ -88,7 +88,7 @@ public class MomentTasksController(
     /// <returns>The updated task DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{taskId:int}/completion")]
-    public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentId, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request)
+    public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentId, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request, CancellationToken cancellationToken = default)
     {
         if (request is null)
             return BadRequest("Request body is required.");
@@ -96,16 +96,16 @@ public class MomentTasksController(
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var task = await _momentTaskService.GetByIdAsync(taskId);
+        var task = await _momentTaskService.GetByIdAsync(taskId, cancellationToken);
         if (task is null || task.MomentId != momentId)
             return NotFound($"Moment task with ID {taskId} not found.");
 
-        if (!await UserCanEditMomentAsync(momentId))
+        if (!await UserCanEditMomentAsync(momentId, cancellationToken))
             return Forbid();
 
         task.IsCompleted = request.IsCompleted;
         task.CompletedAt = request.IsCompleted ? DateTime.UtcNow : null;
-        await _momentTaskService.UpdateAsync(task);
+        await _momentTaskService.UpdateAsync(task, cancellationToken);
 
         _logger.LogInformation(
             "Updated MomentTask {MomentTaskId} completion for Moment {MomentId} at {UtcTimestamp}: {Changes}",
@@ -133,27 +133,27 @@ public class MomentTasksController(
     };
 
     /// <summary>Resolve the current user from JWT claims.</summary>
-    private async Task<User?> GetCurrentUserAsync()
+    private async Task<User?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                  ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        return await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
     }
 
     /// <summary>Check if the current user has Edit permission.</summary>
     /// <param name="momentId">The moment ID.</param>
-    private async Task<bool> UserCanEditMomentAsync(int momentId)
+    private async Task<bool> UserCanEditMomentAsync(int momentId, CancellationToken cancellationToken = default)
     {
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
         if (user is null) return false;
 
-        var projectId = await _momentService.GetProjectIdForMomentAsync(momentId);
+        var projectId = await _momentService.GetProjectIdForMomentAsync(momentId, cancellationToken);
         if (projectId is null) return false;
 
-        var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value);
+        var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value, cancellationToken);
         return level == PermissionLevel.Edit;
     }
 }

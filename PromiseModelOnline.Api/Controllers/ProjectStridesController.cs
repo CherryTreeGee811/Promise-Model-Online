@@ -43,10 +43,10 @@ public class ProjectStridesController(
     /// <returns>A list of stride DTOs.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StrideDto>>> GetAll(string owner, string project, [FromQuery] int? iterationId = null)
+    public async Task<ActionResult<IEnumerable<StrideDto>>> GetAll(string owner, string project, [FromQuery] int? iterationId = null, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
@@ -55,18 +55,18 @@ public class ProjectStridesController(
         if (iterationId.HasValue)
         {
             var iteration = await _context.Iterations
-                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId.Value);
+                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId.Value, cancellationToken);
 
             if (iteration is null)
                 return NotFound("Iteration not found.");
 
-            strides = await _strideService.GetStridesByIterationAsync(iterationId.Value);
+            strides = await _strideService.GetStridesByIterationAsync(iterationId.Value, cancellationToken);
         }
         else
         {
             strides = await _context.Strides
                 .Where(s => s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         var result = new List<StrideDto>();
@@ -82,15 +82,15 @@ public class ProjectStridesController(
     /// <returns>The matching stride as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("by-id/{id}")]
-    public async Task<ActionResult<StrideDto>> GetById(int id, string owner, string project)
+    public async Task<ActionResult<StrideDto>> GetById(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var stride = await _context.Strides
-            .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id, cancellationToken);
 
         if (stride is null)
             return NotFound();
@@ -104,21 +104,21 @@ public class ProjectStridesController(
     /// <returns>The created stride as a DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<StrideDto>> Create([FromBody] CreateStrideRequestDto dto, string owner, string project)
+    public async Task<ActionResult<StrideDto>> Create([FromBody] CreateStrideRequestDto dto, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (dto.IterationId.HasValue)
         {
             var iteration = await _context.Iterations
-                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == dto.IterationId.Value);
+                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == dto.IterationId.Value, cancellationToken);
 
             if (iteration is null)
                 return NotFound("Iteration not found.");
@@ -134,7 +134,7 @@ public class ProjectStridesController(
             IsActive = dto.IsActive,
         };
 
-        await _strideService.AddAsync(entity);
+        await _strideService.AddAsync(entity, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { owner, project, id = entity.Id }, _mapper.Map(entity, _strideService));
     }
     /// <summary>Complete a stride and progress unfinished moments.</summary>
@@ -145,26 +145,26 @@ public class ProjectStridesController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{id}")]
-    public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDto request, string owner, string project)
+    public async Task<ActionResult> UpdateStride(int id, [FromBody] UpdateStrideRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var stride = await _context.Strides
-            .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id, cancellationToken);
 
         if (stride is null)
             return NotFound();
 
         try
         {
-            await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
+            await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id, cancellationToken);
 
             _logger.LogInformation(
                 "Progressed unfinished moments for stride {StrideId} via PATCH",
@@ -185,25 +185,25 @@ public class ProjectStridesController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("{id}/progress")]
-    public async Task<ActionResult> ProgressStride(int id, string owner, string project)
+    public async Task<ActionResult> ProgressStride(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var stride = await _context.Strides
-            .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id, cancellationToken);
 
         if (stride is null)
             return NotFound();
 
         try
         {
-            await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id);
+            await _momentService.MoveUnfinishedMomentsToNextStrideAsync(id, cancellationToken);
             return NoContent();
         }
         catch (Exception ex)

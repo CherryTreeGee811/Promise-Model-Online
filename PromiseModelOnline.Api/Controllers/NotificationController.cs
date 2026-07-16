@@ -33,12 +33,12 @@ public class NotificationsController(INotificationService notificationService,
     /// <returns>A list of notification DTOs.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<NotificationDto>>> GetNotifications()
+    public async Task<ActionResult<IEnumerable<NotificationDto>>> GetNotifications(CancellationToken cancellationToken = default)
     {
-        var userId = await GetCurrentUserIdByEmailAsync();
+        var userId = await GetCurrentUserIdByEmailAsync(cancellationToken);
         if (userId is null) return Unauthorized();
 
-        var notifications = await _notificationService.GetUnreadNotificationsAsync(userId.Value);
+        var notifications = await _notificationService.GetUnreadNotificationsAsync(userId.Value, cancellationToken);
         return Ok(notifications);
     }
     /// <param name="id">The notification ID.</param>
@@ -48,15 +48,15 @@ public class NotificationsController(INotificationService notificationService,
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{id}")]
-    public async Task<IActionResult> UpdateNotification(int id, [FromBody] UpdateNotificationRequestDto request)
+    public async Task<IActionResult> UpdateNotification(int id, [FromBody] UpdateNotificationRequestDto request, CancellationToken cancellationToken = default)
     {
-        var userId = await GetCurrentUserIdByEmailAsync();
+        var userId = await GetCurrentUserIdByEmailAsync(cancellationToken);
         if (userId is null) return Unauthorized();
 
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-        try { await _notificationService.MarkAsReadAsync(id, userId.Value); }
+        try { await _notificationService.MarkAsReadAsync(id, userId.Value, cancellationToken); }
         catch (InvalidOperationException) { return NotFound(); }
 
         _logger.LogInformation("User {UserId} read notification {NotificationId}", userId.Value, id);
@@ -68,9 +68,9 @@ public class NotificationsController(INotificationService notificationService,
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch]
-    public async Task<IActionResult> UpdateNotifications([FromBody] UpdateNotificationsRequestDto request)
+    public async Task<IActionResult> UpdateNotifications([FromBody] UpdateNotificationsRequestDto request, CancellationToken cancellationToken = default)
     {
-        var userId = await GetCurrentUserIdByEmailAsync();
+        var userId = await GetCurrentUserIdByEmailAsync(cancellationToken);
         if (userId is null) return Unauthorized();
 
         if (request is null) return BadRequest("Request body is required.");
@@ -87,14 +87,14 @@ public class NotificationsController(INotificationService notificationService,
 
         if (applyToAll)
         {
-            await _notificationService.MarkAllAsReadAsync(userId.Value);
+            await _notificationService.MarkAllAsReadAsync(userId.Value, cancellationToken);
             _logger.LogInformation("User {UserId} marked all notifications as read", userId.Value);
             return NoContent();
         }
 
         foreach (var id in ids!)
         {
-            try { await _notificationService.MarkAsReadAsync(id, userId.Value); }
+            try { await _notificationService.MarkAsReadAsync(id, userId.Value, cancellationToken); }
             catch (InvalidOperationException) { return NotFound($"Notification {id} not found."); }
         }
 
@@ -103,12 +103,12 @@ public class NotificationsController(INotificationService notificationService,
     }
 
     /// <summary>Resolve the current user ID from JWT email claim.</summary>
-    private async Task<int?> GetCurrentUserIdByEmailAsync()
+    private async Task<int?> GetCurrentUserIdByEmailAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(ClaimTypes.Email)?.Value;
         if (string.IsNullOrEmpty(email)) return null;
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
         return user.Id;
     }
 }

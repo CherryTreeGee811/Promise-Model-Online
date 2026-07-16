@@ -4,6 +4,7 @@ using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using PromiseModelOnline.Api.Enums;
 
@@ -22,34 +23,35 @@ public class MomentRepository(PromiseModelOnlineContext context) : GenericReposi
 
     /// <summary>Return all moments with their ancestor chain and sub-tasks eagerly loaded.</summary>
     /// <returns>All moments with lineage metadata.</returns>
-    public new async Task<IEnumerable<Moment>> GetAllAsync() => await BuildMomentQuery().ToListAsync();
+    public new async Task<IEnumerable<Moment>> GetAllAsync(CancellationToken cancellationToken = default) => await BuildMomentQuery().ToListAsync(cancellationToken);
 
     /// <summary>Find a moment by its primary key, supporting both <c>int</c> and parseable <c>string</c> IDs.</summary>
     /// <param name="id">The moment's primary key. Accepts <c>int</c> or a numeric <c>string</c>.</param>
+    /// <param name="cancellationToken">Propagates notification that the operation should be cancelled.</param>
     /// <returns>The matching moment with lineage loaded, or <c>null</c> if the ID format is invalid or not found.</returns>
-    public new async Task<Moment?> GetByIdAsync(object id)
+    public new async Task<Moment?> GetByIdAsync(object id, CancellationToken cancellationToken = default)
     {
         if (!TryGetMomentId(id, out var momentId))
         {
             return null;
         }
 
-        return await BuildMomentQuery().FirstOrDefaultAsync(moment => moment.Id == momentId);
+        return await BuildMomentQuery().FirstOrDefaultAsync(moment => moment.Id == momentId, cancellationToken);
     }
 
     /// <summary>Return all moments belonging to a flow.</summary>
     /// <param name="flowId">The parent flow ID. Must be greater than zero.</param>
     /// <returns>All moments under the given flow with lineage loaded.</returns>
-    public async Task<IEnumerable<Moment>> GetMomentsByFlowAsync(int flowId) => await BuildMomentQuery()
+    public async Task<IEnumerable<Moment>> GetMomentsByFlowAsync(int flowId, CancellationToken cancellationToken = default) => await BuildMomentQuery()
             .Where(moment => moment.FlowId == flowId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Return all moments assigned to a stride (sprint).</summary>
     /// <param name="strideId">The stride ID. Must be greater than zero.</param>
     /// <returns>All moments in the given stride with lineage loaded.</returns>
-    public async Task<IEnumerable<Moment>> GetMomentsByStrideAsync(int strideId) => await BuildMomentQuery()
+    public async Task<IEnumerable<Moment>> GetMomentsByStrideAsync(int strideId, CancellationToken cancellationToken = default) => await BuildMomentQuery()
             .Where(moment => moment.AssignedStrideId == strideId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Return moments in an iteration, with an option to filter for unassigned moments only.</summary>
     /// <remarks>
@@ -61,11 +63,11 @@ public class MomentRepository(PromiseModelOnlineContext context) : GenericReposi
     /// <param name="iterationId">The iteration ID. Must be greater than zero.</param>
     /// <param name="unassignedOnly">If <c>true</c>, only moments without a stride assignment are returned.</param>
     /// <returns>Matching moments with lineage loaded.</returns>
-    public async Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false)
+    public async Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false, CancellationToken cancellationToken = default)
     {
         var iteration = await _context.Set<Iteration>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == iterationId);
+            .FirstOrDefaultAsync(i => i.Id == iterationId, cancellationToken);
 
         if (iteration is null)
             return Enumerable.Empty<Moment>();
@@ -73,7 +75,7 @@ public class MomentRepository(PromiseModelOnlineContext context) : GenericReposi
         var strideIds = await _context.Set<Stride>()
             .Where(s => s.IterationId == iterationId)
             .Select(s => s.Id)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var query = BuildMomentQuery()
             .Where(moment => moment.Flow.Journey.Epic.ProductPromise.ProjectId == iteration.ProjectId);
@@ -91,22 +93,22 @@ public class MomentRepository(PromiseModelOnlineContext context) : GenericReposi
             return Enumerable.Empty<Moment>();
         }
 
-        return await query.ToListAsync();
+        return await query.ToListAsync(cancellationToken);
     }
 
     /// <summary>Return all moments assigned to a specific owner.</summary>
     /// <param name="ownerId">The owner's user ID. Must be greater than zero.</param>
     /// <returns>Moments where <c>OwnerId == ownerId</c>, with lineage loaded.</returns>
-    public async Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId) => await BuildMomentQuery()
+    public async Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId, CancellationToken cancellationToken = default) => await BuildMomentQuery()
             .Where(moment => moment.OwnerId == ownerId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Return all moments scoped to a product promise, traversing the full hierarchy.</summary>
     /// <param name="promiseId">The product promise ID. Must be greater than zero.</param>
     /// <returns>Moments under the promise tree with lineage loaded.</returns>
-    public async Task<IEnumerable<Moment>> GetMomentsByPromiseIdAsync(int promiseId) => await BuildMomentQuery()
+    public async Task<IEnumerable<Moment>> GetMomentsByPromiseIdAsync(int promiseId, CancellationToken cancellationToken = default) => await BuildMomentQuery()
             .Where(moment => moment.Flow.Journey.Epic.ProductPromiseId == promiseId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Resolve the root project ID for a moment by walking the ancestor chain.</summary>
     /// <remarks>
@@ -115,10 +117,10 @@ public class MomentRepository(PromiseModelOnlineContext context) : GenericReposi
     /// </remarks>
     /// <param name="momentId">The moment ID. Must be greater than zero.</param>
     /// <returns>The root project ID, or <c>null</c> if the moment or any ancestor is missing.</returns>
-    public async Task<int?> GetProjectIdForMomentAsync(int momentId) => await _dbSet
+    public async Task<int?> GetProjectIdForMomentAsync(int momentId, CancellationToken cancellationToken = default) => await _dbSet
             .Where(m => m.Id == momentId)
             .Select(m => m.Flow.Journey.Epic.ProductPromise.ProjectId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
     /// <summary>Return unfinished moments in a stride.</summary>
     /// <remarks>
@@ -126,9 +128,9 @@ public class MomentRepository(PromiseModelOnlineContext context) : GenericReposi
     /// </remarks>
     /// <param name="strideId">The stride ID. Must be greater than zero.</param>
     /// <returns>Moments in the stride that are not yet complete.</returns>
-    public async Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId) => await _context.Set<Moment>()
+    public async Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId, CancellationToken cancellationToken = default) => await _context.Set<Moment>()
             .Where(m => m.AssignedStrideId == strideId && m.Status != MomentStatus.Done)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Build an <see cref="IQueryable{T}"/> that eagerly loads the moment's ancestor chain and sub-tasks.</summary>
     /// <remarks>

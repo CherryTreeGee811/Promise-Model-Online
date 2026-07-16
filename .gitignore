@@ -44,6 +44,9 @@ puppeteer/
 .codegraph/
 coverage/
 
+# Environment variables (machine-specific, not committed)
+.env
+
 # Docker Compose local overrides (machine-specific, not committed)
 docker-compose.override.yml
 *.override.yml

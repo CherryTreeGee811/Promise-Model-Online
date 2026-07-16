@@ -38,7 +38,7 @@ public class AuditEventsController(IPromiseModelOnlineContext context) : Control
     public async Task<ActionResult<IEnumerable<AuditTimelineItemDto>>> GetProjectHistory(
         int projectId,
         [FromQuery] int take = 100,
-        [FromQuery] int skip = 0)
+        [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var normalizedTake = NormalizeTake(take);
@@ -70,7 +70,7 @@ public class AuditEventsController(IPromiseModelOnlineContext context) : Control
         string entityType,
         int entityId,
         [FromQuery] int take = 100,
-        [FromQuery] int skip = 0)
+        [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         var normalizedTake = NormalizeTake(take);

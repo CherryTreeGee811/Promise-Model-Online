@@ -1,5 +1,6 @@
 ﻿using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces;
@@ -14,13 +15,15 @@ public interface IMomentRepository : IGenericRepository<Moment>
 {
     /// <summary>Return moments belonging to a flow.</summary>
     /// <param name="flowId">Parent <c>FlowId</c>. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All moments under the given flow.</returns>
-    Task<IEnumerable<Moment>> GetMomentsByFlowAsync(int flowId);
+    Task<IEnumerable<Moment>> GetMomentsByFlowAsync(int flowId, CancellationToken cancellationToken = default);
 
     /// <summary>Return moments assigned to a stride (sprint).</summary>
     /// <param name="strideId">The <c>AssignedStrideId</c>. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All moments in the given stride.</returns>
-    Task<IEnumerable<Moment>> GetMomentsByStrideAsync(int strideId);
+    Task<IEnumerable<Moment>> GetMomentsByStrideAsync(int strideId, CancellationToken cancellationToken = default);
 
     /// <summary>Return moments in an iteration, optionally unassigned only.</summary>
     /// <remarks>
@@ -30,21 +33,24 @@ public interface IMomentRepository : IGenericRepository<Moment>
     /// </remarks>
     /// <param name="iterationId">The iteration ID. Must be greater than zero.</param>
     /// <param name="unassignedOnly">If <c>true</c>, only moments without a stride assignment.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Matching moments.</returns>
-    Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false);
+    Task<IEnumerable<Moment>> GetMomentsByIterationAsync(int iterationId, bool unassignedOnly = false, CancellationToken cancellationToken = default);
 
     /// <summary>Return moments owned by a user.</summary>
     /// <param name="ownerId">The owner's user ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Moments where <c>OwnerId == ownerId</c>.</returns>
-    Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId);
+    Task<IEnumerable<Moment>> GetMomentsByOwnerIdAsync(int ownerId, CancellationToken cancellationToken = default);
 
     /// <summary>Return moments under a product promise.</summary>
     /// <remarks>
     ///   Traverses the hierarchy: moment -> flow -> journey -> epic -> promise.
     /// </remarks>
     /// <param name="promiseId">The product promise ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Moments scoped to the promise tree.</returns>
-    Task<IEnumerable<Moment>> GetMomentsByPromiseIdAsync(int promiseId);
+    Task<IEnumerable<Moment>> GetMomentsByPromiseIdAsync(int promiseId, CancellationToken cancellationToken = default);
 
     /// <summary>Resolve the root project ID for a moment.</summary>
     /// <remarks>
@@ -52,14 +58,16 @@ public interface IMomentRepository : IGenericRepository<Moment>
     ///   Returns <c>null</c> if any ancestor is missing.
     /// </remarks>
     /// <param name="momentId">The moment ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Root project ID, or <c>null</c> if not found.</returns>
-    Task<int?> GetProjectIdForMomentAsync(int momentId);
+    Task<int?> GetProjectIdForMomentAsync(int momentId, CancellationToken cancellationToken = default);
 
     /// <summary>Return unfinished moments in a stride.</summary>
     /// <remarks>
     ///   <c>Unfinished</c> means <c>Status != MomentStatus.Done</c>.
     /// </remarks>
     /// <param name="strideId">The stride ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Moments in the stride that are not yet complete.</returns>
-    Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId);
+    Task<IEnumerable<Moment>> GetUnfinishedMomentsByStrideAsync(int strideId, CancellationToken cancellationToken = default);
 }

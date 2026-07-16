@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.7
     command:
       - "--configFile=/etc/traefik/traefik.yml"
       - "--providers.docker.swarmMode=true"
@@ -15,6 +15,10 @@ services:
     ports:
       - target: 9000
         published: 9000
+        protocol: tcp
+        mode: host
+      - target: 9090
+        published: 9090
         protocol: tcp
         mode: host
     volumes:
@@ -391,6 +395,71 @@ services:
         constraints:
           - node.role == manager
 
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - prometheus-data:/prometheus
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+        mode: 0444
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - target: 3000
+        published: 3001
+        protocol: tcp
+        mode: host
+    volumes:
+      - grafana-data:/var/lib/grafana
+    configs:
+      - source: grafana_datasource
+        target: /etc/grafana/provisioning/datasources/datasource.yml
+        mode: 0444
+      - source: grafana_dashboard_provider
+        target: /etc/grafana/provisioning/dashboards/dashboard.yml
+        mode: 0444
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      GF_INSTALL_PLUGINS: ""
+    secrets:
+      - source: pmo_grafana_admin_password
+        target: grafana_admin_password
+        mode: 0444
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager
+
   umami-init:
     image: postgres:16-alpine
     entrypoint: >
@@ -441,6 +510,12 @@ volumes:
   umami-db:
     name: umamidata
     driver: local
+  prometheus-data:
+    name: prometheusdata
+    driver: local
+  grafana-data:
+    name: grafanadata
+    driver: local
 
 secrets:
   pmo_db_sa_password:
@@ -463,6 +538,8 @@ secrets:
     external: true
   pmo_auth_registration_key:
     external: true
+  pmo_grafana_admin_password:
+    external: true
 
 configs:
   traefik_dynamic_ratelimit:
@@ -473,6 +550,12 @@ configs:
     file: ./traefik/dynamic/middleware-sticky.yml
   traefik_dynamic_tls:
     file: ./traefik/dynamic/tls.yml
+  prometheus_config:
+    file: ./prometheus/prometheus.yml
+  grafana_datasource:
+    file: ./grafana/datasources/datasource.yml
+  grafana_dashboard_provider:
+    file: ./grafana/dashboards/dashboard.yml
   init_db_script:
     file: ./scripts/init-db.sh
   umami_init_script:

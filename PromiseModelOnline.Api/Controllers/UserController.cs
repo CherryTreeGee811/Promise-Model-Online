@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PromiseModelOnline.Api.DAL;
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Security.Claims;
@@ -22,16 +21,16 @@ namespace PromiseModelOnline.Api.Controllers;
 public class UsersController(
     IUserRepository userRepository,
     IProjectRepository projectRepository,
-    PromiseModelOnlineContext context) : ControllerBase
+    IPromiseModelOnlineContext context) : ControllerBase
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IProjectRepository _projectRepository = projectRepository;
-    private readonly PromiseModelOnlineContext _context = context;
+    private readonly IPromiseModelOnlineContext _context = context;
 
     /// <summary>Return the current user's profile information.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpGet("me")]
-    public async Task<IActionResult> Me()
+    public async Task<IActionResult> Me(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
         var id = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -40,7 +39,7 @@ public class UsersController(
         int? userId = null;
         if (!string.IsNullOrEmpty(email))
         {
-            var users = await _userRepository.FindByEmailAsync(email);
+            var users = await _userRepository.FindByEmailAsync(email, cancellationToken);
             var user = users.FirstOrDefault();
             if (user is not null) userId = user.Id;
         }
@@ -54,34 +53,34 @@ public class UsersController(
     /// <returns>An IActionResult containing the exported JSON data.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<object>>> SearchUsers([FromQuery] string q, [FromQuery] int max = 10)
+    public async Task<ActionResult<IEnumerable<object>>> SearchUsers([FromQuery] string q, [FromQuery] int max = 10, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(q)) return Ok(Array.Empty<object>());
-        var users = await _userRepository.SearchUsersAsync(q, max);
+        var users = await _userRepository.SearchUsersAsync(q, max, cancellationToken);
         return Ok(users.Select(u => new { u.Id, u.Name, u.Email }));
     }
 
     /// <summary>Export all of the current user's personal data.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpGet("me/export")]
-    public async Task<IActionResult> ExportMyData()
+    public async Task<IActionResult> ExportMyData(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
         if (string.IsNullOrEmpty(email)) return Unauthorized();
 
-        var users = await _userRepository.FindByEmailAsync(email);
+        var users = await _userRepository.FindByEmailAsync(email, cancellationToken);
         var user = users.FirstOrDefault();
         if (user is null) return NotFound();
 
         var userId = user.Id;
         var exportedAt = DateTime.UtcNow;
 
-        var projects = await _projectRepository.GetProjectsOwnedByUserAsync(userId);
-        var reactions = await _context.Reactions.Where(r => r.UserId == userId).ToListAsync();
-        var comments = await _context.Set<Comment>().Where(c => c.UserId == userId).ToListAsync();
-        var notifications = await _context.Set<Notification>().Where(n => n.UserId == userId).ToListAsync();
-        var permissions = await _context.Set<Permission>().Where(p => p.UserId == userId).ToListAsync();
-        var assignments = await _context.Set<MomentAssignment>().Where(ma => ma.UserId == userId).ToListAsync();
+        var projects = await _projectRepository.GetProjectsOwnedByUserAsync(userId, cancellationToken);
+        var reactions = await _context.Reactions.Where(r => r.UserId == userId).ToListAsync(cancellationToken);
+        var comments = await _context.Set<Comment>().Where(c => c.UserId == userId).ToListAsync(cancellationToken);
+        var notifications = await _context.Set<Notification>().Where(n => n.UserId == userId).ToListAsync(cancellationToken);
+        var permissions = await _context.Set<Permission>().Where(p => p.UserId == userId).ToListAsync(cancellationToken);
+        var assignments = await _context.Set<MomentAssignment>().Where(ma => ma.UserId == userId).ToListAsync(cancellationToken);
 
         return Ok(new
         {
@@ -100,24 +99,24 @@ public class UsersController(
     /// <summary>Delete the current user's account and associated data.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpDelete("me")]
-    public async Task<IActionResult> DeleteMyData()
+    public async Task<IActionResult> DeleteMyData(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
         if (string.IsNullOrEmpty(email)) return Unauthorized();
 
-        var users = await _userRepository.FindByEmailAsync(email);
+        var users = await _userRepository.FindByEmailAsync(email, cancellationToken);
         var user = users.FirstOrDefault();
         if (user is null) return NotFound();
 
         var userId = user.Id;
 
-        var notifications = await _context.Set<Notification>().Where(n => n.UserId == userId).ToListAsync();
-        var reactions = await _context.Reactions.Where(r => r.UserId == userId).ToListAsync();
-        var permissions = await _context.Set<Permission>().Where(p => p.UserId == userId).ToListAsync();
-        var assignments = await _context.Set<MomentAssignment>().Where(ma => ma.UserId == userId).ToListAsync();
-        var comments = await _context.Set<Comment>().Where(c => c.UserId == userId).ToListAsync();
+        var notifications = await _context.Set<Notification>().Where(n => n.UserId == userId).ToListAsync(cancellationToken);
+        var reactions = await _context.Reactions.Where(r => r.UserId == userId).ToListAsync(cancellationToken);
+        var permissions = await _context.Set<Permission>().Where(p => p.UserId == userId).ToListAsync(cancellationToken);
+        var assignments = await _context.Set<MomentAssignment>().Where(ma => ma.UserId == userId).ToListAsync(cancellationToken);
+        var comments = await _context.Set<Comment>().Where(c => c.UserId == userId).ToListAsync(cancellationToken);
         var commentIds = comments.Select(c => c.Id).ToHashSet();
-        var mentions = await _context.Set<CommentMention>().Where(m => commentIds.Contains(m.CommentId)).ToListAsync();
+        var mentions = await _context.Set<CommentMention>().Where(m => commentIds.Contains(m.CommentId)).ToListAsync(cancellationToken);
 
         _context.Set<Notification>().RemoveRange(notifications);
         _context.Reactions.RemoveRange(reactions);
@@ -126,8 +125,8 @@ public class UsersController(
         _context.Set<CommentMention>().RemoveRange(mentions);
         _context.Set<Comment>().RemoveRange(comments);
 
-        _context.Users.Remove(user);
-        await _context.SaveChangesAsync();
+        await _userRepository.DeleteByIdAsync(user.Id, cancellationToken);
+        await _userRepository.SaveChangesAsync(cancellationToken);
 
         return NoContent();
     }

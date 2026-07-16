@@ -52,17 +52,17 @@ public class ProjectPermissionsController(
     /// <returns>A list of permission DTOs.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PermissionDto>>> GetPermissions(string owner, string project)
+    public async Task<ActionResult<IEnumerable<PermissionDto>>> GetPermissions(string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
-        var permissions = await _permissionService.GetPermissionsByProjectAsync(projectEntity.Id);
+        var permissions = await _permissionService.GetPermissionsByProjectAsync(projectEntity.Id, cancellationToken);
         return Ok(permissions);
     }
 
@@ -73,23 +73,23 @@ public class ProjectPermissionsController(
     /// <returns>The created permission DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<PermissionDto>> InviteUser([FromBody] CreatePermissionRequestDto request, string owner, string project)
+    public async Task<ActionResult<PermissionDto>> InviteUser([FromBody] CreatePermissionRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
 
     {
 
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
 
         if (projectEntity is null)
 
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
 
             return Forbid();
 
-        var userId = await GetCurrentUserIdByEmailAsync();
+        var userId = await GetCurrentUserIdByEmailAsync(cancellationToken);
 
         if (userId == null) return Unauthorized();
 
@@ -97,7 +97,7 @@ public class ProjectPermissionsController(
 
         {
 
-            var result = await _permissionService.InviteUserAsync(projectEntity.Id, request.Email, request.Level, userId.Value);
+            var result = await _permissionService.InviteUserAsync(projectEntity.Id, request.Email, request.Level, userId.Value, cancellationToken);
 
             _logger.LogInformation(
 
@@ -130,20 +130,20 @@ public class ProjectPermissionsController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> RevokePermission(int id, string owner, string project)
+    public async Task<IActionResult> RevokePermission(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
 
         if (projectEntity is null)
 
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
 
             return Forbid();
 
-        var userId = await GetCurrentUserIdByEmailAsync();
+        var userId = await GetCurrentUserIdByEmailAsync(cancellationToken);
 
         if (userId == null) return Unauthorized();
 
@@ -151,7 +151,7 @@ public class ProjectPermissionsController(
 
         {
 
-            await _permissionService.RemovePermissionAsync(id, userId.Value);
+            await _permissionService.RemovePermissionAsync(id, userId.Value, cancellationToken);
             return NoContent();
         }
         catch (Exception ex)
@@ -169,10 +169,10 @@ public class ProjectPermissionsController(
     /// <returns>The permission level string.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{id}/my-permission")]
-    public async Task<ActionResult<string>> GetMyPermission(int id, string owner, string project)
+    public async Task<ActionResult<string>> GetMyPermission(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
 
         if (projectEntity is null)
 
@@ -186,9 +186,9 @@ public class ProjectPermissionsController(
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
 
-        var permissionLevel = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id);
+            var permissionLevel = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id, cancellationToken);
 
         if (permissionLevel == null)
 
@@ -200,7 +200,7 @@ public class ProjectPermissionsController(
 
     /// <summary>Resolve the current user ID from JWT email claim.</summary>
     /// <returns>The user ID, or <c>null</c> if the email claim is missing.</returns>
-    private async Task<int?> GetCurrentUserIdByEmailAsync()
+    private async Task<int?> GetCurrentUserIdByEmailAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                  ?? User.FindFirst("email")?.Value
@@ -212,7 +212,7 @@ public class ProjectPermissionsController(
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
 
         return user.Id;
 

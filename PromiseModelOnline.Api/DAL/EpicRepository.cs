@@ -1,6 +1,7 @@
 ﻿using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -18,5 +19,5 @@ public class EpicRepository(PromiseModelOnlineContext context) : GenericReposito
     /// <summary>Return all epics belonging to a product promise.</summary>
     /// <param name="promiseId">The parent product promise ID. Must be greater than zero.</param>
     /// <returns>All epics under the given promise. Empty if none exist.</returns>
-    public async Task<IEnumerable<Epic>> GetEpicsByPromiseAsync(int promiseId) => await FindAsync(e => e.ProductPromiseId == promiseId);
+    public async Task<IEnumerable<Epic>> GetEpicsByPromiseAsync(int promiseId, CancellationToken cancellationToken = default) => await FindAsync(e => e.ProductPromiseId == promiseId, cancellationToken);
 }

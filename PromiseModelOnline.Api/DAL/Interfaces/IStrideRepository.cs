@@ -1,5 +1,6 @@
 ﻿using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces;
@@ -13,8 +14,9 @@ public interface IStrideRepository : IGenericRepository<Stride>
 {
     /// <summary>Return all strides assigned to an iteration.</summary>
     /// <param name="iterationId">The parent <c>IterationId</c>. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All strides in the given iteration. Empty if none exist.</returns>
-    Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId);
+    Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId, CancellationToken cancellationToken = default);
 
     /// <summary>Return strides whose end date matches a specific date.</summary>
     /// <remarks>
@@ -23,6 +25,7 @@ public interface IStrideRepository : IGenericRepository<Stride>
     ///   background service) to trigger end-of-stride processing.
     /// </remarks>
     /// <param name="date">The target date. Only the date component is used; time is ignored.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Strides ending on the given calendar date. Empty if none.</returns>
-    Task<IEnumerable<Stride>> GetStridesEndingOnAsync(DateTime date);
+    Task<IEnumerable<Stride>> GetStridesEndingOnAsync(DateTime date, CancellationToken cancellationToken = default);
 }

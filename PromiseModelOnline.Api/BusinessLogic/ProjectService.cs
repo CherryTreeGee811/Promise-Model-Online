@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -41,14 +42,15 @@ public class ProjectService(
     ///   Eagerly loads the project owner's user data for each result.
     /// </remarks>
     /// <param name="userId">The user ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All projects the user can access, deduplicated.</returns>
-    public async Task<IEnumerable<Project>> GetAccessibleProjectsAsync(int userId)
+    public async Task<IEnumerable<Project>> GetAccessibleProjectsAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var ownedProjects = await _projectRepo.GetProjectsOwnedByUserAsync(userId);
+        var ownedProjects = await _projectRepo.GetProjectsOwnedByUserAsync(userId, cancellationToken);
 
-        var sharedProjectIds = await _permissionRepo.GetProjectIdsForUserAsync(userId);
+        var sharedProjectIds = await _permissionRepo.GetProjectIdsForUserAsync(userId, cancellationToken);
         var sharedProjects = sharedProjectIds.Any()
-            ? await _projectRepo.GetProjectsByIdsAsync(sharedProjectIds)
+            ? await _projectRepo.GetProjectsByIdsAsync(sharedProjectIds, cancellationToken)
             : Enumerable.Empty<Project>();
 
         return ownedProjects.Concat(sharedProjects).DistinctBy(p => p.Id).ToList();
@@ -56,17 +58,18 @@ public class ProjectService(
 
     /// <summary>Return the member list for a project (owner + active permission users).</summary>
     /// <param name="projectId">The project ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Project member DTOs with user name and email.</returns>
     /// <exception cref="InvalidOperationException">Project not found.</exception>
-    public async Task<IEnumerable<ProjectMemberDto>> GetProjectMembersAsync(int projectId)
+    public async Task<IEnumerable<ProjectMemberDto>> GetProjectMembersAsync(int projectId, CancellationToken cancellationToken = default)
     {
-        var project = await _projectRepo.GetByIdAsync(projectId);
+        var project = await _projectRepo.GetByIdAsync(projectId, cancellationToken);
         if (project is null)
             throw new InvalidOperationException("Project not found");
 
         var members = new List<ProjectMemberDto>();
 
-        var owner = await _userRepo.GetByIdAsync(project.OwnerId);
+        var owner = await _userRepo.GetByIdAsync(project.OwnerId, cancellationToken);
         if (owner is not null)
             members.Add(new ProjectMemberDto
             {
@@ -75,7 +78,7 @@ public class ProjectService(
                 Email = owner.Email
             });
 
-        var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId);
+        var permissions = await _permissionRepo.GetPermissionsByProjectAsync(projectId, cancellationToken);
         members.AddRange(permissions
             .Where(p => p.Status == PermissionStatus.Active
                         && members.All(m => m.UserId != p.UserId)
@@ -92,16 +95,18 @@ public class ProjectService(
 
     /// <summary>Return the top-level product promises for a project.</summary>
     /// <param name="projectId">The project ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All top-level promises, ordered by display order.</returns>
-    public async Task<IEnumerable<Promise>> GetProductPromisesAsync(int projectId)
-        => await _projectRepo.GetProductPromisesByProjectAsync(projectId);
+    public async Task<IEnumerable<Promise>> GetProductPromisesAsync(int projectId, CancellationToken cancellationToken = default)
+        => await _projectRepo.GetProductPromisesByProjectAsync(projectId, cancellationToken);
 
     /// <summary>Look up a project by owner slug and project slug.</summary>
     /// <param name="ownerSlug">The owner's URL-safe slug.</param>
     /// <param name="projectSlug">The project's URL-safe slug.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The matching project, or <c>null</c>.</returns>
-    public async Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug)
-        => await _projectRepo.GetByOwnerAndSlugAsync(ownerSlug, projectSlug);
+    public async Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug, CancellationToken cancellationToken = default)
+        => await _projectRepo.GetByOwnerAndSlugAsync(ownerSlug, projectSlug, cancellationToken);
 
     /// <summary>Generate a unique URL-safe slug for a project within the owner's namespace.</summary>
     /// <remarks>
@@ -110,8 +115,9 @@ public class ProjectService(
     /// </remarks>
     /// <param name="name">The project name to base the slug on.</param>
     /// <param name="ownerId">The owner's user ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A unique slug string.</returns>
-    public async Task<string> GenerateProjectSlugAsync(string name, int ownerId)
+    public async Task<string> GenerateProjectSlugAsync(string name, int ownerId, CancellationToken cancellationToken = default)
     {
         var baseSlug = SlugInvalidChars.Replace(name.ToLowerInvariant(), "")
             .Replace(" ", "-")
@@ -126,7 +132,7 @@ public class ProjectService(
         while (true)
         {
             var existing = await _projectRepo.GetByOwnerAndSlugAsync(
-                (await _userRepo.GetByIdAsync(ownerId))?.Slug ?? "", slug);
+                (await _userRepo.GetByIdAsync(ownerId, cancellationToken))?.Slug ?? "", slug, cancellationToken);
             if (existing is null)
                 return slug;
 

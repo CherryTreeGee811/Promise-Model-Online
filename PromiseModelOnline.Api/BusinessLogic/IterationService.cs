@@ -2,6 +2,7 @@
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -18,7 +19,10 @@ public class IterationService(IIterationRepository iterationRepository) : Generi
 
     /// <summary>Return all iterations (time-boxed planning cycles) for a project.</summary>
     /// <param name="projectId">The project ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All iterations belonging to the project.</returns>
-    public async Task<IEnumerable<Iteration>> GetIterationsByProjectAsync(int projectId)
-        => await _iterationRepository.GetIterationsByProjectAsync(projectId);
+    public async Task<IEnumerable<Iteration>> GetIterationsByProjectAsync(int projectId, CancellationToken cancellationToken = default)
+        => await _iterationRepository.GetIterationsByProjectAsync(projectId, cancellationToken);
+
+
 }

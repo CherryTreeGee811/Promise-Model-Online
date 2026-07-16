@@ -27,10 +27,10 @@ public abstract class ProjectScopedControllerBase(IProjectService projectService
     /// <param name="ownerSlug">The project owner's URL-safe slug.</param>
     /// <param name="projectSlug">The project's URL-safe slug.</param>
     /// <returns>The matching <see cref="Project"/>, or <c>null</c> if not found.</returns>
-    protected async Task<Project?> ResolveProjectAsync(string ownerSlug, string projectSlug) => await _projectService.GetByOwnerAndSlugAsync(ownerSlug, projectSlug);
+    protected async Task<Project?> ResolveProjectAsync(string ownerSlug, string projectSlug, CancellationToken cancellationToken = default) => await _projectService.GetByOwnerAndSlugAsync(ownerSlug, projectSlug, cancellationToken);
 
     /// <summary>Check the current user has Edit permission on the given project and return Forbid() if not.</summary>
-    protected async Task<bool> RequireProjectEditPermissionAsync(Project project)
+    protected async Task<bool> RequireProjectEditPermissionAsync(Project project, CancellationToken cancellationToken = default)
     {
         var permissionService = HttpContext.RequestServices.GetRequiredService<IPermissionService>();
         var userRepository = HttpContext.RequestServices.GetRequiredService<DAL.Interfaces.IUserRepository>();
@@ -40,9 +40,9 @@ public abstract class ProjectScopedControllerBase(IProjectService projectService
         if (string.IsNullOrEmpty(email)) return false;
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        var user = await userRepository.GetOrCreateUserByEmailAsync(email, username);
+        var user = await userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken);
 
-        var level = await permissionService.GetUserPermissionAsync(user.Id, project.Id);
+        var level = await permissionService.GetUserPermissionAsync(user.Id, project.Id, cancellationToken);
         return level == PermissionLevel.Edit;
     }
 }

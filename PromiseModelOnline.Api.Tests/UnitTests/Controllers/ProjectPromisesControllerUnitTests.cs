@@ -26,6 +26,7 @@ public class ProjectPromisesControllerUnitTests
     private Mock<IGenericService<Promise>> _serviceMock = null!;
     private Mock<IGenericMapper<Promise, PromiseDto>> _mapperMock = null!;
     private Mock<IMomentService> _momentServiceMock = null!;
+    private Mock<IGenericRepository<Promise>> _promiseRepoMock = null!;
     private PromiseModelOnlineContext _context = null!;
     private ProjectPromisesController _controller = null!;
 
@@ -36,6 +37,7 @@ public class ProjectPromisesControllerUnitTests
         _serviceMock = new Mock<IGenericService<Promise>>();
         _mapperMock = new Mock<IGenericMapper<Promise, PromiseDto>>();
         _momentServiceMock = new Mock<IMomentService>();
+        _promiseRepoMock = new Mock<IGenericRepository<Promise>>();
 
         var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -47,7 +49,8 @@ public class ProjectPromisesControllerUnitTests
             _mapperMock.Object,
             _momentServiceMock.Object,
             _context,
-            _projectServiceMock.Object);
+            _projectServiceMock.Object,
+            _promiseRepoMock.Object);
         ControllerTestHelpers.SetControllerUser(_controller, "u@test.com");
     }
 
@@ -115,7 +118,8 @@ public class ProjectPromisesControllerUnitTests
     public async Task REQ_FUN_XXX_GetById_Found_ReturnsOk()
     {
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
-        _context.Promises.Add(Promise(id: 42)); await _context.SaveChangesAsync();
+        var promise = Promise(id: 42);
+        _promiseRepoMock.Setup(r => r.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(promise);
         _mapperMock.Setup(m => m.Map(It.IsAny<Promise>(), It.IsAny<IGenericService<Promise>>()))
             .Returns<Promise, IGenericService<Promise>>((p, _) => new PromiseDto { Id = p.Id });
 
@@ -128,6 +132,7 @@ public class ProjectPromisesControllerUnitTests
     public async Task REQ_FUN_XXX_GetById_NotFound_Returns404()
     {
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
+        _promiseRepoMock.Setup(r => r.GetByIdAsync(999, It.IsAny<CancellationToken>())).ReturnsAsync((Promise?)null);
 
         var result = await _controller.GetById(999, "o", "p");
 

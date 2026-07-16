@@ -1,5 +1,6 @@
 ﻿using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -13,10 +14,12 @@ public interface IStrideService : IGenericService<Stride>
 {
     /// <summary>Return all strides assigned to an iteration.</summary>
     /// <param name="iterationId">The iteration ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All strides in the given iteration.</returns>
-    Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId);
+    Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId, CancellationToken cancellationToken = default);
 
     /// <summary>Send deadline notifications for strides ending today.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>Called by a scheduled job (Hangfire / background service).</remarks>
-    Task SendDeadlineNotificationsAsync();
+    Task SendDeadlineNotificationsAsync(CancellationToken cancellationToken = default);
 }

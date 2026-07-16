@@ -47,12 +47,12 @@ public class UserProjectsController(
     /// <returns>A list of project DTOs accessible to the user.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll(CancellationToken cancellationToken = default)
     {
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
         if (user is null) return Unauthorized();
 
-        var projects = await _projectService.GetAccessibleProjectsAsync(user.Id);
+        var projects = await _projectService.GetAccessibleProjectsAsync(user.Id, cancellationToken);
         return Ok(projects.Select(p => _mapper.Map(p, _service)).ToList());
     }
     /// <summary>Create a new project with auto-generated slug.</summary>
@@ -60,17 +60,17 @@ public class UserProjectsController(
     /// <returns>The created project DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("create")]
-    public async Task<ActionResult<ProjectDto>> Create([FromBody] ProjectCreateDto request)
+    public async Task<ActionResult<ProjectDto>> Create([FromBody] ProjectCreateDto request, CancellationToken cancellationToken = default)
     {
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         if (string.IsNullOrWhiteSpace(request.Name))
             return BadRequest("Project name is required.");
 
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
         if (user is null) return Unauthorized();
 
-        var slug = await _projectService.GenerateProjectSlugAsync(request.Name, user.Id);
+        var slug = await _projectService.GenerateProjectSlugAsync(request.Name, user.Id, cancellationToken);
         var project = new Project
         {
             Name = request.Name.Trim(),
@@ -80,7 +80,7 @@ public class UserProjectsController(
             CreatedAt = DateTime.UtcNow
         };
 
-        await _service.AddAsync(project);
+        await _service.AddAsync(project, cancellationToken);
         return CreatedAtAction(nameof(GetAll), new { id = project.Id }, _mapper.Map(project, _service));
     }
 
@@ -89,16 +89,16 @@ public class UserProjectsController(
     /// <returns>The validation result.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("import/validate")]
-    public async Task<ActionResult<ProjectImportValidationResult>> ValidateImport([FromForm] IFormFile file)
+    public async Task<ActionResult<ProjectImportValidationResult>> ValidateImport([FromForm] IFormFile file, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
         using var stream = new System.IO.MemoryStream();
-        await file.CopyToAsync(stream);
+        await file.CopyToAsync(stream, cancellationToken);
         stream.Position = 0;
 
-        var result = await _projectImportValidationService.ValidateAsync(stream);
+        var result = await _projectImportValidationService.ValidateAsync(stream, cancellationToken);
         if (result.IsValid) return Ok(result);
         return BadRequest(result);
     }
@@ -108,32 +108,32 @@ public class UserProjectsController(
     /// <returns>The import result.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("import")]
-    public async Task<ActionResult<ProjectImportResult>> Import([FromForm] IFormFile file)
+    public async Task<ActionResult<ProjectImportResult>> Import([FromForm] IFormFile file, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
         if (user is null) return Unauthorized();
 
         using var stream = new System.IO.MemoryStream();
-        await file.CopyToAsync(stream);
+        await file.CopyToAsync(stream, cancellationToken);
         stream.Position = 0;
 
-        var validationResult = await _projectImportValidationService.ValidateAsync(stream);
+        var validationResult = await _projectImportValidationService.ValidateAsync(stream, cancellationToken);
         if (!validationResult.IsValid)
             return BadRequest(validationResult);
 
-        var importResult = await _projectImportService.ImportAsync(validationResult.Document!, user.Id);
+        var importResult = await _projectImportService.ImportAsync(validationResult.Document!, user.Id, cancellationToken);
         return CreatedAtAction(nameof(GetAll), new { id = importResult.ProjectId }, importResult);
     }
 
     /// <summary>Resolve the current user from JWT claims.</summary>
-    private async Task<User?> GetCurrentUserAsync()
+    private async Task<User?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        return await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
     }
 }

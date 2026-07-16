@@ -17,11 +17,45 @@ using PromiseModelOnline.Api.Auth;
 using PromiseModelOnline.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.HttpOverrides;
+using PromiseModelOnline.Api.Configuration;
+using Serilog;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 var config = builder.Configuration;
+
+// Register strongly-typed options with startup validation.
+builder.Services.AddOptions<JwtSettings>()
+    .Bind(config.GetSection(JwtSettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<CorsSettings>()
+    .Bind(config.GetSection(CorsSettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<AuthSettings>()
+    .Bind(config.GetSection(AuthSettings.SectionName))
+    .ValidateOnStart();
+
+var jwtSettings = config.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+    ?? throw new InvalidOperationException("JwtSettings configuration is required.");
+var corsSettings = config.GetSection(CorsSettings.SectionName).Get<CorsSettings>()
+    ?? new CorsSettings { AllowedOrigins = config["APP_BASE_URL"] ?? "https://localhost:9000" };
+if (string.IsNullOrEmpty(corsSettings.AllowedOrigins))
+    corsSettings.AllowedOrigins = config["APP_BASE_URL"] ?? "https://localhost:9000";
+var authSettings = config.GetSection(AuthSettings.SectionName).Get<AuthSettings>()
+    ?? new AuthSettings();
 
 // CORS policy for the SPA client origin.
 builder.Services.AddCors(options =>
@@ -31,7 +65,7 @@ builder.Services.AddCors(options =>
         {
             policy
             .WithOrigins(
-                builder.Configuration["APP_BASE_URL"] ?? "https://localhost:9000",
+                corsSettings.AllowedOrigins,
                 "https://promisemodelonlineclient:9000")
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .AllowAnyHeader()
@@ -41,10 +75,10 @@ builder.Services.AddCors(options =>
 });
 
 // Kestrel HTTPS with certificate file (cert.pem / key.pem) or fallback to HTTP.
-var configuredUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"];
+var kestrelUrl = config["Kestrel:Endpoints:Http:Url"];
 #pragma warning disable S1075 // Hardcoded URI default fallback
 #pragma warning disable S5332 // HTTP used only for container-internal traffic behind nginx TLS termination; external traffic always uses HTTPS
-var defaultHttpUrl = configuredUrl ?? "http://+:8000";
+var defaultHttpUrl = kestrelUrl ?? "http://+:8000";
 #pragma warning restore S5332
 #pragma warning restore S1075
 var certPath = Path.Combine(Directory.GetCurrentDirectory(), "cert.pem");
@@ -68,18 +102,18 @@ else
 }
 
 // JWT Bearer authentication with token validation and SignalR token support.
-var issuer = config["JwtSettings:Issuer"]!;
-var audience = config["JwtSettings:Audience"]!;
-var metadataAddress = config["JwtSettings:MetadataAddress"] ?? $"{issuer}/.well-known/openid-configuration";
+var metadataAddress = string.IsNullOrEmpty(jwtSettings.MetadataAddress)
+    ? $"{jwtSettings.Issuer}/.well-known/openid-configuration"
+    : jwtSettings.MetadataAddress;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
-        o.Authority = issuer;
+        o.Authority = jwtSettings.Issuer;
         o.MetadataAddress = metadataAddress;
-        o.Audience = audience;
-        o.TokenValidationParameters.ValidAudience = audience;
-        o.TokenValidationParameters.ValidIssuer = issuer;
+        o.Audience = jwtSettings.Audience;
+        o.TokenValidationParameters.ValidAudience = jwtSettings.Audience;
+        o.TokenValidationParameters.ValidIssuer = jwtSettings.Issuer;
         o.TokenValidationParameters.TokenDecryptionKeyResolver = (token, securityToken, kid, parameters) =>
             parameters.IssuerSigningKeys;
 
@@ -212,11 +246,10 @@ if (app.Environment.IsDevelopment())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api Server");
         c.RoutePrefix = string.Empty;
-        var registrationKey = app.Configuration["Auth:RegistrationKey"];
 
-        if (!string.IsNullOrEmpty(registrationKey))
+        if (!string.IsNullOrEmpty(authSettings.RegistrationKey))
         {
-            var escapedKey = registrationKey.Replace("'", "\\'");
+            var escapedKey = authSettings.RegistrationKey.Replace("'", "\\'");
             c.UseRequestInterceptor($"(req) => {{ req.headers['X-Registration-Key'] = '{escapedKey}'; return req; }}");
         }
     });

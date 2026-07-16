@@ -1,6 +1,7 @@
 ﻿using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -18,7 +19,7 @@ public class StrideRepository(PromiseModelOnlineContext context) : GenericReposi
     /// <summary>Return all strides assigned to an iteration.</summary>
     /// <param name="iterationId">The parent iteration ID. Must be greater than zero.</param>
     /// <returns>All strides in the given iteration. Empty if none exist.</returns>
-    public async Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId) => await FindAsync(s => s.IterationId == iterationId);
+    public async Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId, CancellationToken cancellationToken = default) => await FindAsync(s => s.IterationId == iterationId, cancellationToken);
 
     /// <summary>Return strides whose end date matches a specific date, ignoring time-of-day.</summary>
     /// <remarks>
@@ -27,5 +28,5 @@ public class StrideRepository(PromiseModelOnlineContext context) : GenericReposi
     /// </remarks>
     /// <param name="date">The target date. Time component is ignored.</param>
     /// <returns>Strides ending on the given calendar date. Empty if none.</returns>
-    public async Task<IEnumerable<Stride>> GetStridesEndingOnAsync(DateTime date) => await FindAsync(s => s.EndDate.Date == date.Date);
+    public async Task<IEnumerable<Stride>> GetStridesEndingOnAsync(DateTime date, CancellationToken cancellationToken = default) => await FindAsync(s => s.EndDate.Date == date.Date, cancellationToken);
 }

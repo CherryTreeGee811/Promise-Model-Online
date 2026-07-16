@@ -32,34 +32,34 @@ public class SearchCommentsController(ICommentRepository commentRepository, ILog
     [HttpGet("entity-map")]
     public async Task<ActionResult<IEnumerable<object>>> GetEntityMap(
         [FromQuery] string? parentType,
-        [FromQuery] int parentId)
+        [FromQuery] int parentId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(parentType) || parentId <= 0)
             return Ok(Array.Empty<object>());
 
         try
         {
-            var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
+            var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId, cancellationToken);
 
             var entityMap = new List<object>();
 
-            var promises = await _commentRepository.GetPromisesByProjectAsync(projectId);
+            var promises = await _commentRepository.GetPromisesByProjectAsync(projectId, cancellationToken);
             entityMap.AddRange(promises.Select(p => new { EntityType = "promise", p.Id, p.SequenceNumber, p.StatusColor }));
 
             var promiseIds = promises.Select(p => p.Id).ToList();
-            var epics = await _commentRepository.GetEpicsByPromiseIdsAsync(promiseIds);
+            var epics = await _commentRepository.GetEpicsByPromiseIdsAsync(promiseIds, cancellationToken);
             entityMap.AddRange(epics.Select(e => new { EntityType = "epic", e.Id, e.SequenceNumber, e.StatusColor }));
 
             var epicIds = epics.Select(e => e.Id).ToList();
-            var journeys = await _commentRepository.GetJourneysByEpicIdsAsync(epicIds);
+            var journeys = await _commentRepository.GetJourneysByEpicIdsAsync(epicIds, cancellationToken);
             entityMap.AddRange(journeys.Select(j => new { EntityType = "journey", j.Id, j.SequenceNumber, j.StatusColor }));
 
             var journeyIds = journeys.Select(j => j.Id).ToList();
-            var flows = await _commentRepository.GetFlowsByJourneyIdsAsync(journeyIds);
+            var flows = await _commentRepository.GetFlowsByJourneyIdsAsync(journeyIds, cancellationToken);
             entityMap.AddRange(flows.Select(f => new { EntityType = "flow", f.Id, f.SequenceNumber, f.StatusColor }));
 
             var flowIds = flows.Select(f => f.Id).ToList();
-            var moments = await _commentRepository.GetMomentsByFlowIdsAsync(flowIds);
+            var moments = await _commentRepository.GetMomentsByFlowIdsAsync(flowIds, cancellationToken);
             entityMap.AddRange(moments.Select(m => new { EntityType = "moment", m.Id, m.SequenceNumber, m.StatusColor }));
 
             return Ok(entityMap);

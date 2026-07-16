@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -38,10 +39,11 @@ public class CommentService(
     /// <summary>Return all comments for a parent entity as DTOs with threaded replies.</summary>
     /// <param name="parentType">Entity type discriminator (<c>"promise"</c>, <c>"epic"</c>, <c>"journey"</c>, <c>"flow"</c>, <c>"moment"</c>).</param>
     /// <param name="parentId">The parent entity's ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Comment DTOs mapped from entities.</returns>
-    public async Task<IEnumerable<CommentDto>> GetCommentsAsync(string parentType, int parentId)
+    public async Task<IEnumerable<CommentDto>> GetCommentsAsync(string parentType, int parentId, CancellationToken cancellationToken = default)
     {
-        var comments = await _commentRepo.GetCommentsForEntityAsync(parentType, parentId);
+        var comments = await _commentRepo.GetCommentsForEntityAsync(parentType, parentId, cancellationToken);
         return comments.Select(c => _mapper.Map(c, null!)).ToList();
     }
 
@@ -52,8 +54,9 @@ public class CommentService(
     /// </remarks>
     /// <param name="dto">The creation data. Not null.</param>
     /// <param name="userId">The author's user ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created comment DTO.</returns>
-    public async Task<CommentDto> CreateCommentAsync(CreateCommentDto dto, int userId)
+    public async Task<CommentDto> CreateCommentAsync(CreateCommentDto dto, int userId, CancellationToken cancellationToken = default)
     {
         var comment = new Comment
         {
@@ -73,9 +76,9 @@ public class CommentService(
             default: throw new ArgumentException("Invalid parent type");
         }
 
-        await _commentRepo.AddCommentAsync(comment);
+        await _commentRepo.AddCommentAsync(comment, cancellationToken);
 
-        var currentUser = await _userRepo.GetByIdAsync(userId);
+        var currentUser = await _userRepo.GetByIdAsync(userId, cancellationToken);
         var currentUserName = currentUser?.Name ?? "Unknown";
 
         var mentions = MentionPattern.Matches(dto.Text)
@@ -83,7 +86,7 @@ public class CommentService(
                             .Distinct();
         foreach (var mentionedUsername in mentions)
         {
-            var mentionedUsers = await _userRepo.GetUsersByNameAsync(mentionedUsername);
+            var mentionedUsers = await _userRepo.GetUsersByNameAsync(mentionedUsername, cancellationToken);
             var mentionedUser = mentionedUsers.FirstOrDefault();
             if (mentionedUser != null)
             {
@@ -91,18 +94,19 @@ public class CommentService(
                 {
                     CommentId = comment.Id,
                     MentionedUserId = mentionedUser.Id
-                });
+                }, cancellationToken);
 
                 await _notificationService.CreateNotificationAsync(
                     mentionedUser.Id,
                     NotificationType.Mention,
                     $"You were mentioned in a comment by {currentUserName}",
-                    $"/moments/{dto.ParentId}?type={dto.ParentType}"
+                    $"/moments/{dto.ParentId}?type={dto.ParentType}",
+                    cancellationToken
                 );
             }
         }
 
-        var createdComments = await _commentRepo.GetCommentsForEntityAsync(dto.ParentType, dto.ParentId);
+        var createdComments = await _commentRepo.GetCommentsForEntityAsync(dto.ParentType, dto.ParentId, cancellationToken);
         var created = createdComments.First(c => c.Id == comment.Id);
         return _mapper.Map(created, null!);
     }

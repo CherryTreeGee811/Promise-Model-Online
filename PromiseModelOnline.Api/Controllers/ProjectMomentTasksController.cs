@@ -74,15 +74,15 @@ public class ProjectMomentTasksController(
     /// <returns>The created task DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<MomentTaskDto>> Create(int momentSeq, [FromBody] CreateMomentTaskRequestDto request, string owner, string project)
+    public async Task<ActionResult<MomentTaskDto>> Create(int momentSeq, [FromBody] CreateMomentTaskRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
 
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq);
+            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq, cancellationToken);
 
 
 
@@ -92,7 +92,7 @@ public class ProjectMomentTasksController(
 
 
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
 
             return Forbid();
 
@@ -130,7 +130,7 @@ public class ProjectMomentTasksController(
 
 
 
-        await _momentTaskService.CreateAsync(task);
+        await _momentTaskService.CreateAsync(task, cancellationToken);
 
 
 
@@ -161,9 +161,9 @@ public class ProjectMomentTasksController(
     /// <returns>The updated task DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{taskId:int}/completion")]
-    public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentSeq, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request, string owner, string project)
+    public async Task<ActionResult<MomentTaskDto>> UpdateCompletion(int momentSeq, int taskId, [FromBody] UpdateMomentTaskCompletionRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
@@ -171,7 +171,7 @@ public class ProjectMomentTasksController(
 
         var moment = await _context.Moments
 
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq);
+            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.SequenceNumber == momentSeq, cancellationToken);
 
 
 
@@ -193,7 +193,7 @@ public class ProjectMomentTasksController(
 
 
 
-        var task = await _momentTaskService.GetByIdAsync(taskId);
+        var task = await _momentTaskService.GetByIdAsync(taskId, cancellationToken);
 
         if (task is null || task.MomentId != moment.Id)
 
@@ -201,7 +201,7 @@ public class ProjectMomentTasksController(
 
 
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
 
             return Forbid();
 
@@ -211,7 +211,7 @@ public class ProjectMomentTasksController(
 
         task.CompletedAt = request.IsCompleted ? DateTime.UtcNow : null;
 
-        await _momentTaskService.UpdateAsync(task);
+        await _momentTaskService.UpdateAsync(task, cancellationToken);
 
 
 
@@ -266,7 +266,7 @@ public class ProjectMomentTasksController(
 
     /// <summary>Resolve the current user from JWT claims.</summary>
 
-    private async Task<User?> GetCurrentUserAsync()
+    private async Task<User?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
 
     {
 
@@ -280,7 +280,7 @@ public class ProjectMomentTasksController(
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-        return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        return await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
 
     }
 
@@ -290,23 +290,23 @@ public class ProjectMomentTasksController(
 
     /// <param name="momentId">The moment ID.</param>
 
-    private async Task<bool> UserCanEditMomentAsync(int momentId)
+    private async Task<bool> UserCanEditMomentAsync(int momentId, CancellationToken cancellationToken = default)
 
     {
 
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
 
         if (user is null) return false;
 
 
 
-        var projectId = await _momentService.GetProjectIdForMomentAsync(momentId);
+        var projectId = await _momentService.GetProjectIdForMomentAsync(momentId, cancellationToken);
 
         if (projectId is null) return false;
 
 
 
-        var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value);
+        var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value, cancellationToken);
 
         return level == PermissionLevel.Edit;
 

@@ -1,5 +1,6 @@
 ﻿using PromiseModelOnline.Api.DTOs;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -14,6 +15,7 @@ public interface IProjectImportValidationService
 {
     /// <summary>Validate a project import JSON stream.</summary>
     /// <param name="jsonStream">The JSON stream containing the export document.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A <see cref="ProjectImportValidationResult"/> with errors and warnings.</returns>
-    Task<ProjectImportValidationResult> ValidateAsync(Stream jsonStream);
+    Task<ProjectImportValidationResult> ValidateAsync(Stream jsonStream, CancellationToken cancellationToken = default);
 }

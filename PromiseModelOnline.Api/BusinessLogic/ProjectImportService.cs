@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -52,9 +53,10 @@ public sealed class ProjectImportService(
     /// <summary>Import a project from an export document, recreating the full hierarchy in the database.</summary>
     /// <param name="document">The export document containing the project data.</param>
     /// <param name="requestedByUserId">The user ID requesting the import (becomes the project owner).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An <see cref="ProjectImportResult"/> with the new project ID and any warnings.</returns>
     /// <exception cref="InvalidDataException">Project section is missing from the document.</exception>
-    public async Task<ProjectImportResult> ImportAsync(ProjectExportDocument document, int requestedByUserId)
+    public async Task<ProjectImportResult> ImportAsync(ProjectExportDocument document, int requestedByUserId, CancellationToken cancellationToken = default)
     {
         if (document.Project is null)
         {
@@ -75,10 +77,10 @@ public sealed class ProjectImportService(
                 CreatedAt = document.Project.CreatedAt
             };
 
-            await _projectRepository.AddAsync(project);
-            await _projectRepository.SaveChangesAsync();
+            await _projectRepository.AddAsync(project, cancellationToken);
+            await _projectRepository.SaveChangesAsync(cancellationToken);
 
-            var owner = await _userRepository.GetByIdAsync(requestedByUserId);
+            var owner = await _userRepository.GetByIdAsync(requestedByUserId, cancellationToken);
 
             foreach (var iteration in OrderByIteration(document.Project.Iterations))
             {
@@ -89,8 +91,8 @@ public sealed class ProjectImportService(
                     CreatedAt = iteration.CreatedAt
                 };
 
-                await _iterationRepository.AddAsync(newIteration);
-                await _iterationRepository.SaveChangesAsync();
+                await _iterationRepository.AddAsync(newIteration, cancellationToken);
+                await _iterationRepository.SaveChangesAsync(cancellationToken);
 
                 foreach (var stride in OrderByStride(iteration.Strides))
                 {
@@ -105,15 +107,15 @@ public sealed class ProjectImportService(
                         CreatedAt = stride.CreatedAt
                     };
 
-                    await _strideRepository.AddAsync(newStride);
-                    await _strideRepository.SaveChangesAsync();
+                    await _strideRepository.AddAsync(newStride, cancellationToken);
+                    await _strideRepository.SaveChangesAsync(cancellationToken);
                     strideIdMap[stride.Id] = newStride.Id;
                 }
             }
 
             foreach (var promise in OrderByDisplayOrder(document.Project.ProductPromises))
             {
-                await ImportPromiseAsync(project.Id, promise, requestedByUserId, warnings, strideIdMap);
+                await ImportPromiseAsync(project.Id, promise, requestedByUserId, warnings, strideIdMap, cancellationToken);
             }
 
             return new ProjectImportResult
@@ -123,7 +125,7 @@ public sealed class ProjectImportService(
                 OwnerSlug = owner?.Slug,
                 Slug = project.Slug
             };
-        });
+        }, cancellationToken);
     }
 
     /// <summary>Import a single promise and recursively import its child epics.</summary>
@@ -132,21 +134,23 @@ public sealed class ProjectImportService(
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     private async Task ImportPromiseAsync(
         int projectId,
         ProjectExportPromise promise,
         int requestedByUserId,
         List<string> warnings,
-        Dictionary<int, int> strideIdMap)
+        Dictionary<int, int> strideIdMap,
+        CancellationToken cancellationToken = default)
     {
-        var nextSeq = await _context.GetNextPromiseSequenceAsync(projectId);
+        var nextSeq = await _context.GetNextPromiseSequenceAsync(projectId, cancellationToken);
 
         var newPromise = new Promise
         {
             ProjectId = projectId,
             Statement = promise.Statement,
             Description = promise.Description,
-            OwnerId = await ResolveOptionalOwnerIdAsync(promise.OwnerId, requestedByUserId, warnings, $"promise {promise.Id}"),
+            OwnerId = await ResolveOptionalOwnerIdAsync(promise.OwnerId, requestedByUserId, warnings, $"promise {promise.Id}", cancellationToken),
             SequenceNumber = nextSeq,
             DisplayOrder = promise.DisplayOrder,
             CreatedAt = promise.CreatedAt,
@@ -154,12 +158,12 @@ public sealed class ProjectImportService(
             StatusColor = promise.StatusColor
         };
 
-        await _promiseRepository.AddAsync(newPromise);
-        await _promiseRepository.SaveChangesAsync();
+        await _promiseRepository.AddAsync(newPromise, cancellationToken);
+        await _promiseRepository.SaveChangesAsync(cancellationToken);
 
         foreach (var epic in OrderByDisplayOrder(promise.Epics))
         {
-            await ImportEpicAsync(newPromise.Id, epic, requestedByUserId, warnings, strideIdMap);
+            await ImportEpicAsync(newPromise.Id, epic, requestedByUserId, warnings, strideIdMap, cancellationToken);
         }
     }
 
@@ -204,14 +208,15 @@ public sealed class ProjectImportService(
     /// <param name="fallbackUserId">The fallback user ID if the exported owner is not found.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="entityLabel">A human-readable label for the entity for warning messages.</param>
-    private async Task<int?> ResolveOptionalOwnerIdAsync(int? exportedOwnerId, int fallbackUserId, List<string> warnings, string entityLabel)
+    /// <param name="cancellationToken">Cancellation token.</param>
+    private async Task<int?> ResolveOptionalOwnerIdAsync(int? exportedOwnerId, int fallbackUserId, List<string> warnings, string entityLabel, CancellationToken cancellationToken = default)
     {
         if (!exportedOwnerId.HasValue)
         {
             return null;
         }
 
-        var user = await _userRepository.GetByIdAsync(exportedOwnerId.Value);
+        var user = await _userRepository.GetByIdAsync(exportedOwnerId.Value, cancellationToken);
         if (user is not null)
         {
             return exportedOwnerId;
@@ -250,21 +255,23 @@ public sealed class ProjectImportService(
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     private async Task ImportEpicAsync(
         int promiseId,
         ProjectExportEpic epic,
         int requestedByUserId,
         List<string> warnings,
-        Dictionary<int, int> strideIdMap)
+        Dictionary<int, int> strideIdMap,
+        CancellationToken cancellationToken = default)
     {
-        var nextSeq = await _context.GetNextEpicSequenceAsync(promiseId);
+        var nextSeq = await _context.GetNextEpicSequenceAsync(promiseId, cancellationToken);
 
         var newEpic = new Epic
         {
             ProductPromiseId = promiseId,
             Statement = epic.Statement,
             Description = epic.Description,
-            OwnerId = await ResolveOptionalOwnerIdAsync(epic.OwnerId, requestedByUserId, warnings, $"epic {epic.Id}"),
+            OwnerId = await ResolveOptionalOwnerIdAsync(epic.OwnerId, requestedByUserId, warnings, $"epic {epic.Id}", cancellationToken),
             SequenceNumber = nextSeq,
             DisplayOrder = epic.DisplayOrder,
             CreatedAt = epic.CreatedAt,
@@ -272,12 +279,12 @@ public sealed class ProjectImportService(
             StatusColor = epic.StatusColor
         };
 
-        await _epicRepository.AddAsync(newEpic);
-        await _epicRepository.SaveChangesAsync();
+        await _epicRepository.AddAsync(newEpic, cancellationToken);
+        await _epicRepository.SaveChangesAsync(cancellationToken);
 
         foreach (var journey in OrderByDisplayOrder(epic.Journeys))
         {
-            await ImportJourneyAsync(newEpic.Id, journey, requestedByUserId, warnings, strideIdMap);
+            await ImportJourneyAsync(newEpic.Id, journey, requestedByUserId, warnings, strideIdMap, cancellationToken);
         }
     }
 
@@ -287,21 +294,23 @@ public sealed class ProjectImportService(
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     private async Task ImportJourneyAsync(
         int epicId,
         ProjectExportJourney journey,
         int requestedByUserId,
         List<string> warnings,
-        Dictionary<int, int> strideIdMap)
+        Dictionary<int, int> strideIdMap,
+        CancellationToken cancellationToken = default)
     {
-        var nextSeq = await _context.GetNextJourneySequenceAsync(epicId);
+        var nextSeq = await _context.GetNextJourneySequenceAsync(epicId, cancellationToken);
 
         var newJourney = new Journey
         {
             EpicId = epicId,
             Statement = journey.Statement,
             Description = journey.Description,
-            OwnerId = await ResolveOptionalOwnerIdAsync(journey.OwnerId, requestedByUserId, warnings, $"journey {journey.Id}"),
+            OwnerId = await ResolveOptionalOwnerIdAsync(journey.OwnerId, requestedByUserId, warnings, $"journey {journey.Id}", cancellationToken),
             SequenceNumber = nextSeq,
             DisplayOrder = journey.DisplayOrder,
             CreatedAt = journey.CreatedAt,
@@ -309,12 +318,12 @@ public sealed class ProjectImportService(
             StatusColor = journey.StatusColor
         };
 
-        await _journeyRepository.AddAsync(newJourney);
-        await _journeyRepository.SaveChangesAsync();
+        await _journeyRepository.AddAsync(newJourney, cancellationToken);
+        await _journeyRepository.SaveChangesAsync(cancellationToken);
 
         foreach (var flow in OrderByDisplayOrder(journey.Flows))
         {
-            await ImportFlowAsync(newJourney.Id, flow, requestedByUserId, warnings, strideIdMap);
+            await ImportFlowAsync(newJourney.Id, flow, requestedByUserId, warnings, strideIdMap, cancellationToken);
         }
     }
 
@@ -324,21 +333,23 @@ public sealed class ProjectImportService(
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     private async Task ImportFlowAsync(
         int journeyId,
         ProjectExportFlow flow,
         int requestedByUserId,
         List<string> warnings,
-        Dictionary<int, int> strideIdMap)
+        Dictionary<int, int> strideIdMap,
+        CancellationToken cancellationToken = default)
     {
-        var nextSeq = await _context.GetNextFlowSequenceAsync(journeyId);
+        var nextSeq = await _context.GetNextFlowSequenceAsync(journeyId, cancellationToken);
 
         var newFlow = new Flow
         {
             JourneyId = journeyId,
             Statement = flow.Statement,
             Description = flow.Description,
-            OwnerId = await ResolveOptionalOwnerIdAsync(flow.OwnerId, requestedByUserId, warnings, $"flow {flow.Id}"),
+            OwnerId = await ResolveOptionalOwnerIdAsync(flow.OwnerId, requestedByUserId, warnings, $"flow {flow.Id}", cancellationToken),
             SequenceNumber = nextSeq,
             DisplayOrder = flow.DisplayOrder,
             CreatedAt = flow.CreatedAt,
@@ -346,12 +357,12 @@ public sealed class ProjectImportService(
             StatusColor = flow.StatusColor
         };
 
-        await _flowRepository.AddAsync(newFlow);
-        await _flowRepository.SaveChangesAsync();
+        await _flowRepository.AddAsync(newFlow, cancellationToken);
+        await _flowRepository.SaveChangesAsync(cancellationToken);
 
         foreach (var moment in OrderByDisplayOrder(flow.Moments))
         {
-            await ImportMomentAsync(newFlow.Id, moment, requestedByUserId, warnings, strideIdMap);
+            await ImportMomentAsync(newFlow.Id, moment, requestedByUserId, warnings, strideIdMap, cancellationToken);
         }
     }
 
@@ -361,14 +372,16 @@ public sealed class ProjectImportService(
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
     /// <param name="strideIdMap">Mapping of exported stride IDs to new stride IDs.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     private async Task ImportMomentAsync(
         int flowId,
         ProjectExportMoment moment,
         int requestedByUserId,
         List<string> warnings,
-        Dictionary<int, int> strideIdMap)
+        Dictionary<int, int> strideIdMap,
+        CancellationToken cancellationToken = default)
     {
-        var nextSeq = await _context.GetNextMomentSequenceAsync(flowId);
+        var nextSeq = await _context.GetNextMomentSequenceAsync(flowId, cancellationToken);
 
         var newMoment = new Moment
         {
@@ -378,7 +391,7 @@ public sealed class ProjectImportService(
             Type = moment.Type,
             Status = moment.Status,
             EffortEstimate = moment.EffortEstimate,
-            OwnerId = await ResolveOptionalOwnerIdAsync(moment.OwnerId, requestedByUserId, warnings, $"moment {moment.Id}"),
+            OwnerId = await ResolveOptionalOwnerIdAsync(moment.OwnerId, requestedByUserId, warnings, $"moment {moment.Id}", cancellationToken),
             AssignedStrideId = await ResolveStrideIdAsync(moment.AssignedStrideId, strideIdMap, warnings, $"moment {moment.Id}", "assigned"),
             SequenceNumber = nextSeq,
             DisplayOrder = moment.DisplayOrder,
@@ -390,12 +403,12 @@ public sealed class ProjectImportService(
             StatusColor = moment.StatusColor
         };
 
-        await _momentRepository.AddAsync(newMoment);
-        await _momentRepository.SaveChangesAsync();
+        await _momentRepository.AddAsync(newMoment, cancellationToken);
+        await _momentRepository.SaveChangesAsync(cancellationToken);
 
         foreach (var task in moment.Tasks.OrderBy(task => task.Id))
         {
-            await ImportTaskAsync(newMoment.Id, task, requestedByUserId, warnings);
+            await ImportTaskAsync(newMoment.Id, task, requestedByUserId, warnings, cancellationToken);
         }
     }
 
@@ -404,25 +417,27 @@ public sealed class ProjectImportService(
     /// <param name="task">The exported task data.</param>
     /// <param name="requestedByUserId">The requesting user ID for owner resolution.</param>
     /// <param name="warnings">Accumulated import warnings.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     private async Task ImportTaskAsync(
         int momentId,
         ProjectExportMomentTask task,
         int requestedByUserId,
-        List<string> warnings)
+        List<string> warnings,
+        CancellationToken cancellationToken = default)
     {
         var newTask = new MomentTask
         {
             MomentId = momentId,
             Name = task.Name,
             Description = task.Description,
-            OwnerId = await ResolveOptionalOwnerIdAsync(task.OwnerId, requestedByUserId, warnings, $"task {task.Id}"),
+            OwnerId = await ResolveOptionalOwnerIdAsync(task.OwnerId, requestedByUserId, warnings, $"task {task.Id}", cancellationToken),
             IsCompleted = task.IsCompleted,
             CreatedAt = task.CreatedAt,
             CompletedAt = task.CompletedAt
         };
 
-        await _momentTaskRepository.AddAsync(newTask);
-        await _momentTaskRepository.SaveChangesAsync();
+        await _momentTaskRepository.AddAsync(newTask, cancellationToken);
+        await _momentTaskRepository.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>Generate a URL-safe slug from a text string.</summary>
@@ -440,21 +455,22 @@ public sealed class ProjectImportService(
 
     /// <summary>Execute an import operation within a database transaction.</summary>
     /// <param name="action">The import operation to execute.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The result of the import operation.</returns>
-    private async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> action)
+    private async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> action, CancellationToken cancellationToken = default)
     {
         if (_context is DbContext dbContext)
         {
-            await using var transaction = await dbContext.Database.BeginTransactionAsync();
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
                 var result = await action();
-                await transaction.CommitAsync();
+                await transaction.CommitAsync(cancellationToken);
                 return result;
             }
             catch
             {
-                await transaction.RollbackAsync();
+                await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
         }

@@ -30,6 +30,8 @@ public class ProjectMomentsControllerUnitTests
     private PromiseModelOnlineContext _context = null!;
     private Mock<IProjectService> _projectServiceMock = null!;
     private Mock<ILogger<ProjectMomentsController>> _loggerMock = null!;
+    private Mock<IMomentRepository> _momentRepoMock = null!;
+    private Mock<IFlowRepository> _flowRepoMock = null!;
     private ProjectMomentsController _controller = null!;
 
     [SetUp]
@@ -41,6 +43,8 @@ public class ProjectMomentsControllerUnitTests
         _permissionServiceMock = new Mock<IPermissionService>();
         _projectServiceMock = new Mock<IProjectService>();
         _loggerMock = new Mock<ILogger<ProjectMomentsController>>();
+        _momentRepoMock = new Mock<IMomentRepository>();
+        _flowRepoMock = new Mock<IFlowRepository>();
 
         var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -54,7 +58,9 @@ public class ProjectMomentsControllerUnitTests
             _permissionServiceMock.Object,
             _context,
             _loggerMock.Object,
-            _projectServiceMock.Object);
+            _projectServiceMock.Object,
+            _momentRepoMock.Object,
+            _flowRepoMock.Object);
         ControllerTestHelpers.SetControllerUser(_controller, "u@test.com");
 
         _controller.ControllerContext.HttpContext.RequestServices = CreateServiceProvider(

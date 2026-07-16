@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Threading;
 using Microsoft.EntityFrameworkCore;
 using PromiseModelOnline.Api.Models;
 
@@ -47,28 +48,36 @@ public interface IPromiseModelOnlineContext
     /// <summary>Gets or sets the <see cref="DbSet{T}"/> for entity-scoped sequence counters.</summary>
     DbSet<EntitySequence> EntitySequences { get; set; }
 
+    /// <summary>Provides access to a <see cref="DbSet{T}"/> for the given entity type.</summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <returns>The <see cref="DbSet{T}"/> for the given type.</returns>
+    DbSet<T> Set<T>() where T : class;
+
     /// <summary>Atomically allocate the next sequence number for a promise within its project.</summary>
     /// <param name="projectId">The parent project ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The next available sequence number.</returns>
-    Task<int> GetNextPromiseSequenceAsync(int projectId);
+    Task<int> GetNextPromiseSequenceAsync(int projectId, CancellationToken cancellationToken = default);
 
     /// <summary>Atomically allocate the next sequence number for an epic within its promise.</summary>
     /// <param name="promiseId">The parent promise ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The next available sequence number.</returns>
-    Task<int> GetNextEpicSequenceAsync(int promiseId);
+    Task<int> GetNextEpicSequenceAsync(int promiseId, CancellationToken cancellationToken = default);
 
     /// <summary>Atomically allocate the next sequence number for a journey within its epic.</summary>
     /// <param name="epicId">The parent epic ID. Must be greater than zero.</param>
     /// <returns>The next available sequence number.</returns>
-    Task<int> GetNextJourneySequenceAsync(int epicId);
+    Task<int> GetNextJourneySequenceAsync(int epicId, CancellationToken cancellationToken = default);
 
     /// <summary>Atomically allocate the next sequence number for a flow within its journey.</summary>
     /// <param name="journeyId">The parent journey ID. Must be greater than zero.</param>
     /// <returns>The next available sequence number.</returns>
-    Task<int> GetNextFlowSequenceAsync(int journeyId);
+    Task<int> GetNextFlowSequenceAsync(int journeyId, CancellationToken cancellationToken = default);
 
     /// <summary>Atomically allocate the next sequence number for a moment within its flow.</summary>
     /// <param name="flowId">The parent flow ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The next available sequence number.</returns>
-    Task<int> GetNextMomentSequenceAsync(int flowId);
+    Task<int> GetNextMomentSequenceAsync(int flowId, CancellationToken cancellationToken = default);
 }

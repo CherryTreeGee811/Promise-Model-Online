@@ -26,9 +26,9 @@ public class ProjectGraphController(
     /// <returns>The project graph DTO containing the full hierarchy.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<ProjectGraphDto>> GetGraph(string owner, string project)
+    public async Task<ActionResult<ProjectGraphDto>> GetGraph(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
@@ -130,7 +130,7 @@ public class ProjectGraphController(
                             }).ToList()
                     }).ToList()
             })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (graph is null)
             return NotFound();

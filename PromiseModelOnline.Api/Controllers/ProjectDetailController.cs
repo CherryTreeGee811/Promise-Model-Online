@@ -67,21 +67,21 @@ public class ProjectDetailController(
     /// <returns>The project as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<ProjectDto>> GetBySlug(string owner, string project)
+    public async Task<ActionResult<ProjectDto>> GetBySlug(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
-        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity, cancellationToken)) return Forbid();
 
         return Ok(_mapper.Map(projectEntity, _service));
     }
 
     /// <summary>Check the current user has read access to the project (is owner or has a permission record).</summary>
-    private async Task<bool> UserCanReadProjectAsync(Project projectEntity)
+    private async Task<bool> UserCanReadProjectAsync(Project projectEntity, CancellationToken cancellationToken = default)
     {
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
         if (user is null) return false;
-        var accessible = await _projectService.GetAccessibleProjectsAsync(user.Id);
+        var accessible = await _projectService.GetAccessibleProjectsAsync(user.Id, cancellationToken);
         return accessible.Any(p => p.Id == projectEntity.Id);
     }
 
@@ -92,13 +92,13 @@ public class ProjectDetailController(
     /// <returns>A list of project member DTOs.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("members")]
-    public async Task<ActionResult<IEnumerable<ProjectMemberDto>>> GetMembers(string owner, string project)
+    public async Task<ActionResult<IEnumerable<ProjectMemberDto>>> GetMembers(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
-        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity, cancellationToken)) return Forbid();
 
-        var members = await _projectService.GetProjectMembersAsync(projectEntity.Id);
+        var members = await _projectService.GetProjectMembersAsync(projectEntity.Id, cancellationToken);
         return Ok(members);
     }
 
@@ -109,13 +109,13 @@ public class ProjectDetailController(
     /// <returns>A list of promise DTOs ordered by display order.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("promises")]
-    public async Task<ActionResult<IEnumerable<PromiseDto>>> GetProjectPromises(string owner, string project)
+    public async Task<ActionResult<IEnumerable<PromiseDto>>> GetProjectPromises(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
-        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity, cancellationToken)) return Forbid();
 
-        var promises = await _projectService.GetProductPromisesAsync(projectEntity.Id);
+        var promises = await _projectService.GetProductPromisesAsync(projectEntity.Id, cancellationToken);
         var result = promises.OrderBy(p => p.DisplayOrder)
             .Select(p => _promiseMapper.Map(p, _promiseService)).ToList();
         return Ok(result);
@@ -128,40 +128,40 @@ public class ProjectDetailController(
     /// <returns>A flat list of all entities in the project.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("entity-map")]
-    public async Task<ActionResult<IEnumerable<object>>> GetEntityMap(string owner, string project)
+    public async Task<ActionResult<IEnumerable<object>>> GetEntityMap(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
-        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity, cancellationToken)) return Forbid();
 
         var entityMap = new List<object>();
         var promises = await _context.Promises
             .Where(p => p.ProjectId == projectEntity.Id)
-            .Select(p => new { EntityType = "promise", p.Id, p.SequenceNumber }).ToListAsync();
+            .Select(p => new { EntityType = "promise", p.Id, p.SequenceNumber }).ToListAsync(cancellationToken);
         entityMap.AddRange(promises);
 
         var promiseIds = promises.Select(p => p.Id).ToList();
         var epics = await _context.Epics
             .Where(e => promiseIds.Contains(e.ProductPromiseId))
-            .Select(e => new { EntityType = "epic", e.Id, e.SequenceNumber }).ToListAsync();
+            .Select(e => new { EntityType = "epic", e.Id, e.SequenceNumber }).ToListAsync(cancellationToken);
         entityMap.AddRange(epics);
 
         var epicIds = epics.Select(e => e.Id).ToList();
         var journeys = await _context.Journeys
             .Where(j => epicIds.Contains(j.EpicId))
-            .Select(j => new { EntityType = "journey", j.Id, j.SequenceNumber }).ToListAsync();
+            .Select(j => new { EntityType = "journey", j.Id, j.SequenceNumber }).ToListAsync(cancellationToken);
         entityMap.AddRange(journeys);
 
         var journeyIds = journeys.Select(j => j.Id).ToList();
         var flows = await _context.Flows
             .Where(f => journeyIds.Contains(f.JourneyId))
-            .Select(f => new { EntityType = "flow", f.Id, f.SequenceNumber }).ToListAsync();
+            .Select(f => new { EntityType = "flow", f.Id, f.SequenceNumber }).ToListAsync(cancellationToken);
         entityMap.AddRange(flows);
 
         var flowIds = flows.Select(f => f.Id).ToList();
         var moments = await _context.Moments
             .Where(m => flowIds.Contains(m.FlowId))
-            .Select(m => new { EntityType = "moment", m.Id, m.SequenceNumber }).ToListAsync();
+            .Select(m => new { EntityType = "moment", m.Id, m.SequenceNumber }).ToListAsync(cancellationToken);
         entityMap.AddRange(moments);
 
         return Ok(entityMap);
@@ -176,16 +176,16 @@ public class ProjectDetailController(
     /// <returns>An object containing the permission level and ownership status.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("my-permission")]
-    public async Task<ActionResult<object>> GetMyPermission(string owner, string project)
+    public async Task<ActionResult<object>> GetMyPermission(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
 
         var email = User.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrEmpty(email)) return Unauthorized();
 
-        var user = await _userRepository.GetOrCreateUserByEmailAsync(email);
-        var permission = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id);
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, cancellationToken: cancellationToken);
+        var permission = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id, cancellationToken);
 
         if (permission == null) return NoContent();
         return Ok(new { permission = permission.ToString(), isOwner = projectEntity.OwnerId == user.Id });
@@ -201,21 +201,21 @@ public class ProjectDetailController(
     /// <returns>The updated project DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("details")]
-    public async Task<ActionResult<ProjectDto>> UpdateDetails(string owner, string project, [FromBody] UpdateProjectDetailsRequestDto request)
+    public async Task<ActionResult<ProjectDto>> UpdateDetails(string owner, string project, [FromBody] UpdateProjectDetailsRequestDto request, CancellationToken cancellationToken = default)
     {
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest("Project title is required.");
 
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         projectEntity.Name = request.Name.Trim();
         projectEntity.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
-        await _service.UpdateAsync(projectEntity);
+        await _service.UpdateAsync(projectEntity, cancellationToken);
         return Ok(_mapper.Map(projectEntity, _service));
     }
 
@@ -227,15 +227,15 @@ public class ProjectDetailController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete]
-    public async Task<IActionResult> Delete(string owner, string project)
+    public async Task<IActionResult> Delete(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
-        var deleted = await _service.DeleteByIdAsync(projectEntity.Id);
+        var deleted = await _service.DeleteByIdAsync(projectEntity.Id, cancellationToken);
         if (!deleted) return NotFound();
         return NoContent();
     }
@@ -250,15 +250,15 @@ public class ProjectDetailController(
     /// <returns>A JSON file download.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("export")]
-    public async Task<IActionResult> Export(string owner, string project)
+    public async Task<IActionResult> Export(string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
-        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity, cancellationToken)) return Forbid();
 
         try
         {
-            var exportDocument = await _projectExportService.BuildExportAsync(projectEntity.Id);
+            var exportDocument = await _projectExportService.BuildExportAsync(projectEntity.Id, cancellationToken);
             var json = JsonSerializer.Serialize(exportDocument, new JsonSerializerOptions { WriteIndented = true });
             return File(Encoding.UTF8.GetBytes(json), "application/json", $"{projectEntity.Slug}-export.json");
         }
@@ -277,12 +277,12 @@ public class ProjectDetailController(
     [HttpGet("audit-events")]
     public async Task<ActionResult<IEnumerable<AuditTimelineItemDto>>> GetAuditEvents(
         string owner, string project,
-        [FromQuery] int take = 100, [FromQuery] int skip = 0)
+        [FromQuery] int take = 100, [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null) return NotFound();
-        if (!await UserCanReadProjectAsync(projectEntity)) return Forbid();
+        if (!await UserCanReadProjectAsync(projectEntity, cancellationToken)) return Forbid();
 
         if (take <= 0) take = 100;
         else if (take > 500) take = 500;
@@ -292,9 +292,9 @@ public class ProjectDetailController(
             .OrderByDescending(entry => entry.OccurredAtUtc)
             .ThenByDescending(entry => entry.Id);
 
-        Response.Headers["X-Total-Count"] = (await query.CountAsync()).ToString();
+        Response.Headers["X-Total-Count"] = (await query.CountAsync(cancellationToken)).ToString();
 
-        var events = await query.Skip(skip).Take(take).ToListAsync();
+        var events = await query.Skip(skip).Take(take).ToListAsync(cancellationToken);
         return Ok(events.Select(MapToAuditDto));
     }
 
@@ -354,11 +354,11 @@ public class ProjectDetailController(
 
     /// <summary>Resolve the current user from JWT claims, auto-provisioning if needed.</summary>
     /// <returns>The current user, or <c>null</c> if the email claim is missing.</returns>
-    private async Task<User?> GetCurrentUserAsync()
+    private async Task<User?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        return await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken);
     }
 }

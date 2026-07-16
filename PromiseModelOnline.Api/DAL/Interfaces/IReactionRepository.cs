@@ -1,5 +1,6 @@
 ﻿using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces;
@@ -20,8 +21,9 @@ public interface IReactionRepository : IGenericRepository<Reaction>
     /// </remarks>
     /// <param name="stackItemType">Type of the target entity. Not null.</param>
     /// <param name="stackItemId">The target entity's ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All reactions on the given item with user information.</returns>
-    Task<IEnumerable<Reaction>> GetReactionsForItemAsync(string stackItemType, int stackItemId);
+    Task<IEnumerable<Reaction>> GetReactionsForItemAsync(string stackItemType, int stackItemId, CancellationToken cancellationToken = default);
 
     /// <summary>Return a specific user's reaction on a specific stack item.</summary>
     /// <remarks>
@@ -30,6 +32,7 @@ public interface IReactionRepository : IGenericRepository<Reaction>
     /// <param name="userId">The user ID. Must be greater than zero.</param>
     /// <param name="stackItemType">Type of the target entity. Not null.</param>
     /// <param name="stackItemId">The target entity's ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The user's reaction, or <c>null</c> if they have not reacted.</returns>
-    Task<Reaction?> GetUserReactionAsync(int userId, string stackItemType, int stackItemId);
+    Task<Reaction?> GetUserReactionAsync(int userId, string stackItemType, int stackItemId, CancellationToken cancellationToken = default);
 }

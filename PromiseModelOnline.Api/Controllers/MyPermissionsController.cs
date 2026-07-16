@@ -29,12 +29,12 @@ public class MyPermissionsController(
     /// <summary>Get all pending project invitations for the current user.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpGet("pending")]
-    public async Task<ActionResult<IEnumerable<PendingInvitationDto>>> GetPendingInvitations()
+    public async Task<ActionResult<IEnumerable<PendingInvitationDto>>> GetPendingInvitations(CancellationToken cancellationToken = default)
     {
-        var userId = await GetCurrentUserIdByEmailAsync();
+        var userId = await GetCurrentUserIdByEmailAsync(cancellationToken);
         if (userId is null) return Unauthorized();
 
-        var invitations = await _permissionService.GetPendingInvitationsForUserAsync(userId.Value);
+        var invitations = await _permissionService.GetPendingInvitationsForUserAsync(userId.Value, cancellationToken);
         return Ok(invitations);
     }
 
@@ -45,16 +45,16 @@ public class MyPermissionsController(
     [HttpPatch("{id}")]
     public async Task<ActionResult<PermissionDto>> UpdatePermissionStatus(
         int id,
-        [FromBody] UpdatePermissionRequestDto request)
+        [FromBody] UpdatePermissionRequestDto request, CancellationToken cancellationToken = default)
     {
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var userId = await GetCurrentUserIdByEmailAsync();
+        var userId = await GetCurrentUserIdByEmailAsync(cancellationToken);
         if (userId == null) return Unauthorized();
 
         try
         {
-            var acceptedPermission = await _permissionService.AcceptInvitationAsync(id, userId.Value);
+            var acceptedPermission = await _permissionService.AcceptInvitationAsync(id, userId.Value, cancellationToken);
             return Ok(acceptedPermission);
         }
         catch (Exception ex)
@@ -64,7 +64,7 @@ public class MyPermissionsController(
     }
 
     /// <summary>Resolve the current user ID from JWT email claim.</summary>
-    private async Task<int?> GetCurrentUserIdByEmailAsync()
+    private async Task<int?> GetCurrentUserIdByEmailAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(ClaimTypes.Email)?.Value
                  ?? User.FindFirst("email")?.Value
@@ -73,7 +73,7 @@ public class MyPermissionsController(
         if (string.IsNullOrEmpty(email)) return null;
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
         return user.Id;
     }
 }

@@ -40,17 +40,17 @@ public class MyMomentsController(
     /// <summary>Return moments assigned to the current user, with project slug context.</summary>
     [Authorize(Policy = "projects.read")]
     [HttpGet("assigned-to-me")]
-    public async Task<ActionResult<IEnumerable<MomentDto>>> GetMyAssignedMoments()
+    public async Task<ActionResult<IEnumerable<MomentDto>>> GetMyAssignedMoments(CancellationToken cancellationToken = default)
     {
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
         if (user is null) return Unauthorized();
 
-        var moments = await _momentService.GetMomentsByOwnerIdAsync(user.Id);
+        var moments = await _momentService.GetMomentsByOwnerIdAsync(user.Id, cancellationToken);
         var result = new List<MomentDto>();
         foreach (var m in moments)
         {
             var dto = _mapper.Map(m, _momentService);
-            var projectInfo = await ResolveProjectContextAsync(m.FlowId);
+            var projectInfo = await ResolveProjectContextAsync(m.FlowId, cancellationToken);
             if (projectInfo is not null)
             {
                 dto.OwnerSlug = projectInfo.Value.OwnerSlug;
@@ -64,7 +64,7 @@ public class MyMomentsController(
     /// <summary>Resolve owner and project slugs from a flow ID for URL construction.</summary>
     /// <param name="flowId">The flow ID to resolve.</param>
     /// <returns>A tuple of owner slug and project slug, or <c>null</c> if not found.</returns>
-    private async Task<(string OwnerSlug, string ProjectSlug)?> ResolveProjectContextAsync(int flowId)
+    private async Task<(string OwnerSlug, string ProjectSlug)?> ResolveProjectContextAsync(int flowId, CancellationToken cancellationToken = default)
     {
         var result = await _context.Flows
             .Where(f => f.Id == flowId)
@@ -73,19 +73,19 @@ public class MyMomentsController(
                 OwnerSlug = f.Journey.Epic.ProductPromise.Project.Owner.Slug,
                 ProjectSlug = f.Journey.Epic.ProductPromise.Project.Slug
             })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (result is null) return null;
         return (result.OwnerSlug, result.ProjectSlug);
     }
 
     /// <summary>Resolve the current user from JWT claims.</summary>
-    private async Task<User?> GetCurrentUserAsync()
+    private async Task<User?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(ClaimTypes.Email)?.Value
                  ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        return await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
     }
 }

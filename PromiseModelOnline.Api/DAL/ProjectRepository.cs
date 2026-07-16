@@ -3,6 +3,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -20,18 +21,18 @@ public class ProjectRepository(PromiseModelOnlineContext context) : GenericRepos
     /// <summary>Return all projects where the specified user is the owner.</summary>
     /// <param name="userId">The owner's user ID. Must be greater than zero.</param>
     /// <returns>Projects where <c>OwnerId == userId</c>. Empty if none.</returns>
-    public async Task<IEnumerable<Project>> GetProjectsOwnedByUserAsync(int userId) => await _context.Set<Project>()
+    public async Task<IEnumerable<Project>> GetProjectsOwnedByUserAsync(int userId, CancellationToken cancellationToken = default) => await _context.Set<Project>()
             .Include(p => p.Owner)
             .Where(p => p.OwnerId == userId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Return projects matching the given IDs with their owner loaded.</summary>
     /// <param name="ids">The project IDs to fetch. Must be non-null.</param>
     /// <returns>Projects whose <c>Id</c> is in <paramref name="ids"/>, with <c>Owner</c> populated.</returns>
-    public async Task<IEnumerable<Project>> GetProjectsByIdsAsync(IEnumerable<int> ids) => await _context.Set<Project>()
+    public async Task<IEnumerable<Project>> GetProjectsByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default) => await _context.Set<Project>()
             .Include(p => p.Owner)
             .Where(p => ids.Contains(p.Id))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Return the top-level product promises for a project, ordered by display order.</summary>
     /// <remarks>
@@ -39,11 +40,11 @@ public class ProjectRepository(PromiseModelOnlineContext context) : GenericRepos
     /// </remarks>
     /// <param name="projectId">The project ID. Must be greater than zero.</param>
     /// <returns>All top-level promises, ordered by <see cref="Promise.DisplayOrder"/>.</returns>
-    public async Task<IEnumerable<Promise>> GetProductPromisesByProjectAsync(int projectId) => await _context.Set<Project>()
+    public async Task<IEnumerable<Promise>> GetProductPromisesByProjectAsync(int projectId, CancellationToken cancellationToken = default) => await _context.Set<Project>()
             .Where(project => project.Id == projectId)
             .SelectMany(project => project.ProductPromises)
             .OrderBy(promise => promise.DisplayOrder)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Look up a project by its owner-slug and project-slug pair (canonical URL identifier).</summary>
     /// <remarks>
@@ -53,7 +54,7 @@ public class ProjectRepository(PromiseModelOnlineContext context) : GenericRepos
     /// <param name="ownerSlug">The URL-safe slug of the project owner. Case-sensitive. Not null.</param>
     /// <param name="projectSlug">The URL-safe slug of the project. Case-sensitive. Not null.</param>
     /// <returns>The matching project with <c>Owner</c> populated, or <c>null</c> if not found.</returns>
-    public async Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug) => await _context.Set<Project>()
+    public async Task<Project?> GetByOwnerAndSlugAsync(string ownerSlug, string projectSlug, CancellationToken cancellationToken = default) => await _context.Set<Project>()
             .Include(p => p.Owner)
-            .FirstOrDefaultAsync(p => p.Owner.Slug == ownerSlug && p.Slug == projectSlug);
+            .FirstOrDefaultAsync(p => p.Owner.Slug == ownerSlug && p.Slug == projectSlug, cancellationToken);
 }

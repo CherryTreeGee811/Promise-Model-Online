@@ -23,11 +23,15 @@ public class ProjectFlowsController(
     IGenericService<Flow> service,
     IGenericMapper<Flow, FlowDto> mapper,
     IPromiseModelOnlineContext context,
-    IProjectService projectService) : ProjectScopedControllerBase(projectService)
+    IProjectService projectService,
+    IFlowRepository flowRepo,
+    IJourneyRepository journeyRepo) : ProjectScopedControllerBase(projectService)
 {
     private readonly IGenericService<Flow> _service = service;
     private readonly IGenericMapper<Flow, FlowDto> _mapper = mapper;
     private readonly IPromiseModelOnlineContext _context = context;
+    private readonly IFlowRepository _flowRepo = flowRepo;
+    private readonly IJourneyRepository _journeyRepo = journeyRepo;
 
     /// <summary>Return all flows for a project, optionally filtered by journey.</summary>
     /// <param name="owner">The project owner's URL-safe slug.</param>
@@ -36,10 +40,10 @@ public class ProjectFlowsController(
     /// <returns>A list of flow DTOs.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<FlowDto>>> GetAll(string owner, string project, [FromQuery] int? journeySeq = null)
+    public async Task<ActionResult<IEnumerable<FlowDto>>> GetAll(string owner, string project, [FromQuery] int? journeySeq = null, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
@@ -48,20 +52,19 @@ public class ProjectFlowsController(
         if (journeySeq.HasValue)
         {
             var journey = await _context.Journeys
-                .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == journeySeq.Value);
+                .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.SequenceNumber == journeySeq.Value, cancellationToken);
 
             if (journey is null)
                 return NotFound("Journey not found.");
 
-            flows = await _context.Flows
-                .Where(f => f.JourneyId == journey.Id)
-                .ToListAsync();
+            flows = await _flowRepo
+                .GetFlowsByJourneyAsync(journey.Id, cancellationToken);
         }
         else
         {
             flows = await _context.Flows
                 .Where(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         var result = new List<FlowDto>();
@@ -77,15 +80,15 @@ public class ProjectFlowsController(
     /// <returns>The matching flow as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{seq}")]
-    public async Task<ActionResult<FlowDto>> GetBySeq(int seq, string owner, string project)
+    public async Task<ActionResult<FlowDto>> GetBySeq(int seq, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var flow = await _context.Flows
-            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq);
+            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq, cancellationToken);
 
         if (flow is null)
             return NotFound();
@@ -99,17 +102,25 @@ public class ProjectFlowsController(
     /// <returns>The matching flow as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("by-id/{id}")]
-    public async Task<ActionResult<FlowDto>> GetById(int id, string owner, string project)
+    public async Task<ActionResult<FlowDto>> GetById(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        var flow = await _context.Flows
-            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.Id == id);
+        var flow = await _flowRepo.GetByIdAsync(id, cancellationToken);
 
         if (flow is null)
+            return NotFound();
+
+        var journey = await _journeyRepo.GetByIdAsync(flow.JourneyId, cancellationToken);
+        if (journey is null)
+            return NotFound();
+
+        var epic = await _context.Epics
+            .FirstOrDefaultAsync(e => e.Id == journey.EpicId && e.ProductPromise.ProjectId == projectEntity.Id, cancellationToken);
+        if (epic is null)
             return NotFound();
 
         return Ok(_mapper.Map(flow, _service));
@@ -122,19 +133,19 @@ public class ProjectFlowsController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] UpdateFlowRequestDto dto, string owner, string project)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdateFlowRequestDto dto, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var existing = await _context.Flows
-            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq);
+            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq, cancellationToken);
 
         if (existing is null)
             return NotFound();
@@ -151,7 +162,7 @@ public class ProjectFlowsController(
         existing.OwnerId = dto.OwnerId;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        await _service.UpdateAsync(existing);
+        await _service.UpdateAsync(existing, cancellationToken);
         return NoContent();
     }
     /// <summary>Delete a flow by its sequence number.</summary>
@@ -161,23 +172,23 @@ public class ProjectFlowsController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete("{seq}")]
-    public async Task<IActionResult> Delete(int seq, string owner, string project)
+    public async Task<IActionResult> Delete(int seq, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var flow = await _context.Flows
-            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq);
+            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq, cancellationToken);
 
         if (flow is null)
             return NotFound();
 
-        var deleted = await _service.DeleteByIdAsync(flow.Id);
+        var deleted = await _service.DeleteByIdAsync(flow.Id, cancellationToken);
         if (!deleted)
             return NotFound();
 
@@ -190,13 +201,13 @@ public class ProjectFlowsController(
     /// <returns>The created flow as a DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("create")]
-    public async Task<ActionResult<FlowDto>> CreateFromDto([FromBody] CreateFlowRequestDto request, string owner, string project)
+    public async Task<ActionResult<FlowDto>> CreateFromDto([FromBody] CreateFlowRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -205,13 +216,17 @@ public class ProjectFlowsController(
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var journey = await _context.Journeys
-            .FirstOrDefaultAsync(j => j.Epic.ProductPromise.ProjectId == projectEntity.Id && j.Id == request.JourneyId);
+        var journey = await _journeyRepo.GetByIdAsync(request.JourneyId, cancellationToken);
 
         if (journey is null)
             return NotFound("Journey not found.");
 
-        var nextSeq = await _context.GetNextFlowSequenceAsync(journey.Id);
+        var epic = await _context.Epics
+            .FirstOrDefaultAsync(e => e.Id == journey.EpicId && e.ProductPromise.ProjectId == projectEntity.Id, cancellationToken);
+        if (epic is null)
+            return NotFound("Journey not found.");
+
+        var nextSeq = await _context.GetNextFlowSequenceAsync(journey.Id, cancellationToken);
 
         var flow = new Flow
         {
@@ -223,7 +238,7 @@ public class ProjectFlowsController(
             StatusColor = "red"
         };
 
-        await _service.AddAsync(flow);
+        await _service.AddAsync(flow, cancellationToken);
         return CreatedAtAction(nameof(GetBySeq), new { owner, project, seq = flow.SequenceNumber }, _mapper.Map(flow, _service));
     }
     /// <summary>Update a flow's description.</summary>
@@ -234,13 +249,13 @@ public class ProjectFlowsController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/description")]
-    public async Task<ActionResult<FlowDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
+    public async Task<ActionResult<FlowDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -250,7 +265,7 @@ public class ProjectFlowsController(
             return ValidationProblem(ModelState);
 
         var flow = await _context.Flows
-            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq);
+            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == seq, cancellationToken);
 
         if (flow is null)
             return NotFound();
@@ -260,7 +275,7 @@ public class ProjectFlowsController(
             : request.Description.Trim();
         flow.UpdatedAt = DateTime.UtcNow;
 
-        await _service.UpdateAsync(flow);
+        await _service.UpdateAsync(flow, cancellationToken);
         return Ok(_mapper.Map(flow, _service));
     }
 }

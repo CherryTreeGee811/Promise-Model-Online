@@ -2,6 +2,7 @@
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -21,33 +22,36 @@ public class JourneyService(IJourneyRepository journeyRepository, IHierarchyStat
 
     /// <summary>Return all journeys belonging to an epic.</summary>
     /// <param name="epicId">The parent epic ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All journeys under the given epic.</returns>
-    public async Task<IEnumerable<Journey>> GetJourneysByEpicAsync(int epicId)
-        => await _journeyRepository.GetJourneysByEpicAsync(epicId);
+    public async Task<IEnumerable<Journey>> GetJourneysByEpicAsync(int epicId, CancellationToken cancellationToken = default)
+        => await _journeyRepository.GetJourneysByEpicAsync(epicId, cancellationToken);
 
     /// <summary>Add a journey and trigger hierarchy status recalculation on its parent epic.</summary>
     /// <param name="entity">The journey to add.</param>
-    public override async Task AddAsync(Journey entity)
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public override async Task AddAsync(Journey entity, CancellationToken cancellationToken = default)
     {
-        await base.AddAsync(entity);
-        await _hierarchyStatusService.RecalculateFromJourneyAsync(entity.Id);
+        await base.AddAsync(entity, cancellationToken);
+        await _hierarchyStatusService.RecalculateFromJourneyAsync(entity.Id, cancellationToken);
     }
 
     /// <summary>Delete a journey and trigger hierarchy status recalculation on its parent epic.</summary>
     /// <param name="id">The journey's primary key.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns><c>true</c> if the journey was found and deleted; <c>false</c> otherwise.</returns>
-    public override async Task<bool> DeleteByIdAsync(object id)
+    public override async Task<bool> DeleteByIdAsync(object id, CancellationToken cancellationToken = default)
     {
-        var journey = await _journeyRepository.GetByIdAsync(id);
+        var journey = await _journeyRepository.GetByIdAsync(id, cancellationToken);
         if (journey is null)
         {
             return false;
         }
 
-        var deleted = await base.DeleteByIdAsync(id);
+        var deleted = await base.DeleteByIdAsync(id, cancellationToken);
         if (deleted)
         {
-            await _hierarchyStatusService.RecalculateFromEpicAsync(journey.EpicId);
+            await _hierarchyStatusService.RecalculateFromEpicAsync(journey.EpicId, cancellationToken);
         }
 
         return deleted;

@@ -2,6 +2,7 @@
 using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using PromiseModelOnline.Api.Enums;
 
@@ -27,33 +28,36 @@ public class StrideService(IStrideRepository strideRepository, IGenericRepositor
 
     /// <summary>Return all strides assigned to an iteration.</summary>
     /// <param name="iterationId">The iteration ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All strides in the given iteration.</returns>
-    public async Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId)
-        => await _strideRepository.GetStridesByIterationAsync(iterationId);
+    public async Task<IEnumerable<Stride>> GetStridesByIterationAsync(int iterationId, CancellationToken cancellationToken = default)
+        => await _strideRepository.GetStridesByIterationAsync(iterationId, cancellationToken);
 
     /// <summary>Send deadline notifications for strides ending in 3 days.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>
     ///   Called by a scheduled job (Hangfire / background service). Finds all strides whose
     ///   end date is in 3 days and sends <see cref="NotificationType.StrideEnding"/> alerts
     ///   to every member of the stride's project.
     /// </remarks>
-    public async Task SendDeadlineNotificationsAsync()
+    public async Task SendDeadlineNotificationsAsync(CancellationToken cancellationToken = default)
     {
         var threeDaysFromNow = DateTime.UtcNow.Date.AddDays(3);
-        var strides = await _strideRepository.GetStridesEndingOnAsync(threeDaysFromNow);
+        var strides = await _strideRepository.GetStridesEndingOnAsync(threeDaysFromNow, cancellationToken);
         foreach (var stride in strides)
         {
             if (stride.IterationId is null) continue;
-            var iteration = await _iterationRepository.GetByIdAsync(stride.IterationId.Value);
+            var iteration = await _iterationRepository.GetByIdAsync(stride.IterationId.Value, cancellationToken);
             if (iteration is null) continue;
-            var members = await _projectService.GetProjectMembersAsync(iteration.ProjectId);
+            var members = await _projectService.GetProjectMembersAsync(iteration.ProjectId, cancellationToken);
             foreach (var member in members)
             {
                 await _notificationService.CreateNotificationAsync(
                     member.UserId,
                     NotificationType.StrideEnding,
                     $"Stride '{stride.Name}' ends in 3 days.",
-                    $"/projects/{iteration.ProjectId}/strides"
+                    $"/projects/{iteration.ProjectId}/strides",
+                    cancellationToken
                 );
             }
         }

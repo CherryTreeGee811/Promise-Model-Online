@@ -5,6 +5,7 @@ using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -38,7 +39,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
     /// <param name="parentId">The parent entity's integer ID. Must be greater than zero.</param>
     /// <returns>Threaded comment tree ordered by creation date ascending.</returns>
     /// <exception cref="ArgumentException"><paramref name="parentType"/> is not a valid entity type.</exception>
-    public async Task<IEnumerable<Comment>> GetCommentsForEntityAsync(string parentType, int parentId)
+    public async Task<IEnumerable<Comment>> GetCommentsForEntityAsync(string parentType, int parentId, CancellationToken cancellationToken = default)
     {
         var query = _context.Set<Comment>()
             .Include(c => c.User)
@@ -61,7 +62,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
             _ => throw new ArgumentException("Invalid parent type")
         };
 
-        return await query.OrderBy(c => c.CreatedAt).ToListAsync();
+        return await query.OrderBy(c => c.CreatedAt).ToListAsync(cancellationToken);
     }
 
     /// <summary>Persist a new comment and save immediately.</summary>
@@ -71,19 +72,19 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
     /// </remarks>
     /// <param name="comment">The comment to insert. Not null.</param>
     /// <exception cref="ArgumentNullException"><paramref name="comment"/> is <c>null</c>.</exception>
-    public async Task AddCommentAsync(Comment comment)
+    public async Task AddCommentAsync(Comment comment, CancellationToken cancellationToken = default)
     {
-        await _context.Set<Comment>().AddAsync(comment);
-        await _context.SaveChangesAsync();
+        await _context.Set<Comment>().AddAsync(comment, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>Record a user mention for notification dispatch and save immediately.</summary>
     /// <param name="mention">The mention link record. Not null.</param>
     /// <exception cref="ArgumentNullException"><paramref name="mention"/> is <c>null</c>.</exception>
-    public async Task AddMentionAsync(CommentMention mention)
+    public async Task AddMentionAsync(CommentMention mention, CancellationToken cancellationToken = default)
     {
-        await _context.Set<CommentMention>().AddAsync(mention);
-        await _context.SaveChangesAsync();
+        await _context.Set<CommentMention>().AddAsync(mention, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>Search the project hierarchy (promise -> epic -> journey -> flow -> moment) for the auto-complete UI.</summary>
@@ -101,7 +102,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
     /// <param name="searchTerm">User input. Matches statement text (case-insensitive contains) or a type-sequence reference.</param>
     /// <param name="maxResults">Maximum items to return, range [1, 50]. Default is 5.</param>
     /// <returns>Flat list of matching stack items with type, ID, sequence number, statement, and status color.</returns>
-    public async Task<IEnumerable<StackSearchResult>> SearchStackByStatementAsync(int projectId, string searchTerm, int maxResults = 5)
+    public async Task<IEnumerable<StackSearchResult>> SearchStackByStatementAsync(int projectId, string searchTerm, int maxResults = 5, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
             return Enumerable.Empty<StackSearchResult>();
@@ -114,8 +115,6 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         bool matchesType(string type) =>
             typeOnly && parsedType == type;
 
-        // Prefix-boost sort: statements starting with the search term (or the parsed type name
-        // for type-only searches like "moment-") appear first, then alphabetically.
         IOrderedEnumerable<StackSearchResult> RankResults(IEnumerable<StackSearchResult> source) =>
             source.OrderBy(r =>
                 r.Statement.StartsWith(lowerSearch, StringComparison.OrdinalIgnoreCase)
@@ -135,7 +134,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
                 (typeOnly && parsedType != "promise" && p.Statement.ToLower().Contains(parsedType!))))
             .OrderBy(p => p.Statement)
             .Take(typeOnly && parsedType == "promise" ? int.MaxValue : maxResults)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         results.AddRange(promises.Select(p => new StackSearchResult("promise", p.Id, p.SequenceNumber, p.Statement, p.StatusColor)));
 
         if (matchesType("promise"))
@@ -144,7 +143,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
         var promiseIds = await _context.Set<Promise>()
             .Where(p => p.ProjectId == projectId)
             .Select(p => p.Id)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var epics = await _context.Set<Epic>()
             .Where(e => promiseIds.Contains(e.ProductPromiseId) && (
@@ -158,7 +157,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
                 (typeOnly && parsedType != "epic" && e.Statement.ToLower().Contains(parsedType!))))
             .OrderBy(e => e.Statement)
             .Take(typeOnly && parsedType == "epic" ? int.MaxValue : maxResults)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         results.AddRange(epics.Select(e => new StackSearchResult("epic", e.Id, e.SequenceNumber, e.Statement, e.StatusColor)));
 
         if (matchesType("epic"))
@@ -168,7 +167,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
             .Concat(await _context.Set<Epic>()
                 .Where(e => promiseIds.Contains(e.ProductPromiseId))
                 .Select(e => e.Id)
-                .ToListAsync())
+                .ToListAsync(cancellationToken))
             .Distinct()
             .ToList();
 
@@ -184,7 +183,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
                 (typeOnly && parsedType != "journey" && j.Statement.ToLower().Contains(parsedType!))))
             .OrderBy(j => j.Statement)
             .Take(typeOnly && parsedType == "journey" ? int.MaxValue : maxResults)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         results.AddRange(journeys.Select(j => new StackSearchResult("journey", j.Id, j.SequenceNumber, j.Statement, j.StatusColor)));
 
         if (matchesType("journey"))
@@ -194,7 +193,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
             .Concat(await _context.Set<Journey>()
                 .Where(j => epicIds.Contains(j.EpicId))
                 .Select(j => j.Id)
-                .ToListAsync())
+                .ToListAsync(cancellationToken))
             .Distinct()
             .ToList();
 
@@ -210,7 +209,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
                 (typeOnly && parsedType != "flow" && f.Statement.ToLower().Contains(parsedType!))))
             .OrderBy(f => f.Statement)
             .Take(typeOnly && parsedType == "flow" ? int.MaxValue : maxResults)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         results.AddRange(flows.Select(f => new StackSearchResult("flow", f.Id, f.SequenceNumber, f.Statement, f.StatusColor)));
 
         if (matchesType("flow"))
@@ -220,7 +219,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
             .Concat(await _context.Set<Flow>()
                 .Where(f => journeyIds.Contains(f.JourneyId))
                 .Select(f => f.Id)
-                .ToListAsync())
+                .ToListAsync(cancellationToken))
             .Distinct()
             .ToList();
 
@@ -235,7 +234,7 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
                 (typeOnly && parsedType == "moment")))
             .OrderBy(m => m.Statement)
             .Take(typeOnly && parsedType == "moment" ? int.MaxValue : maxResults)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         results.AddRange(moments.Select(m => new StackSearchResult("moment", m.Id, m.SequenceNumber, m.Statement, m.StatusColor)));
 
         return RankResults(results).Take(maxResults).ToList();
@@ -266,37 +265,37 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
     /// <summary>Load all promises in a project.</summary>
     /// <param name="projectId">The project ID. Must be greater than zero.</param>
     /// <returns>All promises belonging to the project.</returns>
-    public async Task<IEnumerable<Promise>> GetPromisesByProjectAsync(int projectId) => await _context.Set<Promise>()
+    public async Task<IEnumerable<Promise>> GetPromisesByProjectAsync(int projectId, CancellationToken cancellationToken = default) => await _context.Set<Promise>()
             .Where(p => p.ProjectId == projectId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Batch-load epics for a list of promise IDs using a single query.</summary>
     /// <param name="promiseIds">Promise IDs to scope the query. Not null.</param>
     /// <returns>Epics whose <c>ProductPromiseId</c> is in <paramref name="promiseIds"/>.</returns>
-    public async Task<IEnumerable<Epic>> GetEpicsByPromiseIdsAsync(List<int> promiseIds) => await _context.Set<Epic>()
+    public async Task<IEnumerable<Epic>> GetEpicsByPromiseIdsAsync(List<int> promiseIds, CancellationToken cancellationToken = default) => await _context.Set<Epic>()
             .Where(e => promiseIds.Contains(e.ProductPromiseId))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Batch-load journeys for a list of epic IDs using a single query.</summary>
     /// <param name="epicIds">Epic IDs to scope the query. Not null.</param>
     /// <returns>Journeys whose <c>EpicId</c> is in <paramref name="epicIds"/>.</returns>
-    public async Task<IEnumerable<Journey>> GetJourneysByEpicIdsAsync(List<int> epicIds) => await _context.Set<Journey>()
+    public async Task<IEnumerable<Journey>> GetJourneysByEpicIdsAsync(List<int> epicIds, CancellationToken cancellationToken = default) => await _context.Set<Journey>()
             .Where(j => epicIds.Contains(j.EpicId))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Batch-load flows for a list of journey IDs using a single query.</summary>
     /// <param name="journeyIds">Journey IDs to scope the query. Not null.</param>
     /// <returns>Flows whose <c>JourneyId</c> is in <paramref name="journeyIds"/>.</returns>
-    public async Task<IEnumerable<Flow>> GetFlowsByJourneyIdsAsync(List<int> journeyIds) => await _context.Set<Flow>()
+    public async Task<IEnumerable<Flow>> GetFlowsByJourneyIdsAsync(List<int> journeyIds, CancellationToken cancellationToken = default) => await _context.Set<Flow>()
             .Where(f => journeyIds.Contains(f.JourneyId))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Batch-load moments for a list of flow IDs using a single query.</summary>
     /// <param name="flowIds">Flow IDs to scope the query. Not null.</param>
     /// <returns>Moments whose <c>FlowId</c> is in <paramref name="flowIds"/>.</returns>
-    public async Task<IEnumerable<Moment>> GetMomentsByFlowIdsAsync(List<int> flowIds) => await _context.Set<Moment>()
+    public async Task<IEnumerable<Moment>> GetMomentsByFlowIdsAsync(List<int> flowIds, CancellationToken cancellationToken = default) => await _context.Set<Moment>()
             .Where(m => flowIds.Contains(m.FlowId))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
     /// <summary>Resolve the root project ID for any commentable entity by walking its ancestor chain.</summary>
     /// <remarks>
@@ -308,57 +307,57 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
     /// <param name="parentId">The entity's integer ID.</param>
     /// <returns>The root project ID.</returns>
     /// <exception cref="ArgumentException"><paramref name="parentType"/> is invalid or an ancestor entity cannot be found.</exception>
-    public async Task<int> ResolveProjectIdAsync(string parentType, int parentId)
+    public async Task<int> ResolveProjectIdAsync(string parentType, int parentId, CancellationToken cancellationToken = default)
     {
         var normalizedType = parentType.ToLower();
 
         if (normalizedType == "promise")
         {
-            var promise = await _context.Set<Promise>().FindAsync(parentId);
+            var promise = await _context.Set<Promise>().FindAsync(new object[] { parentId }, cancellationToken);
             return promise?.ProjectId ?? throw new ArgumentException("Promise not found");
         }
 
         if (normalizedType == "epic")
         {
-            var epic = await _context.Set<Epic>().FindAsync(parentId);
+            var epic = await _context.Set<Epic>().FindAsync(new object[] { parentId }, cancellationToken);
             if (epic == null) throw new ArgumentException("Epic not found");
-            var promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            var promise = await _context.Set<Promise>().FindAsync(new object[] { epic.ProductPromiseId }, cancellationToken);
             return promise?.ProjectId ?? throw new ArgumentException("Promise not found");
         }
 
         if (normalizedType == "journey")
         {
-            var journey = await _context.Set<Journey>().FindAsync(parentId);
+            var journey = await _context.Set<Journey>().FindAsync(new object[] { parentId }, cancellationToken);
             if (journey == null) throw new ArgumentException("Journey not found");
-            var epic = await _context.Set<Epic>().FindAsync(journey.EpicId);
+            var epic = await _context.Set<Epic>().FindAsync(new object[] { journey.EpicId }, cancellationToken);
             if (epic == null) throw new ArgumentException("Epic not found");
-            var promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            var promise = await _context.Set<Promise>().FindAsync(new object[] { epic.ProductPromiseId }, cancellationToken);
             return promise?.ProjectId ?? throw new ArgumentException("Promise not found");
         }
 
         if (normalizedType == "flow")
         {
-            var flow = await _context.Set<Flow>().FindAsync(parentId);
+            var flow = await _context.Set<Flow>().FindAsync(new object[] { parentId }, cancellationToken);
             if (flow == null) throw new ArgumentException("Flow not found");
-            var journey = await _context.Set<Journey>().FindAsync(flow.JourneyId);
+            var journey = await _context.Set<Journey>().FindAsync(new object[] { flow.JourneyId }, cancellationToken);
             if (journey == null) throw new ArgumentException("Journey not found");
-            var epic = await _context.Set<Epic>().FindAsync(journey.EpicId);
+            var epic = await _context.Set<Epic>().FindAsync(new object[] { journey.EpicId }, cancellationToken);
             if (epic == null) throw new ArgumentException("Epic not found");
-            var promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            var promise = await _context.Set<Promise>().FindAsync(new object[] { epic.ProductPromiseId }, cancellationToken);
             return promise?.ProjectId ?? throw new ArgumentException("Promise not found");
         }
 
         if (normalizedType == "moment")
         {
-            var moment = await _context.Set<Moment>().FindAsync(parentId);
+            var moment = await _context.Set<Moment>().FindAsync(new object[] { parentId }, cancellationToken);
             if (moment == null) throw new ArgumentException("Moment not found");
-            var flow = await _context.Set<Flow>().FindAsync(moment.FlowId);
+            var flow = await _context.Set<Flow>().FindAsync(new object[] { moment.FlowId }, cancellationToken);
             if (flow == null) throw new ArgumentException("Flow not found");
-            var journey = await _context.Set<Journey>().FindAsync(flow.JourneyId);
+            var journey = await _context.Set<Journey>().FindAsync(new object[] { flow.JourneyId }, cancellationToken);
             if (journey == null) throw new ArgumentException("Journey not found");
-            var epic = await _context.Set<Epic>().FindAsync(journey.EpicId);
+            var epic = await _context.Set<Epic>().FindAsync(new object[] { journey.EpicId }, cancellationToken);
             if (epic == null) throw new ArgumentException("Epic not found");
-            var promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            var promise = await _context.Set<Promise>().FindAsync(new object[] { epic.ProductPromiseId }, cancellationToken);
             return promise?.ProjectId ?? throw new ArgumentException("Promise not found");
         }
 

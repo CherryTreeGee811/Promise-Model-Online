@@ -24,9 +24,9 @@ public class DeadlineNotificationRunsController(IStrideService strideService) : 
     /// <response code="204">Notifications were generated successfully.</response>
     /// <returns>NoContent on successful notification generation.</returns>
     [HttpPost]
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(CancellationToken cancellationToken = default)
     {
-        await _strideService.SendDeadlineNotificationsAsync();
+        await _strideService.SendDeadlineNotificationsAsync(cancellationToken);
         return NoContent();
     }
 }

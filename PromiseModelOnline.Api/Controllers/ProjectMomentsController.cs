@@ -32,7 +32,9 @@ public class ProjectMomentsController(
     IPermissionService permissionService,
     IPromiseModelOnlineContext context,
     ILogger<ProjectMomentsController> logger,
-    IProjectService projectService) : ProjectScopedControllerBase(projectService)
+    IProjectService projectService,
+    IMomentRepository momentRepo,
+    IFlowRepository flowRepo) : ProjectScopedControllerBase(projectService)
 {
     private readonly IMomentService _momentService = service;
     private readonly IGenericMapper<Moment, MomentDto> _mapper = mapper;
@@ -40,6 +42,8 @@ public class ProjectMomentsController(
     private readonly IPermissionService _permissionService = permissionService;
     private readonly IPromiseModelOnlineContext _context = context;
     private readonly ILogger<ProjectMomentsController> _logger = logger;
+    private readonly IMomentRepository _momentRepo = momentRepo;
+    private readonly IFlowRepository _flowRepo = flowRepo;
 
     /// <summary>Return a moment by its sequence number within the project.</summary>
     /// <param name="seq">The moment's sequence number within its flow.</param>
@@ -50,15 +54,15 @@ public class ProjectMomentsController(
     /// <response code="404">No moment with the given sequence number exists in the project.</response>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{seq}")]
-    public async Task<ActionResult<MomentDto>> GetBySeq(int seq, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<ActionResult<MomentDto>> GetBySeq(int seq, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
@@ -74,17 +78,25 @@ public class ProjectMomentsController(
     /// <response code="404">No moment with the given ID exists in the project.</response>
     [Authorize(Policy = "projects.read")]
     [HttpGet("by-id/{id}")]
-    public async Task<ActionResult<MomentDto>> GetById(int id, string owner, string project)
+    public async Task<ActionResult<MomentDto>> GetById(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.Id == id);
+        var moment = await _momentRepo.GetByIdAsync(id, cancellationToken);
 
         if (moment is null)
+            return NotFound();
+
+        var flow = await _flowRepo.GetByIdAsync(moment.FlowId, cancellationToken);
+        if (flow is null)
+            return NotFound();
+
+        var journey = await _context.Journeys
+            .FirstOrDefaultAsync(j => j.Id == flow.JourneyId && j.Epic.ProductPromise.ProjectId == projectEntity.Id, cancellationToken);
+        if (journey is null)
             return NotFound();
 
         return Ok(_mapper.Map(moment, _momentService));
@@ -102,19 +114,19 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] UpdateMomentRequestDto dto, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdateMomentRequestDto dto, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
         if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var existing = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (existing is null)
             return NotFound();
@@ -135,7 +147,7 @@ public class ProjectMomentsController(
         existing.AssignedStrideId = dto.AssignedStrideId;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        await _momentService.UpdateAsync(existing);
+        await _momentService.UpdateAsync(existing, cancellationToken);
         return NoContent();
     }
 
@@ -149,23 +161,23 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or NotFound if not found.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete("{seq}")]
-    public async Task<IActionResult> Delete(int seq, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<IActionResult> Delete(int seq, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
 
-        var deleted = await _momentService.DeleteByIdAsync(moment.Id);
+        var deleted = await _momentService.DeleteByIdAsync(moment.Id, cancellationToken);
         if (!deleted)
             return NotFound();
 
@@ -181,13 +193,13 @@ public class ProjectMomentsController(
     /// <response code="404">Project or flow not found.</response>
     [Authorize(Policy = "projects.write")]
     [HttpPost("create")]
-    public async Task<ActionResult<MomentDto>> CreateFromDto([FromBody] CreateMomentRequestDto request, string owner, string project)
+    public async Task<ActionResult<MomentDto>> CreateFromDto([FromBody] CreateMomentRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -196,13 +208,17 @@ public class ProjectMomentsController(
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var flow = await _context.Flows
-            .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.Id == request.FlowId);
+        var flow = await _flowRepo.GetByIdAsync(request.FlowId, cancellationToken);
 
         if (flow is null)
             return NotFound("Flow not found.");
 
-        var nextSeq = await _context.GetNextMomentSequenceAsync(flow.Id);
+        var journey = await _context.Journeys
+            .FirstOrDefaultAsync(j => j.Id == flow.JourneyId && j.Epic.ProductPromise.ProjectId == projectEntity.Id, cancellationToken);
+        if (journey is null)
+            return NotFound("Flow not found.");
+
+        var nextSeq = await _context.GetNextMomentSequenceAsync(flow.Id, cancellationToken);
 
         var moment = new Moment
         {
@@ -218,7 +234,7 @@ public class ProjectMomentsController(
             StatusColor = StatusColorRules.FromMomentStatus(request.Status),
         };
 
-        await _momentService.AddAsync(moment);
+        await _momentService.AddAsync(moment, cancellationToken);
         return CreatedAtAction(nameof(GetBySeq), new { owner, project, seq = moment.SequenceNumber, flowId = moment.FlowId }, _mapper.Map(moment, _momentService));
     }
 
@@ -234,10 +250,10 @@ public class ProjectMomentsController(
     [HttpGet]
     public async Task<ActionResult<IEnumerable<MomentDto>>> GetAll(string owner, string project,
         [FromQuery] int? strideId = null, [FromQuery] int? flowSeq = null,
-        [FromQuery] int? iterationId = null, [FromQuery] bool? unassigned = null)
+        [FromQuery] int? iterationId = null, [FromQuery] bool? unassigned = null, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
@@ -246,37 +262,37 @@ public class ProjectMomentsController(
         if (strideId.HasValue)
         {
             var stride = await _context.Strides
-                .FirstOrDefaultAsync(s => s.Id == strideId.Value && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id);
+                .FirstOrDefaultAsync(s => s.Id == strideId.Value && s.Iteration != null && s.Iteration.ProjectId == projectEntity.Id, cancellationToken);
             if (stride is null)
                 return NotFound("Stride not found.");
 
-            moments = await _momentService.GetMomentsByStrideAsync(strideId.Value);
+            moments = await _momentService.GetMomentsByStrideAsync(strideId.Value, cancellationToken);
         }
         else if (flowSeq.HasValue)
         {
             var flow = await _context.Flows
-                .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == flowSeq.Value);
+                .FirstOrDefaultAsync(f => f.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && f.SequenceNumber == flowSeq.Value, cancellationToken);
 
             if (flow is null)
                 return NotFound("Flow not found.");
 
-            moments = await _momentService.GetMomentsByFlowAsync(flow.Id);
+            moments = await _momentService.GetMomentsByFlowAsync(flow.Id, cancellationToken);
         }
         else if (iterationId.HasValue)
         {
             var unassignedOnly = unassigned == true;
             var iteration = await _context.Iterations
-                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId.Value);
+                .FirstOrDefaultAsync(i => i.ProjectId == projectEntity.Id && i.Id == iterationId.Value, cancellationToken);
             if (iteration is null)
                 return NotFound("Iteration not found.");
 
-            moments = await _momentService.GetMomentsByIterationAsync(iterationId.Value, unassignedOnly);
+            moments = await _momentService.GetMomentsByIterationAsync(iterationId.Value, unassignedOnly, cancellationToken);
         }
         else
         {
             moments = await _context.Moments
                 .Where(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         var result = new List<MomentDto>();
@@ -299,19 +315,19 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/stride-assignment")]
-    public async Task<ActionResult<MomentDto>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<ActionResult<MomentDto>> AssignMomentToStride(int seq, [FromBody] UpdateMomentStrideAssignmentRequest request, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -322,7 +338,7 @@ public class ProjectMomentsController(
 
         try
         {
-            var updated = await _momentService.AssignMomentToStrideAsync(moment.Id, request.StrideId);
+            var updated = await _momentService.AssignMomentToStrideAsync(moment.Id, request.StrideId, cancellationToken);
 
             var jwtSub = User.FindFirst("sub")?.Value
                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -358,19 +374,19 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/status")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<ActionResult<MomentDto>> UpdateMomentStatus(int seq, [FromBody] UpdateMomentStatusRequest request, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -381,7 +397,7 @@ public class ProjectMomentsController(
 
         try
         {
-            var updated = await _momentService.UpdateMomentStatusAsync(moment.Id, request.NewStatus);
+            var updated = await _momentService.UpdateMomentStatusAsync(moment.Id, request.NewStatus, cancellationToken);
 
             var jwtSub = User.FindFirst("sub")?.Value
                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -413,19 +429,19 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/description")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<ActionResult<MomentDto>> UpdateMomentDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -441,7 +457,7 @@ public class ProjectMomentsController(
                 : request.Description.Trim();
             moment.UpdatedAt = DateTime.UtcNow;
 
-            await _momentService.UpdateAsync(moment);
+            await _momentService.UpdateAsync(moment, cancellationToken);
 
             var jwtSub = User.FindFirst("sub")?.Value
                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -473,19 +489,19 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/estimate")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<ActionResult<MomentDto>> UpdateMomentEstimate(int seq, [FromBody] UpdateMomentEstimateRequest request, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -496,7 +512,7 @@ public class ProjectMomentsController(
 
         try
         {
-            var updated = await _momentService.UpdateMomentEstimateAsync(moment.Id, request.Estimate);
+            var updated = await _momentService.UpdateMomentEstimateAsync(moment.Id, request.Estimate, cancellationToken);
 
             var jwtSub = User.FindFirst("sub")?.Value
                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -528,19 +544,19 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/type")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<ActionResult<MomentDto>> UpdateMomentType(int seq, [FromBody] UpdateMomentTypeRequest request, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -554,7 +570,7 @@ public class ProjectMomentsController(
             moment.Type = request.NewType;
             moment.UpdatedAt = DateTime.UtcNow;
 
-            await _momentService.UpdateAsync(moment);
+            await _momentService.UpdateAsync(moment, cancellationToken);
 
             var jwtSub = User.FindFirst("sub")?.Value
                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -586,19 +602,19 @@ public class ProjectMomentsController(
     /// <returns>NoContent on success, or BadRequest if IDs mismatch.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/owner")]
-    public async Task<ActionResult<MomentDto>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project, [FromQuery] int flowId = 0)
+    public async Task<ActionResult<MomentDto>> UpdateMomentOwner(int seq, [FromBody] UpdateMomentOwnerRequest request, string owner, string project, [FromQuery] int flowId = 0, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var moment = await _context.Moments
-            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
+            .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId), cancellationToken);
 
         if (moment is null)
             return NotFound();
 
-        if (!await UserCanEditMomentAsync(moment.Id))
+        if (!await UserCanEditMomentAsync(moment.Id, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -609,7 +625,7 @@ public class ProjectMomentsController(
 
         try
         {
-            var updated = await _momentService.AssignOwnerAsync(moment.Id, request.UserId);
+            var updated = await _momentService.AssignOwnerAsync(moment.Id, request.UserId, cancellationToken);
 
             var jwtSub = User.FindFirst("sub")?.Value
                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -631,28 +647,28 @@ public class ProjectMomentsController(
 
     /// <summary>Resolve the current user from JWT claims, auto-provisioning if needed.</summary>
     /// <returns>The current user, or <c>null</c> if the email claim is missing.</returns>
-    private async Task<User?> GetCurrentUserAsync()
+    private async Task<User?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
     {
         var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                  ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(email)) return null;
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        return await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        return await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
     }
 
     /// <summary>Check if the current user has Edit permission on the moment's project.</summary>
     /// <param name="momentId">The moment ID to check permissions for.</param>
     /// <returns><c>true</c> if the user has Edit permission; otherwise <c>false</c>.</returns>
-    private async Task<bool> UserCanEditMomentAsync(int momentId)
+    private async Task<bool> UserCanEditMomentAsync(int momentId, CancellationToken cancellationToken = default)
     {
-        var user = await GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync(cancellationToken);
         if (user is null) return false;
 
-        var projectId = await _momentService.GetProjectIdForMomentAsync(momentId);
+        var projectId = await _momentService.GetProjectIdForMomentAsync(momentId, cancellationToken);
         if (projectId is null) return false;
 
-        var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value);
+        var level = await _permissionService.GetUserPermissionAsync(user.Id, projectId.Value, cancellationToken);
         return level == PermissionLevel.Edit;
     }
 }

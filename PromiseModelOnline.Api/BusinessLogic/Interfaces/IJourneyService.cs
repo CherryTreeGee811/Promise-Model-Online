@@ -1,5 +1,6 @@
 ﻿using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
@@ -13,6 +14,7 @@ public interface IJourneyService : IGenericService<Journey>
 {
     /// <summary>Return all journeys belonging to an epic.</summary>
     /// <param name="epicId">The parent epic ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All journeys under the given epic.</returns>
-    Task<IEnumerable<Journey>> GetJourneysByEpicAsync(int epicId);
+    Task<IEnumerable<Journey>> GetJourneysByEpicAsync(int epicId, CancellationToken cancellationToken = default);
 }

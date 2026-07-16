@@ -24,6 +24,8 @@ public class ProjectEpicsControllerUnitTests
     private Mock<IProjectService> _projectServiceMock = null!;
     private Mock<IGenericService<Epic>> _serviceMock = null!;
     private Mock<IGenericMapper<Epic, EpicDto>> _mapperMock = null!;
+    private Mock<IEpicRepository> _epicRepoMock = null!;
+    private Mock<IGenericRepository<Promise>> _promiseRepoMock = null!;
     private PromiseModelOnlineContext _context = null!;
     private ProjectEpicsController _controller = null!;
 
@@ -33,6 +35,8 @@ public class ProjectEpicsControllerUnitTests
         _projectServiceMock = new Mock<IProjectService>();
         _serviceMock = new Mock<IGenericService<Epic>>();
         _mapperMock = new Mock<IGenericMapper<Epic, EpicDto>>();
+        _epicRepoMock = new Mock<IEpicRepository>();
+        _promiseRepoMock = new Mock<IGenericRepository<Promise>>();
 
         var options = new DbContextOptionsBuilder<PromiseModelOnlineContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -43,7 +47,9 @@ public class ProjectEpicsControllerUnitTests
             _serviceMock.Object,
             _mapperMock.Object,
             _context,
-            _projectServiceMock.Object);
+            _projectServiceMock.Object,
+            _epicRepoMock.Object,
+            _promiseRepoMock.Object);
         ControllerTestHelpers.SetControllerUser(_controller, "u@test.com");
     }
 
@@ -112,7 +118,8 @@ public class ProjectEpicsControllerUnitTests
     {
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         _context.Promises.Add(Promise(id: 10, seq: 1)); await _context.SaveChangesAsync();
-        _context.Epics.Add(Epic(id: 20, promiseId: 10)); await _context.SaveChangesAsync();
+        _epicRepoMock.Setup(r => r.GetEpicsByPromiseAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Epic> { Epic(id: 20, promiseId: 10) });
         _mapperMock.Setup(m => m.Map(It.IsAny<Epic>(), It.IsAny<IGenericService<Epic>>()))
             .Returns<Epic, IGenericService<Epic>>((e, _) => new EpicDto { Id = e.Id });
 
@@ -169,8 +176,9 @@ public class ProjectEpicsControllerUnitTests
     public async Task REQ_FUN_XXX_GetById_Found_ReturnsOk()
     {
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
-        _context.Promises.Add(Promise()); await _context.SaveChangesAsync();
-        _context.Epics.Add(Epic(id: 42)); await _context.SaveChangesAsync();
+        var epic = Epic(id: 42);
+        _epicRepoMock.Setup(r => r.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(epic);
+        _promiseRepoMock.Setup(r => r.GetByIdAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(Promise());
         _mapperMock.Setup(m => m.Map(It.IsAny<Epic>(), It.IsAny<IGenericService<Epic>>()))
             .Returns<Epic, IGenericService<Epic>>((e, _) => new EpicDto { Id = e.Id });
 
@@ -183,6 +191,7 @@ public class ProjectEpicsControllerUnitTests
     public async Task REQ_FUN_XXX_GetById_NotFound_Returns404()
     {
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
+        _epicRepoMock.Setup(r => r.GetByIdAsync(999, It.IsAny<CancellationToken>())).ReturnsAsync((Epic?)null);
 
         var result = await _controller.GetById(999, "o", "p");
 
@@ -194,7 +203,7 @@ public class ProjectEpicsControllerUnitTests
     {
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
-        _context.Promises.Add(Promise()); await _context.SaveChangesAsync();
+        _promiseRepoMock.Setup(r => r.GetByIdAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(Promise());
         _serviceMock.Setup(s => s.AddAsync(It.IsAny<Epic>())).Returns(Task.CompletedTask);
         _mapperMock.Setup(m => m.Map(It.IsAny<Epic>(), It.IsAny<IGenericService<Epic>>()))
             .Returns<Epic, IGenericService<Epic>>((e, _) => new EpicDto { Id = e.Id });

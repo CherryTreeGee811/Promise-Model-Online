@@ -24,12 +24,14 @@ public class ProjectPromisesController(
     IGenericMapper<Promise, PromiseDto> mapper,
     IMomentService momentService,
     IPromiseModelOnlineContext context,
-    IProjectService projectService) : ProjectScopedControllerBase(projectService)
+    IProjectService projectService,
+    IGenericRepository<Promise> promiseRepo) : ProjectScopedControllerBase(projectService)
 {
     private readonly IGenericService<Promise> _service = service;
     private readonly IGenericMapper<Promise, PromiseDto> _mapper = mapper;
     private readonly IMomentService _momentService = momentService;
     private readonly IPromiseModelOnlineContext _context = context;
+    private readonly IGenericRepository<Promise> _promiseRepo = promiseRepo;
 
     /// <summary>Return a promise by its sequence number within the project.</summary>
     /// <param name="seq">The promise sequence number.</param>
@@ -38,15 +40,15 @@ public class ProjectPromisesController(
     /// <returns>The matching promise as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{seq}")]
-    public async Task<ActionResult<PromiseDto>> GetBySeq(int seq, string owner, string project)
+    public async Task<ActionResult<PromiseDto>> GetBySeq(int seq, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var promise = await _context.Promises
-            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq);
+            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq, cancellationToken);
 
         if (promise is null)
             return NotFound();
@@ -60,17 +62,16 @@ public class ProjectPromisesController(
     /// <returns>The matching promise as a DTO.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("by-id/{id}")]
-    public async Task<ActionResult<PromiseDto>> GetById(int id, string owner, string project)
+    public async Task<ActionResult<PromiseDto>> GetById(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
-        var promise = await _context.Promises
-            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.Id == id);
+        var promise = await _promiseRepo.GetByIdAsync(id, cancellationToken);
 
-        if (promise is null)
+        if (promise is null || promise.ProjectId != projectEntity.Id)
             return NotFound();
 
         return Ok(_mapper.Map(promise, _service));
@@ -83,18 +84,18 @@ public class ProjectPromisesController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPut("{seq}")]
-    public async Task<IActionResult> Update(int seq, [FromBody] UpdatePromiseRequestDto dto, string owner, string project)
+    public async Task<IActionResult> Update(int seq, [FromBody] UpdatePromiseRequestDto dto, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (dto is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var existing = await _context.Promises
-            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq);
+            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq, cancellationToken);
 
         if (existing is null)
             return NotFound();
@@ -111,7 +112,7 @@ public class ProjectPromisesController(
         existing.OwnerId = dto.OwnerId;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        await _service.UpdateAsync(existing);
+        await _service.UpdateAsync(existing, cancellationToken);
         return NoContent();
     }
     /// <summary>Delete a promise by its sequence number.</summary>
@@ -121,22 +122,22 @@ public class ProjectPromisesController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete("{seq}")]
-    public async Task<IActionResult> Delete(int seq, string owner, string project)
+    public async Task<IActionResult> Delete(int seq, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         var promise = await _context.Promises
-            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq);
+            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq, cancellationToken);
 
         if (promise is null)
             return NotFound();
 
-        var deleted = await _service.DeleteByIdAsync(promise.Id);
+        var deleted = await _service.DeleteByIdAsync(promise.Id, cancellationToken);
         if (!deleted)
             return NotFound();
 
@@ -149,12 +150,12 @@ public class ProjectPromisesController(
     /// <returns>The created promise as a DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost("create")]
-    public async Task<ActionResult<PromiseDto>> CreateFromDto([FromBody] CreatePromiseRequestDto request, string owner, string project)
+    public async Task<ActionResult<PromiseDto>> CreateFromDto([FromBody] CreatePromiseRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -163,7 +164,7 @@ public class ProjectPromisesController(
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var nextSeq = await _context.GetNextPromiseSequenceAsync(projectEntity.Id);
+        var nextSeq = await _context.GetNextPromiseSequenceAsync(projectEntity.Id, cancellationToken);
 
         var promise = new Promise
         {
@@ -175,7 +176,7 @@ public class ProjectPromisesController(
             StatusColor = "red",
         };
 
-        await _service.AddAsync(promise);
+        await _service.AddAsync(promise, cancellationToken);
         return CreatedAtAction(nameof(GetBySeq), new { owner, project, seq = promise.SequenceNumber }, _mapper.Map(promise, _service));
     }
     /// <summary>Update a promise's description.</summary>
@@ -186,12 +187,12 @@ public class ProjectPromisesController(
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{seq}/description")]
-    public async Task<ActionResult<PromiseDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project)
+    public async Task<ActionResult<PromiseDto>> UpdateDescription(int seq, [FromBody] UpdateDescriptionRequestDto request, string owner, string project, CancellationToken cancellationToken = default)
     {
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
             return Forbid();
 
         if (request is null)
@@ -201,7 +202,7 @@ public class ProjectPromisesController(
             return ValidationProblem(ModelState);
 
         var promise = await _context.Promises
-            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq);
+            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq, cancellationToken);
 
         if (promise is null)
             return NotFound();
@@ -211,7 +212,7 @@ public class ProjectPromisesController(
             : request.Description.Trim();
         promise.UpdatedAt = DateTime.UtcNow;
 
-        await _service.UpdateAsync(promise);
+        await _service.UpdateAsync(promise, cancellationToken);
         return Ok(_mapper.Map(promise, _service));
     }
     /// <summary>Get the total effort estimate for all moments under a promise.</summary>
@@ -221,20 +222,20 @@ public class ProjectPromisesController(
     /// <returns>The total effort value.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{seq}/total-effort")]
-    public async Task<ActionResult<int>> GetTotalEffort(int seq, string owner, string project)
+    public async Task<ActionResult<int>> GetTotalEffort(int seq, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
         if (projectEntity is null)
             return NotFound();
 
         var promise = await _context.Promises
-            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq);
+            .FirstOrDefaultAsync(p => p.ProjectId == projectEntity.Id && p.SequenceNumber == seq, cancellationToken);
 
         if (promise is null)
             return NotFound();
 
-        var effort = await _momentService.GetTotalEffortForPromiseAsync(promise.Id);
+        var effort = await _momentService.GetTotalEffortForPromiseAsync(promise.Id, cancellationToken);
         return Ok(effort);
     }
 }

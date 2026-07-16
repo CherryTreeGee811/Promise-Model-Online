@@ -6,6 +6,7 @@ using PromiseModelOnline.Api.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -27,21 +28,23 @@ public class ReactionService(IReactionRepository reactionRepo,
     /// <summary>Return all reactions on a stack item as DTOs.</summary>
     /// <param name="stackItemType">The target entity type.</param>
     /// <param name="stackItemId">The target entity ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Reaction DTOs with user information.</returns>
-    public async Task<IEnumerable<ReactionDto>> GetReactionsAsync(string stackItemType, int stackItemId)
+    public async Task<IEnumerable<ReactionDto>> GetReactionsAsync(string stackItemType, int stackItemId, CancellationToken cancellationToken = default)
     {
-        var reactions = await _reactionRepo.GetReactionsForItemAsync(stackItemType, stackItemId);
+        var reactions = await _reactionRepo.GetReactionsForItemAsync(stackItemType, stackItemId, cancellationToken);
         return reactions.Select(r => _mapper.Map(r, null!));
     }
 
     /// <summary>Add a reaction to a stack item.</summary>
     /// <param name="request">The reaction details.</param>
     /// <param name="userId">The user ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created reaction DTO.</returns>
     /// <exception cref="InvalidOperationException">Reaction already exists for this user and item.</exception>
-    public async Task<ReactionDto> CreateReactionAsync(CreateReactionRequest request, int userId)
+    public async Task<ReactionDto> CreateReactionAsync(CreateReactionRequest request, int userId, CancellationToken cancellationToken = default)
     {
-        var existing = await _reactionRepo.GetUserReactionAsync(userId, request.StackItemType, request.StackItemId);
+        var existing = await _reactionRepo.GetUserReactionAsync(userId, request.StackItemType, request.StackItemId, cancellationToken);
         if (existing is not null)
             throw new InvalidOperationException("Reaction already exists for this user and item.");
 
@@ -53,8 +56,8 @@ public class ReactionService(IReactionRepository reactionRepo,
             StackItemId = request.StackItemId,
             CreatedAt = DateTime.UtcNow
         };
-        await _reactionRepo.AddAsync(reaction);
-        await _reactionRepo.SaveChangesAsync();
+        await _reactionRepo.AddAsync(reaction, cancellationToken);
+        await _reactionRepo.SaveChangesAsync(cancellationToken);
         return _mapper.Map(reaction, null!);
     }
 
@@ -62,11 +65,12 @@ public class ReactionService(IReactionRepository reactionRepo,
     /// <param name="reactionId">The reaction ID.</param>
     /// <param name="request">The updated reaction details.</param>
     /// <param name="userId">The requesting user ID for ownership validation.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated reaction DTO.</returns>
     /// <exception cref="InvalidOperationException">Reaction not found, not owned by user, or emote is empty.</exception>
-    public async Task<ReactionDto> UpdateReactionAsync(int reactionId, UpdateReactionRequestDto request, int userId)
+    public async Task<ReactionDto> UpdateReactionAsync(int reactionId, UpdateReactionRequestDto request, int userId, CancellationToken cancellationToken = default)
     {
-        var existing = await _reactionRepo.GetByIdAsync(reactionId);
+        var existing = await _reactionRepo.GetByIdAsync(reactionId, cancellationToken);
         if (existing is null || existing.UserId != userId)
             throw new InvalidOperationException("Reaction not found or not yours.");
 
@@ -75,19 +79,20 @@ public class ReactionService(IReactionRepository reactionRepo,
 
         existing.Emote = request.Emote;
         _reactionRepo.Update(existing);
-        await _reactionRepo.SaveChangesAsync();
+        await _reactionRepo.SaveChangesAsync(cancellationToken);
         return _mapper.Map(existing, null!);
     }
 
     /// <summary>Remove a reaction with ownership validation.</summary>
     /// <param name="reactionId">The reaction ID to remove.</param>
     /// <param name="userId">The requesting user ID for ownership validation.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="InvalidOperationException">Reaction not found or not owned by user.</exception>
-    public async Task RemoveReactionAsync(int reactionId, int userId)
+    public async Task RemoveReactionAsync(int reactionId, int userId, CancellationToken cancellationToken = default)
     {
-        var reaction = await _reactionRepo.GetByIdAsync(reactionId);
+        var reaction = await _reactionRepo.GetByIdAsync(reactionId, cancellationToken);
         if (reaction is null || reaction.UserId != userId)
             throw new InvalidOperationException("Reaction not found or not yours.");
-        await _reactionRepo.DeleteByIdAsync(reactionId);
+        await _reactionRepo.DeleteByIdAsync(reactionId, cancellationToken);
     }
 }

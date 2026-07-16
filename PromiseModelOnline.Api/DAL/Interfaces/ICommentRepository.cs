@@ -1,6 +1,7 @@
 ﻿using PromiseModelOnline.Api.DTOs;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces;
@@ -21,9 +22,10 @@ public interface ICommentRepository
     /// <param name="parentType">Entity type discriminator: <c>"promise"</c>, <c>"epic"</c>,
     ///   <c>"journey"</c>, <c>"flow"</c>, or <c>"moment"</c>. Case-insensitive. Not null.</param>
     /// <param name="parentId">The parent entity's integer ID. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Threaded comment tree for the entity.</returns>
     /// <exception cref="System.ArgumentException"><paramref name="parentType"/> is not a valid type.</exception>
-    Task<IEnumerable<Comment>> GetCommentsForEntityAsync(string parentType, int parentId);
+    Task<IEnumerable<Comment>> GetCommentsForEntityAsync(string parentType, int parentId, CancellationToken cancellationToken = default);
 
     /// <summary>Persist a new comment.</summary>
     /// <remarks>
@@ -31,13 +33,15 @@ public interface ICommentRepository
     ///   (e.g., <c>MomentId</c>, <c>FlowId</c>) on the comment entity.
     /// </remarks>
     /// <param name="comment">The comment to insert. Not null.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="System.ArgumentNullException"><paramref name="comment"/> is <c>null</c>.</exception>
-    Task AddCommentAsync(Comment comment);
+    Task AddCommentAsync(Comment comment, CancellationToken cancellationToken = default);
 
     /// <summary>Record a user mention for notification dispatch.</summary>
     /// <param name="mention">The mention link record. Not null.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="System.ArgumentNullException"><paramref name="mention"/> is <c>null</c>.</exception>
-    Task AddMentionAsync(CommentMention mention);
+    Task AddMentionAsync(CommentMention mention, CancellationToken cancellationToken = default);
 
     /// <summary>Search the project hierarchy for auto-complete.</summary>
     /// <remarks>
@@ -51,7 +55,7 @@ public interface ICommentRepository
     ///   or a type-sequence reference.</param>
     /// <param name="maxResults">Max items to return, range [1, 50]. Default is 5.</param>
     /// <returns>Flat list of matching stack items with type, ID, sequence, statement, and status color.</returns>
-    Task<IEnumerable<StackSearchResult>> SearchStackByStatementAsync(int projectId, string searchTerm, int maxResults = 5);
+    Task<IEnumerable<StackSearchResult>> SearchStackByStatementAsync(int projectId, string searchTerm, int maxResults = 5, CancellationToken cancellationToken = default);
 
     /// <summary>Resolve the root project ID for any commentable entity.</summary>
     /// <remarks>
@@ -62,30 +66,30 @@ public interface ICommentRepository
     /// <param name="parentId">The entity's integer ID.</param>
     /// <returns>The root project ID.</returns>
     /// <exception cref="System.ArgumentException"><paramref name="parentType"/> is invalid or an ancestor cannot be found.</exception>
-    Task<int> ResolveProjectIdAsync(string parentType, int parentId);
+    Task<int> ResolveProjectIdAsync(string parentType, int parentId, CancellationToken cancellationToken = default);
 
     /// <summary>Load all promises in a project.</summary>
     /// <param name="projectId">The project ID. Must be greater than zero.</param>
     /// <returns>All promises belonging to the project.</returns>
-    Task<IEnumerable<Promise>> GetPromisesByProjectAsync(int projectId);
+    Task<IEnumerable<Promise>> GetPromisesByProjectAsync(int projectId, CancellationToken cancellationToken = default);
 
     /// <summary>Batch-load epics for a list of promise IDs.</summary>
     /// <param name="promiseIds">Promise IDs to scope the query. Not null.</param>
     /// <returns>Epics whose <c>ProductPromiseId</c> is in <paramref name="promiseIds"/>.</returns>
-    Task<IEnumerable<Epic>> GetEpicsByPromiseIdsAsync(List<int> promiseIds);
+    Task<IEnumerable<Epic>> GetEpicsByPromiseIdsAsync(List<int> promiseIds, CancellationToken cancellationToken = default);
 
     /// <summary>Batch-load journeys for a list of epic IDs.</summary>
     /// <param name="epicIds">Epic IDs to scope the query. Not null.</param>
     /// <returns>Journeys whose <c>EpicId</c> is in <paramref name="epicIds"/>.</returns>
-    Task<IEnumerable<Journey>> GetJourneysByEpicIdsAsync(List<int> epicIds);
+    Task<IEnumerable<Journey>> GetJourneysByEpicIdsAsync(List<int> epicIds, CancellationToken cancellationToken = default);
 
     /// <summary>Batch-load flows for a list of journey IDs.</summary>
     /// <param name="journeyIds">Journey IDs to scope the query. Not null.</param>
     /// <returns>Flows whose <c>JourneyId</c> is in <paramref name="journeyIds"/>.</returns>
-    Task<IEnumerable<Flow>> GetFlowsByJourneyIdsAsync(List<int> journeyIds);
+    Task<IEnumerable<Flow>> GetFlowsByJourneyIdsAsync(List<int> journeyIds, CancellationToken cancellationToken = default);
 
     /// <summary>Batch-load moments for a list of flow IDs.</summary>
     /// <param name="flowIds">Flow IDs to scope the query. Not null.</param>
     /// <returns>Moments whose <c>FlowId</c> is in <paramref name="flowIds"/>.</returns>
-    Task<IEnumerable<Moment>> GetMomentsByFlowIdsAsync(List<int> flowIds);
+    Task<IEnumerable<Moment>> GetMomentsByFlowIdsAsync(List<int> flowIds, CancellationToken cancellationToken = default);
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic;
@@ -22,8 +23,9 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
 
     /// <summary>Validate a project import JSON stream, checking structure, schema version, references, and data integrity.</summary>
     /// <param name="jsonStream">The JSON stream containing the export document.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A <see cref="ProjectImportValidationResult"/> with errors and warnings.</returns>
-    public async Task<ProjectImportValidationResult> ValidateAsync(Stream jsonStream)
+    public async Task<ProjectImportValidationResult> ValidateAsync(Stream jsonStream, CancellationToken cancellationToken = default)
     {
         var result = new ProjectImportValidationResult();
 
@@ -35,7 +37,8 @@ public sealed class ProjectImportValidationService : IProjectImportValidationSer
                 new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
-                });
+                },
+                cancellationToken);
         }
         catch (JsonException ex)
         {

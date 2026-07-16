@@ -3,6 +3,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -20,5 +21,5 @@ public class FlowRepository(PromiseModelOnlineContext context) : GenericReposito
     /// <summary>Return all flows belonging to a journey.</summary>
     /// <param name="journeyId">The parent journey ID. Must be greater than zero.</param>
     /// <returns>All flows under the given journey. Empty if none exist.</returns>
-    public async Task<IEnumerable<Flow>> GetFlowsByJourneyAsync(int journeyId) => await FindAsync(f => f.JourneyId == journeyId);
+    public async Task<IEnumerable<Flow>> GetFlowsByJourneyAsync(int journeyId, CancellationToken cancellationToken = default) => await FindAsync(f => f.JourneyId == journeyId, cancellationToken);
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Threading;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -106,83 +107,83 @@ public class PromiseModelOnlineContext(
     /// <param name="parentId">The parent entity's ID that scopes the sequence.</param>
     /// <param name="scope">The entity type name acting as the sequence scope (e.g., "Promise", "Epic").</param>
     /// <returns>The next available sequence number.</returns>
-    private async Task<int> GetNextSequenceAsync(int parentId, string scope)
+    private async Task<int> GetNextSequenceAsync(int parentId, string scope, CancellationToken cancellationToken = default)
     {
         if (Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
         {
-            var seq = await EntitySequences.FindAsync(parentId, scope);
+            var seq = await EntitySequences.FindAsync(new object[] { parentId, scope }, cancellationToken);
             if (seq is null)
             {
                 EntitySequences.Add(new EntitySequence { ParentId = parentId, Scope = scope, NextSequenceNumber = 2 });
-                await SaveChangesAsync();
+                await SaveChangesAsync(cancellationToken);
                 return 1;
             }
             var value = seq.NextSequenceNumber;
             seq.NextSequenceNumber++;
-            await SaveChangesAsync();
+            await SaveChangesAsync(cancellationToken);
             return value;
         }
 
         if (Database.CurrentTransaction is not null)
         {
-            var seq = await EntitySequences.FindAsync(parentId, scope);
+            var seq = await EntitySequences.FindAsync(new object[] { parentId, scope }, cancellationToken);
             if (seq is null)
             {
                 EntitySequences.Add(new EntitySequence { ParentId = parentId, Scope = scope, NextSequenceNumber = 2 });
-                await SaveChangesAsync();
+                await SaveChangesAsync(cancellationToken);
                 return 1;
             }
             var value = seq.NextSequenceNumber;
             seq.NextSequenceNumber++;
-            await SaveChangesAsync();
+            await SaveChangesAsync(cancellationToken);
             return value;
         }
 
-        await using var tx = await Database.BeginTransactionAsync(IsolationLevel.Serializable);
-        var seq2 = await EntitySequences.FindAsync(parentId, scope);
+        await using var tx = await Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var seq2 = await EntitySequences.FindAsync(new object[] { parentId, scope }, cancellationToken);
         if (seq2 is null)
         {
             EntitySequences.Add(new EntitySequence { ParentId = parentId, Scope = scope, NextSequenceNumber = 2 });
-            await SaveChangesAsync();
-            await tx.CommitAsync();
+            await SaveChangesAsync(cancellationToken);
+            await tx.CommitAsync(cancellationToken);
             return 1;
         }
         var nextValue = seq2.NextSequenceNumber;
         seq2.NextSequenceNumber++;
-        await SaveChangesAsync();
-        await tx.CommitAsync();
+        await SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
         return nextValue;
     }
 
     /// <summary>Atomically allocate the next display-order sequence number for a product promise within its project.</summary>
     /// <param name="projectId">The parent project ID.</param>
     /// <returns>The next available sequence number.</returns>
-    public async Task<int> GetNextPromiseSequenceAsync(int projectId)
-        => await GetNextSequenceAsync(projectId, "Promise");
+    public async Task<int> GetNextPromiseSequenceAsync(int projectId, CancellationToken cancellationToken = default)
+        => await GetNextSequenceAsync(projectId, "Promise", cancellationToken);
 
     /// <summary>Atomically allocate the next display-order sequence number for an epic within its parent promise.</summary>
     /// <param name="promiseId">The parent promise ID.</param>
     /// <returns>The next available sequence number.</returns>
-    public async Task<int> GetNextEpicSequenceAsync(int promiseId)
-        => await GetNextSequenceAsync(promiseId, "Epic");
+    public async Task<int> GetNextEpicSequenceAsync(int promiseId, CancellationToken cancellationToken = default)
+        => await GetNextSequenceAsync(promiseId, "Epic", cancellationToken);
 
     /// <summary>Atomically allocate the next display-order sequence number for a journey within its parent epic.</summary>
     /// <param name="epicId">The parent epic ID.</param>
     /// <returns>The next available sequence number.</returns>
-    public async Task<int> GetNextJourneySequenceAsync(int epicId)
-        => await GetNextSequenceAsync(epicId, "Journey");
+    public async Task<int> GetNextJourneySequenceAsync(int epicId, CancellationToken cancellationToken = default)
+        => await GetNextSequenceAsync(epicId, "Journey", cancellationToken);
 
     /// <summary>Atomically allocate the next display-order sequence number for a flow within its parent journey.</summary>
     /// <param name="journeyId">The parent journey ID.</param>
     /// <returns>The next available sequence number.</returns>
-    public async Task<int> GetNextFlowSequenceAsync(int journeyId)
-        => await GetNextSequenceAsync(journeyId, "Flow");
+    public async Task<int> GetNextFlowSequenceAsync(int journeyId, CancellationToken cancellationToken = default)
+        => await GetNextSequenceAsync(journeyId, "Flow", cancellationToken);
 
     /// <summary>Atomically allocate the next display-order sequence number for a moment within its parent flow.</summary>
     /// <param name="flowId">The parent flow ID.</param>
     /// <returns>The next available sequence number.</returns>
-    public async Task<int> GetNextMomentSequenceAsync(int flowId)
-        => await GetNextSequenceAsync(flowId, "Moment");
+    public async Task<int> GetNextMomentSequenceAsync(int flowId, CancellationToken cancellationToken = default)
+        => await GetNextSequenceAsync(flowId, "Moment", cancellationToken);
 
     /// <summary>Configure entity relationships, indexes, and constraints.</summary>
     /// <remarks>

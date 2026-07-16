@@ -1,6 +1,8 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Services;
 
@@ -18,7 +20,9 @@ public class AuthUserLookupService(
     private readonly ILogger<AuthUserLookupService> _logger = logger;
 
     /// <summary>Search the auth DB by normalized UserName or Email (exact match).</summary>
-    public async Task<AuthUserInfo?> FindByUsernameOrEmailAsync(string searchTerm)
+    /// <param name="searchTerm">Username or email to search for.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public async Task<AuthUserInfo?> FindByUsernameOrEmailAsync(string searchTerm, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
             return null;
@@ -34,7 +38,7 @@ public class AuthUserLookupService(
         try
         {
             await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
             const string sql = """
                 SELECT TOP 1 [UserName], [Email]
@@ -45,8 +49,8 @@ public class AuthUserLookupService(
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@normalized", normalized);
 
-            await using var reader = await command.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
             {
                 return new AuthUserInfo
                 {

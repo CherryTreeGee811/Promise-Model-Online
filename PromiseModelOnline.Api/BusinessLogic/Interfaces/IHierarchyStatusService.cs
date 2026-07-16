@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.BusinessLogic.Interfaces;
 
@@ -12,17 +13,21 @@ public interface IHierarchyStatusService
 {
     /// <summary>Recalculate status from a flow upward.</summary>
     /// <param name="flowId">The flow ID whose status changed.</param>
-    Task RecalculateFromFlowAsync(int flowId);
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RecalculateFromFlowAsync(int flowId, CancellationToken cancellationToken = default);
 
     /// <summary>Recalculate status from a journey upward.</summary>
     /// <param name="journeyId">The journey ID whose status changed.</param>
-    Task RecalculateFromJourneyAsync(int journeyId);
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RecalculateFromJourneyAsync(int journeyId, CancellationToken cancellationToken = default);
 
     /// <summary>Recalculate status from an epic upward.</summary>
     /// <param name="epicId">The epic ID whose status changed.</param>
-    Task RecalculateFromEpicAsync(int epicId);
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RecalculateFromEpicAsync(int epicId, CancellationToken cancellationToken = default);
 
     /// <summary>Recalculate status from a promise upward.</summary>
     /// <param name="promiseId">The promise ID whose status changed.</param>
-    Task RecalculateFromPromiseAsync(int promiseId);
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RecalculateFromPromiseAsync(int promiseId, CancellationToken cancellationToken = default);
 }

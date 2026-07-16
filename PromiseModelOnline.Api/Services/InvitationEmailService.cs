@@ -2,6 +2,8 @@
 using PromiseModelOnline.Api.BusinessLogic.Interfaces;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.Services;
 
@@ -43,7 +45,8 @@ public class InvitationEmailService : IInvitationEmailService
     /// <param name="email">Recipient email address.</param>
     /// <param name="username">Recipient display name.</param>
     /// <param name="projectName">Name of the project.</param>
-    public async Task SendInvitationEmailAsync(string email, string username, string projectName)
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public async Task SendInvitationEmailAsync(string email, string username, string projectName, CancellationToken cancellationToken = default)
     {
         var acceptUrl = $"{_baseUrl}/invitations";
         if (string.IsNullOrEmpty(_apiKey))
@@ -100,11 +103,11 @@ public class InvitationEmailService : IInvitationEmailService
             msg.SetGoogleAnalytics(false);
             msg.SetSubscriptionTracking(false);
 
-            var response = await client.SendEmailAsync(msg);
+            var response = await client.SendEmailAsync(msg, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
-                var body = await response.Body.ReadAsStringAsync();
+                var body = await response.Body.ReadAsStringAsync(cancellationToken);
                 _logger.LogWarning("SendGrid returned {StatusCode} when sending invitation to {Email}. Body: {Body}", (int)response.StatusCode, email, body);
             }
         }

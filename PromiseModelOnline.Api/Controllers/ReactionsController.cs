@@ -54,12 +54,12 @@ public class ReactionsController(IReactionService reactionService,
 
     public async Task<ActionResult<IEnumerable<ReactionDto>>> GetReactions(
 
-        [FromQuery] string type, [FromQuery] int itemId)
+        [FromQuery] string type, [FromQuery] int itemId, CancellationToken cancellationToken = default)
 
     {
 
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var reactions = await _reactionService.GetReactionsAsync(type, itemId);
+        var reactions = await _reactionService.GetReactionsAsync(type, itemId, cancellationToken);
 
         return Ok(reactions);
 
@@ -72,22 +72,22 @@ public class ReactionsController(IReactionService reactionService,
     /// <returns>The created reaction DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<ReactionDto>> CreateReaction([FromBody] CreateReactionRequest request)
+    public async Task<ActionResult<ReactionDto>> CreateReaction([FromBody] CreateReactionRequest request, CancellationToken cancellationToken = default)
     {
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var userId = await GetCurrentUserIdAsync();
+        var userId = await GetCurrentUserIdAsync(cancellationToken);
         if (userId is null) return Unauthorized();
 
         int projectId;
-        try { projectId = await _commentRepository.ResolveProjectIdAsync(request.StackItemType, request.StackItemId); }
+        try { projectId = await _commentRepository.ResolveProjectIdAsync(request.StackItemType, request.StackItemId, cancellationToken); }
         catch (ArgumentException) { return NotFound("Stack item not found."); }
-        var level = await _permissionService.GetUserPermissionAsync(userId.Value, projectId);
+        var level = await _permissionService.GetUserPermissionAsync(userId.Value, projectId, cancellationToken);
         if (level == null || level < PermissionLevel.Comment) return Forbid();
 
         try
         {
-            var result = await _reactionService.CreateReactionAsync(request, userId.Value);
+            var result = await _reactionService.CreateReactionAsync(request, userId.Value, cancellationToken);
             _logger.LogInformation("User {UserId} created reaction {ReactionId}", userId.Value, result.Id);
             return CreatedAtAction(nameof(GetReactions), new { type = request.StackItemType, itemId = request.StackItemId }, result);
         }
@@ -104,25 +104,25 @@ public class ReactionsController(IReactionService reactionService,
     /// <returns>The updated reaction DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPatch("{id}")]
-    public async Task<ActionResult<ReactionDto>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDto request)
+    public async Task<ActionResult<ReactionDto>> UpdateReaction(int id, [FromBody] UpdateReactionRequestDto request, CancellationToken cancellationToken = default)
     {
-        var userId = await GetCurrentUserIdAsync();
+        var userId = await GetCurrentUserIdAsync(cancellationToken);
         if (userId is null) return Unauthorized();
         if (request is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-        var reaction = await _reactionRepository.GetByIdAsync(id);
+        var reaction = await _reactionRepository.GetByIdAsync(id, cancellationToken);
         if (reaction is null) return NotFound("Reaction not found.");
 
         int projectId;
-        try { projectId = await _commentRepository.ResolveProjectIdAsync(reaction.StackItemType, reaction.StackItemId); }
+        try { projectId = await _commentRepository.ResolveProjectIdAsync(reaction.StackItemType, reaction.StackItemId, cancellationToken); }
         catch (ArgumentException) { return NotFound("Stack item not found."); }
-        var level = await _permissionService.GetUserPermissionAsync(userId.Value, projectId);
+        var level = await _permissionService.GetUserPermissionAsync(userId.Value, projectId, cancellationToken);
         if (level == null || level < PermissionLevel.Comment) return Forbid();
 
         try
         {
-            var result = await _reactionService.UpdateReactionAsync(id, request, userId.Value);
+            var result = await _reactionService.UpdateReactionAsync(id, request, userId.Value, cancellationToken);
             _logger.LogInformation("User {UserId} updated reaction {ReactionId}", userId.Value, id);
             return Ok(result);
         }
@@ -140,24 +140,24 @@ public class ReactionsController(IReactionService reactionService,
     /// <returns>NoContent on success.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteReaction(int id)
+    public async Task<ActionResult> DeleteReaction(int id, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var userId = await GetCurrentUserIdAsync();
-        if (userId == null) return Unauthorized();
+        var userId = await GetCurrentUserIdAsync(cancellationToken);
+        if (userId is null) return Unauthorized();
 
-        var reaction = await _reactionRepository.GetByIdAsync(id);
+        var reaction = await _reactionRepository.GetByIdAsync(id, cancellationToken);
         if (reaction is null) return NotFound("Reaction not found.");
 
         int projectId;
-        try { projectId = await _commentRepository.ResolveProjectIdAsync(reaction.StackItemType, reaction.StackItemId); }
+        try { projectId = await _commentRepository.ResolveProjectIdAsync(reaction.StackItemType, reaction.StackItemId, cancellationToken); }
         catch (ArgumentException) { return NotFound("Stack item not found."); }
-        var level = await _permissionService.GetUserPermissionAsync(userId.Value, projectId);
+        var level = await _permissionService.GetUserPermissionAsync(userId.Value, projectId, cancellationToken);
         if (level == null || level < PermissionLevel.Comment) return Forbid();
 
         try
         {
-            await _reactionService.RemoveReactionAsync(id, userId.Value);
+            await _reactionService.RemoveReactionAsync(id, userId.Value, cancellationToken);
             _logger.LogInformation("User {UserId} deleted reaction {ReactionId}", userId.Value, id);
             return NoContent();
         }
@@ -172,7 +172,7 @@ public class ReactionsController(IReactionService reactionService,
 
     /// <summary>Resolve the current user ID from JWT claims.</summary>
 
-    private async Task<int?> GetCurrentUserIdAsync()
+    private async Task<int?> GetCurrentUserIdAsync(CancellationToken cancellationToken = default)
 
     {
 
@@ -182,7 +182,7 @@ public class ReactionsController(IReactionService reactionService,
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username);
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
 
         return user.Id;
 

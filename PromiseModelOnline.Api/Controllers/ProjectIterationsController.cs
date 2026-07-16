@@ -52,11 +52,11 @@ public class ProjectIterationsController(
     /// <returns>A list of iteration DTOs.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<IterationDto>>> GetAll(string owner, string project)
+    public async Task<ActionResult<IEnumerable<IterationDto>>> GetAll(string owner, string project, CancellationToken cancellationToken = default)
 
     {
 
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
 
         if (projectEntity is null)
 
@@ -64,7 +64,7 @@ public class ProjectIterationsController(
 
 
 
-        var iterations = await _iterationService.GetIterationsByProjectAsync(projectEntity.Id);
+        var iterations = await _iterationService.GetIterationsByProjectAsync(projectEntity.Id, cancellationToken);
 
 
 
@@ -89,19 +89,19 @@ public class ProjectIterationsController(
     /// <returns>The created iteration DTO.</returns>
     [Authorize(Policy = "projects.write")]
     [HttpPost]
-    public async Task<ActionResult<IterationDto>> Create([FromBody] Iteration entity, string owner, string project)
+    public async Task<ActionResult<IterationDto>> Create([FromBody] Iteration entity, string owner, string project, CancellationToken cancellationToken = default)
 
     {
 
         if (entity is null) return BadRequest("Request body is required.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
 
         if (projectEntity is null)
 
             return NotFound();
 
-        if (!await RequireProjectEditPermissionAsync(projectEntity))
+        if (!await RequireProjectEditPermissionAsync(projectEntity, cancellationToken))
 
             return Forbid();
 
@@ -109,7 +109,7 @@ public class ProjectIterationsController(
 
 
 
-        await _service.AddAsync(entity);
+        await _service.AddAsync(entity, cancellationToken);
 
         return CreatedAtAction(nameof(GetAll), new { owner, project }, _mapper.Map(entity, _service));
 
@@ -125,10 +125,10 @@ public class ProjectIterationsController(
     /// <returns>A list of burndown data points.</returns>
     [Authorize(Policy = "projects.read")]
     [HttpGet("{id}/burndown")]
-    public async Task<ActionResult<List<BurndownPointDto>>> GetIterationBurndown(int id, string owner, string project)
+    public async Task<ActionResult<List<BurndownPointDto>>> GetIterationBurndown(int id, string owner, string project, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var projectEntity = await ResolveProjectAsync(owner, project);
+        var projectEntity = await ResolveProjectAsync(owner, project, cancellationToken);
 
         if (projectEntity is null)
 
@@ -136,7 +136,7 @@ public class ProjectIterationsController(
 
 
 
-        var iteration = await _iterationService.GetByIdAsync(id);
+        var iteration = await _iterationService.GetByIdAsync(id, cancellationToken);
 
         if (iteration is null || iteration.ProjectId != projectEntity.Id)
 
@@ -144,7 +144,7 @@ public class ProjectIterationsController(
 
 
 
-        var points = await _momentService.GetIterationBurndownAsync(id);
+        var points = await _momentService.GetIterationBurndownAsync(id, cancellationToken);
 
         return Ok(points);
 

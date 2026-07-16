@@ -4,6 +4,7 @@ using PromiseModelOnline.Api.DAL.Interfaces;
 using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL;
@@ -20,8 +21,8 @@ public class MomentTaskRepository(PromiseModelOnlineContext context) : GenericRe
     /// <summary>Return all sub-tasks belonging to a moment, ordered by ID.</summary>
     /// <param name="momentId">The parent moment ID. Must be greater than zero.</param>
     /// <returns>Ordered collection of tasks under the moment.</returns>
-    public async Task<IEnumerable<MomentTask>> GetTasksByMomentAsync(int momentId) => await _context.Set<MomentTask>()
+    public async Task<IEnumerable<MomentTask>> GetTasksByMomentAsync(int momentId, CancellationToken cancellationToken = default) => await _context.Set<MomentTask>()
             .Where(task => task.MomentId == momentId)
             .OrderBy(task => task.Id)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 }

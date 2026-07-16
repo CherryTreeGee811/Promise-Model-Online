@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces;
@@ -20,7 +21,7 @@ public interface IGenericRepository<T> where T : class
     /// <remarks>Materialises the entire <see cref="Microsoft.EntityFrameworkCore.DbSet{T}"/> 
     /// with no filtering. For large tables, prefer a paginated or filtered query.</remarks>
     /// <returns>All entities currently tracked or persisted.</returns>
-    Task<IEnumerable<T>> GetAllAsync();
+    Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Find an entity by its primary-key value.</summary>
     /// <remarks>
@@ -31,10 +32,11 @@ public interface IGenericRepository<T> where T : class
     /// </remarks>
     /// <param name="id">Primary-key value. Must be the same type as the entity's key 
     ///   property (<c>int</c>, <c>Guid</c>, <c>string</c>, or anonymous object).</param>
+    /// <param name="cancellationToken">Propagates notification that the operation should be cancelled.</param>
     /// <returns>The matching entity, or <c>null</c> if none exists.</returns>
     /// <exception cref="InvalidOperationException">The entity is already being tracked 
     ///   with a different key value.</exception>
-    Task<T?> GetByIdAsync(object id);
+    Task<T?> GetByIdAsync(object id, CancellationToken cancellationToken = default);
 
     /// <summary>Stage a new entity for insertion.</summary>
     /// <remarks>
@@ -44,8 +46,9 @@ public interface IGenericRepository<T> where T : class
     ///   EF assigns it after the save.
     /// </remarks>
     /// <param name="entity">The entity instance to add. Must not be <c>null</c>.</param>
+    /// <param name="cancellationToken">Propagates notification that the operation should be cancelled.</param>
     /// <exception cref="ArgumentNullException"><paramref name="entity"/> is <c>null</c>.</exception>
-    Task AddAsync(T entity);
+    Task AddAsync(T entity, CancellationToken cancellationToken = default);
 
     /// <summary>Mark an existing entity as modified.</summary>
     /// <remarks>
@@ -67,11 +70,12 @@ public interface IGenericRepository<T> where T : class
     /// </remarks>
     /// <param name="id">Primary-key value (<c>int</c>, <c>Guid</c>, <c>string</c>, 
     ///   or composite).</param>
+    /// <param name="cancellationToken">Propagates notification that the operation should be cancelled.</param>
     /// <returns><c>true</c> if the entity was found and deleted; <c>false</c> if 
     ///   no entity with the given key exists.</returns>
     /// <exception cref="Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException">
     ///   The entity was modified or deleted between the lookup and the save.</exception>
-    Task<bool> DeleteByIdAsync(object id);
+    Task<bool> DeleteByIdAsync(object id, CancellationToken cancellationToken = default);
 
     /// <summary>Persist all staged changes to the database.</summary>
     /// <remarks>
@@ -81,5 +85,5 @@ public interface IGenericRepository<T> where T : class
     /// </remarks>
     /// <exception cref="Microsoft.EntityFrameworkCore.DbUpdateException">
     ///   A database constraint is violated.</exception>
-    Task SaveChangesAsync();
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

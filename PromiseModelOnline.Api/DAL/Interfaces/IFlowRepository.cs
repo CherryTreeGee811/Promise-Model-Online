@@ -1,5 +1,6 @@
 ﻿using PromiseModelOnline.Api.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Api.DAL.Interfaces;
@@ -13,6 +14,7 @@ public interface IFlowRepository : IGenericRepository<Flow>
 {
     /// <summary>Return all flows belonging to a journey.</summary>
     /// <param name="journeyId">The parent <c>JourneyId</c>. Must be greater than zero.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>All flows under the given journey. Empty if none exist.</returns>
-    Task<IEnumerable<Flow>> GetFlowsByJourneyAsync(int journeyId);
+    Task<IEnumerable<Flow>> GetFlowsByJourneyAsync(int journeyId, CancellationToken cancellationToken = default);
 }
