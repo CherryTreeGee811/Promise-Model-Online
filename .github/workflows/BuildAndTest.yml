@@ -353,11 +353,11 @@ jobs:
               exit 0
             fi
             EXITED=$(docker inspect \
-              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik umami-init umami-db \
               --format '{{.State.Status}}' 2>/dev/null | grep 'exited' || true)
             if [ -n "$EXITED" ]; then
               echo "ERROR: A service exited during startup"
-              for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik; do
+              for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik umami-init; do
                 docker logs "$svc" --tail 60 2>&1
               done
               exit 1
@@ -366,7 +366,7 @@ jobs:
           done
 
           echo "ERROR: Timed out waiting for services"
-          for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik; do
+          for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik umami-init umami-db; do
             echo "--- $svc ---"
             docker logs "$svc" --tail 60 2>&1
           done

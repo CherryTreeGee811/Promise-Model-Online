@@ -470,8 +470,10 @@ services:
     image: postgres:16-alpine
     entrypoint: >
       /bin/sh -c "
+      timeout 120 sh -c '
       apk add --no-cache apache2-utils 2>&1 &&
       /init/umami-init.sh
+      '
       "
     environment:
       WEBSITE_ID: ${UMAMI_WEBSITE_ID:-813ea5c6-8576-44d0-b702-923f5ba331cd}
@@ -479,6 +481,7 @@ services:
       WEBSITE_DOMAIN: ${UMAMI_WEBSITE_DOMAIN:-localhost}
       POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
       UMAMI_ADMIN_USERNAME: ${UMAMI_ADMIN_USERNAME}
+      PGCONNECT_TIMEOUT: "5"
     secrets:
       - source: pmo_umami_db_password
         target: umami_db_password
