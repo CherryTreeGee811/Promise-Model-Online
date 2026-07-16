@@ -278,6 +278,12 @@ services:
     depends_on:
       umami-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
     networks:
       - promisemodelonline-net
     labels:
@@ -340,7 +346,7 @@ services:
       - ./scripts/umami-init.sh:/init/umami-init.sh:ro
     depends_on:
       umami:
-        condition: service_started
+        condition: service_healthy
     networks:
       - promisemodelonline-net
     restart: "no"

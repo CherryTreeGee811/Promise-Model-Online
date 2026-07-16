@@ -336,7 +336,7 @@ services:
       restart_policy:
         condition: none
 
-  umami:
+   umami:
     image: docker.umami.is/umami-software/umami:postgresql-latest
     environment:
       DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
@@ -346,6 +346,12 @@ services:
       - source: pmo_umami_db_password
         target: umami_db_password
         mode: 0444
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
     networks:
       - promisemodelonline-net
     labels:

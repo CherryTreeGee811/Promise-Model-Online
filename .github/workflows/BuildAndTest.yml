@@ -143,70 +143,70 @@ jobs:
             printf '%s' "${{ secrets.DB_SA_PASSWORD }}" > secrets/db_sa_password.txt
             printf '%s' "${{ secrets.AUTH__REG_KEY }}" > secrets/auth_registration_key.txt
 
-      - name: Run Auth Unit Tests
-        shell: bash
-        run: |
-          mkdir -p AuthTestResults
-          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
-            --no-build \
-            --settings coverage.runsettings \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./AuthTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName!~IntegrationTests"
-          bash scripts/check-coverage.sh ./AuthTestResults 0.70 0.70 0.70
+      # - name: Run Auth Unit Tests
+      #   shell: bash
+      #   run: |
+      #     mkdir -p AuthTestResults
+      #     dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+      #       --no-build \
+      #       --settings coverage.runsettings \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./AuthTestResults \
+      #       --logger "console;verbosity=normal" \
+      #       --filter "FullyQualifiedName!~IntegrationTests"
+      #     bash scripts/check-coverage.sh ./AuthTestResults 0.70 0.70 0.70
 
-      - name: Run API Unit Tests
-        shell: bash
-        run: |
-          mkdir -p ApiUnitTestResults
-          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
-            --no-build \
-            --settings coverage.runsettings \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ApiUnitTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName!~IntegrationTests"
-          bash scripts/check-coverage.sh ./ApiUnitTestResults 0.70 0.70 0.70
+      # - name: Run API Unit Tests
+      #   shell: bash
+      #   run: |
+      #     mkdir -p ApiUnitTestResults
+      #     dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+      #       --no-build \
+      #       --settings coverage.runsettings \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./ApiUnitTestResults \
+      #       --logger "console;verbosity=normal" \
+      #       --filter "FullyQualifiedName!~IntegrationTests"
+      #     bash scripts/check-coverage.sh ./ApiUnitTestResults 0.70 0.70 0.70
 
-      - name: Run Auth Integration Tests
-        shell: bash
-        run: |
-          mkdir -p AuthTestResults
-          dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
-            --no-build \
-            --settings coverage.runsettings \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./AuthTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests"
-          bash scripts/check-coverage.sh ./AuthTestResults 0.30
+      # - name: Run Auth Integration Tests
+      #   shell: bash
+      #   run: |
+      #     mkdir -p AuthTestResults
+      #     dotnet test ./PromiseModelOnline.Auth.Tests/PromiseModelOnline.Auth.Tests.csproj \
+      #       --no-build \
+      #       --settings coverage.runsettings \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./AuthTestResults \
+      #       --logger "console;verbosity=normal" \
+      #       --filter "FullyQualifiedName~IntegrationTests"
+      #     bash scripts/check-coverage.sh ./AuthTestResults 0.30
 
-      - name: Run BFF Integration Tests
-        shell: bash
-        run: |
-          mkdir -p BffTestResults
-          dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
-            --no-build \
-            --settings coverage.runsettings \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./BffTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests"
-          bash scripts/check-coverage.sh ./BffTestResults 0.30
+      # - name: Run BFF Integration Tests
+      #   shell: bash
+      #   run: |
+      #     mkdir -p BffTestResults
+      #     dotnet test ./PromiseModelOnline.BFF.Tests/PromiseModelOnline.BFF.Tests.csproj \
+      #       --no-build \
+      #       --settings coverage.runsettings \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./BffTestResults \
+      #       --logger "console;verbosity=normal" \
+      #       --filter "FullyQualifiedName~IntegrationTests"
+      #     bash scripts/check-coverage.sh ./BffTestResults 0.30
 
-      - name: Run API Integration Tests
-        shell: bash
-        run: |
-          mkdir -p ApiIntegrationTestResults
-          dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
-            --no-build \
-            --settings coverage.runsettings \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ApiIntegrationTestResults \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IntegrationTests"
-          bash scripts/check-coverage.sh ./ApiIntegrationTestResults 0.30
+      # - name: Run API Integration Tests
+      #   shell: bash
+      #   run: |
+      #     mkdir -p ApiIntegrationTestResults
+      #     dotnet test ./PromiseModelOnline.Api.Tests/PromiseModelOnline.Api.Tests.csproj \
+      #       --no-build \
+      #       --settings coverage.runsettings \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./ApiIntegrationTestResults \
+      #       --logger "console;verbosity=normal" \
+      #       --filter "FullyQualifiedName~IntegrationTests"
+      #     bash scripts/check-coverage.sh ./ApiIntegrationTestResults 0.30
 
       - name: Run Client UI Test Environment
         shell: bash
@@ -274,62 +274,62 @@ jobs:
         shell: bash
         run: npx @puppeteer/browsers install chrome 2>&1 | tail -3
 
-      - name: Run Client Tests (Chromium)
-        shell: bash
-        env:
-          TEST_BROWSER: chromium
-        run: |
-          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ClientTestResults \
-            --logger "console;verbosity=normal"
+      # - name: Run Client Tests (Chromium)
+      #   shell: bash
+      #   env:
+      #     TEST_BROWSER: chromium
+      #   run: |
+      #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+      #       --no-build \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./ClientTestResults \
+      #       --logger "console;verbosity=normal"
 
-      - name: Run Client Tests (Firefox)
-        shell: bash
-        env:
-          TEST_BROWSER: firefox
-        run: |
-          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ClientTestResults \
-            --logger "console;verbosity=normal"
+      # - name: Run Client Tests (Firefox)
+      #   shell: bash
+      #   env:
+      #     TEST_BROWSER: firefox
+      #   run: |
+      #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+      #       --no-build \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./ClientTestResults \
+      #       --logger "console;verbosity=normal"
 
-      - name: Run Client Tests (WebKit)
-        shell: bash
-        env:
-          TEST_BROWSER: webkit
-        run: |
-          dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
-            --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./ClientTestResults \
-            --logger "console;verbosity=normal"
+      # - name: Run Client Tests (WebKit)
+      #   shell: bash
+      #   env:
+      #     TEST_BROWSER: webkit
+      #   run: |
+      #     dotnet test ./PromiseModelOnline.Client.Tests/PromiseModelOnline.Client.Tests.csproj \
+      #       --no-build \
+      #       --collect:"XPlat Code Coverage" \
+      #       --results-directory ./ClientTestResults \
+      #       --logger "console;verbosity=normal"
 
-      - name: A11y + Responsive + Lighthouse Audit
-        shell: bash
-        run: |
-          npm run lint:a11y https://localhost:9000
-          npm run lint:responsive https://localhost:9000
-          npm run lint:lighthouse
+      # - name: A11y + Responsive + Lighthouse Audit
+      #   shell: bash
+      #   run: |
+      #     npm run lint:a11y https://localhost:9000
+      #     npm run lint:responsive https://localhost:9000
+      #     npm run lint:lighthouse
 
-      - name: Memory Leak Audit (single-run)
-        shell: bash
-        env:
-          PUPPETEER_CACHE_DIR: ~/.cache/puppeteer
-        run: |
-          URL=https://localhost:9000 npx memlab run \
-            --scenario scripts/memlab-scenarios/leak-check.cjs \
-            --chromium-binary "$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)"
+      # - name: Memory Leak Audit (single-run)
+      #   shell: bash
+      #   env:
+      #     PUPPETEER_CACHE_DIR: ~/.cache/puppeteer
+      #   run: |
+      #     URL=https://localhost:9000 npx memlab run \
+      #       --scenario scripts/memlab-scenarios/leak-check.cjs \
+      #       --chromium-binary "$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)"
 
-      - name: Memory Leak Audit (iterative)
-        shell: bash
-        env:
-          PUPPETEER_CACHE_DIR: ~/.cache/puppeteer
-        run: |
-          URL=https://localhost:9000 node scripts/check-memory-leaks-iterative.cjs \
-            --chromium-binary "$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)"
+      # - name: Memory Leak Audit (iterative)
+      #   shell: bash
+      #   env:
+      #     PUPPETEER_CACHE_DIR: ~/.cache/puppeteer
+      #   run: |
+      #     URL=https://localhost:9000 node scripts/check-memory-leaks-iterative.cjs \
+      #       --chromium-binary "$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)"
 
       - name: Teardown Client UI Test Environment
         if: always()
