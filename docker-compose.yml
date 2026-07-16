@@ -234,10 +234,6 @@ services:
       - db_sa_password
     volumes:
       - mssql-data:/var/opt/mssql
-    deploy:
-      resources:
-        limits:
-          memory: 2G
 
   promisemodelonline.db-init:
     image: mcr.microsoft.com/mssql-tools
