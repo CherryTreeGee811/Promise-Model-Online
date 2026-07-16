@@ -228,13 +228,13 @@ services:
   umami-init:
     image: postgres:16-alpine
     container_name: umami-init
-    entrypoint: >
-      /bin/sh -c "
-      timeout 120 sh -c '
-      apk add --no-cache apache2-utils 2>&1 &&
-      /init/umami-init.sh
-      '
-      "
+    entrypoint: ["timeout", "-k", "30", "120"]
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache apache2-utils 2>&1 &&
+        /init/umami-init.sh
     environment:
       WEBSITE_ID: ${UMAMI_WEBSITE_ID:-813ea5c6-8576-44d0-b702-923f5ba331cd}
       WEBSITE_NAME: ${UMAMI_WEBSITE_NAME:-Promise Model Online}
