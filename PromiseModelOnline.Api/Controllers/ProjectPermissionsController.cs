@@ -186,9 +186,9 @@ public class ProjectPermissionsController(
 
         var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-            var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
+        var user = await _userRepository.GetOrCreateUserByEmailAsync(email, username, cancellationToken: cancellationToken);
 
-            var permissionLevel = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id, cancellationToken);
+        var permissionLevel = await _permissionService.GetUserPermissionAsync(user.Id, projectEntity.Id, cancellationToken);
 
         if (permissionLevel == null)
 

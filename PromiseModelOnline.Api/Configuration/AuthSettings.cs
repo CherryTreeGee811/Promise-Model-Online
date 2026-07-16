@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.Configuration;
+﻿namespace PromiseModelOnline.Api.Configuration;
 
 /// <summary>Configuration options for API registration and auth behavior.</summary>
 public class AuthSettings
