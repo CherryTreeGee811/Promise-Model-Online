@@ -43,6 +43,7 @@ puppeteer/
 .opencode/
 .codegraph/
 coverage/
+.lighthouseci/
 
 # Environment variables (machine-specific, not committed)
 .env
