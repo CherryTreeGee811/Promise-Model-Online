@@ -336,6 +336,20 @@ jobs:
         shell: bash
         run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
+      - name: Free up Docker disk space before E2E stack
+        shell: bash
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / | tail -1
+          echo "=== Docker disk usage ==="
+          docker system df 2>/dev/null || true
+          echo "=== Pruning Docker build cache ==="
+          docker builder prune -af
+          echo "=== Pruning dangling images ==="
+          docker image prune -f
+          echo "=== Disk usage after cleanup ==="
+          df -h / | tail -1
+
       - name: Start E2E Stack (without rate limiting)
         shell: bash
         run: |
@@ -408,7 +422,10 @@ jobs:
 
       - name: Tear Down E2E Stack
         shell: bash
-        run: docker compose --project-name promisemodelonline down -v
+        run: |
+          docker compose --project-name promisemodelonline down -v
+          docker builder prune -af
+          docker image prune -f
 
       - name: Start E2E Stack for Rate-Limit Tests
         shell: bash
@@ -457,7 +474,10 @@ jobs:
 
       - name: Tear Down E2E Stack (Rate-Limit)
         shell: bash
-        run: docker compose --project-name promisemodelonline down -v
+        run: |
+          docker compose --project-name promisemodelonline down -v
+          docker builder prune -af
+          docker image prune -f
 
       - name: Upload .NET coverage to Codecov
         uses: codecov/codecov-action@v5
