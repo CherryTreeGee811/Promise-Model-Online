@@ -234,6 +234,10 @@ services:
       - db_sa_password
     volumes:
       - mssql-data:/var/opt/mssql
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
   promisemodelonline.db-init:
     image: mcr.microsoft.com/mssql-tools
@@ -310,6 +314,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   umami-init:
     image: postgres:16-alpine
@@ -337,30 +345,6 @@ services:
       - promisemodelonline-net
     restart: "no"
 
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-    volumes:
-      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    networks:
-      - promisemodelonline-net
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "127.0.0.1:3001:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./deploy/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./deploy/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-    networks:
-      - promisemodelonline-net
-    restart: unless-stopped
-
 networks:
   promisemodelonline-net:
     driver: bridge
@@ -377,9 +361,6 @@ volumes:
     driver: local
   umami-db:
     name: umamidata
-    driver: local
-  grafana-data:
-    name: grafanadata
     driver: local
 
 secrets:

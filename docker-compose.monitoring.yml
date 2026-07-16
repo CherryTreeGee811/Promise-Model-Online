@@ -1,0 +1,41 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - promisemodelonline-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./deploy/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./deploy/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    networks:
+      - promisemodelonline-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  grafana-data:
+    name: grafanadata
+    driver: local
+
+networks:
+  promisemodelonline-net:
+    external: true

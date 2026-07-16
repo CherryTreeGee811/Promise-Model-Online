@@ -29,12 +29,15 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-var appBaseUrl = builder.Configuration["APP_BASE_URL"]
-    ?? throw new InvalidOperationException("APP_BASE_URL is required.");
+var appBaseUrl = builder.Configuration["APP_BASE_URL"];
+if (string.IsNullOrEmpty(appBaseUrl))
+    throw new InvalidOperationException("APP_BASE_URL is required and must not be empty.");
 
-var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"]
-    ?? builder.Configuration["AUTH_AUTHORITY"]
-    ?? appBaseUrl;
+var publicIssuer = builder.Configuration["AUTH_PUBLIC_ISSUER"];
+if (string.IsNullOrEmpty(publicIssuer))
+    publicIssuer = builder.Configuration["AUTH_AUTHORITY"];
+if (string.IsNullOrEmpty(publicIssuer))
+    publicIssuer = appBaseUrl;
 
 AppUrls.BaseUrl = appBaseUrl.TrimEnd('/');
 AppUrls.PublicIssuer = publicIssuer.TrimEnd('/');
