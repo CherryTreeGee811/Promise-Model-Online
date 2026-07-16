@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,11 @@ public class ProjectMomentsControllerUnitTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _context = new PromiseModelOnlineContext(options);
+
+        _momentRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns<object, CancellationToken>((id, ct) => _context.Moments.FindAsync(new object[] { id }, ct).AsTask());
+        _flowRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns<object, CancellationToken>((id, ct) => _context.Flows.FindAsync(new object[] { id }, ct).AsTask());
 
         _controller = new ProjectMomentsController(
             _momentServiceMock.Object,

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,20 @@ public class UsersControllerUnitTests
             _mockUserRepo.Object,
             _mockProjectRepo.Object,
             _context);
+
+        _mockUserRepo.Setup(r => r.DeleteByIdAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns<object, CancellationToken>((id, ct) =>
+            {
+                var user = _context.Users.Find(new object[] { id });
+                if (user is not null)
+                {
+                    _context.Users.Remove(user);
+                    return Task.FromResult(true);
+                }
+                return Task.FromResult(false);
+            });
+        _mockUserRepo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns<CancellationToken>(ct => _context.SaveChangesAsync(ct));
     }
 
     [TearDown]

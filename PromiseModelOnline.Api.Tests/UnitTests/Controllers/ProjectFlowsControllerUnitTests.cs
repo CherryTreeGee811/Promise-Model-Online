@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +43,13 @@ public class ProjectFlowsControllerUnitTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _context = new PromiseModelOnlineContext(options);
+
+        _flowRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns<object, CancellationToken>((id, ct) => _context.Flows.FindAsync(new object[] { id }, ct).AsTask());
+        _flowRepoMock.Setup(r => r.GetFlowsByJourneyAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int journeyId, CancellationToken _) => _context.Flows.Where(f => f.JourneyId == journeyId).ToList());
+        _journeyRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns<object, CancellationToken>((id, ct) => _context.Journeys.FindAsync(new object[] { id }, ct).AsTask());
 
         _controller = new ProjectFlowsController(
             _serviceMock.Object,

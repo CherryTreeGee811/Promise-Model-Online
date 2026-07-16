@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
@@ -56,8 +57,8 @@ public class ProjectImportServiceUnitTests
         _strideRepoMock = new Mock<IStrideRepository>();
         _userRepoMock = new Mock<IUserRepository>();
 
-        _projectRepoMock.Setup(r => r.AddAsync(It.IsAny<Project>()))
-            .Callback<Project>(project =>
+        _projectRepoMock.Setup(r => r.AddAsync(It.IsAny<Project>(), It.IsAny<CancellationToken>()))
+            .Callback<Project, CancellationToken>((project, _) =>
             {
                 _addedProject = project;
                 project.Id = 100;
@@ -65,8 +66,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _projectRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _promiseRepoMock.Setup(r => r.AddAsync(It.IsAny<Promise>()))
-            .Callback<Promise>(promise =>
+        _promiseRepoMock.Setup(r => r.AddAsync(It.IsAny<Promise>(), It.IsAny<CancellationToken>()))
+            .Callback<Promise, CancellationToken>((promise, _) =>
             {
                 _addedPromise = promise;
                 promise.Id = 110;
@@ -74,8 +75,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _promiseRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _epicRepoMock.Setup(r => r.AddAsync(It.IsAny<Epic>()))
-            .Callback<Epic>(epic =>
+        _epicRepoMock.Setup(r => r.AddAsync(It.IsAny<Epic>(), It.IsAny<CancellationToken>()))
+            .Callback<Epic, CancellationToken>((epic, _) =>
             {
                 _addedEpic = epic;
                 epic.Id = 120;
@@ -83,8 +84,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _epicRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _journeyRepoMock.Setup(r => r.AddAsync(It.IsAny<Journey>()))
-            .Callback<Journey>(journey =>
+        _journeyRepoMock.Setup(r => r.AddAsync(It.IsAny<Journey>(), It.IsAny<CancellationToken>()))
+            .Callback<Journey, CancellationToken>((journey, _) =>
             {
                 _addedJourney = journey;
                 journey.Id = 130;
@@ -92,8 +93,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _journeyRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _flowRepoMock.Setup(r => r.AddAsync(It.IsAny<Flow>()))
-            .Callback<Flow>(flow =>
+        _flowRepoMock.Setup(r => r.AddAsync(It.IsAny<Flow>(), It.IsAny<CancellationToken>()))
+            .Callback<Flow, CancellationToken>((flow, _) =>
             {
                 _addedFlow = flow;
                 flow.Id = 140;
@@ -101,8 +102,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _flowRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _momentRepoMock.Setup(r => r.AddAsync(It.IsAny<Moment>()))
-            .Callback<Moment>(moment =>
+        _momentRepoMock.Setup(r => r.AddAsync(It.IsAny<Moment>(), It.IsAny<CancellationToken>()))
+            .Callback<Moment, CancellationToken>((moment, _) =>
             {
                 _addedMoment = moment;
                 moment.Id = 150;
@@ -110,8 +111,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _momentRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _taskRepoMock.Setup(r => r.AddAsync(It.IsAny<MomentTask>()))
-            .Callback<MomentTask>(task =>
+        _taskRepoMock.Setup(r => r.AddAsync(It.IsAny<MomentTask>(), It.IsAny<CancellationToken>()))
+            .Callback<MomentTask, CancellationToken>((task, _) =>
             {
                 _addedTask = task;
                 task.Id = 160;
@@ -119,8 +120,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _taskRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _iterationRepoMock.Setup(r => r.AddAsync(It.IsAny<Iteration>()))
-            .Callback<Iteration>(iteration =>
+        _iterationRepoMock.Setup(r => r.AddAsync(It.IsAny<Iteration>(), It.IsAny<CancellationToken>()))
+            .Callback<Iteration, CancellationToken>((iteration, _) =>
             {
                 _addedIteration = iteration;
                 iteration.Id = 170;
@@ -128,8 +129,8 @@ public class ProjectImportServiceUnitTests
             .Returns(Task.CompletedTask);
         _iterationRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        _strideRepoMock.Setup(r => r.AddAsync(It.IsAny<Stride>()))
-            .Callback<Stride>(stride =>
+        _strideRepoMock.Setup(r => r.AddAsync(It.IsAny<Stride>(), It.IsAny<CancellationToken>()))
+            .Callback<Stride, CancellationToken>((stride, _) =>
             {
                 _addedStride = stride;
                 stride.Id = 180;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
@@ -80,8 +81,8 @@ public class CommentServiceUnitTests
     private void SetupCommentCreation(string parentType, int parentId)
     {
         Comment? savedComment = null;
-        _commentRepoMock.Setup(r => r.AddCommentAsync(It.IsAny<Comment>()))
-                       .Callback<Comment>(c => savedComment = c)
+        _commentRepoMock.Setup(r => r.AddCommentAsync(It.IsAny<Comment>(), It.IsAny<CancellationToken>()))
+                       .Callback<Comment, CancellationToken>((c, _) => savedComment = c)
                        .Returns(Task.CompletedTask);
         _commentRepoMock.Setup(r => r.GetCommentsForEntityAsync(parentType, parentId))
                        .ReturnsAsync(() => savedComment != null
@@ -97,8 +98,8 @@ public class CommentServiceUnitTests
         // Arrange
         var dto = new CreateCommentDto { Text = "Great work!", ParentType = "moment", ParentId = 42 };
         Comment? savedComment = null;
-        _commentRepoMock.Setup(r => r.AddCommentAsync(It.IsAny<Comment>()))
-                       .Callback<Comment>(c => savedComment = c)
+        _commentRepoMock.Setup(r => r.AddCommentAsync(It.IsAny<Comment>(), It.IsAny<CancellationToken>()))
+                       .Callback<Comment, CancellationToken>((c, _) => savedComment = c)
                        .Returns(Task.CompletedTask);
         _commentRepoMock.Setup(r => r.GetCommentsForEntityAsync("moment", 42))
                        .ReturnsAsync(() => savedComment != null ? new List<Comment> { savedComment } : new List<Comment>());
@@ -189,8 +190,8 @@ public class CommentServiceUnitTests
         _userRepoMock.Setup(r => r.GetUsersByNameAsync("bob")).ReturnsAsync(new List<User> { bob });
 
         Comment? savedComment = null;
-        _commentRepoMock.Setup(r => r.AddCommentAsync(It.IsAny<Comment>()))
-                       .Callback<Comment>(c => savedComment = c)
+        _commentRepoMock.Setup(r => r.AddCommentAsync(It.IsAny<Comment>(), It.IsAny<CancellationToken>()))
+                       .Callback<Comment, CancellationToken>((c, _) => savedComment = c)
                        .Returns(Task.CompletedTask);
         _commentRepoMock.Setup(r => r.AddMentionAsync(It.IsAny<CommentMention>())).Returns(Task.CompletedTask);
         _commentRepoMock.Setup(r => r.GetCommentsForEntityAsync("moment", 99))

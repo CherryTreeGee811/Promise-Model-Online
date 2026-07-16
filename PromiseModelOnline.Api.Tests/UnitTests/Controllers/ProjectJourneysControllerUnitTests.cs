@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +43,13 @@ public class ProjectJourneysControllerUnitTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _context = new PromiseModelOnlineContext(options);
+
+        _journeyRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns<object, CancellationToken>((id, ct) => _context.Journeys.FindAsync(new object[] { id }, ct).AsTask());
+        _journeyRepoMock.Setup(r => r.GetJourneysByEpicAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int epicId, CancellationToken _) => _context.Journeys.Where(j => j.EpicId == epicId).ToList());
+        _epicRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns<object, CancellationToken>((id, ct) => _context.Epics.FindAsync(new object[] { id }, ct).AsTask());
 
         _controller = new ProjectJourneysController(
             _serviceMock.Object,

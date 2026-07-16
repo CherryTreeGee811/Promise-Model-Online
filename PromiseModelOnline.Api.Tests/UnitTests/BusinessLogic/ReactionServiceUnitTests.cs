@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
@@ -103,8 +104,8 @@ public class ReactionServiceUnitTests
         _reactionRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
         Reaction? savedReaction = null;
-        _reactionRepoMock.Setup(r => r.AddAsync(It.IsAny<Reaction>()))
-                         .Callback<Reaction>(r => savedReaction = r)
+        _reactionRepoMock.Setup(r => r.AddAsync(It.IsAny<Reaction>(), It.IsAny<CancellationToken>()))
+                         .Callback<Reaction, CancellationToken>((r, _) => savedReaction = r)
                          .Returns(Task.CompletedTask);
 
         _mapperMock.Setup(m => m.Map(It.IsAny<Reaction>(), null!))

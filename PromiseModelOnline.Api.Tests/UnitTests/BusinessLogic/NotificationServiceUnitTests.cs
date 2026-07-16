@@ -188,7 +188,7 @@ public class NotificationServiceUnitTests
         // Arrange
         Notification? savedNotification = null;
         _notificationRepoMock.Setup(r => r.AddAsync(It.IsAny<Notification>()))
-                             .Callback<Notification>(n => savedNotification = n)
+                             .Callback<Notification, CancellationToken>((n, _) => savedNotification = n)
                              .Returns(Task.CompletedTask);
         _notificationRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
         _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
@@ -208,7 +208,7 @@ public class NotificationServiceUnitTests
         Assert.That(savedNotification.Message, Is.EqualTo("You were mentioned"));
         Assert.That(savedNotification.Link, Is.EqualTo("/moments/5"));
         Assert.That(savedNotification.CreatedAt, Is.Not.EqualTo(default(DateTime)));
-        _notificationRepoMock.Verify(r => r.AddAsync(It.IsAny<Notification>()), Times.Once);
+        _notificationRepoMock.Verify(r => r.AddAsync(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Once);
         _notificationRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
         _clientProxyMock.Verify(p => p.SendCoreAsync(
             "ReceiveNotification",
@@ -221,7 +221,7 @@ public class NotificationServiceUnitTests
     {
         Notification? savedNotification = null;
         _notificationRepoMock.Setup(r => r.AddAsync(It.IsAny<Notification>()))
-                             .Callback<Notification>(n => savedNotification = n)
+                             .Callback<Notification, CancellationToken>((n, _) => savedNotification = n)
                              .Returns(Task.CompletedTask);
         _notificationRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
         _mapperMock.Setup(m => m.Map(It.IsAny<Notification>(), null!))
