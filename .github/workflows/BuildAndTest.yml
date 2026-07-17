@@ -339,7 +339,7 @@ jobs:
       - name: Start E2E Stack (without rate limiting)
         shell: bash
         run: |
-          timeout 300 docker compose --project-name promisemodelonline \
+          docker compose --project-name promisemodelonline \
             -f docker-compose.yml \
             -f infrastructure/tests/docker-compose.e2e-override.yml \
             up -d
@@ -416,7 +416,7 @@ jobs:
       - name: Start E2E Stack for Rate-Limit Tests
         shell: bash
         run: |
-          timeout 300 docker compose --project-name promisemodelonline up -d
+          docker compose --project-name promisemodelonline up -d
 
           for i in $(seq 1 40); do
             HEALTHY=$(docker inspect \

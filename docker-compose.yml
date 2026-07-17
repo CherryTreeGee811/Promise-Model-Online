@@ -275,27 +275,8 @@ services:
     depends_on:
       umami-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "http://127.0.0.1:3000/"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 60s
     networks:
       - promisemodelonline-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.umami-script.rule=PathPrefix(`/umami/script.js`)"
-      - "traefik.http.routers.umami-script.entrypoints=websecure"
-      - "traefik.http.routers.umami-script.tls=true"
-      - "traefik.http.routers.umami-script.priority=50"
-      - "traefik.http.routers.umami-api.rule=PathPrefix(`/umami/api/`)"
-      - "traefik.http.routers.umami-api.entrypoints=websecure"
-      - "traefik.http.routers.umami-api.tls=true"
-      - "traefik.http.routers.umami-api.priority=50"
-      - "traefik.http.middlewares.umami-strip-prefix.stripprefix.prefixes=/umami/api"
-      - "traefik.http.routers.umami-api.middlewares=umami-strip-prefix"
-      - "traefik.http.services.umami.loadbalancer.server.port=3000"
     restart: unless-stopped
 
   umami-db:
@@ -317,28 +298,21 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
 
   umami-init:
     image: postgres:16-alpine
     container_name: umami-init
-    entrypoint: ["timeout", "-k", "30", "120"]
-    command:
-      - /bin/sh
-      - -c
-      - |
-        apk add --no-cache apache2-utils 2>&1 &&
-        /init/umami-init.sh
+    entrypoint: >
+      /bin/sh -c "
+      apk add --no-cache apache2-utils > /dev/null 2>&1 &&
+      /init/umami-init.sh
+      "
     environment:
       WEBSITE_ID: ${UMAMI_WEBSITE_ID:-813ea5c6-8576-44d0-b702-923f5ba331cd}
       WEBSITE_NAME: ${UMAMI_WEBSITE_NAME:-Promise Model Online}
       WEBSITE_DOMAIN: ${UMAMI_WEBSITE_DOMAIN:-localhost}
       POSTGRES_PASSWORD_FILE: /run/secrets/umami_db_password
       UMAMI_ADMIN_USERNAME: ${UMAMI_ADMIN_USERNAME}
-      PGCONNECT_TIMEOUT: "5"
     secrets:
       - umami_db_password
       - umami_admin_password
