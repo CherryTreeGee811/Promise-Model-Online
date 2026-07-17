@@ -336,38 +336,13 @@ jobs:
       #   shell: bash
       #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
-      - name: Build E2E images + start stack
+      - name: Start E2E Stack (without rate limiting)
         shell: bash
         run: |
-          echo "=== Disk before cleanup ==="
-          df -h / | tail -1
-          echo "=== Docker usage before cleanup ==="
-          docker system df 2>/dev/null || true
-
-          echo "=== Aggressive Docker cleanup ==="
-          docker kill $(docker ps -q) 2>/dev/null || true
-          docker rm -f $(docker ps -aq) 2>/dev/null || true
-          docker system prune -af --volumes 2>/dev/null || true
-
-          echo "=== Disk after cleanup ==="
-          df -h / | tail -1
-
-          echo "=== Building E2E images ==="
           docker compose --project-name promisemodelonline \
             -f docker-compose.yml \
             -f infrastructure/tests/docker-compose.e2e-override.yml \
-            build
-
-          echo "=== Pruning build cache ==="
-          docker builder prune -af 2>/dev/null || true
-          echo "=== Disk after build ==="
-          df -h / | tail -1
-
-          echo "=== Starting E2E stack ==="
-          docker compose --project-name promisemodelonline \
-            -f docker-compose.yml \
-            -f infrastructure/tests/docker-compose.e2e-override.yml \
-            up -d --no-build
+            up -d
 
           for i in $(seq 1 40); do
             HEALTHY=$(docker inspect \
@@ -377,7 +352,7 @@ jobs:
               echo "All services healthy"
               exit 0
             fi
-              EXITED=$(docker inspect \
+            EXITED=$(docker inspect \
               promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik umami-init umami-db promisemodelonlinedbinit \
               --format '{{.State.Status}}' 2>/dev/null | grep 'exited' || true)
             if [ -n "$EXITED" ]; then
