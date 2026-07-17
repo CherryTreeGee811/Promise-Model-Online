@@ -10,15 +10,7 @@ psql() {
 }
 
 echo "[umami-init] Waiting for Umami migrations..."
-MAX_RETRIES=15 RETRY=0
-until psql "SELECT to_regclass('\"user\"') IS NOT NULL;" | grep -q t; do
-  RETRY=$((RETRY + 1))
-  if [ "$RETRY" -ge "$MAX_RETRIES" ]; then
-    echo "[umami-init] ERROR: Timed out waiting 30s for Umami migrations to create the user table."
-    exit 1
-  fi
-  sleep 2
-done
+until psql "SELECT to_regclass('\"user\"') IS NOT NULL;" | grep -q t; do sleep 2; done
 echo "[umami-init] Database ready."
 
 HASH=$(htpasswd -nbB "$ADMIN_USER" "$ADMIN_PASS" | cut -d: -f2 | sed 's/\$2y\$/\$2b\$/')
