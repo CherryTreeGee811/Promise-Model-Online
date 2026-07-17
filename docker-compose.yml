@@ -230,10 +230,13 @@ services:
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD_FILE: /run/secrets/db_sa_password
+      MSSQL_PID: Express
+      MSSQL_MEMORY_LIMIT_MB: 1536
     secrets:
       - db_sa_password
     volumes:
       - mssql-data:/var/opt/mssql
+    restart: unless-stopped
   promisemodelonline.db-init:
     image: mcr.microsoft.com/mssql-tools
     container_name: promisemodelonlinedbinit
@@ -343,7 +346,7 @@ services:
       - ./scripts/umami-init.sh:/init/umami-init.sh:ro
     depends_on:
       umami:
-        condition: service_healthy
+        condition: service_started
     networks:
       - promisemodelonline-net
     restart: "no"
