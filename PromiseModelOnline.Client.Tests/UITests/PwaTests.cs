@@ -63,6 +63,9 @@ public class PwaTests : PlaywrightTestBase
     [Description("REQ_PWA_001: Service worker registration")]
     public async Task REQ_INT_007_ServiceWorker_IsRegistered()
     {
+        var browser = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant();
+        Assume.That(browser is not "firefox", "Service worker registration over HTTPS with self-signed certs is not supported in Firefox");
+
         await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
 
         // Wait for at least one SW registration
@@ -79,6 +82,9 @@ public class PwaTests : PlaywrightTestBase
     [Description("REQ_PWA_002: Service worker cache-first caches static assets")]
     public async Task REQ_INT_007_ServiceWorker_CachesStaticAssets()
     {
+        var browser = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant();
+        Assume.That(browser is not "firefox", "Service worker over HTTPS with self-signed certs is not supported in Firefox");
+
         // Arrange — page loaded by Setup() at /
 
         // Act — SW activates without precaching; assets are cached lazily
@@ -130,6 +136,9 @@ public class PwaTests : PlaywrightTestBase
     [Description("REQ_PWA_002: Service worker cache-first serves static assets")]
     public async Task REQ_INT_007_CacheFirst_ServesStaticAssets()
     {
+        var browser = Environment.GetEnvironmentVariable("TEST_BROWSER")?.ToLowerInvariant();
+        Assume.That(browser is not "firefox", "Service worker over HTTPS with self-signed certs is not supported in Firefox");
+
         // Arrange — reload the page so the SW can register from scratch
         await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 5000 });
 
