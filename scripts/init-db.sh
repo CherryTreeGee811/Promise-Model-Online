@@ -30,20 +30,14 @@ sql_escape_literal() {
 API_PASSWORD_SQL=$(sql_escape_literal "$API_PASSWORD")
 AUTH_PASSWORD_SQL=$(sql_escape_literal "$AUTH_PASSWORD")
 
-MAX_RETRIES=24 RETRY=0
 until "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
   # Check if failure is due to SA being disabled
   if "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" 2>&1 | grep -qi "account is disabled"; then
     echo "SA account disabled. Assuming already initialized."
     exit 0
   fi
-  RETRY=$((RETRY + 1))
-  if [ "$RETRY" -ge "$MAX_RETRIES" ]; then
-    echo "FATAL: SQL Server did not become available within 240 seconds."
-    exit 1
-  fi
-  echo "Waiting for SQL Server... (attempt $RETRY/$MAX_RETRIES)"
-  sleep 10
+  echo 'Waiting for SQL Server...'
+  sleep 5
 done
 
 cat >/tmp/create-app-accounts.generated.sql <<EOF
