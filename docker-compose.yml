@@ -245,8 +245,7 @@ services:
     image: mcr.microsoft.com/mssql-tools
     container_name: promisemodelonlinedbinit
     depends_on:
-      promisemodelonline.db:
-        condition: service_healthy
+      - promisemodelonline.db
     networks:
       - promisemodelonline-net
     secrets:
