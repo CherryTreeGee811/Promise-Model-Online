@@ -46,22 +46,30 @@ const BFF_PATHS = [
 ];
 
 swSelf.addEventListener('install', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
-  event.waitUntil(
-    caches.open(CACHE).then(async cache => {
-      await Promise.allSettled(PRECACHE.map(url => cache.add(url)));
-    })
-  );
+  event.waitUntil(Promise.resolve());
   swSelf.skipWaiting();
+
+  caches.open(CACHE).then(async cache => {
+    await Promise.allSettled(
+      PRECACHE.map(url =>
+        fetch(url)
+          .then(response => {
+            if (response.ok) return cache.put(url, response);
+          })
+          .catch(() => {})
+      )
+    );
+  }).catch(() => {});
 });
 
 swSelf.addEventListener('activate', /** @param {{ waitUntil: (p: Promise<unknown>) => void }} event */ event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
+  event.waitUntil(Promise.resolve());
   swSelf.clients.claim();
   _cacheReady = true;
+
+  caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ).catch(() => {});
 });
 
 /**
@@ -127,9 +135,9 @@ async function networkFirst(request) {
  * @returns {Promise<Response|null>} The response from cache or network, or null.
  */
 async function cacheFirst(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
-  if (cached) return cached;
   try {
+    const cached = await caches.match(request, { ignoreSearch: true });
+    if (cached) return cached;
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE);
