@@ -249,7 +249,6 @@ services:
       PMO_API_DB_USER: ${PMO_API_DB_USER}
       PMO_AUTH_DB_USER: ${PMO_AUTH_DB_USER}
     volumes:
-      - mssql-data:/var/opt/mssql:rw
       - ./scripts/init-db.sh:/init/init-db.sh:ro
     entrypoint:
       - /bin/sh

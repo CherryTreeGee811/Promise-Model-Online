@@ -1,11 +1,5 @@
 #!/bin/sh
 
-SENTINEL="/var/opt/mssql/.db-initialized"
-if [ -f "$SENTINEL" ]; then
-    echo "[db-init] Database already initialized (sentinel found). Skipping."
-    exit 0
-fi
-
 SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
 API_USER=${API_DB_USER:-pmo_api}
 AUTH_USER=${AUTH_DB_USER:-pmo_auth}
@@ -108,6 +102,3 @@ EOF
 "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql
 
 echo 'Database application accounts created or already present.'
-
-touch "$SENTINEL"
-echo "[db-init] Sentinel file created at $SENTINEL"
