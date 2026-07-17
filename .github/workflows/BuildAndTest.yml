@@ -336,27 +336,38 @@ jobs:
       #   shell: bash
       #   run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
 
-      - name: Free up Docker disk space before E2E stack
+      - name: Build E2E images + start stack
         shell: bash
         run: |
-          echo "=== Disk usage before cleanup ==="
+          echo "=== Disk before cleanup ==="
           df -h / | tail -1
-          echo "=== Docker disk usage ==="
+          echo "=== Docker usage before cleanup ==="
           docker system df 2>/dev/null || true
-          echo "=== Pruning Docker build cache ==="
-          docker builder prune -af
-          echo "=== Pruning dangling images ==="
-          docker image prune -f
-          echo "=== Disk usage after cleanup ==="
+
+          echo "=== Aggressive Docker cleanup ==="
+          docker kill $(docker ps -q) 2>/dev/null || true
+          docker rm -f $(docker ps -aq) 2>/dev/null || true
+          docker system prune -af --volumes 2>/dev/null || true
+
+          echo "=== Disk after cleanup ==="
           df -h / | tail -1
 
-      - name: Start E2E Stack (without rate limiting)
-        shell: bash
-        run: |
+          echo "=== Building E2E images ==="
           docker compose --project-name promisemodelonline \
             -f docker-compose.yml \
             -f infrastructure/tests/docker-compose.e2e-override.yml \
-            up -d
+            build
+
+          echo "=== Pruning build cache ==="
+          docker builder prune -af 2>/dev/null || true
+          echo "=== Disk after build ==="
+          df -h / | tail -1
+
+          echo "=== Starting E2E stack ==="
+          docker compose --project-name promisemodelonline \
+            -f docker-compose.yml \
+            -f infrastructure/tests/docker-compose.e2e-override.yml \
+            up -d --no-build
 
           for i in $(seq 1 40); do
             HEALTHY=$(docker inspect \
