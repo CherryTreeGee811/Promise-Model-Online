@@ -346,18 +346,21 @@ jobs:
 
           for i in $(seq 1 40); do
             HEALTHY=$(docker inspect \
-              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik \
               --format '{{.State.Health.Status}}' 2>/dev/null || true)
-            if [ "$(echo "$HEALTHY" | grep -c 'healthy')" -eq 4 ]; then
+            if [ "$(echo "$HEALTHY" | grep -c 'healthy')" -eq 5 ]; then
               echo "All services healthy"
               exit 0
             fi
             EXITED=$(docker inspect \
-              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik \
               --format '{{.State.Status}}' 2>/dev/null | grep 'exited' || true)
             if [ -n "$EXITED" ]; then
               echo "ERROR: A service exited during startup"
-              for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient; do
+              for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik; do
+
+            echo "ERROR: Timed out waiting for services"
+            for svc in promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik; do
                 docker logs "$svc" --tail 60 2>&1
               done
               exit 1
@@ -417,9 +420,9 @@ jobs:
 
           for i in $(seq 1 40); do
             HEALTHY=$(docker inspect \
-              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient \
+              promisemodelonlineapi promisemodelonlineauth promisemodelonlinebff promisemodelonlineclient traefik \
               --format '{{.State.Health.Status}}' 2>/dev/null || true)
-            if [ "$(echo "$HEALTHY" | grep -c 'healthy')" -eq 4 ]; then
+            if [ "$(echo "$HEALTHY" | grep -c 'healthy')" -eq 5 ]; then
               echo "All services healthy"
               exit 0
             fi

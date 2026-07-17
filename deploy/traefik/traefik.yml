@@ -1,0 +1,32 @@
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: promisemodelonline-net
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+entryPoints:
+  websecure:
+    address: ":9000"
+  metrics:
+    address: ":9090"
+
+api:
+  dashboard: true
+  insecure: false
+
+ping: {}
+
+log:
+  level: INFO
+
+accessLog: {}
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+
+serversTransport:
+  insecureSkipVerify: true

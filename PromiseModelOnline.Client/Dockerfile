@@ -28,6 +28,6 @@ COPY PromiseModelOnline.Client/default.conf /etc/nginx/conf.d/default.conf
 
 USER appuser
 
-EXPOSE 9000/tcp
+EXPOSE 8080/tcp
 
 CMD ["nginx", "-g", "daemon off;"]

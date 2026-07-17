@@ -1,22 +1,49 @@
 services:
+  traefik:
+    image: traefik:v3.7
+    container_name: traefik
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./deploy/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./deploy/traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./keys/client/cert.pem:/certs/cert.pem:ro
+      - ./keys/client/key.pem:/certs/key.pem:ro
+    networks:
+      - promisemodelonline-net
+    depends_on:
+      - promisemodelonline.bff
+      - promisemodelonline.auth
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   promisemodelonline.client:
     image: ${DOCKER_REGISTRY-}promisemodelonlineclient
     container_name: promisemodelonlineclient
     hostname: localhost
-    ports:
-      - "127.0.0.1:9000:9000/tcp"
-    depends_on:
-      - promisemodelonline.bff
-    volumes:
-      - ./keys/client/cert.pem:/etc/nginx/cert.pem:ro
-      - ./keys/client/key.pem:/etc/nginx/key.pem:ro
+    expose:
+      - "4000"
     networks:
       - promisemodelonline-net
     build:
       context: .
       dockerfile: PromiseModelOnline.Client/Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spa.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.spa.entrypoints=websecure"
+      - "traefik.http.routers.spa.tls=true"
+      - "traefik.http.routers.spa.priority=1"
+      - "traefik.http.services.spa.loadbalancer.server.port=4000"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:4000/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -24,8 +51,6 @@ services:
   promisemodelonline.bff:
     image: ${DOCKER_REGISTRY-}promisemodelonlinebff
     container_name: promisemodelonlinebff
-    ports:
-      - "127.0.0.1:8010:8010/tcp"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:8010
@@ -45,6 +70,29 @@ services:
         condition: service_healthy
     networks:
       - promisemodelonline-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bff-api.rule=PathPrefix(`/api/`)"
+      - "traefik.http.routers.bff-api.entrypoints=websecure"
+      - "traefik.http.routers.bff-api.tls=true"
+      - "traefik.http.routers.bff-api.priority=20"
+      - "traefik.http.routers.bff-api.middlewares=ratelimit-api@file,security-headers@file"
+      - "traefik.http.routers.bff-hubs.rule=PathPrefix(`/hubs/`)"
+      - "traefik.http.routers.bff-hubs.entrypoints=websecure"
+      - "traefik.http.routers.bff-hubs.tls=true"
+      - "traefik.http.routers.bff-hubs.priority=20"
+      - "traefik.http.routers.bff-hubs.middlewares=ratelimit-hubs@file,sticky-hubs@file,security-headers@file"
+      - "traefik.http.services.bff.loadbalancer.sticky.cookie.name=traefik_hub_route"
+      - "traefik.http.services.bff.loadbalancer.sticky.cookie.httpOnly=true"
+      - "traefik.http.services.bff.loadbalancer.sticky.cookie.secure=true"
+      - "traefik.http.services.bff.loadbalancer.sticky.cookie.sameSite=lax"
+      - "traefik.http.routers.bff-auth-internal.rule=PathPrefix(`/login`) || PathPrefix(`/logout`) || PathPrefix(`/signin-oidc`) || PathPrefix(`/signout-callback-oidc`)"
+      - "traefik.http.routers.bff-auth-internal.entrypoints=websecure"
+      - "traefik.http.routers.bff-auth-internal.tls=true"
+      - "traefik.http.routers.bff-auth-internal.priority=20"
+      - "traefik.http.routers.bff-auth-internal.middlewares=ratelimit-login@file,security-headers@file"
+      - "traefik.http.services.bff.loadbalancer.server.port=8010"
+      - "traefik.http.services.bff.loadbalancer.server.scheme=https"
     build:
       context: .
       dockerfile: PromiseModelOnline.BFF/Dockerfile
@@ -98,7 +146,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
-    
+
   promisemodelonline.auth:
     image: ${DOCKER_REGISTRY-}promisemodelonlineauth
     container_name: promisemodelonlineauth
@@ -128,6 +176,39 @@ services:
         condition: service_completed_successfully
     networks:
       - promisemodelonline-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth-connect.rule=PathPrefix(`/connect/`)"
+      - "traefik.http.routers.auth-connect.entrypoints=websecure"
+      - "traefik.http.routers.auth-connect.tls=true"
+      - "traefik.http.routers.auth-connect.priority=30"
+      - "traefik.http.routers.auth-connect.middlewares=ratelimit-token@file,auth-csp@file,security-headers@file"
+      - "traefik.http.routers.auth-wellknown.rule=PathPrefix(`/.well-known/`)"
+      - "traefik.http.routers.auth-wellknown.entrypoints=websecure"
+      - "traefik.http.routers.auth-wellknown.tls=true"
+      - "traefik.http.routers.auth-wellknown.priority=30"
+      - "traefik.http.routers.auth-wellknown.middlewares=security-headers@file"
+      - "traefik.http.routers.auth-account.rule=PathPrefix(`/account/`)"
+      - "traefik.http.routers.auth-account.entrypoints=websecure"
+      - "traefik.http.routers.auth-account.tls=true"
+      - "traefik.http.routers.auth-account.priority=30"
+      - "traefik.http.routers.auth-account.middlewares=ratelimit-account@file,auth-csp@file,security-headers@file"
+      - "traefik.http.routers.auth-register.rule=PathPrefix(`/account/register`)"
+      - "traefik.http.routers.auth-register.entrypoints=websecure"
+      - "traefik.http.routers.auth-register.tls=true"
+      - "traefik.http.routers.auth-register.priority=40"
+      - "traefik.http.routers.auth-register.middlewares=ratelimit-register@file,auth-csp@file,security-headers@file"
+      - "traefik.http.routers.auth-external.rule=PathPrefix(`/account/external/`)"
+      - "traefik.http.routers.auth-external.entrypoints=websecure"
+      - "traefik.http.routers.auth-external.tls=true"
+      - "traefik.http.routers.auth-external.priority=40"
+      - "traefik.http.routers.auth-external.middlewares=ratelimit-external@file,auth-csp@file,security-headers@file"
+      - "traefik.http.routers.auth-signin-google.rule=PathPrefix(`/signin-google`)"
+      - "traefik.http.routers.auth-signin-google.entrypoints=websecure"
+      - "traefik.http.routers.auth-signin-google.tls=true"
+      - "traefik.http.routers.auth-signin-google.priority=30"
+      - "traefik.http.services.auth.loadbalancer.server.port=8060"
+      - "traefik.http.services.auth.loadbalancer.server.scheme=https"
     build:
       context: .
       dockerfile: PromiseModelOnline.Auth/Dockerfile
@@ -177,8 +258,6 @@ services:
   umami:
     image: docker.umami.is/umami-software/umami:postgresql-latest
     container_name: umami
-    ports:
-      - "127.0.0.1:3000:3000/tcp"
     entrypoint: /init/umami-entrypoint.sh
     environment:
       DATABASE_TYPE: postgresql
@@ -192,6 +271,19 @@ services:
         condition: service_healthy
     networks:
       - promisemodelonline-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.umami-script.rule=PathPrefix(`/umami/script.js`)"
+      - "traefik.http.routers.umami-script.entrypoints=websecure"
+      - "traefik.http.routers.umami-script.tls=true"
+      - "traefik.http.routers.umami-script.priority=50"
+      - "traefik.http.routers.umami-api.rule=PathPrefix(`/umami/api/`)"
+      - "traefik.http.routers.umami-api.entrypoints=websecure"
+      - "traefik.http.routers.umami-api.tls=true"
+      - "traefik.http.routers.umami-api.priority=50"
+      - "traefik.http.middlewares.umami-strip-prefix.stripprefix.prefixes=/umami/api"
+      - "traefik.http.routers.umami-api.middlewares=umami-strip-prefix"
+      - "traefik.http.services.umami.loadbalancer.server.port=3000"
     restart: unless-stopped
 
   umami-db:

@@ -3,7 +3,7 @@ services:
     container_name: promisemodelonlineclient
     hostname: localhost
     ports:
-      - "127.0.0.1:9000:9000/tcp"
+      - "127.0.0.1:4000:4000/tcp"
     networks:
       - promisemodelonline-client-ui-test-net
     build:
