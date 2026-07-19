@@ -1,22 +1,39 @@
 services:
-  promisemodelonline.client:
-    image: ${DOCKER_REGISTRY-}promisemodelonlineclient
-    container_name: promisemodelonlineclient
+  promisemodelonline.proxy:
+    image: ${DOCKER_REGISTRY-}promisemodelonlineproxy
+    container_name: promisemodelonlineproxy
     hostname: localhost
     ports:
       - "127.0.0.1:9000:9000/tcp"
-    depends_on:
-      - promisemodelonline.bff
     volumes:
       - ./keys/client/cert.pem:/etc/nginx/cert.pem:ro
       - ./keys/client/key.pem:/etc/nginx/key.pem:ro
+    depends_on:
+      promisemodelonline.client:
+        condition: service_started
+      promisemodelonline.bff:
+        condition: service_started
+    networks:
+      - promisemodelonline-net
+    build:
+      context: .
+      dockerfile: PromiseModelOnline.Proxy/Dockerfile
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  promisemodelonline.client:
+    image: ${DOCKER_REGISTRY-}promisemodelonlineclient
+    container_name: promisemodelonlineclient
     networks:
       - promisemodelonline-net
     build:
       context: .
       dockerfile: PromiseModelOnline.Client/Dockerfile
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:4000/"]
       interval: 15s
       timeout: 5s
       retries: 3

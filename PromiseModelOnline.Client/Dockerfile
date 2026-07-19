@@ -1,4 +1,3 @@
-# Stage 1: Build JS with Vite
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -7,7 +6,6 @@ COPY PromiseModelOnline.Client/wwwroot ./PromiseModelOnline.Client/wwwroot
 COPY vite.config.js ./
 RUN npm run build
 
-# Stage 2: Nginx
 FROM nginx:stable-alpine-slim
 
 RUN addgroup -g 1000 -S appgroup && \
@@ -27,7 +25,5 @@ COPY PromiseModelOnline.Client/nginx.conf /etc/nginx/nginx.conf
 COPY PromiseModelOnline.Client/default.conf /etc/nginx/conf.d/default.conf
 
 USER appuser
-
-EXPOSE 9000/tcp
 
 CMD ["nginx", "-g", "daemon off;"]
