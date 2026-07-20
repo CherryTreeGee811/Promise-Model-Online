@@ -1,0 +1,106 @@
+name: PromiseModelOnline (Self-Hosted)
+on:
+  workflow_dispatch:
+jobs:
+  BuildAndTest:
+    runs-on: ["self-hosted", "local-e2e"]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install PowerShell (self-hosted)
+        shell: bash
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq powershell
+      - name: Setup .NET
+        if: false
+        uses: actions/setup-dotnet@v5
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        id: nuget-cache
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.sln') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Cache npm packages
+        uses: actions/cache@v5
+        id: npm-cache
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - name: Restore & Build All Projects
+        shell: bash
+        run: dotnet build Promise-Model-Online.sln
+      - name: Enforce .NET code style
+        shell: bash
+        run: dotnet format Promise-Model-Online.sln --verify-no-changes
+      - name: Install dependencies
+        shell: bash
+        run: npm ci
+      - name: ESLint & Quality
+        shell: bash
+        run: |
+          npm run lint && npm run lint:html && npm run lint:css && npm run lint:nginx && npm run typecheck && npm run lint:dry && npm run lint:dead && npm run test -- --coverage --coverage.thresholds.lines=70 --coverage.thresholds.branches=70 --coverage.thresholds.functions=70 --coverage.thresholds.statements=70 2>&1 | tee /tmp/vitest-coverage.log; if grep -q "ERROR: Coverage for" /tmp/vitest-coverage.log; then echo "Coverage thresholds not met!"; exit 1; fi && npm run build
+      - name: Generate dev certs
+        shell: bash
+        run: bash scripts/generate-dev-certs.sh
+      - name: Run Auth Unit Tests
+        shell: bash
+        run: dotnet test ./PromiseModelOnline.Auth.Tests --no-build --settings coverage.runsettings --filter "FullyQualifiedName!~IntegrationTests"
+      - name: Run API Unit Tests
+        shell: bash
+        run: dotnet test ./PromiseModelOnline.Api.Tests --no-build --settings coverage.runsettings --filter "FullyQualifiedName!~IntegrationTests"
+      - name: Run Auth Integration Tests
+        shell: bash
+        run: dotnet test ./PromiseModelOnline.Auth.Tests --no-build --settings coverage.runsettings --filter "FullyQualifiedName~IntegrationTests"
+      - name: Run BFF Integration Tests
+        shell: bash
+        run: dotnet test ./PromiseModelOnline.BFF.Tests --no-build --settings coverage.runsettings --filter "FullyQualifiedName~IntegrationTests"
+      - name: Run API Integration Tests
+        shell: bash
+        run: dotnet test ./PromiseModelOnline.Api.Tests --no-build --settings coverage.runsettings --filter "FullyQualifiedName~IntegrationTests"
+      - name: Run Client UI Test Environment
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml up -d --build
+      - name: Wait for Client (Nginx)
+        shell: bash
+        run: for i in $(seq 1 15); do STATUS=$(docker exec promisemodelonlineclient sh -c "test -f /tmp/nginx.pid && echo 200 || echo 000" 2>/dev/null || true); if [ "$STATUS" = "200" ]; then echo "Client healthy"; exit 0; fi; sleep 2; done; echo "ERROR: Client not healthy"; exit 1
+      - name: Run Client Tests (Chromium)
+        shell: bash
+        env:
+          TEST_BROWSER: chromium
+        run: dotnet test ./PromiseModelOnline.Client.Tests --no-build
+      - name: Run Client Tests (Firefox)
+        shell: bash
+        env:
+          TEST_BROWSER: firefox
+        run: dotnet test ./PromiseModelOnline.Client.Tests --no-build
+      - name: Run Client Tests (WebKit)
+        shell: bash
+        env:
+          TEST_BROWSER: webkit
+        run: dotnet test ./PromiseModelOnline.Client.Tests --no-build
+      - name: Teardown Client UI
+        if: always()
+        shell: bash
+        run: docker compose --project-name promisemodelonline-ui-test -f infrastructure/tests/docker-compose.ui.yml down -v
+      - name: Start E2E Stack
+        shell: bash
+        run: docker compose --project-name promisemodelonline -f docker-compose.yml -f infrastructure/tests/docker-compose.e2e-override.yml up -d
+      - name: Run E2E Tests (Core)
+        shell: bash
+        run: dotnet test ./PromiseModelOnline.E2E.Tests --no-build --filter "FullyQualifiedName!~RateLimitingTests"
+      - name: Tear Down E2E Stack
+        shell: bash
+        run: docker compose --project-name promisemodelonline down -v
+      - name: Start Rate-Limit Stack
+        shell: bash
+        run: docker compose --project-name promisemodelonline up -d
+      - name: Install Playwright for E2E
+        shell: bash
+        run: pwsh ./PromiseModelOnline.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium 2>&1
+      - name: Run E2E Rate Limit Tests
+        shell: bash
+        run: dotnet test ./PromiseModelOnline.E2E.Tests --no-build --filter "FullyQualifiedName~RateLimitingTests"
+      - name: Tear Down Rate-Limit Stack
+        shell: bash
+        run: docker compose --project-name promisemodelonline down -v
