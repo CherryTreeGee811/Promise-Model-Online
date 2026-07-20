@@ -24,10 +24,11 @@ jobs:
         if: env.ACT != 'true'
         shell: bash
         run: |
-          rm -rf keys scripts infrastructure
+          rm -rf keys scripts infrastructure secrets
           ln -sf /keys keys
           ln -sf /scripts scripts
           ln -sf /infrastructure infrastructure
+          ln -sf /secrets secrets
 
       - name: Clean up stale containers (act local runs)
         if: env.ACT == 'true'
