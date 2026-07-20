@@ -20,16 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Docker Desktop volume symlinks
-        if: contains(runner.labels, 'self-hosted')
-        shell: bash
-        run: |
-          rm -rf keys scripts infrastructure secrets
-          ln -sf /keys keys
-          ln -sf /scripts scripts
-          ln -sf /infrastructure infrastructure
-          ln -sf /secrets secrets
-
       - name: Clean up stale containers (act local runs)
         if: env.ACT == 'true'
         shell: bash
