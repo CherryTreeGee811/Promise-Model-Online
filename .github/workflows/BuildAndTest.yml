@@ -82,8 +82,8 @@ jobs:
           restore-keys: |
             npm-${{ runner.os }}-
 
-      - name: Install PowerShell (act runner only)
-        if: env.ACT == 'true'
+      - name: Install PowerShell (act and self-hosted runners)
+        if: env.ACT == 'true' || contains(runner.labels, 'self-hosted')
         shell: bash
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq powershell
