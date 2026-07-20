@@ -24,6 +24,9 @@ keys/
 secrets/*.txt
 deploy/secrets/*.txt
 
+# act runner secrets (local CI)
+.secrets
+
 # Rider / JetBrains cache files and solution user settings
 **/*.lscache
 **/*.sln.DotSettings.user
@@ -43,3 +46,4 @@ puppeteer/
 .opencode/
 .codegraph/
 coverage/
+zap-output/

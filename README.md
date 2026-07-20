@@ -303,6 +303,32 @@ The project uses GitHub Actions for CI/CD. Pipelines run on every push:
 
 Secrets are injected at runtime via GitHub Secrets, never baked into images.
 
+### Local CI with `act`
+
+Run the full `BuildAndTest.yml` pipeline locally using [`act`](https://github.com/nektos/act):
+
+```bash
+# Prerequisites: Docker, act (v0.2.70+), and the .secrets file
+
+# First pull the runner image (~18 GB playwright/mcr images):
+act -W .github/workflows/BuildAndTest.yml --secret-file .secrets --pull=true
+
+# Subsequent runs (reuse cached runner image, much faster):
+act -W .github/workflows/BuildAndTest.yml --secret-file .secrets --pull=false
+```
+
+**Setup:**
+
+1. Ensure `.secrets` exists in the repo root (gitignored) with all secrets the workflow references. A template is generated on first use.
+2. Generate dev certs: `bash scripts/generate-dev-certs.sh`
+3. Ensure `secrets/` directory has the required password files (create with `openssl rand` if missing).
+
+**Notes:**
+- Steps that depend on GitHub API (Codecov upload, Trivy SARIF upload, Docker Hub push) are skipped via `if: env.ACT != 'true'` — they pass silently in local runs.
+- The `--secret-file` passes all required secrets; the workflow writes them to `./secrets/` files as it does in CI.
+- `act` mounts the Docker socket, so `docker compose` steps (E2E, client UI tests) work natively.
+- First run downloads ~18 GB of runner images (playwright + .NET SDK). Cache it with `--pull=false` on subsequent runs.
+
 ---
 
 ## Project Structure

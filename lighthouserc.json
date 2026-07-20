@@ -5,7 +5,7 @@
       "numberOfRuns": 1,
       "settings": {
         "onlyCategories": ["best-practices", "accessibility", "seo"],
-        "chromeFlags": "--ignore-certificate-errors"
+        "chromeFlags": "--ignore-certificate-errors --no-sandbox"
       }
     },
     "assert": {

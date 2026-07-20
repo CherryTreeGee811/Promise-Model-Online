@@ -20,6 +20,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Setup Docker Desktop volume symlinks
+        if: env.ACT != 'true'
+        shell: bash
+        run: |
+          rm -rf keys scripts infrastructure
+          ln -sf /keys keys
+          ln -sf /scripts scripts
+          ln -sf /infrastructure infrastructure
+
+      - name: Clean up stale containers (act local runs)
+        if: env.ACT == 'true'
+        shell: bash
+        run: |
+          if command -v docker &>/dev/null; then
+            docker rm -f $(docker ps -aq --filter name=promisemodelonline) 2>/dev/null || true
+            docker network prune -f 2>/dev/null || true
+          fi
+
       - name: Check for accidentally committed large files
         shell: bash
         run: |
@@ -72,6 +90,12 @@ jobs:
           key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             npm-${{ runner.os }}-
+
+      - name: Install PowerShell (act runner only)
+        if: env.ACT == 'true'
+        shell: bash
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq powershell
 
       - name: Restore & Build All Projects
         shell: bash
@@ -314,7 +338,11 @@ jobs:
 
       - name: A11y + Responsive + Lighthouse Audit
         shell: bash
+        env:
+          PUPPETEER_CACHE_DIR: ~/.cache/puppeteer
         run: |
+          CHROME=$(ls ~/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome 2>/dev/null | head -1)
+          if [ -n "$CHROME" ]; then export CHROME_PATH="$CHROME"; fi
           npm run lint:a11y https://localhost:9000
           npm run lint:responsive https://localhost:9000
           npm run lint:lighthouse
@@ -396,18 +424,19 @@ jobs:
             bash scripts/check-query-performance.sh
 
       - name: Security — OWASP ZAP DAST scan
+        if: env.ACT != 'true'
         shell: bash
         run: |
           docker run --rm \
             --network host \
-            -v /tmp:/zap/wrk:rw \
-            -v ${{ github.workspace }}/infrastructure/tests/zap-baseline.conf:/zap/wrk/zap-baseline.conf:ro \
+            -v ${{ github.workspace }}/zap-output:/zap/wrk:rw \
+            -v ${{ github.workspace }}/infrastructure/tests/zap-baseline.conf:/zap/wrk-config/zap-baseline.conf:ro \
             -e JAVA_OPTS="-Xmx2048m" \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-full-scan.py \
             -t https://localhost:9000 \
             -r /zap/wrk/zap-report.html \
-            -c /zap/wrk/zap-baseline.conf \
+            -c /zap/wrk-config/zap-baseline.conf \
             -P 8079 \
             -z "-config globalexcludeurl.url= -config hsqldb.writeDelayMs=5000 -config database.recovery.log=false"
 
@@ -465,6 +494,7 @@ jobs:
         run: docker compose --project-name promisemodelonline down -v
 
       - name: Upload .NET coverage to Codecov
+        if: env.ACT != 'true'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -478,6 +508,7 @@ jobs:
             ./E2eTestResults/*/coverage.cobertura.xml
 
       - name: Upload TS coverage to Codecov
+        if: env.ACT != 'true'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -549,30 +580,35 @@ jobs:
           exit-code: "0"
 
       - name: Upload Trivy filesystem results
+        if: env.ACT != 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-results.sarif"
           category: "trivy-fs"
 
       - name: Upload Trivy image scan results (API)
+        if: env.ACT != 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-api.sarif"
           category: "trivy-image-api"
 
       - name: Upload Trivy image scan results (client)
+        if: env.ACT != 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-client.sarif"
           category: "trivy-image-client"
 
       - name: Upload Trivy image scan results (auth)
+        if: env.ACT != 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-auth.sarif"
           category: "trivy-image-auth"
 
       - name: Upload Trivy image scan results (bff)
+        if: env.ACT != 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-image-bff.sarif"
@@ -625,6 +661,7 @@ jobs:
           exit-code: "0"
 
       - name: Upload SBOMs
+        if: env.ACT != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: sbom
@@ -638,7 +675,7 @@ jobs:
             /tmp/zap-report.html
 
       - name: Push Docker Images to DockerHub
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && env.ACT != 'true'
         shell: bash
         run: |
           docker tag promisemodelonlineapi cherrytree811/promisemodelonlineapi:latest
