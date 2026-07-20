@@ -113,7 +113,7 @@ jobs:
 
       - name: Full dependency audit (production + dev)
         shell: bash
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=low
 
       - name: Production dependency boundary check (Layer 1)
         shell: bash
