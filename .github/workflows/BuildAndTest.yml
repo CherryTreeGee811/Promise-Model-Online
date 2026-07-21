@@ -668,8 +668,10 @@ jobs:
           docker tag promisemodelonlineclient cherrytree811/promisemodelonlineclient:latest
           docker tag promisemodelonlineauth cherrytree811/promisemodelonlineauth:latest
           docker tag promisemodelonlinebff cherrytree811/promisemodelonlinebff:latest
+          docker tag promisemodelonlineproxy cherrytree811/promisemodelonlineproxy:latest
           docker login -u cherrytree811 -p ${{ secrets.DOCKER_CRED }}
           docker push cherrytree811/promisemodelonlineapi:latest
           docker push cherrytree811/promisemodelonlineclient:latest
           docker push cherrytree811/promisemodelonlineauth:latest
           docker push cherrytree811/promisemodelonlinebff:latest
+          docker push cherrytree811/promisemodelonlineproxy:latest
