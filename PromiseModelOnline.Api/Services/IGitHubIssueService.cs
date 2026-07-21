@@ -1,4 +1,4 @@
-namespace PromiseModelOnline.Api.Services;
+﻿namespace PromiseModelOnline.Api.Services;
 
 /// <summary>Service for reporting bugs to GitHub Issues.</summary>
 public interface IGitHubIssueService
