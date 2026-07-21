@@ -38,13 +38,14 @@ public class GitHubIssueService : IGitHubIssueService
     /// <param name="reporterEmail">Email of the reporting user.</param>
     /// <param name="userAgent">Browser user agent string.</param>
     /// <param name="pageUrl">URL where the bug was observed.</param>
-    /// <returns>The HTML URL of the created issue, or null if GitHub is not configured.</returns>
-    public async Task<string?> CreateBugReportAsync(string title, string description, string consoleLogs, string reporterEmail, string userAgent, string pageUrl)
+    /// <returns>The HTML URL of the created issue.</returns>
+    /// <exception cref="InvalidOperationException">GitHub integration is not configured.</exception>
+    public async Task<string> CreateBugReportAsync(string title, string description, string consoleLogs, string reporterEmail, string userAgent, string pageUrl)
     {
         if (string.IsNullOrEmpty(_owner) || string.IsNullOrEmpty(_repo) || string.IsNullOrEmpty(_token))
         {
-            _logger.LogWarning("GitHub token not configured — bug report not filed");
-            return null;
+            _logger.LogError("GitHub integration not configured — bug report not filed. Set GitHub:Token, GitHub:Owner, and GitHub:Repo.");
+            throw new InvalidOperationException("GitHub integration is not configured. Set GitHub:Token, GitHub:Owner, and GitHub:Repo.");
         }
 
         var body = $"""

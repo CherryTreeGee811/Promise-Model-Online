@@ -31,8 +31,8 @@ public class BugReportsController(IGitHubIssueService gitHubIssueService, ILogge
 {
     /// <summary>Submit a bug report.</summary>
     /// <param name="request">The bug report details.</param>
-    /// <response code="200">Bug report submitted successfully. Returns <c>issueUrl</c> if GitHub is configured.</response>
-    /// <response code="502">GitHub API call failed.</response>
+    /// <response code="200">Bug report submitted successfully. Returns <c>issueUrl</c>.</response>
+    /// <response code="502">GitHub integration not configured or API call failed.</response>
     [Authorize(Policy = "projects.read")]
     [HttpPost]
     public async Task<IActionResult> SubmitBugReport([FromBody] BugReportRequest request)
@@ -52,11 +52,6 @@ public class BugReportsController(IGitHubIssueService gitHubIssueService, ILogge
                 email,
                 userAgent,
                 pageUrl);
-
-            if (issueUrl is null)
-            {
-                return Ok(new { issueUrl = (string?)null, message = "Bug report noted but GitHub integration is not configured." });
-            }
 
             return Ok(new { issueUrl });
         }

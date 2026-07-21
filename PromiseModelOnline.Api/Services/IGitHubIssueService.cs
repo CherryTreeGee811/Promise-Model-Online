@@ -10,6 +10,7 @@ public interface IGitHubIssueService
     /// <param name="reporterEmail">Email of the reporting user.</param>
     /// <param name="userAgent">Browser user agent string.</param>
     /// <param name="pageUrl">URL where the bug was observed.</param>
-    /// <returns>The HTML URL of the created issue, or null if GitHub is not configured.</returns>
-    Task<string?> CreateBugReportAsync(string title, string description, string consoleLogs, string reporterEmail, string userAgent, string pageUrl);
+    /// <returns>The HTML URL of the created issue.</returns>
+    /// <exception cref="InvalidOperationException">GitHub integration is not configured.</exception>
+    Task<string> CreateBugReportAsync(string title, string description, string consoleLogs, string reporterEmail, string userAgent, string pageUrl);
 }
