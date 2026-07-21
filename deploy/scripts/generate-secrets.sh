@@ -27,7 +27,7 @@ print(''.join(secrets.SystemRandom().sample(p, len(p)))[:30])
 echo "  secrets/db_sa_password.txt"
 
 # External API placeholders (replace with real values)
-for f in google_client_secret.txt sendgrid_api_key.txt cloudflare_tunnel_token.txt; do
+for f in google_client_secret.txt sendgrid_api_key.txt cloudflare_tunnel_token.txt github_token.txt; do
   [ -s "secrets/$f" ] || { echo "REPLACE_ME_$(openssl rand -hex 16)" > "secrets/$f"; echo "  secrets/$f  [PLACEHOLDER]"; }
 done
 

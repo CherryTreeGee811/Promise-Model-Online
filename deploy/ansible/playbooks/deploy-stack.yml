@@ -50,6 +50,7 @@
         - cloudflare_tunnel_token.txt
         - db_sa_password.txt
         - auth_registration_key.txt
+        - github_token.txt
 
     - name: Set permissions on certs
       ansible.builtin.file:
@@ -88,6 +89,7 @@
         - umami_admin_password
         - cloudflare_tunnel_token
         - auth_registration_key
+        - github_token
 
     - name: Pull Docker images from registry
       ansible.builtin.shell:

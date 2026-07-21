@@ -107,12 +107,18 @@ services:
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
       - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+      - GitHub__Owner=CherryTreeGee811
+      - GitHub__Repo=Promise-Model-Online
+      - GitHub__Token_FILE=/run/secrets/github_token
     secrets:
       - source: pmo_api_db_password
         target: api_db_password
         mode: 0444
       - source: pmo_auth_registration_key
         target: auth_registration_key
+        mode: 0444
+      - source: pmo_github_token
+        target: github_token
         mode: 0444
     networks:
       - promisemodelonline-net
@@ -382,6 +388,8 @@ secrets:
   pmo_cloudflare_tunnel_token:
     external: true
   pmo_auth_registration_key:
+    external: true
+  pmo_github_token:
     external: true
 
 configs:
