@@ -14,27 +14,34 @@ systemctl is-active --quiet libvirtd || {
   exit 1
 }
 
-# === Step 2: Validate required secrets ===
-echo "[2/5] Validating secrets..."
-missing=0
-for f in google_client_secret.txt sendgrid_api_key.txt cloudflare_tunnel_token.txt github_token.txt; do
-  if [ ! -s "secrets/$f" ] || grep -q "REPLACE_ME\|PLACEHOLDER" "secrets/$f" 2>/dev/null; then
-    echo "  FATAL: secrets/$f is missing or still has placeholder text"
-    missing=1
-  fi
-done
-[ "$missing" -eq 1 ] && exit 1
-
-# === Step 3: Generate SSH key ===
-echo "[3/5] Checking SSH key..."
+# === Step 2: Generate SSH key ===
+echo "[2/5] Checking SSH key..."
 if [ ! -f ~/.ssh/pmo_vm_key ]; then
   echo "  Generating ~/.ssh/pmo_vm_key..."
   ssh-keygen -t ed25519 -f ~/.ssh/pmo_vm_key -N "" >/dev/null 2>&1
 fi
 
-# === Step 4: Generate auto-secrets + certs ===
-echo "[4/5] Generating passwords and certificates..."
+# === Step 3: Generate auto-secrets, certs, and placeholders ===
+echo "[3/5] Generating passwords and certificates..."
 bash scripts/generate-secrets.sh
+
+# === Step 4: Validate external secrets ===
+echo "[4/5] Checking external secrets..."
+missing=0
+for f in google_client_secret.txt sendgrid_api_key.txt cloudflare_tunnel_token.txt github_token.txt; do
+  if grep -q "REPLACE_ME\|PLACEHOLDER" "secrets/$f" 2>/dev/null; then
+    echo "  ⚠️  secrets/$f still has placeholder — replace with your real value"
+    missing=1
+  fi
+done
+
+if [ "$missing" -eq 1 ]; then
+  echo ""
+  echo "ERROR: One or more external secrets still contain placeholder values."
+  echo "Edit the files listed above in deploy/secrets/ and re-run deploy.sh."
+  echo "The stack will NOT be deployed until these are filled in."
+  exit 1
+fi
 
 # === Step 5: Deploy via Ansible ===
 echo "[5/5] Deploying via Ansible (provision VM + deploy stack)..."
