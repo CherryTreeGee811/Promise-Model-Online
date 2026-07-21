@@ -1,17 +1,17 @@
-name: promisemodelonline
-
 services:
-  promisemodelonline.proxy:
+  promisemodelonline-proxy:
     image: cherrytree811/promisemodelonlineproxy
     ports:
       - target: 9000
         published: 9000
         protocol: tcp
-        mode: host
     networks:
       - promisemodelonline-net
     configs:
-      - source: nginx_default_conf
+      - source: nginx_swarm_conf
+        target: /etc/nginx/nginx.conf
+        mode: 0444
+      - source: nginx_swarm_default_conf
         target: /etc/nginx/conf.d/default.conf
         mode: 0444
       - source: proxy_cert
@@ -36,12 +36,12 @@ services:
         order: start-first
         failure_action: rollback
 
-  promisemodelonline.client:
+  promisemodelonline-client:
     image: cherrytree811/promisemodelonlineclient
     networks:
       - promisemodelonline-net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:4000/"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -56,7 +56,7 @@ services:
         order: start-first
         failure_action: rollback
 
-  promisemodelonline.bff:
+  promisemodelonline-bff:
     image: cherrytree811/promisemodelonlinebff
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
@@ -97,7 +97,7 @@ services:
           cpus: '1'
           memory: 512M
 
-  promisemodelonline.api:
+  promisemodelonline-api:
     image: cherrytree811/promisemodelonlineapi
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
@@ -106,7 +106,7 @@ services:
       - JwtSettings__Audience=promisemodelonline.api
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
     secrets:
       - source: pmo_api_db_password
         target: api_db_password
@@ -121,6 +121,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 90s
     deploy:
       mode: replicated
       replicas: 2
@@ -132,7 +133,7 @@ services:
         order: start-first
         failure_action: rollback
 
-  promisemodelonline.auth:
+  promisemodelonline-auth:
     image: cherrytree811/promisemodelonlineauth
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
@@ -141,7 +142,7 @@ services:
       - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
       - Certificates__Password_FILE=/run/secrets/cert_password
       - DATA_PROTECTION_KEYS_PATH=/app/dp-keys
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID}
       - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
       - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
@@ -177,6 +178,7 @@ services:
       interval: 20s
       timeout: 5s
       retries: 3
+      start_period: 120s
     deploy:
       mode: replicated
       replicas: 2
@@ -188,7 +190,7 @@ services:
         order: start-first
         failure_action: rollback
 
-  promisemodelonline.db:
+  promisemodelonline-db:
     image: mcr.microsoft.com/mssql/server:2025-latest
     environment:
       ACCEPT_EULA: Y
@@ -212,7 +214,7 @@ services:
         constraints:
           - node.role == manager
 
-  promisemodelonline.db-init:
+  promisemodelonline-db-init:
     image: mcr.microsoft.com/mssql-tools
     secrets:
       - source: pmo_auth_db_password
@@ -331,7 +333,6 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:2026.6.1
     command: tunnel --no-autoupdate run
-    profiles: [production]
     secrets:
       - source: pmo_cloudflare_tunnel_token
         target: cloudflare_tunnel_token
@@ -389,8 +390,10 @@ secrets:
     external: true
 
 configs:
-  nginx_default_conf:
-    file: ./nginx-proxy-default.conf
+  nginx_swarm_conf:
+    file: ./nginx-swarm.conf
+  nginx_swarm_default_conf:
+    file: ./nginx-swarm-default.conf
   proxy_cert:
     file: ./keys/client/cert.pem
   proxy_key:
