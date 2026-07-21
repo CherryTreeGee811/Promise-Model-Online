@@ -113,6 +113,13 @@
               -days 365 -subj "/CN=promisemodelonline.bff/O=Promise Model Online BFF/C=CA"
             creates: "{{ project_root }}/keys/bff/cert.pem"
 
+        - name: Proxy certs (copy from client)
+          ansible.builtin.copy:
+            src: "{{ project_root }}/keys/client/"
+            dest: "{{ project_root }}/keys/proxy/"
+            remote_src: true
+            mode: "0644"
+
     - name: Set permissions on certs
       ansible.builtin.file:
         path: "{{ item }}"

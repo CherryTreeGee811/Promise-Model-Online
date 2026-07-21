@@ -23,6 +23,7 @@ keys/
 # Docker secrets (actual values — use .example.txt templates instead)
 secrets/*.txt
 deploy/secrets/*.txt
+deploy/keys/
 
 # act runner secrets (local CI)
 .secrets
