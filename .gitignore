@@ -46,4 +46,7 @@ puppeteer/
 .opencode/
 .codegraph/
 coverage/
-zap-output/
+zap-output/__pycache__/
+
+# Python cache
+__pycache__/
