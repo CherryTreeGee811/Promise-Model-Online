@@ -21,13 +21,13 @@
         - "{{ project_root }}/keys/client"
         - "{{ project_root }}/keys/auth"
         - "{{ project_root }}/keys/bff"
+        - "{{ project_root }}/keys/proxy"
 
     - name: Sync deploy directory to VM
       ansible.builtin.synchronize:
         src: "{{ deploy_root }}"
         dest: "{{ project_root }}"
         rsync_opts:
-          - "--exclude=keys"
           - "--exclude=secrets"
           - "--exclude=ansible"
           - "--exclude=.DS_Store"
@@ -51,75 +51,6 @@
         - db_sa_password.txt
         - auth_registration_key.txt
 
-    - name: Check if existing cert is ECDSA (needs RSA regeneration)
-      ansible.builtin.shell:
-        cmd: |
-          openssl x509 -in {{ project_root }}/keys/auth/cert.pem -noout -text 2>/dev/null | grep -q "id-ecPublicKey" && echo "ECDSA" || echo "RSA or missing"
-      register: cert_type_check
-      changed_when: false
-      failed_when: false
-
-    - name: Remove old ECDSA certs to force RSA regeneration
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - "{{ project_root }}/keys/client/cert.pem"
-        - "{{ project_root }}/keys/client/key.pem"
-        - "{{ project_root }}/keys/auth/cert.pem"
-        - "{{ project_root }}/keys/auth/key.pem"
-        - "{{ project_root }}/keys/auth/cert.pfx"
-        - "{{ project_root }}/keys/bff/cert.pem"
-        - "{{ project_root }}/keys/bff/key.pem"
-      when: cert_type_check.stdout == "ECDSA"
-
-    - name: Generate all self-signed certificates
-      block:
-        - name: Client cert
-          ansible.builtin.shell:
-            cmd: >
-              openssl req -x509 -newkey rsa:4096 -nodes
-              -keyout "{{ project_root }}/keys/client/key.pem"
-              -out "{{ project_root }}/keys/client/cert.pem"
-              -days 365 -subj "/CN=promisemodel.online/O=Promise Model Online/C=CA"
-            creates: "{{ project_root }}/keys/client/cert.pem"
-
-        - name: Auth cert
-          ansible.builtin.shell:
-            cmd: >
-              openssl req -x509 -newkey rsa:4096 -nodes
-              -keyout "{{ project_root }}/keys/auth/key.pem"
-              -out "{{ project_root }}/keys/auth/cert.pem"
-              -days 365 -subj "/CN=promisemodelonline.auth/O=Promise Model Online Auth/C=CA"
-            creates: "{{ project_root }}/keys/auth/cert.pem"
-
-        - name: cert.pfx for token signing
-          ansible.builtin.shell:
-            cmd: >
-              openssl pkcs12 -export
-              -in "{{ project_root }}/keys/auth/cert.pem"
-              -inkey "{{ project_root }}/keys/auth/key.pem"
-              -out "{{ project_root }}/keys/auth/cert.pfx"
-              -passout pass:{{ lookup('file', deploy_root ~ '/secrets/cert_password.txt') | trim }}
-              -name "Promise Model Online Token Signing"
-            creates: "{{ project_root }}/keys/auth/cert.pfx"
-
-        - name: BFF cert
-          ansible.builtin.shell:
-            cmd: >
-              openssl req -x509 -newkey rsa:4096 -nodes
-              -keyout "{{ project_root }}/keys/bff/key.pem"
-              -out "{{ project_root }}/keys/bff/cert.pem"
-              -days 365 -subj "/CN=promisemodelonline.bff/O=Promise Model Online BFF/C=CA"
-            creates: "{{ project_root }}/keys/bff/cert.pem"
-
-        - name: Proxy certs (copy from client)
-          ansible.builtin.copy:
-            src: "{{ project_root }}/keys/client/"
-            dest: "{{ project_root }}/keys/proxy/"
-            remote_src: true
-            mode: "0644"
-
     - name: Set permissions on certs
       ansible.builtin.file:
         path: "{{ item }}"
@@ -137,16 +68,15 @@
 
     - name: Initialize Docker Swarm (idempotent)
       ansible.builtin.shell:
-        cmd: docker swarm init 2>&1 || true
+        cmd: sudo docker swarm init 2>&1 || true
       register: swarm_init
       changed_when: false
 
     - name: Create Docker Swarm secrets from files
-      no_log: true
       ansible.builtin.shell:
         cmd: |
-          docker secret inspect "pmo_{{ item }}" > /dev/null 2>&1 || \
-          docker secret create "pmo_{{ item }}" "{{ project_root }}/secrets/{{ item }}.txt"
+          sudo docker secret inspect "pmo_{{ item }}" > /dev/null 2>&1 || \
+          sudo docker secret create "pmo_{{ item }}" "{{ project_root }}/secrets/{{ item }}.txt"
       loop:
         - db_sa_password
         - api_db_password
@@ -161,18 +91,22 @@
 
     - name: Pull Docker images from registry
       ansible.builtin.shell:
-        cmd: for img in cherrytree811/promisemodelonlineapi cherrytree811/promisemodelonlineauth cherrytree811/promisemodelonlinebff cherrytree811/promisemodelonlineclient cherrytree811/promisemodelonlineproxy; do docker pull "$img" 2>&1; done
+        cmd: for img in cherrytree811/promisemodelonlineapi cherrytree811/promisemodelonlineauth cherrytree811/promisemodelonlinebff cherrytree811/promisemodelonlineclient cherrytree811/promisemodelonlineproxy; do sudo docker pull "$img" 2>&1; done
       register: pull_result
       changed_when: "'Downloaded' in pull_result.stdout or 'Pulled' in pull_result.stdout"
 
     - name: Deploy Docker Swarm stack
       ansible.builtin.shell:
         cmd: |
+          set -a
+          source {{ project_root }}/.env
+          set +a
           export DB_SA_PASSWORD=$(cat {{ project_root }}/secrets/db_sa_password.txt)
           export UMAMI_DB_PASSWORD=$(cat {{ project_root }}/secrets/umami_db_password.txt)
-          docker stack deploy -c docker-stack.yml "{{ stack_name }}"
+          sudo -E docker stack deploy -c docker-stack.yml "{{ stack_name }}"
       args:
         chdir: "{{ project_root }}"
+        executable: /bin/bash
       register: deploy_result
       changed_when: true
 
@@ -180,7 +114,7 @@
       ansible.builtin.shell:
         cmd: |
           for i in $(seq 1 60); do
-            FAILED=$(docker service ls --filter "name={{ stack_name }}" --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
+            FAILED=$(sudo docker service ls --filter "name={{ stack_name }}" --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
             if [ -z "$FAILED" ]; then
               echo "All services stable"
               exit 0
@@ -188,7 +122,7 @@
             sleep 5
           done
           echo "ERROR: Timed out waiting for services"
-          docker service ls --filter "name={{ stack_name }}"
+          sudo docker service ls --filter "name={{ stack_name }}"
           exit 1
       args:
         chdir: "{{ project_root }}"
@@ -197,7 +131,7 @@
 
     - name: Print stack status
       ansible.builtin.shell:
-        cmd: docker service ls --filter "name={{ stack_name }}"
+        cmd: sudo docker service ls --filter "name={{ stack_name }}"
       register: status_result
 
     - name: Print deployment summary
