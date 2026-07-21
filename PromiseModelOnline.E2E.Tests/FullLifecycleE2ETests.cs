@@ -14,6 +14,7 @@ public class FullLifecycleE2ETests : E2ETestBase
     [Description("PMO-178: Full lifecycle — Login -> Create Project -> Add Promise/Epic/Journey/Flow/Moment -> Share with second user")]
     public async Task FullProjectLifecycle_LoginCreateAddStackShare_EndToEnd()
     {
+        // Arrange
         // ════════════════════════════════════════════
         //  Step 1: Log in and create a fresh project
         // ════════════════════════════════════════════
@@ -25,12 +26,14 @@ public class FullLifecycleE2ETests : E2ETestBase
         await Page.WaitForSelectorAsync("#add-project-form", new() { Timeout = 10000 });
         await Page.FillAsync("#project-name-input", projectName);
         await Page.FillAsync("#first-promise-input", "E2E lifecycle promise.");
+        // Act
         await Page.ClickAsync("#create-project-btn");
         await Page.WaitForURLAsync("**/graph", new() { Timeout = 30000 });
         await Page.WaitForSelectorAsync("#graph-content svg", new() { Timeout = 15000 });
         var urlParts = Page.Url.TrimEnd('/').Split('/');
         var slug = urlParts[^2];
         var graphNodeCount = await Page.Locator(".graph-node").CountAsync();
+        // Assert
         Assert.That(graphNodeCount, Is.GreaterThan(0), "Graph should show nodes after project creation");
         AssertNoCspViolations();
 

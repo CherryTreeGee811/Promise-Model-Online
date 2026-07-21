@@ -464,6 +464,7 @@ public class CommentsControllerUnitTests
     [Test]
     public async Task REQ_FUN_017_CreateComment_WhenUserRepositoryThrowsException_ReturnsBadRequest()
     {
+        // Arrange
         var createDto = new CreateCommentDto
         {
             Text = "This will fail at user level",

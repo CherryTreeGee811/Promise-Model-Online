@@ -71,6 +71,7 @@ public class ReactionRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_SYS_004_GetReactionsForItemAsync_EmptyDatabase_ReturnsEmpty()
     {
         // Act
+        // Arrange
         var result = await _repo.GetReactionsForItemAsync("Journey", 1);
         // Assert
         Assert.That(result, Is.Empty);
@@ -118,6 +119,7 @@ public class ReactionRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_SYS_004_GetUserReactionAsync_EmptyDatabase_ReturnsNull()
     {
         // Act
+        // Arrange
         var reaction = await _repo.GetUserReactionAsync(1, "Moment", 5);
         // Assert
         Assert.That(reaction, Is.Null);

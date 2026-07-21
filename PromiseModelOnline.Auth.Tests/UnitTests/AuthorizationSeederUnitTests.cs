@@ -64,16 +64,20 @@ public class AuthorizationSeederUnitTests
     [Test]
     public async Task SeedAsync_NonDevelopmentEnvironment_ReturnsEarly()
     {
+        // Arrange
         _envMock.Setup(e => e.EnvironmentName).Returns("Production");
 
+        // Act
         await AuthorizationSeeder.SeedAsync(_serviceProviderMock.Object);
 
+        // Assert
         _scopeFactoryMock.Verify(f => f.CreateScope(), Times.Never);
     }
 
     [Test]
     public async Task SeedAsync_DevelopmentEnvironment_SeedsUsersAndScopes()
     {
+        // Arrange
         _envMock.Setup(e => e.EnvironmentName).Returns("Development");
 
         _userManagerMock
@@ -97,8 +101,10 @@ public class AuthorizationSeederUnitTests
             .Setup(m => m.CreateAsync(It.IsAny<OpenIddictScopeDescriptor>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new object());
 
+        // Act
         await AuthorizationSeeder.SeedAsync(_serviceProviderMock.Object);
 
+        // Assert
         _userManagerMock.Verify(m => m.CreateAsync(
             It.Is<IdentityUser>(u =>
                 u.UserName == "pmo_test" &&
@@ -125,6 +131,7 @@ public class AuthorizationSeederUnitTests
     [Test]
     public async Task SeedAsync_ExistingUsers_DoesNotReSeed()
     {
+        // Arrange
         _envMock.Setup(e => e.EnvironmentName).Returns("Development");
 
         var existingUser1 = new IdentityUser { UserName = "pmo_test", Email = "pmo@gmail.com" };
@@ -144,14 +151,17 @@ public class AuthorizationSeederUnitTests
             .Setup(m => m.FindByNameAsync("projects.write", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new object());
 
+        // Act
         await AuthorizationSeeder.SeedAsync(_serviceProviderMock.Object);
 
+        // Assert
         _userManagerMock.Verify(m => m.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>()), Times.Never);
     }
 
     [Test]
     public async Task SeedAsync_ExistingScopes_DoesNotReSeed()
     {
+        // Arrange
         _envMock.Setup(e => e.EnvironmentName).Returns("Development");
 
         _userManagerMock
@@ -172,8 +182,10 @@ public class AuthorizationSeederUnitTests
             .Setup(m => m.FindByNameAsync("projects.write", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new object());
 
+        // Act
         await AuthorizationSeeder.SeedAsync(_serviceProviderMock.Object);
 
+        // Assert
         _scopeManagerMock.Verify(m => m.CreateAsync(
             It.IsAny<OpenIddictScopeDescriptor>(), It.IsAny<CancellationToken>()), Times.Never);
     }

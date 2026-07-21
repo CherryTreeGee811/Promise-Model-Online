@@ -49,6 +49,7 @@ public class MyMomentsControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetMyAssignedMoments_ReturnsOk()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "u@test.com");
         _userRepoMock.Setup(r => r.GetOrCreateUserByEmailAsync("u@test.com", null))
             .ReturnsAsync(new User { Id = 10 });
@@ -57,24 +58,30 @@ public class MyMomentsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.GetMyAssignedMoments();
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetMyAssignedMoments_Unauthorized_Returns401()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
+        // Act
         var result = await _controller.GetMyAssignedMoments();
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetMyAssignedMoments_ReturnsMomentsWithSlugs()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, "u@test.com");
         _userRepoMock.Setup(r => r.GetOrCreateUserByEmailAsync("u@test.com", null))
             .ReturnsAsync(new User { Id = 10 });
@@ -92,8 +99,10 @@ public class MyMomentsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.GetMyAssignedMoments();
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 }

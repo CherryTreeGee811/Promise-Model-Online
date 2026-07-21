@@ -83,9 +83,12 @@ afterEach(() => {
 
 describe('GDPR / PIPEDA compliance claims', () => {
   it('no PII collected', async () => {
+    // Arrange
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
 
+    // Assert
     expect(payload).not.toHaveProperty('userId');
     expect(payload).not.toHaveProperty('userName');
     expect(payload).not.toHaveProperty('username');
@@ -98,43 +101,55 @@ describe('GDPR / PIPEDA compliance claims', () => {
   });
 
   it('no cookies or persistent storage', async () => {
+    // Arrange
     const cookieSet = vi.spyOn(document, 'cookie', 'set');
     initTelemetry();
+    // Act
     await getLastPayload();
 
     // Telemetry module should not set cookies
+    // Assert
     expect(cookieSet).not.toHaveBeenCalled();
   });
 
   it('respects Global Privacy Control (GPC) signal', () => {
+    // Arrange
     Object.defineProperty(window.navigator, 'globalPrivacyControl', {
       value: true, configurable: true, writable: true,
     });
     initTelemetry();
+    // Act
     vi.advanceTimersByTime(120_000);
+    // Assert
     expect(navigator.sendBeacon).not.toHaveBeenCalled();
   });
 
   it('respects meta tag opt-out (<meta name="telemetry" content="off">)', () => {
+    // Arrange
     const meta = document.createElement('meta');
     meta.name = 'telemetry';
     meta.content = 'off';
     document.head.append(meta);
 
     initTelemetry();
+    // Act
     vi.advanceTimersByTime(120_000);
+    // Assert
     expect(navigator.sendBeacon).not.toHaveBeenCalled();
   });
 
   it('error messages only — no stack traces collected', async () => {
+    // Arrange
     initTelemetry();
     window.dispatchEvent(new ErrorEvent('error', {
       message: 'Something broke',
       error: new Error('Something broke'),
     }));
     vi.advanceTimersByTime(60_000);
+    // Act
     const payload = await getLastPayload();
 
+    // Assert
     expect(payload.errorMessages).toContain('Something broke');
     if (Array.isArray(payload.errorMessages)) {
       for (const msg of payload.errorMessages) {
@@ -144,21 +159,29 @@ describe('GDPR / PIPEDA compliance claims', () => {
   });
 
   it('paths are anonymized', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('/owner-name/project-name')).toBe('/:owner/:project');
   });
 
   it('best-effort delivery via sendBeacon — no retry queue', async () => {
+    // Arrange
     initTelemetry();
     const firstCallCount = (navigator.sendBeacon as unknown as ReturnType<typeof vi.fn>).mock.calls.length;
     vi.advanceTimersByTime(60_000);
+    // Act
     const secondCallCount = (navigator.sendBeacon as unknown as ReturnType<typeof vi.fn>).mock.calls.length;
+    // Assert
     expect(secondCallCount - firstCallCount).toBe(1);
   });
 
   it('metrics are aggregated client-side — no individual event tracking', async () => {
+    // Arrange
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
 
+    // Assert
     expect(payload).toHaveProperty('heapSize');
     expect(payload).toHaveProperty('domNodes');
     expect(payload).toHaveProperty('errorCount');
@@ -177,36 +200,50 @@ describe('GDPR / PIPEDA compliance claims', () => {
 
 describe('opt-out flow', () => {
   it('blocks telemetry when localStorage telemetry:disabled is true', () => {
+    // Arrange
     localStorage.setItem('telemetry:disabled', 'true');
+    // Act
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).not.toHaveBeenCalled();
   });
 
   it('blocks telemetry when GPC signal is true', () => {
+    // Arrange
     Object.defineProperty(window.navigator, 'globalPrivacyControl', {
       value: true, configurable: true, writable: true,
     });
+    // Act
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).not.toHaveBeenCalled();
   });
 
   it('blocks telemetry when meta tag content is "off"', () => {
+    // Arrange
     const meta = document.createElement('meta');
     meta.name = 'telemetry';
     meta.content = 'off';
     document.head.append(meta);
+    // Act
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).not.toHaveBeenCalled();
   });
 
   it('allows telemetry when neither GPC nor meta tag is set', () => {
+    // Arrange
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
   });
 
   it('does not queue failed sendBeacon calls for retry', () => {
+    // Arrange
     (navigator.sendBeacon as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    // Act
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
   });
 });
@@ -217,6 +254,8 @@ describe('opt-out flow', () => {
 
 describe('path anonymization', () => {
   it('passes through plain paths unchanged', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('/projects')).toBe('/projects');
     expect(anonymizePath('/account')).toBe('/account');
     expect(anonymizePath('/knowledge-base')).toBe('/knowledge-base');
@@ -225,35 +264,49 @@ describe('path anonymization', () => {
   });
 
   it('replaces first unknown segment with :owner', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('/my-org')).toBe('/:owner');
   });
 
   it('replaces second unknown segment with :project', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('/my-org/my-project')).toBe('/:owner/:project');
     expect(anonymizePath('/my-org/my-project/promises/5')).toBe('/:owner/:project/promises/5');
   });
 
   it('replaces UUID segments with :id', () => {
+    // Arrange
     const uuid = '550e8400-e29b-41d4-a716-446655440000';
+    // Assert
     expect(anonymizePath('/projects/' + uuid + '/detail')).toBe('/projects/:id/detail');
   });
 
   it('strips scheme and host before processing', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('https://example.com/some-owner/some-project'))
       .toBe('/:owner/:project');
   });
 
   it('handles root path /', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('/')).toBe('/');
   });
 
   it('handles empty pathname segments gracefully', () => {
     // Single-character segments (a, b) are below the {2,64} regex length
     // so they pass through unchanged
+    // Arrange
+    // Assert
     expect(anonymizePath('//a//b')).toBe('/a/b');
   });
 
   it('handles numeric segments (42 is matched as alphanumeric)', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('/42')).toBe('/:owner');
   });
 });
@@ -264,14 +317,18 @@ describe('path anonymization', () => {
 
 describe('error collection', () => {
   it('captures ErrorEvent message', async () => {
+    // Arrange
     initTelemetry();
     window.dispatchEvent(new ErrorEvent('error', { message: 'test error' }));
     vi.advanceTimersByTime(60_000);
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.errorMessages).toContain('test error');
   });
 
   it('does not collect stack traces', async () => {
+    // Arrange
     initTelemetry();
     window.dispatchEvent(new ErrorEvent('error', {
       message: 'test error',
@@ -279,7 +336,9 @@ describe('error collection', () => {
     }));
     vi.advanceTimersByTime(60_000);
     const payload = await getLastPayload();
+    // Act
     const messages = payload.errorMessages as string[];
+    // Assert
     expect(messages).toContain('test error');
     for (const m of messages) {
       expect(m).not.toMatch(/\n\s+at\s/);
@@ -287,6 +346,7 @@ describe('error collection', () => {
   });
 
   it('captures unhandled promise rejections', async () => {
+    // Arrange
     initTelemetry();
     const rejected = Promise.reject(new Error('async failed')).catch(() => {});
     window.dispatchEvent(new PromiseRejectionEvent('unhandledrejection', {
@@ -294,30 +354,39 @@ describe('error collection', () => {
       reason: new Error('async failed'),
     }));
     vi.advanceTimersByTime(60_000);
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.errorMessages).toContain('async failed');
   });
 
   it('truncates error messages to 200 characters', async () => {
+    // Arrange
     initTelemetry();
     window.dispatchEvent(new ErrorEvent('error', { message: 'x'.repeat(500) }));
     vi.advanceTimersByTime(60_000);
     const payload = await getLastPayload();
+    // Act
     const messages = payload.errorMessages as string[];
+    // Assert
     expect(messages[0].length).toBeLessThanOrEqual(200);
   });
 
   it('stores at most 20 error messages', async () => {
+    // Arrange
     initTelemetry();
     for (let i = 0; i < 25; i++) {
       window.dispatchEvent(new ErrorEvent('error', { message: `error-${i}` }));
     }
     vi.advanceTimersByTime(60_000);
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect((payload.errorMessages as string[]).length).toBeLessThanOrEqual(20);
   });
 
   it('stringifies non-Error rejection reasons', async () => {
+    // Arrange
     initTelemetry();
     const rejected = Promise.reject('string reason').catch(() => {});
     window.dispatchEvent(new PromiseRejectionEvent('unhandledrejection', {
@@ -325,7 +394,9 @@ describe('error collection', () => {
       reason: 'string reason',
     }));
     vi.advanceTimersByTime(60_000);
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.errorMessages).toContain('string reason');
   });
 });
@@ -336,55 +407,76 @@ describe('error collection', () => {
 
 describe('metrics collection', () => {
   it('reads heap size from performance.memory.usedJSHeapSize', async () => {
+    // Arrange
     (performance as unknown as Record<string, unknown>).memory = { usedJSHeapSize: 5_242_880 };
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.heapSize).toBe(5_242_880);
   });
 
   it('reports heapSize = 0 when performance.memory is unavailable', async () => {
+    // Arrange
     delete (performance as unknown as Record<string, unknown>).memory;
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.heapSize).toBe(0);
   });
 
   it('counts DOM nodes from querySelectorAll(*)', async () => {
+    // Arrange
     document.body.innerHTML = '<div><span><p>text</p></span></div>';
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.domNodes).toBeGreaterThanOrEqual(3);
   });
 
   it('reports SW state from navigator.serviceWorker.controller.state', async () => {
+    // Arrange
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.swState).toBe('activated');
   });
 
   it('reports swState "none" when no controller', async () => {
+    // Arrange
     Object.defineProperty(window.navigator, 'serviceWorker', {
       value: { controller: null },
       configurable: true, writable: true,
     });
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.swState).toBe('none');
   });
 
   it('reports swState "none" when serviceWorker is unavailable', async () => {
+    // Arrange
     Object.defineProperty(window.navigator, 'serviceWorker', {
       value: undefined,
       configurable: true, writable: true,
     });
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(payload.swState).toBe('none');
   });
 
   it('includes sentAt as a numeric timestamp', async () => {
+    // Arrange
     initTelemetry();
+    // Act
     const payload = await getLastPayload();
+    // Assert
     expect(typeof payload.sentAt).toBe('number');
     expect(payload.sentAt).toBeGreaterThan(0);
   });
@@ -396,14 +488,20 @@ describe('metrics collection', () => {
 
 describe('sendTelemetry behavior', () => {
   it('calls navigator.sendBeacon with /umami/api/telemetry', async () => {
+    // Arrange
     initTelemetry();
+    // Act
     const [[url]] = (navigator.sendBeacon as unknown as ReturnType<typeof vi.fn>).mock.calls as [string, Blob][];
+    // Assert
     expect(url).toBe('/umami/api/telemetry');
   });
 
   it('sends a JSON payload inside a Blob with application/json type', async () => {
+    // Arrange
     initTelemetry();
+    // Act
     const [[_url, blob]] = (navigator.sendBeacon as unknown as ReturnType<typeof vi.fn>).mock.calls as [string, Blob][];
+    // Assert
     expect(blob.type).toBe('application/json');
     const payload = JSON.parse(await blob.text());
     expect(payload).toHaveProperty('heapSize');
@@ -412,9 +510,11 @@ describe('sendTelemetry behavior', () => {
   });
 
   it('never throws — even if sendBeacon or JSON.stringify fails', () => {
+    // Arrange
     (navigator.sendBeacon as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
       throw new Error('sendBeacon failed');
     });
+    // Assert
     expect(() => initTelemetry()).not.toThrow();
     vi.advanceTimersByTime(60_000);
     expect(() => vi.advanceTimersByTime(60_000)).not.toThrow();
@@ -427,12 +527,16 @@ describe('sendTelemetry behavior', () => {
 
 describe('initTelemetry lifecycle', () => {
   it('sends telemetry immediately on first call', () => {
+    // Arrange
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
   });
 
   it('sets up interval for subsequent sends', () => {
+    // Arrange
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(60_000);
     expect(navigator.sendBeacon).toHaveBeenCalledTimes(2);
@@ -441,17 +545,22 @@ describe('initTelemetry lifecycle', () => {
   });
 
   it('does not start twice — second call is idempotent', () => {
+    // Arrange
     initTelemetry();
+    // Assert
     expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
     initTelemetry();
     expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
   });
 
   it('clears error messages after each send', async () => {
+    // Arrange
     initTelemetry();
     window.dispatchEvent(new ErrorEvent('error', { message: 'first batch' }));
     vi.advanceTimersByTime(60_000);
+    // Act
     const payload1 = await getLastPayload();
+    // Assert
     expect((payload1.errorMessages as string[]).length).toBeGreaterThanOrEqual(1);
     vi.advanceTimersByTime(60_000);
     const payload2 = await getLastPayload();
@@ -476,7 +585,9 @@ describe('long task observation', () => {
   });
 
   it('skips when PerformanceObserver is undefined', () => {
+    // Arrange
     delete (globalThis as unknown as Record<string, unknown>).PerformanceObserver;
+    // Assert
     expect(() => initTelemetry()).not.toThrow();
   });
 
@@ -498,19 +609,25 @@ describe('long task observation', () => {
 
 describe('edge cases', () => {
   it('handles missing serviceWorker gracefully', () => {
+    // Arrange
     Object.defineProperty(window.navigator, 'serviceWorker', {
       value: undefined,
       configurable: true, writable: true,
     });
+    // Assert
     expect(() => initTelemetry()).not.toThrow();
   });
 
   it('handles numeric segments (42 is matched as alphanumeric)', () => {
+    // Arrange
+    // Assert
     expect(anonymizePath('/42')).toBe('/:owner');
   });
 
   it('handles empty pathname segments gracefully', () => {
     // Single-character segments (a, b) are below the {2,64} regex length
+    // Arrange
+    // Assert
     expect(anonymizePath('//a//b')).toBe('/a/b');
   });
 });

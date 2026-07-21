@@ -176,12 +176,14 @@ public class CommentServiceUnitTests
         var dto = new CreateCommentDto { Text = "Bad", ParentType = "invalid", ParentId = 1 };
 
         // Act & Assert
+        // Assert
         Assert.ThrowsAsync<ArgumentException>(() => _service.CreateCommentAsync(dto, 1));
     }
 
     [Test]
     public async Task REQ_FUN_017_CreateCommentAsync_WithMentions_AddsMentionsAndNotifications()
     {
+        // Arrange
         var dto = new CreateCommentDto { Text = "Hey @alice and @bob!", ParentType = "moment", ParentId = 99 };
         var alice = new User { Id = 10, Name = "alice" };
         var bob = new User { Id = 20, Name = "bob" };
@@ -198,8 +200,10 @@ public class CommentServiceUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Comment>(), null!))
                    .Returns(new CommentDto());
 
+        // Act
         await _service.CreateCommentAsync(dto, 1);
 
+        // Assert
         _commentRepoMock.Verify(r => r.AddMentionAsync(It.Is<CommentMention>(m => m.MentionedUserId == 10)), Times.Once);
         _commentRepoMock.Verify(r => r.AddMentionAsync(It.Is<CommentMention>(m => m.MentionedUserId == 20)), Times.Once);
         _notificationServiceMock.Verify(n => n.CreateNotificationAsync(10, NotificationType.Mention, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
@@ -209,6 +213,7 @@ public class CommentServiceUnitTests
     [Test]
     public async Task REQ_FUN_017_CreateCommentAsync_WithDuplicateMentions_OnlyAddsOnce()
     {
+        // Arrange
         var dto = new CreateCommentDto { Text = "@alice @alice look!", ParentType = "moment", ParentId = 1 };
         var alice = new User { Id = 10, Name = "alice" };
         _userRepoMock.Setup(r => r.GetUsersByNameAsync("alice")).ReturnsAsync(new List<User> { alice });
@@ -216,8 +221,10 @@ public class CommentServiceUnitTests
         SetupCommentCreation("moment", 1);
         _commentRepoMock.Setup(r => r.AddMentionAsync(It.IsAny<CommentMention>())).Returns(Task.CompletedTask);
 
+        // Act
         await _service.CreateCommentAsync(dto, 1);
 
+        // Assert
         _commentRepoMock.Verify(r => r.AddMentionAsync(It.IsAny<CommentMention>()), Times.Once);
         _notificationServiceMock.Verify(n => n.CreateNotificationAsync(10, NotificationType.Mention, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }
@@ -225,12 +232,15 @@ public class CommentServiceUnitTests
     [Test]
     public async Task REQ_FUN_017_CreateCommentAsync_MentionedUserNotFound_SkipsMention()
     {
+        // Arrange
         var dto = new CreateCommentDto { Text = "Hey @ghost", ParentType = "moment", ParentId = 5 };
         _userRepoMock.Setup(r => r.GetUsersByNameAsync("ghost")).ReturnsAsync(new List<User>());
 
         SetupCommentCreation("moment", 5);
+        // Act
         await _service.CreateCommentAsync(dto, 1);
 
+        // Assert
         _commentRepoMock.Verify(r => r.AddMentionAsync(It.IsAny<CommentMention>()), Times.Never);
         _notificationServiceMock.Verify(n => n.CreateNotificationAsync(It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
@@ -238,11 +248,14 @@ public class CommentServiceUnitTests
     [Test]
     public async Task REQ_FUN_017_CreateCommentAsync_ParentCommentIdIsSet()
     {
+        // Arrange
         var dto = new CreateCommentDto { Text = "Reply", ParentType = "moment", ParentId = 10, ParentCommentId = 5 };
 
         SetupCommentCreation("moment", 10);
+        // Act
         await _service.CreateCommentAsync(dto, 3);
 
+        // Assert
         _commentRepoMock.Verify(r => r.AddCommentAsync(It.Is<Comment>(c => c.ParentCommentId == 5)), Times.Once);
     }
 }

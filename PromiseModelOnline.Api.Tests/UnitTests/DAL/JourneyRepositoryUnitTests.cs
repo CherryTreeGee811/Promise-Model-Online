@@ -60,6 +60,7 @@ public class JourneyRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_FUN_006_GetJourneysByEpicAsync_EmptyDatabase_ReturnsEmpty()
     {
         // Act
+        // Arrange
         var result = await _repo.GetJourneysByEpicAsync(1);
         // Assert
         Assert.That(result, Is.Empty);

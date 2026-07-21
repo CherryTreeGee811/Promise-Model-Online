@@ -211,15 +211,18 @@ afterEach(async () => {
 
 describe('loadEpicDetail', () => {
     it('returns early when detailDiv is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<div></div>';
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetEpic).not.toHaveBeenCalled();
     });
 
     it('shows loading indicator on start', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -229,12 +232,15 @@ describe('loadEpicDetail', () => {
 
         const promise = loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#epic-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(false);
         await promise;
     });
 
     it('hides loading on success', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -244,23 +250,29 @@ describe('loadEpicDetail', () => {
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#epic-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
     });
 
     it('hides loading and shows error on API failure', async () => {
+        // Arrange
         mockGetEpic.mockRejectedValue(new Error('network'));
 
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const loading = document.querySelector('#epic-detail-loading') as HTMLElement;
+        // Act
         const error = document.querySelector('#error-text') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
         expect(error.textContent).toContain('Failed to load epic details.');
     });
 
     it('calls destroyDetailStackGraph on start', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -268,12 +280,14 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockDestroyDetailStackGraph).toHaveBeenCalled();
     });
 
     it('calls getEpic with correct params', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -281,12 +295,14 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetEpic).toHaveBeenCalledWith('o', 'p', '42');
     });
 
     it('calls loadEntityLookupMap with correct params', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -294,12 +310,14 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockLoadEntityLookupMap).toHaveBeenCalledWith('Epic', 42, 'o', 'p');
     });
 
     it('calls mountDetailStackGraph with correct params', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -307,14 +325,16 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockMountDetailStackGraph).toHaveBeenCalledWith({
             nodeType: 'epic', nodeId: '42', owner: 'o', project: 'p',
         });
     });
 
     it('clears error text on load', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -324,12 +344,14 @@ describe('loadEpicDetail', () => {
         errorEl.textContent = 'Old error';
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(errorEl.textContent).toBe('');
     });
 
     it('builds detail card with epic heading', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -339,11 +361,14 @@ describe('loadEpicDetail', () => {
 
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const detailCard = document.querySelector('.epic-detail-card')!;
+        // Assert
         expect(detailCard.querySelector('h2')!.textContent).toBe('Test epic');
     });
 
     it('builds table with description row', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -351,14 +376,16 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildInlineEditUI).toHaveBeenCalledWith(
             expect.any(HTMLElement), '', 'A description',
         );
     });
 
     it('loads parent promise', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -366,12 +393,14 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetPromiseById).toHaveBeenCalledWith('o', 'p', 7);
     });
 
     it('loads epic journeys', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -379,8 +408,9 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetJourneys).toHaveBeenCalledWith('o', 'p', '42');
         expect(mockPatchChildMetrics).toHaveBeenCalledWith('epic-1', expect.any(Array));
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalled();
@@ -389,6 +419,7 @@ describe('loadEpicDetail', () => {
     });
 
     it('sets up inline editing', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -396,8 +427,9 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockCreateCommentAutocomplete).toHaveBeenCalledWith(
             expect.any(HTMLElement), 'Epic', 42,
         );
@@ -408,6 +440,7 @@ describe('loadEpicDetail', () => {
     });
 
     it('calls gateDetailControls', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -415,8 +448,9 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGateDetailControls).toHaveBeenCalledWith(
             { permission: 'Edit' },
             ['#edit-desc-btn', '#save-desc', '#description-input', '#add-journey-statement', '#add-journey-submit'],
@@ -424,6 +458,7 @@ describe('loadEpicDetail', () => {
     });
 
     it('calls initBackLink and loadCommentsAndReactions', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -431,8 +466,9 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockInitBackLink).toHaveBeenCalled();
         expect(mockLoadCommentsAndReactions).toHaveBeenCalledWith(
             expect.any(HTMLElement), 'Epic', 42, 'o', 'p', { permission: 'Edit' },
@@ -440,6 +476,7 @@ describe('loadEpicDetail', () => {
     });
 
     it('calls setupDescriptionHandler', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -447,14 +484,16 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockSetupDescriptionHandler).toHaveBeenCalledWith(
             'o', 'p', '42', 'epic', expect.any(Object), mockUpdateEpicDescription,
         );
     });
 
     it('calls upsertEpicGraphViewButton', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -462,14 +501,16 @@ describe('loadEpicDetail', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
 
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockUpsertGraphViewButton).toHaveBeenCalled();
     });
 });
 
 describe('loadParentPromise', () => {
     it('shows fallback text on API error', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -479,11 +520,14 @@ describe('loadParentPromise', () => {
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const parentCell = document.querySelector('#epic-parent-promise')!;
+        // Assert
         expect(parentCell.textContent).toBe('Promise 7');
     });
 
     it('navigates on link click', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -496,11 +540,14 @@ describe('loadParentPromise', () => {
         await loadEpicDetail('o', 'p', '42', navDiv, contentDiv, { permission: 'Edit' });
 
         const link = document.querySelector('#epic-parent-promise a')!;
+        // Act
         link.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        // Assert
         expect(mockNavigate).toHaveBeenCalledWith('/o/p/promises/5', navDiv, contentDiv);
     });
 
     it('does not navigate on ctrl+click', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -511,11 +558,14 @@ describe('loadParentPromise', () => {
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const link = document.querySelector('#epic-parent-promise a')!;
+        // Act
         link.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+        // Assert
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('does not navigate on middle-click', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -526,13 +576,16 @@ describe('loadParentPromise', () => {
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const link = document.querySelector('#epic-parent-promise a')!;
+        // Act
         link.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 1 }));
+        // Assert
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 });
 
 describe('loadEpicJourneys', () => {
     it('renders empty state when no journeys exist', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -540,8 +593,9 @@ describe('loadEpicJourneys', () => {
         mockGetJourneys.mockResolvedValue([]);
 
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalledWith(
             expect.any(HTMLElement),
             expect.objectContaining({
@@ -552,6 +606,7 @@ describe('loadEpicJourneys', () => {
     });
 
     it('shows error on API failure', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -561,7 +616,9 @@ describe('loadEpicJourneys', () => {
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const journeysList = document.querySelector('#epic-journeys-list')!;
+        // Assert
         expect(journeysList.querySelector('.error')).not.toBeNull();
         expect(journeysList.textContent).toContain('Failed to load journeys.');
     });
@@ -569,6 +626,7 @@ describe('loadEpicJourneys', () => {
 
 describe('upsertEpicGraphViewButton', () => {
     it('does not insert when owner is empty', async () => {
+        // Arrange
         mockGetOwnerProjectFromPath.mockReturnValue({ owner: '', project: 'p' });
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -577,13 +635,15 @@ describe('upsertEpicGraphViewButton', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
 
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
 
     it('does not insert when project is empty', async () => {
+        // Arrange
         mockGetOwnerProjectFromPath.mockReturnValue({ owner: 'o', project: '' });
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -592,13 +652,15 @@ describe('upsertEpicGraphViewButton', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
 
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
 
     it('does not insert when href is null', async () => {
+        // Arrange
         mockBuildGraphViewHref.mockReturnValue(null);
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -607,8 +669,9 @@ describe('upsertEpicGraphViewButton', () => {
         mockGetJourneys.mockResolvedValue(defaultJourneys);
 
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildGraphViewHref).toHaveBeenCalledWith('o', 'p', 'epic-1');
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
@@ -616,25 +679,32 @@ describe('upsertEpicGraphViewButton', () => {
 
 describe('additional coverage', () => {
     it('returns early when getEpic returns null', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(null);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        // Assert
         expect(mockLoadEntityLookupMap).not.toHaveBeenCalled();
         expect(mockMountDetailStackGraph).not.toHaveBeenCalled();
     });
 
     it('renders empty description when epic has none', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue({ ...defaultEpic, description: undefined });
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
         mockGetPromiseById.mockResolvedValue(defaultPromise);
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        // Assert
         expect(mockBuildInlineEditUI).toHaveBeenCalledWith(expect.any(HTMLElement), '', '');
     });
 
     it('skips inline editing when description DOM elements are absent', async () => {
+        // Arrange
         mockBuildInlineEditUI.mockImplementation((descTd: HTMLElement) => {
             descTd.innerHTML = '';
             return {};
@@ -645,48 +715,62 @@ describe('additional coverage', () => {
         mockGetPromiseById.mockResolvedValue(defaultPromise);
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        // Assert
         expect(mockCreateCommentAutocomplete).not.toHaveBeenCalled();
         expect(mockSetupInlineEdit).not.toHaveBeenCalled();
     });
 
     it('handles missing loading and error elements on success', async () => {
+        // Arrange
         document.body.innerHTML = '<div id="epic-detail-content"></div>';
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
         mockGetPromiseById.mockResolvedValue(defaultPromise);
         mockGetJourneys.mockResolvedValue(defaultJourneys);
+        // Act
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Assert
         await expect(loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' })).resolves.toBeUndefined();
     });
 
     it('handles missing loading and error elements on API failure', async () => {
+        // Arrange
         document.body.innerHTML = '<div id="epic-detail-content"></div>';
         mockGetEpic.mockRejectedValue(new Error('network'));
+        // Act
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Assert
         await expect(loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' })).resolves.toBeUndefined();
     });
 
     it('handles null journeys response', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
         mockGetPromiseById.mockResolvedValue(defaultPromise);
         mockGetJourneys.mockResolvedValue(null);
+        // Act
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Assert
         await expect(loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' })).resolves.toBeUndefined();
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalled();
     });
 
     it('handles undefined permission', async () => {
+        // Arrange
         mockGetEpic.mockResolvedValue(defaultEpic);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
         mockGetPromiseById.mockResolvedValue(defaultPromise);
         mockGetJourneys.mockResolvedValue(defaultJourneys);
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         await loadEpicDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), undefined);
+        // Assert
         expect(mockGateDetailControls).toHaveBeenCalledWith(undefined, expect.any(Array));
     });
 });

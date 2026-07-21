@@ -10,17 +10,23 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts', (
 
 describe('createGraphContextMenuController', () => {
     it('opens a context menu with status/estimate/owner/type forms', async () => {
+        // Arrange
         const { createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
+        // Act
         const controller = createGraphContextMenuController();
+        // Assert
         expect(controller).toHaveProperty('open');
         expect(controller).toHaveProperty('hide');
     });
 
     it('creates form elements for moment editing', async () => {
+        // Arrange
         const { createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const controller = createGraphContextMenuController();
         const event = new MouseEvent('contextmenu');
+        // Act
         controller.open(event, { nodeType: 'moment', id: 'moment-100', payload: { statement: 'Test', statusColor: 'green' } });
+        // Assert
         expect(controller.hide).toBeDefined();
     });
 });

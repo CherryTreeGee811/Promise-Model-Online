@@ -59,30 +59,40 @@ public class EmailVerificationControllerUnitTests
     [Test]
     public async Task Index_NullUserId_RedirectsToLogin()
     {
+        // Arrange
+
+        // Act
         var result = await _controller.Index(null, null);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectResult>());
     }
 
     [Test]
     public async Task Index_UserNotFound_RedirectsToLogin()
     {
+        // Arrange
         _userManagerMock.Setup(u => u.FindByIdAsync("bad-id")).ReturnsAsync((IdentityUser?)null);
 
+        // Act
         var result = await _controller.Index("bad-id", null);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectResult>());
     }
 
     [Test]
     public async Task Index_EmailAlreadyConfirmed_RedirectsToLogin()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
 
+        // Act
         var result = await _controller.Index("1", null);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;
         Assert.That(redirect.ActionName, Is.EqualTo("Index"));
@@ -91,18 +101,22 @@ public class EmailVerificationControllerUnitTests
     [Test]
     public async Task Index_ValidUser_ReturnsView()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
 
+        // Act
         var result = await _controller.Index("1", null);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<ViewResult>());
     }
 
     [Test]
     public async Task Confirm_ValidCode_ConfirmsEmailAndRedirects()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
@@ -112,8 +126,11 @@ public class EmailVerificationControllerUnitTests
         _cache.Set("verify_code:1", "123456");
 
         var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+
+        // Act
         var result = await _controller.Confirm(request);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;
         Assert.That(redirect.ActionName, Is.EqualTo("Index"));
@@ -122,6 +139,7 @@ public class EmailVerificationControllerUnitTests
     [Test]
     public async Task Confirm_WrongCode_ReturnsViewWithError()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
@@ -129,22 +147,28 @@ public class EmailVerificationControllerUnitTests
         _cache.Set("verify_code:1", "000000");
 
         var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+
+        // Act
         var result = await _controller.Confirm(request);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<ViewResult>());
     }
 
     [Test]
     public async Task Resend_GeneratesCodeAndSendsEmail()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com", UserName = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
         _emailServiceMock.Setup(e => e.SendVerificationEmailAsync("u@t.com", "u@t.com", It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
+        // Act
         var result = await _controller.Resend("1");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         _emailServiceMock.Verify(e => e.SendVerificationEmailAsync("u@t.com", "u@t.com", It.IsAny<string>()), Times.Once);
     }
@@ -152,42 +176,57 @@ public class EmailVerificationControllerUnitTests
     [Test]
     public async Task Resend_NullUserId_RedirectsToLogin()
     {
+        // Arrange
+
+        // Act
         var result = await _controller.Resend(null);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectResult>());
     }
 
     [Test]
     public void GetVerificationCode_Development_ReturnsCode()
     {
+        // Arrange
         _envMock.Setup(e => e.EnvironmentName).Returns("Development");
         var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
         _cache.Set($"verify_code:{userId}", "654321");
+
+        // Act
         var result = _controller.GetVerificationCode(userId);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public void GetVerificationCode_Production_ReturnsNotFound()
     {
+        // Arrange
         _envMock.Setup(e => e.EnvironmentName).Returns("Production");
 
         var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
+        // Act
         var result = _controller.GetVerificationCode(userId);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task Index_WithResentParam_SetsViewBag()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
 
+        // Act
         var result = await _controller.Index("1", "true");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<ViewResult>());
         Assert.That(_controller.ViewBag.Resent, Is.True);
     }
@@ -195,24 +234,32 @@ public class EmailVerificationControllerUnitTests
     [Test]
     public async Task Confirm_UserNotFound_ReturnsRedirect()
     {
+        // Arrange
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync((IdentityUser?)null);
 
         var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+
+        // Act
         var result = await _controller.Confirm(request);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectResult>());
     }
 
     [Test]
     public async Task Confirm_EmailAlreadyConfirmed_ReturnsRedirect()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
 
         var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+
+        // Act
         var result = await _controller.Confirm(request);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;
         Assert.That(redirect.ActionName, Is.EqualTo("Index"));
@@ -221,6 +268,7 @@ public class EmailVerificationControllerUnitTests
     [Test]
     public async Task Confirm_ConfirmEmailFails_ReturnsView()
     {
+        // Arrange
         var user = new IdentityUser { Id = "1", Email = "u@t.com" };
         _userManagerMock.Setup(u => u.FindByIdAsync("1")).ReturnsAsync(user);
         _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
@@ -231,8 +279,11 @@ public class EmailVerificationControllerUnitTests
         _cache.Set("verify_code:1", "123456");
 
         var request = new ConfirmEmailRequest { UserId = "1", Code = "123456" };
+
+        // Act
         var result = await _controller.Confirm(request);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<RedirectToActionResult>());
         var redirect = (RedirectToActionResult)result;
         Assert.That(redirect.ActionName, Is.EqualTo("Index"));

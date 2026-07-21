@@ -28,19 +28,25 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts
 
 describe('loadGraphPage', () => {
     it('exports loadGraphPage', () => {
+        // Arrange
+        // Assert
         expect(loadGraphPage).toBeDefined();
     });
 });
 
 describe('hasNodeChildren (pure)', () => {
     it('detects nodes with children', () => {
+        // Arrange
+        // Assert
         expect(hasNodeChildren({ children: [{ id: 'c' }] })).toBe(true);
     });
 });
 
 describe('createDefaultFilters (pure)', () => {
     it('returns filter defaults', () => {
+        // Arrange
         const f = createDefaultFilters();
+        // Assert
         expect(f.search).toBe('');
     });
 });
@@ -52,7 +58,9 @@ describe('readFiltersFromUrl', () => {
     });
 
     it('returns default filters when no URL params', () => {
+        // Arrange
         const f = readFiltersFromUrl();
+        // Assert
         expect(f.search).toBe('');
         expect(f.includeChildren).toBe(false);
         expect(f.types.size).toBe(5);
@@ -63,17 +71,23 @@ describe('readFiltersFromUrl', () => {
     });
 
     it('reads search query from q param', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?q=hello%20world' };
+        // Assert
         expect(readFiltersFromUrl().search).toBe('hello world');
     });
 
     it('reads empty search when q is empty', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?q=' };
+        // Assert
         expect(readFiltersFromUrl().search).toBe('');
     });
 
     it('reads includeChildren from children param', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?children=1' };
+        // Assert
         expect(readFiltersFromUrl().includeChildren).toBe(true);
 
         globalThis.location = { ...globalThis.location, search: '?children=true' };
@@ -87,21 +101,29 @@ describe('readFiltersFromUrl', () => {
     });
 
     it('reads types filter from param', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?types=promise,epic' };
+        // Act
         const f = readFiltersFromUrl();
+        // Assert
         expect(f.types.has('promise')).toBe(true);
         expect(f.types.has('epic')).toBe(true);
         expect(f.types.has('moment')).toBe(false);
     });
 
     it('handles empty types param', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?types=' };
+        // Assert
         expect(readFiltersFromUrl().types.size).toBe(0);
     });
 
     it('reads status, effort, stride, assignment params', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?status=done&effort=M&stride=backlog&assignment=assigned-to-me' };
+        // Act
         const f = readFiltersFromUrl();
+        // Assert
         expect(f.status).toBe('done');
         expect(f.effort).toBe('M');
         expect(f.stride).toBe('backlog');
@@ -109,15 +131,21 @@ describe('readFiltersFromUrl', () => {
     });
 
     it('handles missing URL search gracefully', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: undefined };
+        // Act
         const f = readFiltersFromUrl();
+        // Assert
         expect(f.search).toBe('');
         expect(f.includeChildren).toBe(false);
     });
 
     it('reads all params combined', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?q=test&children=1&types=promise&status=inprogress&effort=L&stride=42&assignment=all' };
+        // Act
         const f = readFiltersFromUrl();
+        // Assert
         expect(f.search).toBe('test');
         expect(f.includeChildren).toBe(true);
         expect(f.types.has('promise')).toBe(true);
@@ -146,7 +174,9 @@ describe('syncFiltersToUrl', () => {
     });
 
     it('writes minimal URL for default filters', () => {
+        // Arrange
         syncFiltersToUrl(createDefaultFilters());
+        // Assert
         expect(replaceStateSpy).toHaveBeenCalledWith(
             { owner: 'test-owner', project: 'test-project' },
             '',
@@ -155,70 +185,97 @@ describe('syncFiltersToUrl', () => {
     });
 
     it('includes search param when set', () => {
+        // Arrange
         const filters = createDefaultFilters();
         filters.search = 'hello';
         syncFiltersToUrl(filters);
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).toContain('q=hello');
     });
 
     it('includes children param when includeChildren is true', () => {
+        // Arrange
         const filters = createDefaultFilters();
         filters.includeChildren = true;
         syncFiltersToUrl(filters);
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).toContain('children=1');
     });
 
     it('omits children param when includeChildren is false', () => {
+        // Arrange
         syncFiltersToUrl(createDefaultFilters());
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).not.toContain('children');
     });
 
     it('includes types param when subset selected', () => {
+        // Arrange
         const filters = createDefaultFilters();
         filters.types = new Set(['promise', 'epic']);
         syncFiltersToUrl(filters);
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).toContain('types=');
     });
 
     it('includes empty types param when no types selected', () => {
+        // Arrange
         const filters = createDefaultFilters();
         filters.types = new Set();
         syncFiltersToUrl(filters);
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).toContain('types=');
     });
 
     it('omits types param when all types selected', () => {
+        // Arrange
         syncFiltersToUrl(createDefaultFilters());
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).not.toContain('types');
     });
 
     it('includes focus param when graphState.focusNodeId is set', () => {
+        // Arrange
         graphState.focusNodeId = 'node-42';
         syncFiltersToUrl(createDefaultFilters());
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).toContain('focus=node-42');
     });
 
     it('omits focus param when focusNodeId is not set', () => {
+        // Arrange
         syncFiltersToUrl(createDefaultFilters());
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).not.toContain('focus');
     });
 
     it('includes status, effort, stride, assignment when non-default', () => {
+        // Arrange
         const filters = createDefaultFilters();
         filters.status = 'done';
         filters.effort = 'XL';
         filters.stride = 'backlog';
         filters.assignment = 'assigned-to-me';
         syncFiltersToUrl(filters);
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).toContain('status=done');
         expect(url).toContain('effort=XL');
         expect(url).toContain('stride=backlog');
@@ -226,8 +283,11 @@ describe('syncFiltersToUrl', () => {
     });
 
     it('omits status, effort, stride, assignment params when set to all', () => {
+        // Arrange
         syncFiltersToUrl(createDefaultFilters());
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).not.toContain('status=');
         expect(url).not.toContain('effort=');
         expect(url).not.toContain('stride=');
@@ -235,16 +295,22 @@ describe('syncFiltersToUrl', () => {
     });
 
     it('preserves hash in URL', () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, hash: '#section' };
         syncFiltersToUrl(createDefaultFilters());
+        // Act
         const url = replaceStateSpy.mock.calls[0][2] as string;
+        // Assert
         expect(url).toContain('#section');
     });
 
     it('passes owner and project to replaceState', () => {
+        // Arrange
         graphState.owner = 'my-owner';
         graphState.project = 'my-project';
+        // Act
         syncFiltersToUrl(createDefaultFilters());
+        // Assert
         expect(replaceStateSpy).toHaveBeenCalledWith(
             { owner: 'my-owner', project: 'my-project' },
             '',
@@ -285,73 +351,95 @@ describe('initZoomControls', () => {
     });
 
     it('returns early when zoomBehavior is null', () => {
+        // Arrange
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        // Assert
         expect(() => initZoomControls(null, svg, {})).not.toThrow();
     });
 
     it('returns early when svgNode is null', () => {
+        // Arrange
+        // Assert
         expect(() => initZoomControls({}, null, {})).not.toThrow();
     });
 
     it('returns early when d3Instance is null', () => {
+        // Arrange
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        // Assert
         expect(() => initZoomControls({}, svg, null)).not.toThrow();
     });
 
     it('calls d3 select immediately with svg node', () => {
+        // Arrange
         const selection = { transition: vi.fn().mockReturnValue({ duration: vi.fn().mockReturnValue({ call: vi.fn() }) }) };
         const d3Instance = { select: vi.fn().mockReturnValue(selection) };
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
+        // Act
         initZoomControls({ scaleBy: vi.fn() }, svg, d3Instance);
 
+        // Assert
         expect(d3Instance.select).toHaveBeenCalledWith(svg);
     });
 
     it('calls transition on zoom-in click', () => {
+        // Arrange
         const selection = { transition: vi.fn().mockReturnValue({ duration: vi.fn().mockReturnValue({ call: vi.fn() }) }) };
         const d3Instance = { select: vi.fn().mockReturnValue(selection) };
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
         initZoomControls({ scaleBy: vi.fn() }, svg, d3Instance);
+        // Act
         zoomIn.dispatchEvent(new MouseEvent('click'));
 
+        // Assert
         expect(selection.transition).toHaveBeenCalled();
     });
 
     it('calls transition on zoom-out click', () => {
+        // Arrange
         const selection = { transition: vi.fn().mockReturnValue({ duration: vi.fn().mockReturnValue({ call: vi.fn() }) }) };
         const d3Instance = { select: vi.fn().mockReturnValue(selection) };
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
         initZoomControls({ scaleBy: vi.fn() }, svg, d3Instance);
+        // Act
         zoomOut.dispatchEvent(new MouseEvent('click'));
 
+        // Assert
         expect(selection.transition).toHaveBeenCalled();
     });
 
     it('calls transition on zoom-reset click', () => {
+        // Arrange
         const selection = { transition: vi.fn().mockReturnValue({ duration: vi.fn().mockReturnValue({ call: vi.fn() }) }) };
         const d3Instance = { select: vi.fn().mockReturnValue(selection), zoomIdentity: 'identity' };
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
         initZoomControls({ transform: vi.fn() }, svg, d3Instance);
+        // Act
         zoomReset.dispatchEvent(new MouseEvent('click'));
 
+        // Assert
         expect(selection.transition).toHaveBeenCalled();
     });
 
     it('handles fullscreen toggle without viewport element', () => {
+        // Arrange
         const selection = { transition: vi.fn().mockReturnValue({ duration: vi.fn().mockReturnValue({ call: vi.fn() }) }) };
         const d3Instance = { select: vi.fn().mockReturnValue(selection) };
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
+        // Act
         initZoomControls({}, svg, d3Instance);
 
+        // Assert
         expect(() => fullscreenBtn.dispatchEvent(new MouseEvent('click'))).not.toThrow();
     });
 
     it('handles fullscreen toggle with viewport element', () => {
+        // Arrange
         const selection = { transition: vi.fn().mockReturnValue({ duration: vi.fn().mockReturnValue({ call: vi.fn() }) }) };
         const d3Instance = { select: vi.fn().mockReturnValue(selection) };
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -360,14 +448,17 @@ describe('initZoomControls', () => {
         viewport.id = 'graph-viewport';
         document.body.appendChild(viewport);
 
+        // Act
         initZoomControls({}, svg, d3Instance);
 
+        // Assert
         expect(() => fullscreenBtn.dispatchEvent(new MouseEvent('click'))).not.toThrow();
 
         viewport.remove();
     });
 
     it('does not throw when zoom buttons are missing from DOM', () => {
+        // Arrange
         zoomIn.remove();
         zoomOut.remove();
         zoomReset.remove();
@@ -375,8 +466,10 @@ describe('initZoomControls', () => {
 
         const selection = { transition: vi.fn().mockReturnValue({ duration: vi.fn().mockReturnValue({ call: vi.fn() }) }) };
         const d3Instance = { select: vi.fn().mockReturnValue(selection) };
+        // Act
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
+        // Assert
         expect(() => initZoomControls({ scaleBy: vi.fn() }, svg, d3Instance)).not.toThrow();
     });
 });
@@ -503,11 +596,14 @@ describe('loadGraphPage', () => {
     });
 
     it('loads graph and renders filter bar', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('owner-1', 'project-1', contentDiv, null);
 
+        // Assert
         expect(errorText.textContent).toBe('');
         expect(successText.textContent).toContain('Loaded 1 top-level promise');
         expect(loadingState.hidden).toBe(true);
@@ -526,12 +622,15 @@ describe('loadGraphPage', () => {
     });
 
     it('reads filters from URL', async () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?q=test&status=done&effort=M&stride=backlog' };
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(graphState.filters.search).toBe('test');
         expect(graphState.filters.status).toBe('done');
         expect(graphState.filters.effort).toBe('M');
@@ -539,32 +638,41 @@ describe('loadGraphPage', () => {
     });
 
     it('handles API error during data load', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockRejectedValue(new Error('Network error'));
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(errorText.textContent).toBe('Unable to load the project graph.');
         expect(loadingState.hidden).toBe(true);
     });
 
     it('handles empty graph data', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue({ id: 'p', name: 'Empty', Promises: [] });
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(successText.textContent).toContain('Loaded 0 top-level promises');
         expect(vi.mocked(renderStackGraph)).toHaveBeenCalled();
     });
 
     it('renders filter bar controls with default values', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Act
         const searchInput = document.querySelector('#graph-filter-search') as HTMLInputElement;
+        // Assert
         expect(searchInput).toBeTruthy();
         expect(searchInput.value).toBe('');
 
@@ -578,13 +686,16 @@ describe('loadGraphPage', () => {
     });
 
     it('syncs filter controls from URL to DOM', async () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?q=findme&status=done&children=1' };
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Act
         const searchInput = document.querySelector('#graph-filter-search') as HTMLInputElement;
+        // Assert
         expect(searchInput.value).toBe('findme');
 
         const includeChildren = document.querySelector('#graph-filter-include-children') as HTMLInputElement;
@@ -595,18 +706,22 @@ describe('loadGraphPage', () => {
     });
 
     it('displays filter summary metrics', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Act
         const summary = document.querySelector('#graph-filter-summary') as HTMLElement;
+        // Assert
         expect(summary).toBeTruthy();
         expect(summary.textContent).toContain('visible');
         expect(summary.textContent).toContain('total');
     });
 
     it('handles fullscreen change event', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
@@ -619,8 +734,10 @@ describe('loadGraphPage', () => {
         await loadGraphPage('o', 'p', contentDiv, null);
 
         Object.defineProperty(document, 'fullscreenElement', { value: document.createElement('div'), writable: true, configurable: true });
+        // Act
         document.dispatchEvent(new Event('fullscreenchange'));
 
+        // Assert
         expect(icon.classList.contains('bi-arrows-angle-contract')).toBe(true);
         expect(fsBtn.getAttribute('aria-label')).toBe('Exit fullscreen');
 
@@ -634,14 +751,17 @@ describe('loadGraphPage', () => {
     });
 
     it('renders with available strides', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([
             { id: 1, name: 'Sprint 1', startDate: '2024-01-01' },
             { id: 2, name: 'Sprint 2', startDate: '2024-02-01' },
         ]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(graphState.availableStrides.length).toBeGreaterThan(0);
         const strideSelect = document.querySelector('#graph-filter-stride') as HTMLSelectElement;
         expect(strideSelect).toBeTruthy();
@@ -649,34 +769,43 @@ describe('loadGraphPage', () => {
     });
 
     it('cleans up old pageShow handler on re-entry', async () => {
+        // Arrange
         const removeSpy = vi.spyOn(window, 'removeEventListener');
         graphState.pageShowRefreshHandler = vi.fn();
 
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(removeSpy).toHaveBeenCalledWith('pageshow', expect.any(Function));
         removeSpy.mockRestore();
     });
 
     it('sets focusNodeId from URL', async () => {
+        // Arrange
         globalThis.location = { ...globalThis.location, search: '?focus=node-42' };
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(graphState.focusNodeId).toBe('node-42');
     });
 
     it('loads page without permission', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(vi.mocked(createGraphContextMenuController)).toHaveBeenCalledWith(
             expect.objectContaining({
                 permission: null,
@@ -685,11 +814,14 @@ describe('loadGraphPage', () => {
     });
 
     it('loads page with edit permission', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
+        // Act
         await loadGraphPage('o', 'p', contentDiv, { permission: 'Edit' });
 
+        // Assert
         expect(vi.mocked(createGraphContextMenuController)).toHaveBeenCalledWith(
             expect.objectContaining({
                 permission: { permission: 'Edit' },
@@ -698,40 +830,50 @@ describe('loadGraphPage', () => {
     });
 
     it('reset button clears filters and reloads', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Act
         btnClickById('graph-filter-reset');
 
+        // Assert
         expect(graphState.filters.search).toBe('');
         expect(graphState.filters.types.size).toBe(5);
     });
 
     it('hide-all button collapses promises', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Act
         btnClickById('graph-filter-hide-all');
 
+        // Assert
         expect(vi.mocked(renderStackGraph)).toHaveBeenCalled();
     });
 
     it('expand-all button expands nodes', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Act
         btnClickById('graph-filter-expand-all');
 
+        // Assert
         expect(vi.mocked(renderStackGraph)).toHaveBeenCalled();
     });
 
     it('refresh button reloads data', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue(mockGraphData);
         vi.mocked(getStrides).mockResolvedValue([]);
 
@@ -742,12 +884,15 @@ describe('loadGraphPage', () => {
 
         btnClickById('graph-filter-refresh');
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(vi.mocked(getGraphData)).toHaveBeenCalledTimes(1);
         });
     });
 
     it('pageshow event triggers reload when persisted', async () => {
+        // Arrange
         const prevHandler = graphState.pageShowRefreshHandler;
         if (prevHandler) window.removeEventListener('pageshow', prevHandler);
 
@@ -756,7 +901,9 @@ describe('loadGraphPage', () => {
 
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Act
         const handler = graphState.pageShowRefreshHandler;
+        // Assert
         expect(handler).toBeDefined();
 
         const callCountBefore = vi.mocked(getGraphData).mock.calls.length;
@@ -771,6 +918,7 @@ describe('loadGraphPage', () => {
     });
 
     it('pageshow event does not reload when not persisted', async () => {
+        // Arrange
         const prevHandler = graphState.pageShowRefreshHandler;
         if (prevHandler) window.removeEventListener('pageshow', prevHandler);
 
@@ -785,7 +933,9 @@ describe('loadGraphPage', () => {
         Object.defineProperty(event, 'persisted', { value: false });
         window.dispatchEvent(event);
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(vi.mocked(getGraphData).mock.calls.length).toBe(callCountBefore);
         });
     });
@@ -857,6 +1007,7 @@ describe('applyFilters internal path', () => {
     });
 
     it('loadGraphPage dispatches fullscreen button updates', async () => {
+        // Arrange
         vi.mocked(getGraphData).mockResolvedValue({
             id: 'p1', name: 'P', Promises: [{ id: 'p1', title: 'P1', epics: [] }],
         });
@@ -870,8 +1021,10 @@ describe('applyFilters internal path', () => {
         fullscreenBtn.appendChild(icon);
 
         const contentDiv = document.createElement('div');
+        // Act
         await loadGraphPage('o', 'p', contentDiv, null);
 
+        // Assert
         expect(fullscreenBtn.parentNode).toBeTruthy();
         fullscreenBtn.remove();
     });
@@ -897,6 +1050,7 @@ describe('initZoomControls fullscreen edge cases', () => {
     });
 
     it('calls exitFullscreen when already fullscreen', () => {
+        // Arrange
         const exitSpy = vi.fn().mockResolvedValue(undefined);
         Object.defineProperty(document, 'fullscreenElement', {
             value: viewport, writable: true, configurable: true,
@@ -907,8 +1061,10 @@ describe('initZoomControls fullscreen edge cases', () => {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
         initZoomControls({}, svg, d3Instance);
+        // Act
         fullscreenBtn.dispatchEvent(new MouseEvent('click'));
 
+        // Assert
         expect(exitSpy).toHaveBeenCalled();
 
         Object.defineProperty(document, 'fullscreenElement', { value: null, writable: true, configurable: true });
@@ -916,6 +1072,7 @@ describe('initZoomControls fullscreen edge cases', () => {
     });
 
     it('calls requestFullscreen when not fullscreen', () => {
+        // Arrange
         const requestSpy = vi.fn().mockResolvedValue(undefined);
         viewport.requestFullscreen = requestSpy;
         Object.defineProperty(document, 'fullscreenElement', { value: null, writable: true, configurable: true });
@@ -924,8 +1081,10 @@ describe('initZoomControls fullscreen edge cases', () => {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
         initZoomControls({}, svg, d3Instance);
+        // Act
         fullscreenBtn.dispatchEvent(new MouseEvent('click'));
 
+        // Assert
         expect(requestSpy).toHaveBeenCalled();
     });
 });

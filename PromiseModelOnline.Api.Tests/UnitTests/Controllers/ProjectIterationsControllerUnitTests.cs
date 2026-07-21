@@ -46,6 +46,7 @@ public class ProjectIterationsControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetAll_ProjectFound_ReturnsMappedIterations()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(project);
 
@@ -54,8 +55,10 @@ public class ProjectIterationsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Iteration>(), It.IsAny<IGenericService<Iteration>>()))
             .Returns<Iteration, IGenericService<Iteration>>((i, _) => new IterationDto { Id = i.Id, Name = i.Name });
 
+        // Act
         var result = await _controller.GetAll("o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         var ok = result.Result as OkObjectResult;
         var list = ok!.Value as List<IterationDto>;
@@ -66,16 +69,20 @@ public class ProjectIterationsControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetAll_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetAll("bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Create_ValidRequest_Returns201()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(project);
 
@@ -93,35 +100,44 @@ public class ProjectIterationsControllerUnitTests
 
         var entity = new Iteration { Name = "New Sprint" };
 
+        // Act
         var result = await _controller.Create(entity, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Create_NullBody_Returns400()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(project);
 
+        // Act
         var result = await _controller.Create(null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Create_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.Create(new Iteration(), "bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Create_NoEditPermission_Returns403()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(project);
 
@@ -137,14 +153,17 @@ public class ProjectIterationsControllerUnitTests
         permissionServiceMock.Setup(s => s.GetUserPermissionAsync(10, 1))
             .ReturnsAsync(PermissionLevel.View);
 
+        // Act
         var result = await _controller.Create(new Iteration(), "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetIterationBurndown_Valid_ReturnsData()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(project);
 
@@ -157,8 +176,10 @@ public class ProjectIterationsControllerUnitTests
         };
         _momentServiceMock.Setup(s => s.GetIterationBurndownAsync(5)).ReturnsAsync(burndown);
 
+        // Act
         var result = await _controller.GetIterationBurndown(5, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         var ok = result.Result as OkObjectResult;
         var list = ok!.Value as List<BurndownPointDto>;
@@ -169,26 +190,32 @@ public class ProjectIterationsControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetIterationBurndown_IterationNotFound_Returns404()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(project);
         _iterationServiceMock.Setup(s => s.GetByIdAsync(999)).ReturnsAsync((Iteration?)null);
 
+        // Act
         var result = await _controller.GetIterationBurndown(999, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetIterationBurndown_WrongProject_Returns404()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(project);
 
         var iteration = new Iteration { Id = 5, ProjectId = 99, Name = "Other" };
         _iterationServiceMock.Setup(s => s.GetByIdAsync(5)).ReturnsAsync(iteration);
 
+        // Act
         var result = await _controller.GetIterationBurndown(5, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 

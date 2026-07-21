@@ -106,6 +106,7 @@ public class ProjectExportServiceUnitTests
         _projectRepoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Project?)null);
 
         // Act & Assert
+        // Assert
         Assert.ThrowsAsync<KeyNotFoundException>(() => _service.BuildExportAsync(999));
     }
 }

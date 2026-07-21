@@ -47,6 +47,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Valid project resolves successfully and returns Ok with permissions list")]
     public async Task GetPermissions_WithValidProject_ReturnsOk()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1, Name = "Test Project" };
@@ -69,8 +70,10 @@ public class ProjectPermissionsControllerUnitTests
         _controller.ControllerContext.HttpContext.RequestServices = permServices.Object;
         _mockPermissionService.Setup(p => p.GetUserPermissionAsync(permUser.Id, projectEntity.Id)).ReturnsAsync(PermissionLevel.Edit);
 
+        // Act
         var result = await _controller.GetPermissions(owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         var ok = result.Result as OkObjectResult;
         Assert.That(ok, Is.Not.Null);
@@ -83,13 +86,16 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing project slug returns NotFound")]
     public async Task GetPermissions_WithMissingProject_ReturnsNotFound()
     {
+        // Arrange
         var owner = "missingowner";
         var project = "missingproject";
         _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(owner, project))
             .ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetPermissions(owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
@@ -101,6 +107,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Valid invite request creates permission and logs success")]
     public async Task InviteUser_WithValidRequest_ReturnsCreated()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -126,8 +133,10 @@ public class ProjectPermissionsControllerUnitTests
         _mockPermissionService.Setup(s => s.InviteUserAsync(projectEntity.Id, request.Email, request.Level, user.Id))
             .ReturnsAsync(permissionDto);
 
+        // Act
         var result = await _controller.InviteUser(request, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
         var created = result.Result as CreatedAtActionResult;
         Assert.That(created, Is.Not.Null);
@@ -139,6 +148,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Service exception during invite returns BadRequest with error log")]
     public async Task InviteUser_WhenServiceThrows_ReturnsBadRequest()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -163,8 +173,10 @@ public class ProjectPermissionsControllerUnitTests
         _mockPermissionService.Setup(s => s.InviteUserAsync(projectEntity.Id, request.Email, request.Level, user.Id))
             .ThrowsAsync(new InvalidOperationException("Invitation failed"));
 
+        // Act
         var result = await _controller.InviteUser(request, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
         var badRequest = result.Result as BadRequestObjectResult;
         Assert.That(badRequest, Is.Not.Null);
@@ -176,6 +188,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing project slug during invite returns NotFound before auth check")]
     public async Task InviteUser_WithMissingProject_ReturnsNotFound()
     {
+        // Arrange
         var owner = "missingowner";
         var project = "missingproject";
         _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(owner, project))
@@ -183,8 +196,10 @@ public class ProjectPermissionsControllerUnitTests
 
         var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
 
+        // Act
         var result = await _controller.InviteUser(request, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
@@ -192,6 +207,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing email claim on user returns Forbidden")]
     public async Task InviteUser_WithoutAuth_ReturnsForbidden()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -207,8 +223,10 @@ public class ProjectPermissionsControllerUnitTests
 
         var request = new CreatePermissionRequestDto { Email = "invited@example.com", Level = PermissionLevel.View };
 
+        // Act
         var result = await _controller.InviteUser(request, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 
@@ -220,6 +238,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Valid revoke request removes permission and returns NoContent")]
     public async Task RevokePermission_ValidRequest_ReturnsNoContent()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -242,8 +261,10 @@ public class ProjectPermissionsControllerUnitTests
 
         var permissionId = 5;
 
+        // Act
         var result = await _controller.RevokePermission(permissionId, owner, project);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
         _mockPermissionService.Verify(s => s.RemovePermissionAsync(permissionId, user.Id), Times.Once);
     }
@@ -252,6 +273,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Service exception during revoke returns BadRequest with error log")]
     public async Task RevokePermission_WhenServiceThrows_ReturnsBadRequest()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -276,8 +298,10 @@ public class ProjectPermissionsControllerUnitTests
         _mockPermissionService.Setup(s => s.RemovePermissionAsync(permissionId, user.Id))
             .ThrowsAsync(new InvalidOperationException("Revoke failed"));
 
+        // Act
         var result = await _controller.RevokePermission(permissionId, owner, project);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
         var badRequest = result as BadRequestObjectResult;
         Assert.That(badRequest, Is.Not.Null);
@@ -293,6 +317,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Authenticated user with permission returns Ok with level string")]
     public async Task GetMyPermission_WithPermission_ReturnsOk()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -310,8 +335,10 @@ public class ProjectPermissionsControllerUnitTests
         _mockPermissionService.Setup(s => s.GetUserPermissionAsync(user.Id, projectEntity.Id))
             .ReturnsAsync(PermissionLevel.View);
 
+        // Act
         var result = await _controller.GetMyPermission(permissionId, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         var ok = result.Result as OkObjectResult;
         Assert.That(ok, Is.Not.Null);
@@ -322,6 +349,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing email claim returns Unauthorized")]
     public async Task GetMyPermission_WithoutEmail_ReturnsUnauthorized()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -332,8 +360,10 @@ public class ProjectPermissionsControllerUnitTests
 
         var permissionId = 5;
 
+        // Act
         var result = await _controller.GetMyPermission(permissionId, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
     }
 
@@ -341,6 +371,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Authenticated user with no permission returns NoContent")]
     public async Task GetMyPermission_WhenNoPermission_ReturnsNoContent()
     {
+        // Arrange
         var owner = "testowner";
         var project = "testproject";
         var projectEntity = new Project { Id = 1 };
@@ -358,8 +389,10 @@ public class ProjectPermissionsControllerUnitTests
         _mockPermissionService.Setup(s => s.GetUserPermissionAsync(user.Id, projectEntity.Id))
             .ReturnsAsync((PermissionLevel?)null);
 
+        // Act
         var result = await _controller.GetMyPermission(permissionId, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NoContentResult>());
     }
 
@@ -367,6 +400,7 @@ public class ProjectPermissionsControllerUnitTests
     [Description("REQ_FUN_003 + REQ-SEC-LOG-001: Missing project slug returns NotFound")]
     public async Task GetMyPermission_WithMissingProject_ReturnsNotFound()
     {
+        // Arrange
         var owner = "missingowner";
         var project = "missingproject";
         _mockProjectService.Setup(s => s.GetByOwnerAndSlugAsync(owner, project))
@@ -374,8 +408,10 @@ public class ProjectPermissionsControllerUnitTests
 
         var permissionId = 5;
 
+        // Act
         var result = await _controller.GetMyPermission(permissionId, owner, project);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 

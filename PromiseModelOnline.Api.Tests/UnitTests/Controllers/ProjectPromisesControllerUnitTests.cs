@@ -81,62 +81,78 @@ public class ProjectPromisesControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_Found_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         _context.Promises.Add(Promise()); await _context.SaveChangesAsync();
         _mapperMock.Setup(m => m.Map(It.IsAny<Promise>(), It.IsAny<IGenericService<Promise>>()))
             .Returns<Promise, IGenericService<Promise>>((p, _) => new PromiseDto { Id = p.Id, Statement = p.Statement });
 
+        // Act
         var result = await _controller.GetBySeq(1, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetBySeq(999, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetBySeq(1, "bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetById_Found_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         _context.Promises.Add(Promise(id: 42)); await _context.SaveChangesAsync();
         _mapperMock.Setup(m => m.Map(It.IsAny<Promise>(), It.IsAny<IGenericService<Promise>>()))
             .Returns<Promise, IGenericService<Promise>>((p, _) => new PromiseDto { Id = p.Id });
 
+        // Act
         var result = await _controller.GetById(42, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetById_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetById(999, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_Valid_Returns201()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         _serviceMock.Setup(s => s.AddAsync(It.IsAny<Promise>())).Returns(Task.CompletedTask);
@@ -144,25 +160,31 @@ public class ProjectPromisesControllerUnitTests
             .Returns<Promise, IGenericService<Promise>>((p, _) => new PromiseDto { Id = p.Id });
 
         var request = new CreatePromiseRequestDto { Statement = "New" };
+        // Act
         var result = await _controller.CreateFromDto(request, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
 
+        // Act
         var result = await _controller.CreateFromDto(null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_NoPermission_Returns403()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
         var permissionServiceMock = new Mock<IPermissionService>();
@@ -175,70 +197,87 @@ public class ProjectPromisesControllerUnitTests
         permissionServiceMock.Setup(s => s.GetUserPermissionAsync(10, 1))
             .ReturnsAsync(PermissionLevel.View);
 
+        // Act
         var result = await _controller.CreateFromDto(new CreatePromiseRequestDto(), "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_Valid_Returns204()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         _context.Promises.Add(Promise(id: 10, seq: 1)); await _context.SaveChangesAsync();
 
         var dto = new UpdatePromiseRequestDto { Id = 10, Statement = "Updated" };
+        // Act
         var result = await _controller.Update(1, dto, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_IdMismatch_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         _context.Promises.Add(Promise(id: 10, seq: 1)); await _context.SaveChangesAsync();
 
         var dto = new UpdatePromiseRequestDto { Id = 99, Statement = "Bad" };
+        // Act
         var result = await _controller.Update(1, dto, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<BadRequestResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Delete_Valid_Returns204()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         _context.Promises.Add(Promise(id: 10, seq: 1)); await _context.SaveChangesAsync();
         _serviceMock.Setup(s => s.DeleteByIdAsync(10)).ReturnsAsync(true);
 
+        // Act
         var result = await _controller.Delete(1, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Delete_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
 
+        // Act
         var result = await _controller.Delete(999, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetTotalEffort_Valid_ReturnsEffort()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         _context.Promises.Add(Promise(id: 10, seq: 1)); await _context.SaveChangesAsync();
         _momentServiceMock.Setup(s => s.GetTotalEffortForPromiseAsync(10)).ReturnsAsync(42);
 
+        // Act
         var result = await _controller.GetTotalEffort(1, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         var ok = result.Result as OkObjectResult;
         Assert.That(ok!.Value, Is.EqualTo(42));

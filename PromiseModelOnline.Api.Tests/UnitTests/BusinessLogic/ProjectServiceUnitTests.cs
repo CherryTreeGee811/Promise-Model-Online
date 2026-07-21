@@ -112,11 +112,14 @@ public class ProjectServiceUnitTests
     [Test]
     public async Task REQ_FUN_003_GetAccessibleProjectsAsync_NoAccessibleProjects_ReturnsEmpty()
     {
+        // Arrange
         _projectRepoMock.Setup(r => r.GetProjectsOwnedByUserAsync(500)).ReturnsAsync(new List<Project>());
         _permissionRepoMock.Setup(r => r.GetProjectIdsForUserAsync(500)).ReturnsAsync(new List<int>());
 
+        // Act
         var result = await _service.GetAccessibleProjectsAsync(500);
 
+        // Assert
         Assert.That(result, Is.Empty);
     }
 
@@ -127,8 +130,10 @@ public class ProjectServiceUnitTests
     [Test]
     public void REQ_FUN_003_GetProjectMembersAsync_ProjectNotFound_Throws()
     {
+        // Arrange
         _projectRepoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Project?)null);
 
+        // Assert
         Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetProjectMembersAsync(999));
     }
 
@@ -202,6 +207,7 @@ public class ProjectServiceUnitTests
     [Test]
     public async Task REQ_FUN_003_GetProjectMembersAsync_PendingPermissions_NotIncluded()
     {
+        // Arrange
         var project = new Project { Id = 30, OwnerId = 10 };
         var owner = new User { Id = 10, Name = "Owner10" };
 
@@ -213,9 +219,11 @@ public class ProjectServiceUnitTests
                     new Permission { UserId = 20, ProjectId = 30, Level = PermissionLevel.Comment, Status = PermissionStatus.Pending }
             });
 
+        // Act
         var result = await _service.GetProjectMembersAsync(30);
         var members = result.ToList();
 
+        // Assert
         Assert.That(members.Count, Is.EqualTo(1));
         Assert.That(members[0].UserId, Is.EqualTo(10));
     }
@@ -223,6 +231,7 @@ public class ProjectServiceUnitTests
     [Test]
     public async Task REQ_FUN_003_GetProjectMembersAsync_PermissionUserNotFound_SkipsThatPermission()
     {
+        // Arrange
         var project = new Project { Id = 40, OwnerId = 99 };
         var owner = new User { Id = 99, Name = "Owner99" };
         _projectRepoMock.Setup(r => r.GetByIdAsync(40)).ReturnsAsync(project);
@@ -234,9 +243,11 @@ public class ProjectServiceUnitTests
                     new Permission { UserId = 200, ProjectId = 40, Level = PermissionLevel.View, Status = PermissionStatus.Active }
             });
 
+        // Act
         var result = await _service.GetProjectMembersAsync(40);
         var members = result.ToList();
 
+        // Assert
         Assert.That(members.Count, Is.EqualTo(1));
         Assert.That(members[0].UserId, Is.EqualTo(99));
     }
@@ -248,24 +259,30 @@ public class ProjectServiceUnitTests
     [Test]
     public async Task GenerateProjectSlugAsync_EmptyAfterNormalization_DefaultsToProject()
     {
+        // Arrange
         _userRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new User { Id = 1 });
         _projectRepoMock.Setup(r => r.GetByOwnerAndSlugAsync("", "project")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _service.GenerateProjectSlugAsync("@#$%", 1);
 
+        // Assert
         Assert.That(result, Is.EqualTo("project"));
     }
 
     [Test]
     public async Task GenerateProjectSlugAsync_Collision_AppendsSuffix()
     {
+        // Arrange
         _userRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new User { Id = 1 });
         _projectRepoMock.SetupSequence(r => r.GetByOwnerAndSlugAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new Project { Id = 1 })
             .ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _service.GenerateProjectSlugAsync("My Project", 1);
 
+        // Assert
         Assert.That(result, Is.EqualTo("my-project-2"));
     }
 

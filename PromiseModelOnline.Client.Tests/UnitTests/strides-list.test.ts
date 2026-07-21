@@ -78,13 +78,16 @@ beforeEach(() => {
 
 describe('loadStridesList', () => {
     it('exports expected function', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.loadStridesList).toBeDefined();
     });
 });
 
 describe('applyPermissionUI', () => {
     it('disables controls when canEdit is false', async () => {
+        // Arrange
         document.body.innerHTML = `
             <select class="status-dropdown"></select>
             <select class="estimate-dropdown"></select>
@@ -95,57 +98,81 @@ describe('applyPermissionUI', () => {
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
         mod.applyPermissionUI(false);
         const controls = document.querySelectorAll('.status-dropdown, .estimate-dropdown, .owner-dropdown, .moment-type-dropdown');
+        // Act
         for (const el of controls) expect((el as HTMLInputElement).disabled).toBe(true);
+        // Assert
         expect(document.querySelector('.progress-stride-btn')!.classList.contains('hidden')).toBe(true);
     });
 
     it('enables controls when canEdit is true', async () => {
+        // Arrange
         document.body.innerHTML = '<select class="status-dropdown"></select><button class="progress-stride-btn">Progress</button>';
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Act
         mod.applyPermissionUI(true);
+        // Assert
         expect((document.querySelector('.status-dropdown') as HTMLInputElement).disabled).toBe(false);
         expect(document.querySelector('.progress-stride-btn')!.classList.contains('hidden')).toBe(false);
     });
 
     it('does not throw when controls are missing', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(() => mod.applyPermissionUI(false)).not.toThrow();
     });
 
     it('does not throw when progress buttons are missing', async () => {
+        // Arrange
         document.body.innerHTML = '<select class="status-dropdown"></select>';
+        // Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(() => mod.applyPermissionUI(true)).not.toThrow();
     });
 });
 
 describe('getStrideStartDateValue', () => {
     it('returns timestamp for valid date', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.getStrideStartDateValue({ startDate: '2024-06-15' })).toBeGreaterThan(0);
     });
     it('returns 0 for invalid date', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.getStrideStartDateValue({ startDate: 'not-a-date' })).toBe(0);
     });
     it('returns 0 when stride is null', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.getStrideStartDateValue(null as unknown as Record<string, unknown>)).toBe(0);
     });
     it('returns 0 when stride is undefined', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.getStrideStartDateValue(undefined as unknown as Record<string, unknown>)).toBe(0);
     });
     it('returns 0 when startDate is missing', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.getStrideStartDateValue({})).toBe(0);
     });
     it('returns 0 for empty string date', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.getStrideStartDateValue({ startDate: '' })).toBe(0);
     });
     it('parses ISO date strings', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.getStrideStartDateValue({ startDate: '2024-01-01T00:00:00Z' })).toBeGreaterThan(0);
     });
 });
@@ -220,29 +247,36 @@ describe('handleMoveToBacklog', () => {
     });
 
     it('does nothing when modal elements are missing', async () => {
+        // Arrange
         document.body.innerHTML = '<div id="backlog-section"><div class="backlog-content"><table class="promisemodel-table"><tbody></tbody></table></div></div>';
         mockBuildGraphViewHref.mockReturnValue('/graph/moment-1');
 
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
         const button = document.createElement('button');
         button.dataset.momentId = '1';
+        // Act
         await mod.handleMoveToBacklog(button, 'owner1', 'proj1');
+        // Assert
         expect(mockAssignMomentToStride).not.toHaveBeenCalled();
     });
 });
 
 describe('handleMoveToStride', () => {
     it('does nothing when no stride target selected', async () => {
+        // Arrange
         document.body.innerHTML = '<div id="move-to-stride-modal"><p id="move-to-stride-modal-text"></p><button id="move-to-stride-modal-confirm">Confirm</button></div>';
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
         const button = document.createElement('button');
         button.dataset.momentId = '1';
         button.className = 'move-to-stride-from-backlog-btn';
+        // Act
         await mod.handleMoveToStride(button, 'owner1', 'proj1');
+        // Assert
         expect(mockAssignMomentToStride).not.toHaveBeenCalled();
     });
 
     it('does nothing when strideId is NaN', async () => {
+        // Arrange
         document.body.innerHTML = '<div id="move-to-stride-modal"><p id="move-to-stride-modal-text"></p><button id="move-to-stride-modal-confirm">Confirm</button></div>';
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
         const row = document.createElement('tr');
@@ -258,7 +292,9 @@ describe('handleMoveToStride', () => {
         button.dataset.momentId = '1';
         row.append(select, button);
         document.body.append(row);
+        // Act
         await mod.handleMoveToStride(button, 'owner1', 'proj1');
+        // Assert
         expect(mockAssignMomentToStride).not.toHaveBeenCalled();
     });
 
@@ -381,6 +417,7 @@ describe('handleProgressStride', () => {
     });
 
     it('progresses stride when confirm is clicked', async () => {
+        // Arrange
         mockProgressStride.mockResolvedValue(undefined);
 
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
@@ -392,11 +429,14 @@ describe('handleProgressStride', () => {
         await vi.waitFor(() => expect(document.querySelector('#progress-stride-modal-confirm')).not.toBeNull());
         (document.querySelector('#progress-stride-modal-confirm') as HTMLButtonElement).click();
 
+        // Act
         await promise;
+        // Assert
         expect(mockProgressStride).toHaveBeenCalledWith('owner1', 'proj1', 1);
     });
 
     it('shows success message when moments moved to visible target', async () => {
+        // Arrange
         mockProgressStride.mockResolvedValue(undefined);
 
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
@@ -408,11 +448,14 @@ describe('handleProgressStride', () => {
         await vi.waitFor(() => expect(document.querySelector('#progress-stride-modal-confirm')).not.toBeNull());
         (document.querySelector('#progress-stride-modal-confirm') as HTMLButtonElement).click();
 
+        // Act
         await promise;
+        // Assert
         expect(document.getElementById('success-text')!.textContent).toContain('Moved');
     });
 
     it('shows message when no unfinished moments', async () => {
+        // Arrange
         (document.querySelector('.status-dropdown') as HTMLSelectElement).value = 'Done';
         (document.querySelector('.status-badge') as HTMLElement).textContent = 'Done';
         mockProgressStride.mockResolvedValue(undefined);
@@ -426,11 +469,14 @@ describe('handleProgressStride', () => {
         await vi.waitFor(() => expect(document.querySelector('#progress-stride-modal-confirm')).not.toBeNull());
         (document.querySelector('#progress-stride-modal-confirm') as HTMLButtonElement).click();
 
+        // Act
         await promise;
+        // Assert
         expect(document.getElementById('success-text')!.textContent).toContain('No unfinished moments');
     });
 
     it('shows toast on API error', async () => {
+        // Arrange
         mockProgressStride.mockRejectedValue(new Error('API error'));
 
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
@@ -442,11 +488,14 @@ describe('handleProgressStride', () => {
         await vi.waitFor(() => expect(document.querySelector('#progress-stride-modal-confirm')).not.toBeNull());
         (document.querySelector('#progress-stride-modal-confirm') as HTMLButtonElement).click();
 
+        // Act
         await promise;
+        // Assert
         expect(mockShowToast).toHaveBeenCalledWith('Failed to progress stride', 'error');
     });
 
     it('shows success without targetVisible when no next card DOM element', async () => {
+        // Arrange
         mockProgressStride.mockResolvedValue(undefined);
 
         document.body.innerHTML = `
@@ -475,11 +524,14 @@ describe('handleProgressStride', () => {
         (document.querySelector('#progress-stride-modal-confirm') as HTMLButtonElement).click();
         await promise;
 
+        // Act
         const successEl = document.getElementById('success-text')!;
+        // Assert
         expect(successEl.textContent).toContain('Moved');
     });
 
     it('shows success moved message even when no next stride exists', async () => {
+        // Arrange
         mockProgressStride.mockResolvedValue(undefined);
 
         document.body.innerHTML = `
@@ -506,13 +558,16 @@ describe('handleProgressStride', () => {
 
         await vi.waitFor(() => expect(document.querySelector('#progress-stride-modal-confirm')).not.toBeNull());
         (document.querySelector('#progress-stride-modal-confirm') as HTMLButtonElement).click();
+        // Act
         await promise;
 
+        // Assert
         expect(mockProgressStride).toHaveBeenCalledWith('owner1', 'proj1', 10);
         expect(document.getElementById('success-text')!.textContent).toContain('Moved');
     });
 
     it('handles missing current card in DOM update', async () => {
+        // Arrange
         mockProgressStride.mockResolvedValue(undefined);
         document.body.innerHTML = `<div id="error-text"></div><div id="success-text"></div>`;
 
@@ -523,8 +578,10 @@ describe('handleProgressStride', () => {
 
         await vi.waitFor(() => expect(document.querySelector('#progress-stride-modal-confirm')).not.toBeNull());
         (document.querySelector('#progress-stride-modal-confirm') as HTMLButtonElement).click();
+        // Act
         await promise;
 
+        // Assert
         expect(mockProgressStride).toHaveBeenCalledWith('owner1', 'proj1', 999);
         const successEl = document.getElementById('success-text')!;
         expect(successEl.textContent).toContain('Stride progressed');
@@ -533,6 +590,7 @@ describe('handleProgressStride', () => {
 
 describe('setUpCreateStrideButton (branch coverage)', () => {
     it('opens iteration create modal when no cached iterations exist', async () => {
+        // Arrange
         document.body.innerHTML = `
             <div id="stride-board"></div>
             <span id="error-text"></span>
@@ -545,13 +603,16 @@ describe('setUpCreateStrideButton (branch coverage)', () => {
         await loadStridesList('owner1', 'proj1', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const btn = document.querySelector('#create-stride-btn') as HTMLElement;
+        // Act
         btn.click();
 
+        // Assert
         expect(mockOpenIterationCreateModal).toHaveBeenCalledWith('owner1', 'proj1', expect.any(Function));
         expect(mockOpenStrideCreateModal).not.toHaveBeenCalled();
     });
 
     it('executes onCreated callback which reloads the strides list', async () => {
+        // Arrange
         document.body.innerHTML = `
             <div id="stride-board"></div>
             <span id="error-text"></span>
@@ -578,7 +639,9 @@ describe('setUpCreateStrideButton (branch coverage)', () => {
         const btn = document.querySelector('#create-stride-btn') as HTMLElement;
         btn.click();
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(mockGetIterations).toHaveBeenCalledTimes(2);
         });
     });
@@ -586,6 +649,7 @@ describe('setUpCreateStrideButton (branch coverage)', () => {
 
 describe('ensureStrideTbody', () => {
     it('creates tbody for target stride card with no table (lines 1017-1020)', async () => {
+        // Arrange
         mockAssignMomentToStride.mockResolvedValue({ sequenceNumber: 1, statement: 'Test', type: 'Story', status: 'Todo' });
         mockBuildGraphViewHref.mockReturnValue('/graph/moment-1');
 
@@ -619,7 +683,9 @@ describe('ensureStrideTbody', () => {
 
         (document.getElementById('move-to-stride-modal-confirm') as HTMLButtonElement).click();
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(mockAssignMomentToStride).toHaveBeenCalled();
         });
 
@@ -632,6 +698,7 @@ describe('ensureStrideTbody', () => {
 
 describe('inline moment controls via event delegation', () => {
     it('calls updateMomentOwner on owner-dropdown change (line 1120-1121)', async () => {
+        // Arrange
         mockGetProject.mockResolvedValue({ name: 'Test' });
         mockGetIterations.mockResolvedValue([{ id: 1, name: 'S1', createdAt: '2024-06-01T00:00:00Z' }]);
         mockGetStridesByIteration.mockResolvedValue([{ id: 10, name: 'Stride 1', startDate: '2024-06-01' }]);
@@ -655,7 +722,9 @@ describe('inline moment controls via event delegation', () => {
         const contentDiv = document.createElement('div');
         await loadStridesList('owner1', 'proj1', navDiv, contentDiv, { permission: 'Edit' });
 
+        // Act
         const sel = document.querySelector('.owner-dropdown') as HTMLSelectElement;
+        // Assert
         expect(sel).not.toBeNull();
         const opt = document.createElement('option');
         opt.value = '5';
@@ -670,6 +739,7 @@ describe('inline moment controls via event delegation', () => {
     });
 
     it('calls updateMomentType on moment-type-dropdown change (line 1122-1123)', async () => {
+        // Arrange
         mockGetProject.mockResolvedValue({ name: 'Test' });
         mockGetIterations.mockResolvedValue([{ id: 1, name: 'S1', createdAt: '2024-06-01T00:00:00Z' }]);
         mockGetStridesByIteration.mockResolvedValue([{ id: 10, name: 'Stride 1', startDate: '2024-06-01' }]);
@@ -693,7 +763,9 @@ describe('inline moment controls via event delegation', () => {
         const contentDiv = document.createElement('div');
         await loadStridesList('owner1', 'proj1', navDiv, contentDiv, { permission: 'Edit' });
 
+        // Act
         const sel = document.querySelector('.moment-type-dropdown') as HTMLSelectElement;
+        // Assert
         expect(sel).not.toBeNull();
         sel.value = 'Job';
         sel.dispatchEvent(new Event('change', { bubbles: true }));

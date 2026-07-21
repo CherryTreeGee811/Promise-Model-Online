@@ -12,8 +12,11 @@ beforeEach(() => {
 
 describe('readFiltersFromUrl', () => {
     it('returns defaults for empty query', async () => {
+        // Arrange
         const { readFiltersFromUrl } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph.ts');
+        // Act
         const filters = readFiltersFromUrl();
+        // Assert
         expect(filters.search).toBe('');
         expect(filters.types.size).toBeGreaterThan(0);
     });
@@ -21,13 +24,16 @@ describe('readFiltersFromUrl', () => {
 
 describe('syncFiltersToUrl', () => {
     it('writes filter state to URL', async () => {
+        // Arrange
         const { syncFiltersToUrl } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph.ts');
         const spy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
         const filters = {
             search: 'test', includeChildren: true, types: new Set(['promise']),
             effort: 'all', stride: 'all', status: 'all', assignment: 'all',
         };
+        // Act
         syncFiltersToUrl(filters as never);
+        // Assert
         expect(spy).toHaveBeenCalled();
         spy.mockRestore();
     });

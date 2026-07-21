@@ -39,11 +39,15 @@ public class ProfileIntegrationTests : IntegrationTestBase
     [Test]
     public async Task REQ_CA_001_Get_ProfilePage_Authenticated_Returns200()
     {
+        // Arrange
         var auth = await AuthCookieAsync();
 
         var getRequest = CreateGet("/account/me/profile", auth);
+
+        // Act
         var response = await Client.SendAsync(getRequest);
 
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var html = await response.Content.ReadAsStringAsync();
         Assert.That(html, Does.Contain("My Profile"));
@@ -53,13 +57,19 @@ public class ProfileIntegrationTests : IntegrationTestBase
     [Test]
     public async Task REQ_CA_001_Get_ProfilePage_Unauthenticated_ReturnsRedirect()
     {
+        // Arrange
+
+        // Act
         var response = await Client.GetAsync("/account/me/profile");
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
     }
 
     [Test]
     public async Task REQ_CA_001_Post_UpdateDisplayName_Authenticated_ReturnsSuccess()
     {
+        // Arrange
         var uniqueName = "user_" + System.Guid.NewGuid().ToString("N")[..8];
         var auth = await AuthCookieAsync();
 
@@ -82,8 +92,11 @@ public class ProfileIntegrationTests : IntegrationTestBase
             { "Email", "pmo_test@example.com" },
             { "__RequestVerificationToken", profileToken }
         });
+
+        // Act
         var postResponse = await Client.SendAsync(postRequest);
 
+        // Assert
         Assert.That(postResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var responseHtml = await postResponse.Content.ReadAsStringAsync();
         Assert.That(responseHtml, Does.Contain("profile has been updated"));
@@ -92,8 +105,13 @@ public class ProfileIntegrationTests : IntegrationTestBase
     [Test]
     public async Task REQ_CA_001_Post_UpdateDisplayName_Unauthenticated_ReturnsRedirect()
     {
+        // Arrange
+
+        // Act
         var response = await Client.PostAsync("/account/me/profile", new FormUrlEncodedContent(
             new Dictionary<string, string> { { "Username", "newuser" } }));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
     }
 }

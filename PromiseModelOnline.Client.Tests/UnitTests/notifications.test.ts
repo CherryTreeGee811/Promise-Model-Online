@@ -10,7 +10,9 @@ beforeEach(() => {
 
 describe('notifications module', () => {
     it('loadNotificationsPage is defined', async () => {
+        // Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/list.ts');
+        // Assert
         expect(mod.loadNotificationsPage).toBeDefined();
     });
 });

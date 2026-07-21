@@ -13,6 +13,7 @@ public class AuthManagementE2ETests : E2ETestBase
     [Test]
     public async Task ChangePassword_Valid_Succeeds()
     {
+        // Arrange
         var (username, email, userId) = await RegisterAndVerifyUserAsync();
 
         await LoginAsUser(username, NewPassword);  // the password set during registration
@@ -20,6 +21,7 @@ public class AuthManagementE2ETests : E2ETestBase
         await NavigateForFormAsync("/account/change-password");
         await Page.WaitForSelectorAsync(".auth-form", new() { Timeout = 5000 });
 
+        // Act
         await Page.FillAsync("#currentPassword", NewPassword);
         await Page.FillAsync("#newPassword", TestPassword);
         await Page.FillAsync("#confirmPassword", TestPassword);
@@ -27,6 +29,7 @@ public class AuthManagementE2ETests : E2ETestBase
         await SubmitFormAsync();
         await Page.WaitForURLAsync(new Regex("/account/change-password$"), new() { Timeout = 5000 });
 
+        // Assert
         var successText = await Page.Locator(".auth-success").InnerTextAsync();
         Assert.That(successText, Does.Contain("Password changed"));
         AssertNoCspViolations();
@@ -35,6 +38,7 @@ public class AuthManagementE2ETests : E2ETestBase
     [Test]
     public async Task DeleteAccount_WithPassword_Succeeds()
     {
+        // Arrange
         var (username, email, userId) = await RegisterAndVerifyUserAsync();
 
         await LoginAsUser(username, NewPassword);
@@ -45,14 +49,17 @@ public class AuthManagementE2ETests : E2ETestBase
         {
             Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
         };
+        // Act
         var response = await authClient.SendAsync(request);
 
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
     }
 
     [Test]
     public async Task DeleteAccount_WrongPassword_ReturnsError()
     {
+        // Arrange
         var (username, email, userId) = await RegisterAndVerifyUserAsync();
 
         await LoginAsUser(username, NewPassword);
@@ -63,8 +70,10 @@ public class AuthManagementE2ETests : E2ETestBase
         {
             Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
         };
+        // Act
         var response = await authClient.SendAsync(request);
 
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest).Or.EqualTo(HttpStatusCode.Unauthorized));
     }
 

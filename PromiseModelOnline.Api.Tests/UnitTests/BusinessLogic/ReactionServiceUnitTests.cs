@@ -64,10 +64,13 @@ public class ReactionServiceUnitTests
     [Test]
     public async Task REQ_SYS_004_GetReactionsAsync_NoReactions_ReturnsEmpty()
     {
+        // Arrange
         _reactionRepoMock.Setup(r => r.GetReactionsForItemAsync("Moment", 5)).ReturnsAsync(new List<Reaction>());
 
+        // Act
         var result = await _service.GetReactionsAsync("Moment", 5);
 
+        // Assert
         Assert.That(result, Is.Empty);
     }
 
@@ -78,6 +81,7 @@ public class ReactionServiceUnitTests
     [Test]
     public async Task REQ_SYS_004_UpdateReactionAsync_ExistingReaction_UpdatesEmote()
     {
+        // Arrange
         var existing = new Reaction { Id = 1, UserId = 10, Emote = "👍", StackItemType = "Moment", StackItemId = 5 };
         _reactionRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existing);
         _reactionRepoMock.Setup(r => r.Update(It.IsAny<Reaction>()));
@@ -86,8 +90,10 @@ public class ReactionServiceUnitTests
         _mapperMock.Setup(m => m.Map(existing, null!)).Returns(new ReactionDto { Id = 1, Emote = "👎" });
 
         var request = new UpdateReactionRequestDto { Emote = "👎" };
+        // Act
         var result = await _service.UpdateReactionAsync(1, request, 10);
 
+        // Assert
         Assert.That(result.Emote, Is.EqualTo("👎"));
         Assert.That(existing.Emote, Is.EqualTo("👎"));
         _reactionRepoMock.Verify(r => r.Update(existing), Times.Once);
@@ -98,6 +104,7 @@ public class ReactionServiceUnitTests
     [Test]
     public async Task REQ_SYS_004_CreateReactionAsync_NoExistingReaction_CreatesNew()
     {
+        // Arrange
         _reactionRepoMock.Setup(r => r.GetUserReactionAsync(20, "Epic", 3)).ReturnsAsync((Reaction?)null);
         _reactionRepoMock.Setup(r => r.AddAsync(It.IsAny<Reaction>())).Returns(Task.CompletedTask);
         _reactionRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
@@ -117,8 +124,10 @@ public class ReactionServiceUnitTests
                    });
 
         var request = new CreateReactionRequest { Emote = "🚀", StackItemType = "Epic", StackItemId = 3 };
+        // Act
         var result = await _service.CreateReactionAsync(request, 20);
 
+        // Assert
         Assert.That(result.Emote, Is.EqualTo("🚀"));
         Assert.That(savedReaction, Is.Not.Null);
         Assert.That(savedReaction!.UserId, Is.EqualTo(20));
@@ -137,29 +146,36 @@ public class ReactionServiceUnitTests
     [Test]
     public void REQ_SYS_004_RemoveReactionAsync_NotFound_ThrowsInvalidOperation()
     {
+        // Arrange
         _reactionRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Reaction?)null);
 
+        // Assert
         Assert.ThrowsAsync<InvalidOperationException>(() => _service.RemoveReactionAsync(99, 1));
     }
 
     [Test]
     public void REQ_SYS_004_RemoveReactionAsync_NotOwner_ThrowsInvalidOperation()
     {
+        // Arrange
         var reaction = new Reaction { Id = 5, UserId = 100 };
         _reactionRepoMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(reaction);
 
+        // Assert
         Assert.ThrowsAsync<InvalidOperationException>(() => _service.RemoveReactionAsync(5, 999));
     }
 
     [Test]
     public async Task REQ_SYS_004_RemoveReactionAsync_Owner_DeletesReaction()
     {
+        // Arrange
         var reaction = new Reaction { Id = 7, UserId = 42 };
         _reactionRepoMock.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(reaction);
         _reactionRepoMock.Setup(r => r.DeleteByIdAsync(7)).ReturnsAsync(true);
 
+        // Act
         await _service.RemoveReactionAsync(7, 42);
 
+        // Assert
         _reactionRepoMock.Verify(r => r.DeleteByIdAsync(7), Times.Once);
     }
 

@@ -194,24 +194,29 @@ afterEach(async () => {
 
 describe('loadFlowDetail', () => {
     it('returns early when detailDiv is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<div></div>';
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
 
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetFlow).not.toHaveBeenCalled();
     });
 
     it('calls destroyDetailStackGraph even when detailDiv is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<div></div>';
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
 
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockDestroyDetailStackGraph).toHaveBeenCalled();
     });
 
     it('shows loading indicator on start', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -222,12 +227,15 @@ describe('loadFlowDetail', () => {
 
         const promise = loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#flow-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(false);
         await promise;
     });
 
     it('clears error text on start', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -238,12 +246,14 @@ describe('loadFlowDetail', () => {
         errorEl.textContent = 'Old error';
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(errorEl.textContent).toBe('');
     });
 
     it('hides loading on success', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -253,23 +263,29 @@ describe('loadFlowDetail', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#flow-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
     });
 
     it('shows error and hides loading on API failure', async () => {
+        // Arrange
         mockGetFlow.mockRejectedValue(new Error('network'));
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const loading = document.querySelector('#flow-detail-loading') as HTMLElement;
+        // Act
         const error = document.querySelector('#error-text') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
         expect(error.textContent).toContain('Failed to load flow details.');
     });
 
     it('calls destroyDetailStackGraph on start', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -278,12 +294,14 @@ describe('loadFlowDetail', () => {
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
 
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockDestroyDetailStackGraph).toHaveBeenCalled();
     });
 
     it('calls getFlow with correct params', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -291,21 +309,25 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetFlow).toHaveBeenCalledWith('o', 'p', '42');
     });
 
     it('returns early when flow is falsy', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(null);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockLoadEntityLookupMap).not.toHaveBeenCalled();
     });
 
     it('calls loadEntityLookupMap with correct params', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -313,12 +335,14 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockLoadEntityLookupMap).toHaveBeenCalledWith('Flow', 42, 'o', 'p');
     });
 
     it('calls mountDetailStackGraph with correct params', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -326,14 +350,16 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockMountDetailStackGraph).toHaveBeenCalledWith({
             nodeType: 'flow', nodeId: '42', owner: 'o', project: 'p',
         });
     });
 
     it('builds detail card with flow heading', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -343,11 +369,14 @@ describe('loadFlowDetail', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const detailCard = document.querySelector('.flow-detail-card')!;
+        // Assert
         expect(detailCard.querySelector('h2')!.textContent).toBe('Test flow');
     });
 
     it('builds table with description row', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -355,14 +384,16 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildInlineEditUI).toHaveBeenCalledWith(
             expect.any(HTMLElement), '', 'A flow description',
         );
     });
 
     it('calls getStatusIcon and getStatusLabel for status row', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -370,13 +401,15 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetStatusIcon).toHaveBeenCalledWith('green');
         expect(mockGetStatusLabel).toHaveBeenCalledWith('green');
     });
 
     it('calls createDateRow for created and updated dates', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -384,13 +417,15 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockCreateDateRow).toHaveBeenCalledWith('Created', defaultFlow.createdAt);
         expect(mockCreateDateRow).toHaveBeenCalledWith('Updated', defaultFlow.updatedAt);
     });
 
     it('creates moments heading and list container', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -400,12 +435,15 @@ describe('loadFlowDetail', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const detailCard = document.querySelector('.flow-detail-card')!;
+        // Assert
         expect(detailCard.querySelector('h3')!.textContent).toBe('Moments');
         expect(detailCard.querySelector('#flow-moments-list')).not.toBeNull();
     });
 
     it('creates comments container', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -415,11 +453,14 @@ describe('loadFlowDetail', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const detailCard = document.querySelector('.flow-detail-card')!;
+        // Assert
         expect(detailCard.querySelector('#flow-comments')).not.toBeNull();
     });
 
     it('creates back button', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -430,12 +471,15 @@ describe('loadFlowDetail', () => {
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const detailCard = document.querySelector('.flow-detail-card')!;
+        // Act
         const backBtn = detailCard.querySelector('#back-link') as HTMLButtonElement;
+        // Assert
         expect(backBtn).not.toBeNull();
         expect(backBtn.textContent).toContain('Back');
     });
 
     it('sets up inline editing via setupDetailInlineEdit', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -443,14 +487,16 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockSetupDetailInlineEdit).toHaveBeenCalledWith(
             '#description-input', '#description-view', '#edit-desc-btn', 'Flow', 42, '#save-desc', '#cancel-desc',
         );
     });
 
     it('calls bindLinkClickHandlers for journey links', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -458,8 +504,9 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBindLinkClickHandlers).toHaveBeenCalledWith(
             document.body, '.detail-link[journey-id]', 'journey-seq', 'journeys', 'o', 'p',
             expect.any(HTMLElement), expect.any(HTMLElement),
@@ -467,6 +514,7 @@ describe('loadFlowDetail', () => {
     });
 
     it('loads flow moments', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -474,8 +522,9 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetMoments).toHaveBeenCalledWith('o', 'p', '42');
         expect(mockPatchChildMetrics).toHaveBeenCalledWith('flow-1', expect.any(Array));
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalled();
@@ -483,6 +532,7 @@ describe('loadFlowDetail', () => {
     });
 
     it('loads flow moments and shows error on failure', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -492,12 +542,15 @@ describe('loadFlowDetail', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const momentsList = document.querySelector('#flow-moments-list')!;
+        // Assert
         expect(momentsList.querySelector('.error')).not.toBeNull();
         expect(momentsList.textContent).toContain('Failed to load moments.');
     });
 
     it('calls initBackLink', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -505,12 +558,14 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockInitBackLink).toHaveBeenCalled();
     });
 
     it('loads flow journey name via getJourneyById', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -518,12 +573,14 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetJourneyById).toHaveBeenCalledWith('o', 'p', 7);
     });
 
     it('calls setupDescriptionHandler', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -531,14 +588,16 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockSetupDescriptionHandler).toHaveBeenCalledWith(
             'o', 'p', '42', 'flow', expect.objectContaining({ id: 42, sequenceNumber: 1 }), mockUpdateFlowDescription,
         );
     });
 
     it('calls gateDetailControls with correct selectors', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -546,8 +605,9 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGateDetailControls).toHaveBeenCalledWith(
             { permission: 'Edit' },
             ['#edit-desc-btn', '#save-desc', '#description-input', '#add-moment-statement', '#add-moment-submit', '#add-moment-type'],
@@ -555,6 +615,7 @@ describe('loadFlowDetail', () => {
     });
 
     it('calls loadCommentsAndReactions', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -562,14 +623,16 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockLoadCommentsAndReactions).toHaveBeenCalledWith(
             expect.any(HTMLElement), 'Flow', 42, 'o', 'p', { permission: 'Edit' },
         );
     });
 
     it('calls upsertFlowGraphViewButton', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -577,14 +640,16 @@ describe('loadFlowDetail', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockUpsertGraphViewButton).toHaveBeenCalled();
     });
 });
 
 describe('loadFlowJourneyName', () => {
     it('navigates on link click', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -597,11 +662,14 @@ describe('loadFlowJourneyName', () => {
         await loadFlowDetail('o', 'p', '42', navDiv, contentDiv, { permission: 'Edit' });
 
         const link = document.querySelector('#flow-journey-cell a.detail-link')!;
+        // Act
         link.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        // Assert
         expect(mockNavigate).toHaveBeenCalledWith('/o/p/journeys/3', navDiv, contentDiv);
     });
 
     it('does not navigate on ctrl+click', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -612,11 +680,14 @@ describe('loadFlowJourneyName', () => {
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const link = document.querySelector('#flow-journey-cell a.detail-link')!;
+        // Act
         link.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+        // Assert
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('does not navigate on middle-click', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -627,11 +698,14 @@ describe('loadFlowJourneyName', () => {
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const link = document.querySelector('#flow-journey-cell a.detail-link')!;
+        // Act
         link.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 1 }));
+        // Assert
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('handles API error gracefully', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -641,13 +715,16 @@ describe('loadFlowJourneyName', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const journeyCell = document.querySelector('#flow-journey-cell')!;
+        // Assert
         expect(journeyCell.textContent).toContain('Journey 7');
     });
 });
 
 describe('loadFlowMoments', () => {
     it('renders empty state when no moments exist', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -655,8 +732,9 @@ describe('loadFlowMoments', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalledWith(
             expect.any(HTMLElement),
             expect.objectContaining({
@@ -667,6 +745,7 @@ describe('loadFlowMoments', () => {
     });
 
     it('handles moment type change via change event', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -676,7 +755,9 @@ describe('loadFlowMoments', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const select = document.querySelector('.moment-type-select') as HTMLSelectElement;
+        // Assert
         expect(select).not.toBeNull();
         mockUpdateMomentType.mockResolvedValue(undefined);
         select.value = 'Job';
@@ -685,6 +766,7 @@ describe('loadFlowMoments', () => {
     });
 
     it('reverts select value when updateMomentType rejects', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -700,13 +782,16 @@ describe('loadFlowMoments', () => {
         mockUpdateMomentType.mockRejectedValue(new Error('network'));
         select.value = newValue;
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        // Act
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Assert
         expect(select.value).toBe(originalValue);
     });
 });
 
 describe('upsertFlowGraphViewButton', () => {
     it('does not insert when owner is empty', async () => {
+        // Arrange
         mockGetOwnerProjectFromPath.mockReturnValue({ owner: '', project: 'p' });
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -715,13 +800,15 @@ describe('upsertFlowGraphViewButton', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
 
     it('does not insert when project is empty', async () => {
+        // Arrange
         mockGetOwnerProjectFromPath.mockReturnValue({ owner: 'o', project: '' });
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -730,13 +817,15 @@ describe('upsertFlowGraphViewButton', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
 
     it('does not insert when href is null', async () => {
+        // Arrange
         mockBuildGraphViewHref.mockReturnValue(null);
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -745,8 +834,9 @@ describe('upsertFlowGraphViewButton', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildGraphViewHref).toHaveBeenCalledWith('o', 'p', 'flow-1');
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
@@ -754,6 +844,7 @@ describe('upsertFlowGraphViewButton', () => {
 
 describe('additional edge case coverage', () => {
     it('handles flow with empty description', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue({ ...defaultFlow, description: '' });
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -761,12 +852,14 @@ describe('additional edge case coverage', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockBuildInlineEditUI).toHaveBeenCalledWith(expect.any(HTMLElement), '', '');
     });
 
     it('handles flow with null statusColor', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue({ ...defaultFlow, statusColor: null });
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -774,13 +867,15 @@ describe('additional edge case coverage', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetStatusIcon).toHaveBeenCalledWith('');
         expect(mockGetStatusLabel).toHaveBeenCalledWith('');
     });
 
     it('handles null moments from API', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -788,8 +883,9 @@ describe('additional edge case coverage', () => {
         mockGetJourneyById.mockResolvedValue(defaultJourney);
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalledWith(
             expect.any(HTMLElement),
             expect.objectContaining({ items: [] }),
@@ -797,6 +893,7 @@ describe('additional edge case coverage', () => {
     });
 
     it('ignores change events on non-select elements', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -806,12 +903,14 @@ describe('additional edge case coverage', () => {
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         document.querySelector('#flow-moments-list')!.dispatchEvent(new Event('change', { bubbles: true }));
-
+        // Assert
         expect(mockUpdateMomentType).not.toHaveBeenCalled();
     });
 
     it('handles journey with null statusColor', async () => {
+        // Arrange
         mockGetFlow.mockResolvedValue(defaultFlow);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -819,8 +918,9 @@ describe('additional edge case coverage', () => {
         mockGetJourneyById.mockResolvedValue({ ...defaultJourney, statusColor: null });
 
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         await loadFlowDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
-
+        // Assert
         expect(mockGetStatusIcon).toHaveBeenCalledWith('');
         expect(mockGetStatusLabel).toHaveBeenCalledWith('');
     });

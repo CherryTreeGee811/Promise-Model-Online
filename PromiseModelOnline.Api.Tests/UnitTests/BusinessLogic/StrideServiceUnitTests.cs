@@ -134,6 +134,7 @@ public class StrideServiceUnitTests
     [Test]
     public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_NoProjectMembers_NoNotificationsSent()
     {
+        // Arrange
         var iteration = new Iteration { Id = 100, ProjectId = 200 };
         var stride = new Stride { Id = 3, Name = "Sprint A", IterationId = 100 };
         _strideRepoMock.Setup(r => r.GetStridesEndingOnAsync(It.IsAny<DateTime>()))
@@ -142,8 +143,10 @@ public class StrideServiceUnitTests
         _projectServiceMock.Setup(p => p.GetProjectMembersAsync(200))
                            .ReturnsAsync(new List<ProjectMemberDto>());
 
+        // Act
         await _service.SendDeadlineNotificationsAsync();
 
+        // Assert
         _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
             It.IsAny<int>(), It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
@@ -152,6 +155,7 @@ public class StrideServiceUnitTests
     [Test]
     public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_SendsNotificationsToAllMembers()
     {
+        // Arrange
         var iteration = new Iteration { Id = 1, ProjectId = 5 };
         var stride = new Stride { Id = 10, Name = "Sprint 1", IterationId = 1 };
         var members = new List<ProjectMemberDto>
@@ -165,8 +169,10 @@ public class StrideServiceUnitTests
         _iterationRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(iteration);
         _projectServiceMock.Setup(p => p.GetProjectMembersAsync(5)).ReturnsAsync(members);
 
+        // Act
         await _service.SendDeadlineNotificationsAsync();
 
+        // Assert
         _notificationServiceMock.Verify(n => n.CreateNotificationAsync(
             100,
             NotificationType.StrideEnding,
@@ -185,6 +191,7 @@ public class StrideServiceUnitTests
     [Test]
     public async Task REQ_FUN_023_SendDeadlineNotificationsAsync_MultipleStrides_SendsForEach()
     {
+        // Arrange
         var iteration1 = new Iteration { Id = 1, ProjectId = 10 };
         var iteration2 = new Iteration { Id = 2, ProjectId = 20 };
         var stride1 = new Stride { Id = 1, Name = "S1", IterationId = 1 };
@@ -199,8 +206,10 @@ public class StrideServiceUnitTests
         _projectServiceMock.Setup(p => p.GetProjectMembersAsync(10)).ReturnsAsync(members1);
         _projectServiceMock.Setup(p => p.GetProjectMembersAsync(20)).ReturnsAsync(members2);
 
+        // Act
         await _service.SendDeadlineNotificationsAsync();
 
+        // Assert
         _notificationServiceMock.Verify(n => n.CreateNotificationAsync(1, It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         _notificationServiceMock.Verify(n => n.CreateNotificationAsync(2, It.IsAny<NotificationType>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }

@@ -65,14 +65,18 @@ function auditRowHtml(items: unknown[]) {
 
 describe('loadProjectAuditHistoryPage', () => {
     it('exports expected function', async () => {
+        // Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/history.ts');
+        // Assert
         expect(mod.loadProjectAuditHistoryPage).toBeDefined();
     });
 });
 
 describe('renderAuditTable', () => {
     it('exports expected function', async () => {
+        // Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/audit.ts');
+        // Assert
         expect(mod.renderAuditTable ?? mod.loadProjectAudit).toBeDefined();
     });
 });
@@ -99,17 +103,20 @@ describe('loadProjectAuditHistoryPage behavior', () => {
     });
 
     it('returns early when essential DOM elements are missing', () => {
+        // Arrange
         setupMissingElement('project-title');
         const navDiv = document.createElement('div');
         const contentDiv = document.createElement('div');
 
+        // Act
         loadProjectAuditHistoryPage(navDiv, contentDiv, 'owner', 'project');
-
+        // Assert
         expect(mockGetProject).not.toHaveBeenCalled();
         expect(mockGetAuditEvents).not.toHaveBeenCalled();
     });
 
     it('loads project title and audit entries on successful load', async () => {
+        // Arrange
         setupDom();
         const navDiv = document.createElement('div');
         const contentDiv = document.createElement('div');
@@ -120,8 +127,9 @@ describe('loadProjectAuditHistoryPage behavior', () => {
         mockRenderAuditTable.mockReturnValue(auditRowHtml(items));
 
         loadProjectAuditHistoryPage(navDiv, contentDiv, 'owner', 'my-project');
+        // Act
         await vi.runAllTimersAsync();
-
+        // Assert
         expect(mockGetProject).toHaveBeenCalledWith('owner', 'my-project');
         expect(mockGetAuditEvents).toHaveBeenCalledWith('owner', 'my-project', 25, 0);
         expect(document.getElementById('project-title')!.textContent).toBe('My Project activity');
@@ -129,6 +137,7 @@ describe('loadProjectAuditHistoryPage behavior', () => {
     });
 
     it('renders pagination controls', async () => {
+        // Arrange
         setupDom();
         const navDiv = document.createElement('div');
         const contentDiv = document.createElement('div');
@@ -141,13 +150,16 @@ describe('loadProjectAuditHistoryPage behavior', () => {
         loadProjectAuditHistoryPage(navDiv, contentDiv, 'o', 'p');
         await vi.runAllTimersAsync();
 
+        // Act
         const paginationEl = document.getElementById('audit-history-pagination')!;
+        // Assert
         expect(paginationEl.querySelector('[data-page-action="previous"]')).toBeTruthy();
         expect(paginationEl.querySelector('[data-page-action="next"]')).toBeTruthy();
         expect(paginationEl.textContent).toContain('Page 1 of 4');
     });
 
     it('shows "Failed to load audit history" on API error when isReset is true', async () => {
+        // Arrange
         setupDom();
         const navDiv = document.createElement('div');
         const contentDiv = document.createElement('div');
@@ -159,12 +171,15 @@ describe('loadProjectAuditHistoryPage behavior', () => {
         loadProjectAuditHistoryPage(navDiv, contentDiv, 'o', 'p');
         await vi.runAllTimersAsync();
 
+        // Act
         const listEl = document.getElementById('audit-history-list')!;
+        // Assert
         expect(listEl.querySelector('.text-danger')).toBeTruthy();
         expect(listEl.querySelector('.text-danger')!.textContent).toBe('Failed to load audit history.');
     });
 
     it('shows "Failed to load more audit history" on subsequent (non-reset) page load error', async () => {
+        // Arrange
         setupDom();
         const navDiv = document.createElement('div');
         const contentDiv = document.createElement('div');
@@ -180,7 +195,9 @@ describe('loadProjectAuditHistoryPage behavior', () => {
         await vi.runAllTimersAsync();
 
         const paginationEl = document.getElementById('audit-history-pagination')!;
+        // Act
         const nextButton = paginationEl.querySelector<HTMLButtonElement>('[data-page-action="next"]')!;
+        // Assert
         expect(nextButton).toBeTruthy();
 
         nextButton.click();
@@ -191,6 +208,7 @@ describe('loadProjectAuditHistoryPage behavior', () => {
     });
 
     it('navigates back to projects when back button is clicked', async () => {
+        // Arrange
         setupDom();
         const navDiv = document.createElement('div');
         const contentDiv = document.createElement('div');
@@ -202,8 +220,9 @@ describe('loadProjectAuditHistoryPage behavior', () => {
         loadProjectAuditHistoryPage(navDiv, contentDiv, 'o', 'p');
         await vi.runAllTimersAsync();
 
+        // Act
         document.getElementById('back-to-projects-btn')!.click();
-
+        // Assert
         expect(mockNavigate).toHaveBeenCalledWith('/projects', navDiv, contentDiv);
     });
 });

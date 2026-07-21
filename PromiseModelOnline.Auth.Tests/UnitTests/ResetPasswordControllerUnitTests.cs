@@ -39,8 +39,12 @@ public class ResetPasswordControllerUnitTests
     [Test]
     public void Index_ValidTokenAndEmail_ReturnsViewWithPrepopulatedViewModel()
     {
+        // Arrange
+
+        // Act
         var result = _controller.Index("user@example.com", "valid-token");
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         var viewResult = (ViewResult)result;
         var model = viewResult.Model as ResetPasswordViewModel;
@@ -52,8 +56,12 @@ public class ResetPasswordControllerUnitTests
     [Test]
     public void Index_MissingToken_ReturnsErrorView()
     {
+        // Arrange
+
+        // Act
         var result = _controller.Index("user@example.com", null);
 
+        // Assert
         var viewResult = result as ViewResult;
         Assert.That(viewResult, Is.Not.Null);
         Assert.That(viewResult!.ViewName, Is.EqualTo("Error"));
@@ -62,8 +70,12 @@ public class ResetPasswordControllerUnitTests
     [Test]
     public void Index_MissingEmail_ReturnsErrorView()
     {
+        // Arrange
+
+        // Act
         var result = _controller.Index(null, "valid-token");
 
+        // Assert
         var viewResult = result as ViewResult;
         Assert.That(viewResult, Is.Not.Null);
         Assert.That(viewResult!.ViewName, Is.EqualTo("Error"));
@@ -72,6 +84,7 @@ public class ResetPasswordControllerUnitTests
     [Test]
     public async Task Reset_ValidToken_ResetsPasswordAndReturnsSuccessView()
     {
+        // Arrange
         var model = new ResetPasswordViewModel
         {
             Email = "user@example.com",
@@ -83,8 +96,10 @@ public class ResetPasswordControllerUnitTests
         _userManagerMock.Setup(x => x.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.ResetPasswordAsync(user, "valid-token", "NewPass123!")).ReturnsAsync(IdentityResult.Success);
 
+        // Act
         var result = await _controller.Reset(model);
 
+        // Assert
         var viewResult = result as ViewResult;
         Assert.That(viewResult, Is.Not.Null);
         Assert.That(viewResult!.ViewName, Is.EqualTo("Success"));
@@ -94,6 +109,7 @@ public class ResetPasswordControllerUnitTests
     [Test]
     public async Task Reset_InvalidToken_ReturnsViewWithErrors()
     {
+        // Arrange
         var model = new ResetPasswordViewModel
         {
             Email = "user@example.com",
@@ -106,8 +122,10 @@ public class ResetPasswordControllerUnitTests
         _userManagerMock.Setup(x => x.ResetPasswordAsync(user, "expired-token", "NewPass123!"))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Invalid token." }));
 
+        // Act
         var result = await _controller.Reset(model);
 
+        // Assert
         var viewResult = result as ViewResult;
         Assert.That(viewResult, Is.Not.Null);
         Assert.That(viewResult!.ViewName, Is.Null.Or.EqualTo("Index"));
@@ -117,6 +135,7 @@ public class ResetPasswordControllerUnitTests
     [Test]
     public async Task Reset_PasswordMismatch_ReturnsViewWithValidationError()
     {
+        // Arrange
         var model = new ResetPasswordViewModel
         {
             Email = "user@example.com",
@@ -125,8 +144,10 @@ public class ResetPasswordControllerUnitTests
             ConfirmPassword = "DifferentPass!"
         };
 
+        // Act
         var result = await _controller.Reset(model);
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ModelState.IsValid, Is.False);
     }
@@ -134,6 +155,7 @@ public class ResetPasswordControllerUnitTests
     [Test]
     public async Task Reset_UnknownEmail_ReturnsViewWithModelError()
     {
+        // Arrange
         var model = new ResetPasswordViewModel
         {
             Email = "unknown@example.com",
@@ -143,8 +165,10 @@ public class ResetPasswordControllerUnitTests
         };
         _userManagerMock.Setup(x => x.FindByEmailAsync("unknown@example.com")).ReturnsAsync((IdentityUser?)null);
 
+        // Act
         var result = await _controller.Reset(model);
 
+        // Assert
         var viewResult = result as ViewResult;
         Assert.That(viewResult, Is.Not.Null);
         Assert.That(viewResult!.ViewName, Is.Null.Or.EqualTo("Index"));

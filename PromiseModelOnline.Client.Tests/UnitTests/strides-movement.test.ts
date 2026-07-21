@@ -21,12 +21,15 @@ beforeEach(() => {
 
 describe('loadStridesList', () => {
     it('loads and renders the stride board', async () => {
+        // Arrange
         const { loadStridesList } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
         const { getIterations } = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/api.ts');
         vi.mocked(getIterations).mockResolvedValue([{ id: 1, name: 'Sprint 1' }]);
         const nav = document.createElement('div'); const content = document.createElement('div');
         await loadStridesList('o', 'p', nav, content, { permission: 'Edit', isOwner: false });
+        // Act
         const board = document.getElementById('stride-board')!;
+        // Assert
         expect(board.children.length).toBeGreaterThanOrEqual(0);
     });
 });

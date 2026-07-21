@@ -51,13 +51,19 @@ public class ForgotPasswordControllerUnitTests
     [Test]
     public void Index_ReturnsView()
     {
+        // Arrange
+
+        // Act
         var result = _controller.Index();
+
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
     }
 
     [Test]
     public async Task SendResetLink_ValidConfirmedEmail_SendsEmailAndReturnsSuccess()
     {
+        // Arrange
         var model = new ForgotPasswordViewModel { Email = "user@example.com" };
         var user = new IdentityUser { Id = "1", UserName = "testuser", Email = "user@example.com" };
         _userManagerMock.Setup(x => x.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
@@ -65,8 +71,10 @@ public class ForgotPasswordControllerUnitTests
         _userManagerMock.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("mock-token");
         _urlHelperMock.Setup(x => x.Action(It.IsAny<UrlActionContext>())).Returns("https://localhost/reset");
 
+        // Act
         var result = await _controller.SendResetLink(model);
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ViewBag.Sent, Is.True);
         _emailServiceMock.Verify(x => x.SendResetPasswordEmailAsync("user@example.com", "testuser", It.IsAny<string>()), Times.Once);
@@ -76,11 +84,14 @@ public class ForgotPasswordControllerUnitTests
     [Test]
     public async Task SendResetLink_UnknownEmail_ReturnsSuccessWithoutSendingEmail()
     {
+        // Arrange
         var model = new ForgotPasswordViewModel { Email = "unknown@example.com" };
         _userManagerMock.Setup(x => x.FindByEmailAsync("unknown@example.com")).ReturnsAsync((IdentityUser?)null);
 
+        // Act
         var result = await _controller.SendResetLink(model);
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ViewBag.Sent, Is.True);
         _emailServiceMock.Verify(x => x.SendResetPasswordEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -89,13 +100,16 @@ public class ForgotPasswordControllerUnitTests
     [Test]
     public async Task SendResetLink_UnconfirmedEmail_ReturnsSuccessWithoutSendingEmail()
     {
+        // Arrange
         var model = new ForgotPasswordViewModel { Email = "unconfirmed@example.com" };
         var user = new IdentityUser { Id = "2", UserName = "unconfirmed", Email = "unconfirmed@example.com", EmailConfirmed = false };
         _userManagerMock.Setup(x => x.FindByEmailAsync("unconfirmed@example.com")).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
 
+        // Act
         var result = await _controller.SendResetLink(model);
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ViewBag.Sent, Is.True);
         _emailServiceMock.Verify(x => x.SendResetPasswordEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -104,6 +118,7 @@ public class ForgotPasswordControllerUnitTests
     [Test]
     public async Task SendResetLink_PasswordlessGoogleUser_CreatesLocalPasswordViaReset()
     {
+        // Arrange
         var model = new ForgotPasswordViewModel { Email = "google@example.com" };
         var user = new IdentityUser { Id = "3", UserName = "google-user", Email = "google@example.com", EmailConfirmed = true };
         _userManagerMock.Setup(x => x.FindByEmailAsync("google@example.com")).ReturnsAsync(user);
@@ -111,8 +126,10 @@ public class ForgotPasswordControllerUnitTests
         _userManagerMock.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("google-token");
         _urlHelperMock.Setup(x => x.Action(It.IsAny<UrlActionContext>())).Returns("https://localhost/reset?token=google-token");
 
+        // Act
         var result = await _controller.SendResetLink(model);
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ViewBag.Sent, Is.True);
         _emailServiceMock.Verify(x => x.SendResetPasswordEmailAsync("google@example.com", "google-user", It.Is<string>(link => link.Contains("google-token"))), Times.Once);
@@ -122,10 +139,13 @@ public class ForgotPasswordControllerUnitTests
     [Test]
     public async Task SendResetLink_InvalidModel_ReturnsViewWithErrors()
     {
+        // Arrange
         _controller.ModelState.AddModelError("Email", "Required");
 
+        // Act
         var result = await _controller.SendResetLink(new ForgotPasswordViewModel());
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ModelState.IsValid, Is.False);
         _emailServiceMock.Verify(x => x.SendResetPasswordEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -134,6 +154,7 @@ public class ForgotPasswordControllerUnitTests
     [Test]
     public async Task SendResetLink_UrlGenerationFails_LogsErrorAndReturnsModelError()
     {
+        // Arrange
         var model = new ForgotPasswordViewModel { Email = "user@example.com" };
         var user = new IdentityUser { Id = "1", UserName = "testuser", Email = "user@example.com" };
         _userManagerMock.Setup(x => x.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
@@ -141,8 +162,10 @@ public class ForgotPasswordControllerUnitTests
         _userManagerMock.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("mock-token");
         _urlHelperMock.Setup(x => x.Action(It.IsAny<UrlActionContext>())).Returns((string?)null);
 
+        // Act
         var result = await _controller.SendResetLink(model);
 
+        // Assert
         Assert.That(result, Is.TypeOf<ViewResult>());
         Assert.That(_controller.ModelState[string.Empty]?.Errors[0].ErrorMessage,
             Is.EqualTo("An error occurred. Please try again."));

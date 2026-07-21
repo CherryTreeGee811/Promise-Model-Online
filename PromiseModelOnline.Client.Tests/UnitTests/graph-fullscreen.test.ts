@@ -11,7 +11,9 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/api.ts', () => ({ apiGet: vi
 
 describe('initZoomControls', () => {
     it('exports initZoomControls function', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph.ts');
+        // Assert
         expect(mod.initZoomControls).toBeDefined();
     });
 });

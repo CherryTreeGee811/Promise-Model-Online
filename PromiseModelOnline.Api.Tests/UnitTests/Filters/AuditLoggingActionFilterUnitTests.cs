@@ -118,11 +118,14 @@ public class AuditLoggingActionFilterUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetRequest_DoesNotLog()
     {
+        // Arrange
         var (executing, executed) = CreateContexts("GET");
 
         var next = new ActionExecutionDelegate(() => Task.FromResult(executed));
+        // Act
         await _filter.OnActionExecutionAsync(executing, next);
 
+        // Assert
         _loggerMock.Verify(x => x.Log(
             It.IsAny<LogLevel>(),
             It.IsAny<EventId>(),
@@ -135,11 +138,14 @@ public class AuditLoggingActionFilterUnitTests
     [Test]
     public async Task REQ_FUN_XXX_NonMutatingMethod_DoesNotLog()
     {
+        // Arrange
         var (executing, executed) = CreateContexts("OPTIONS");
 
         var next = new ActionExecutionDelegate(() => Task.FromResult(executed));
+        // Act
         await _filter.OnActionExecutionAsync(executing, next);
 
+        // Assert
         _loggerMock.Verify(x => x.Log(
             It.IsAny<LogLevel>(),
             It.IsAny<EventId>(),
@@ -152,11 +158,14 @@ public class AuditLoggingActionFilterUnitTests
     [Test]
     public async Task REQ_FUN_XXX_NonSuccessStatusCode_DoesNotLog()
     {
+        // Arrange
         var (executing, executed) = CreateContexts("POST", statusCode: 400);
 
         var next = new ActionExecutionDelegate(() => Task.FromResult(executed));
+        // Act
         await _filter.OnActionExecutionAsync(executing, next);
 
+        // Assert
         _loggerMock.Verify(x => x.Log(
             It.IsAny<LogLevel>(),
             It.IsAny<EventId>(),
@@ -169,13 +178,16 @@ public class AuditLoggingActionFilterUnitTests
     [Test]
     public async Task REQ_FUN_XXX_UnhandledException_DoesNotLog()
     {
+        // Arrange
         var (executing, executed) = CreateContexts("POST");
         executed.Exception = new InvalidOperationException("fail");
         executed.ExceptionHandled = false;
 
         var next = new ActionExecutionDelegate(() => Task.FromResult(executed));
+        // Act
         await _filter.OnActionExecutionAsync(executing, next);
 
+        // Assert
         _loggerMock.Verify(x => x.Log(
             It.IsAny<LogLevel>(),
             It.IsAny<EventId>(),

@@ -28,35 +28,45 @@ beforeEach(() => {
 
 describe('loadPromiseDetail', () => {
     it('is defined and callable', async () => {
+        // Arrange
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
+        // Assert
         expect(loadPromiseDetail).toBeDefined();
     });
 });
 
 describe('loadEpicDetail', () => {
     it('is defined', async () => {
+        // Arrange
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Assert
         expect(loadEpicDetail).toBeDefined();
     });
 });
 
 describe('loadJourneyDetail', () => {
     it('is defined', async () => {
+        // Arrange
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Assert
         expect(loadJourneyDetail).toBeDefined();
     });
 });
 
 describe('loadFlowDetail', () => {
     it('is defined', async () => {
+        // Arrange
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Assert
         expect(loadFlowDetail).toBeDefined();
     });
 });
 
 describe('loadMomentDetail', () => {
     it('is defined', async () => {
+        // Arrange
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        // Assert
         expect(loadMomentDetail).toBeDefined();
     });
 });

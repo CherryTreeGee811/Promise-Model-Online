@@ -11,7 +11,12 @@ public class ResetPasswordIntegrationTests : IntegrationTestBase
     [Test]
     public async Task REQ_CA_001_Get_ResetPage_MissingToken_ReturnsError()
     {
+        // Arrange
+
+        // Act
         var response = await Client.GetAsync("/account/reset-password?email=test@example.com");
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response.Content.ReadAsStringAsync();
@@ -21,7 +26,12 @@ public class ResetPasswordIntegrationTests : IntegrationTestBase
     [Test]
     public async Task REQ_CA_001_Get_ResetPage_MissingEmail_ReturnsError()
     {
+        // Arrange
+
+        // Act
         var response = await Client.GetAsync("/account/reset-password?token=sometoken");
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response.Content.ReadAsStringAsync();
@@ -31,7 +41,12 @@ public class ResetPasswordIntegrationTests : IntegrationTestBase
     [Test]
     public async Task REQ_CA_001_Get_ResetPage_BothMissing_ReturnsError()
     {
+        // Arrange
+
+        // Act
         var response = await Client.GetAsync("/account/reset-password");
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response.Content.ReadAsStringAsync();
@@ -41,7 +56,12 @@ public class ResetPasswordIntegrationTests : IntegrationTestBase
     [Test]
     public async Task REQ_CA_001_Get_ResetPage_ValidToken_Returns200()
     {
+        // Arrange
+
+        // Act
         var response = await Client.GetAsync("/account/reset-password?email=test@example.com&token=valid-token");
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var html = await response.Content.ReadAsStringAsync();
