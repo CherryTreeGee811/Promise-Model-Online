@@ -1,3 +1,6 @@
+import { initConsoleCapture } from './utils/console-capture.ts';
+initConsoleCapture();
+
 import { initDeleteAccountPage } from './account/delete-account.ts';
 import { initPreferencesPage } from './account/preferences.ts';
 import { checkSession } from './api.ts';

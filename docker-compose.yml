@@ -93,12 +93,14 @@ services:
       - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
       - ConnectionStrings__AuthDB=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
+      - GitHub__Token_FILE=/run/secrets/github_token
       - App__BaseUrl=${APP_BASE_URL}
     secrets:
       - api_db_password
       - auth_db_password
       - auth_registration_key
       - sendgrid_api_key
+      - github_token
     depends_on:
       promisemodelonline.auth:
         condition: service_started
@@ -292,5 +294,7 @@ secrets:
     file: ./secrets/db_sa_password.txt
   auth_registration_key:
     file: ./secrets/auth_registration_key.txt
+  github_token:
+    file: ./secrets/github_token.txt
   cert_password:
     file: ./secrets/cert_password.txt

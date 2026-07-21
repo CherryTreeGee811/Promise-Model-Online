@@ -81,5 +81,6 @@ public static class RegistrationExtensions
         });
 
         services.AddScoped<IInvitationEmailService, InvitationEmailService>();
+        services.AddScoped<IGitHubIssueService, GitHubIssueService>();
     }
 }

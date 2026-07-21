@@ -1,6 +1,7 @@
 import { isLoggedIn } from '../auth-state.ts';
 import { startNotificationPolling } from '../notifications/badge.ts';
 import { navigate } from '../router.ts';
+import { openBugReportModal } from '../utils/bug-report-modal.ts';
 
 /**
  * Set the aria-current attribute on the navigation link matching the current URL path.
@@ -75,10 +76,11 @@ export async function loadNavTemplate(navContentDiv: HTMLElement, _contentDiv: H
 }
 
 /**
- * Initialize navigation event delegation for menu links.
+ * Initialize navigation event delegation for menu links and utility buttons.
  * Binds a single click listener on the main-menu element that delegates
- * to handleNavClick. Idempotent — uses a data attribute guard to prevent
- * duplicate listeners.
+ * to handleNavClick for data-nav links and handles special actions like
+ * opening the bug report modal. Idempotent — uses a data attribute guard
+ * to prevent duplicate listeners.
  * @param {HTMLElement} navContentDiv - The navigation container element.
  * @param {HTMLElement} contentDiv - The main content container element.
  */
@@ -87,5 +89,16 @@ export function initNavEventDelegation(navContentDiv: HTMLElement, contentDiv: H
     if (!menu || menu.dataset.navBound) return;
     menu.dataset.navBound = '1';
 
-    menu.addEventListener('click', (event) => handleNavClick(event, navContentDiv, contentDiv));
+    menu.addEventListener('click', (event) => {
+        const link = (event.target as Element).closest('a');
+        if (!link) return;
+
+        if (link.id === 'bug-report-link') {
+            event.preventDefault();
+            openBugReportModal();
+            return;
+        }
+
+        handleNavClick(event, navContentDiv, contentDiv);
+    });
 }
