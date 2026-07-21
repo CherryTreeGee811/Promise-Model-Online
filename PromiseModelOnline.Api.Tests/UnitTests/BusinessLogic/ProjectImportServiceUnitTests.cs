@@ -297,13 +297,10 @@ public class ProjectImportServiceUnitTests
         var document = new ProjectExportDocument
         {
             SchemaVersion = "1.0",
-#pragma warning disable CS8625
-            Project = null
-#pragma warning restore CS8625
-        // Act
+            Project = null!
         };
 
-        // Assert
+        // Act & Assert
         Assert.That(async () => await _service.ImportAsync(document, 42), Throws.TypeOf<InvalidDataException>());
     }
 }
