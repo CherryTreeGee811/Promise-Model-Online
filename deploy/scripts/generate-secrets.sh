@@ -9,12 +9,8 @@ mkdir -p secrets keys/client keys/auth keys/bff keys/proxy
 # Only created if they don't already exist.
 # ============================================================
 gen() {
-  if [ -f "secrets/$1" ]; then
-    echo "  secrets/$1  [EXISTS — kept]"
-  else
-    openssl rand -base64 48 | tr -d '\n' > "secrets/$1"
-    echo "  secrets/$1  [generated]"
-  fi
+  openssl rand -base64 48 | tr -d '\n' > "secrets/$1"
+  echo "  secrets/$1  [generated]"
 }
 
 echo "=== Auto-generated secrets ==="
@@ -26,10 +22,7 @@ gen cert_password.txt
 gen auth_registration_key.txt
 
 # MSSQL SA password (special complexity requirements)
-if [ -f secrets/db_sa_password.txt ]; then
-  echo "  secrets/db_sa_password.txt  [EXISTS — kept]"
-else
-  python3 -c "
+python3 -c "
 import secrets, string
 c = string.ascii_uppercase + string.ascii_lowercase + string.digits
 p = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(4))
@@ -39,8 +32,7 @@ p += ''.join(secrets.choice('!@#%^&*-_=+') for _ in range(3))
 p += ''.join(secrets.choice(c) for _ in range(15))
 print(''.join(secrets.SystemRandom().sample(p, len(p)))[:30])
 " > secrets/db_sa_password.txt
-  echo "  secrets/db_sa_password.txt  [generated]"
-fi
+echo "  secrets/db_sa_password.txt  [generated]"
 
 # ============================================================
 # EXTERNAL secrets  (cannot be auto-generated)
@@ -101,16 +93,14 @@ for dir in auth bff proxy; do
   fi
 done
 
-# Auth PFX (always regenerated — depends on keypair, not a durable secret)
+# Auth PFX (always regenerated)
 CERT_PASS=$(cat secrets/cert_password.txt)
-if [ -f keys/auth/cert.pfx ] && [ -f keys/auth/cert.pem ]; then
-  openssl pkcs12 -export \
-    -in keys/auth/cert.pem -inkey keys/auth/key.pem \
-    -out keys/auth/cert.pfx \
-    -passout "pass:$CERT_PASS" \
-    -name "Promise Model Online Token Signing" 2>/dev/null
-  echo "  keys/auth/cert.pfx  [regenerated]"
-fi
+openssl pkcs12 -export \
+  -in keys/auth/cert.pem -inkey keys/auth/key.pem \
+  -out keys/auth/cert.pfx \
+  -passout "pass:$CERT_PASS" \
+  -name "Promise Model Online Token Signing" 2>/dev/null
+echo "  keys/auth/cert.pfx  [generated]"
 
 chmod 600 secrets/*.txt 2>/dev/null || true
 chmod 644 keys/*/*.pem keys/*/*.pfx 2>/dev/null || true
