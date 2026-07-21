@@ -341,11 +341,6 @@ services:
       TUNNEL_TOKEN_FILE: /run/secrets/cloudflare_tunnel_token
     networks:
       - promisemodelonline-net
-    healthcheck:
-      test: ["CMD", "cloudflared", "tunnel", "info"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     deploy:
       mode: replicated
       replicas: 1
