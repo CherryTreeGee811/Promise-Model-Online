@@ -508,96 +508,133 @@ describe('getDetailPageNodeScale', () => {
 
 describe('findNodeById', () => {
     it('returns undefined for undefined tree', async () => {
+        // Arrange
         const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(findNodeById(undefined, '1')).toBeUndefined();
     });
 
     it('returns undefined for undefined nodeId', async () => {
+        // Arrange
         const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(findNodeById({ id: '1' }, undefined)).toBeUndefined();
     });
 
     it('finds node at root', async () => {
+        // Arrange
         const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(findNodeById({ id: '1' }, '1')).toEqual({ id: '1' });
     });
 
     it('finds nested node', async () => {
+        // Arrange
         const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const tree = { id: 'root', children: [{ id: 'child', children: [{ id: 'grandchild' }] }] };
+        // Act
+        // Assert
         expect(findNodeById(tree, 'grandchild')).toEqual({ id: 'grandchild' });
     });
 
     it('returns undefined for missing node', async () => {
+        // Arrange
         const { findNodeById } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const tree = { id: 'root', children: [{ id: 'child' }] };
+        // Act
+        // Assert
         expect(findNodeById(tree, 'missing')).toBeUndefined();
     });
 });
 
 describe('countRenderableNodes', () => {
     it('returns 0 for undefined node', async () => {
+        // Arrange
         const { countRenderableNodes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(countRenderableNodes(undefined)).toBe(0);
     });
 
     it('returns 0 for root-only node', async () => {
+        // Arrange
         const { countRenderableNodes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(countRenderableNodes({ id: 'root', nodeType: 'root' })).toBe(0);
     });
 
     it('counts child nodes recursively', async () => {
+        // Arrange
         const { countRenderableNodes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const tree = { id: 'root', nodeType: 'root', children: [{ id: 'p1', nodeType: 'promise', children: [{ id: 'e1', nodeType: 'epic' }] }] };
+        // Act
+        // Assert
         expect(countRenderableNodes(tree)).toBe(2);
     });
 
     it('returns 1 for single non-root node', async () => {
+        // Arrange
         const { countRenderableNodes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(countRenderableNodes({ id: 'p1', nodeType: 'promise' })).toBe(1);
     });
 });
 
 describe('parseGraphData', () => {
     it('creates root node with project label', async () => {
+        // Arrange
         const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const result = parseGraphData([], 'owner', 'project');
+        // Act
+        // Assert
         expect(result.nodeType).toBe('root');
         expect(result.label).toBe('Project owner/project');
         expect(result.children).toEqual([]);
     });
 
     it('uses project entity name', async () => {
+        // Arrange
         const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const result = parseGraphData([], 'o', 'p', { name: 'My Project' });
+        // Act
+        // Assert
         expect(result.label).toBe('My Project');
     });
 
     it('falls back to Name from project entity', async () => {
+        // Arrange
         const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const result = parseGraphData([], 'o', 'p', { Name: 'Alt Name' });
+        // Act
+        // Assert
         expect(result.label).toBe('Alt Name');
     });
 
     it('includes root promises as children', async () => {
+        // Arrange
         const { parseGraphData } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const promises = [{ id: 'p1' }, { id: 'p2' }];
         const result = parseGraphData(promises, 'o', 'p');
+        // Act
+        // Assert
         expect(result.children).toHaveLength(2);
     });
 });
 
 describe('renderEmptyState', () => {
     it('creates empty state element', async () => {
+        // Arrange
         const { renderEmptyState } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         const div = document.createElement('div');
         renderEmptyState(div, 'No data');
+        // Act
+        // Assert
         expect(div.children.length).toBe(1);
         expect(div.children[0].className).toBe('graph-empty-state');
         expect(div.children[0].textContent).toBe('No data');
     });
 
     it('does nothing for undefined container', async () => {
+        // Arrange
         const { renderEmptyState } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
         renderEmptyState(undefined, 'No data');
     });
@@ -605,12 +642,16 @@ describe('renderEmptyState', () => {
 
 describe('logGraphFocus', () => {
     it('logs focus event without throwing', async () => {
+        // Arrange
         const { logGraphFocus } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(() => logGraphFocus('test', {})).not.toThrow();
     });
 
     it('handles empty details object', async () => {
+        // Arrange
         const { logGraphFocus } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/stack-graph-core.ts');
+        // Assert
         expect(() => logGraphFocus('test', undefined as never)).not.toThrow();
     });
 });

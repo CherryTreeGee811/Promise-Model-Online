@@ -960,6 +960,7 @@ describe('updateFilterSummary', () => {
     });
 
     it('shows loading text when rawTree is null', () => {
+        // Arrange
         graphState.rawTree = null;
         graphState.hasRendered = false;
         graphState.totalRenderableNodes = 0;

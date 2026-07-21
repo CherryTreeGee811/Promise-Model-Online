@@ -149,6 +149,7 @@ describe('setupAddChildForm', () => {
     });
 
     it('does not call onSuccess when not provided', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig();
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);

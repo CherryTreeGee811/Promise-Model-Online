@@ -304,6 +304,7 @@ describe('initNavEventDelegation', () => {
     });
 
     it('does nothing if #main-menu is missing', async () => {
+        // Arrange
         const { initNavEventDelegation } = await import('../../PromiseModelOnline.Client/wwwroot/js/navigation/router.ts');
         document.body.innerHTML = '';
         initNavEventDelegation(document.createElement('div'), document.createElement('div'));

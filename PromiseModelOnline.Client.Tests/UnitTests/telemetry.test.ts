@@ -574,6 +574,7 @@ describe('initTelemetry lifecycle', () => {
 
 describe('long task observation', () => {
   it('creates a PerformanceObserver for longtask type', () => {
+    // Arrange
     class MockObserver {
       static supportedEntryTypes = ['longtask'];
       observe = vi.fn();
@@ -592,6 +593,7 @@ describe('long task observation', () => {
   });
 
   it('skips when longtask is not in supportedEntryTypes', () => {
+    // Arrange
     class MockObserver {
       static supportedEntryTypes = ['mark', 'measure'];
       observe = vi.fn();

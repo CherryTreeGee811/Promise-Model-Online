@@ -83,9 +83,12 @@ describe('updateNotificationBadge', () => {
     });
 
     it('does nothing when badge element is missing', async () => {
+        // Arrange
         const { fetchUnreadNotifications } = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/api.ts');
         (fetchUnreadNotifications as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: 1 }]);
         const { updateNotificationBadge } = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/badge.ts');
+        // Act
+        // Assert
         await expect(updateNotificationBadge()).resolves.toBeUndefined();
     });
 

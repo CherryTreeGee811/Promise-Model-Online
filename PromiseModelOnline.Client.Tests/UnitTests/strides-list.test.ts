@@ -191,6 +191,7 @@ describe('handleMoveToBacklog', () => {
     });
 
     it('calls assignMomentToStride on confirm', async () => {
+        // Arrange
         mockAssignMomentToStride.mockResolvedValue({ sequenceNumber: 1, statement: 'Test', type: 'Story', status: 'Todo' });
         mockBuildGraphViewHref.mockReturnValue('/graph/moment-1');
 
@@ -206,6 +207,7 @@ describe('handleMoveToBacklog', () => {
     });
 
     it('sends flowId when button inside data-flow-id', async () => {
+        // Arrange
         mockAssignMomentToStride.mockResolvedValue({ sequenceNumber: 2, statement: 'Moment', type: 'Job', status: 'InProgress' });
         mockBuildGraphViewHref.mockReturnValue('/graph/moment-2');
 
@@ -233,6 +235,7 @@ describe('handleMoveToBacklog', () => {
     });
 
     it('shows toast on API error', async () => {
+        // Arrange
         mockAssignMomentToStride.mockRejectedValue(new Error('API error'));
 
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
@@ -299,6 +302,7 @@ describe('handleMoveToStride', () => {
     });
 
     it('calls assignMomentToStride on confirm', async () => {
+        // Arrange
         mockAssignMomentToStride.mockResolvedValue({ sequenceNumber: 1, statement: 'Test', type: 'Story', status: 'Todo' });
         mockBuildGraphViewHref.mockReturnValue('/graph/moment-1');
 
@@ -337,6 +341,7 @@ describe('handleMoveToStride', () => {
     });
 
     it('shows toast on API error', async () => {
+        // Arrange
         mockAssignMomentToStride.mockRejectedValue(new Error('API error'));
         mockBuildGraphViewHref.mockReturnValue('/graph/moment-1');
 

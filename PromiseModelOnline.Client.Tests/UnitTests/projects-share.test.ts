@@ -30,11 +30,14 @@ describe('loadSharePage', () => {
     });
 
     it('handles missing section element gracefully', async () => {
+        // Arrange
         document.body.innerHTML = '<span id="error-text"></span><span id="loading-text">Loading...</span>';
         mockGetPermissions.mockResolvedValue([]);
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: true });
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(mockGetPermissions).toHaveBeenCalled();
         });
         expect(document.querySelector('#permissions-section')).toBeNull();
@@ -356,13 +359,16 @@ describe('loadSharePage', () => {
         }
 
         it('opens autocomplete dropdown when search returns results', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([{ name: 'Alice', email: 'alice@test.com' }]);
             const emailInput = await openModalAndGetInput();
 
             emailInput.value = 'ali';
             emailInput.dispatchEvent(new Event('input'));
             await waitForDebounce();
+        // Act
 
+        // Assert
             expect(mockSearchUsers).toHaveBeenCalledWith('ali');
             const items = document.querySelectorAll('.comment-autocomplete__item');
             expect(items.length).toBe(1);
@@ -372,32 +378,39 @@ describe('loadSharePage', () => {
         });
 
         it('closes autocomplete when search returns no results', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([]);
             const emailInput = await openModalAndGetInput();
 
             emailInput.value = 'xyz';
             emailInput.dispatchEvent(new Event('input'));
             await waitForDebounce();
+        // Act
 
+        // Assert
             expect(mockSearchUsers).toHaveBeenCalledWith('xyz');
             const dropdown = document.querySelector('#invite-autocomplete')!;
             expect(dropdown.classList.contains('d-none')).toBe(true);
         });
 
         it('closes autocomplete when search API throws', async () => {
+        // Arrange
             mockSearchUsers.mockRejectedValue(new Error('network'));
             const emailInput = await openModalAndGetInput();
 
             emailInput.value = 'ali';
             emailInput.dispatchEvent(new Event('input'));
             await waitForDebounce();
+        // Act
 
+        // Assert
             expect(mockSearchUsers).toHaveBeenCalled();
             const dropdown = document.querySelector('#invite-autocomplete')!;
             expect(dropdown.classList.contains('d-none')).toBe(true);
         });
 
         it('closes autocomplete on empty input', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([{ name: 'Alice', email: 'alice@test.com' }]);
             const emailInput = await openModalAndGetInput();
 
@@ -406,6 +419,8 @@ describe('loadSharePage', () => {
             await waitForDebounce();
 
             let items = document.querySelectorAll('.comment-autocomplete__item');
+        // Act
+        // Assert
             expect(items.length).toBe(1);
 
             emailInput.value = '';
@@ -418,6 +433,7 @@ describe('loadSharePage', () => {
         });
 
         it('selects autocomplete item on mousedown', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([{ name: 'Alice', email: 'alice@test.com' }]);
             const emailInput = await openModalAndGetInput();
 
@@ -426,6 +442,8 @@ describe('loadSharePage', () => {
             await waitForDebounce();
 
             const items = document.querySelectorAll('.comment-autocomplete__item');
+        // Act
+        // Assert
             expect(items.length).toBe(1);
 
             const item = document.querySelector('.comment-autocomplete__item') as HTMLElement;
@@ -435,6 +453,7 @@ describe('loadSharePage', () => {
         });
 
         it('navigates autocomplete with ArrowDown and ArrowUp', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([
                 { name: 'Alice', email: 'alice@test.com' },
                 { name: 'Bob', email: 'bob@test.com' },
@@ -446,6 +465,8 @@ describe('loadSharePage', () => {
             await waitForDebounce();
 
             let items = document.querySelectorAll('.comment-autocomplete__item');
+        // Act
+        // Assert
             expect(items.length).toBe(2);
             expect(items[0].classList.contains('comment-autocomplete__item--highlight')).toBe(true);
             expect(items[1].classList.contains('comment-autocomplete__item--highlight')).toBe(false);
@@ -464,6 +485,7 @@ describe('loadSharePage', () => {
         });
 
         it('selects highlighted item with Enter', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([
                 { name: 'Alice', email: 'alice@test.com' },
                 { name: 'Bob', email: 'bob@test.com' },
@@ -475,6 +497,8 @@ describe('loadSharePage', () => {
             await waitForDebounce();
 
             let items = document.querySelectorAll('.comment-autocomplete__item');
+        // Act
+        // Assert
             expect(items.length).toBe(2);
 
             emailInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
@@ -484,6 +508,7 @@ describe('loadSharePage', () => {
         });
 
         it('closes autocomplete with Escape', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([{ name: 'Alice', email: 'alice@test.com' }]);
             const emailInput = await openModalAndGetInput();
 
@@ -492,6 +517,8 @@ describe('loadSharePage', () => {
             await waitForDebounce();
 
             let items = document.querySelectorAll('.comment-autocomplete__item');
+        // Act
+        // Assert
             expect(items.length).toBe(1);
 
             emailInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -501,6 +528,7 @@ describe('loadSharePage', () => {
         });
 
         it('selects highlighted item with Tab', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([{ name: 'Alice', email: 'alice@test.com' }]);
             const emailInput = await openModalAndGetInput();
 
@@ -509,6 +537,8 @@ describe('loadSharePage', () => {
             await waitForDebounce();
 
             let items = document.querySelectorAll('.comment-autocomplete__item');
+        // Act
+        // Assert
             expect(items.length).toBe(1);
 
             emailInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
@@ -517,6 +547,7 @@ describe('loadSharePage', () => {
         });
 
         it('closes autocomplete on blur when focus leaves dropdown', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([{ name: 'Alice', email: 'alice@test.com' }]);
             const emailInput = await openModalAndGetInput();
 
@@ -525,6 +556,8 @@ describe('loadSharePage', () => {
             await waitForDebounce();
 
             let items = document.querySelectorAll('.comment-autocomplete__item');
+        // Act
+        // Assert
             expect(items.length).toBe(1);
 
             emailInput.dispatchEvent(new Event('blur'));
@@ -536,6 +569,7 @@ describe('loadSharePage', () => {
         });
 
         it('keyboard does nothing when autocomplete is closed', async () => {
+        // Arrange
             mockSearchUsers.mockResolvedValue([]);
             const emailInput = await openModalAndGetInput();
 
@@ -543,19 +577,24 @@ describe('loadSharePage', () => {
             emailInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
             emailInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
             emailInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+        // Act
 
+        // Assert
             expect(mockSearchUsers).not.toHaveBeenCalled();
             const dropdown = document.querySelector('#invite-autocomplete')!;
             expect(dropdown.classList.contains('d-none')).toBe(true);
         });
 
         it('does not call inviteUser on submit with empty email', async () => {
+        // Arrange
             const emailInput = await openModalAndGetInput();
             emailInput.value = '';
 
             const form = document.querySelector('#invite-modal-form') as HTMLFormElement;
             form.dispatchEvent(new Event('submit'));
+        // Act
 
+        // Assert
             await expect(vi.waitFor(() => {
                 expect(mockInviteUser).not.toHaveBeenCalled();
             })).resolves.not.toThrow();
@@ -563,6 +602,7 @@ describe('loadSharePage', () => {
     });
 
     it('does not re-bind revoke button if already bound', async () => {
+        // Arrange
         mockGetPermissions.mockResolvedValue([
             { id: '99', userName: 'Charlie', level: 'View', status: 'Active' },
         ]);
@@ -570,6 +610,8 @@ describe('loadSharePage', () => {
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: true });
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(document.querySelector('.revoke-btn')).not.toBeNull();
         });
 
@@ -586,37 +628,47 @@ describe('loadSharePage', () => {
     });
 
     it('handles null permissions gracefully', async () => {
+        // Arrange
         mockGetPermissions.mockResolvedValue(null);
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: true });
         await vi.waitFor(() => {
             const section = document.querySelector('#permissions-section')!;
+        // Act
+        // Assert
             expect(section.textContent).toContain('No permissions configured');
         });
     });
 
     it('handles undefined permissions gracefully', async () => {
+        // Arrange
         mockGetPermissions.mockResolvedValue(undefined);
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: true });
         await vi.waitFor(() => {
             const section = document.querySelector('#permissions-section')!;
+        // Act
+        // Assert
             expect(section.textContent).toContain('No permissions configured');
         });
     });
 
     it('renders non-owner empty state without invite button', async () => {
+        // Arrange
         mockGetPermissions.mockResolvedValue(null);
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: false });
         await vi.waitFor(() => {
             const section = document.querySelector('#permissions-section')!;
+        // Act
+        // Assert
             expect(section.textContent).toContain('No permissions configured');
         });
         expect(document.querySelector('#empty-state-invite-btn')).toBeNull();
     });
 
     it('calls ensureRevokeModal when revoke button is clicked via existing modal', async () => {
+        // Arrange
         document.body.innerHTML += `
             <div class="modal fade" id="revoke-modal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
@@ -643,6 +695,8 @@ describe('loadSharePage', () => {
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: true });
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(document.querySelector('.revoke-btn')).not.toBeNull();
         });
         (document.querySelector('.revoke-btn') as HTMLButtonElement).click();
@@ -656,12 +710,15 @@ describe('loadSharePage', () => {
     });
 
     it('loads permissions on top invite button click', async () => {
+        // Arrange
         mockGetPermissions.mockResolvedValue([
             { id: '1', userName: 'Alice', level: 'Edit', status: 'Active' },
         ]);
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: true });
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(document.querySelector('#invite-btn-top')).not.toBeNull();
         });
         (document.querySelector('#invite-btn-top') as HTMLButtonElement).click();
@@ -671,11 +728,14 @@ describe('loadSharePage', () => {
     });
 
     it('shows loading element and hides on permissions load', async () => {
+        // Arrange
         mockGetPermissions.mockResolvedValue([]);
         const { loadSharePage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/share.ts');
         loadSharePage('o', 'p', document.createElement('div'), { isOwner: true });
         await vi.waitFor(() => {
             const loadingEl = document.querySelector('#loading-text') as HTMLElement;
+        // Act
+        // Assert
             expect(loadingEl.classList.contains('d-none')).toBe(true);
         });
     });

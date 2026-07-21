@@ -693,6 +693,7 @@ describe('description edit handler', () => {
     });
 
     it('shows error toast when stride assignment fails', async () => {
+        // Arrange
         mockGetMoment.mockResolvedValue(defaultMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockGetStrides.mockRejectedValue(new Error('strides fail'));
@@ -700,15 +701,20 @@ describe('description edit handler', () => {
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(mockGetStrides).toHaveBeenCalled();
         });
     });
 
     it('gracefully handles getStrides API failure', async () => {
+        // Arrange
         mockGetMoment.mockResolvedValue(defaultMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockGetStrides.mockRejectedValue(new Error('strides fail'));
         mockMountDetailStackGraph.mockResolvedValue(undefined);
+        // Act
+        // Assert
         await expect(async () => {
             const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
             await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
@@ -1000,11 +1006,14 @@ describe('task completion toggle', () => {
 
 describe('loadMomentDetail - early return on null moment', () => {
     it('returns early when getMoment returns null', async () => {
+        // Arrange
         mockGetMoment.mockResolvedValue(null);
 
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        // Act
 
+        // Assert
         expect(mockLoadEntityLookupMap).not.toHaveBeenCalled();
         expect(mockMountDetailStackGraph).not.toHaveBeenCalled();
     });
@@ -1012,6 +1021,7 @@ describe('loadMomentDetail - early return on null moment', () => {
 
 describe('handleTaskAddClick - empty name edge case', () => {
     it('shows Name is required when task name is empty', async () => {
+        // Arrange
         mockGetMoment.mockResolvedValue(defaultMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -1023,6 +1033,8 @@ describe('handleTaskAddClick - empty name edge case', () => {
         submitBtn.click();
 
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(msg.textContent).toBe('Name is required.');
         });
     });
@@ -1030,6 +1042,7 @@ describe('handleTaskAddClick - empty name edge case', () => {
 
 describe('applyCheckResult - null API response', () => {
     it('does not throw when updateTaskCompletion returns falsy', async () => {
+        // Arrange
         mockUpdateTaskCompletion.mockResolvedValue(null);
         mockGetMoment.mockResolvedValue(defaultMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -1042,6 +1055,8 @@ describe('applyCheckResult - null API response', () => {
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(checkbox.checked).toBe(true);
             expect(mockShowToast).not.toHaveBeenCalled();
         });
@@ -1050,6 +1065,7 @@ describe('applyCheckResult - null API response', () => {
 
 describe('renderMomentTasks - renderItemRow branches', () => {
     it('renders completed task row with checked checkbox and Job type', async () => {
+        // Arrange
         const momentWithCompleted = {
             ...defaultMoment,
             type: 'Job',
@@ -1083,6 +1099,8 @@ describe('renderMomentTasks - renderItemRow branches', () => {
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const checkbox = document.querySelector('.moment-task-complete-checkbox') as HTMLInputElement;
+        // Act
+        // Assert
         expect(checkbox.checked).toBe(true);
         const label = checkbox.closest('label')!;
         const span = label.querySelector('span');
@@ -1094,18 +1112,22 @@ describe('renderMomentTasks - renderItemRow branches', () => {
 
 describe('renderMomentTasks - early return on null tbody', () => {
     it('returns early when renderTableWithInlineAddRow returns null', async () => {
+        // Arrange
         mockGetMoment.mockResolvedValue(defaultMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
         mockRenderTableWithInlineAddRow.mockImplementationOnce(() => null);
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+        // Act
+        // Assert
         expect(mockCreateCommentAutocomplete).toHaveBeenCalledTimes(1);
     });
 });
 
 describe('loadMomentDetail - initial type Job branch', () => {
     it('sets type select to Job when moment type is Job', async () => {
+        // Arrange
         const jobMoment = { ...defaultMoment, type: 'Job' };
         mockGetMoment.mockResolvedValue(jobMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -1115,12 +1137,15 @@ describe('loadMomentDetail - initial type Job branch', () => {
         await loadMomentDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const typeSelect = document.querySelector('#moment-type-select') as HTMLSelectElement;
+        // Act
+        // Assert
         expect(typeSelect.value).toBe('Job');
     });
 });
 
 describe('status change - completedAt falsy', () => {
     it('sets dash in completed cell when completedAt is empty', async () => {
+        // Arrange
         mockUpdateMomentStatus.mockResolvedValue({ status: 'InProgress', statusColor: 'blue' });
         mockGetMoment.mockResolvedValue(defaultMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -1135,6 +1160,8 @@ describe('status change - completedAt falsy', () => {
 
         await vi.waitFor(() => {
             const completedCell = document.querySelector('#moment-detail-content .detail-table tr:last-child td')!;
+        // Act
+        // Assert
             expect(completedCell.textContent).toBe('\u2013');
         });
     });
@@ -1142,6 +1169,7 @@ describe('status change - completedAt falsy', () => {
 
 describe('handleTaskAddClick - API failure', () => {
     it('shows error message when createTask fails', async () => {
+        // Arrange
         mockCreateTask.mockRejectedValue(new Error('network error'));
         mockGetMoment.mockResolvedValue(defaultMoment);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -1158,6 +1186,8 @@ describe('handleTaskAddClick - API failure', () => {
         submitBtn.click();
 
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(msg.textContent).toBe('Failed to add task.');
         });
 

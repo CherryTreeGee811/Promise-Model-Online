@@ -755,6 +755,7 @@ describe('buildMomentFormElement', () => {
     });
 
     it('returns early when statement is empty', async () => {
+        // Arrange
         mockApiFetch.mockResolvedValue({ ok: true, status: 204 });
         const { buildMomentFormElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const closeMenus = vi.fn();
@@ -771,11 +772,14 @@ describe('buildMomentFormElement', () => {
 
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(mockApiFetch).not.toHaveBeenCalled();
     });
 
     it('submit sends effortEstimate and assignedStrideId when selected', async () => {
+        // Arrange
         mockApiFetch.mockResolvedValue({ ok: true, status: 204 });
         const { buildMomentFormElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const closeMenus = vi.fn();
@@ -793,7 +797,9 @@ describe('buildMomentFormElement', () => {
 
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(mockApiFetch).toHaveBeenCalled();
         const callBody = JSON.parse(mockApiFetch.mock.calls[0][1].body);
         expect(callBody.effortEstimate).toBe('M');
@@ -802,6 +808,7 @@ describe('buildMomentFormElement', () => {
     });
 
     it('submit sends undefined effortEstimate when dash selected', async () => {
+        // Arrange
         mockApiFetch.mockResolvedValue({ ok: true, status: 204 });
         const { buildMomentFormElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const closeMenus = vi.fn();
@@ -821,11 +828,14 @@ describe('buildMomentFormElement', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
 
         const callBody = JSON.parse(mockApiFetch.mock.calls[0][1].body);
+        // Act
+        // Assert
         expect(callBody.effortEstimate).toBeUndefined();
         expect(callBody.assignedStrideId).toBeUndefined();
     });
 
     it('submit handler re-enables button on api error', async () => {
+        // Arrange
         mockApiFetch.mockRejectedValue(new Error('API Error'));
         const { buildMomentFormElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const closeMenus = vi.fn();
@@ -849,6 +859,8 @@ describe('buildMomentFormElement', () => {
         process.removeListener('unhandledRejection', rejectionHandler);
 
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        // Act
+        // Assert
         expect(submitBtn.disabled).toBe(false);
         expect(submitBtn.textContent).toBe('Create Moment');
     });
@@ -914,6 +926,7 @@ describe('createGraphContextMenuController', () => {
     });
 
     it('open method shows tippy with built menu actions', async () => {
+        // Arrange
         const showFn = vi.fn();
         const setPropsFn = vi.fn();
         (globalThis as Record<string, unknown>).tippy = vi.fn(() => ({
@@ -931,11 +944,14 @@ describe('createGraphContextMenuController', () => {
         const event = new MouseEvent('contextmenu', { clientX: 100, clientY: 200 });
 
         controller.open(event, { nodeType: 'flow', childCount: 0, payload: { id: 42 } });
+        // Act
 
+        // Assert
         expect(showFn).toHaveBeenCalled();
     });
 
     it('open creates menu with buildMenuActions and buildMenuElement', async () => {
+        // Arrange
         const showFn = vi.fn();
         const setContentFn = vi.fn();
         (globalThis as Record<string, unknown>).tippy = vi.fn(() => ({
@@ -957,11 +973,14 @@ describe('createGraphContextMenuController', () => {
         const event = new MouseEvent('contextmenu', { clientX: 50, clientY: 75 });
 
         controller.open(event, { nodeType: 'promise', childCount: 3, payload: { id: 99 } });
+        // Act
 
+        // Assert
         expect(showFn).toHaveBeenCalled();
     });
 
     it('open handles missing event properties', async () => {
+        // Arrange
         const showFn = vi.fn();
         (globalThis as Record<string, unknown>).tippy = vi.fn(() => ({
             setProps: vi.fn(),
@@ -977,11 +996,14 @@ describe('createGraphContextMenuController', () => {
         });
 
         controller.open(undefined as unknown as MouseEvent, { nodeType: 'flow', childCount: 0 });
+        // Act
 
+        // Assert
         expect(showFn).toHaveBeenCalled();
     });
 
     it('tippy receives onHidden callback for formTippy', async () => {
+        // Arrange
         const tippyOptsList: Array<Record<string, unknown>> = [];
         (globalThis as Record<string, unknown>).tippy = vi.fn((_ref: unknown, opts: Record<string, unknown>) => {
             tippyOptsList.push(opts);
@@ -995,13 +1017,16 @@ describe('createGraphContextMenuController', () => {
         });
         const { createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({});
+        // Act
 
+        // Assert
         expect(tippyOptsList.length).toBe(2);
         expect(typeof tippyOptsList[0].onHidden).toBe('function');
         expect(typeof tippyOptsList[1].onHidden).toBe('function');
     });
 
     it('appendTarget returns body when no fullscreen viewport', async () => {
+        // Arrange
         const tippyOptsList: Array<Record<string, unknown>> = [];
         (globalThis as Record<string, unknown>).tippy = vi.fn((_ref: unknown, opts: Record<string, unknown>) => {
             tippyOptsList.push(opts);
@@ -1018,10 +1043,13 @@ describe('createGraphContextMenuController', () => {
 
         const appendToFn = tippyOptsList[0].appendTo as () => HTMLElement;
         const target = appendToFn();
+        // Act
+        // Assert
         expect(target).toBe(document.body);
     });
 
     it('appendTarget returns viewport when it is fullscreen element', async () => {
+        // Arrange
         const viewport = document.createElement('div');
         viewport.id = 'graph-viewport';
         document.body.append(viewport);
@@ -1043,6 +1071,8 @@ describe('createGraphContextMenuController', () => {
 
         const appendToFn = tippyOptsList[0].appendTo as () => HTMLElement;
         const target = appendToFn();
+        // Act
+        // Assert
         expect(target).toBe(viewport);
 
         viewport.remove();
@@ -1050,6 +1080,7 @@ describe('createGraphContextMenuController', () => {
     });
 
     it('formTippy onHidden resets its content', async () => {
+        // Arrange
         const tippyOptsList: Array<Record<string, unknown>> = [];
         (globalThis as Record<string, unknown>).tippy = vi.fn((_ref: unknown, opts: Record<string, unknown>) => {
             tippyOptsList.push(opts);
@@ -1067,10 +1098,13 @@ describe('createGraphContextMenuController', () => {
         const onHidden = tippyOptsList[0].onHidden as (instance: { setContent: (c: HTMLElement) => void }) => void;
         const setContentMock = vi.fn();
         onHidden({ setContent: setContentMock });
+        // Act
+        // Assert
         expect(setContentMock).toHaveBeenCalled();
     });
 
     it('instance onHidden clears menuContent children', async () => {
+        // Arrange
         const tippyOptsList: Array<Record<string, unknown>> = [];
         (globalThis as Record<string, unknown>).tippy = vi.fn((_ref: unknown, opts: Record<string, unknown>) => {
             tippyOptsList.push(opts);
@@ -1090,6 +1124,7 @@ describe('createGraphContextMenuController', () => {
     });
 
     it('instance getReferenceClientRect returns referenceRect', async () => {
+        // Arrange
         const tippyOptsList: Array<Record<string, unknown>> = [];
         (globalThis as Record<string, unknown>).tippy = vi.fn((_ref: unknown, opts: Record<string, unknown>) => {
             tippyOptsList.push(opts);
@@ -1106,11 +1141,14 @@ describe('createGraphContextMenuController', () => {
 
         const getRect = tippyOptsList[1].getReferenceClientRect as () => DOMRect;
         const rect = getRect();
+        // Act
+        // Assert
         expect(rect).toBeInstanceOf(DOMRect);
         expect(rect.width).toBe(0);
     });
 
     it('hide method of controller calls tippy hide', async () => {
+        // Arrange
         const formHide = vi.fn();
         const instanceHide = vi.fn();
         (globalThis as Record<string, unknown>).tippy = vi.fn(() => ({
@@ -1123,10 +1161,13 @@ describe('createGraphContextMenuController', () => {
         const { createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const controller = createGraphContextMenuController({});
         controller.hide();
+        // Act
+        // Assert
         expect(instanceHide).toHaveBeenCalled();
     });
 
     it('clicking create-child in menu triggers openCreateForm and openForm', async () => {
+        // Arrange
         let capturedContent: HTMLElement | undefined;
         (globalThis as Record<string, unknown>).tippy = vi.fn((_ref: unknown, opts: Record<string, unknown>) => {
             if (opts.content instanceof HTMLElement) {
@@ -1147,7 +1188,9 @@ describe('createGraphContextMenuController', () => {
         });
 
         controller.open(new MouseEvent('contextmenu', { clientX: 100, clientY: 100 }), { nodeType: 'flow', childCount: 0, payload: { id: 1 } });
+        // Act
 
+        // Assert
         expect(capturedContent).toBeDefined();
         const createBtn = capturedContent!.querySelector('button')!;
         expect(createBtn.textContent).toBe('Create New Moment');
@@ -1156,6 +1199,7 @@ describe('createGraphContextMenuController', () => {
     });
 
     it('clicking change-status in menu triggers openMomentStatusForm and openForm', async () => {
+        // Arrange
         const momentApi = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/api.ts');
         vi.mocked(momentApi.updateMomentStatus).mockResolvedValue(undefined);
         let capturedContent: HTMLElement | undefined;
@@ -1178,7 +1222,9 @@ describe('createGraphContextMenuController', () => {
         });
 
         controller.open(new MouseEvent('contextmenu', { clientX: 100, clientY: 100 }), { nodeType: 'moment', childCount: 0, payload: { id: 1, sequenceNumber: 5 } });
+        // Act
 
+        // Assert
         expect(capturedContent).toBeDefined();
         const statusBtn = Array.from(capturedContent!.querySelectorAll('button')).find(b => b.textContent === 'Change Status')!;
         expect(statusBtn).toBeDefined();
@@ -1187,6 +1233,7 @@ describe('createGraphContextMenuController', () => {
     });
 
     it('clicking change-status with null sequenceNumber returns early in openForm', async () => {
+        // Arrange
         let capturedContent: HTMLElement | undefined;
         const setPropsCalls: Array<vi.Mock> = [];
         (globalThis as Record<string, unknown>).tippy = vi.fn((_ref: unknown, opts: Record<string, unknown>) => {
@@ -1214,11 +1261,14 @@ describe('createGraphContextMenuController', () => {
         const statusBtn = Array.from(capturedContent!.querySelectorAll('button')).find(b => b.textContent === 'Change Status')!;
         statusBtn.click();
         await new Promise(resolve => setTimeout(resolve, 10));
+        // Act
 
+        // Assert
         expect(setPropsCalls[0]).not.toHaveBeenCalled();
     });
 
     it('setProps getReferenceClientRect invokes arrow function', async () => {
+        // Arrange
         let capturedSetProps: ((props: { getReferenceClientRect?: () => DOMRect }) => void) | undefined;
         const instanceSetProps = vi.fn((props: Record<string, unknown>) => {
             if (props.getReferenceClientRect) {
@@ -1236,15 +1286,20 @@ describe('createGraphContextMenuController', () => {
         const controller = createGraphContextMenuController({ owner: 'o', project: 'p' });
 
         controller.open(new MouseEvent('contextmenu', { clientX: 50, clientY: 50 }), { nodeType: 'flow', childCount: 0 });
+        // Act
+        // Assert
         expect(instanceSetProps).toHaveBeenCalled();
     });
 });
 
 describe('getCreateActionMeta', () => {
     it('returns Promise metadata for root', async () => {
+        // Arrange
         const { createGraphContextMenuController, getCreateActionMeta } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'test-owner', project: 'test-project' });
         const result = getCreateActionMeta({ nodeType: 'root' });
+        // Act
+        // Assert
         expect(result).toEqual({
             entityLabel: 'Promise',
             endpoint: '/api/projects/test-owner/test-project/promises/create',
@@ -1253,8 +1308,11 @@ describe('getCreateActionMeta', () => {
     });
 
     it('returns Epic metadata for promise', async () => {
+        // Arrange
         const { getCreateActionMeta } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateActionMeta({ nodeType: 'promise' });
+        // Act
+        // Assert
         expect(result).toEqual({
             entityLabel: 'Epic',
             endpoint: '/api/projects/test-owner/test-project/epics/create',
@@ -1263,8 +1321,11 @@ describe('getCreateActionMeta', () => {
     });
 
     it('returns Journey metadata for epic', async () => {
+        // Arrange
         const { getCreateActionMeta } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateActionMeta({ nodeType: 'epic' });
+        // Act
+        // Assert
         expect(result).toEqual({
             entityLabel: 'Journey',
             endpoint: '/api/projects/test-owner/test-project/journeys/create',
@@ -1273,8 +1334,11 @@ describe('getCreateActionMeta', () => {
     });
 
     it('returns Flow metadata for journey', async () => {
+        // Arrange
         const { getCreateActionMeta } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateActionMeta({ nodeType: 'journey' });
+        // Act
+        // Assert
         expect(result).toEqual({
             entityLabel: 'Flow',
             endpoint: '/api/projects/test-owner/test-project/flows/create',
@@ -1283,8 +1347,11 @@ describe('getCreateActionMeta', () => {
     });
 
     it('returns Moment metadata for flow', async () => {
+        // Arrange
         const { getCreateActionMeta } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateActionMeta({ nodeType: 'flow' });
+        // Act
+        // Assert
         expect(result).toEqual({
             entityLabel: 'Moment',
             endpoint: '/api/projects/test-owner/test-project/moments/create',
@@ -1293,60 +1360,87 @@ describe('getCreateActionMeta', () => {
     });
 
     it('returns undefined for unknown node type', async () => {
+        // Arrange
         const { getCreateActionMeta } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateActionMeta({ nodeType: 'unknown' });
+        // Act
+        // Assert
         expect(result).toBeUndefined();
     });
 });
 
 describe('getCreateFormDefaults', () => {
     it('returns defaults for root', async () => {
+        // Arrange
         const { getCreateFormDefaults } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateFormDefaults({ nodeType: 'root', childCount: 0 });
+        // Act
+        // Assert
         expect(result).toEqual({ statement: 'New Promise', description: '', displayOrder: 1 });
     });
 
     it('returns defaults for promise', async () => {
+        // Arrange
         const { getCreateFormDefaults } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateFormDefaults({ nodeType: 'promise', childCount: 2 });
+        // Act
+        // Assert
         expect(result).toEqual({ statement: 'New Epic', description: '', displayOrder: 3 });
     });
 
     it('returns defaults for epic', async () => {
+        // Arrange
         const { getCreateFormDefaults } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateFormDefaults({ nodeType: 'epic', childCount: 5 });
+        // Act
+        // Assert
         expect(result).toEqual({ statement: 'New Journey', description: '', displayOrder: 6 });
     });
 
     it('returns defaults for journey', async () => {
+        // Arrange
         const { getCreateFormDefaults } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateFormDefaults({ nodeType: 'journey', childCount: 1 });
+        // Act
+        // Assert
         expect(result).toEqual({ statement: 'New Flow', description: '', displayOrder: 2 });
     });
 
     it('returns defaults for flow', async () => {
+        // Arrange
         const { getCreateFormDefaults } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateFormDefaults({ nodeType: 'flow', childCount: 3 });
+        // Act
+        // Assert
         expect(result).toEqual({ statement: 'New Moment', description: '', displayOrder: 4 });
     });
 
     it('uses 0 for null childCount', async () => {
+        // Arrange
         const { getCreateFormDefaults } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateFormDefaults({ nodeType: 'flow', childCount: null });
+        // Act
+        // Assert
         expect(result).toEqual({ statement: 'New Moment', description: '', displayOrder: 1 });
     });
 
     it('returns undefined for unknown node type', async () => {
+        // Arrange
         const { getCreateFormDefaults } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getCreateFormDefaults({ nodeType: 'unknown' });
+        // Act
+        // Assert
         expect(result).toBeUndefined();
     });
 });
 
 describe('createInputField', () => {
     it('creates text input field by default', async () => {
+        // Arrange
         const { createInputField } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const { field, input } = createInputField({ name: 'test', label: 'Test Label' });
+        // Act
+        // Assert
         expect(field).toBeInstanceOf(HTMLLabelElement);
         expect(input).toBeInstanceOf(HTMLInputElement);
         expect((input as HTMLInputElement).type).toBe('text');
@@ -1355,8 +1449,11 @@ describe('createInputField', () => {
     });
 
     it('creates textarea field', async () => {
+        // Arrange
         const { createInputField } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const { field, input } = createInputField({ name: 'desc', label: 'Desc', type: 'textarea', rows: 5, value: 'val', placeholder: 'ph' });
+        // Act
+        // Assert
         expect(input).toBeInstanceOf(HTMLTextAreaElement);
         expect((input as HTMLTextAreaElement).rows).toBe(5);
         expect(input.value).toBe('val');
@@ -1364,8 +1461,11 @@ describe('createInputField', () => {
     });
 
     it('applies custom value and placeholder', async () => {
+        // Arrange
         const { createInputField } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const { input } = createInputField({ name: 'n', label: 'L', value: 'initial', placeholder: 'enter here' });
+        // Act
+        // Assert
         expect(input.value).toBe('initial');
         expect(input.placeholder).toBe('enter here');
     });
@@ -1373,9 +1473,12 @@ describe('createInputField', () => {
 
 describe('createSelectField', () => {
     it('creates select with options', async () => {
+        // Arrange
         const { createSelectField } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const options = [{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }];
         const { field, select } = createSelectField({ name: 'sel', label: 'Select', options });
+        // Act
+        // Assert
         expect(select).toBeInstanceOf(HTMLSelectElement);
         expect(select.options.length).toBe(2);
         expect(select.options[0].textContent).toBe('Option A');
@@ -1383,23 +1486,32 @@ describe('createSelectField', () => {
     });
 
     it('preselects matching option', async () => {
+        // Arrange
         const { createSelectField } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const options = [{ value: 'x', label: 'X' }, { value: 'y', label: 'Y' }];
         const { select } = createSelectField({ name: 's', label: 'S', value: 'y', options });
+        // Act
+        // Assert
         expect(select.options[1].selected).toBe(true);
     });
 
     it('handles empty options', async () => {
+        // Arrange
         const { createSelectField } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const { select } = createSelectField({ name: 'e', label: 'E' });
+        // Act
+        // Assert
         expect(select.options.length).toBe(0);
     });
 });
 
 describe('getMomentTypeOptions', () => {
     it('returns Story and Job options', async () => {
+        // Arrange
         const { getMomentTypeOptions } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const options = getMomentTypeOptions();
+        // Act
+        // Assert
         expect(options).toEqual([
             { value: 'Story', label: 'Story' },
             { value: 'Job', label: 'Job' },
@@ -1409,100 +1521,148 @@ describe('getMomentTypeOptions', () => {
 
 describe('getMomentStatusValue', () => {
     it('returns canonical status from payload.status', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { status: 'Done' } });
+        // Act
+        // Assert
         expect(result).toBe('Done');
     });
 
     it('returns canonical status from payload.Status (capitalized)', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { Status: 'inprogress' } });
+        // Act
+        // Assert
         expect(result).toBe('InProgress');
     });
 
     it('maps statusColor green to Done', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'green' } });
+        // Act
+        // Assert
         expect(result).toBe('Done');
     });
 
     it('maps statusColor orange to InProgress', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'orange' } });
+        // Act
+        // Assert
         expect(result).toBe('InProgress');
     });
 
     it('maps statusColor red to Todo', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'red' } });
+        // Act
+        // Assert
         expect(result).toBe('Todo');
     });
 
     it('maps statusColor black to Blocked', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'black' } });
+        // Act
+        // Assert
         expect(result).toBe('Blocked');
     });
 
     it('defaults to Todo for unknown color', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'purple' } });
+        // Act
+        // Assert
         expect(result).toBe('Todo');
     });
 
     it('handles StatusColor with camelCase', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { StatusColor: 'amber' } });
+        // Act
+        // Assert
         expect(result).toBe('InProgress');
     });
 
     it('returns Todo for empty payload', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({});
+        // Act
+        // Assert
         expect(result).toBe('Todo');
     });
 
     it('returns Todo when payload is absent', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ nodeType: 'moment' });
+        // Act
+        // Assert
         expect(result).toBe('Todo');
     });
 
     it('maps statusColor done (lowercase) to Done', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'done' } });
+        // Act
+        // Assert
         expect(result).toBe('Done');
     });
 
     it('maps statusColor blocked to Blocked', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'blocked' } });
+        // Act
+        // Assert
         expect(result).toBe('Blocked');
     });
 
     it('maps statusColor in-progress to InProgress', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'in-progress' } });
+        // Act
+        // Assert
         expect(result).toBe('InProgress');
     });
 
     it('maps statusColor yellow to InProgress', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { statusColor: 'yellow' } });
+        // Act
+        // Assert
         expect(result).toBe('InProgress');
     });
 
     it('prefers payload.status over statusColor', async () => {
+        // Arrange
         const { getMomentStatusValue } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = getMomentStatusValue({ payload: { status: 'Blocked', statusColor: 'green' } });
+        // Act
+        // Assert
         expect(result).toBe('Blocked');
     });
 });
 
 describe('getMomentEstimateOptions', () => {
     it('returns estimate options with dash and sizes', async () => {
+        // Arrange
         const { getMomentEstimateOptions } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const options = getMomentEstimateOptions();
+        // Act
+        // Assert
         expect(options).toEqual([
             { value: '-', label: '-' },
             { value: 'XS', label: 'XS' },
@@ -1518,32 +1678,44 @@ describe('getMomentEstimateOptions', () => {
 
 describe('getStrideOptions', () => {
     it('returns Backlog-only options when no strides', async () => {
+        // Arrange
         const { getStrideOptions } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const options = getStrideOptions();
+        // Act
+        // Assert
         expect(options).toEqual([{ value: '', label: 'Backlog' }]);
     });
 
     it('includes stride entries with names', async () => {
+        // Arrange
         const { getStrideOptions } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const options = getStrideOptions([{ id: 1, name: 'Sprint 1' }, { id: 2, name: 'Sprint 2' }]);
+        // Act
+        // Assert
         expect(options).toHaveLength(3);
         expect(options[1]).toEqual({ value: '1', label: 'Stride #1 - Sprint 1' });
         expect(options[2]).toEqual({ value: '2', label: 'Stride #2 - Sprint 2' });
     });
 
     it('includes stride entries without names', async () => {
+        // Arrange
         const { getStrideOptions } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const options = getStrideOptions([{ id: 5 }]);
+        // Act
+        // Assert
         expect(options[1]).toEqual({ value: '5', label: 'Stride #5' });
     });
 });
 
 describe('createFormActionsBar', () => {
     it('creates cancel and submit buttons', async () => {
+        // Arrange
         const { createFormActionsBar } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const closeMenus = vi.fn();
         const { cancelButton, submitButton } = createFormActionsBar(closeMenus, 'Submit Me');
+        // Act
 
+        // Assert
         expect(cancelButton.type).toBe('button');
         expect(cancelButton.textContent).toBe('Cancel');
         expect(cancelButton.className).toContain('graph-context-menu-form__button--secondary');
@@ -1553,47 +1725,60 @@ describe('createFormActionsBar', () => {
     });
 
     it('cancel button triggers closeMenus on click', async () => {
+        // Arrange
         const { createFormActionsBar } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const closeMenus = vi.fn();
         const { cancelButton } = createFormActionsBar(closeMenus, 'Submit');
 
         cancelButton.click();
+        // Act
 
+        // Assert
         expect(closeMenus).toHaveBeenCalled();
     });
 });
 
 describe('buildMomentStatusFormElement', () => {
     it('returns undefined when sequenceNumber is null', async () => {
+        // Arrange
         const { buildMomentStatusFormElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = buildMomentStatusFormElement(
             { nodeType: 'moment', payload: { sequenceNumber: null } },
             undefined, vi.fn(),
         );
+        // Act
+        // Assert
         expect(result).toBeUndefined();
     });
 
     it('returns form when payload is missing (sequenceNumber is undefined, not null)', async () => {
+        // Arrange
         const { buildMomentStatusFormElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const result = buildMomentStatusFormElement(
             { nodeType: 'moment' },
             undefined, vi.fn(),
         );
+        // Act
+        // Assert
         expect(result).toBeInstanceOf(HTMLFormElement);
     });
 
     it('returns form element with status field', async () => {
+        // Arrange
         const { buildMomentStatusFormElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const form = buildMomentStatusFormElement(
             { nodeType: 'moment', payload: { sequenceNumber: 42, flowId: 7 } },
             undefined, vi.fn(),
         );
+        // Act
+        // Assert
         expect(form).toBeInstanceOf(HTMLFormElement);
         expect(form!.querySelector('[name="status"]')).toBeTruthy();
         expect(form!.querySelector('button[type="submit"]')?.textContent).toBe('Save Status');
     });
 
     it('submit handler calls updateMomentStatus and triggers callbacks', async () => {
+        // Arrange
         const momentApi = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/api.ts');
         vi.mocked(momentApi.updateMomentStatus).mockResolvedValue(undefined);
         const { buildMomentStatusFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
@@ -1608,13 +1793,16 @@ describe('buildMomentStatusFormElement', () => {
 
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(momentApi.updateMomentStatus).toHaveBeenCalledWith('o', 'p', 42, 'Todo', 7);
         expect(closeMenus).toHaveBeenCalled();
         expect(onGraphMutated).toHaveBeenCalled();
     });
 
     it('cancels via cancel button click', async () => {
+        // Arrange
         const { buildMomentStatusFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
         const closeMenus = vi.fn();
@@ -1626,11 +1814,14 @@ describe('buildMomentStatusFormElement', () => {
 
         const cancelBtn = form.querySelector('button[type="button"]') as HTMLButtonElement;
         cancelBtn.click();
+        // Act
 
+        // Assert
         expect(closeMenus).toHaveBeenCalled();
     });
 
     it('submit handler re-enables button on error', async () => {
+        // Arrange
         const momentApi = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/api.ts');
         vi.mocked(momentApi.updateMomentStatus).mockRejectedValue(new Error('Fail'));
         const { buildMomentStatusFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
@@ -1651,6 +1842,8 @@ describe('buildMomentStatusFormElement', () => {
         process.removeListener('unhandledRejection', rejectionHandler);
 
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        // Act
+        // Assert
         expect(submitBtn.disabled).toBe(false);
         expect(submitBtn.textContent).toBe('Save Status');
     });
@@ -1658,32 +1851,41 @@ describe('buildMomentStatusFormElement', () => {
 
 describe('buildCreateFormElement', () => {
     it('returns undefined for unknown node type', async () => {
+        // Arrange
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
         const result = buildCreateFormElement(
             { nodeType: 'unknown' }, '', '', undefined, undefined, vi.fn(),
         );
+        // Act
+        // Assert
         expect(result).toBeUndefined();
     });
 
     it('returns Moment form for flow nodes (delegates to buildMomentFormElement)', async () => {
+        // Arrange
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
         const form = buildCreateFormElement(
             { nodeType: 'flow', childCount: 0, payload: { id: 42 } },
             '', '', () => [], undefined, vi.fn(),
         );
+        // Act
+        // Assert
         expect(form).toBeInstanceOf(HTMLFormElement);
         expect(form!.querySelector('[name="type"]')).toBeTruthy();
     });
 
     it('returns generic Create form for promise nodes', async () => {
+        // Arrange
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
         const form = buildCreateFormElement(
             { nodeType: 'promise', childCount: 0, payload: { id: 50 } },
             'owner', 'project', undefined, undefined, vi.fn(),
         );
+        // Act
+        // Assert
         expect(form).toBeInstanceOf(HTMLFormElement);
         expect(form!.querySelector('[name="statement"]')).toBeTruthy();
         expect(form!.querySelector('[name="description"]')).toBeTruthy();
@@ -1691,6 +1893,7 @@ describe('buildCreateFormElement', () => {
     });
 
     it('generic form submit creates entity and triggers callbacks', async () => {
+        // Arrange
         mockApiFetch.mockResolvedValue({ ok: true, status: 204 });
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
@@ -1705,13 +1908,16 @@ describe('buildCreateFormElement', () => {
 
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(mockApiFetch).toHaveBeenCalled();
         expect(closeMenus).toHaveBeenCalled();
         expect(onGraphMutated).toHaveBeenCalled();
     });
 
     it('generic form create for root node includes projectId in endpoint', async () => {
+        // Arrange
         mockApiFetch.mockResolvedValue({ ok: true, status: 204 });
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
@@ -1725,11 +1931,14 @@ describe('buildCreateFormElement', () => {
 
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(mockApiFetch).toHaveBeenCalled();
     });
 
     it('generic form returns early with empty statement', async () => {
+        // Arrange
         mockApiFetch.mockResolvedValue({ ok: true, status: 204 });
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
@@ -1743,11 +1952,14 @@ describe('buildCreateFormElement', () => {
 
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(mockApiFetch).not.toHaveBeenCalled();
     });
 
     it('generic form cancel button triggers closeMenus', async () => {
+        // Arrange
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
         const closeMenus = vi.fn();
@@ -1759,11 +1971,14 @@ describe('buildCreateFormElement', () => {
 
         const cancelBtn = form.querySelector('button[type="button"]') as HTMLButtonElement;
         cancelBtn.click();
+        // Act
 
+        // Assert
         expect(closeMenus).toHaveBeenCalled();
     });
 
     it('generic form sets parentField for non-root nodes', async () => {
+        // Arrange
         mockApiFetch.mockResolvedValue({ ok: true, status: 204 });
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
@@ -1777,13 +1992,16 @@ describe('buildCreateFormElement', () => {
 
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(mockApiFetch).toHaveBeenCalled();
         const callBody = JSON.parse(mockApiFetch.mock.calls[0][1].body);
         expect(callBody.productPromiseId).toBe(50);
     });
 
     it('generic form submit re-enables on api error', async () => {
+        // Arrange
         mockApiFetch.mockRejectedValue(new Error('Network error'));
         const { buildCreateFormElement, createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         createGraphContextMenuController({ owner: 'o', project: 'p' });
@@ -1803,49 +2021,61 @@ describe('buildCreateFormElement', () => {
         await new Promise(resolve => setTimeout(resolve, 50));
 
         process.removeListener('unhandledRejection', rejectionHandler);
+        // Act
 
+        // Assert
         expect(mockApiFetch).toHaveBeenCalled();
     });
 });
 
 describe('buildMenuElement', () => {
     it('builds menu div with action buttons', async () => {
+        // Arrange
         const { buildMenuElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const actions = [
             { id: 'a1', label: 'Action 1', danger: false, handler: vi.fn() },
             { id: 'a2', label: 'Action 2', danger: false, handler: vi.fn() },
         ];
         const menu = buildMenuElement(actions);
+        // Act
 
+        // Assert
         expect(menu.className).toBe('graph-context-menu');
         expect(menu.children.length).toBe(2);
         expect((menu.children[0] as HTMLButtonElement).textContent).toBe('Action 1');
     });
 
     it('adds danger class for dangerous actions', async () => {
+        // Arrange
         const { buildMenuElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const actions = [
             { id: 'del', label: 'Delete', danger: true, handler: vi.fn() },
         ];
         const menu = buildMenuElement(actions);
+        // Act
 
+        // Assert
         expect((menu.children[0] as HTMLButtonElement).className).toContain('graph-context-menu__item--danger');
     });
 
     it('disables button for disabled actions', async () => {
+        // Arrange
         const { buildMenuElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const actions = [
             { id: 'dis', label: 'Disabled', danger: false, disabled: true, disabledReason: 'No permission', handler: vi.fn() },
         ];
         const menu = buildMenuElement(actions);
         const btn = menu.children[0] as HTMLButtonElement;
+        // Act
 
+        // Assert
         expect(btn.disabled).toBe(true);
         expect(btn.className).toContain('graph-context-menu__item--disabled');
         expect(btn.title).toBe('No permission');
     });
 
     it('click handler calls action.handler and prevents event propagation', async () => {
+        // Arrange
         const handler = vi.fn().mockResolvedValue(undefined);
         const { buildMenuElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const actions = [
@@ -1860,13 +2090,16 @@ describe('buildMenuElement', () => {
 
         btn.dispatchEvent(event);
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(handler).toHaveBeenCalled();
         expect(stopPropagationSpy).toHaveBeenCalled();
         expect(preventDefaultSpy).toHaveBeenCalled();
     });
 
     it('click handler does nothing for disabled actions', async () => {
+        // Arrange
         const handler = vi.fn();
         const { buildMenuElement } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         const actions = [
@@ -1877,7 +2110,9 @@ describe('buildMenuElement', () => {
 
         btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
         await new Promise(resolve => setTimeout(resolve, 0));
+        // Act
 
+        // Assert
         expect(handler).not.toHaveBeenCalled();
     });
 });

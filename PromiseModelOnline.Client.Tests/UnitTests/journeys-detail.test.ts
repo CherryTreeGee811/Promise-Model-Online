@@ -629,6 +629,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('shows error when loadParentEpic fails', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -636,7 +637,9 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockRejectedValue(new Error('fail'));
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
 
+        // Assert
         await expect(loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' })).resolves.toBeUndefined();
     });
 
