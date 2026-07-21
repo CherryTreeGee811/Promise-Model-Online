@@ -5,8 +5,7 @@ cd "$(dirname "$0")/.."
 mkdir -p secrets keys/client keys/auth keys/bff keys/proxy
 
 # ============================================================
-# AUTO-GENERATED secrets  (safe to regenerate — random values)
-# Only created if they don't already exist.
+# AUTO-GENERATED secrets  (always regenerated — existing values are replaced)
 # ============================================================
 gen() {
   openssl rand -base64 48 | tr -d '\n' > "secrets/$1"
