@@ -18,21 +18,27 @@ beforeEach(() => {
 
 describe('routeHandler 404 fallback', () => {
     it('loads 404 for unknown routes', async () => {
+        // Arrange
         const { routeHandler } = await import('../../PromiseModelOnline.Client/wwwroot/js/router.ts');
         const nav = document.getElementById('main-menu')!;
         const content = document.getElementById('content')!;
+        // Act
         await routeHandler(nav, content);
+        // Assert
         expect(globalThis.fetch).toHaveBeenCalledWith('/templates/404.html');
     });
 });
 
 describe('loadTemplateWithError inner catch', () => {
     it('renders inline fallback when error template fails', async () => {
+        // Arrange
         globalThis.fetch = vi.fn().mockRejectedValue(new Error('network error'));
         const { routeHandler } = await import('../../PromiseModelOnline.Client/wwwroot/js/router.ts');
         const nav = document.getElementById('main-menu')!;
         const content = document.getElementById('content')!;
+        // Act
         await routeHandler(nav, content);
+        // Assert
         expect(content.querySelector('h1')).toBeTruthy();
     });
 });

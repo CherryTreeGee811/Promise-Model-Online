@@ -60,6 +60,7 @@ public class IterationRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_FUN_023_GetIterationsByProjectAsync_EmptyDatabase_ReturnsEmpty()
     {
         // Act
+        // Arrange
         var result = await _repo.GetIterationsByProjectAsync(1);
         // Assert
         Assert.That(result, Is.Empty);

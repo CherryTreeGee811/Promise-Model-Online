@@ -103,108 +103,136 @@ public class ProjectJourneysControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetAll_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _mapperMock.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
             .Returns<Journey, IGenericService<Journey>>((j, _) => new JourneyDto { Id = j.Id });
 
+        // Act
         var result = await _controller.GetAll("o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetAll("bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_FilterByEpicSeq_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _mapperMock.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
             .Returns<Journey, IGenericService<Journey>>((j, _) => new JourneyDto { Id = j.Id });
 
+        // Act
         var result = await _controller.GetAll("o", "p", epicSeq: 1);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_FilterByEpicSeq_EpicNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetAll("o", "p", epicSeq: 999);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_Found_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _mapperMock.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
             .Returns<Journey, IGenericService<Journey>>((j, _) => new JourneyDto { Id = j.Id });
 
+        // Act
         var result = await _controller.GetBySeq(1, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetBySeq(999, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetBySeq(1, "bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetById_Found_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _mapperMock.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
             .Returns<Journey, IGenericService<Journey>>((j, _) => new JourneyDto { Id = j.Id });
 
+        // Act
         var result = await _controller.GetById(30, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetById_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetById(999, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_Valid_Returns201()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         await SetupHierarchy();
@@ -212,25 +240,31 @@ public class ProjectJourneysControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
             .Returns<Journey, IGenericService<Journey>>((j, _) => new JourneyDto { Id = j.Id });
 
+        // Act
         var result = await _controller.CreateFromDto(new CreateJourneyRequestDto { EpicId = 20 }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
 
+        // Act
         var result = await _controller.CreateFromDto(null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_NoPermission_Returns403()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         var permissionServiceMock = new Mock<IPermissionService>();
         var userRepoMock = new Mock<IUserRepository>();
@@ -242,73 +276,90 @@ public class ProjectJourneysControllerUnitTests
         permissionServiceMock.Setup(s => s.GetUserPermissionAsync(10, 1))
             .ReturnsAsync(PermissionLevel.View);
 
+        // Act
         var result = await _controller.CreateFromDto(new CreateJourneyRequestDto(), "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_Valid_Returns204()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         await SetupHierarchy();
         _serviceMock.Setup(s => s.UpdateAsync(It.IsAny<Journey>())).Returns(Task.CompletedTask);
 
         var dto = new UpdateJourneyRequestDto { Id = 30, Statement = "Updated" };
+        // Act
         var result = await _controller.Update(1, dto, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_IdMismatch_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         await SetupHierarchy();
 
         var dto = new UpdateJourneyRequestDto { Id = 99, Statement = "Bad" };
+        // Act
         var result = await _controller.Update(1, dto, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<BadRequestResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_NullBody_Returns400()
     {
+        // Arrange
         var result = await _controller.Update(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Delete_Valid_Returns204()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         await SetupHierarchy();
         _serviceMock.Setup(s => s.DeleteByIdAsync(30)).ReturnsAsync(true);
 
+        // Act
         var result = await _controller.Delete(1, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Delete_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
 
+        // Act
         var result = await _controller.Delete(999, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateDescription_Valid_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
         await SetupHierarchy();
@@ -316,19 +367,24 @@ public class ProjectJourneysControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Journey>(), It.IsAny<IGenericService<Journey>>()))
             .Returns<Journey, IGenericService<Journey>>((j, _) => new JourneyDto { Id = j.Id });
 
+        // Act
         var result = await _controller.UpdateDescription(1, new UpdateDescriptionRequestDto { Description = "New desc" }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateDescription_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         SetupEditPermission();
 
+        // Act
         var result = await _controller.UpdateDescription(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 

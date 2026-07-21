@@ -68,151 +68,208 @@ beforeEach(() => {
 
 describe('processBurndownPoints', () => {
     it('sorts by date and returns indices as days', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-03', remaining: 5 }, { date: '2026-06-01', remaining: 12 }, { date: '2026-06-02', remaining: 8 },
+        // Act
         ]));
+        // Assert
         expect(r.actualPoints).toEqual([12, 8, 5]);
         expect(r.days).toEqual([0, 1, 2]);
     });
 
     it('generates ideal line from start when all ideals are 0', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10 }, { date: '2026-06-02', remaining: 7 }, { date: '2026-06-03', remaining: 4 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([10, 5, 0]);
     });
 
     it('uses provided ideals if non-zero', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10, ideal: 10 }, { date: '2026-06-02', remaining: 7, ideal: 5 }, { date: '2026-06-03', remaining: 4, ideal: 0 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([10, 5, 0]);
     });
 
     it('handles single point', () => {
+        // Act
         const r = processBurndownPoints(pts([{ date: '2026-06-01', remaining: 5 }]));
+        // Assert
         expect(r.days).toEqual([0]);
         expect(r.lastDay).toBe(0);
     });
 
     it('handles two points', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10 }, { date: '2026-06-02', remaining: 0 },
+        // Act
         ]));
+        // Assert
         expect(r.days).toEqual([0, 1]);
         expect(r.lastDay).toBe(1);
         expect(r.finalIdeal).toEqual([10, 0]);
     });
 
     it('returns startDate and endDate', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10 }, { date: '2026-06-03', remaining: 4 },
+        // Act
         ]));
+        // Assert
         expect(r.startDate).toEqual(new Date('2026-06-01'));
         expect(r.endDate).toEqual(new Date('2026-06-03'));
     });
 
     it('uses provided ideals when some are non-zero', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10, ideal: 8 }, { date: '2026-06-02', remaining: 7, ideal: 4 }, { date: '2026-06-03', remaining: 4, ideal: 0 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([8, 4, 0]);
     });
 
     it('handles single point with 0 remaining', () => {
+        // Act
         const r = processBurndownPoints(pts([{ date: '2026-06-01', remaining: 0 }]));
+        // Assert
         expect(r.actualPoints).toEqual([0]);
         expect(r.lastDay).toBe(0);
         expect(r.finalIdeal).toEqual([0]);
     });
 
     it('handles all ideals zero with zero start', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 0 }, { date: '2026-06-02', remaining: 0 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([0, 0]);
     });
 
     it('handles all ideals zero with lastDay zero', () => {
+        // Act
         const r = processBurndownPoints(pts([{ date: '2026-06-01', remaining: 5 }]));
+        // Assert
         expect(r.finalIdeal).toEqual([0]);
     });
 
     it('keeps idealRemaining when only first is non-zero', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10, ideal: 10 }, { date: '2026-06-02', remaining: 7, ideal: 0 }, { date: '2026-06-03', remaining: 4, ideal: 0 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([10, 0, 0]);
     });
 
     it('sorts dates correctly', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-05', remaining: 1 }, { date: '2026-06-01', remaining: 10 }, { date: '2026-06-03', remaining: 5 },
+        // Act
         ]));
+        // Assert
         expect(r.actualPoints).toEqual([10, 5, 1]);
         expect(r.days).toEqual([0, 1, 2]);
     });
 
     it('generates ideal line when all ideals are 0 and startRemaining > 0 and lastDay > 0', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10 }, { date: '2026-06-02', remaining: 8 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([10, 0]);
     });
 
     it('returns zeros when startRemaining is 0 and all ideals are 0', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 0, ideal: 0 }, { date: '2026-06-02', remaining: 0, ideal: 0 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([0, 0]);
     });
 
     it('returns ideals as-is when they are not all zero', () => {
+        // Arrange
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10, ideal: 10 }, { date: '2026-06-02', remaining: 7, ideal: 4 },
+        // Act
         ]));
+        // Assert
         expect(r.finalIdeal).toEqual([10, 4]);
     });
 });
 
 describe('handleCrossPoint', () => {
     it('adds to behind when diffLeft >= 0 and diffRight >= 0', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         handleCrossPoint(3, 2, { x: 5, y0: 3, y1: 5, behind: true }, behind, ahead);
+        // Assert
         expect(behind).toHaveLength(2);
         expect(ahead).toHaveLength(0);
     });
 
     it('adds to ahead when diffLeft < 0 and diffRight < 0', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         handleCrossPoint(-3, -2, { x: 5, y0: 5, y1: 3, behind: false }, behind, ahead);
+        // Assert
         expect(behind).toHaveLength(0);
         expect(ahead).toHaveLength(2);
     });
 
     it('splits copies when diffLeft >= 0 and diffRight < 0', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         handleCrossPoint(2, -1, { x: 5, y0: 3, y1: 5, behind: false }, behind, ahead);
+        // Assert
         expect(behind).toHaveLength(1);
         expect(ahead).toHaveLength(1);
     });
 
     it('splits copies when diffLeft < 0 and diffRight >= 0', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         handleCrossPoint(-1, 2, { x: 5, y0: 3, y1: 5, behind: false }, behind, ahead);
+        // Assert
         expect(behind).toHaveLength(1);
         expect(ahead).toHaveLength(1);
     });
 
     it('does not mutate the original crossPoint object', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const crossPoint = { x: 5, y0: 3, y1: 5, behind: false };
+        // Act
         handleCrossPoint(2, -1, crossPoint, behind, ahead);
+        // Assert
         expect(crossPoint.behind).toBe(false);
     });
 });
@@ -222,49 +279,67 @@ describe('processSegment', () => {
     const ys = (v: number) => 100 - v * 10;
 
     it('adds left point to behind when actual >= ideal (no crossing)', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         processSegment(0, [0, 1], [10, 8], [5, 5], xs, ys, behind, ahead);
+        // Assert
         expect(behind).toHaveLength(1);
         expect(ahead).toHaveLength(0);
     });
 
     it('adds left point to ahead when actual < ideal (no crossing)', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         processSegment(0, [0, 1], [5, 3], [10, 8], xs, ys, behind, ahead);
+        // Assert
         expect(behind).toHaveLength(0);
         expect(ahead).toHaveLength(1);
     });
 
     it('handles crossing from ahead to behind', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         processSegment(0, [0, 1], [5, 10], [8, 8], xs, ys, behind, ahead);
+        // Assert
         expect(behind.length).toBeGreaterThan(0);
         expect(ahead.length).toBeGreaterThan(0);
     });
 
     it('handles crossing from behind to ahead', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         processSegment(0, [0, 1], [10, 5], [8, 8], xs, ys, behind, ahead);
+        // Assert
         expect(behind.length).toBeGreaterThan(0);
         expect(ahead.length).toBeGreaterThan(0);
     });
 
     it('handles equal values (no crossing)', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         processSegment(0, [0, 1], [8, 8], [8, 8], xs, ys, behind, ahead);
+        // Assert
         expect(behind).toHaveLength(1);
         expect(ahead).toHaveLength(0);
     });
 
     it('processes later segments', () => {
+        // Arrange
         const behind: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
         const ahead: Array<{ x: number; y0: number; y1: number; behind: boolean }> = [];
+        // Act
         processSegment(1, [0, 1, 2], [10, 8, 6], [10, 6, 2], xs, ys, behind, ahead);
+        // Assert
         expect(behind.length + ahead.length).toBeGreaterThan(0);
     });
 });
@@ -274,34 +349,46 @@ describe('buildEnhancedPoints', () => {
     const ys = (v: number) => 100 - v * 10;
 
     it('returns both behind and ahead arrays', () => {
+        // Act
         const r = buildEnhancedPoints([0, 1], [10, 5], [10, 5], xs, ys);
+        // Assert
         expect(r.enhancedBehind.length + r.enhancedAhead.length).toBeGreaterThan(0);
     });
 
     it('handles crossing lines', () => {
+        // Act
         const r = buildEnhancedPoints([0, 1, 2], [10, 8, 6], [10, 6, 2], xs, ys);
+        // Assert
         expect(r.enhancedAhead.length + r.enhancedBehind.length).toBeGreaterThan(0);
     });
 
     it('handles single day (no segments to iterate)', () => {
+        // Act
         const r = buildEnhancedPoints([0], [10], [10], xs, ys);
+        // Assert
         expect(r.enhancedBehind.length + r.enhancedAhead.length).toBe(1);
     });
 
     it('all behind when actual >= ideal for all points', () => {
+        // Act
         const r = buildEnhancedPoints([0, 1], [10, 8], [5, 5], xs, ys);
+        // Assert
         expect(r.enhancedBehind.length).toBeGreaterThan(0);
         expect(r.enhancedAhead).toHaveLength(0);
     });
 
     it('all ahead when actual <= ideal for all points', () => {
+        // Act
         const r = buildEnhancedPoints([0, 1], [5, 3], [10, 8], xs, ys);
+        // Assert
         expect(r.enhancedAhead.length).toBeGreaterThan(0);
         expect(r.enhancedBehind).toHaveLength(0);
     });
 
     it('processes multiple segments', () => {
+        // Act
         const r = buildEnhancedPoints([0, 1, 2, 3], [10, 8, 6, 4], [8, 6, 4, 2], xs, ys);
+        // Assert
         expect(r.enhancedBehind.length + r.enhancedAhead.length).toBeGreaterThanOrEqual(4);
     });
 });
@@ -312,25 +399,35 @@ describe('drawBurndownChart', () => {
     });
 
     it('logs error when container not found', async () => {
+        // Arrange
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        // Act
         await drawBurndownChart('non-existent-id', []);
+        // Assert
         expect(consoleSpy).toHaveBeenCalledWith('Burndown container not found');
         consoleSpy.mockRestore();
     });
 
     it('shows empty state when points array is empty', async () => {
+        // Arrange
         const container = document.getElementById('chart-container')!;
+        // Act
         await drawBurndownChart(container, []);
+        // Assert
         expect(container.innerHTML).toContain('No burndown data available');
     });
 
     it('shows empty state when points is null', async () => {
+        // Arrange
         const container = document.getElementById('chart-container')!;
+        // Act
         await drawBurndownChart(container, null as unknown as []);
+        // Assert
         expect(container.innerHTML).toContain('No burndown data available');
     });
 
     it('renders chart with mocked D3 for valid points', async () => {
+        // Arrange
         const d3 = makeMockD3();
         mockLoadD3.mockResolvedValue(d3);
 
@@ -341,13 +438,15 @@ describe('drawBurndownChart', () => {
         ]);
 
         const container = document.getElementById('chart-container')!;
+        // Act
         await drawBurndownChart(container, points);
-
+        // Assert
         expect(mockLoadD3).toHaveBeenCalled();
         expect(d3.select).toHaveBeenCalled();
     });
 
     it('accepts string id for container', async () => {
+        // Arrange
         const d3 = makeMockD3();
         mockLoadD3.mockResolvedValue(d3);
 
@@ -356,7 +455,9 @@ describe('drawBurndownChart', () => {
             { date: '2026-06-03', remaining: 4 },
         ]);
 
+        // Act
         await drawBurndownChart('chart-container', points);
+        // Assert
         expect(mockLoadD3).toHaveBeenCalled();
     });
 });

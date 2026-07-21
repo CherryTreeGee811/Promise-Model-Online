@@ -35,15 +35,20 @@ beforeAll(() => {
 
 describe('SignalR lifecycle', () => {
     it('registers handlers and starts connection', async () => {
+        // Arrange
         const { startSignalR } = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/signalr.ts');
         const onNotification = vi.fn();
         await startSignalR(onNotification);
+        // Act
         const { showToast } = await import('../../PromiseModelOnline.Client/wwwroot/js/ui/toast.ts');
+        // Assert
         expect(showToast).toBeDefined();
     });
 
     it('exports startSignalR', async () => {
+        // Act
         const { startSignalR } = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/signalr.ts');
+        // Assert
         expect(startSignalR).toBeDefined();
     });
 });

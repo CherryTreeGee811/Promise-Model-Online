@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SA_PASSWORD=${DB_SA_PASSWORD:-SADevelopment10*}
+SA_PASSWORD=$(cat /run/secrets/db_sa_password)
 API_USER=${API_DB_USER:-pmo_api}
 AUTH_USER=${AUTH_DB_USER:-pmo_auth}
 
@@ -27,7 +27,7 @@ sql_escape_literal() {
 API_PASSWORD_SQL=$(sql_escape_literal "$API_PASSWORD")
 AUTH_PASSWORD_SQL=$(sql_escape_literal "$AUTH_PASSWORD")
 
-until "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
+until "$SQLCMD" -S promisemodelonline-db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
   echo 'Waiting for SQL Server...'
   sleep 5
 done
@@ -99,6 +99,6 @@ GO
 -- sa deliberately left enabled for db-init restart support
 EOF
 
-"$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql
+"$SQLCMD" -S promisemodelonline-db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql
 
 echo 'Database application accounts created or already present.'

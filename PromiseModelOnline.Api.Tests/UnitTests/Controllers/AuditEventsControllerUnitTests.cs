@@ -40,6 +40,7 @@ public class AuditEventsControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetProjectHistory_ReturnsOk()
     {
+        // Arrange
         _context.AuditEvents.Add(new AuditEvent
         {
             Id = 1,
@@ -51,22 +52,27 @@ public class AuditEventsControllerUnitTests
         });
         await _context.SaveChangesAsync();
 
+        // Act
         var result = await _controller.GetProjectHistory(1);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetProjectHistory_Empty_ReturnsOk()
     {
+        // Arrange
         var result = await _controller.GetProjectHistory(999);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetEntityHistory_ReturnsOk()
     {
+        // Arrange
         _context.AuditEvents.Add(new AuditEvent
         {
             Id = 1,
@@ -79,22 +85,27 @@ public class AuditEventsControllerUnitTests
         });
         await _context.SaveChangesAsync();
 
+        // Act
         var result = await _controller.GetEntityHistory("Moment", 42);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetEntityHistory_Empty_ReturnsOk()
     {
+        // Arrange
         var result = await _controller.GetEntityHistory("Moment", 999);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetProjectHistory_SetsTotalCountHeader()
     {
+        // Arrange
         _context.AuditEvents.Add(new AuditEvent
         {
             Id = 1,
@@ -115,14 +126,17 @@ public class AuditEventsControllerUnitTests
         });
         await _context.SaveChangesAsync();
 
+        // Act
         await _controller.GetProjectHistory(1);
 
+        // Assert
         Assert.That(_controller.Response.Headers["X-Total-Count"], Is.EqualTo("2"));
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetProjectHistory_RespectsTakeAndSkip()
     {
+        // Arrange
         for (var i = 1; i <= 10; i++)
         {
             _context.AuditEvents.Add(new AuditEvent
@@ -137,8 +151,10 @@ public class AuditEventsControllerUnitTests
         }
         await _context.SaveChangesAsync();
 
+        // Act
         var result = await _controller.GetProjectHistory(1, take: 3, skip: 5);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 }

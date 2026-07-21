@@ -482,6 +482,7 @@ describe('loadStridesList', () => {
     });
 
     it('handles getMyPermission rejection gracefully', async () => {
+        // Arrange
         mockGetIterations.mockResolvedValue([defaultIteration]);
         mockGetStridesByIteration.mockResolvedValue([]);
         mockGetMomentsByIteration.mockResolvedValue([]);
@@ -493,10 +494,13 @@ describe('loadStridesList', () => {
         await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
 
         const board = document.querySelector('#stride-board')!;
+        // Act
+        // Assert
         expect(board).toBeTruthy();
     });
 
     it('updates countdown with ended stride', async () => {
+        // Arrange
         const pastDate = new Date(Date.now() - 86400000 * 5).toISOString();
         document.body.innerHTML += `<span class="stride-countdown" data-end-date="${pastDate}"></span>`;
 
@@ -510,11 +514,14 @@ describe('loadStridesList', () => {
         await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
 
         const el = document.querySelector('.stride-countdown')!;
+        // Act
+        // Assert
         expect(el.textContent).toBe('Ended');
         expect(el.classList.contains('stride-countdown--ended')).toBe(true);
     });
 
     it('updates countdown with ending today stride', async () => {
+        // Arrange
         const todayDate = new Date(Date.now()).toISOString();
         document.body.innerHTML += `<span class="stride-countdown" data-end-date="${todayDate}"></span>`;
 
@@ -528,10 +535,13 @@ describe('loadStridesList', () => {
         await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
 
         const el = document.querySelector('.stride-countdown')!;
+        // Act
+        // Assert
         expect(el.textContent).toBe('Ends today');
     });
 
     it('updates countdown with ending soon stride (within 3 days)', async () => {
+        // Arrange
         const soonDate = new Date(Date.now() + 86400000 * 2).toISOString();
         document.body.innerHTML += `<span class="stride-countdown" data-end-date="${soonDate}"></span>`;
 
@@ -545,10 +555,13 @@ describe('loadStridesList', () => {
         await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
 
         const el = document.querySelector('.stride-countdown')!;
+        // Act
+        // Assert
         expect(el.textContent).toMatch(/\d+ days? left/);
     });
 
     it('updates countdown with healthy stride', async () => {
+        // Arrange
         const farDate = new Date(Date.now() + 86400000 * 10).toISOString();
         document.body.innerHTML += `<span class="stride-countdown" data-end-date="${farDate}"></span>`;
 
@@ -562,11 +575,14 @@ describe('loadStridesList', () => {
         await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
 
         const el = document.querySelector('.stride-countdown')!;
+        // Act
+        // Assert
         expect(el.textContent).toMatch(/\d+ days left/);
         expect(el.classList.contains('stride-countdown--healthy')).toBe(true);
     });
 
     it('navigates to history page on history link click', async () => {
+        // Arrange
         mockGetIterations.mockResolvedValue([defaultIteration]);
         mockGetStridesByIteration.mockResolvedValue([]);
         mockGetMomentsByIteration.mockResolvedValue([]);
@@ -575,11 +591,14 @@ describe('loadStridesList', () => {
 
         const historyLink = document.querySelector('#iteration-history-link') as HTMLAnchorElement;
         historyLink.click();
+        // Act
 
+        // Assert
         expect(mockNavigate).toHaveBeenCalledWith('/owner1/proj1/iterations', expect.any(HTMLElement), expect.any(HTMLElement));
     });
 
     it('handles getProjectMembers rejection gracefully', async () => {
+        // Arrange
         mockGetIterations.mockResolvedValue([defaultIteration]);
         mockGetStridesByIteration.mockResolvedValue([]);
         mockGetMomentsByIteration.mockResolvedValue([]);
@@ -591,10 +610,13 @@ describe('loadStridesList', () => {
         await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
 
         const board = document.querySelector('#stride-board')!;
+        // Act
+        // Assert
         expect(board).toBeTruthy();
     });
 
     it('handles getProject rejection in tryFetchProjectData', async () => {
+        // Arrange
         mockGetIterations.mockResolvedValue([defaultIteration]);
         mockGetStridesByIteration.mockResolvedValue([]);
         mockGetMomentsByIteration.mockResolvedValue([]);
@@ -606,10 +628,13 @@ describe('loadStridesList', () => {
         await loadStridesList('o', 'p', navDiv, contentDiv, { permission: 'Edit' });
 
         const board = document.querySelector('#stride-board')!;
+        // Act
+        // Assert
         expect(board).toBeTruthy();
     });
 
     it('opens stride create modal with onCreated callback when create button clicked', async () => {
+        // Arrange
         mockGetIterations.mockResolvedValue([defaultIteration]);
         mockGetStridesByIteration.mockResolvedValue([]);
         mockGetMomentsByIteration.mockResolvedValue([]);
@@ -622,7 +647,9 @@ describe('loadStridesList', () => {
 
         const createBtn = document.querySelector('#create-stride-btn') as HTMLElement;
         createBtn.click();
+        // Act
 
+        // Assert
         expect(mockOpenStrideCreateModal).toHaveBeenCalled();
         expect(capturedOnCreated).toBeDefined();
         expect(typeof capturedOnCreated).toBe('function');

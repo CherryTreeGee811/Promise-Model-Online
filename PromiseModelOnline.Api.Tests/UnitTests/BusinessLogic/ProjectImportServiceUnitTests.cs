@@ -293,14 +293,14 @@ public class ProjectImportServiceUnitTests
     [Test]
     public async Task ImportAsync_NullProjectSection_ThrowsInvalidDataException()
     {
+        // Arrange
         var document = new ProjectExportDocument
         {
             SchemaVersion = "1.0",
-#pragma warning disable CS8625
-            Project = null
-#pragma warning restore CS8625
+            Project = null!
         };
 
+        // Act & Assert
         Assert.That(async () => await _service.ImportAsync(document, 42), Throws.TypeOf<InvalidDataException>());
     }
 }

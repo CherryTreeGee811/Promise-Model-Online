@@ -20,40 +20,55 @@ beforeEach(() => {
 
 describe('loadPromiseDetail error handling', () => {
     it('handles fetch failures gracefully', async () => {
+        // Arrange
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
+        // Act
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Assert
         await expect(loadPromiseDetail('o', 'p', '1', nav, content, { permission: 'Edit' })).resolves.toBeUndefined();
     });
 });
 
 describe('loadEpicDetail error handling', () => {
     it('handles fetch failures gracefully', async () => {
+        // Arrange
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
+        // Act
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Assert
         await expect(loadEpicDetail('o', 'p', '1', nav, content, { permission: 'Edit' })).resolves.toBeUndefined();
     });
 });
 
 describe('loadJourneyDetail error handling', () => {
     it('handles fetch failures gracefully', async () => {
+        // Arrange
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Assert
         await expect(loadJourneyDetail('o', 'p', '1', nav, content, { permission: 'Edit' })).resolves.toBeUndefined();
     });
 });
 
 describe('loadFlowDetail error handling', () => {
     it('handles fetch failures gracefully', async () => {
+        // Arrange
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
+        // Act
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Assert
         await expect(loadFlowDetail('o', 'p', '1', nav, content, { permission: 'Edit' })).resolves.toBeUndefined();
     });
 });
 
 describe('loadMomentDetail error handling', () => {
     it('handles fetch failures gracefully', async () => {
+        // Arrange
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
+        // Act
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Assert
         await expect(loadMomentDetail('o', 'p', '100', nav, content, { permission: 'Edit' })).resolves.toBeUndefined();
     });
 });

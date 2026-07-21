@@ -22,9 +22,13 @@ public class OpenIddictExtensionsUnitTests
     [Test]
     public void AddPermissions_AddsAllEndpointPermissions()
     {
+        // Arrange
         var descriptor = new OpenIddictApplicationDescriptor();
+
+        // Act
         InvokeAddPermissions(descriptor);
 
+        // Assert
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.Endpoints.Authorization));
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.Endpoints.Token));
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.Endpoints.EndSession));
@@ -34,9 +38,13 @@ public class OpenIddictExtensionsUnitTests
     [Test]
     public void AddPermissions_AddsAllGrantTypeAndResponseTypePermissions()
     {
+        // Arrange
         var descriptor = new OpenIddictApplicationDescriptor();
+
+        // Act
         InvokeAddPermissions(descriptor);
 
+        // Assert
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode));
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.GrantTypes.RefreshToken));
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.ResponseTypes.Code));
@@ -45,9 +53,13 @@ public class OpenIddictExtensionsUnitTests
     [Test]
     public void AddPermissions_AddsAllScopePermissions()
     {
+        // Arrange
         var descriptor = new OpenIddictApplicationDescriptor();
+
+        // Act
         InvokeAddPermissions(descriptor);
 
+        // Assert
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.OpenId));
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Profile));
         Assert.That(descriptor.Permissions, Does.Contain(OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Email));
@@ -59,24 +71,33 @@ public class OpenIddictExtensionsUnitTests
     [Test]
     public void AddPermissions_AddsProofKeyForCodeExchangeRequirement()
     {
+        // Arrange
         var descriptor = new OpenIddictApplicationDescriptor();
+
+        // Act
         InvokeAddPermissions(descriptor);
 
+        // Assert
         Assert.That(descriptor.Requirements, Does.Contain(OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange));
     }
 
     [Test]
     public void AddPermissions_AddsExpectedTotalPermissionCount()
     {
+        // Arrange
         var descriptor = new OpenIddictApplicationDescriptor();
+
+        // Act
         InvokeAddPermissions(descriptor);
 
+        // Assert
         Assert.That(descriptor.Permissions, Has.Count.EqualTo(13));
     }
 
     [Test]
     public async Task SeedAsync_WhenClientDoesNotExist_CreatesNewApplication()
     {
+        // Arrange
         var appManagerMock = new Mock<IOpenIddictApplicationManager>();
         var configMock = new Mock<IConfiguration>();
         var serviceProviderMock = new Mock<IServiceProvider>();
@@ -100,8 +121,10 @@ public class OpenIddictExtensionsUnitTests
             .Setup(m => m.CreateAsync(It.IsAny<OpenIddictApplicationDescriptor>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new object());
 
+        // Act
         await PromiseModelOnline.Auth.Extensions.OpenIddictExtensions.SeedAsync(serviceProviderMock.Object);
 
+        // Assert
         appManagerMock.Verify(m => m.CreateAsync(
             It.IsAny<OpenIddictApplicationDescriptor>(),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -114,6 +137,7 @@ public class OpenIddictExtensionsUnitTests
     [Test]
     public async Task SeedAsync_WhenClientExists_UpdatesExistingApplication()
     {
+        // Arrange
         var appManagerMock = new Mock<IOpenIddictApplicationManager>();
         var configMock = new Mock<IConfiguration>();
         var serviceProviderMock = new Mock<IServiceProvider>();
@@ -138,8 +162,10 @@ public class OpenIddictExtensionsUnitTests
             .Setup(m => m.UpdateAsync(It.IsAny<object>(), It.IsAny<OpenIddictApplicationDescriptor>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
 
+        // Act
         await PromiseModelOnline.Auth.Extensions.OpenIddictExtensions.SeedAsync(serviceProviderMock.Object);
 
+        // Assert
         appManagerMock.Verify(m => m.CreateAsync(
             It.IsAny<OpenIddictApplicationDescriptor>(),
             It.IsAny<CancellationToken>()), Times.Never);
@@ -152,6 +178,7 @@ public class OpenIddictExtensionsUnitTests
     [Test]
     public async Task SeedAsync_WithAdditionalRedirectUris_AddsExtraUris()
     {
+        // Arrange
         var appManagerMock = new Mock<IOpenIddictApplicationManager>();
         var configMock = new Mock<IConfiguration>();
         var serviceProviderMock = new Mock<IServiceProvider>();
@@ -179,8 +206,10 @@ public class OpenIddictExtensionsUnitTests
             .Setup(c => c["Auth:AdditionalRedirectUris"])
             .Returns("https://other.example.com/callback,https://another.example.com/callback");
 
+        // Act
         await PromiseModelOnline.Auth.Extensions.OpenIddictExtensions.SeedAsync(serviceProviderMock.Object);
 
+        // Assert
         appManagerMock.Verify(m => m.CreateAsync(
             It.Is<OpenIddictApplicationDescriptor>(d =>
                 d.RedirectUris.Count == 3 &&
@@ -192,6 +221,7 @@ public class OpenIddictExtensionsUnitTests
     [Test]
     public async Task SeedAsync_SetsCorrectDescriptorProperties()
     {
+        // Arrange
         var appManagerMock = new Mock<IOpenIddictApplicationManager>();
         var configMock = new Mock<IConfiguration>();
         var serviceProviderMock = new Mock<IServiceProvider>();
@@ -215,8 +245,10 @@ public class OpenIddictExtensionsUnitTests
             .Setup(m => m.CreateAsync(It.IsAny<OpenIddictApplicationDescriptor>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new object());
 
+        // Act
         await PromiseModelOnline.Auth.Extensions.OpenIddictExtensions.SeedAsync(serviceProviderMock.Object);
 
+        // Assert
         appManagerMock.Verify(m => m.CreateAsync(
             It.Is<OpenIddictApplicationDescriptor>(d =>
                 d.ClientId == "pmo-spa" &&

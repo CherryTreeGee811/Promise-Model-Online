@@ -41,6 +41,7 @@ describe('loadReactions', () => {
 
     describe('DOM structure', () => {
         it('renders reactions bar with picker when user has Comment permission', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -48,8 +49,9 @@ describe('loadReactions', () => {
 
             const loadReactions = await load();
             const container = document.createElement('div');
+            // Act
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
-
+            // Assert
             expect(container.querySelector('.reactions-bar')).toBeTruthy();
             expect(container.querySelector('.reactions-summary')).toBeTruthy();
             expect(container.querySelector('.reactions-picker')).toBeTruthy();
@@ -59,6 +61,7 @@ describe('loadReactions', () => {
         });
 
         it('renders reactions bar with picker when user has Edit permission', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -66,12 +69,14 @@ describe('loadReactions', () => {
 
             const loadReactions = await load();
             const container = document.createElement('div');
+            // Act
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Edit' });
-
+            // Assert
             expect(container.querySelector('.reactions-picker')).toBeTruthy();
         });
 
         it('renders reactions bar without picker when user lacks permission', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -79,14 +84,16 @@ describe('loadReactions', () => {
 
             const loadReactions = await load();
             const container = document.createElement('div');
+            // Act
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Owner' });
-
+            // Assert
             expect(container.querySelector('.reactions-bar')).toBeTruthy();
             expect(container.querySelector('.reactions-summary')).toBeTruthy();
             expect(container.querySelector('.reactions-picker')).toBeNull();
         });
 
         it('renders reactions bar without picker when permission is undefined', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -94,12 +101,14 @@ describe('loadReactions', () => {
 
             const loadReactions = await load();
             const container = document.createElement('div');
+            // Act
             loadReactions(container, 'Promise', '1', 'owner', 'project', {});
-
+            // Assert
             expect(container.querySelector('.reactions-picker')).toBeNull();
         });
 
         it('renders reactions bar without picker when permission is nullish', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -107,14 +116,16 @@ describe('loadReactions', () => {
 
             const loadReactions = await load();
             const container = document.createElement('div');
+            // Act
             loadReactions(container, 'Promise', '1', 'owner', 'project', {});
-
+            // Assert
             expect(container.querySelector('.reactions-picker')).toBeNull();
         });
     });
 
     describe('refresh (API fetch on init)', () => {
         it('handles getReactions returning null (reactions || [] fallback)', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -125,12 +136,15 @@ describe('loadReactions', () => {
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
             await vi.waitFor(() => {
+            // Act
                 const summary = container.querySelector('.reactions-summary');
+                // Assert
                 expect(summary?.textContent).toBe('No reactions yet.');
             });
         });
 
         it('handles getReactions returning undefined (reactions || [] fallback)', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -141,12 +155,15 @@ describe('loadReactions', () => {
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
             await vi.waitFor(() => {
+            // Act
                 const summary = container.querySelector('.reactions-summary');
+                // Assert
                 expect(summary?.textContent).toBe('No reactions yet.');
             });
         });
 
         it('handles missing summary element gracefully (querySelector returns null)', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -157,12 +174,15 @@ describe('loadReactions', () => {
             vi.spyOn(container, 'querySelector').mockReturnValue(null);
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
         });
 
         it('calls getReactions with correct arguments', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -172,12 +192,15 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Moment', '42', 'owner', 'project', { permission: 'Edit' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalledWith('owner', 'project', 'Moment', '42');
             });
         });
 
         it('renders "No reactions yet." when API returns empty array', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -188,12 +211,15 @@ describe('loadReactions', () => {
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
             await vi.waitFor(() => {
+            // Act
                 const summary = container.querySelector('.reactions-summary');
+                // Assert
                 expect(summary?.textContent).toBe('No reactions yet.');
             });
         });
 
         it('renders emote counts from API response', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -209,12 +235,15 @@ describe('loadReactions', () => {
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
             await vi.waitFor(() => {
+            // Act
                 const summary = container.querySelector('.reactions-summary');
+                // Assert
                 expect(summary?.textContent).toBe('👍 2 ❤️ 1 🚀 1');
             });
         });
 
         it('identifies user\'s own reaction when username matches', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('alice');
@@ -226,7 +255,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -239,6 +270,7 @@ describe('loadReactions', () => {
         });
 
         it('handles missing username gracefully', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue(undefined as unknown as string);
@@ -250,7 +282,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -263,6 +297,7 @@ describe('loadReactions', () => {
         });
 
         it('shows "Failed to load reactions." when API throws', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -273,12 +308,15 @@ describe('loadReactions', () => {
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
             await vi.waitFor(() => {
+            // Act
                 const summary = container.querySelector('.reactions-summary');
+                // Assert
                 expect(summary?.textContent).toBe('Failed to load reactions.');
             });
         });
 
         it('handles API error with null summaryElement gracefully', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -289,7 +327,9 @@ describe('loadReactions', () => {
             vi.spyOn(container, 'querySelector').mockReturnValue(null);
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
         });
@@ -297,6 +337,7 @@ describe('loadReactions', () => {
 
     describe('click handler - addReaction (no prior reaction)', () => {
         it('calls addReaction when clicking with no existing reaction', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -307,7 +348,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -324,6 +367,7 @@ describe('loadReactions', () => {
         });
 
         it('increments count for the clicked emote when no prior reaction', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -334,7 +378,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -350,6 +396,7 @@ describe('loadReactions', () => {
 
     describe('click handler - updateReaction (prior reaction exists)', () => {
         it('calls updateReaction when user has existing reaction', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -362,7 +409,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -375,6 +424,7 @@ describe('loadReactions', () => {
         });
 
         it('decrements old emote count and increments new emote count', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -388,7 +438,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -403,6 +455,7 @@ describe('loadReactions', () => {
         });
 
         it('clicking the same emote leaves counts unchanged', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -415,7 +468,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -431,6 +486,7 @@ describe('loadReactions', () => {
 
     describe('click handler - API response edge cases', () => {
         it('fallback: uses button emote when API returns null', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -443,7 +499,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -456,6 +514,7 @@ describe('loadReactions', () => {
         });
 
         it('keeps existing myReactionId when API returns null on update', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -468,7 +527,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -492,6 +553,7 @@ describe('loadReactions', () => {
 
     describe('click handler - error handling', () => {
         it('shows toast when addReaction fails', async () => {
+            // Arrange
             const m = await api();
             const t = await toast();
             const a = await auth();
@@ -503,7 +565,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -516,6 +580,7 @@ describe('loadReactions', () => {
         });
 
         it('shows toast when updateReaction fails', async () => {
+            // Arrange
             const m = await api();
             const t = await toast();
             const a = await auth();
@@ -529,7 +594,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 
@@ -544,6 +611,7 @@ describe('loadReactions', () => {
 
     describe('scroll position preservation', () => {
         it('restores scroll position after reaction click', async () => {
+            // Arrange
             const m = await api();
             const a = await auth();
             vi.mocked(a.getUsername).mockReturnValue('testuser');
@@ -555,7 +623,9 @@ describe('loadReactions', () => {
             const container = document.createElement('div');
             loadReactions(container, 'Promise', '1', 'owner', 'project', { permission: 'Comment' });
 
+            // Act
             await vi.waitFor(() => {
+                // Assert
                 expect(m.getReactions).toHaveBeenCalled();
             });
 

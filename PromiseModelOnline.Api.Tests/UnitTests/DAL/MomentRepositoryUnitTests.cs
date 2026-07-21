@@ -144,6 +144,7 @@ public class MomentRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_FUN_008_GetProjectIdForMomentAsync_NonexistentMoment_ReturnsZero()
     {
         // Act
+        // Arrange
         var result = await _repo.GetProjectIdForMomentAsync(999);
         // Assert
         Assert.That(result, Is.EqualTo(0));

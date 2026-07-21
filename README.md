@@ -286,22 +286,131 @@ dotnet run --project PromiseModelOnline.BFF
 
 ### Testing
 
+The project maintains **3,165 test methods** across C# (NUnit 4) and TypeScript (Vitest) test suites. Every test follows the **Arrange-Act-Assert** pattern.
+
+#### Test Suites
+
+| Suite | Type | Count | Coverage Threshold | Command |
+|---|---|---|---|---|
+| Auth Unit | NUnit | 133 | 70% | `dotnet test PromiseModelOnline.Auth.Tests --filter "FullyQualifiedName!~IntegrationTests"` |
+| API Unit | NUnit | 603 | 70% | `dotnet test PromiseModelOnline.Api.Tests --filter "FullyQualifiedName!~IntegrationTests"` |
+| Auth Integration | NUnit | 77 | 30% | `dotnet test PromiseModelOnline.Auth.Tests --filter "FullyQualifiedName~IntegrationTests"` |
+| BFF Integration | NUnit | 31 | 30% | `dotnet test PromiseModelOnline.BFF.Tests` |
+| API Integration | NUnit | 284 | 30% | `dotnet test PromiseModelOnline.Api.Tests --filter "FullyQualifiedName~IntegrationTests"` |
+| Client UI (Chromium) | NUnit + Playwright | 190 | — | `TEST_BROWSER=chromium dotnet test PromiseModelOnline.Client.Tests` |
+| Client UI (Firefox) | NUnit + Playwright | 189 | — | `TEST_BROWSER=firefox dotnet test PromiseModelOnline.Client.Tests` |
+| Client UI (WebKit) | NUnit + Playwright | 189 | — | `TEST_BROWSER=webkit dotnet test PromiseModelOnline.Client.Tests` |
+| Vitest Unit | Vitest | 1,568 | 70% | `npm run test` |
+| E2E Core | NUnit + Playwright | 268 | — | `dotnet test PromiseModelOnline.E2E.Tests --filter "FullyQualifiedName!~RateLimitingTests"` |
+| E2E Rate Limiting | NUnit + Playwright | 6 | — | `dotnet test PromiseModelOnline.E2E.Tests --filter "FullyQualifiedName~RateLimitingTests"` |
+
+#### Quality Gates
+
+| Gate | Tool | Scope |
+|---|---|---|
+| JavaScript lint | ESLint | `wwwroot/js/**/*.{mjs,ts}` |
+| HTML lint | HTMLHint | `wwwroot/**/*.html` |
+| CSS lint | stylelint | `wwwroot/css/*.css` |
+| TypeScript typecheck | tsc | Full project |
+| Copy/paste detection | jscpd | TypeScript/MJS files |
+| Dead code detection | knip | Unused exports, dependencies |
+| Accessibility | axe-core | All pages via a11y-check.mjs |
+| Responsive layout | Puppeteer | Viewport breakpoint checks |
+| Performance/Lighthouse | @lhci/cli | Best practices, a11y, SEO |
+| Memory leaks | memlab | SPA heap snapshot diffs |
+| Nginx config | check-nginx.sh | Syntax validity |
+| Production dependency boundary | check-prod-deps.sh | No dev deps in production |
+| Source import boundary | check-source-imports.sh | No cross-layer violations |
+| Bundle boundary | check-bundle.sh | No unexpected bundled modules |
+
+#### Security Scans
+
+| Scan | Tool | Trigger |
+|---|---|---|
+| DAST | OWASP ZAP | CI only |
+| Container/FS vulns | Trivy | CI only |
+| npm audit | npm | Every build |
+| NuGet vuln check | dotnet list package | Every build |
+| Security headers | NUnit tests | Client test suite |
+| SQL injection | E2E tests | E2E suite |
+| XSS | E2E tests | E2E suite |
+| CSRF | E2E tests | E2E suite |
+
+#### Running Tests
+
 ```bash
+# Single test suite
 dotnet test PromiseModelOnline.Auth.Tests
-dotnet test PromiseModelOnline.Api.Tests
+
+# All .NET tests sequentially
+dotnet test Promise-Model-Online.sln
+
+# Vitest unit tests (no Docker required)
+npm run test
+
+# Client UI tests (requires docker compose stack running)
+TEST_BROWSER=chromium dotnet test PromiseModelOnline.Client.Tests
+
+# E2E tests (requires full docker compose stack)
+dotnet test PromiseModelOnline.E2E.Tests
+
+# Full pipeline locally via act
+act -W .github/workflows/BuildAndTest.yml --secret-file .secrets --pull=false
+
+# Coverage report
+dotnet test --settings coverage.runsettings --collect:"XPlat Code Coverage"
 ```
 
-### CI/CD Pipeline
+#### CI/CD Pipeline
 
-The project uses GitHub Actions for CI/CD. Pipelines run on every push:
+The project uses GitHub Actions for CI/CD. The full `BuildAndTest.yml` pipeline runs on every push and pull request:
 
-1. **Build** — `dotnet build --configuration Release`
-2. **Unit tests** — Auth, API, and Client test suites (NUnit + Selenium)
-3. **Integration tests** — Auth integration tests against a real database
-4. **Smoke test** — Full `docker compose up` with health checks for all 6 services
-5. **Push** — Images tagged `latest` and pushed to Docker Hub (main branch only)
+1. **Build** — `dotnet build Promise-Model-Online.sln`
+2. **Code style** — `dotnet format --verify-no-changes`
+3. **Package audit** — NuGet vulnerability check + npm audit
+4. **Quality** — ESLint, stylelint, HTML lint, nginx check, typecheck, jscpd, knip
+5. **Coverage** — Vitest with 70% threshold (lines, branches, functions, statements)
+6. **Build** — `npm run build` (Vite production bundle)
+7. **Boundary checks** — Layer 1 (prod deps), Layer 2 (source imports), Layer 3 (bundle)
+8. **Server tests** — Auth Unit, API Unit, Auth Integration, BFF Integration, API Integration
+9. **Client UI tests** — Chromium, Firefox, WebKit (via docker compose)
+10. **A11y + Responsive + Lighthouse** — axe-core scans, viewport checks, LHCI assertions
+11. **Memory leak audit** — memlab single-run + iterative heap analysis
+12. **E2E tests** — Core (268 tests) + Rate limiting (6 tests)
+13. **E2E rate-limit stack** — With rate limiting enabled
+14. **Security** — OWASP ZAP DAST scan
+15. **Database performance** — Query execution time verification
+16. **Container security** — Hadolint (Dockerfiles), Trivy (filesystem + images)
+17. **SBOM generation** — CycloneDX for source and all container images
+18. **Push** — Docker images to DockerHub (main branch only)
 
 Secrets are injected at runtime via GitHub Secrets, never baked into images.
+
+### Local CI with `act`
+
+Run the full `BuildAndTest.yml` pipeline locally using [`act`](https://github.com/nektos/act):
+
+```bash
+# Prerequisites: Docker, act (v0.2.70+), and the .secrets file
+
+# First pull the runner image (~18 GB playwright/mcr images):
+act -W .github/workflows/BuildAndTest.yml --secret-file .secrets --pull=true
+
+# Subsequent runs (reuse cached runner image, much faster):
+act -W .github/workflows/BuildAndTest.yml --secret-file .secrets --pull=false
+```
+
+**Setup:**
+
+1. Ensure `.secrets` exists in the repo root (gitignored) with all secrets the workflow references. A template is generated on first use.
+2. Generate dev certs: `bash scripts/generate-dev-certs.sh`
+3. Ensure `secrets/` directory has the required password files (create with `openssl rand` if missing).
+
+**Notes:**
+- Steps that depend on GitHub API (Codecov upload, Trivy SARIF upload, Docker Hub push) are skipped via `if: env.ACT != 'true'` — they pass silently in local runs.
+- The `--secret-file` passes all required secrets; the workflow writes them to `./secrets/` files as it does in CI.
+- `act` mounts the Docker socket, so `docker compose` steps (E2E, client UI tests) work natively.
+- First run downloads ~18 GB of runner images (playwright + .NET SDK). Cache it with `--pull=false` on subsequent runs.
 
 ---
 
@@ -329,9 +438,9 @@ Promise-Model-Online/
 │       │   ├── navigation/
 │       │   └── utils/
 │       └── templates/
-├── PromiseModelOnline.Auth.Tests/  # Auth server tests (NUnit)
+├── PromiseModelOnline.Auth.Tests/  # Auth server tests (NUnit + Playwright)
 ├── PromiseModelOnline.Api.Tests/   # API tests (NUnit)
-├── PromiseModelOnline.Client.Tests/ # UI tests (Selenium)
+├── PromiseModelOnline.Client.Tests/ # UI + Vitest unit tests (NUnit + Playwright + Vitest)
 ├── db/init/                        # Database initialization scripts
 │   └── run-init.sh                 # Creates databases, logins, users
 ├── secrets/                        # Local secret files (gitignored)

@@ -19,6 +19,7 @@ beforeEach(() => {
 
 describe('mountDetailStackGraph double-invocation guard', () => {
     it('handles multiple rapid mounts (stale mount token)', async () => {
+        // Arrange
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockResolvedValue({
             id: 1, name: 'Project', promises: [{ id: 1, sequenceNumber: 1, statement: 'P1', epics: [] }],
@@ -28,16 +29,21 @@ describe('mountDetailStackGraph double-invocation guard', () => {
         const container = document.getElementById('detail-stack-graph')!;
         const p1 = mountDetailStackGraph({ nodeType: 'promise', nodeId: '1', owner: 'o', project: 'p' });
         const p2 = mountDetailStackGraph({ nodeType: 'promise', nodeId: '1', owner: 'o', project: 'p' });
+        // Act
         await Promise.all([p1, p2]);
+        // Assert
         expect(container.classList.contains('detail-stack-graph--loading')).toBe(false);
     });
 
     it('handles API failure gracefully', async () => {
+        // Arrange
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockRejectedValue(new Error('API error'));
         const { mountDetailStackGraph } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/detail-stack-graph.ts');
         const container = document.getElementById('detail-stack-graph')!;
+        // Act
         await mountDetailStackGraph({ nodeType: 'promise', nodeId: '1', owner: 'o', project: 'p' });
+        // Assert
         expect(container.classList.contains('detail-stack-graph--loading')).toBe(false);
     });
 });

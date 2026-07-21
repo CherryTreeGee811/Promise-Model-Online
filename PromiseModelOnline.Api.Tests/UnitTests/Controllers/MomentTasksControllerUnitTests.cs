@@ -53,42 +53,53 @@ public class MomentTasksControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_Create_Valid_ReturnsOk()
     {
+        // Arrange
         _momentServiceMock.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(new Moment { Id = 1 });
         _momentTaskServiceMock.Setup(s => s.CreateAsync(It.IsAny<MomentTask>()))
             .ReturnsAsync(new MomentTask { Id = 10, Name = "Task" });
 
+        // Act
         var result = await _controller.Create(1, new CreateMomentTaskRequestDto { Name = "New Task" });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Create_NullBody_Returns400()
     {
+        // Arrange
         var result = await _controller.Create(1, null!);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Create_MomentNotFound_Returns404()
     {
+        // Arrange
         _momentServiceMock.Setup(s => s.GetByIdAsync(999)).ReturnsAsync((Moment?)null);
 
+        // Act
         var result = await _controller.Create(999, new CreateMomentTaskRequestDto { Name = "Task" });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Create_NoPermission_Returns403()
     {
+        // Arrange
         _momentServiceMock.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(new Moment { Id = 1 });
         _permissionServiceMock.Setup(s => s.GetUserPermissionAsync(10, It.IsAny<int>()))
             .ReturnsAsync(PermissionLevel.View);
 
+        // Act
         var result = await _controller.Create(1, new CreateMomentTaskRequestDto { Name = "Task" });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
 
         _permissionServiceMock.Setup(s => s.GetUserPermissionAsync(10, It.IsAny<int>()))
@@ -98,44 +109,55 @@ public class MomentTasksControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_UpdateCompletion_Valid_ReturnsOk()
     {
+        // Arrange
         _momentTaskServiceMock.Setup(s => s.GetByIdAsync(5))
             .ReturnsAsync(new MomentTask { Id = 5, MomentId = 1, Name = "Task" });
         _momentTaskServiceMock.Setup(s => s.UpdateAsync(It.IsAny<MomentTask>()))
             .ReturnsAsync(new MomentTask { Id = 5, MomentId = 1 });
 
+        // Act
         var result = await _controller.UpdateCompletion(1, 5, new UpdateMomentTaskCompletionRequestDto { IsCompleted = true });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateCompletion_NullBody_Returns400()
     {
+        // Arrange
         var result = await _controller.UpdateCompletion(1, 5, null!);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateCompletion_TaskNotFound_Returns404()
     {
+        // Arrange
         _momentTaskServiceMock.Setup(s => s.GetByIdAsync(999)).ReturnsAsync((MomentTask?)null);
 
+        // Act
         var result = await _controller.UpdateCompletion(1, 999, new UpdateMomentTaskCompletionRequestDto { IsCompleted = true });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateCompletion_NoPermission_Returns403()
     {
+        // Arrange
         _momentTaskServiceMock.Setup(s => s.GetByIdAsync(5))
             .ReturnsAsync(new MomentTask { Id = 5, MomentId = 1, Name = "Task" });
         _permissionServiceMock.Setup(s => s.GetUserPermissionAsync(10, It.IsAny<int>()))
             .ReturnsAsync(PermissionLevel.View);
 
+        // Act
         var result = await _controller.UpdateCompletion(1, 5, new UpdateMomentTaskCompletionRequestDto { IsCompleted = true });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
 
         _permissionServiceMock.Setup(s => s.GetUserPermissionAsync(10, It.IsAny<int>()))

@@ -29,13 +29,15 @@ describe('loadComments', () => {
     });
 
     it('renders heading and empty comments list with canComment permission', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const { createCommentAutocomplete } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts');
         vi.mocked(apiGet).mockResolvedValue([]);
 
+        // Act
         await loadComments(container, 'Moment', 123, 'owner', 'project', { permission: 'Edit' });
-
+        // Assert
         expect(container.querySelector('h3')?.textContent).toBe('Comments');
         expect(container.querySelector('#comments-list')).toBeTruthy();
         expect(container.querySelector('#comment-form')).toBeTruthy();
@@ -50,29 +52,35 @@ describe('loadComments', () => {
     });
 
     it('renders heading without form when canComment is false', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockResolvedValue([]);
 
+        // Act
         await loadComments(container, 'Moment', 123, 'owner', 'project');
-
+        // Assert
         expect(container.querySelector('#comment-form')).toBeNull();
         expect(container.querySelector('.no-items')?.textContent).not.toContain('Be the first');
     });
 
     it('renders error message when API fails', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockRejectedValue(new Error('Network error'));
 
         await loadComments(container, 'Moment', 123, 'owner', 'project');
 
+        // Act
         const errorEl = container.querySelector('.error');
+        // Assert
         expect(errorEl).toBeTruthy();
         expect(errorEl?.textContent).toBe('Failed to load comments.');
     });
 
     it('renders comment items when data is returned', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const comments = [
@@ -83,13 +91,16 @@ describe('loadComments', () => {
 
         await loadComments(container, 'Moment', 123, 'owner', 'project');
 
+        // Act
         const items = container.querySelectorAll('.comment-item');
+        // Assert
         expect(items.length).toBe(2);
         expect(items[0].querySelector('strong')?.textContent).toBe('Alice');
         expect(items[1].querySelector('strong')?.textContent).toBe('Bob');
     });
 
     it('submits form and appends comment', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet, apiPost } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const { showToast } = await import('../../PromiseModelOnline.Client/wwwroot/js/ui/toast.ts');
@@ -104,7 +115,9 @@ describe('loadComments', () => {
         textarea.value = 'New comment';
         form.dispatchEvent(new Event('submit'));
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(apiPost).toHaveBeenCalledWith('/api/comments', {
                 parentType: 'Moment',
                 parentId: 123,
@@ -118,6 +131,7 @@ describe('loadComments', () => {
     });
 
     it('ignores submission with empty text', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet, apiPost } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockResolvedValue([]);
@@ -129,11 +143,14 @@ describe('loadComments', () => {
         textarea.value = '   ';
         form.dispatchEvent(new Event('submit'));
 
+        // Act
         await flushPromises();
+        // Assert
         expect(apiPost).not.toHaveBeenCalled();
     });
 
     it('shows toast on form submission failure', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet, apiPost } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const { showToast } = await import('../../PromiseModelOnline.Client/wwwroot/js/ui/toast.ts');
@@ -148,7 +165,9 @@ describe('loadComments', () => {
         textarea.value = 'Test';
         form.dispatchEvent(new Event('submit'));
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(showToast).toHaveBeenCalledWith('Failed to post comment.', 'error');
         });
         expect(consoleSpy).toHaveBeenCalled();
@@ -156,14 +175,16 @@ describe('loadComments', () => {
     });
 
     it('removes empty state when appending first comment', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet, apiPost } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const createdComment = { id: 1, userName: 'Me', createdAt: new Date().toISOString(), text: 'First!' };
         vi.mocked(apiGet).mockResolvedValue([]);
         vi.mocked(apiPost).mockResolvedValue(createdComment);
 
+        // Act
         await loadComments(container, 'Moment', 123, 'owner', 'project', { permission: 'Edit' });
-
+        // Assert
         expect(container.querySelector('.no-items')).toBeTruthy();
 
         const textarea = container.querySelector('#comment-textarea') as HTMLTextAreaElement;
@@ -177,6 +198,7 @@ describe('loadComments', () => {
     });
 
     it('renders comment with mentions and replies', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const comments = [{
@@ -190,7 +212,9 @@ describe('loadComments', () => {
 
         await loadComments(container, 'Moment', 123, 'owner', 'project');
 
+        // Act
         const mentions = container.querySelector('.comment-mentions');
+        // Assert
         expect(mentions).toBeTruthy();
         expect(mentions?.textContent).toContain('alice');
 
@@ -201,6 +225,7 @@ describe('loadComments', () => {
     });
 
     it('uses authorName when userName is missing', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const comments = [{
@@ -210,12 +235,14 @@ describe('loadComments', () => {
         }];
         vi.mocked(apiGet).mockResolvedValue(comments);
 
+        // Act
         await loadComments(container, 'Moment', 123, 'owner', 'project');
-
+        // Assert
         expect(container.querySelector('.comment-item strong')?.textContent).toBe('Charlie');
     });
 
     it('appends comment when comments already exist', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet, apiPost } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const existingComments = [
@@ -225,8 +252,9 @@ describe('loadComments', () => {
         vi.mocked(apiGet).mockResolvedValue(existingComments);
         vi.mocked(apiPost).mockResolvedValue(newComment);
 
+        // Act
         await loadComments(container, 'Moment', 123, 'owner', 'project', { permission: 'Edit' });
-
+        // Assert
         expect(container.querySelectorAll('.comment-item').length).toBe(1);
 
         const textarea = container.querySelector('#comment-textarea') as HTMLTextAreaElement;
@@ -240,6 +268,7 @@ describe('loadComments', () => {
     });
 
     it('shows Unknown for reply when no userName or authorName', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const comments = [{
@@ -252,11 +281,14 @@ describe('loadComments', () => {
 
         await loadComments(container, 'Moment', 123, 'owner', 'project');
 
+        // Act
         const reply = container.querySelector('.comment-replies .reply');
+        // Assert
         expect(reply?.querySelector('strong')?.textContent).toBe('Unknown');
     });
 
     it('renders reply with authorName fallback', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const comments = [{
@@ -269,11 +301,14 @@ describe('loadComments', () => {
 
         await loadComments(container, 'Moment', 123, 'owner', 'project');
 
+        // Act
         const reply = container.querySelector('.comment-replies .reply');
+        // Assert
         expect(reply?.querySelector('strong')?.textContent).toBe('Alice');
     });
 
     it('shows Unknown when no userName or authorName', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         const comments = [{
@@ -282,8 +317,9 @@ describe('loadComments', () => {
         }];
         vi.mocked(apiGet).mockResolvedValue(comments);
 
+        // Act
         await loadComments(container, 'Moment', 123, 'owner', 'project');
-
+        // Assert
         expect(container.querySelector('.comment-item strong')?.textContent).toBe('Unknown');
     });
 });

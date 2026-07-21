@@ -69,13 +69,13 @@
   "overrides": {
     "tmp": "0.2.7",
     "uuid": "14.0.0",
-    "js-yaml": "4.2.0"
+    "js-yaml": "4.3.0"
   },
   "allowScripts": {
-    "memlab@2.0.3": true,
-    "@memlab/cli@2.0.3": true,
-    "puppeteer@24.43.1": true,
     "sleep@6.1.0": true,
-    "unrs-resolver@1.12.2": true
+    "unrs-resolver@1.12.2": true,
+    "@memlab/cli@2.0.4": true,
+    "memlab@2.0.4": true,
+    "puppeteer@24.31.0": true
   }
 }

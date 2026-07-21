@@ -1,19 +1,31 @@
 services:
-  promisemodelonline.client:
-    image: cherrytree811/promisemodelonlineclient
-    container_name: promisemodelonlineclient
+  promisemodelonline.proxy:
+    image: cherrytree811/promisemodelonlineproxy
+    container_name: promisemodelonlineproxy
     hostname: localhost
     ports:
       - "127.0.0.1:9000:9000/tcp"
     depends_on:
       - promisemodelonline.bff
+      - promisemodelonline.client
     networks:
       - promisemodelonline-net
     volumes:
       - ./keys/client/cert.pem:/etc/nginx/cert.pem:ro
       - ./keys/client/key.pem:/etc/nginx/key.pem:ro
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "sh", "-c", "test -f /tmp/nginx.pid"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  promisemodelonline.client:
+    image: cherrytree811/promisemodelonlineclient
+    container_name: promisemodelonlineclient
+    networks:
+      - promisemodelonline-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:4000/"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -31,7 +43,7 @@ services:
     networks:
       - promisemodelonline-net
     depends_on:
-      promisemodelonline.client:
+      promisemodelonline.proxy:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "cloudflared", "tunnel", "info"]

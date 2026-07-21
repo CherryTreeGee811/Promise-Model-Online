@@ -164,6 +164,7 @@ public class CommentRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_FUN_017_GetCommentsForEntityAsync_NoComments_ReturnsEmptyList()
     {
         // Act
+        // Arrange
         var result = await _repo.GetCommentsForEntityAsync("journey", 99);
         // Assert
         Assert.That(result, Is.Empty);
@@ -240,6 +241,7 @@ public class CommentRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_FUN_017_SearchStackByStatementAsync_EmptySearch_ReturnsEmpty()
     {
         // Act
+        // Arrange
         var result = await _repo.SearchStackByStatementAsync(1, "", 5);
         // Assert
         Assert.That(result, Is.Empty);

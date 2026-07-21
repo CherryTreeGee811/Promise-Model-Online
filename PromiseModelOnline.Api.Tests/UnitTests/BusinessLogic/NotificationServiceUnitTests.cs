@@ -89,10 +89,13 @@ public class NotificationServiceUnitTests
     [Test]
     public async Task REQ_FUN_035_GetUnreadNotificationsAsync_NoUnread_ReturnsEmpty()
     {
+        // Arrange
         _notificationRepoMock.Setup(r => r.GetUnreadByUserIdAsync(5)).ReturnsAsync(new List<Notification>());
 
+        // Act
         var result = await _service.GetUnreadNotificationsAsync(5);
 
+        // Assert
         Assert.That(result, Is.Empty);
     }
 
@@ -103,6 +106,7 @@ public class NotificationServiceUnitTests
     [Test]
     public async Task REQ_FUN_035_GetAllNotificationsAsync_ReturnsMappedDtos()
     {
+        // Arrange
         var notifications = new List<Notification>
             {
                 new Notification { Id = 1, Message = "All N1" }
@@ -115,8 +119,10 @@ public class NotificationServiceUnitTests
                        Message = n.Message
                    });
 
+        // Act
         var result = await _service.GetAllNotificationsAsync(20);
 
+        // Assert
         Assert.That(result.Count(), Is.EqualTo(1));
         Assert.That(result.First().Message, Is.EqualTo("All N1"));
     }
@@ -124,10 +130,13 @@ public class NotificationServiceUnitTests
     [Test]
     public async Task REQ_FUN_035_GetAllNotificationsAsync_Empty_ReturnsEmpty()
     {
+        // Arrange
         _notificationRepoMock.Setup(r => r.GetAllByUserIdAsync(30)).ReturnsAsync(new List<Notification>());
 
+        // Act
         var result = await _service.GetAllNotificationsAsync(30);
 
+        // Assert
         Assert.That(result, Is.Empty);
     }
 
@@ -138,29 +147,36 @@ public class NotificationServiceUnitTests
     [Test]
     public async Task REQ_FUN_035_MarkAsReadAsync_Valid_MarksAsRead()
     {
+        // Arrange
         var notification = new Notification { Id = 1, UserId = 100 };
         _notificationRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(notification);
         _notificationRepoMock.Setup(r => r.MarkAsReadAsync(1)).Returns(Task.CompletedTask);
 
+        // Act
         await _service.MarkAsReadAsync(1, 100);
 
+        // Assert
         _notificationRepoMock.Verify(r => r.MarkAsReadAsync(1), Times.Once);
     }
 
     [Test]
     public void REQ_FUN_035_MarkAsReadAsync_NotificationNotFound_Throws()
     {
+        // Arrange
         _notificationRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Notification?)null);
 
+        // Assert
         Assert.ThrowsAsync<InvalidOperationException>(() => _service.MarkAsReadAsync(99, 1));
     }
 
     [Test]
     public void REQ_FUN_035_MarkAsReadAsync_WrongUser_ThrowsAccessDenied()
     {
+        // Arrange
         var notification = new Notification { Id = 2, UserId = 200 };
         _notificationRepoMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(notification);
 
+        // Assert
         Assert.ThrowsAsync<InvalidOperationException>(() => _service.MarkAsReadAsync(2, 999));
     }
 
@@ -171,10 +187,13 @@ public class NotificationServiceUnitTests
     [Test]
     public async Task REQ_FUN_035_MarkAllAsReadAsync_DelegatesToRepository()
     {
+        // Arrange
         _notificationRepoMock.Setup(r => r.MarkAllAsReadAsync(50)).Returns(Task.CompletedTask);
 
+        // Act
         await _service.MarkAllAsReadAsync(50);
 
+        // Assert
         _notificationRepoMock.Verify(r => r.MarkAllAsReadAsync(50), Times.Once);
     }
 
@@ -219,6 +238,7 @@ public class NotificationServiceUnitTests
     [Test]
     public async Task REQ_FUN_035_CreateNotificationAsync_LinkIsNull_DoesNotSetLink()
     {
+        // Arrange
         Notification? savedNotification = null;
         _notificationRepoMock.Setup(r => r.AddAsync(It.IsAny<Notification>()))
                              .Callback<Notification>(n => savedNotification = n)
@@ -231,8 +251,10 @@ public class NotificationServiceUnitTests
                        Message = n.Message
                    });
 
+        // Act
         await _service.CreateNotificationAsync(1, NotificationType.Deadline, "Stride ending");
 
+        // Assert
         Assert.That(savedNotification, Is.Not.Null);
         Assert.That(savedNotification!.Link, Is.Null);
     }

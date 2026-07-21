@@ -129,6 +129,7 @@ describe('loadProjectAuditHistoryPage', () => {
     });
 
     it('renders pagination with next/previous buttons', async () => {
+        // Arrange
         mockGetProject.mockResolvedValue({ name: 'P' });
         mockGetAuditEvents.mockResolvedValue({ items: [{ id: 1 }], totalCount: 50 });
         mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td></tr></tbody></table>');
@@ -136,12 +137,15 @@ describe('loadProjectAuditHistoryPage', () => {
         loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
         await vi.waitFor(() => {
             const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
+        // Act
+        // Assert
             expect(nextBtn).not.toBeNull();
             expect(nextBtn.disabled).toBe(false);
         });
     });
 
     it('navigates to next page on next button click', async () => {
+        // Arrange
         mockGetProject.mockResolvedValue({ name: 'P' });
         mockGetAuditEvents.mockResolvedValue({ items: [{ id: 1 }], totalCount: 50 });
         mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td></tr></tbody></table>');
@@ -150,17 +154,22 @@ describe('loadProjectAuditHistoryPage', () => {
         await vi.waitFor(() => {
             const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
             if (nextBtn) nextBtn.click();
+        // Act
+        // Assert
             expect(mockGetAuditEvents).toHaveBeenCalledTimes(2);
         });
     });
 
     it('navigates to previous page on previous button click', async () => {
+        // Arrange
         mockGetProject.mockResolvedValue({ name: 'P' });
         mockGetAuditEvents.mockResolvedValue({ items: [{ id: 1 }], totalCount: 50 });
         mockRenderAuditTable.mockReturnValue('<table><tbody><tr class="audit-row"><td>event</td></tr></tbody></table>');
         const { loadProjectAuditHistoryPage } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/history.ts');
         loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
         await vi.waitFor(() => {
+        // Act
+        // Assert
             expect(mockGetAuditEvents).toHaveBeenCalledTimes(1);
         });
         const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
@@ -182,6 +191,7 @@ describe('loadProjectAuditHistoryPage', () => {
     });
 
     it('opens audit details on detail link click', async () => {
+        // Arrange
         mockGetProject.mockResolvedValue({ name: 'P' });
         const auditItem = { id: 1, action: 'update' };
         mockGetAuditEvents.mockResolvedValue({ items: [auditItem], totalCount: 1 });
@@ -192,6 +202,8 @@ describe('loadProjectAuditHistoryPage', () => {
             const link = document.querySelector('.audit-show-details-link') as HTMLAnchorElement;
             if (link) link.click();
             const modalTitle = document.querySelector('#audit-details-modal-title') as HTMLElement;
+        // Act
+        // Assert
             expect(modalTitle).not.toBeNull();
             expect(modalTitle.textContent).toBe('Detail');
         });
@@ -199,6 +211,7 @@ describe('loadProjectAuditHistoryPage', () => {
     });
 
     it('shows error on failed subsequent load', async () => {
+        // Arrange
         mockGetProject.mockResolvedValue({ name: 'P' });
         mockGetAuditEvents.mockResolvedValueOnce({ items: [{ id: 1 }], totalCount: 50 });
         mockGetAuditEvents.mockRejectedValueOnce(new Error('fail'));
@@ -207,6 +220,8 @@ describe('loadProjectAuditHistoryPage', () => {
         loadProjectAuditHistoryPage(document.createElement('div'), document.createElement('div'), 'o', 'p');
         await vi.waitFor(() => {
             const nextBtn = document.querySelector('[data-page-action="next"]') as HTMLButtonElement;
+        // Act
+        // Assert
             expect(nextBtn).not.toBeNull();
             expect(nextBtn.disabled).toBe(false);
         });

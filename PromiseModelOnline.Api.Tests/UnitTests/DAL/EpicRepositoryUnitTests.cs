@@ -60,6 +60,7 @@ public class EpicRepositoryUnitTests : RepositoryTestBase
     public async Task REQ_FUN_005_GetEpicsByPromiseAsync_EmptyDatabase_ReturnsEmpty()
     {
         // Act
+        // Arrange
         var result = await _repo.GetEpicsByPromiseAsync(1);
         // Assert
         Assert.That(result, Is.Empty);

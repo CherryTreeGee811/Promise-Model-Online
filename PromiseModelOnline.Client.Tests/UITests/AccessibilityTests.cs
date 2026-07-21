@@ -39,57 +39,81 @@ public class AccessibilityTests : PlaywrightTestBase
     [Test]
     public async Task REQ_WCAG_001_HomePage_NoAccessibilityViolations()
     {
+        // Arrange
         await EnsureLoggedIn();
+        // Act
         await AssertNoAxeViolations("Home page");
+        // Assert
     }
 
     [Test]
     public async Task REQ_WCAG_002_ProjectsList_NoAccessibilityViolations()
     {
+        // Arrange
         await NavigateAsUser("/projects");
+        // Act
         await AssertNoAxeViolations("Projects list");
+        // Assert
     }
 
     [Test]
     public async Task REQ_WCAG_003_ProjectGraph_NoAccessibilityViolations()
     {
+        // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
         await WaitForSelectorAsync("#graph-viewport");
+        // Act
         await AssertNoAxeViolations("Project graph");
+        // Assert
     }
 
     [Test]
     public async Task REQ_WCAG_005_PromiseDetail_NoAccessibilityViolations()
     {
+        // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/promises/1");
+        // Act
         await AssertNoAxeViolations("Promise detail");
+        // Assert
     }
 
     [Test]
     public async Task REQ_WCAG_007_PrivacyPage_NoAccessibilityViolations()
     {
+        // Arrange
         await NavigateAsUser("/privacy");
+        // Act
         await AssertNoAxeViolations("Privacy page");
+        // Assert
     }
 
     [Test]
     public async Task REQ_WCAG_007_TermsPage_NoAccessibilityViolations()
     {
+        // Arrange
         await NavigateAsUser("/tos");
+        // Act
         await AssertNoAxeViolations("Terms of Service");
+        // Assert
     }
 
     [Test]
     public async Task REQ_WCAG_007_NotificationsPage_NoAccessibilityViolations()
     {
+        // Arrange
         await NavigateAsUser("/notifications");
+        // Act
         await AssertNoAxeViolations("Notifications");
+        // Assert
     }
 
     [Test]
     public async Task REQ_WCAG_007_StrideBoard_NoAccessibilityViolations()
     {
+        // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/strides");
+        // Act
         await AssertNoAxeViolations("Stride board");
+        // Assert
     }
 }

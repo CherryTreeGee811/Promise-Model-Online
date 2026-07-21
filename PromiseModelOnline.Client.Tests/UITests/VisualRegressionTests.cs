@@ -21,49 +21,67 @@ public class VisualRegressionTests : PlaywrightTestBase
     [Test]
     public async Task REQ_VIS_001_HomePage_Screenshot()
     {
+        // Arrange
         await EnsureLoggedIn();
         await Task.Delay(500);
+        // Act
         await CaptureScreenshot("home");
+        // Assert
     }
 
     [Test]
     public async Task REQ_VIS_002_ProjectsList_Screenshot()
     {
+        // Arrange
         await NavigateAsUser("/projects");
         await Task.Delay(500);
+        // Act
         await CaptureScreenshot("projects-list");
+        // Assert
     }
 
     [Test]
     public async Task REQ_VIS_003_ProjectGraph_Screenshot()
     {
+        // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/graph");
         await WaitForSelectorAsync("#graph-viewport");
         await Task.Delay(1000);
+        // Act
         await CaptureScreenshot("graph");
+        // Assert
     }
 
     [Test]
     public async Task REQ_VIS_004_StrideBoard_Screenshot()
     {
+        // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/strides");
         await Task.Delay(1000);
+        // Act
         await CaptureScreenshot("stride-board");
+        // Assert
     }
 
     [Test]
     public async Task REQ_VIS_005_PromiseDetail_Screenshot()
     {
+        // Arrange
         await NavigateAsUser("/pmo_test/seeded-project/promises/1");
         await Task.Delay(500);
+        // Act
         await CaptureScreenshot("promise-detail");
+        // Assert
     }
 
     [Test]
     public async Task REQ_VIS_006_NavigationMenu_Screenshot()
     {
+        // Arrange
         await EnsureLoggedIn();
         await Task.Delay(500);
+        // Act
         await CaptureScreenshot("navigation");
+        // Assert
     }
 }

@@ -40,52 +40,70 @@ beforeEach(() => {
 
 describe('setupAddChildForm', () => {
     it('returns early when form element is missing', async () => {
+        // Arrange
         document.body.innerHTML = '';
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig();
+        // Act
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
+        // Assert
         expect(config.onCreate).not.toHaveBeenCalled();
     });
 
     it('returns early when statement input is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<form id="add-form"><span id="form-msg"></span><button id="submit-btn">Add</button></form>';
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig();
+        // Act
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
+        // Assert
         expect(config.onCreate).not.toHaveBeenCalled();
     });
 
     it('returns early when message element is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<form id="add-form"><input id="statement-input" /><button id="submit-btn">Add</button></form>';
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig();
+        // Act
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
+        // Assert
         expect(config.onCreate).not.toHaveBeenCalled();
     });
 
     it('returns early when submit button is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<form id="add-form"><input id="statement-input" /><span id="form-msg"></span></form>';
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig();
+        // Act
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
+        // Assert
         expect(config.onCreate).not.toHaveBeenCalled();
     });
 
     it('returns early when typeSelectId is specified but element is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<form id="add-form"><input id="statement-input" /><button id="submit-btn">Add</button><span id="form-msg"></span></form>';
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig({ typeSelectId: 'missing-select' });
+        // Act
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
+        // Assert
         expect(config.onCreate).not.toHaveBeenCalled();
     });
 
     it('shows validation message when statement is empty', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig();
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
         const form = document.getElementById('add-form') as HTMLFormElement;
         const msg = document.getElementById('form-msg')!;
+        // Act
         form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(msg.textContent).toBe('Statement is required.');
         expect(config.onCreate).not.toHaveBeenCalled();
         const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
@@ -93,6 +111,7 @@ describe('setupAddChildForm', () => {
     });
 
     it('creates entity and inserts row on successful submission', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const { removeInlineEmptyRow, insertRowBeforeAddRow } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-table.ts');
         const { patchChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/detail-stack-graph.ts');
@@ -102,7 +121,9 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onCreate).toHaveBeenCalledWith('New epic', undefined);
         expect(removeInlineEmptyRow).toHaveBeenCalled();
         expect(insertRowBeforeAddRow).toHaveBeenCalled();
@@ -111,6 +132,7 @@ describe('setupAddChildForm', () => {
     });
 
     it('calls onSuccess callback when provided', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const { patchChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/detail-stack-graph.ts');
         const onSuccess = vi.fn();
@@ -119,12 +141,15 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onSuccess).toHaveBeenCalled();
         expect(patchChildMetrics).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onSuccess when not provided', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig();
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
@@ -135,6 +160,7 @@ describe('setupAddChildForm', () => {
     });
 
     it('handles created being null (no row insertion)', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const { removeInlineEmptyRow, insertRowBeforeAddRow } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-table.ts');
         const { patchChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/detail-stack-graph.ts');
@@ -144,7 +170,9 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onCreate).toHaveBeenCalledWith('New epic', undefined);
         expect(removeInlineEmptyRow).not.toHaveBeenCalled();
         expect(insertRowBeforeAddRow).not.toHaveBeenCalled();
@@ -152,6 +180,7 @@ describe('setupAddChildForm', () => {
     });
 
     it('handles tbody being null (no row insertion)', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const { removeInlineEmptyRow, insertRowBeforeAddRow } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-table.ts');
         const { patchChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/detail-stack-graph.ts');
@@ -161,7 +190,9 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onCreate).toHaveBeenCalled();
         expect(removeInlineEmptyRow).not.toHaveBeenCalled();
         expect(insertRowBeforeAddRow).not.toHaveBeenCalled();
@@ -169,6 +200,7 @@ describe('setupAddChildForm', () => {
     });
 
     it('passes extra from getExtra when provided', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const onCreate = vi.fn().mockResolvedValue({ id: 42 });
         const getExtra = vi.fn().mockReturnValue('Bug');
@@ -177,12 +209,15 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New item';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(getExtra).toHaveBeenCalled();
         expect(onCreate).toHaveBeenCalledWith('New item', 'Bug');
     });
 
     it('passes only statement when getExtra is not provided', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const onCreate = vi.fn().mockResolvedValue({ id: 42 });
         const config = createMockConfig({ onCreate, getExtra: undefined });
@@ -190,11 +225,14 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New item';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onCreate).toHaveBeenCalledWith('New item', undefined);
     });
 
     it('shows error message when onCreate throws', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const onCreate = vi.fn().mockRejectedValue(new Error('API error'));
         const config = createMockConfig({ onCreate });
@@ -204,12 +242,15 @@ describe('setupAddChildForm', () => {
         const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(msg.textContent).toBe('Failed to add epic.');
         expect(submitBtn.disabled).toBe(false);
     });
 
     it('re-enables submit button after success', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const onCreate = vi.fn().mockResolvedValue({ id: 42 });
         const config = createMockConfig({ onCreate });
@@ -218,11 +259,14 @@ describe('setupAddChildForm', () => {
         const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(submitBtn.disabled).toBe(false);
     });
 
     it('re-enables submit button after error', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const onCreate = vi.fn().mockRejectedValue(new Error('fail'));
         const config = createMockConfig({ onCreate });
@@ -231,11 +275,14 @@ describe('setupAddChildForm', () => {
         const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(submitBtn.disabled).toBe(false);
     });
 
     it('includes items in patchChildMetrics when provided', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const { patchChildMetrics } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/detail-stack-graph.ts');
         const items = [{ id: 1, name: 'Existing' }];
@@ -245,11 +292,14 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(patchChildMetrics).toHaveBeenCalledWith('epic-42', [{ id: 1, name: 'Existing' }, { id: 2, name: 'New' }]);
     });
 
     it('resets typeSelect value when present', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const config = createMockConfig({ typeSelectId: 'type-select' });
         setupAddChildForm(config as Parameters<typeof setupAddChildForm>[0]);
@@ -258,11 +308,14 @@ describe('setupAddChildForm', () => {
         const typeSelect = document.getElementById('type-select') as HTMLSelectElement;
         typeSelect.value = 'Other';
         input.value = 'New item';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(typeSelect.value).toBe('Story');
     });
 
     it('trims whitespace from statement input', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const onCreate = vi.fn().mockResolvedValue({ id: 42 });
         const config = createMockConfig({ onCreate });
@@ -270,11 +323,14 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = '  spaced epic  ';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onCreate).toHaveBeenCalledWith('spaced epic', undefined);
     });
 
     it('copies data- attributes from parsed row', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const { removeInlineEmptyRow, insertRowBeforeAddRow } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-table.ts');
         const onCreate = vi.fn().mockResolvedValue({ id: 99 });
@@ -284,7 +340,9 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'has data attr';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onCreate).toHaveBeenCalledWith('has data attr', undefined);
         expect(removeInlineEmptyRow).toHaveBeenCalled();
         expect(insertRowBeforeAddRow).toHaveBeenCalled();
@@ -294,6 +352,7 @@ describe('setupAddChildForm', () => {
     });
 
     it('handles getRowHtml returning no tr element (parsedRow null)', async () => {
+        // Arrange
         const { setupAddChildForm } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-add-form.ts');
         const { removeInlineEmptyRow, insertRowBeforeAddRow } = await import('../../PromiseModelOnline.Client/wwwroot/js/utils/inline-table.ts');
         const onCreate = vi.fn().mockResolvedValue({ id: 42 });
@@ -303,12 +362,15 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'test no tr';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(removeInlineEmptyRow).toHaveBeenCalled();
         expect(insertRowBeforeAddRow).toHaveBeenCalled();
     });
 
     it('handles parsed row without getAttributeNames (?? [])', async () => {
+        // Arrange
         const origParseFromString = DOMParser.prototype.parseFromString;
         const mockRow = document.createElement('tr');
         mockRow.setAttribute('data-epic-id', '42');
@@ -326,7 +388,9 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'test';
+        // Act
         await form.dispatchEvent(new Event('submit'));
+        // Assert
         expect(onCreate).toHaveBeenCalledWith('test', undefined);
         DOMParser.prototype.parseFromString = origParseFromString;
     });

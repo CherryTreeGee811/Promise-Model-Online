@@ -1,11 +1,12 @@
 ---
-- name: Deploy Docker Compose stack to VM
+- name: Deploy Docker Swarm stack to VM
   hosts: vm_host
   gather_facts: true
 
   vars:
     deploy_root: "{{ playbook_dir }}/../../"
     project_root: "{{ pmo_repo_root }}"
+    stack_name: promisemodelonline
 
   tasks:
     - name: Create project directories on VM
@@ -124,70 +125,74 @@
         - "{{ project_root }}/keys/auth/cert.pfx"
         - "{{ project_root }}/keys/bff/key.pem"
         - "{{ project_root }}/keys/bff/cert.pem"
+        - "{{ project_root }}/keys/proxy/key.pem"
+        - "{{ project_root }}/keys/proxy/cert.pem"
+
+    - name: Initialize Docker Swarm (idempotent)
+      ansible.builtin.shell:
+        cmd: docker swarm init 2>&1 || true
+      register: swarm_init
+      changed_when: false
+
+    - name: Create Docker Swarm secrets from files
+      no_log: true
+      ansible.builtin.shell:
+        cmd: |
+          docker secret inspect "pmo_{{ item }}" > /dev/null 2>&1 || \
+          docker secret create "pmo_{{ item }}" "{{ project_root }}/secrets/{{ item }}.txt"
+      loop:
+        - db_sa_password
+        - api_db_password
+        - auth_db_password
+        - google_client_secret
+        - sendgrid_api_key
+        - cert_password
+        - umami_db_password
+        - umami_admin_password
+        - cloudflare_tunnel_token
+        - auth_registration_key
 
     - name: Pull Docker images from registry
       ansible.builtin.shell:
-        cmd: docker compose pull
-      args:
-        chdir: "{{ project_root }}"
+        cmd: for img in cherrytree811/promisemodelonlineapi cherrytree811/promisemodelonlineauth cherrytree811/promisemodelonlinebff cherrytree811/promisemodelonlineclient cherrytree811/promisemodelonlineproxy; do docker pull "$img" 2>&1; done
       register: pull_result
-      changed_when: "'Downloaded' in pull_result.stderr or 'Pulled' in pull_result.stderr"
+      changed_when: "'Downloaded' in pull_result.stdout or 'Pulled' in pull_result.stdout"
 
-    - name: Remove old stack and volumes for clean deploy
-      ansible.builtin.shell:
-        cmd: docker compose down -v 2>/dev/null; echo "cleaned"
-      args:
-        chdir: "{{ project_root }}"
-      changed_when: false
-
-    - name: Deploy Docker Compose stack
+    - name: Deploy Docker Swarm stack
       ansible.builtin.shell:
         cmd: |
           export DB_SA_PASSWORD=$(cat {{ project_root }}/secrets/db_sa_password.txt)
           export UMAMI_DB_PASSWORD=$(cat {{ project_root }}/secrets/umami_db_password.txt)
-          docker compose up -d
+          docker stack deploy -c docker-stack.yml "{{ stack_name }}"
       args:
         chdir: "{{ project_root }}"
       register: deploy_result
       changed_when: true
 
-    - name: Wait for all services to be healthy
+    - name: Wait for all services to stabilize
       ansible.builtin.shell:
         cmd: |
           for i in $(seq 1 60); do
-            ALL_READY=true
-            for c in promisemodelonlineauth promisemodelonlineapi promisemodelonlinebff promisemodelonlineclient; do
-              HEALTH=$(docker ps --filter "name=$c" --filter "health=healthy" -q 2>/dev/null)
-              if [ -z "$HEALTH" ]; then
-                ALL_READY=false
-              fi
-            done
-            if [ "$ALL_READY" = "true" ]; then
-              echo "All services ready"
+            FAILED=$(docker service ls --filter "name={{ stack_name }}" --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
+            if [ -z "$FAILED" ]; then
+              echo "All services stable"
               exit 0
             fi
             sleep 5
           done
           echo "ERROR: Timed out waiting for services"
-          docker compose ps
+          docker service ls --filter "name={{ stack_name }}"
           exit 1
       args:
         chdir: "{{ project_root }}"
+        executable: /bin/bash
       register: health_result
 
-    - name: Verify stack is serving
+    - name: Print stack status
       ansible.builtin.shell:
-        cmd: |
-          echo "=== BFF health ==="
-          curl -sk https://localhost:8010/health
-          echo ""
-          echo "=== Client HTTPS ==="
-          curl -sk https://localhost:9000/ | head -3
-          echo ""
-      args:
-        executable: /bin/bash
-      register: verify_result
+        cmd: docker service ls --filter "name={{ stack_name }}"
+      register: status_result
 
-    - name: Print deployment results
+    - name: Print deployment summary
       ansible.builtin.debug:
-        msg: "{{ verify_result.stdout }}"
+        msg: "{{ status_result.stdout }}"

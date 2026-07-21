@@ -10,7 +10,9 @@ beforeEach(() => {
 
 describe('loadProjectList', () => {
     it('imports without error', async () => {
+        // Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/list.ts');
+        // Assert
         expect(mod.loadProjectList).toBeDefined();
     });
 });

@@ -10,6 +10,7 @@ public class HomePageTests : PlaywrightTestBase
     [Test]
     public async Task REQ_SYS_021_HomePage_ShowsTitle()
     {
+        // Arrange
         // Act
         await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
         var title = await WaitForSelectorAsync(".home-page h1");
@@ -21,6 +22,7 @@ public class HomePageTests : PlaywrightTestBase
     [Test]
     public async Task REQ_SYS_021_HomePage_AnonymousUser_ShowsLoginAndRegisterLinks()
     {
+        // Arrange
         // Act
         await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
         var ctaArea = await WaitForSelectorAsync("#home-cta-area");
@@ -36,10 +38,13 @@ public class HomePageTests : PlaywrightTestBase
     [Test]
     public async Task REQ_SYS_021_HomePage_AuthenticatedUser_ShowsProjectAndTaskLinks()
     {
+        // Arrange
         await NavigateAsUser("/");
+        // Act
         var projectsLink = Page.Locator("#home-cta-area a[href='/projects']");
         var myTasksLink = Page.Locator("#home-cta-area a[href='/moments/my-tasks']");
         var kbLink = Page.Locator("#home-cta-area a[href='/knowledge-base']");
+        // Assert
         await Assertions.Expect(projectsLink).ToBeVisibleAsync();
         await Assertions.Expect(myTasksLink).ToBeVisibleAsync();
         await Assertions.Expect(kbLink).ToBeVisibleAsync();
@@ -48,6 +53,7 @@ public class HomePageTests : PlaywrightTestBase
     [Test]
     public async Task REQ_SYS_021_HomePage_ShowsStackCards()
     {
+        // Arrange
         // Act
         await Page.GotoAsync(BaseUrl + "/", new PageGotoOptions { Timeout = 2000 });
         await WaitForSelectorAsync(".home-stack-card--promise");

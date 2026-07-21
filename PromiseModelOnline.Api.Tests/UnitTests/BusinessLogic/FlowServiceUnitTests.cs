@@ -54,10 +54,13 @@ public class FlowServiceUnitTests
     [Test]
     public async Task REQ_FUN_007_GetFlowsByJourneyAsync_NoFlows_ReturnsEmpty()
     {
+        // Arrange
         _flowRepoMock.Setup(r => r.GetFlowsByJourneyAsync(99)).ReturnsAsync(new List<Flow>());
 
+        // Act
         var result = await _service.GetFlowsByJourneyAsync(99);
 
+        // Assert
         Assert.That(result, Is.Empty);
     }
 
@@ -68,20 +71,26 @@ public class FlowServiceUnitTests
     [Test]
     public async Task REQ_FUN_007_GetAllAsync_DelegatesToRepository()
     {
+        // Arrange
         var flows = new List<Flow> { new Flow { Id = 1 } };
         _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetAllAsync()).ReturnsAsync(flows);
 
+        // Act
         var result = await _service.GetAllAsync();
+        // Assert
         Assert.That(result.Count(), Is.EqualTo(1));
     }
 
     [Test]
     public async Task REQ_FUN_007_GetByIdAsync_ReturnsFlow_WhenFound()
     {
+        // Arrange
         var flow = new Flow { Id = 3, Statement = "Test" };
         _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetByIdAsync(3)).ReturnsAsync(flow);
 
+        // Act
         var result = await _service.GetByIdAsync(3);
+        // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result!.Id, Is.EqualTo(3));
     }
@@ -89,31 +98,40 @@ public class FlowServiceUnitTests
     [Test]
     public async Task REQ_FUN_007_GetByIdAsync_ReturnsNull_WhenNotFound()
     {
+        // Arrange
         _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Flow?)null);
 
+        // Act
         var result = await _service.GetByIdAsync(404);
+        // Assert
         Assert.That(result, Is.Null);
     }
 
     [Test]
     public async Task REQ_FUN_007_AddAsync_RollsUpHierarchyFromJourney()
     {
+        // Arrange
         var flow = new Flow { Id = 7, JourneyId = 21 };
 
+        // Act
         await _service.AddAsync(flow);
 
+        // Assert
         _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromFlowAsync(7), Times.Once);
     }
 
     [Test]
     public async Task REQ_FUN_007_DeleteByIdAsync_RollsUpHierarchyFromJourney()
     {
+        // Arrange
         var flow = new Flow { Id = 7, JourneyId = 21 };
         _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.GetByIdAsync(7)).ReturnsAsync(flow);
         _flowRepoMock.As<IGenericRepository<Flow>>().Setup(r => r.DeleteByIdAsync(7)).ReturnsAsync(true);
 
+        // Act
         var deleted = await _service.DeleteByIdAsync(7);
 
+        // Assert
         Assert.That(deleted, Is.True);
         _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromJourneyAsync(21), Times.Once);
     }

@@ -10,22 +10,28 @@ beforeEach(() => {
 
 describe('loadComments', () => {
     it('fetches comments for entity', async () => {
+        // Arrange
         const { loadComments } = await import('../../PromiseModelOnline.Client/wwwroot/js/comments/comments.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockResolvedValue([]);
         const container = document.createElement('div');
+        // Act
         await loadComments(container, 'Moment', 100, 'o', 'p', { permission: 'Edit' });
+        // Assert
         expect(apiGet).toHaveBeenCalled();
     });
 });
 
 describe('loadReactions', () => {
     it('fetches reactions for entity', async () => {
+        // Arrange
         const { loadReactions } = await import('../../PromiseModelOnline.Client/wwwroot/js/reactions/reactions.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockResolvedValue([]);
         const container = document.createElement('div');
+        // Act
         loadReactions(container, 'Promise', '1', 'o', 'p', { permission: 'Edit' });
+        // Assert
         expect(apiGet).toHaveBeenCalled();
     });
 });

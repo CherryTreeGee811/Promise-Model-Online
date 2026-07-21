@@ -89,11 +89,14 @@ public class EpicServiceUnitTests
     [Test]
     public async Task REQ_FUN_005_GetByIdAsync_ValidId_ReturnsEpic()
     {
+        // Arrange
         var epic = new Epic { Id = 5, Statement = "Test" };
         _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.GetByIdAsync(5)).ReturnsAsync(epic);
 
+        // Act
         var result = await _service.GetByIdAsync(5);
 
+        // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result!.Id, Is.EqualTo(5));
     }
@@ -101,32 +104,41 @@ public class EpicServiceUnitTests
     [Test]
     public async Task REQ_FUN_005_GetByIdAsync_InvalidId_ReturnsNull()
     {
+        // Arrange
         _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.GetByIdAsync(404)).ReturnsAsync((Epic?)null);
 
+        // Act
         var result = await _service.GetByIdAsync(404);
 
+        // Assert
         Assert.That(result, Is.Null);
     }
 
     [Test]
     public async Task REQ_FUN_005_AddAsync_RollsUpHierarchyFromPromise()
     {
+        // Arrange
         var epic = new Epic { Id = 9, ProductPromiseId = 23 };
 
+        // Act
         await _service.AddAsync(epic);
 
+        // Assert
         _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromEpicAsync(9), Times.Once);
     }
 
     [Test]
     public async Task REQ_FUN_005_DeleteByIdAsync_RollsUpHierarchyFromPromise()
     {
+        // Arrange
         var epic = new Epic { Id = 9, ProductPromiseId = 23 };
         _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.GetByIdAsync(9)).ReturnsAsync(epic);
         _epicRepoMock.As<IGenericRepository<Epic>>().Setup(r => r.DeleteByIdAsync(9)).ReturnsAsync(true);
 
+        // Act
         var deleted = await _service.DeleteByIdAsync(9);
 
+        // Assert
         Assert.That(deleted, Is.True);
         _hierarchyStatusServiceMock.Verify(s => s.RecalculateFromPromiseAsync(23), Times.Once);
     }

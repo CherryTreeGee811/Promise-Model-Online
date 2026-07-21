@@ -27,7 +27,9 @@ beforeAll(() => {
 
 describe('startSignalR guard and lifecycle', () => {
     it('exports startSignalR', async () => {
+        // Arrange
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/signalr.ts');
+        // Assert
         expect(mod.startSignalR).toBeDefined();
     });
 });

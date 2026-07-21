@@ -14,9 +14,12 @@ beforeEach(() => {
 
 describe('handleLegacyProjectRoutes error paths', () => {
     it('shows 404 for unknown projects sub-paths', async () => {
+        // Arrange
         const { handleLegacyProjectRoutes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/router.ts');
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Act
         await handleLegacyProjectRoutes('/projects/unknown', nav, content);
+        // Assert
         expect(globalThis.fetch).toHaveBeenCalledWith('/templates/404.html');
     });
 });

@@ -137,6 +137,7 @@ public class HierarchyStatusServiceUnitTests
         await _context.SaveChangesAsync();
 
         // Act & Assert
+        // Assert
         Assert.ThrowsAsync<KeyNotFoundException>(() => _service.RecalculateFromFlowAsync(50));
     }
 

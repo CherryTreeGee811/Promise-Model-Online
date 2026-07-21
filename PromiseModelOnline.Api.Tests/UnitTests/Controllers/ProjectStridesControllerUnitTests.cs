@@ -420,6 +420,7 @@ public class ProjectStridesControllerUnitTests
     [Description("REQ_USE_012: Valid owner and project slugs and existing stride return Ok")]
     public async Task GetById_Valid_ReturnsOk()
     {
+        // Arrange
         var project = new Project { Id = 1, Slug = ProjectSlug };
         SetUpProjectResolve(project);
 
@@ -433,8 +434,10 @@ public class ProjectStridesControllerUnitTests
         _mockMapper.Setup(m => m.Map(It.IsAny<Stride>(), _mockStrideService.Object))
             .Returns<Stride, IGenericService<Stride>>((s, svc) => new StrideDto { Id = s.Id, Name = s.Name });
 
+        // Act
         var result = await _controller.GetById(10, OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
@@ -442,14 +445,17 @@ public class ProjectStridesControllerUnitTests
     [Description("REQ_USE_012: Missing stride returns 404")]
     public async Task GetById_NotFound_Returns404()
     {
+        // Arrange
         var project = new Project { Id = 1, Slug = ProjectSlug };
         SetUpProjectResolve(project);
 
         var mockDbSet = CreateMockDbSet(new List<Stride>());
         _mockContext.Setup(c => c.Strides).Returns(mockDbSet.Object);
 
+        // Act
         var result = await _controller.GetById(999, OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
@@ -457,10 +463,13 @@ public class ProjectStridesControllerUnitTests
     [Description("REQ_USE_012: Missing project returns 404")]
     public async Task GetById_ProjectNotFound_Returns404()
     {
+        // Arrange
         SetUpProjectResolve(null);
 
+        // Act
         var result = await _controller.GetById(10, OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
@@ -472,6 +481,7 @@ public class ProjectStridesControllerUnitTests
     [Description("REQ_USE_012: Valid create request returns Created")]
     public async Task Create_Valid_ReturnsCreated()
     {
+        // Arrange
         var project = new Project { Id = 1, Slug = ProjectSlug };
         SetUpProjectResolve(project);
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
@@ -487,8 +497,10 @@ public class ProjectStridesControllerUnitTests
             .Returns<Stride, IGenericService<Stride>>((s, svc) => new StrideDto { Id = s.Id, Name = s.Name });
 
         var dto = new CreateStrideRequestDto { Name = "New Stride", StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(14), DurationDays = 14 };
+        // Act
         var result = await _controller.Create(dto, OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
     }
 
@@ -496,11 +508,14 @@ public class ProjectStridesControllerUnitTests
     [Description("REQ_USE_012: Null body returns 400")]
     public async Task Create_NullBody_Returns400()
     {
+        // Arrange
         var project = new Project { Id = 1, Slug = ProjectSlug };
         SetUpProjectResolve(project);
 
+        // Act
         var result = await _controller.Create(null!, OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
@@ -508,10 +523,13 @@ public class ProjectStridesControllerUnitTests
     [Description("REQ_USE_012: Missing project returns 404")]
     public async Task Create_ProjectNotFound_Returns404()
     {
+        // Arrange
         SetUpProjectResolve(null);
 
+        // Act
         var result = await _controller.Create(new CreateStrideRequestDto(), OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 

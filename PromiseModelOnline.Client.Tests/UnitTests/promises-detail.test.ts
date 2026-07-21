@@ -186,122 +186,158 @@ afterEach(async () => {
 
 describe('loadPromiseDetail', () => {
     it('returns early when detailDiv is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<div></div>';
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetPromise).not.toHaveBeenCalled();
     });
 
     it('shows loading indicator on start', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
         const promise = loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#promise-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(false);
         await promise;
     });
 
     it('hides loading on success', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#promise-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
     });
 
     it('hides loading and shows error on API failure', async () => {
+        // Arrange
         mockGetPromise.mockRejectedValue(new Error('network'));
 
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const loading = document.querySelector('#promise-detail-loading') as HTMLElement;
+        // Act
         const error = document.querySelector('#error-text') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
         expect(error.textContent).toContain('Failed to load promise details.');
     });
 
     it('calls destroyDetailStackGraph on start', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockDestroyDetailStackGraph).toHaveBeenCalled();
     });
 
     it('calls getPromise with correct params', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetPromise).toHaveBeenCalledWith('o', 'p', '42');
     });
 
     it('calls loadEntityLookupMap with correct params', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockLoadEntityLookupMap).toHaveBeenCalledWith('Promise', 42, 'o', 'p');
     });
 
     it('calls mountDetailStackGraph with correct params', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockMountDetailStackGraph).toHaveBeenCalledWith({
             nodeType: 'promise', nodeId: '42', owner: 'o', project: 'p',
         });
     });
 
     it('builds detail card with promise statement heading', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const detailCard = document.querySelector('.promise-detail-card')!;
+        // Assert
         expect(detailCard.querySelector('h2')!.textContent).toBe('Test promise');
     });
 
     it('calls buildInlineEditUI for description', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockBuildInlineEditUI).toHaveBeenCalledWith(
             expect.any(HTMLElement), '', 'A description',
         );
     });
 
     it('calls createDateRow for created and updated dates', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockCreateDateRow).toHaveBeenCalledWith('Created', '2024-01-15T10:00:00Z');
         expect(mockCreateDateRow).toHaveBeenCalledWith('Updated', '2024-01-16T10:00:00Z');
     });
 
     it('loads epics from API', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetEpicsByPromise).toHaveBeenCalledWith('o', 'p', '42');
         expect(mockPatchChildMetrics).toHaveBeenCalledWith('promise-1', expect.any(Array));
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalled();
@@ -310,6 +346,7 @@ describe('loadPromiseDetail', () => {
     });
 
     it('handles epic load failure (shows error)', async () => {
+        // Arrange
         mockGetPromise.mockResolvedValue(defaultPromise);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -318,17 +355,22 @@ describe('loadPromiseDetail', () => {
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const epicsList = document.querySelector('#promise-epics-list')!;
+        // Assert
         expect(epicsList.querySelector('.error')).not.toBeNull();
         expect(epicsList.textContent).toContain('Failed to load epics.');
     });
 
     it('calls gateDetailControls with correct selectors', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGateDetailControls).toHaveBeenCalledWith(
             { permission: 'Edit' },
             ['#edit-desc-btn', '#save-desc', '#description-input', '#add-epic-statement', '#add-epic-submit'],
@@ -336,53 +378,68 @@ describe('loadPromiseDetail', () => {
     });
 
     it('calls loadCommentsAndReactions', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockLoadCommentsAndReactions).toHaveBeenCalledWith(
             expect.any(HTMLElement), 'Promise', 42, 'o', 'p', { permission: 'Edit' },
         );
     });
 
     it('calls initBackLink', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockInitBackLink).toHaveBeenCalled();
     });
 
     it('calls setupDescriptionHandler', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockSetupDescriptionHandler).toHaveBeenCalledWith(
             'o', 'p', '42', 'promise', expect.any(Object), mockUpdatePromiseDescription,
         );
     });
 
     it('handles null promise return from API (early return)', async () => {
+        // Arrange
         mockGetPromise.mockResolvedValue(null);
 
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockLoadEntityLookupMap).not.toHaveBeenCalled();
         expect(mockMountDetailStackGraph).not.toHaveBeenCalled();
         expect(mockGetEpicsByPromise).not.toHaveBeenCalled();
     });
 
     it('upserts graph view button', async () => {
+        // Arrange
         setupSuccessMocks();
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
 
+        // Act
         await loadPromiseDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetOwnerProjectFromPath).toHaveBeenCalled();
         expect(mockBuildGraphViewHref).toHaveBeenCalledWith('o', 'p', 'promise-1');
         expect(mockUpsertGraphViewButton).toHaveBeenCalled();

@@ -39,6 +39,7 @@ public class ProjectGraphControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetGraph_ProjectFound_ReturnsOkResult()
     {
+        // Arrange
         var owner = new User { Id = 1, Name = "Owner", Email = "o@t.com", Slug = "owner-slug" };
         var project = new Project { Id = 1, Name = "Test", Slug = "test", OwnerId = 1, Owner = owner };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("owner", "test")).ReturnsAsync(project);
@@ -47,18 +48,23 @@ public class ProjectGraphControllerUnitTests
         _context.Projects.Add(project);
         await _context.SaveChangesAsync();
 
+        // Act
         var result = await _controller.GetGraph("owner", "test");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetGraph_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetGraph("bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 }

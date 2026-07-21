@@ -8,7 +8,6 @@
   ],
   "project": [
     "PromiseModelOnline.Client/wwwroot/js/**/*.ts",
-    "scripts/**/*.js",
     "scripts/**/*.cjs",
     "*.mjs"
   ],

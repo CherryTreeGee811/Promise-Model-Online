@@ -10,8 +10,11 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/comments/autocomplete.ts', (
 
 describe('Graph context menu forms', () => {
     it('creates controller with expected methods', async () => {
+        // Arrange
         const { createGraphContextMenuController } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
+        // Act
         const controller = createGraphContextMenuController();
+        // Assert
         expect(controller).toHaveProperty('open');
         expect(controller).toHaveProperty('hide');
     });

@@ -24,7 +24,9 @@ beforeEach(() => {
 
 describe('loadStridesList error paths', () => {
     it('exports loadStridesList', async () => {
+        // Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        // Assert
         expect(mod.loadStridesList).toBeDefined();
     });
 });

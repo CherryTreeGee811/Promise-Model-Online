@@ -40,11 +40,14 @@ public class ProjectScopedControllerBaseUnitTests
     [Test]
     public async Task REQ_FUN_XXX_ResolveProjectAsync_Found_ReturnsProject()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "Test", Slug = "test-slug" };
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("owner", "test-slug")).ReturnsAsync(project);
 
+        // Act
         var result = await _controller.PublicResolveProjectAsync("owner", "test-slug");
 
+        // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result!.Id, Is.EqualTo(1));
     }
@@ -52,16 +55,20 @@ public class ProjectScopedControllerBaseUnitTests
     [Test]
     public async Task REQ_FUN_XXX_ResolveProjectAsync_NotFound_ReturnsNull()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.PublicResolveProjectAsync("bad", "bad");
 
+        // Assert
         Assert.That(result, Is.Null);
     }
 
     [Test]
     public async Task REQ_FUN_XXX_RequireProjectEditPermissionAsync_EditPermission_ReturnsTrue()
     {
+        // Arrange
         var userRepoMock = new Mock<IUserRepository>();
         var permServiceMock = new Mock<IPermissionService>();
 
@@ -85,14 +92,17 @@ public class ProjectScopedControllerBaseUnitTests
             .ReturnsAsync(PermissionLevel.Edit);
 
         var result = await _controller.PublicRequireProjectEditPermissionAsync(
+            // Act
             new Project { Id = 1 });
 
+        // Assert
         Assert.That(result, Is.True);
     }
 
     [Test]
     public async Task REQ_FUN_XXX_RequireProjectEditPermissionAsync_ViewPermission_ReturnsFalse()
     {
+        // Arrange
         var userRepoMock = new Mock<IUserRepository>();
         var permServiceMock = new Mock<IPermissionService>();
 
@@ -115,14 +125,17 @@ public class ProjectScopedControllerBaseUnitTests
             .ReturnsAsync(PermissionLevel.View);
 
         var result = await _controller.PublicRequireProjectEditPermissionAsync(
+            // Act
             new Project { Id = 2 });
 
+        // Assert
         Assert.That(result, Is.False);
     }
 
     [Test]
     public async Task REQ_FUN_XXX_RequireProjectEditPermissionAsync_NoEmail_ReturnsFalse()
     {
+        // Arrange
         var user = new ClaimsPrincipal(new ClaimsIdentity("test"));
 
         var userRepoMock = new Mock<IUserRepository>();
@@ -137,8 +150,10 @@ public class ProjectScopedControllerBaseUnitTests
             (typeof(IUserRepository), userRepoMock.Object));
 
         var result = await _controller.PublicRequireProjectEditPermissionAsync(
+            // Act
             new Project { Id = 1 });
 
+        // Assert
         Assert.That(result, Is.False);
     }
 

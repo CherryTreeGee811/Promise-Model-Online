@@ -87,109 +87,137 @@ public class ProjectMomentsControllerUnitTests
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_Found_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.GetBySeq(1, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetBySeq(999, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetBySeq_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetBySeq(1, "bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetById_Found_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy(momentId: 42);
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.GetById(42, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetById_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetById(999, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.GetAll("o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.GetAll("bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_FilterByFlowSeq_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _momentServiceMock.Setup(s => s.GetMomentsByFlowAsync(40)).ReturnsAsync(new List<Moment>());
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.GetAll("o", "p", flowSeq: 1);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_FilterByFlowSeq_FlowNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.GetAll("o", "p", flowSeq: 999);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAll_FilterByStride_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         _context.Projects.Add(Project()); await _context.SaveChangesAsync();
         _context.Iterations.Add(new() { Id = 1, ProjectId = 1, Name = "I1" }); await _context.SaveChangesAsync();
@@ -198,14 +226,17 @@ public class ProjectMomentsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.GetAll("o", "p", strideId: 5);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_Valid_Returns201()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _momentServiceMock.Setup(s => s.AddAsync(It.IsAny<Moment>())).Returns(Task.CompletedTask);
@@ -213,89 +244,112 @@ public class ProjectMomentsControllerUnitTests
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
         var request = new CreateMomentRequestDto { FlowId = 40, Type = MomentType.Story, Status = MomentStatus.Todo };
+        // Act
         var result = await _controller.CreateFromDto(request, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<CreatedAtActionResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.CreateFromDto(null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_CreateFromDto_ProjectNotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("bad", "bad")).ReturnsAsync((Project?)null);
 
+        // Act
         var result = await _controller.CreateFromDto(new CreateMomentRequestDto(), "bad", "bad");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_Valid_Returns204()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _momentServiceMock.Setup(s => s.UpdateAsync(It.IsAny<Moment>())).Returns(Task.CompletedTask);
 
         var dto = new UpdateMomentRequestDto { Id = 50, Statement = "Updated" };
+        // Act
         var result = await _controller.Update(1, dto, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_IdMismatch_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
 
         var dto = new UpdateMomentRequestDto { Id = 99, Statement = "Bad" };
+        // Act
         var result = await _controller.Update(1, dto, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<BadRequestResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Update_NullBody_Returns400()
     {
+        // Arrange
         var result = await _controller.Update(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Delete_Valid_Returns204()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _momentServiceMock.Setup(s => s.DeleteByIdAsync(50)).ReturnsAsync(true);
 
+        // Act
         var result = await _controller.Delete(1, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_Delete_NotFound_Returns404()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
 
+        // Act
         var result = await _controller.Delete(999, "o", "p");
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_AssignMomentToStride_Valid_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         var updated = new Moment { Id = 50, Statement = "M1", FlowId = 40, SequenceNumber = 1 };
@@ -303,25 +357,31 @@ public class ProjectMomentsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.AssignMomentToStride(1, new UpdateMomentStrideAssignmentRequest { StrideId = 5 }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_AssignMomentToStride_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
 
+        // Act
         var result = await _controller.AssignMomentToStride(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentStatus_Valid_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         var updated = new Moment { Id = 50, Statement = "M1", FlowId = 40, SequenceNumber = 1, Status = MomentStatus.InProgress };
@@ -329,25 +389,31 @@ public class ProjectMomentsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.UpdateMomentStatus(1, new UpdateMomentStatusRequest { NewStatus = MomentStatus.InProgress }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentStatus_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
 
+        // Act
         var result = await _controller.UpdateMomentStatus(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentEstimate_Valid_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         var updated = new Moment { Id = 50, Statement = "M1", FlowId = 40, SequenceNumber = 1 };
@@ -355,50 +421,62 @@ public class ProjectMomentsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.UpdateMomentEstimate(1, new UpdateMomentEstimateRequest { Estimate = Estimate.M }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentEstimate_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
 
+        // Act
         var result = await _controller.UpdateMomentEstimate(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentType_Valid_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _momentServiceMock.Setup(s => s.UpdateAsync(It.IsAny<Moment>())).Returns(Task.CompletedTask);
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.UpdateMomentType(1, new UpdateMomentTypeRequest { NewType = MomentType.Job }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentType_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
 
+        // Act
         var result = await _controller.UpdateMomentType(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentOwner_Valid_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         var updated = new Moment { Id = 50, Statement = "M1", FlowId = 40, SequenceNumber = 1, OwnerId = 5 };
@@ -406,44 +484,55 @@ public class ProjectMomentsControllerUnitTests
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.UpdateMomentOwner(1, new UpdateMomentOwnerRequest { UserId = 5 }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentOwner_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
 
+        // Act
         var result = await _controller.UpdateMomentOwner(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentDescription_Valid_ReturnsOk()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
         _momentServiceMock.Setup(s => s.UpdateAsync(It.IsAny<Moment>())).Returns(Task.CompletedTask);
         _mapperMock.Setup(m => m.Map(It.IsAny<Moment>(), It.IsAny<IMomentService>()))
             .Returns<Moment, IMomentService>((m, _) => new MomentDto { Id = m.Id });
 
+        // Act
         var result = await _controller.UpdateMomentDescription(1, new UpdateDescriptionRequestDto { Description = "New desc" }, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_FUN_XXX_UpdateMomentDescription_NullBody_Returns400()
     {
+        // Arrange
         _projectServiceMock.Setup(s => s.GetByOwnerAndSlugAsync("o", "p")).ReturnsAsync(Project());
         await SetupHierarchy();
 
+        // Act
         var result = await _controller.UpdateMomentDescription(1, null!, "o", "p");
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 

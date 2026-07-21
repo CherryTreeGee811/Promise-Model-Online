@@ -24,10 +24,13 @@ beforeAll(() => {
 
 describe('startSignalR', () => {
     it('creates hub connection and registers handlers', async () => {
+        // Arrange
         const { startSignalR } = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/signalr.ts');
         const onNotification = vi.fn();
         await startSignalR(onNotification);
+        // Act
         const { showToast } = await import('../../PromiseModelOnline.Client/wwwroot/js/ui/toast.ts');
+        // Assert
         expect(showToast).not.toHaveBeenCalled();
     });
 });

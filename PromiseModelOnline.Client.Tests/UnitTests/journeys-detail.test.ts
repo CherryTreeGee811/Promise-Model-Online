@@ -191,15 +191,19 @@ afterEach(async () => {
 
 describe('loadJourneyDetail', () => {
     it('returns early when detailDiv is missing', async () => {
+        // Arrange
         document.body.innerHTML = '<div></div>';
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
 
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetJourney).not.toHaveBeenCalled();
     });
 
     it('shows loading indicator on start', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -210,12 +214,15 @@ describe('loadJourneyDetail', () => {
 
         const promise = loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#journey-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(false);
         await promise;
     });
 
     it('hides loading on success', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -225,23 +232,29 @@ describe('loadJourneyDetail', () => {
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const loading = document.querySelector('#journey-detail-loading') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
     });
 
     it('hides loading and shows error on API failure', async () => {
+        // Arrange
         mockGetJourney.mockRejectedValue(new Error('network'));
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const loading = document.querySelector('#journey-detail-loading') as HTMLElement;
+        // Act
         const error = document.querySelector('#error-text') as HTMLElement;
+        // Assert
         expect(loading.hidden).toBe(true);
         expect(error.textContent).toContain('Failed to load journey details.');
     });
 
     it('calls destroyDetailStackGraph on start', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -250,12 +263,15 @@ describe('loadJourneyDetail', () => {
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
 
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockDestroyDetailStackGraph).toHaveBeenCalled();
     });
 
     it('calls getJourney with correct params', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -263,12 +279,15 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetJourney).toHaveBeenCalledWith('o', 'p', '42');
     });
 
     it('calls loadEntityLookupMap with correct params', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -276,12 +295,15 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockLoadEntityLookupMap).toHaveBeenCalledWith('Journey', 42, 'o', 'p');
     });
 
     it('calls mountDetailStackGraph with correct params', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -289,14 +311,17 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockMountDetailStackGraph).toHaveBeenCalledWith({
             nodeType: 'journey', nodeId: '42', owner: 'o', project: 'p',
         });
     });
 
     it('clears error text on load', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -307,12 +332,15 @@ describe('loadJourneyDetail', () => {
         errorEl.textContent = 'Old error';
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(errorEl.textContent).toBe('');
     });
 
     it('builds detail card with journey heading', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -322,11 +350,14 @@ describe('loadJourneyDetail', () => {
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const detailCard = document.querySelector('.journey-detail-card')!;
+        // Assert
         expect(detailCard.querySelector('h2')!.textContent).toBe('Test journey');
     });
 
     it('builds table with description row', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -334,14 +365,17 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockBuildInlineEditUI).toHaveBeenCalledWith(
             expect.any(HTMLElement), '', 'A description',
         );
     });
 
     it('loads journey flows', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -349,8 +383,10 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetFlows).toHaveBeenCalledWith('o', 'p', '42');
         expect(mockPatchChildMetrics).toHaveBeenCalledWith('journey-1', expect.any(Array));
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalled();
@@ -359,6 +395,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('loads journey flows and shows error on failure', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -368,12 +405,15 @@ describe('loadJourneyDetail', () => {
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const flowsList = document.querySelector('#journey-flows-list')!;
+        // Assert
         expect(flowsList.querySelector('.error')).not.toBeNull();
         expect(flowsList.textContent).toContain('Failed to load flows.');
     });
 
     it('sets up inline editing via setupDetailInlineEdit', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -381,14 +421,17 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockSetupDetailInlineEdit).toHaveBeenCalledWith(
             '#description-input', '#description-view', '#edit-desc-btn', 'Journey', 42, '#save-desc', '#cancel-desc',
         );
     });
 
     it('calls bindLinkClickHandlers', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -396,8 +439,10 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockBindLinkClickHandlers).toHaveBeenCalledWith(
             document.body, 'a.detail-link[epic-id]', 'epic-seq', 'epics', 'o', 'p',
             expect.any(HTMLElement), expect.any(HTMLElement),
@@ -405,6 +450,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('calls initBackLink and loadCommentsAndReactions', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -412,8 +458,10 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockInitBackLink).toHaveBeenCalled();
         expect(mockLoadCommentsAndReactions).toHaveBeenCalledWith(
             expect.any(HTMLElement), 'Journey', 42, 'o', 'p', { permission: 'Edit' },
@@ -421,6 +469,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('loads parent epic', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -428,12 +477,15 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetEpicById).toHaveBeenCalledWith('o', 'p', 7);
     });
 
     it('calls gateDetailControls with correct selectors', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -441,8 +493,10 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGateDetailControls).toHaveBeenCalledWith(
             { permission: 'Edit' },
             ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit'],
@@ -450,6 +504,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('calls upsertJourneyGraphViewButton', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -457,12 +512,15 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockUpsertGraphViewButton).toHaveBeenCalled();
     });
 
     it('navigates to epic on link click', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -472,7 +530,9 @@ describe('loadJourneyDetail', () => {
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const epicLink = document.querySelector('#journey-epic-cell a') as HTMLAnchorElement;
+        // Assert
         expect(epicLink).not.toBeNull();
         expect(epicLink.textContent).toBe('Parent epic');
         epicLink.click();
@@ -480,6 +540,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('saves description on button click', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -495,7 +556,9 @@ describe('loadJourneyDetail', () => {
         descInput.value = 'Updated description';
         saveBtn.click();
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(mockUpdateJourneyDescription).toHaveBeenCalledWith('o', 'p', '42', 'Updated description');
             expect(mockPatchDetailStackGraphNode).toHaveBeenCalledWith('journey-1', {
                 description: 'Updated description',
@@ -504,6 +567,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('disables save button during description save', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -515,12 +579,15 @@ describe('loadJourneyDetail', () => {
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
         const saveBtn = document.querySelector('#save-desc') as HTMLButtonElement;
+        // Act
         saveBtn.click();
 
+        // Assert
         expect(saveBtn.disabled).toBe(true);
     });
 
     it('shows error on description save failure', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -535,12 +602,15 @@ describe('loadJourneyDetail', () => {
         const descMsg = document.querySelector('#desc-save-msg') as HTMLElement;
         saveBtn.click();
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(descMsg.textContent).toBe('Save failed');
         });
     });
 
     it('handles null/undefined permission in gateDetailControls', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -548,8 +618,10 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), undefined);
 
+        // Assert
         expect(mockGateDetailControls).toHaveBeenCalledWith(
             undefined,
             ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit'],
@@ -557,6 +629,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('shows error when loadParentEpic fails', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -564,11 +637,14 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockRejectedValue(new Error('fail'));
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
 
+        // Assert
         await expect(loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' })).resolves.toBeUndefined();
     });
 
     it('creates status row with journey statusColor', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -576,12 +652,15 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockCreateStatusRow).toHaveBeenCalledWith('green');
     });
 
     it('creates date rows for created and updated dates', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -589,13 +668,16 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockCreateDateRow).toHaveBeenCalledWith('Created', '2024-01-15T10:00:00Z');
         expect(mockCreateDateRow).toHaveBeenCalledWith('Updated', '2024-01-16T10:00:00Z');
     });
 
     it('builds description row even when description is empty', async () => {
+        // Arrange
         const journeyEmptyDesc = { ...defaultJourney, description: '' };
         mockGetJourney.mockResolvedValue(journeyEmptyDesc);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -604,12 +686,15 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockBuildInlineEditUI).toHaveBeenCalledWith(expect.any(HTMLElement), '', '');
     });
 
     it('loads epic cell content after parent epic fetch', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -619,11 +704,14 @@ describe('loadJourneyDetail', () => {
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const epicLink = document.querySelector('#journey-epic-cell a') as HTMLAnchorElement;
+        // Assert
         expect(epicLink.textContent).toBe('Parent epic');
     });
 
     it('calls upsertGraphViewButton with correct href', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -633,11 +721,14 @@ describe('loadJourneyDetail', () => {
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const detailDiv = document.querySelector('#journey-detail-content') as HTMLElement;
+        // Assert
         expect(mockUpsertGraphViewButton).toHaveBeenCalledWith(detailDiv, '/graph/journey-1');
     });
 
     it('calls gateDetailControls with null permission', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -645,8 +736,10 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), null);
 
+        // Assert
         expect(mockGateDetailControls).toHaveBeenCalledWith(
             null,
             ['#edit-desc-btn', '#save-desc', '#description-input', '#add-flow-statement', '#add-flow-submit'],
@@ -654,6 +747,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('renderItemRow callback builds correct HTML for a flow item', async () => {
+        // Arrange
         mockEscapeHtml.mockImplementation((s: string) => '__escaped_' + s);
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -666,14 +760,17 @@ describe('loadJourneyDetail', () => {
 
         const opts = mockRenderTableWithInlineAddRow.mock.calls[0][1] as Record<string, unknown>;
         const renderItemRow = opts.renderItemRow as (item: unknown) => string;
+        // Act
         const html = renderItemRow({ id: 99, sequenceNumber: 3, statement: 'Test flow' });
 
+        // Assert
         expect(html).toContain('data-flow-id="99"');
         expect(html).toContain('flow-seq="3"');
         expect(html).toContain('__escaped_Test flow');
     });
 
     it('renderAddRow callback builds correct HTML', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -685,14 +782,17 @@ describe('loadJourneyDetail', () => {
 
         const opts = mockRenderTableWithInlineAddRow.mock.calls[0][1] as Record<string, unknown>;
         const renderAddRow = opts.renderAddRow as () => string;
+        // Act
         const html = renderAddRow();
 
+        // Assert
         expect(html).toContain('data-inline-add-row="1"');
         expect(html).toContain('id="add-flow-form"');
         expect(html).toContain('id="add-flow-submit"');
     });
 
     it('onCreate callback calls createFlow with correct params', async () => {
+        // Arrange
         mockCreateFlow.mockResolvedValue({ id: 1, sequenceNumber: 10, statement: 'New flow' });
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -705,8 +805,10 @@ describe('loadJourneyDetail', () => {
 
         const opts = mockSetupAddChildForm.mock.calls[0][0] as Record<string, unknown>;
         const onCreate = opts.onCreate as (statement: string) => Promise<Record<string, unknown> | null>;
+        // Act
         await onCreate('New flow');
 
+        // Assert
         expect(mockCreateFlow).toHaveBeenCalledWith('o', 'p', {
             statement: 'New flow',
             journeyId: 42,
@@ -715,6 +817,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('getRowHtml callback builds correct HTML for created flow', async () => {
+        // Arrange
         mockEscapeHtml.mockImplementation((s: string) => '__escaped_' + s);
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
@@ -727,18 +830,23 @@ describe('loadJourneyDetail', () => {
 
         const opts = mockSetupAddChildForm.mock.calls[0][0] as Record<string, unknown>;
         const getRowHtml = opts.getRowHtml as (created: Record<string, unknown>) => string;
+        // Act
         const html = getRowHtml({ id: 88, sequenceNumber: 7, statement: 'Created flow' });
 
+        // Assert
         expect(html).toContain('flow-seq="7"');
         expect(html).toContain('__escaped_Created flow');
     });
 
     it('returns early when getJourney returns null', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(null);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockGetFlows).not.toHaveBeenCalled();
         expect(mockGetEpicById).not.toHaveBeenCalled();
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
@@ -748,6 +856,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('does not navigate when epic link is clicked with Ctrl held', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -757,7 +866,9 @@ describe('loadJourneyDetail', () => {
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Act
         const epicLink = document.querySelector('#journey-epic-cell a') as HTMLAnchorElement;
+        // Assert
         expect(epicLink).not.toBeNull();
 
         const ctrlClickEvent = new MouseEvent('click', { ctrlKey: true, bubbles: true });
@@ -767,6 +878,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('renders flows table with empty array when getFlows returns null', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -774,8 +886,10 @@ describe('loadJourneyDetail', () => {
         mockGetEpicById.mockResolvedValue(defaultEpic);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockPatchChildMetrics).toHaveBeenCalledWith('journey-1', null);
         expect(mockRenderTableWithInlineAddRow).toHaveBeenCalled();
         const opts = mockRenderTableWithInlineAddRow.mock.calls[0][1] as Record<string, unknown>;
@@ -783,6 +897,7 @@ describe('loadJourneyDetail', () => {
     });
 
     it('does not call buildGraphViewHref when owner is empty', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -791,13 +906,16 @@ describe('loadJourneyDetail', () => {
         mockGetOwnerProjectFromPath.mockReturnValue({ owner: '', project: 'p' });
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockBuildGraphViewHref).not.toHaveBeenCalled();
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
 
     it('skips graph view button when buildGraphViewHref returns null', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -806,13 +924,16 @@ describe('loadJourneyDetail', () => {
         mockBuildGraphViewHref.mockReturnValue(null);
 
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
+        // Act
         await loadJourneyDetail('o', 'p', '42', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
 
+        // Assert
         expect(mockBuildGraphViewHref).toHaveBeenCalledWith('o', 'p', 'journey-1');
         expect(mockUpsertGraphViewButton).not.toHaveBeenCalled();
     });
 
     it('handles empty description save when API returns no description field', async () => {
+        // Arrange
         mockGetJourney.mockResolvedValue(defaultJourney);
         mockLoadEntityLookupMap.mockResolvedValue(undefined);
         mockMountDetailStackGraph.mockResolvedValue(undefined);
@@ -828,7 +949,9 @@ describe('loadJourneyDetail', () => {
         descInput.value = '';
         saveBtn.click();
 
+        // Act
         await vi.waitFor(() => {
+            // Assert
             expect(mockUpdateJourneyDescription).toHaveBeenCalledWith('o', 'p', '42', '');
             expect(mockPatchDetailStackGraphNode).toHaveBeenCalledWith('journey-1', {
                 description: undefined,

@@ -400,6 +400,7 @@ public class ProjectDetailControllerTests
     [Test]
     public async Task REQ_FUN_003_Delete_Valid_ReturnsNoContent()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "P", Slug = ProjectSlug, OwnerId = 1 };
         SetUpProjectResolve(project);
         SetControllerUser("u@u.com");
@@ -412,25 +413,31 @@ public class ProjectDetailControllerTests
         _mockPermissionService.Setup(p => p.GetUserPermissionAsync(deleteUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
         _mockGenericService.Setup(s => s.DeleteByIdAsync(project.Id)).ReturnsAsync(true);
 
+        // Act
         var result = await _controller.Delete(OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
     public async Task REQ_FUN_003_Delete_ProjectNotFound_Returns404()
     {
+        // Arrange
         SetUpProjectResolve(null);
         SetControllerUser("u@u.com");
 
+        // Act
         var result = await _controller.Delete(OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 
     [Test]
     public async Task REQ_FUN_003_Delete_NoPermission_ReturnsForbid()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "P", Slug = ProjectSlug, OwnerId = 1 };
         SetUpProjectResolve(project);
         SetControllerUser("u@u.com");
@@ -442,14 +449,17 @@ public class ProjectDetailControllerTests
         _controller.ControllerContext.HttpContext.RequestServices = svc.Object;
         _mockPermissionService.Setup(p => p.GetUserPermissionAsync(deleteUser.Id, project.Id)).ReturnsAsync(PermissionLevel.View);
 
+        // Act
         var result = await _controller.Delete(OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<ForbidResult>());
     }
 
     [Test]
     public async Task REQ_FUN_003_Delete_DeleteFails_Returns404()
     {
+        // Arrange
         var project = new Project { Id = 1, Name = "P", Slug = ProjectSlug, OwnerId = 1 };
         SetUpProjectResolve(project);
         SetControllerUser("u@u.com");
@@ -462,8 +472,10 @@ public class ProjectDetailControllerTests
         _mockPermissionService.Setup(p => p.GetUserPermissionAsync(deleteUser.Id, project.Id)).ReturnsAsync(PermissionLevel.Edit);
         _mockGenericService.Setup(s => s.DeleteByIdAsync(project.Id)).ReturnsAsync(false);
 
+        // Act
         var result = await _controller.Delete(OwnerSlug, ProjectSlug);
 
+        // Assert
         Assert.That(result, Is.InstanceOf<NotFoundResult>());
     }
 }

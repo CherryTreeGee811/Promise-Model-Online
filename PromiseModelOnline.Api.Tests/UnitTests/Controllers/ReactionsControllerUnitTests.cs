@@ -244,6 +244,7 @@ public class ReactionsControllerUnitTests
     [Test]
     public async Task REQ_SYS_004_UpdateReaction_Valid_ReturnsOk()
     {
+        // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com" };
         var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
         var request = new UpdateReactionRequestDto { Emote = "heart" };
@@ -256,49 +257,61 @@ public class ReactionsControllerUnitTests
         _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.Comment);
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+        // Act
         var result = await _controller.UpdateReaction(15, request);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
     public async Task REQ_SYS_004_UpdateReaction_NullBody_Returns400()
     {
+        // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com" };
         _userRepositoryMock.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null)).ReturnsAsync(currentUser);
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+        // Act
         var result = await _controller.UpdateReaction(1, null!);
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
     }
 
     [Test]
     public async Task REQ_SYS_004_UpdateReaction_Unauthorized_Returns401()
     {
+        // Arrange
         ControllerTestHelpers.SetControllerUser(_controller, null);
 
+        // Act
         var result = await _controller.UpdateReaction(1, new UpdateReactionRequestDto());
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<UnauthorizedResult>());
     }
 
     [Test]
     public async Task REQ_SYS_004_UpdateReaction_NotFound_Returns404()
     {
+        // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com" };
         _userRepositoryMock.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null)).ReturnsAsync(currentUser);
         _reactionRepositoryMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Reaction?)null);
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+        // Act
         var result = await _controller.UpdateReaction(999, new UpdateReactionRequestDto { Emote = "heart" });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
     }
 
     [Test]
     public async Task REQ_SYS_004_UpdateReaction_NoPermission_ReturnsForbid()
     {
+        // Arrange
         var currentUser = new User { Id = 5, Email = "user@example.com" };
         var reaction = new Reaction { Id = 15, StackItemType = "Promise", StackItemId = 42, UserId = 5 };
         _userRepositoryMock.Setup(r => r.GetOrCreateUserByEmailAsync("user@example.com", null)).ReturnsAsync(currentUser);
@@ -307,8 +320,10 @@ public class ReactionsControllerUnitTests
         _permissionServiceMock.Setup(p => p.GetUserPermissionAsync(5, 1)).ReturnsAsync(PermissionLevel.View);
         ControllerTestHelpers.SetControllerUser(_controller, "user@example.com");
 
+        // Act
         var result = await _controller.UpdateReaction(15, new UpdateReactionRequestDto { Emote = "heart" });
 
+        // Assert
         Assert.That(result.Result, Is.InstanceOf<ForbidResult>());
     }
 }

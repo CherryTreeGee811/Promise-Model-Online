@@ -40,20 +40,25 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_GetAllAsync_ReturnsAllEntities()
     {
+        // Arrange
         Context.Projects.AddRange(
             new Project { Id = 1, Name = "A", Slug = "a", OwnerId = 1 },
             new Project { Id = 2, Name = "B", Slug = "b", OwnerId = 1 });
         await Context.SaveChangesAsync();
 
+        // Act
         var result = await _projectRepo.GetAllAsync();
 
+        // Assert
         Assert.That(result.Count(), Is.EqualTo(2));
     }
 
     [Test]
     public async Task REQ_FUN_XXX_GetAllAsync_EmptyDatabase_ReturnsEmpty()
     {
+        // Arrange
         var result = await _projectRepo.GetAllAsync();
+        // Assert
         Assert.That(result, Is.Empty);
     }
 
@@ -64,12 +69,15 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_GetByIdAsync_ExistingId_ReturnsEntity()
     {
+        // Arrange
         var project = new Project { Id = 10, Name = "Test", Slug = "test", OwnerId = 1 };
         Context.Projects.Add(project);
         await Context.SaveChangesAsync();
 
+        // Act
         var result = await _projectRepo.GetByIdAsync(10);
 
+        // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result!.Name, Is.EqualTo("Test"));
     }
@@ -77,7 +85,9 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_GetByIdAsync_NonExistingId_ReturnsNull()
     {
+        // Arrange
         var result = await _projectRepo.GetByIdAsync(999);
+        // Assert
         Assert.That(result, Is.Null);
     }
 
@@ -88,12 +98,15 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_AddAsync_StagesEntityForInsert()
     {
+        // Arrange
         var project = new Project { Name = "New", Slug = "new", OwnerId = 42 };
 
         await _projectRepo.AddAsync(project);
+        // Act
         await Context.SaveChangesAsync();
 
         var saved = Context.Projects.FirstOrDefault(p => p.Slug == "new");
+        // Assert
         Assert.That(saved, Is.Not.Null);
         Assert.That(saved!.OwnerId, Is.EqualTo(42));
     }
@@ -105,15 +118,18 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_Update_MarksEntityAsModified()
     {
+        // Arrange
         var project = new Project { Id = 20, Name = "Original", Slug = "original", OwnerId = 1 };
         Context.Projects.Add(project);
         await Context.SaveChangesAsync();
 
         project.Name = "Updated";
         _projectRepo.Update(project);
+        // Act
         await Context.SaveChangesAsync();
 
         var saved = Context.Projects.Find(20);
+        // Assert
         Assert.That(saved, Is.Not.Null);
         Assert.That(saved!.Name, Is.EqualTo("Updated"));
     }
@@ -125,12 +141,15 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_ExistingEntity_RemovesAndReturnsTrue()
     {
+        // Arrange
         var project = new Project { Id = 30, Name = "DeleteMe", Slug = "delete-me", OwnerId = 1 };
         Context.Projects.Add(project);
         await Context.SaveChangesAsync();
 
+        // Act
         var result = await _projectRepo.DeleteByIdAsync(30);
 
+        // Assert
         Assert.That(result, Is.True);
         Assert.That(Context.Projects.Find(30), Is.Null);
     }
@@ -138,13 +157,16 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_NonExistingId_ReturnsFalse()
     {
+        // Arrange
         var result = await _projectRepo.DeleteByIdAsync(999);
+        // Assert
         Assert.That(result, Is.False);
     }
 
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Project_CascadesToPromises()
     {
+        // Arrange
         var project = new Project { Id = 40, Name = "Cascade", Slug = "cascade", OwnerId = 1 };
         Context.Projects.Add(project);
         Context.Promises.AddRange(
@@ -152,8 +174,10 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
             new Promise { Id = 42, ProjectId = 40, Statement = "P2", SequenceNumber = 2 });
         await Context.SaveChangesAsync();
 
+        // Act
         await _projectRepo.DeleteByIdAsync(40);
 
+        // Assert
         Assert.That(Context.Promises.Find(41), Is.Null);
         Assert.That(Context.Promises.Find(42), Is.Null);
         Assert.That(Context.Projects.Find(40), Is.Null);
@@ -162,6 +186,7 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Project_CascadesToIterationsAndUnlinksMoments()
     {
+        // Arrange
         var project = new Project { Id = 50, Name = "CascadeIter", Slug = "cascade-iter", OwnerId = 1 };
         Context.Projects.Add(project);
         var iteration = new Iteration { Id = 51, ProjectId = 50, Name = "Sprint 1" };
@@ -174,8 +199,10 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
         Context.Moments.Add(moment);
         await Context.SaveChangesAsync();
 
+        // Act
         await _projectRepo.DeleteByIdAsync(50);
 
+        // Assert
         Assert.That(Context.Iterations.Find(51), Is.Null);
         Assert.That(Context.Strides.Find(52), Is.Null);
         var unlinkedMoment = Context.Moments.Find(53);
@@ -187,19 +214,23 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Project_CascadesToPermissions()
     {
+        // Arrange
         var project = new Project { Id = 55, Name = "CascadePerm", Slug = "cascade-perm", OwnerId = 1 };
         Context.Projects.Add(project);
         Context.Set<Permission>().Add(new Permission { Id = 56, ProjectId = 55, UserId = 2, Level = PermissionLevel.Edit });
         await Context.SaveChangesAsync();
 
+        // Act
         await _projectRepo.DeleteByIdAsync(55);
 
+        // Assert
         Assert.That(Context.Set<Permission>().Find(56), Is.Null);
     }
 
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Promise_CascadesToEpics()
     {
+        // Arrange
         var promise = new Promise { Id = 60, ProjectId = 1, Statement = "Root", SequenceNumber = 1 };
         Context.Promises.Add(promise);
         Context.Epics.AddRange(
@@ -207,8 +238,10 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
             new Epic { Id = 62, ProductPromiseId = 60, Statement = "E2", SequenceNumber = 2 });
         await Context.SaveChangesAsync();
 
+        // Act
         await _promiseRepo.DeleteByIdAsync(60);
 
+        // Assert
         Assert.That(Context.Epics.Find(61), Is.Null);
         Assert.That(Context.Epics.Find(62), Is.Null);
     }
@@ -216,19 +249,23 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Promise_CascadesToComments()
     {
+        // Arrange
         var promise = new Promise { Id = 65, ProjectId = 1, Statement = "WithComments", SequenceNumber = 1 };
         Context.Promises.Add(promise);
         Context.Set<Comment>().Add(new Comment { Id = 66, Text = "C1", ProductPromiseId = 65 });
         await Context.SaveChangesAsync();
 
+        // Act
         await _promiseRepo.DeleteByIdAsync(65);
 
+        // Assert
         Assert.That(Context.Set<Comment>().Find(66), Is.Null);
     }
 
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Epic_CascadesToJourneys()
     {
+        // Arrange
         var epic = new Epic { Id = 70, ProductPromiseId = 1, Statement = "Epic1", SequenceNumber = 1 };
         Context.Epics.Add(epic);
         Context.Journeys.AddRange(
@@ -236,8 +273,10 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
             new Journey { Id = 72, EpicId = 70, Statement = "J2", SequenceNumber = 2 });
         await Context.SaveChangesAsync();
 
+        // Act
         await _epicRepo.DeleteByIdAsync(70);
 
+        // Assert
         Assert.That(Context.Journeys.Find(71), Is.Null);
         Assert.That(Context.Journeys.Find(72), Is.Null);
     }
@@ -245,6 +284,7 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Journey_CascadesToFlows()
     {
+        // Arrange
         var journey = new Journey { Id = 80, EpicId = 1, Statement = "Journey1", SequenceNumber = 1 };
         Context.Journeys.Add(journey);
         Context.Flows.AddRange(
@@ -252,8 +292,10 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
             new Flow { Id = 82, JourneyId = 80, Statement = "F2", SequenceNumber = 2 });
         await Context.SaveChangesAsync();
 
+        // Act
         await _journeyRepo.DeleteByIdAsync(80);
 
+        // Assert
         Assert.That(Context.Flows.Find(81), Is.Null);
         Assert.That(Context.Flows.Find(82), Is.Null);
     }
@@ -261,6 +303,7 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Flow_CascadesToMoments()
     {
+        // Arrange
         var flow = new Flow { Id = 90, JourneyId = 1, Statement = "Flow1", SequenceNumber = 1 };
         Context.Flows.Add(flow);
         Context.Moments.AddRange(
@@ -268,8 +311,10 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
             new Moment { Id = 92, FlowId = 90, SequenceNumber = 2 });
         await Context.SaveChangesAsync();
 
+        // Act
         await _flowRepo.DeleteByIdAsync(90);
 
+        // Assert
         Assert.That(Context.Moments.Find(91), Is.Null);
         Assert.That(Context.Moments.Find(92), Is.Null);
     }
@@ -277,6 +322,7 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Moment_RemovesAssignmentsAndTasks()
     {
+        // Arrange
         var flow = new Flow { Id = 95, JourneyId = 1, Statement = "FlowM", SequenceNumber = 1 };
         Context.Flows.Add(flow);
         var moment = new Moment { Id = 96, FlowId = 95, SequenceNumber = 1 };
@@ -286,8 +332,10 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
         Context.Set<BugReworkTask>().Add(new BugReworkTask { Id = 99, MomentId = 96, Title = "Bug" });
         await Context.SaveChangesAsync();
 
+        // Act
         await _momentRepo.DeleteByIdAsync(96);
 
+        // Assert
         Assert.That(Context.Moments.Find(96), Is.Null);
         Assert.That(Context.Set<MomentAssignment>().Find(97), Is.Null);
         Assert.That(Context.Set<MomentTask>().Find(98), Is.Null);
@@ -297,14 +345,17 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_Comment_RemovesRepliesAndMentions()
     {
+        // Arrange
         Context.Set<Comment>().AddRange(
             new Comment { Id = 200, Text = "Parent" },
             new Comment { Id = 201, Text = "Reply", ParentCommentId = 200 });
         Context.Set<CommentMention>().Add(new CommentMention { Id = 202, CommentId = 200, MentionedUserId = 1 });
         await Context.SaveChangesAsync();
 
+        // Act
         await _commentRepo.DeleteByIdAsync(200);
 
+        // Assert
         Assert.That(Context.Set<Comment>().Find(200), Is.Null);
         Assert.That(Context.Set<Comment>().Find(201), Is.Null);
         Assert.That(Context.Set<CommentMention>().Find(202), Is.Null);
@@ -313,12 +364,15 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_DeleteByIdAsync_NonCascadingType_RemovesDirectly()
     {
+        // Arrange
         Context.Users.Add(new User { Id = 300, Name = "User", Email = "u@test.com", Slug = "user-300" });
         await Context.SaveChangesAsync();
 
         var userRepo = new GenericRepository<User>(Context);
+        // Act
         var result = await userRepo.DeleteByIdAsync(300);
 
+        // Assert
         Assert.That(result, Is.True);
         Assert.That(Context.Users.Find(300), Is.Null);
     }
@@ -330,11 +384,14 @@ public class GenericRepositoryUnitTests : RepositoryTestBase
     [Test]
     public async Task REQ_FUN_XXX_SaveChangesAsync_PersistsPendingChanges()
     {
+        // Arrange
         var project = new Project { Name = "Persist", Slug = "persist", OwnerId = 1 };
         await _projectRepo.AddAsync(project);
+        // Act
         await _projectRepo.SaveChangesAsync();
 
         var saved = Context.Projects.FirstOrDefault(p => p.Slug == "persist");
+        // Assert
         Assert.That(saved, Is.Not.Null);
     }
 
