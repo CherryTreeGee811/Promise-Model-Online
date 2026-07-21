@@ -1,7 +1,8 @@
 import { apiPost } from '../api.ts';
 import { showToast } from '../ui/toast.ts';
-import { ensureModal } from './html.ts';
+
 import { getFormattedConsoleLogs, clearConsoleLogs } from './console-capture.ts';
+import { ensureModal } from './html.ts';
 
 interface BugReportFormElements {
     form: HTMLFormElement;
@@ -11,6 +12,11 @@ interface BugReportFormElements {
     submitButton: HTMLButtonElement;
 }
 
+/**
+ * Query the bug report modal for all form elements.
+ * @param {HTMLElement} modalElement - The modal root element.
+ * @returns {BugReportFormElements | undefined} The form elements object, or undefined if any element is missing.
+ */
 function getElements(modalElement: HTMLElement): BugReportFormElements | undefined {
     const form = modalElement.querySelector('#bug-report-form') as HTMLFormElement | null;
     const titleInput = modalElement.querySelector('#bug-report-title') as HTMLInputElement | null;
@@ -21,6 +27,10 @@ function getElements(modalElement: HTMLElement): BugReportFormElements | undefin
     return { form, titleInput, descriptionInput, errorElement, submitButton };
 }
 
+/**
+ * Open a Bootstrap modal for reporting a bug.
+ * The modal DOM is created on first invocation and reused.
+ */
 export function openBugReportModal(): void {
     const modalElement = ensureModal('bug-report-modal', `
         <div class="modal fade" id="bug-report-modal" tabindex="-1" aria-hidden="true">
@@ -60,9 +70,10 @@ export function openBugReportModal(): void {
     const fresh = getElements(modalElement);
     if (!fresh) return;
 
-    fresh.errorElement.classList.add('d-none');
-    fresh.submitButton.disabled = false;
-    fresh.submitButton.textContent = 'Submit Bug Report';
+    const { errorElement, submitButton } = fresh;
+    errorElement.classList.add('d-none');
+    submitButton.disabled = false;
+    submitButton.textContent = 'Submit Bug Report';
 
     fresh.form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -70,22 +81,22 @@ export function openBugReportModal(): void {
         const description = fresh.descriptionInput.value.trim();
 
         if (!title) {
-            fresh.errorElement.textContent = 'Title is required.';
-            fresh.errorElement.classList.remove('d-none');
+            errorElement.textContent = 'Title is required.';
+            errorElement.classList.remove('d-none');
             fresh.titleInput.focus();
             return;
         }
 
         if (!description) {
-            fresh.errorElement.textContent = 'Description is required.';
-            fresh.errorElement.classList.remove('d-none');
+            errorElement.textContent = 'Description is required.';
+            errorElement.classList.remove('d-none');
             fresh.descriptionInput.focus();
             return;
         }
 
         const consoleLogs = getFormattedConsoleLogs();
-        fresh.submitButton.disabled = true;
-        fresh.submitButton.textContent = 'Submitting...';
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
 
         try {
             const result = await apiPost<{ issueUrl?: string | null; message?: string }>('/api/bug-reports', { title, description, consoleLogs });
@@ -100,11 +111,11 @@ export function openBugReportModal(): void {
             }
         } catch (error: unknown) {
             console.error('Bug report failed:', error);
-            fresh.errorElement.textContent = (error as Record<string, unknown> | undefined)?.message as string || 'Failed to submit bug report.';
-            fresh.errorElement.classList.remove('d-none');
+            errorElement.textContent = (error as Record<string, unknown> | undefined)?.message as string || 'Failed to submit bug report.';
+            errorElement.classList.remove('d-none');
         } finally {
-            fresh.submitButton.disabled = false;
-            fresh.submitButton.textContent = 'Submit Bug Report';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Bug Report';
         }
     });
 

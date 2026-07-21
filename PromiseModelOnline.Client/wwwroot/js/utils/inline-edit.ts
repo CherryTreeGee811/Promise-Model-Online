@@ -16,6 +16,7 @@ export function setupInlineEdit(inputElement: HTMLElement, viewElement: HTMLElem
    * @param {string} value - The HTML content to display.
    */
   function showView(value: string): void {
+    // eslint-disable-next-line no-unsanitized/property — callers pass either escapeHtml() or formatCommentText(), both safe
     viewElement.innerHTML = value || '';
     viewElement.classList.remove('d-none');
     inputElement.classList.add('d-none');

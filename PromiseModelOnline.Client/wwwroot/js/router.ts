@@ -1,6 +1,3 @@
-import { initConsoleCapture } from './utils/console-capture.ts';
-initConsoleCapture();
-
 import { initDeleteAccountPage } from './account/delete-account.ts';
 import { initPreferencesPage } from './account/preferences.ts';
 import { checkSession } from './api.ts';
@@ -13,6 +10,7 @@ import { loadNavTemplate, initNavEventDelegation } from './navigation/router.ts'
 import { handleNotificationsRoutes } from './notifications/router.ts';
 import { initTheme, toggleTheme } from './stores/theme.ts';
 import { initTelemetry } from './telemetry.ts';
+import { initConsoleCapture } from './utils/console-capture.ts';
 
 /**
  * @typedef {{ allowed: true } | { allowed: false; redirect?: string }} GuardResult
@@ -451,6 +449,7 @@ async function handleProjectScopedPath(path: string, segments: string[], navCont
  * @param {HTMLElement} contentDiv - The main content container.
  */
 export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
+    initConsoleCapture();
     if (!contentDiv) return;
     contentDiv.replaceChildren();
     const path = location.pathname;

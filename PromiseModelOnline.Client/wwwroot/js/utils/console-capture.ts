@@ -1,27 +1,44 @@
 const MAX_ENTRIES = 200;
-const buffer: Array<{ level: string; timestamp: string; text: string }> = [];
-let initialized = false;
 
-function formatArg(arg: unknown): string {
-    if (arg instanceof Error) return `${arg.name}: ${arg.message}\n${arg.stack ?? ''}`;
+const state: { isInitialized: boolean; buffer: Array<{ level: string; timestamp: string; text: string }> } = {
+    isInitialized: false,
+    buffer: [],
+};
+
+/**
+ * Formats a single console argument into a string.
+ * @param {unknown} argument - The value to format.
+ * @returns {string} The formatted string representation.
+ */
+function formatArgument(argument: unknown): string {
+    if (argument instanceof Error) return `${argument.name}: ${argument.message}\n${argument.stack ?? ''}`;
     try {
-        if (typeof arg === 'object') return JSON.stringify(arg, null, 2);
+        if (typeof argument === 'object') return JSON.stringify(argument, undefined, 2);
     } catch {
-        return String(arg);
+        return String(argument);
     }
-    return String(arg);
+    return String(argument);
 }
 
-function capture(level: string, args: unknown[]): void {
+/**
+ * Capture a console entry into the ring buffer.
+ * @param {string} level - The log level string.
+ * @param {unknown[]} originalArguments - The original console arguments.
+ */
+function capture(level: string, originalArguments: unknown[]): void {
     const timestamp = new Date().toISOString().slice(11, 23);
-    const text = args.map(formatArg).join(' ');
-    buffer.push({ level, timestamp, text });
-    if (buffer.length > MAX_ENTRIES) buffer.shift();
+    const text = originalArguments.map(a => formatArgument(a)).join(' ');
+    state.buffer.push({ level, timestamp, text });
+    if (state.buffer.length > MAX_ENTRIES) state.buffer.shift();
 }
 
+/**
+ * Initialize console log capture by wrapping native console methods.
+ * Idempotent — safe to call multiple times.
+ */
 export function initConsoleCapture(): void {
-    if (initialized) return;
-    initialized = true;
+    if (state.isInitialized) return;
+    state.isInitialized = true;
 
     const origLog = console.log.bind(console);
     const origWarn = console.warn.bind(console);
@@ -29,17 +46,24 @@ export function initConsoleCapture(): void {
     const origInfo = console.info.bind(console);
     const origDebug = console.debug.bind(console);
 
-    console.log = (...args: unknown[]) => { capture('log', args); origLog(...args); };
-    console.warn = (...args: unknown[]) => { capture('warn', args); origWarn(...args); };
-    console.error = (...args: unknown[]) => { capture('error', args); origError(...args); };
-    console.info = (...args: unknown[]) => { capture('info', args); origInfo(...args); };
-    console.debug = (...args: unknown[]) => { capture('debug', args); origDebug(...args); };
+    console.log = (...arguments_: unknown[]) => { capture('log', arguments_); origLog(...arguments_); };
+    console.warn = (...arguments_: unknown[]) => { capture('warn', arguments_); origWarn(...arguments_); };
+    console.error = (...arguments_: unknown[]) => { capture('error', arguments_); origError(...arguments_); };
+    console.info = (...arguments_: unknown[]) => { capture('info', arguments_); origInfo(...arguments_); };
+    console.debug = (...arguments_: unknown[]) => { capture('debug', arguments_); origDebug(...arguments_); };
 }
 
+/**
+ * Get all captured console logs as a formatted string.
+ * @returns {string} Newline-separated log entries with timestamps and levels.
+ */
 export function getFormattedConsoleLogs(): string {
-    return buffer.map(e => `[${e.timestamp}] [${e.level}] ${e.text}`).join('\n');
+    return state.buffer.map(entry => `[${entry.timestamp}] [${entry.level}] ${entry.text}`).join('\n');
 }
 
+/**
+ * Clear all captured console logs from the buffer.
+ */
 export function clearConsoleLogs(): void {
-    buffer.length = 0;
+    state.buffer = [];
 }
