@@ -58,35 +58,45 @@ public class BffHelpersTests
     [Test]
     public void REQ_SYS_021_IsAjax_XmlHttpRequestHeader_ReturnsTrue()
     {
+        // Arrange
         var request = CreateRequest(h => h["X-Requested-With"] = "XMLHttpRequest");
+        // Act & Assert
         Assert.That(BffHelpers.IsAjax(request), Is.True);
     }
 
     [Test]
     public void REQ_SYS_021_IsAjax_AcceptJson_ReturnsTrue()
     {
+        // Arrange
         var request = CreateRequest(h => h["Accept"] = "application/json");
+        // Act & Assert
         Assert.That(BffHelpers.IsAjax(request), Is.True);
     }
 
     [Test]
     public void REQ_SYS_021_IsAjax_AcceptAnyJson_ReturnsTrue()
     {
+        // Arrange
         var request = CreateRequest(h => h["Accept"] = "text/html, application/json, */*");
+        // Act & Assert
         Assert.That(BffHelpers.IsAjax(request), Is.True);
     }
 
     [Test]
     public void REQ_SYS_021_IsAjax_NoRelevantHeaders_ReturnsFalse()
     {
+        // Arrange
         var request = CreateRequest(h => h["Accept"] = "text/html");
+        // Act & Assert
         Assert.That(BffHelpers.IsAjax(request), Is.False);
     }
 
     [Test]
     public void REQ_SYS_021_IsAjax_EmptyHeaders_ReturnsFalse()
     {
+        // Arrange
         var request = CreateRequest();
+        // Act & Assert
         Assert.That(BffHelpers.IsAjax(request), Is.False);
     }
 }

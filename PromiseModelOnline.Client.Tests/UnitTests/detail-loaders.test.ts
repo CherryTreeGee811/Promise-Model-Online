@@ -16,20 +16,24 @@ beforeEach(() => {
 
 describe('loadPromiseDetail', () => {
     it('loads and renders promise detail', async () => {
+        // Arrange
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockResolvedValue({ id: 1, statement: 'TP', sequenceNumber: 1 });
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Act & Assert
         await expect(loadPromiseDetail('o', 'p', '1', nav, content, { permission: 'Edit' })).resolves.toBeUndefined();
     });
 });
 
 describe('loadMomentDetail', () => {
     it('loads and renders moment detail', async () => {
+        // Arrange
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
         const { apiGet } = await import('../../PromiseModelOnline.Client/wwwroot/js/api.ts');
         vi.mocked(apiGet).mockResolvedValue({ id: 100, statement: 'TM', sequenceNumber: 100 });
         const nav = document.createElement('div'); const content = document.createElement('div');
+        // Act & Assert
         await expect(loadMomentDetail('o', 'p', '100', nav, content, { permission: 'Edit' })).resolves.toBeUndefined();
     });
 });
