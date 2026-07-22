@@ -56,7 +56,7 @@ if [ "$created" -eq 1 ]; then
   echo "   The stack will deploy but these services will fail until you provide real values:"
   echo "     • secrets/google_client_secret.txt      — Google OAuth (Cloud Console)"
   echo "     • secrets/sendgrid_api_key.txt          — SendGrid email API key"
-  echo "     • secrets/cloudflare_tunnel_token.txt   — Cloudflare Zero Trust tunnel"
+  echo "     • secrets/cloudflare_tunnel_token.txt   — Cloudflare Zero Trust tunnel (optional — Quick Tunnel used if placeholder)"
   echo "     • secrets/github_token.txt              — GitHub PAT (scope: issues:write)"
   echo ""
   echo "   Edit each file and replace the placeholder with your real secret."

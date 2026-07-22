@@ -9,6 +9,11 @@
     stack_name: promisemodelonline
 
   tasks:
+    - name: Wait for cloud-init to complete
+      ansible.builtin.shell:
+        cmd: sudo cloud-init status --wait
+      changed_when: false
+
     - name: Create project directories on VM
       ansible.builtin.file:
         path: "{{ item }}"
@@ -91,6 +96,23 @@
         - auth_registration_key
         - github_token
 
+    - name: Check if cloudflared should use Quick Tunnel mode
+      ansible.builtin.shell:
+        cmd: grep -q "REPLACE_ME\|PLACEHOLDER" "{{ project_root }}/secrets/cloudflare_tunnel_token.txt" 2>/dev/null && echo "quick" || echo "dns"
+      register: tunnel_mode_result
+      changed_when: false
+
+    - name: Set tunnel mode fact
+      ansible.builtin.set_fact:
+        tunnel_mode: "{{ tunnel_mode_result.stdout }}"
+
+    - name: Override cloudflared command for Quick Tunnel mode
+      ansible.builtin.replace:
+        path: "{{ project_root }}/docker-stack.yml"
+        regexp: '^(\s+)command: tunnel --no-autoupdate run$'
+        replace: '\1command: tunnel --url http://promisemodelonline-proxy:8080 --no-autoupdate'
+      when: tunnel_mode == "quick"
+
     - name: Pull Docker images from registry
       ansible.builtin.shell:
         cmd: for img in cherrytree811/promisemodelonlineapi cherrytree811/promisemodelonlineauth cherrytree811/promisemodelonlinebff cherrytree811/promisemodelonlineclient cherrytree811/promisemodelonlineproxy; do sudo docker pull "$img" 2>&1; done
@@ -130,6 +152,92 @@
         chdir: "{{ project_root }}"
         executable: /bin/bash
       register: health_result
+
+    - name: Wait for cloudflared to connect and extract tunnel URL (Quick Tunnel only)
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 60); do
+            URL=$(sudo docker service logs "{{ stack_name }}_cloudflared" --tail 20 2>&1 \
+              | grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
+            if [ -n "$URL" ]; then
+              echo "$URL"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "TIMEOUT: tunnel URL not found in cloudflared logs"
+          sudo docker service logs "{{ stack_name }}_cloudflared" --tail 50
+          exit 1
+      register: tunnel_url_result
+      changed_when: false
+      when: tunnel_mode == "quick"
+      args:
+        executable: /bin/bash
+
+    - name: Set tunnel URL fact (Quick Tunnel only)
+      ansible.builtin.set_fact:
+        tunnel_url: "{{ tunnel_url_result.stdout }}"
+      when: tunnel_mode == "quick"
+
+    - name: Update .env with tunnel URL (Quick Tunnel only)
+      ansible.builtin.replace:
+        path: "{{ project_root }}/.env"
+        regexp: '^APP_BASE_URL=.*'
+        replace: 'APP_BASE_URL={{ tunnel_url }}'
+      when: tunnel_mode == "quick"
+
+    - name: Update auth service with real tunnel URL (Quick Tunnel only)
+      ansible.builtin.shell:
+        cmd: |
+          sudo docker service update \
+            --env-add APP_BASE_URL={{ tunnel_url }} \
+            --env-add AUTH_PUBLIC_ISSUER={{ tunnel_url }} \
+            "{{ stack_name }}_promisemodelonline-auth"
+      changed_when: true
+      when: tunnel_mode == "quick"
+
+    - name: Update BFF service with real tunnel URL (Quick Tunnel only)
+      ansible.builtin.shell:
+        cmd: |
+          sudo docker service update \
+            --env-add APP_BASE_URL={{ tunnel_url }} \
+            --env-add AUTH_PUBLIC_ISSUER={{ tunnel_url }} \
+            "{{ stack_name }}_promisemodelonline-bff"
+      changed_when: true
+      when: tunnel_mode == "quick"
+
+    - name: Update API service with real tunnel URL (Quick Tunnel only)
+      ansible.builtin.shell:
+        cmd: |
+          sudo docker service update \
+            --env-add JwtSettings__Issuer={{ tunnel_url }} \
+            "{{ stack_name }}_promisemodelonline-api"
+      changed_when: true
+      when: tunnel_mode == "quick"
+
+    - name: Wait for services to stabilize after URL update (Quick Tunnel only)
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 60); do
+            FAILED=$(sudo docker service ls --filter "name={{ stack_name }}" --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
+            if [ -z "$FAILED" ]; then
+              echo "All services stable"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Timed out waiting for services"
+          sudo docker service ls --filter "name={{ stack_name }}"
+          exit 1
+      args:
+        chdir: "{{ project_root }}"
+        executable: /bin/bash
+      when: tunnel_mode == "quick"
+
+    - name: Print tunnel URL (Quick Tunnel only)
+      ansible.builtin.debug:
+        msg: "Quick Tunnel URL: {{ tunnel_url }}"
+      when: tunnel_mode == "quick"
 
     - name: Print stack status
       ansible.builtin.shell:

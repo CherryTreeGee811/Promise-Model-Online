@@ -37,10 +37,10 @@ done
 
 if [ "$missing" -eq 1 ]; then
   echo ""
-  echo "ERROR: One or more external secrets still contain placeholder values."
-  echo "Edit the files listed above in deploy/secrets/ and re-run deploy.sh."
-  echo "The stack will NOT be deployed until these are filled in."
-  exit 1
+  echo "⚠️  WARNING: One or more external secrets have placeholder values."
+  echo "   Affected services (Google auth, SendGrid email, GitHub issues) will fail."
+  echo "   Edit deploy/secrets/*.txt with real values and re-run to fix."
+  echo "   Continuing with placeholder secrets..."
 fi
 
 # === Step 5: Deploy via Ansible ===
@@ -49,5 +49,9 @@ ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/site.yml
 
 echo ""
 echo "Done. VM should be reachable at 192.168.122.50"
+echo ""
 echo "  ssh pmo_admin@192.168.122.50 -i ~/.ssh/pmo_vm_key"
 echo "  docker service ls --filter name=promisemodelonline"
+echo ""
+echo "The Quick Tunnel URL is printed in the Ansible output above."
+echo "Look for: https://<random>.trycloudflare.com"
