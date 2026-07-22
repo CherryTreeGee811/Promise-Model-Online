@@ -91,7 +91,7 @@ public class OpenIddictExtensionsUnitTests
         InvokeAddPermissions(descriptor);
 
         // Assert
-        Assert.That(descriptor.Permissions, Has.Count.EqualTo(13));
+        Assert.That(descriptor.Permissions, Has.Count.EqualTo(14));
     }
 
     [Test]
