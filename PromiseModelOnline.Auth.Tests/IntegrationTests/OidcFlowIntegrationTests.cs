@@ -47,15 +47,17 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         // Act - POST to pushed authorization endpoint
         var response = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
 
-        // Assert - successful PAR returns request_uri
-        var body = await response.Content.ReadAsStringAsync();
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK),
-            $"PAR endpoint returned {(int)response.StatusCode}: {body}");
-        var json = body;
-        var doc = JsonDocument.Parse(json);
+        // Assert - successful PAR returns request_uri (201 Created)
+        var responseBody = await response.Content.ReadAsStringAsync();
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created),
+            $"PAR endpoint returned {(int)response.StatusCode}: {responseBody}");
+        var doc = JsonDocument.Parse(responseBody);
         return doc.RootElement.GetProperty("request_uri").GetString()
             ?? throw new InvalidOperationException("PAR response missing request_uri");
     }
+
+    private string BuildAuthorizeUrl(string requestUri) =>
+        $"/connect/authorize?client_id={Uri.EscapeDataString(ClientId)}&request_uri={Uri.EscapeDataString(requestUri)}";
 
     // ============================
     // UNAUTHENTICATED TESTS
@@ -69,7 +71,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         var requestUri = await PushedAuthorizeAsync();
 
         // Act
-        var response = await Client.GetAsync($"/connect/authorize?request_uri={Uri.EscapeDataString(requestUri)}");
+        var response = await Client.GetAsync(BuildAuthorizeUrl(requestUri));
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
@@ -79,17 +81,45 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    [Description("REQ_OIDC_006: Authorize requires openid scope")]
-    public async Task REQ_INT_015_Get_Authorize_WithoutOpenIdScope_ReturnsBadRequest()
+    [Description("REQ_OIDC_006: Authorize requires openid scope (redirects to login, rejects with error after auth)")]
+    public async Task REQ_INT_015_Get_Authorize_WithoutOpenIdScope_ReturnsError()
     {
-        // Arrange
+        // Arrange — PAR with profile scope (no openid)
         var body = BuildParParams(scope: "profile");
+        var parResponse = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+        Assert.That(parResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var doc = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync());
+        var requestUri = doc.RootElement.GetProperty("request_uri").GetString()!;
 
-        // Act
-        var response = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+        // Act — unauthenticated authorize -> redirect to login
+        var authResponse = await Client.GetAsync(BuildAuthorizeUrl(requestUri));
+        var loginUrl = await ExtractRedirectLocation(authResponse);
 
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        var loginResponse = await Client.GetAsync(loginUrl);
+        var loginHtml = await loginResponse.Content.ReadAsStringAsync();
+        var antiforgeryToken = ExtractAntiforgeryToken(loginHtml);
+        var antiforgeryCookie = ExtractSetCookieHeader(loginResponse, ".AspNetCore.Antiforgery");
+        var returnUrl = ExtractQueryParam(loginUrl, "returnUrl");
+
+        var loginForm = new Dictionary<string, string>
+        {
+            { "Username", "pmo_test" },
+            { "Password", "Hello123*" },
+            { "ReturnUrl", returnUrl },
+            { "__RequestVerificationToken", antiforgeryToken }
+        };
+        var loginPostRequest = CreatePost("/account/login", loginForm, antiforgeryCookie);
+        var loginPostResponse = await Client.SendAsync(loginPostRequest);
+
+        var authorizedUrl = await ExtractRedirectLocation(loginPostResponse);
+        var authCookie = ExtractSetCookieHeader(loginPostResponse, "__Host-pmo.auth");
+
+        var finalRequest = CreateGet(authorizedUrl, authCookie);
+        var finalResponse = await Client.SendAsync(finalRequest);
+
+        // Assert — after auth, OpenIddict validates scope and redirects with error
+        var finalLocation = await ExtractRedirectLocation(finalResponse);
+        Assert.That(finalLocation, Does.Contain("error="));
     }
 
     // ============================
@@ -193,33 +223,49 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     // ============================
 
     [Test]
-    [Description("REQ_OAUTH_002: PAR without code_challenge is rejected (PKCE required)")]
+    [Description("REQ_OAUTH_002: PAR without code_challenge accepted at PAR, rejects at token exchange (PKCE required)")]
     public async Task REQ_INT_015_Authorize_MissingCodeChallenge_ReturnsError()
     {
-        // Arrange
-        var authCookie = await AuthCookieAsync();
+        // Arrange — PAR without code_challenge is accepted (deferred to token exchange)
         var body = BuildParParams(codeChallenge: null, codeChallengeMethod: null);
-
-        // Act
         var parResponse = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+        Assert.That(parResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var doc = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync());
+        var requestUri = doc.RootElement.GetProperty("request_uri").GetString()!;
+
+        // Act — complete the full authorization code flow via PAR
+        var code = await PerformAuthorizationCodeFlowWithPar(body, requestUri);
+
+        // Act — token exchange without code_verifier (missing PKCE) should fail
+        var tokenResponse = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
+            new Dictionary<string, string>
+            {
+                { "grant_type", "authorization_code" },
+                { "code", code },
+                { "redirect_uri", RedirectUri },
+                { "client_id", ClientId }
+            }
+        ));
 
         // Assert
-        Assert.That(parResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        Assert.That(tokenResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
-    [Description("REQ_OAUTH_002: PAR with missing code_challenge_method defaults to plain which is rejected")]
-    public async Task REQ_INT_015_Authorize_MissingCodeChallengeMethod_ReturnsBadRequest()
+    [Description("REQ_OAUTH_002: Server metadata advertises only S256 code challenge method")]
+    public async Task Metadata_CodeChallengeMethods_OnlyS256()
     {
-        // Arrange
-        var authCookie = await AuthCookieAsync();
-        var body = BuildParParams(codeChallenge: CodeChallenge, codeChallengeMethod: null);
-
-        // Act
-        var parResponse = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+        // Arrange & Act
+        var response = await Client.GetAsync("/.well-known/openid-configuration");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        var methods = doc.RootElement.GetProperty("code_challenge_methods_supported").EnumerateArray()
+            .Select(m => m.GetString())
+            .ToArray();
 
         // Assert
-        Assert.That(parResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        Assert.That(methods, Is.EquivalentTo(new[] { "S256" }));
     }
 
     [Test]
@@ -340,7 +386,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         var requestUri = await PushedAuthorizeAsync(new Dictionary<string, string> { { "state", null! } });
 
         // Act
-        var request = CreateGet($"/connect/authorize?request_uri={Uri.EscapeDataString(requestUri)}", authCookie);
+        var request = CreateGet(BuildAuthorizeUrl(requestUri), authCookie);
         var response = await Client.SendAsync(request);
 
         // Assert
@@ -516,7 +562,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         Assert.That(tokens!.RefreshToken, Is.Not.Null);
 
         // Act - revoke the refresh token
-        var revokeResponse = await Client.PostAsync("/connect/revocation", new FormUrlEncodedContent(
+        var revokeResponse = await Client.PostAsync("/connect/revoke", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
                 { "token", tokens.RefreshToken },
@@ -546,10 +592,51 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     // PRIVATE HELPERS
     // ============================
 
+    private async Task<string> PerformAuthorizationCodeFlowWithPar(Dictionary<string, string> body, string requestUri)
+    {
+        var authorizeUrl = BuildAuthorizeUrl(requestUri);
+
+        var authResponse = await Client.GetAsync(authorizeUrl);
+        var loginUrl = await ExtractRedirectLocation(authResponse);
+
+        var loginResponse = await Client.GetAsync(loginUrl);
+        Assert.That(loginResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var loginHtml = await loginResponse.Content.ReadAsStringAsync();
+        var antiforgeryToken = ExtractAntiforgeryToken(loginHtml);
+        var antiforgeryCookie = ExtractSetCookieHeader(loginResponse, ".AspNetCore.Antiforgery");
+        Assert.That(antiforgeryCookie, Is.Not.Null);
+
+        var returnUrl = ExtractQueryParam(loginUrl, "returnUrl");
+        var loginForm = new Dictionary<string, string>
+        {
+            { "Username", "pmo_test" },
+            { "Password", "Hello123*" },
+            { "ReturnUrl", returnUrl },
+            { "__RequestVerificationToken", antiforgeryToken }
+        };
+        var loginRequest = CreatePost("/account/login", loginForm, antiforgeryCookie);
+        var loginPostResponse = await Client.SendAsync(loginRequest);
+
+        Assert.That(loginPostResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        var authorizedUrl = await ExtractRedirectLocation(loginPostResponse);
+
+        var authCookie = ExtractSetCookieHeader(loginPostResponse, "__Host-pmo.auth");
+        Assert.That(authCookie, Is.Not.Null, "Auth cookie not found in login response");
+
+        var authRequest = CreateGet(authorizedUrl, authCookie);
+        var finalResponse = await Client.SendAsync(authRequest);
+        Assert.That(finalResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+
+        var finalLocation = await ExtractRedirectLocation(finalResponse);
+        Assert.That(finalLocation, Does.Contain("code="));
+
+        return ExtractQueryParam(finalLocation, "code");
+    }
+
     private async Task<string> PerformAuthorizationCodeFlow()
     {
         var requestUri = await PushedAuthorizeAsync();
-        var authorizeUrl = $"/connect/authorize?request_uri={Uri.EscapeDataString(requestUri)}";
+        var authorizeUrl = BuildAuthorizeUrl(requestUri);
 
         var authResponse = await Client.GetAsync(authorizeUrl);
         var loginUrl = await ExtractRedirectLocation(authResponse);

@@ -105,13 +105,6 @@ builder.Services.AddOpenIddictServerConfig(
     builder.Configuration,
     builder.Environment);
 
-// Restrict code challenge methods to S256 only (OAuth 2.1 compliance).
-builder.Services.PostConfigure<OpenIddictServerOptions>(options =>
-{
-    options.CodeChallengeMethods.Clear();
-    options.CodeChallengeMethods.Add(OpenIddictConstants.CodeChallengeMethods.Sha256);
-});
-
 // Google OAuth 2.0 authentication with PKCE, configured from environment or Docker secrets.
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 if (!string.IsNullOrWhiteSpace(googleClientId))

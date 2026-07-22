@@ -1,4 +1,5 @@
 ﻿using OpenIddict.Abstractions;
+using OpenIddict.Server;
 using Microsoft.IdentityModel.Tokens;
 using PromiseModelOnline.Auth.DAL;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +19,14 @@ public static class OpenIddictExtensions
     public static void AddOpenIddictServerConfig(
         this IServiceCollection services,
         IConfiguration config,
-        IWebHostEnvironment env) =>
+        IWebHostEnvironment env)
+    {
+        services.PostConfigure<OpenIddictServerOptions>(options =>
+        {
+            options.CodeChallengeMethods.Clear();
+            options.CodeChallengeMethods.Add(OpenIddictConstants.CodeChallengeMethods.Sha256);
+        });
+
         services.AddOpenIddict()
             .AddCore(options =>
             {
@@ -74,6 +82,7 @@ public static class OpenIddictExtensions
                 options.UseLocalServer();
                 options.UseAspNetCore();
             });
+    }
 
     /// <summary>Load the signing/encryption certificate from <c>cert.pfx</c> or fall back to ephemeral keys for development.</summary>
     /// <param name="options">The OpenIddict server builder to configure.</param>
