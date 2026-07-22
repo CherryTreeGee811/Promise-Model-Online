@@ -138,8 +138,24 @@ public abstract class E2ETestBase
     private async Task InjectSessionCookiesAsync(IReadOnlyDictionary<string, string>? chunks)
     {
         if (chunks is null) return;
-        foreach (var chunk in chunks)
-            await Page.EvaluateAsync($"document.cookie = '{chunk.Key}={chunk.Value}; path=/; secure; samesite=lax'");
+        var cookies = chunks.Select(c => new Microsoft.Playwright.Cookie
+        {
+            Name = c.Key,
+            Value = c.Value,
+            Path = "/",
+            Secure = true,
+            HttpOnly = true,
+            SameSite = SameSiteAttribute.Lax,
+        }).ToArray();
+        try
+        {
+            await _context.AddCookiesAsync(cookies);
+        }
+        catch
+        {
+            foreach (var chunk in chunks)
+                await Page.EvaluateAsync($"document.cookie = '{chunk.Key}={chunk.Value}; path=/; secure; samesite=lax'");
+        }
     }
 
     /// <summary>Build a semicolon-separated Cookie header value from session cookie chunks.</summary>
