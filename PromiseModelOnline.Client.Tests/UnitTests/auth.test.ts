@@ -8,7 +8,7 @@ beforeEach(() => {
 
 describe('auth module', () => {
     it('starts unauthenticated after reset', () => {
-        // Arrange
+        // Arrange & Act
         // Assert
         expect(isLoggedIn()).toBe(false);
         expect(getUsername()).toBeUndefined();
@@ -17,6 +17,7 @@ describe('auth module', () => {
 
     it('persists auth state to sessionStorage on set', () => {
         // Arrange
+        // Act
         authStore.set({ isAuthenticated: true, username: 'jdoe', userId: 42 });
         // Assert
         expect(isLoggedIn()).toBe(true);
@@ -35,6 +36,7 @@ describe('auth module', () => {
         // Assert
         expect(isLoggedIn()).toBe(true);
 
+        // Act
         authStore.set({ isAuthenticated: false });
         expect(isLoggedIn()).toBe(false);
 
@@ -44,6 +46,7 @@ describe('auth module', () => {
 
     it('reads user name and id from store', () => {
         // Arrange
+        // Act
         authStore.set({ isAuthenticated: true, username: 'charlie', userId: 12 });
         // Assert
         expect(getUsername()).toBe('charlie');
@@ -149,7 +152,7 @@ describe('auth module saveToStorage', () => {
     it('silently handles sessionStorage write failure', () => {
         // Arrange
         const setItemSpy = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => { throw new Error('quota exceeded'); });
-        // Assert
+        // Act & Assert
         expect(() => authStore.set({ isAuthenticated: true })).not.toThrow();
         setItemSpy.mockRestore();
     });
@@ -157,7 +160,7 @@ describe('auth module saveToStorage', () => {
 
 describe('auth-state.ts legacy shim', () => {
     it('re-exports isLoggedIn from stores/auth', async () => {
-        // Arrange
+        // Arrange & Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/auth-state.ts');
         // Assert
         expect(typeof mod.isLoggedIn).toBe('function');

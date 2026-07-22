@@ -99,7 +99,7 @@ describe('processBurndownPoints', () => {
     });
 
     it('handles single point', () => {
-        // Act
+        // Arrange & Act
         const r = processBurndownPoints(pts([{ date: '2026-06-01', remaining: 5 }]));
         // Assert
         expect(r.days).toEqual([0]);
@@ -107,10 +107,9 @@ describe('processBurndownPoints', () => {
     });
 
     it('handles two points', () => {
-        // Arrange
+        // Arrange & Act
         const r = processBurndownPoints(pts([
             { date: '2026-06-01', remaining: 10 }, { date: '2026-06-02', remaining: 0 },
-        // Act
         ]));
         // Assert
         expect(r.days).toEqual([0, 1]);
@@ -140,7 +139,7 @@ describe('processBurndownPoints', () => {
     });
 
     it('handles single point with 0 remaining', () => {
-        // Act
+        // Arrange & Act
         const r = processBurndownPoints(pts([{ date: '2026-06-01', remaining: 0 }]));
         // Assert
         expect(r.actualPoints).toEqual([0]);
@@ -159,7 +158,7 @@ describe('processBurndownPoints', () => {
     });
 
     it('handles all ideals zero with lastDay zero', () => {
-        // Act
+        // Arrange & Act
         const r = processBurndownPoints(pts([{ date: '2026-06-01', remaining: 5 }]));
         // Assert
         expect(r.finalIdeal).toEqual([0]);
@@ -349,28 +348,28 @@ describe('buildEnhancedPoints', () => {
     const ys = (v: number) => 100 - v * 10;
 
     it('returns both behind and ahead arrays', () => {
-        // Act
+        // Arrange & Act
         const r = buildEnhancedPoints([0, 1], [10, 5], [10, 5], xs, ys);
         // Assert
         expect(r.enhancedBehind.length + r.enhancedAhead.length).toBeGreaterThan(0);
     });
 
     it('handles crossing lines', () => {
-        // Act
+        // Arrange & Act
         const r = buildEnhancedPoints([0, 1, 2], [10, 8, 6], [10, 6, 2], xs, ys);
         // Assert
         expect(r.enhancedAhead.length + r.enhancedBehind.length).toBeGreaterThan(0);
     });
 
     it('handles single day (no segments to iterate)', () => {
-        // Act
+        // Arrange & Act
         const r = buildEnhancedPoints([0], [10], [10], xs, ys);
         // Assert
         expect(r.enhancedBehind.length + r.enhancedAhead.length).toBe(1);
     });
 
     it('all behind when actual >= ideal for all points', () => {
-        // Act
+        // Arrange & Act
         const r = buildEnhancedPoints([0, 1], [10, 8], [5, 5], xs, ys);
         // Assert
         expect(r.enhancedBehind.length).toBeGreaterThan(0);
@@ -378,7 +377,7 @@ describe('buildEnhancedPoints', () => {
     });
 
     it('all ahead when actual <= ideal for all points', () => {
-        // Act
+        // Arrange & Act
         const r = buildEnhancedPoints([0, 1], [5, 3], [10, 8], xs, ys);
         // Assert
         expect(r.enhancedAhead.length).toBeGreaterThan(0);
@@ -386,7 +385,7 @@ describe('buildEnhancedPoints', () => {
     });
 
     it('processes multiple segments', () => {
-        // Act
+        // Arrange & Act
         const r = buildEnhancedPoints([0, 1, 2, 3], [10, 8, 6, 4], [8, 6, 4, 2], xs, ys);
         // Assert
         expect(r.enhancedBehind.length + r.enhancedAhead.length).toBeGreaterThanOrEqual(4);

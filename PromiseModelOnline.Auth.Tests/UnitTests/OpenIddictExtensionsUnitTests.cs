@@ -258,6 +258,7 @@ public class OpenIddictExtensionsUnitTests
                 d.RedirectUris.Count == 1 &&
                 d.PostLogoutRedirectUris.Count == 1 &&
                 d.Permissions.Contains(OpenIddictConstants.Permissions.Endpoints.Authorization) &&
+                d.Permissions.Contains(OpenIddictConstants.Permissions.Endpoints.PushedAuthorization) &&
                 d.Permissions.Contains(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode) &&
                 d.Requirements.Contains(OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange)),
             It.IsAny<CancellationToken>()), Times.Once);

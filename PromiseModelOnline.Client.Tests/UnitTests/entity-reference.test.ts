@@ -3,12 +3,13 @@ import { formatCommentText, loadEntityLookupMap } from '../../PromiseModelOnline
 
 describe('formatCommentText', () => {
     it('returns plain text unchanged', () => {
+        // Arrange & Act
         // Assert
         expect(formatCommentText('hello world')).toBe('hello world');
     });
 
     it('wraps @mentions in mention spans', () => {
-        // Act
+        // Arrange & Act
         const result = formatCommentText('Hey @john, check this');
         // Assert
         expect(result).toContain('<span class="mention">');
@@ -16,7 +17,7 @@ describe('formatCommentText', () => {
     });
 
     it('escapes HTML in regular text', () => {
-        // Act
+        // Arrange & Act
         const result = formatCommentText('<script>alert("xss")</script>');
         // Assert
         expect(result).not.toContain('<script>');
@@ -24,19 +25,20 @@ describe('formatCommentText', () => {
     });
 
     it('handles empty string', () => {
+        // Arrange & Act
         // Assert
         expect(formatCommentText('')).toBe('');
     });
 
     it('handles null/undefined by converting to string', () => {
-        // Act
+        // Arrange & Act
         const result = formatCommentText(null as unknown as string);
         // Assert
         expect(result).toBeTruthy();
     });
 
     it('handles mixed mentions and text', () => {
-        // Act
+        // Arrange & Act
         const result = formatCommentText('@alice check this');
         // Assert
         expect(result).toContain('@alice');
@@ -57,7 +59,7 @@ describe('formatCommentText', () => {
     });
 
     it('escapes HTML in entity reference numbers', () => {
-        // Act
+        // Arrange & Act
         const result = formatCommentText('<b>#promise-123</b>');
         // Assert
         expect(result).toContain('&lt;b&gt;');
@@ -84,7 +86,7 @@ describe('loadEntityLookupMap', () => {
     });
 
     it('handles fetch error silently', async () => {
-        // Act
+        // Arrange & Act
         globalThis.fetch = vi.fn().mockRejectedValue(new Error('network error'));
         // Assert
         await expect(loadEntityLookupMap('promise', 123, 'owner', 'project')).resolves.toBeUndefined();

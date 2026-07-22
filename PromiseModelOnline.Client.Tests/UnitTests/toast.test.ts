@@ -31,9 +31,11 @@ describe('showToast', () => {
     });
 
     it('creates the container on first use', () => {
-        // Assert
+        // Arrange
         expect(document.querySelector('#pmo-toast-container')).toBeNull();
+        // Act
         showToast('First');
+        // Assert
         expect(document.querySelector('#pmo-toast-container')).not.toBeNull();
     });
 

@@ -28,7 +28,7 @@ beforeEach(() => {
 
 describe('loadPromiseDetail', () => {
     it('is defined and callable', async () => {
-        // Arrange
+        // Arrange & Act
         const { loadPromiseDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/promises/detail.ts');
         // Assert
         expect(loadPromiseDetail).toBeDefined();
@@ -37,7 +37,7 @@ describe('loadPromiseDetail', () => {
 
 describe('loadEpicDetail', () => {
     it('is defined', async () => {
-        // Arrange
+        // Arrange & Act
         const { loadEpicDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/epics/detail.ts');
         // Assert
         expect(loadEpicDetail).toBeDefined();
@@ -46,7 +46,7 @@ describe('loadEpicDetail', () => {
 
 describe('loadJourneyDetail', () => {
     it('is defined', async () => {
-        // Arrange
+        // Arrange & Act
         const { loadJourneyDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/journeys/detail.ts');
         // Assert
         expect(loadJourneyDetail).toBeDefined();
@@ -55,7 +55,7 @@ describe('loadJourneyDetail', () => {
 
 describe('loadFlowDetail', () => {
     it('is defined', async () => {
-        // Arrange
+        // Arrange & Act
         const { loadFlowDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/flows/detail.ts');
         // Assert
         expect(loadFlowDetail).toBeDefined();
@@ -64,7 +64,7 @@ describe('loadFlowDetail', () => {
 
 describe('loadMomentDetail', () => {
     it('is defined', async () => {
-        // Arrange
+        // Arrange & Act
         const { loadMomentDetail } = await import('../../PromiseModelOnline.Client/wwwroot/js/moments/detail.ts');
         // Assert
         expect(loadMomentDetail).toBeDefined();

@@ -23,7 +23,7 @@ async function getBadgeElement() {
 
 describe('getUnreadNotificationsEventName', () => {
     it('returns the correct event name', async () => {
-        // Arrange
+        // Arrange & Act
         const { getUnreadNotificationsEventName } = await import('../../PromiseModelOnline.Client/wwwroot/js/notifications/badge.ts');
         // Assert
         expect(getUnreadNotificationsEventName()).toBe('pmo:notifications:unread-updated');

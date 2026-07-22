@@ -1120,6 +1120,7 @@ describe('createGraphContextMenuController', () => {
         createGraphContextMenuController({});
 
         const onHidden = tippyOptsList[1].onHidden as () => void;
+        // Act & Assert
         onHidden();
     });
 

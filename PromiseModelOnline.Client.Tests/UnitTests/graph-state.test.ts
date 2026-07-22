@@ -65,6 +65,7 @@ describe('isNodeCollapsed', () => {
 describe('setNodeCollapsed', () => {
     it('adds a node id to collapsed set when collapsing', () => {
         // Arrange
+        // Act
         setNodeCollapsed('node-1', true);
         // Assert
         expect(graphState.collapsedNodeIds.has('node-1')).toBe(true);
@@ -81,6 +82,7 @@ describe('setNodeCollapsed', () => {
 
     it('does nothing for empty node id', () => {
         // Arrange
+        // Act
         setNodeCollapsed('', true);
         // Assert
         expect(graphState.collapsedNodeIds.size).toBe(0);

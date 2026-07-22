@@ -109,6 +109,7 @@ describe('apiGet', () => {
     });
 
     it('throws for non-ok status', async () => {
+        // Arrange
         // Act
         mockFetch(500, {}, false);
         // Assert
@@ -116,6 +117,7 @@ describe('apiGet', () => {
     });
 
     it('throws on network error', async () => {
+        // Arrange
         // Act
         mockFetchError('Network failure');
         // Assert
@@ -206,6 +208,7 @@ describe('apiPatch', () => {
     });
 
     it('throws on non-ok response for PATCH', async () => {
+        // Arrange
         // Act
         mockFetch(500, {}, false);
         // Assert
@@ -213,6 +216,7 @@ describe('apiPatch', () => {
     });
 
     it('throws on network error for PATCH', async () => {
+        // Arrange
         // Act
         mockFetchError('Network failure');
         // Assert

@@ -58,6 +58,7 @@ describe('requestJson', () => {
 
 describe('buildMomentFormElement', () => {
     it('exports buildMomentFormElement function', async () => {
+        // Arrange
         // Act
         const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/graph-context-menu.ts');
         // Assert

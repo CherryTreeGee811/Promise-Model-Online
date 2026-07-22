@@ -35,6 +35,7 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/reactions/reactions.ts', asy
 describe('createStatusRow', () => {
     it('returns a table row element', () => {
         // Arrange
+        // Act
         const row = createStatusRow('green');
         // Assert
         expect(row.tagName).toBe('TR');
@@ -85,6 +86,7 @@ describe('createStatusRow', () => {
 describe('createDateRow', () => {
     it('returns a table row element', () => {
         // Arrange
+        // Act
         const row = createDateRow('Created');
         // Assert
         expect(row.tagName).toBe('TR');
@@ -212,7 +214,7 @@ describe('setElementVisibility', () => {
     it('handles missing element', () => {
         // Arrange
         (document.querySelector as any).mockReturnValue(null);
-        // Assert
+        // Act & Assert
         expect(() => setElementVisibility('#test', true)).not.toThrow();
     });
 });
@@ -239,7 +241,7 @@ describe('setElementText', () => {
     it('handles missing element', () => {
         // Arrange
         (document.querySelector as any).mockReturnValue(null);
-        // Assert
+        // Act & Assert
         expect(() => setElementText('#test', 'hello')).not.toThrow();
     });
 });
@@ -266,7 +268,7 @@ describe('initBackLink', () => {
     it('handles missing back-link', () => {
         // Arrange
         (document.querySelector as any).mockReturnValue(null);
-        // Assert
+        // Act & Assert
         expect(() => initBackLink()).not.toThrow();
     });
 });
@@ -302,14 +304,14 @@ describe('buildInlineEditUI', () => {
     it('handles empty description', () => {
         // Arrange
         const td = document.createElement('td');
-        // Assert
+        // Act & Assert
         expect(() => buildInlineEditUI(td, 'test-', '')).not.toThrow();
     });
 
     it('handles null/undefined description', () => {
         // Arrange
         const td = document.createElement('td');
-        // Assert
+        // Act & Assert
         expect(() => buildInlineEditUI(td, 'test-', null as unknown as string)).not.toThrow();
         const td2 = document.createElement('td');
         expect(() => buildInlineEditUI(td2, 'test-', undefined as unknown as string)).not.toThrow();
@@ -335,7 +337,7 @@ describe('setupDetailInlineEdit', () => {
             if (sel === '#edit') return document.createElement('button');
             return null;
         });
-        // Assert
+        // Act & Assert
         expect(setupDetailInlineEdit('#input', '#view', '#edit', 'epic', 1)).toBeUndefined();
     });
 
@@ -347,7 +349,7 @@ describe('setupDetailInlineEdit', () => {
             if (sel === '#edit') return document.createElement('button');
             return null;
         });
-        // Assert
+        // Act & Assert
         expect(setupDetailInlineEdit('#input', '#view', '#edit', 'epic', 1)).toBeUndefined();
     });
 
@@ -359,7 +361,7 @@ describe('setupDetailInlineEdit', () => {
             if (sel === '#edit') return null;
             return null;
         });
-        // Assert
+        // Act & Assert
         expect(setupDetailInlineEdit('#input', '#view', '#edit', 'epic', 1)).toBeUndefined();
     });
 
@@ -435,9 +437,8 @@ describe('setupDescriptionHandler', () => {
     it('does nothing when save button is missing', () => {
         // Arrange
         document.body.innerHTML = '';
-        // Act
         const updateFn = vi.fn();
-        // Assert
+        // Act & Assert
         expect(() => setupDescriptionHandler('owner', 'proj', '1', 'epic', { sequenceNumber: 1 }, updateFn)).not.toThrow();
         expect(updateFn).not.toHaveBeenCalled();
     });

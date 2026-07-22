@@ -26,6 +26,8 @@ afterEach(() => {
 
 describe('themeStore', () => {
   it('starts with light theme after reset', () => {
+    // Arrange
+    // Act
     // Assert
     expect(themeStore.get().theme).toBe('light');
   });

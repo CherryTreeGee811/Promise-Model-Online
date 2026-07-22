@@ -156,6 +156,7 @@ describe('setupAddChildForm', () => {
         const form = document.getElementById('add-form') as HTMLFormElement;
         const input = document.getElementById('statement-input') as HTMLInputElement;
         input.value = 'New epic';
+        // Act
         await form.dispatchEvent(new Event('submit'));
     });
 

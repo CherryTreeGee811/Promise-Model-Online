@@ -3,6 +3,7 @@ using System.Text.Json;
 
 namespace PromiseModelOnline.Auth.Tests.IntegrationTests;
 
+[TestFixture]
 public class OidcFlowIntegrationTests : IntegrationTestBase
 {
     private const string ClientId = "pmo-spa";
@@ -12,7 +13,6 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
 
     private string CodeChallenge => ComputeS256CodeChallenge(CodeVerifier);
 
-    /// <summary>Build form-url-encoded params for a pushed authorization request.</summary>
     private Dictionary<string, string> BuildParParams(
         string? redirectUri = null,
         string? scope = null,
@@ -35,16 +35,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         };
     }
 
-    /// <summary>POST to the Pushed Authorization Request endpoint and return the request_uri.</summary>
     private async Task<string> PushedAuthorizeAsync(Dictionary<string, string>? overrides = null)
     {
+        // Arrange - build PAR body with optional overrides
         var body = BuildParParams();
         if (overrides is not null)
             foreach (var (key, value) in overrides)
                 if (value is null) body.Remove(key);
                 else body[key] = value;
 
+        // Act - POST to pushed authorization endpoint
         var response = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+
+        // Assert - successful PAR returns request_uri
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK),
             "PAR endpoint should return 200 OK");
         var json = await response.Content.ReadAsStringAsync();
@@ -53,22 +56,21 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
             ?? throw new InvalidOperationException("PAR response missing request_uri");
     }
 
-    /// <summary>Build an authorize URL that uses the PAR request_uri.</summary>
-    private string BuildAuthorizeWithPar(Dictionary<string, string>? parOverrides = null)
-    {
-        var requestUri = PushedAuthorizeAsync(parOverrides).GetAwaiter().GetResult();
-        return $"/connect/authorize?request_uri={Uri.EscapeDataString(requestUri)}";
-    }
-
     // ============================
     // UNAUTHENTICATED TESTS
     // ============================
 
     [Test]
+    [Description("REQ_OIDC_002: Authorization endpoint redirects unauthenticated users to login")]
     public async Task REQ_INT_015_Get_Authorize_WithoutSession_RedirectsToLogin()
     {
+        // Arrange
         var requestUri = await PushedAuthorizeAsync();
+
+        // Act
         var response = await Client.GetAsync($"/connect/authorize?request_uri={Uri.EscapeDataString(requestUri)}");
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
         var location = await ExtractRedirectLocation(response);
         Assert.That(location, Does.Contain("/account/login"));
@@ -76,10 +78,16 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     }
 
     [Test]
+    [Description("REQ_OIDC_006: Authorize requires openid scope")]
     public async Task REQ_INT_015_Get_Authorize_WithoutOpenIdScope_ReturnsBadRequest()
     {
+        // Arrange
         var body = BuildParParams(scope: "profile");
+
+        // Act
         var response = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
@@ -88,17 +96,27 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     // ============================
 
     [Test]
+    [Description("REQ_OAUTH_001: Authorization code flow returns code")]
     public async Task REQ_INT_015_Authorize_WithSession_ReturnsAuthorizationCode()
     {
+        // Arrange & Act
         var code = await PerformAuthorizationCodeFlow();
+
+        // Assert
         Assert.That(code, Is.Not.Null.And.Not.Empty);
     }
 
     [Test]
+    [Description("REQ_OIDC_005: Token exchange returns access token, ID token, and refresh token")]
     public async Task REQ_INT_015_Token_AuthorizationCode_ReturnsTokens()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act
         var tokens = await ExchangeCodeForTokens(code);
+
+        // Assert
         Assert.That(tokens, Is.Not.Null);
         Assert.That(tokens!.AccessToken, Is.Not.Null.And.Not.Empty);
         Assert.That(tokens.IdToken, Is.Not.Null.And.Not.Empty);
@@ -107,22 +125,31 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     }
 
     [Test]
+    [Description("REQ_OAUTH_003: Refresh token rotation — each refresh yields a new token")]
     public async Task REQ_INT_015_Token_RefreshToken_RotatesTokens()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
         var firstTokens = await ExchangeCodeForTokens(code);
         Assert.That(firstTokens!.RefreshToken, Is.Not.Null);
 
+        // Act
         var secondTokens = await ExchangeRefreshToken(firstTokens.RefreshToken!);
+
+        // Assert
         Assert.That(secondTokens, Is.Not.Null);
         Assert.That(secondTokens!.RefreshToken, Is.Not.Null);
         Assert.That(secondTokens.RefreshToken, Is.Not.EqualTo(firstTokens.RefreshToken));
     }
 
     [Test]
+    [Description("REQ_OAUTH_001: Token exchange without code_verifier is rejected")]
     public async Task REQ_INT_015_Token_MissingCodeVerifier_ReturnsError()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -132,13 +159,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId }
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
+    [Description("REQ_OAUTH_001: Token exchange with wrong code_verifier is rejected")]
     public async Task REQ_INT_015_Token_WrongCodeVerifier_ReturnsError()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -149,36 +182,53 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId }
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     // ============================
-    // 🚫 AUTHORIZATION CODE MISUSE CASES
+    // AUTHORIZATION CODE MISUSE CASES
     // ============================
 
     [Test]
+    [Description("REQ_OAUTH_002: PAR without code_challenge is rejected (PKCE required)")]
     public async Task REQ_INT_015_Authorize_MissingCodeChallenge_ReturnsError()
     {
+        // Arrange
         var authCookie = await AuthCookieAsync();
         var body = BuildParParams(codeChallenge: null, codeChallengeMethod: null);
+
+        // Act
         var parResponse = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+
+        // Assert
         Assert.That(parResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
+    [Description("REQ_OAUTH_002: PAR with missing code_challenge_method defaults to plain which is rejected")]
     public async Task REQ_INT_015_Authorize_MissingCodeChallengeMethod_ReturnsBadRequest()
     {
+        // Arrange
         var authCookie = await AuthCookieAsync();
         var body = BuildParParams(codeChallenge: CodeChallenge, codeChallengeMethod: null);
+
+        // Act
         var parResponse = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
+
+        // Assert
         Assert.That(parResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
+    [Description("REQ_OAUTH_004: Authorization code replay is rejected (single-use)")]
     public async Task REQ_INT_015_Token_AuthorizationCodeReplay_ReturnsError()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
 
+        // Act - first exchange succeeds
         var firstResponse = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -189,8 +239,10 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId }
             }
         ));
-        Assert.That(firstResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(firstResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK),
+            "First code exchange should succeed");
 
+        // Act - second exchange with same code should fail
         var secondResponse = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -201,13 +253,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId }
             }
         ));
+
+        // Assert
         Assert.That(secondResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
+    [Description("REQ_OAUTH_005: Token exchange with wrong redirect_uri is rejected")]
     public async Task REQ_INT_015_Token_CodeWithWrongRedirectUri_ReturnsError()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -218,13 +276,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId }
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
+    [Description("REQ_OAUTH_005: Token exchange with wrong client_id returns unauthorized")]
     public async Task REQ_INT_015_Token_CodeWithWrongClientId_ReturnsUnauthorized()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -235,13 +299,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", "wrong-client" }
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
+    [Description("REQ_OAUTH_005: Token exchange without client_id returns error")]
     public async Task REQ_INT_015_Token_MissingClientId_ReturnsError()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -251,6 +321,8 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "redirect_uri", RedirectUri },
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
@@ -259,21 +331,28 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     // ============================
 
     [Test]
+    [Description("REQ_OIDC_003: Missing state parameter still succeeds (state is optional)")]
     public async Task REQ_INT_015_Authorize_MissingState_StillSucceeds()
     {
+        // Arrange
         var authCookie = await AuthCookieAsync();
         var requestUri = await PushedAuthorizeAsync(new Dictionary<string, string> { { "state", null! } });
 
+        // Act
         var request = CreateGet($"/connect/authorize?request_uri={Uri.EscapeDataString(requestUri)}", authCookie);
         var response = await Client.SendAsync(request);
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
         var location = await ExtractRedirectLocation(response);
         Assert.That(location, Does.Contain("code="));
     }
 
     [Test]
+    [Description("REQ_INT_015: Multiple concurrent sessions all produce valid tokens")]
     public async Task REQ_INT_015_Authorize_MultipleSessions_AllValid()
     {
+        // Arrange & Act
         async Task<string> GetCode()
         {
             var code = await PerformAuthorizationCodeFlow();
@@ -285,16 +364,20 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
 
         var token1 = await GetCode();
         var token2 = await GetCode();
+
+        // Assert
         Assert.That(token1, Is.Not.EqualTo(token2));
     }
 
     // ============================
-    // 🚫 REFRESH TOKEN MISUSE CASES
+    // REFRESH TOKEN MISUSE CASES
     // ============================
 
     [Test]
+    [Description("REQ_OAUTH_009: Refresh token replay detection invalidates entire token family")]
     public async Task REQ_INT_015_Token_RefreshTokenReplay_AfterRotation_InvalidatesFamily()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
         var firstTokens = await ExchangeCodeForTokens(code);
         Assert.That(firstTokens!.RefreshToken, Is.Not.Null);
@@ -303,6 +386,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         Assert.That(secondTokens, Is.Not.Null);
         Assert.That(secondTokens!.RefreshToken, Is.Not.Null);
 
+        // Act - replay the old refresh token
         var replayResponse = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -311,8 +395,11 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId }
             }
         ));
+
+        // Assert - replay is rejected
         Assert.That(replayResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
 
+        // Assert - even the new (second) token is invalidated by the theft detection
         var staleResponse = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -325,12 +412,15 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     }
 
     [Test]
+    [Description("REQ_OAUTH_010: Refresh token request without client_id is unauthorized")]
     public async Task REQ_INT_015_Token_RefreshTokenMissingClientId_ReturnsUnauthorized()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
         var firstTokens = await ExchangeCodeForTokens(code);
         Assert.That(firstTokens!.RefreshToken, Is.Not.Null);
 
+        // Act
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -338,13 +428,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "refresh_token", firstTokens.RefreshToken },
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
+    [Description("REQ_OAUTH_007: Scope reduction at token endpoint is rejected")]
     public async Task REQ_INT_015_Token_ScopeChange_AtTokenEndpoint_ReturnsBadRequest()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act - attempt to narrow scope at token exchange
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -356,13 +452,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "scope", "openid" },
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
+    [Description("REQ_OAUTH_007: Scope upgrade at token endpoint is rejected")]
     public async Task REQ_INT_015_Token_ScopeUpgrade_AtTokenEndpoint_ReturnsBadRequest()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act - attempt to add scope at token exchange
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -374,13 +476,19 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "scope", "openid profile email offline_access projects.read projects.write calendar.read" },
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
+    [Description("REQ_OAUTH_011: Public client sending client_secret is rejected")]
     public async Task REQ_INT_015_Token_PublicClientSendsSecret_ReturnsUnauthorized()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
+
+        // Act
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -392,16 +500,21 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_secret", "some-secret" },
             }
         ));
+
+        // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
 
     [Test]
+    [Description("REQ_OAUTH_012: Refresh token revocation invalidates it for future use")]
     public async Task REQ_INT_015_Revoke_RefreshToken_InvalidatesIt()
     {
+        // Arrange
         var code = await PerformAuthorizationCodeFlow();
         var tokens = await ExchangeCodeForTokens(code);
         Assert.That(tokens!.RefreshToken, Is.Not.Null);
 
+        // Act - revoke the refresh token
         var revokeResponse = await Client.PostAsync("/connect/revocation", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -410,8 +523,11 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId },
             }
         ));
+
+        // Assert - revocation succeeds
         Assert.That(revokeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
+        // Act - attempt to use revoked refresh token
         var staleResponse = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -420,6 +536,8 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
                 { "client_id", ClientId },
             }
         ));
+
+        // Assert - revoked token is rejected
         Assert.That(staleResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
@@ -471,6 +589,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
 
     private async Task<TokenResponse?> ExchangeCodeForTokens(string code)
     {
+        // Act - exchange authorization code for tokens
         var response = await Client.PostAsync("/connect/token", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
@@ -482,6 +601,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
             }
         ));
 
+        // Assert - token exchange should succeed
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         var json = await response.Content.ReadAsStringAsync();

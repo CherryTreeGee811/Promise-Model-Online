@@ -29,6 +29,7 @@ describe('hasNodeChildren', () => {
 describe('createDefaultFilters', () => {
     it('returns all filters with defaults', () => {
         // Arrange
+        // Act
         const f = createDefaultFilters();
         // Assert
         expect(f.search).toBe('');
@@ -43,6 +44,7 @@ describe('createDefaultFilters', () => {
 describe('parseTypeList', () => {
     it('parses comma-separated types', () => {
         // Arrange
+        // Act
         const result = parseTypeList('promise,epic');
         // Assert
         expect(result).toContain('promise');
@@ -50,6 +52,7 @@ describe('parseTypeList', () => {
     });
     it('returns empty set for empty input', () => {
         // Arrange
+        // Act
         const result = parseTypeList('');
         // Assert
         expect(result.size).toBe(0);
@@ -172,6 +175,7 @@ describe('getHiddenDescendantCount', () => {
 describe('normalizeTypeSelection', () => {
     it('returns contiguous range from given types', () => {
         // Arrange
+        // Act
         const result = normalizeTypeSelection(new Set(['promise', 'epic']));
         // Assert
         expect(result.has('promise')).toBe(true);
@@ -179,6 +183,7 @@ describe('normalizeTypeSelection', () => {
     });
     it('handles empty set', () => {
         // Arrange
+        // Act
         const result = normalizeTypeSelection(new Set());
         // Assert
         expect(result.size).toBe(0);
@@ -198,6 +203,7 @@ describe('getAssignmentFilterValue', () => {
 describe('buildMomentNode', () => {
     it('creates a moment node from payload', () => {
         // Arrange
+        // Act
         const result = buildMomentNode({ id: 1, sequenceNumber: 100, statement: 'Test Moment', statusColor: 'green' });
         // Assert
         expect(result.nodeType).toBe('moment');
@@ -208,6 +214,7 @@ describe('buildMomentNode', () => {
 describe('buildFlowNode', () => {
     it('creates a flow node with moment children', () => {
         // Arrange
+        // Act
         const result = buildFlowNode({ id: 1, sequenceNumber: 1, statement: 'Flow One', moments: [{ id: 100, sequenceNumber: 100, statement: 'M1' }] });
         // Assert
         expect(result.nodeType).toBe('flow');
@@ -218,6 +225,7 @@ describe('buildFlowNode', () => {
 describe('buildJourneyNode', () => {
     it('creates a journey node with flow children', () => {
         // Arrange
+        // Act
         const result = buildJourneyNode({ id: 1, sequenceNumber: 1, statement: 'J1', flows: [{ id: 1, sequenceNumber: 1, statement: 'F1', moments: [] }] });
         // Assert
         expect(result.nodeType).toBe('journey');
@@ -228,6 +236,7 @@ describe('buildJourneyNode', () => {
 describe('buildEpicNode', () => {
     it('creates an epic node with journey children', () => {
         // Arrange
+        // Act
         const result = buildEpicNode({ id: 1, sequenceNumber: 1, statement: 'E1', journeys: [{ id: 1, sequenceNumber: 1, statement: 'J1', flows: [] }] });
         // Assert
         expect(result.nodeType).toBe('epic');
@@ -238,6 +247,7 @@ describe('buildEpicNode', () => {
 describe('buildPromiseNode', () => {
     it('creates a promise node with epic children', () => {
         // Arrange
+        // Act
         const result = buildPromiseNode({ id: 1, sequenceNumber: 1, statement: 'P1', epics: [{ id: 1, sequenceNumber: 1, statement: 'E1', journeys: [] }] });
         // Assert
         expect(result.nodeType).toBe('promise');

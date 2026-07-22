@@ -17,6 +17,7 @@ describe('loadHomePage', () => {
         ctaBottom.id = 'home-cta-area-bottom';
         document.body.append(ctaBottom);
 
+        // Act
         loadHomePage();
 
         // Act

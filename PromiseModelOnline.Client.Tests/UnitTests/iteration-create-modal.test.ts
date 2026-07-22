@@ -20,6 +20,7 @@ async function openModal(onCreated = vi.fn()): Promise<void> {
 
 describe('openIterationCreateModal', () => {
     it('creates and shows the modal', async () => {
+        // Arrange
         // Act
         await openModal();
         // Assert
@@ -29,6 +30,7 @@ describe('openIterationCreateModal', () => {
     });
 
     it('populates modal with form elements', async () => {
+        // Arrange
         // Act
         await openModal();
         // Assert
@@ -39,6 +41,7 @@ describe('openIterationCreateModal', () => {
     });
 
     it('clears name input and error on open', async () => {
+        // Arrange
         // Act
         await openModal();
         // Assert
@@ -50,6 +53,7 @@ describe('openIterationCreateModal', () => {
     });
 
     it('resets submit button on open', async () => {
+        // Arrange
         // Act
         await openModal();
         // Assert
