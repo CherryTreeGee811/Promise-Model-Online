@@ -190,6 +190,8 @@
       ansible.builtin.shell:
         cmd: |
           sudo docker service update \
+            --env-rm APP_BASE_URL \
+            --env-rm AUTH_PUBLIC_ISSUER \
             --env-add APP_BASE_URL={{ tunnel_url }} \
             --env-add AUTH_PUBLIC_ISSUER={{ tunnel_url }} \
             "{{ stack_name }}_promisemodelonline-auth"
@@ -200,6 +202,8 @@
       ansible.builtin.shell:
         cmd: |
           sudo docker service update \
+            --env-rm APP_BASE_URL \
+            --env-rm AUTH_PUBLIC_ISSUER \
             --env-add APP_BASE_URL={{ tunnel_url }} \
             --env-add AUTH_PUBLIC_ISSUER={{ tunnel_url }} \
             "{{ stack_name }}_promisemodelonline-bff"
@@ -210,6 +214,7 @@
       ansible.builtin.shell:
         cmd: |
           sudo docker service update \
+            --env-rm JwtSettings__Issuer \
             --env-add JwtSettings__Issuer={{ tunnel_url }} \
             "{{ stack_name }}_promisemodelonline-api"
       changed_when: true

@@ -81,9 +81,9 @@ for dir in auth bff proxy; do
     echo "  keys/$dir/  [valid]"
   else
     case $dir in
-      auth)  subj="/CN=promisemodelonline.auth/O=Promise Model Online Auth/C=CA" ;;
-      bff)   subj="/CN=promisemodelonline.bff/O=Promise Model Online BFF/C=CA" ;;
-      proxy) subj="/CN=promisemodelonline.proxy/O=Promise Model Online Proxy/C=CA" ;;
+      auth)  subj="/CN=promisemodelonline-auth/O=Promise Model Online Auth/C=CA" ;;
+      bff)   subj="/CN=promisemodelonline-bff/O=Promise Model Online BFF/C=CA" ;;
+      proxy) subj="/CN=promisemodelonline-proxy/O=Promise Model Online Proxy/C=CA" ;;
     esac
     openssl req -x509 -newkey rsa:4096 -nodes \
       -keyout "keys/$dir/key.pem" -out "keys/$dir/cert.pem" \

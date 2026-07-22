@@ -44,7 +44,9 @@ public static class OpenIddictExtensions
                     .SetTokenEndpointUris("/connect/token")
                     .SetEndSessionEndpointUris("/connect/logout")
                     .SetIntrospectionEndpointUris("/connect/introspect")
-                    .SetRevocationEndpointUris("/connect/revoke");
+                    .SetRevocationEndpointUris("/connect/revoke")
+                    .SetPushedAuthorizationEndpointUris("/connect/authorize/pushed")
+                    .RequirePushedAuthorizationRequests();
 
                 options.AllowAuthorizationCodeFlow()
                     .AllowRefreshTokenFlow()
@@ -170,6 +172,7 @@ public static class OpenIddictExtensions
     private static void AddPermissions(OpenIddictApplicationDescriptor descriptor)
     {
         descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.PushedAuthorization);
         descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Token);
         descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.EndSession);
         descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Revocation);

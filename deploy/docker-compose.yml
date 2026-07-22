@@ -1,13 +1,13 @@
 services:
-  promisemodelonline.proxy:
+  promisemodelonline-proxy:
     image: cherrytree811/promisemodelonlineproxy
     container_name: promisemodelonlineproxy
     hostname: localhost
     ports:
       - "127.0.0.1:9000:9000/tcp"
     depends_on:
-      - promisemodelonline.bff
-      - promisemodelonline.client
+      - promisemodelonline-bff
+      - promisemodelonline-client
     networks:
       - promisemodelonline-net
     volumes:
@@ -19,7 +19,7 @@ services:
       timeout: 5s
       retries: 3
 
-  promisemodelonline.client:
+  promisemodelonline-client:
     image: cherrytree811/promisemodelonlineclient
     container_name: promisemodelonlineclient
     networks:
@@ -43,7 +43,7 @@ services:
     networks:
       - promisemodelonline-net
     depends_on:
-      promisemodelonline.proxy:
+      promisemodelonline-proxy:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "cloudflared", "tunnel", "info"]
@@ -52,7 +52,7 @@ services:
       retries: 3
     restart: unless-stopped
 
-  promisemodelonline.bff:
+  promisemodelonline-bff:
     image: cherrytree811/promisemodelonlinebff
     container_name: promisemodelonlinebff
     ports:
@@ -70,9 +70,9 @@ services:
       - ./keys/bff/cert.pem:/app/cert.pem:ro
       - ./keys/bff/key.pem:/app/key.pem:ro
     depends_on:
-      promisemodelonline.api:
+      promisemodelonline-api:
         condition: service_healthy
-      promisemodelonline.auth:
+      promisemodelonline-auth:
         condition: service_healthy
     networks:
       - promisemodelonline-net
@@ -91,26 +91,26 @@ services:
           cpus: '1'
           memory: 512M
 
-  promisemodelonline.api:
+  promisemodelonline-api:
     image: cherrytree811/promisemodelonlineapi
     container_name: promisemodelonlineapi
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:8000
       - JwtSettings__Issuer=${AUTH_PUBLIC_ISSUER}
-      - JwtSettings__Audience=promisemodelonline.api
+      - JwtSettings__Audience=promisemodelonline-api
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
     secrets:
       - source: api_db_password
         mode: 0444
       - source: auth_registration_key
         mode: 0444
     depends_on:
-      promisemodelonline.auth:
+      promisemodelonline-auth:
         condition: service_started
-      promisemodelonline.db-init:
+      promisemodelonline-db-init:
         condition: service_completed_successfully
     networks:
       - promisemodelonline-net
@@ -120,7 +120,7 @@ services:
       timeout: 5s
       retries: 3
     
-  promisemodelonline.auth:
+  promisemodelonline-auth:
     image: cherrytree811/promisemodelonlineauth
     container_name: promisemodelonlineauth
     environment:
@@ -130,7 +130,7 @@ services:
       - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
       - Certificates__Password_FILE=/run/secrets/cert_password
       - DATA_PROTECTION_KEYS_PATH=${DATA_PROTECTION_KEYS_PATH}
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID}
       - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
       - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
@@ -149,7 +149,7 @@ services:
       - source: sendgrid_api_key
         mode: 0444
     depends_on:
-      promisemodelonline.db-init:
+      promisemodelonline-db-init:
         condition: service_completed_successfully
     networks:
       - promisemodelonline-net
@@ -159,7 +159,7 @@ services:
       timeout: 5s
       retries: 3
 
-  promisemodelonline.db:
+  promisemodelonline-db:
     image: mcr.microsoft.com/mssql/server:2025-latest
     container_name: promisemodelonlinedb
     networks:
@@ -172,11 +172,11 @@ services:
     volumes:
       - mssql-data:/var/opt/mssql
 
-  promisemodelonline.db-init:
+  promisemodelonline-db-init:
     image: mcr.microsoft.com/mssql-tools
     container_name: promisemodelonlinedbinit
     depends_on:
-      - promisemodelonline.db
+      - promisemodelonline-db
     networks:
       - promisemodelonline-net
     secrets:

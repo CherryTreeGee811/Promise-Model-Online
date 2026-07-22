@@ -143,6 +143,7 @@ builder.Services
         options.ResponseType = "code";
         options.ResponseMode = "query";
         options.UsePkce = true;
+        options.PushedAuthorizationBehavior = PushedAuthorizationBehavior.Require;
         options.SaveTokens = true;
         options.SignInScheme = "cookie";
 

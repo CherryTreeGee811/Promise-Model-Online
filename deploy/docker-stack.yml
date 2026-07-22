@@ -103,7 +103,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:8000
       - JwtSettings__Issuer=${AUTH_PUBLIC_ISSUER}
-      - JwtSettings__Audience=promisemodelonline.api
+      - JwtSettings__Audience=promisemodelonline-api
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
       - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
