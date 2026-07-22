@@ -81,9 +81,12 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
     }
 
     [Test]
-    [Description("REQ_OIDC_006: Authorize requires openid scope (redirects to login, rejects with error after auth)")]
-    public async Task REQ_INT_015_Get_Authorize_WithoutOpenIdScope_ReturnsError()
+    [Description("REQ_OIDC_006: Authorize requires openid scope")]
+    public async Task REQ_INT_015_Get_Authorize_WithoutOpenIdScope_ReturnsBadRequest()
     {
+        // Arrange — authenticate first so validation is deterministic (no redirect to login)
+        var authCookie = await AuthCookieAsync();
+
         // Arrange — PAR with profile scope (no openid)
         var body = BuildParParams(scope: "profile");
         var parResponse = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
@@ -91,35 +94,12 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         var doc = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync());
         var requestUri = doc.RootElement.GetProperty("request_uri").GetString()!;
 
-        // Act — unauthenticated authorize -> redirect to login
-        var authResponse = await Client.GetAsync(BuildAuthorizeUrl(requestUri));
-        var loginUrl = await ExtractRedirectLocation(authResponse);
+        // Act — authorize with auth cookie (validates scope immediately)
+        var request = CreateGet(BuildAuthorizeUrl(requestUri), authCookie);
+        var authResponse = await Client.SendAsync(request);
 
-        var loginResponse = await Client.GetAsync(loginUrl);
-        var loginHtml = await loginResponse.Content.ReadAsStringAsync();
-        var antiforgeryToken = ExtractAntiforgeryToken(loginHtml);
-        var antiforgeryCookie = ExtractSetCookieHeader(loginResponse, ".AspNetCore.Antiforgery");
-        var returnUrl = ExtractQueryParam(loginUrl, "returnUrl");
-
-        var loginForm = new Dictionary<string, string>
-        {
-            { "Username", "pmo_test" },
-            { "Password", "Hello123*" },
-            { "ReturnUrl", returnUrl },
-            { "__RequestVerificationToken", antiforgeryToken }
-        };
-        var loginPostRequest = CreatePost("/account/login", loginForm, antiforgeryCookie);
-        var loginPostResponse = await Client.SendAsync(loginPostRequest);
-
-        var authorizedUrl = await ExtractRedirectLocation(loginPostResponse);
-        var authCookie = ExtractSetCookieHeader(loginPostResponse, "__Host-pmo.auth");
-
-        var finalRequest = CreateGet(authorizedUrl, authCookie);
-        var finalResponse = await Client.SendAsync(finalRequest);
-
-        // Assert — after auth, OpenIddict validates scope and redirects with error
-        var finalLocation = await ExtractRedirectLocation(finalResponse);
-        Assert.That(finalLocation, Does.Contain("error="));
+        // Assert — missing openid scope is rejected with BadRequest
+        Assert.That(authResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     // ============================
