@@ -48,9 +48,10 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
         var response = await Client.PostAsync("/connect/authorize/pushed", new FormUrlEncodedContent(body));
 
         // Assert - successful PAR returns request_uri
+        var body = await response.Content.ReadAsStringAsync();
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK),
-            $"PAR endpoint returned {(int)response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
-        var json = await response.Content.ReadAsStringAsync();
+            $"PAR endpoint returned {(int)response.StatusCode}: {body}");
+        var json = body;
         var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("request_uri").GetString()
             ?? throw new InvalidOperationException("PAR response missing request_uri");
