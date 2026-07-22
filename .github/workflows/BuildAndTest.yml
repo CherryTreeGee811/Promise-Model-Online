@@ -157,6 +157,7 @@ jobs:
             printf '%s' "${{ secrets.CERT_PASSWORD }}" > secrets/cert_password.txt
             printf '%s' "${{ secrets.DB_SA_PASSWORD }}" > secrets/db_sa_password.txt
             printf '%s' "${{ secrets.AUTH__REG_KEY }}" > secrets/auth_registration_key.txt
+            printf '%s' "${{ secrets.GITHUB_ISSUE_TOKEN }}" > secrets/github_token.txt
 
       - name: Run Auth Unit Tests
         shell: bash
