@@ -5,7 +5,7 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/notifications/api.ts', () =>
     fetchUnreadNotifications: vi.fn(),
 }));
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/notifications/signalr.ts', () => ({
-    startSignalR: vi.fn(),
+    startSignalR: vi.fn(() => Promise.resolve()),
 }));
 
 beforeEach(() => {

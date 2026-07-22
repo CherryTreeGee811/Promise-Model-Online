@@ -49,7 +49,7 @@ public class OidcFlowIntegrationTests : IntegrationTestBase
 
         // Assert - successful PAR returns request_uri
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK),
-            "PAR endpoint should return 200 OK");
+            $"PAR endpoint returned {(int)response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
         var json = await response.Content.ReadAsStringAsync();
         var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("request_uri").GetString()

@@ -62,6 +62,7 @@ public static class OpenIddictExtensions
                 var aspNetCoreBuilder = options.UseAspNetCore()
                     .EnableAuthorizationEndpointPassthrough()
                     .EnableEndSessionEndpointPassthrough()
+                    .EnablePushedAuthorizationEndpointPassthrough()
                     .EnableStatusCodePagesIntegration();
 
                 if (env.IsDevelopment())

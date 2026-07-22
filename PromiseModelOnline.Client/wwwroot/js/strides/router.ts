@@ -15,6 +15,6 @@ export async function loadStridesPage(owner: string, project: string, navContent
         await loadTemplate('strides/list.html', contentDiv);
         await loadStridesList(owner, project, navContentDiv, contentDiv, permission);
     } catch {
-        void loadTemplateWithError(contentDiv, 'strides')();
+        void (async () => { try { await loadTemplateWithError(contentDiv, 'strides')(); } catch (error) { dispatchEvent(new ErrorEvent('error', { message: String(error) })); } })();
     }
 }

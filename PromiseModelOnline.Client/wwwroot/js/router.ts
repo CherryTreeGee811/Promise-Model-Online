@@ -165,7 +165,7 @@ async function initServiceWorker(): Promise<void> {
  * @returns {Promise<true>} A promise that resolves when initialization is complete.
  */
 async function initApp(): Promise<true> {
-  void initServiceWorker();
+  void (async () => { try { await initServiceWorker(); } catch (error) { dispatchEvent(new ErrorEvent('error', { message: String(error) })); } })();
 
   const contentDiv = document.querySelector('#content') as HTMLElement;
   const navContentDiv = document.querySelector('#main-menu') as HTMLElement;
@@ -463,7 +463,7 @@ export async function routeHandler(navContentDiv: HTMLElement, contentDiv: HTMLE
         return;
     }
 
-    void loadNavTemplate(navContentDiv, contentDiv);
+    void (async () => { try { await loadNavTemplate(navContentDiv, contentDiv); } catch (error) { dispatchEvent(new ErrorEvent('error', { message: String(error) })); } })();
 
     if (await hasMatchingStaticRoute(path, navContentDiv, contentDiv)) return;
 

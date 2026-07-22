@@ -3,6 +3,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/stores/project.ts', () => ({ projectStore: { set: vi.fn() } }));
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/utils/permissions.ts', () => ({ fetchMyPermission: vi.fn().mockResolvedValue({ permission: 'Edit', isOwner: false }) }));
 
+
+
+
 const TEST_TIMEOUT = 10_000;
 
 beforeEach(() => {
@@ -40,7 +43,7 @@ describe('handleLegacyProjectRoutes', () => {
     });
 
     it('handles fetch failure for /projects in catch block', async () => {
-        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, text: () => Promise.resolve('error') }));
         const { handleLegacyProjectRoutes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/router.ts');
         const nav = document.createElement('div'); const content = document.createElement('div');
         await handleLegacyProjectRoutes('/projects', nav, content);
@@ -48,7 +51,7 @@ describe('handleLegacyProjectRoutes', () => {
     });
 
     it('handles fetch failure for /projects/add in catch block', async () => {
-        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, text: () => Promise.resolve('error') }));
         const { handleLegacyProjectRoutes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/router.ts');
         const nav = document.createElement('div'); const content = document.createElement('div');
         await handleLegacyProjectRoutes('/projects/add', nav, content);
@@ -186,7 +189,7 @@ describe('handleProjectScopedRoutes', () => {
 
     for (const [subPath, expectedTemplate] of CATCH_BLOCK_ROUTES) {
         it(`handles catch block in ${subPath} route`, async () => {
-            vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, text: () => Promise.resolve('error') }));
             const { handleProjectScopedRoutes } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/router.ts');
             const nav = document.createElement('div'); const content = document.createElement('div');
             await handleProjectScopedRoutes('o', 'p', subPath, nav, content);

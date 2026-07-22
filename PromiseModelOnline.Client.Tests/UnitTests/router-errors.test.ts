@@ -4,7 +4,7 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/account/delete-account.ts', 
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/api.ts', () => ({ checkSession: vi.fn().mockResolvedValue(false) }));
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/guards.ts', () => ({ requireAuth: () => ({ allowed: true }) }));
 vi.mock('../../PromiseModelOnline.Client/wwwroot/js/home.ts', () => ({ loadHomePage: vi.fn() }));
-vi.mock('../../PromiseModelOnline.Client/wwwroot/js/navigation/router.ts', () => ({ loadNavTemplate: vi.fn(), initNavEventDelegation: vi.fn() }));
+vi.mock('../../PromiseModelOnline.Client/wwwroot/js/navigation/router.ts', () => ({ loadNavTemplate: vi.fn(() => Promise.resolve()), initNavEventDelegation: vi.fn() }));
 
 beforeEach(() => {
     document.body.innerHTML = '<div id="content"></div><ul id="main-menu"></ul><main id="main-content"></main>';
