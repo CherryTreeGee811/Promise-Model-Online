@@ -67,6 +67,18 @@ public class RateLimitingTests : E2ETestBase
     }
 
     [Test]
+    public async Task REQ_NF_010_BugReportEndpoint_RateLimited_AfterBurst()
+    {
+        // Arrange (no setup needed)
+        // Act
+        var statuses = await HammerAsync("/api/bug-reports", 10, HttpMethod.Post);
+
+        // Assert
+        Assert.That(statuses, Does.Contain(HttpStatusCode.TooManyRequests).Or.Contain(HttpStatusCode.ServiceUnavailable),
+            "Expected /api/bug-reports to return 429 after exceeding rate+burst");
+    }
+
+    [Test]
     public async Task REQ_NF_010_NormalTraffic_PassesThrough()
     {
         // Arrange (no setup needed)
