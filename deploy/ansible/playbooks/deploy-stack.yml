@@ -74,9 +74,10 @@
 
     - name: Initialize Docker Swarm (idempotent)
       ansible.builtin.shell:
-        cmd: sudo docker swarm init 2>&1 || true
+        cmd: sudo docker swarm init 2>&1
       register: swarm_init
-      changed_when: false
+      changed_when: swarm_init.rc == 0
+      failed_when: swarm_init.rc != 0 and 'already part of a swarm' not in swarm_init.stderr
 
     - name: Create Docker Swarm secrets from files
       ansible.builtin.shell:

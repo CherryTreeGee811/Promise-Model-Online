@@ -14,6 +14,17 @@ systemctl is-active --quiet libvirtd || {
   exit 1
 }
 
+echo "  Checking default network..."
+virsh -c qemu:///system net-info default 2>/dev/null | grep -q 'Active.*yes' || {
+  echo "FATAL: Default libvirt network is not active."
+  echo "  Define and start it:"
+  echo "    sudo cat /etc/libvirt/qemu/networks/default.xml \\"
+  echo "      | virsh -c qemu:///system net-define /dev/stdin \\"
+  echo "      && virsh -c qemu:///system net-start default \\"
+  echo "      && virsh -c qemu:///system net-autostart default"
+  exit 1
+}
+
 # === Step 2: Generate SSH key ===
 echo "[2/5] Checking SSH key..."
 if [ ! -f ~/.ssh/pmo_vm_key ]; then
