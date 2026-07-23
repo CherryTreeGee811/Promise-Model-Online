@@ -395,21 +395,22 @@ The project uses GitHub Actions for CI/CD. The full `BuildAndTest.yml` pipeline 
 1. **Build** — `dotnet build Promise-Model-Online.sln`
 2. **Code style** — `dotnet format --verify-no-changes`
 3. **Package audit** — NuGet vulnerability check + npm audit
-4. **Quality** — ESLint, stylelint, HTML lint, nginx check, typecheck, jscpd, knip
-5. **Coverage** — Vitest with 70% threshold (lines, branches, functions, statements)
-6. **Build** — `npm run build` (Vite production bundle)
-7. **Boundary checks** — Layer 1 (prod deps), Layer 2 (source imports), Layer 3 (bundle)
-8. **Server tests** — Auth Unit, API Unit, Auth Integration, BFF Integration, API Integration
-9. **Client UI tests** — Chromium, Firefox, WebKit (via docker compose)
-10. **A11y + Responsive + Lighthouse** — axe-core scans, viewport checks, LHCI assertions
-11. **Memory leak audit** — memlab single-run + iterative heap analysis
-12. **E2E tests** — Core (268 tests) + Rate limiting (6 tests)
-13. **E2E rate-limit stack** — With rate limiting enabled
-14. **Security** — OWASP ZAP DAST scan
-15. **Database performance** — Query execution time verification
-16. **Container security** — Hadolint (Dockerfiles), Trivy (filesystem + images)
-17. **SBOM generation** — CycloneDX for source and all container images
-18. **Push** — Docker images to DockerHub (main branch only)
+4. **Quality** — ESLint, stylelint, HTML lint, nginx check (dev + deploy + test configs), typecheck, jscpd, knip
+5. **Deploy config validation** — Docker Compose/Stack YAML (`docker compose config -q`), shellcheck on `deploy/` scripts, ansible-lint on playbooks
+6. **Coverage** — Vitest with 70% threshold (lines, branches, functions, statements)
+7. **Build** — `npm run build` (Vite production bundle)
+8. **Boundary checks** — Layer 1 (prod deps), Layer 2 (source imports), Layer 3 (bundle)
+9. **Server tests** — Auth Unit, API Unit, Auth Integration, BFF Integration, API Integration
+10. **Client UI tests** — Chromium, Firefox, WebKit (via docker compose)
+11. **A11y + Responsive + Lighthouse** — axe-core scans, viewport checks, LHCI assertions
+12. **Memory leak audit** — memlab single-run + iterative heap analysis
+13. **E2E tests** — Core (268 tests) + Rate limiting (6 tests)
+14. **E2E rate-limit stack** — With rate limiting enabled
+15. **Security** — OWASP ZAP DAST scan
+16. **Database performance** — Query execution time verification
+17. **Container security** — Hadolint (Dockerfiles), Trivy (filesystem + images)
+18. **SBOM generation** — CycloneDX for source and all container images
+19. **Push** — Docker images to DockerHub (main branch only)
 
 Secrets are injected at runtime via GitHub Secrets, never baked into images.
 

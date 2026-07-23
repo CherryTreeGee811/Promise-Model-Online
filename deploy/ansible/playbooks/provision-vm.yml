@@ -16,31 +16,32 @@
         - xorrisofs
       changed_when: false
 
-    - name: Ensure libvirtd is running
+    - name: Verify libvirtd is running
       ansible.builtin.systemd:
         name: libvirtd
-        state: started
-      become: true
+      register: libvirtd_status
+      failed_when: libvirtd_status.status.ActiveState != "active"
+      changed_when: false
 
     - name: Ensure default libvirt network is active
       ansible.builtin.shell:
         cmd: |
-          set -o pipefail
           if ! virsh -c qemu:///system net-info default >/dev/null 2>&1; then
             echo "Default network does not exist."
             echo "Define and start it:"
-            echo "  sudo cat /etc/libvirt/qemu/networks/default.xml \\"
-            echo "    | virsh -c qemu:///system net-define /dev/stdin \\"
-            echo "    && virsh -c qemu:///system net-start default \\"
-            echo "    && virsh -c qemu:///system net-autostart default"
+            echo "  sudo virsh -c qemu:///system net-define /usr/share/libvirt/networks/default.xml \\"
+            echo "  sudo virsh -c qemu:///system net-start default \\"
+            echo "  sudo virsh -c qemu:///system net-autostart default"
             exit 1
           fi
-          virsh -c qemu:///system net-info default 2>/dev/null \
-            | grep -q 'Active.*yes' \
-            || virsh -c qemu:///system net-start default
+          INFO=$(virsh -c qemu:///system net-info default 2>/dev/null)
+          if [[ $INFO != *"Active: yes"* ]]; then
+            virsh -c qemu:///system net-start default
+            echo "started"
+          fi
         executable: /bin/bash
       register: net_result
-      changed_when: net_result.stdout | length > 0
+      changed_when: "'started' in net_result.stdout"
 
     - name: Set VM paths
       ansible.builtin.set_fact:
