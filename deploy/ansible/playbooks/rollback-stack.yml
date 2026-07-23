@@ -11,26 +11,40 @@
       - promisemodelonline-bff
       - promisemodelonline-client
       - promisemodelonline-proxy
+    sha: ""
+    service_override: {}
 
   tasks:
-    - name: Prompt for commit SHA to rollback to
-      ansible.builtin.pause:
-        prompt: "Enter the commit SHA to rollback each service to (e.g. c0349d0). Leave empty to use --rollback flag"
-      register: sha_input
-
-    - name: Rollback services using Swarm task history
-      ansible.builtin.shell:
-        cmd: sudo docker service update --rollback "{{ stack_name }}_{{ item }}"
-      loop: "{{ services }}"
-      when: sha_input.user_input | length == 0
+    - name: Fail if no SHA provided
+      ansible.builtin.fail:
+        msg: >
+          You must provide a commit SHA.
+          Usage: ansible-playbook rollback-stack.yml -e 'sha=abc1234'
+          To pin a specific service to a different SHA:
+          -e '{"service_override":{"promisemodelonline-client":"def5678"}}'
+      when: sha | length == 0
 
     - name: Rollback services to specific commit SHA tag
       ansible.builtin.shell:
         cmd: |
           IMG="cherrytree811/promisemodelonline{{ item | regex_replace('^promisemodelonline-', '') }}"
-          sudo docker service update --image "${IMG}:{{ sha_input.user_input }}" "{{ stack_name }}_{{ item }}"
+          TAG="{{ service_override[item] | default(sha) }}"
+          echo "Rolling back {{ item }} to ${IMG}:${TAG}..."
+          sudo docker service update --image "${IMG}:${TAG}" "{{ stack_name }}_{{ item }}" 2>&1
       loop: "{{ services }}"
-      when: sha_input.user_input | length > 0
+      register: rollback_results
+      ignore_errors: yes
+
+    - name: Report any services that failed to rollback
+      ansible.builtin.debug:
+        msg: >
+          WARNING: Rollback failed for {{ item.item }} —
+          tag {{ service_override[item.item] | default(sha) }} not found for that image.
+          No changes made to this service.
+      loop: "{{ rollback_results.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item is failed
 
     - name: Wait for services to stabilize after rollback
       ansible.builtin.shell:
