@@ -2968,3 +2968,12 @@ button:disabled,
 #flow-detail-loading[hidden] {
   display: none !important;
 }
+
+.deploy-banner {
+  background: #4f46e5;
+  color: white;
+  text-align: center;
+  padding: 8px;
+  font-weight: 700;
+  font-size: 18px;
+}
