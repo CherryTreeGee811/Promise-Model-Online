@@ -48,6 +48,20 @@
       register: deploy_result
       changed_when: true
 
+    - name: Force update user services (re-resolve :latest digests)
+      ansible.builtin.shell:
+        cmd: |
+          for svc in \
+            {{ stack_name }}_promisemodelonline-api \
+            {{ stack_name }}_promisemodelonline-auth \
+            {{ stack_name }}_promisemodelonline-bff \
+            {{ stack_name }}_promisemodelonline-client \
+            {{ stack_name }}_promisemodelonline-proxy; do
+            sudo docker service update --force "$svc" 2>&1
+          done
+      register: force_result
+      changed_when: "'forced update' in force_result.stdout"
+
     - name: Wait for all services to stabilize
       ansible.builtin.shell:
         cmd: |
