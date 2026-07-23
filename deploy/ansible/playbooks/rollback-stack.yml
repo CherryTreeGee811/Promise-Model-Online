@@ -1,0 +1,62 @@
+---
+- name: Rollback Docker Swarm stack by commit SHA
+  hosts: vm_host
+  gather_facts: false
+
+  vars:
+    stack_name: promisemodelonline
+    services:
+      - promisemodelonline-api
+      - promisemodelonline-auth
+      - promisemodelonline-bff
+      - promisemodelonline-client
+      - promisemodelonline-proxy
+
+  tasks:
+    - name: Prompt for commit SHA to rollback to
+      ansible.builtin.pause:
+        prompt: "Enter the commit SHA to rollback each service to (e.g. c0349d0). Leave empty to use --rollback flag"
+      register: sha_input
+
+    - name: Rollback services using Swarm task history
+      ansible.builtin.shell:
+        cmd: sudo docker service update --rollback "{{ stack_name }}_{{ item }}"
+      loop: "{{ services }}"
+      when: sha_input.user_input | length == 0
+
+    - name: Rollback services to specific commit SHA tag
+      ansible.builtin.shell:
+        cmd: |
+          IMG="cherrytree811/promisemodelonline{{ item | regex_replace('^promisemodelonline-', '') }}"
+          sudo docker service update --image "${IMG}:{{ sha_input.user_input }}" "{{ stack_name }}_{{ item }}"
+      loop: "{{ services }}"
+      when: sha_input.user_input | length > 0
+
+    - name: Wait for services to stabilize after rollback
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 60); do
+            FAILED=$(sudo docker service ls \
+              --filter "name={{ stack_name }}" \
+              --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null \
+              | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
+            if [ -z "$FAILED" ]; then
+              echo "All services stable"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Timed out waiting for services"
+          sudo docker service ls --filter "name={{ stack_name }}"
+          exit 1
+      args:
+        executable: /bin/bash
+
+    - name: Print stack status after rollback
+      ansible.builtin.shell:
+        cmd: sudo docker service ls --filter "name={{ stack_name }}"
+      register: status_result
+
+    - name: Print rollback summary
+      ansible.builtin.debug:
+        msg: "{{ status_result.stdout }}"

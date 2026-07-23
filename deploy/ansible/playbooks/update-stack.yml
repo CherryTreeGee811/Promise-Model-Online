@@ -1,0 +1,79 @@
+---
+- name: Update Docker Swarm stack on running VM
+  hosts: vm_host
+  gather_facts: false
+
+  vars:
+    deploy_root: "{{ playbook_dir }}/../../"
+    project_root: "{{ pmo_repo_root }}"
+    stack_name: promisemodelonline
+
+  tasks:
+    - name: Sync deploy directory to VM
+      ansible.builtin.synchronize:
+        src: "{{ deploy_root }}"
+        dest: "{{ project_root }}"
+        rsync_opts:
+          - "--exclude=secrets"
+          - "--exclude=ansible"
+          - "--exclude=.DS_Store"
+        delete: yes
+
+    - name: Pull Docker images from registry
+      ansible.builtin.shell:
+        cmd: |
+          for img in \
+            cherrytree811/promisemodelonlineapi \
+            cherrytree811/promisemodelonlineauth \
+            cherrytree811/promisemodelonlinebff \
+            cherrytree811/promisemodelonlineclient \
+            cherrytree811/promisemodelonlineproxy; do
+            sudo docker pull "$img" 2>&1
+          done
+      register: pull_result
+      changed_when: "'Downloaded' in pull_result.stdout or 'Pulled' in pull_result.stdout"
+
+    - name: Deploy Docker Swarm stack
+      ansible.builtin.shell:
+        cmd: |
+          set -a
+          source {{ project_root }}/.env
+          set +a
+          export DB_SA_PASSWORD=$(cat {{ project_root }}/secrets/db_sa_password.txt)
+          export UMAMI_DB_PASSWORD=$(cat {{ project_root }}/secrets/umami_db_password.txt)
+          sudo -E docker stack deploy -c docker-stack.yml "{{ stack_name }}"
+      args:
+        chdir: "{{ project_root }}"
+        executable: /bin/bash
+      register: deploy_result
+      changed_when: true
+
+    - name: Wait for all services to stabilize
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 60); do
+            FAILED=$(sudo docker service ls \
+              --filter "name={{ stack_name }}" \
+              --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null \
+              | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
+            if [ -z "$FAILED" ]; then
+              echo "All services stable"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Timed out waiting for services"
+          sudo docker service ls --filter "name={{ stack_name }}"
+          exit 1
+      args:
+        chdir: "{{ project_root }}"
+        executable: /bin/bash
+
+    - name: Print stack status
+      ansible.builtin.shell:
+        cmd: sudo docker service ls --filter "name={{ stack_name }}"
+      register: status_result
+
+    - name: Print update summary
+      ansible.builtin.debug:
+        msg: "{{ status_result.stdout }}"
