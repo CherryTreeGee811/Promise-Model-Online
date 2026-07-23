@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Serilog;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
@@ -137,6 +138,17 @@ if (!string.IsNullOrWhiteSpace(googleClientId))
             googleOptions.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
             googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");
             googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+
+            googleOptions.Events = new OAuthEvents
+            {
+                OnRemoteFailure = remoteContext =>
+                {
+                    remoteContext.HandleResponse();
+                    remoteContext.Response.Redirect(
+                        $"/account/login?error={Uri.EscapeDataString("Google sign-in failed. Please try again.")}");
+                    return Task.CompletedTask;
+                }
+            };
         });
 }
 
@@ -193,6 +205,11 @@ app.ApplyMigrations();
 // Global exception handler — catches all unhandled exceptions, logs details
 // via Serilog, returns a sanitized JSON error (no stack traces exposed).
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Google OAuth error handling — catches network/Backchannel exceptions from the
+// Google callback handler and redirects to the login page with a user-friendly
+// message instead of returning a generic 500.
+app.UseMiddleware<GoogleAuthErrorHandlingMiddleware>();
 
 // Seed OpenIddict applications (all environments) and development users (development only).
 using var seedScope = app.Services.CreateScope();
