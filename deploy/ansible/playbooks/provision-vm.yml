@@ -35,7 +35,7 @@
             exit 1
           fi
           INFO=$(virsh -c qemu:///system net-info default 2>/dev/null)
-          if [[ $INFO != *"Active: yes"* ]]; then
+          if ! grep -q 'Active.*yes' <<< "$INFO"; then
             virsh -c qemu:///system net-start default
             echo "started"
           fi
