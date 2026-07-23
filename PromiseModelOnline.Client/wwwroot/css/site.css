@@ -112,6 +112,11 @@ button {
   top: var(--stride-sticky-top) !important;
 }
 
+#stride-scrollspy-nav .nav-link {
+  color: var(--bs-nav-link-color);
+  background-color: var(--bs-body-bg);
+}
+
 #home-link {
   min-width: 44px;
   min-height: 44px;
