@@ -665,14 +665,12 @@ jobs:
         if: github.ref == 'refs/heads/main' && env.ACT != 'true'
         shell: bash
         run: |
-          docker tag promisemodelonlineapi cherrytree811/promisemodelonlineapi:latest
-          docker tag promisemodelonlineclient cherrytree811/promisemodelonlineclient:latest
-          docker tag promisemodelonlineauth cherrytree811/promisemodelonlineauth:latest
-          docker tag promisemodelonlinebff cherrytree811/promisemodelonlinebff:latest
-          docker tag promisemodelonlineproxy cherrytree811/promisemodelonlineproxy:latest
+          SHA=$(git rev-parse --short HEAD)
           docker login -u cherrytree811 -p ${{ secrets.DOCKER_CRED }}
-          docker push cherrytree811/promisemodelonlineapi:latest
-          docker push cherrytree811/promisemodelonlineclient:latest
-          docker push cherrytree811/promisemodelonlineauth:latest
-          docker push cherrytree811/promisemodelonlinebff:latest
-          docker push cherrytree811/promisemodelonlineproxy:latest
+          for SERVICE in api client auth bff proxy; do
+            IMG="cherrytree811/promisemodelonline${SERVICE}"
+            docker tag "promisemodelonline${SERVICE}" "${IMG}:latest"
+            docker tag "promisemodelonline${SERVICE}" "${IMG}:${SHA}"
+            docker push "${IMG}:latest"
+            docker push "${IMG}:${SHA}"
+          done
