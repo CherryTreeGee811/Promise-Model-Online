@@ -75,6 +75,54 @@ The `ansible/playbooks/site.yml` playbook runs two stages:
 - Deploys `docker-stack.yml` via `docker stack deploy`
 - Waits for all services to stabilize
 
+### 3. `update-stack.yml` — Rolling Update
+- Syncs `deploy/` configs to the VM
+- Pulls the latest `:latest` images from DockerHub
+- Runs `docker stack deploy` to apply any spec changes
+- **Force-updates** all 5 user services so Swarm re-resolves `:latest` digests and restarts with newly-pulled images
+- Waits for all services to stabilize
+
+### 4. `rollback-stack.yml` — Rollback to a Tagged Version
+- Pins each service to a specific commit-SHA Docker tag via `docker service update --image`
+- If a tag doesn't exist for a given service, that service is skipped with a warning (no crash)
+- Supports per-service override via `service_override` dict
+- Waits for all services to stabilize (respects `start-first` update config for zero-downtime)
+
+## Routine Operations
+
+### Update the stack (push new images to all services)
+
+```bash
+# Pulls latest :latest images, force-updates services to re-resolve digests
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/update-stack.yml
+```
+
+### Rollback a service to a previous SHA-tagged version
+
+```bash
+# Rollback ALL services to a specific commit SHA
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/rollback-stack.yml \
+  -e 'sha=95aa2ce'
+
+# Rollback only the client service (others keep current :latest)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/rollback-stack.yml \
+  -e 'sha=95aa2ce' \
+  -e '{"service_override":{"promisemodelonline-client":"95aa2ce"}}'
+
+# Rollback different services to different SHAs
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/rollback-stack.yml \
+  -e 'sha=95aa2ce' \
+  -e '{"service_override":{"promisemodelonline-client":"abc1234","promisemodelonline-api":"def5678"}}'
+```
+
+All services use `update_config.order: start-first` with health checks, so both update and rollback are **zero-downtime** — one replica updates at a time, new containers start before old ones stop.
+
+### Teardown
+
+```bash
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/destroy-stack.yml
+```
+
 ## Architecture
 
 ```
@@ -114,6 +162,8 @@ deploy/
 │       ├── site.yml              # Provision + deploy
 │       ├── provision-vm.yml      # QEMU/KVM VM creation
 │       ├── deploy-stack.yml      # Cert gen + swarm deploy
+│       ├── update-stack.yml      # Rolling update (pull + force-deploy)
+│       ├── rollback-stack.yml    # SHA-pinned rollback (per-service overrides)
 │       └── destroy-stack.yml     # Teardown
 ├── scripts/
 │   ├── generate-secrets.sh       # Generate passwords + certs

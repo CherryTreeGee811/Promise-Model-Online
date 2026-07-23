@@ -178,7 +178,34 @@ CSP `default-src 'none'` with hash-based allowance, HSTS, `X-Frame-Options: DENY
  ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/deploy-stack.yml
  ```
  
- ### 3. Deprovision the stack
+ ### 3. Update the stack (zero-downtime)
+ 
+ ```bash
+ # Pulls latest :latest images, force-updates services to re-resolve digests
+ ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/update-stack.yml
+ ```
+ 
+ ### 4. Rollback a service to a previous tagged version
+ 
+ ```bash
+ # Rollback all services to a specific commit-SHA tag
+ ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/rollback-stack.yml \
+   -e 'sha=95aa2ce'
+ 
+ # Rollback only the client service (others keep current :latest)
+ ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/rollback-stack.yml \
+   -e 'sha=95aa2ce' \
+   -e '{"service_override":{"promisemodelonline-client":"95aa2ce"}}'
+ 
+ # Rollback different services to different SHAs
+ ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/rollback-stack.yml \
+   -e 'sha=95aa2ce' \
+   -e '{"service_override":{"promisemodelonline-client":"abc1234","promisemodelonline-api":"def5678"}}'
+ ```
+ 
+ All services use `update_config.order: start-first` with health checks and 2 replicas — one replica updates at a time, new containers start before old ones stop. Both update and rollback are **zero-downtime**.
+ 
+ ### 5. Deprovision the stack
  
  ```bash
  ansible-playbook -i deploy/ansible/inventory/hosts.yml deploy/ansible/playbooks/destroy-stack.yml
@@ -448,7 +475,7 @@ Promise-Model-Online/
 ├── deploy/                         # Production deployment (self-contained, no source)
 │   ├── .env                        # Production config (no secrets)
 │   ├── docker-compose.yml          # Production compose (pulls from Docker Hub)
-│   ├── ansible/                    # Ansible playbooks (provision VM + deploy)
+│   ├── ansible/                    # Ansible playbooks (provision, deploy, update, rollback)
 │   ├── scripts/                    # Init scripts (DB, Umami)
 │   └── secrets/                    # Production secrets (blank in repo, populated by bundle)
 ├── .github/workflows/              # CI/CD pipelines
