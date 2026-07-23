@@ -77,7 +77,7 @@
         cmd: sudo docker swarm init 2>&1
       register: swarm_init
       changed_when: swarm_init.rc == 0
-      failed_when: swarm_init.rc != 0 and 'already part of a swarm' not in swarm_init.stderr
+      failed_when: swarm_init.rc != 0 and 'already part of a swarm' not in swarm_init.stdout
 
     - name: Create Docker Swarm secrets from files
       ansible.builtin.shell:
