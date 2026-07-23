@@ -105,6 +105,7 @@
           grep -q "REPLACE_ME\|PLACEHOLDER"
           "{{ project_root }}/secrets/cloudflare_tunnel_token.txt"
           2>/dev/null && echo "quick" || echo "dns"
+        executable: /bin/bash
       register: tunnel_mode_result
       changed_when: false
 
