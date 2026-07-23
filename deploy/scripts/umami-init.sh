@@ -13,6 +13,7 @@ echo "[umami-init] Waiting for Umami migrations..."
 until psql "SELECT to_regclass('\"user\"') IS NOT NULL;" | grep -q t; do sleep 2; done
 echo "[umami-init] Database ready."
 
+# shellcheck disable=SC2016 # $2y$ / $2b$ are bcrypt format identifiers, not shell variables
 HASH=$(htpasswd -nbB "$ADMIN_USER" "$ADMIN_PASS" | cut -d: -f2 | sed 's/\$2y\$/\$2b\$/')
 
 EXISTS=$(psql "SELECT COUNT(*) FROM \"user\" WHERE username = '$ADMIN_USER';")

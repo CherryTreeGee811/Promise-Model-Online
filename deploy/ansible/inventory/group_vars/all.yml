@@ -11,7 +11,3 @@ vm_cloud_image: https://cloud-images.ubuntu.com/noble/current/noble-server-cloud
 
 # Deployment paths
 pmo_repo_root: /home/pmo_admin/promise-model-online
-
-
-
-

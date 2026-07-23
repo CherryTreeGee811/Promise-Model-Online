@@ -109,7 +109,11 @@ for pair in "${CONFIG_PAIRS[@]}"; do
     echo "    ⚠️  Missing X-Frame-Options header"
   fi
 
-  if grep -q 'add_header Content-Security-Policy' "$SERVER"; then
+  # CSP is required for static file servers but NOT for reverse proxies
+  # (each upstream service sets its own per-route CSP)
+  if [ "$LABEL" = "deploy-swarm" ]; then
+    echo "    ⚠️  Reverse proxy — CSP set by upstream services"
+  elif grep -q 'add_header Content-Security-Policy' "$SERVER"; then
     echo "    ✅ CSP header found"
   else
     echo "    ❌ Missing CSP header"

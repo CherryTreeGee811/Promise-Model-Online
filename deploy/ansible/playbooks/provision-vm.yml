@@ -7,7 +7,7 @@
 
   tasks:
     - name: Ensure required tools exist
-      ansible.builtin.shell:
+      ansible.builtin.command:
         cmd: "which {{ item }}"
       loop:
         - virsh
@@ -17,22 +17,22 @@
       changed_when: false
 
     - name: Check libvirtd is running
-      ansible.builtin.shell:
-        cmd: systemctl is-active --quiet libvirtd
-      changed_when: false
-      failed_when: false
+      ansible.builtin.systemd:
+        name: libvirtd
       register: libvirtd_status
+      failed_when: false
+      changed_when: false
 
     - name: Warn if libvirtd is not running
       ansible.builtin.fail:
         msg: |
           libvirtd is not running. Start it first:
             sudo systemctl enable --now libvirtd
-      when: libvirtd_status.rc != 0
+      when: libvirtd_status.status.ActiveState != "active"
 
     - name: Check default network exists
       ansible.builtin.shell:
-        cmd: virsh -c qemu:///system net-info default 2>/dev/null | grep -q 'Active.*yes'
+        cmd: set -o pipefail; virsh -c qemu:///system net-info default 2>/dev/null | grep -q 'Active.*yes'
       changed_when: false
       failed_when: false
       register: net_status
@@ -42,7 +42,10 @@
         msg: |
           Default libvirt network is not active or does not exist.
           Define and start it:
-            sudo cat /etc/libvirt/qemu/networks/default.xml | virsh -c qemu:///system net-define /dev/stdin && virsh -c qemu:///system net-start default && virsh -c qemu:///system net-autostart default
+            sudo cat /etc/libvirt/qemu/networks/default.xml \
+              | virsh -c qemu:///system net-define /dev/stdin \
+              && virsh -c qemu:///system net-start default \
+              && virsh -c qemu:///system net-autostart default
       when: net_status.rc != 0
 
     - name: Set VM paths
@@ -62,6 +65,7 @@
       ansible.builtin.get_url:
         url: "{{ vm_cloud_image }}"
         dest: "{{ cloud_img }}"
+        mode: "0644"
       register: dl_result
       retries: 3
       delay: 5
@@ -78,6 +82,7 @@
         content: |
           instance-id: {{ vm_name }}-{{ ansible_date_time.epoch }}
           local-hostname: {{ vm_name }}
+        mode: "0644"
 
     - name: Write cloud-init user-data
       ansible.builtin.copy:
@@ -99,6 +104,7 @@
           runcmd:
             - systemctl enable --now docker
             - systemctl enable --now qemu-guest-agent
+        mode: "0644"
 
     - name: Write cloud-init network-config
       ansible.builtin.copy:
@@ -114,6 +120,7 @@
                 addresses:
                   - 1.1.1.1
                   - 8.8.8.8
+        mode: "0644"
 
     - name: Generate cloud-init ISO
       ansible.builtin.shell:
@@ -140,6 +147,7 @@
           virsh -c qemu:///system destroy {{ vm_name }} 2>/dev/null || true
           virsh -c qemu:///system undefine {{ vm_name }} --nvram 2>/dev/null || true
       when: vm_state.stdout != "not found" and vm_state.stdout != ""
+      changed_when: true
 
     - name: Create VM disk (qcow2 backing store)
       ansible.builtin.shell:
@@ -167,6 +175,7 @@
           --import
       register: vm_install
       failed_when: vm_install.rc != 0 and 'already exists' not in vm_install.stderr
+      changed_when: true
 
     - name: Wait for VM to become reachable
       ansible.builtin.wait_for:

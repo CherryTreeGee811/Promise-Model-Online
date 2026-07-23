@@ -10,14 +10,14 @@
 
   tasks:
     - name: Sync deploy directory to VM
-      ansible.builtin.synchronize:
+      ansible.posix.synchronize:
         src: "{{ deploy_root }}"
         dest: "{{ project_root }}"
         rsync_opts:
           - "--exclude=secrets"
           - "--exclude=ansible"
           - "--exclude=.DS_Store"
-        delete: yes
+        delete: true
 
     - name: Pull Docker images from registry
       ansible.builtin.shell:
@@ -65,6 +65,7 @@
     - name: Wait for all services to stabilize
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           for i in $(seq 1 60); do
             FAILED=$(sudo docker service ls \
               --filter "name={{ stack_name }}" \
@@ -82,11 +83,13 @@
       args:
         chdir: "{{ project_root }}"
         executable: /bin/bash
+      changed_when: true
 
     - name: Print stack status
-      ansible.builtin.shell:
+      ansible.builtin.command:
         cmd: sudo docker service ls --filter "name={{ stack_name }}"
       register: status_result
+      changed_when: false
 
     - name: Print update summary
       ansible.builtin.debug:

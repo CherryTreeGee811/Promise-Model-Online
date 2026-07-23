@@ -10,7 +10,7 @@
 
   tasks:
     - name: Wait for cloud-init to complete
-      ansible.builtin.shell:
+      ansible.builtin.command:
         cmd: sudo cloud-init status --wait
       changed_when: false
 
@@ -29,14 +29,14 @@
         - "{{ project_root }}/keys/proxy"
 
     - name: Sync deploy directory to VM
-      ansible.builtin.synchronize:
+      ansible.posix.synchronize:
         src: "{{ deploy_root }}"
         dest: "{{ project_root }}"
         rsync_opts:
           - "--exclude=secrets"
           - "--exclude=ansible"
           - "--exclude=.DS_Store"
-        delete: yes
+        delete: true
 
     - name: Create secret files on VM
       no_log: true
@@ -95,10 +95,15 @@
         - cloudflare_tunnel_token
         - auth_registration_key
         - github_token
+      changed_when: true
 
     - name: Check if cloudflared should use Quick Tunnel mode
       ansible.builtin.shell:
-        cmd: grep -q "REPLACE_ME\|PLACEHOLDER" "{{ project_root }}/secrets/cloudflare_tunnel_token.txt" 2>/dev/null && echo "quick" || echo "dns"
+        cmd: >
+          set -o pipefail;
+          grep -q "REPLACE_ME\|PLACEHOLDER"
+          "{{ project_root }}/secrets/cloudflare_tunnel_token.txt"
+          2>/dev/null && echo "quick" || echo "dns"
       register: tunnel_mode_result
       changed_when: false
 
@@ -115,7 +120,15 @@
 
     - name: Pull Docker images from registry
       ansible.builtin.shell:
-        cmd: for img in cherrytree811/promisemodelonlineapi cherrytree811/promisemodelonlineauth cherrytree811/promisemodelonlinebff cherrytree811/promisemodelonlineclient cherrytree811/promisemodelonlineproxy; do sudo docker pull "$img" 2>&1; done
+        cmd: |
+          for img in \
+            cherrytree811/promisemodelonlineapi \
+            cherrytree811/promisemodelonlineauth \
+            cherrytree811/promisemodelonlinebff \
+            cherrytree811/promisemodelonlineclient \
+            cherrytree811/promisemodelonlineproxy; do
+            sudo docker pull "$img" 2>&1
+          done
       register: pull_result
       changed_when: "'Downloaded' in pull_result.stdout or 'Pulled' in pull_result.stdout"
 
@@ -137,8 +150,12 @@
     - name: Wait for all services to stabilize
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           for i in $(seq 1 60); do
-            FAILED=$(sudo docker service ls --filter "name={{ stack_name }}" --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
+            FAILED=$(sudo docker service ls \
+              --filter "name={{ stack_name }}" \
+              --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null \
+              | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
             if [ -z "$FAILED" ]; then
               echo "All services stable"
               exit 0
@@ -152,10 +169,12 @@
         chdir: "{{ project_root }}"
         executable: /bin/bash
       register: health_result
+      changed_when: true
 
     - name: Wait for cloudflared to connect and extract tunnel URL (Quick Tunnel only)
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           for i in $(seq 1 60); do
             URL=$(sudo docker service logs "{{ stack_name }}_cloudflared" --tail 20 2>&1 \
               | grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
@@ -223,8 +242,12 @@
     - name: Wait for services to stabilize after URL update (Quick Tunnel only)
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           for i in $(seq 1 60); do
-            FAILED=$(sudo docker service ls --filter "name={{ stack_name }}" --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
+            FAILED=$(sudo docker service ls \
+              --filter "name={{ stack_name }}" \
+              --format "{{ '{{' }}.Replicas{{ '}}' }}" 2>/dev/null \
+              | grep -vE '^[0-9]+/[0-9]+' | grep -v '^$' || true)
             if [ -z "$FAILED" ]; then
               echo "All services stable"
               exit 0
@@ -237,6 +260,7 @@
       args:
         chdir: "{{ project_root }}"
         executable: /bin/bash
+      changed_when: true
       when: tunnel_mode == "quick"
 
     - name: Print tunnel URL (Quick Tunnel only)
@@ -245,9 +269,10 @@
       when: tunnel_mode == "quick"
 
     - name: Print stack status
-      ansible.builtin.shell:
+      ansible.builtin.command:
         cmd: sudo docker service ls --filter "name={{ stack_name }}"
       register: status_result
+      changed_when: false
 
     - name: Print deployment summary
       ansible.builtin.debug:

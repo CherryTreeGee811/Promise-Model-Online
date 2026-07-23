@@ -3,12 +3,15 @@
   hosts: vm_host
   tasks:
     - name: Remove Swarm stack
-      ansible.builtin.shell:
+      ansible.builtin.command:
         cmd: sudo docker stack rm promisemodelonline
       register: stack_rm_result
       ignore_errors: true
+      changed_when: true
 
     - name: Remove named volumes
-      ansible.builtin.shell:
-        cmd: sudo docker volume rm mssql-data bff-dp-keys auth-dp-keys umami-db 2>/dev/null; true
+      ansible.builtin.command:
+        cmd: sudo docker volume rm mssql-data bff-dp-keys auth-dp-keys umami-db
       register: volume_rm_result
+      ignore_errors: true
+      changed_when: true
