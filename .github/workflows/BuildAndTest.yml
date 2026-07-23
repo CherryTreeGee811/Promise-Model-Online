@@ -132,6 +132,35 @@ jobs:
           npm run test -- --coverage --coverage.thresholds.lines=70 --coverage.thresholds.branches=70 --coverage.thresholds.functions=70 --coverage.thresholds.statements=70 2>&1 | tee /tmp/vitest-coverage.log; if grep -q "ERROR: Coverage for" /tmp/vitest-coverage.log; then echo "Coverage thresholds not met!"; grep "ERROR: Coverage for" /tmp/vitest-coverage.log; exit 1; fi
           npm run build
 
+      - name: Validate deploy/ configs
+        shell: bash
+        run: |
+          set -e
+
+          echo "=== Docker Compose/Stack YAML ==="
+          export DB_SA_PASSWORD=ci-dummy
+          export UMAMI_DB_PASSWORD=ci-dummy
+          docker compose -f deploy/docker-compose.yml config -q
+          echo "  ✅ deploy/docker-compose.yml"
+          docker compose -f deploy/docker-stack.yml config -q
+          echo "  ✅ deploy/docker-stack.yml"
+
+          echo ""
+          echo "=== Shell scripts ==="
+          docker run --rm -v "$(pwd):/mnt" koalaman/shellcheck:stable \
+            deploy/deploy.sh \
+            deploy/scripts/generate-secrets.sh \
+            deploy/scripts/init-db.sh \
+            deploy/scripts/umami-init.sh
+          echo "  ✅ All shell scripts"
+
+          echo ""
+          echo "=== Ansible (playbooks, inventory, vars) ==="
+          docker run --rm -v "$(pwd):/work" --workdir /work \
+            ghcr.io/ansible-community/ansible-lint:latest \
+            -c deploy/ansible/ansible.cfg deploy/ansible/
+          echo "  ✅ All Ansible YAML"
+
       - name: Source code import boundary (Layer 2)
         shell: bash
         run: bash scripts/check-source-imports.sh

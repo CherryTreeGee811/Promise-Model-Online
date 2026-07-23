@@ -3,10 +3,11 @@ set -euo pipefail
 
 # Validate nginx configuration files for syntax and security best practices.
 #
-# Tests three config pairs that match the actual deployment layout:
-#   1. Production  : PromiseModelOnline.Client/nginx.conf (no server block in repo)
-#   2. UI tests    : nginx-test.conf + default-test.conf (server block)
-#   3. E2E tests   : nginx-test.conf + default-e2e.conf (server block)
+# Tests four config pairs that match the actual deployment layout:
+#   1. Dev          : PromiseModelOnline.Client/nginx.conf + default.conf
+#   2. UI tests     : nginx-test.conf + default-test.conf
+#   3. E2E tests    : nginx-test.conf + default-e2e.conf
+#   4. Deploy-swarm : deploy/nginx-swarm.conf + nginx-swarm-default.conf
 #
 # Syntax check uses Docker-based nginx -t (skipped if Docker isn't running).
 # Security check validates required headers on server block files.
@@ -33,6 +34,10 @@ if [ -f "infrastructure/tests/nginx-test.conf" ] && [ -f "infrastructure/tests/d
   CONFIG_PAIRS+=("e2e-test|infrastructure/tests/nginx-test.conf|infrastructure/tests/default-e2e.conf")
 fi
 
+if [ -f "deploy/nginx-swarm.conf" ] && [ -f "deploy/nginx-swarm-default.conf" ]; then
+  CONFIG_PAIRS+=("deploy-swarm|deploy/nginx-swarm.conf|deploy/nginx-swarm-default.conf")
+fi
+
 echo "  Found ${#CONFIG_PAIRS[@]} config pair(s)"
 
 for pair in "${CONFIG_PAIRS[@]}"; do
@@ -53,6 +58,8 @@ for pair in "${CONFIG_PAIRS[@]}"; do
   if [ -n "$SERVER" ]; then
     cp "$SERVER" "$TMPDIR/conf.d/default.conf"
   fi
+
+  DOCKER_ARGS=()
 
   # Generate self-signed TLS cert for server blocks that require one
   if [ -n "$SERVER" ] && grep -q 'listen.*ssl' "$SERVER" 2>/dev/null; then
