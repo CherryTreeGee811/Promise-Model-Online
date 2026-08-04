@@ -2,6 +2,7 @@
 using PromiseModelOnline.Auth.Attributes;
 using PromiseModelOnline.Auth.Services;
 using System.Collections;
+using Microsoft.AspNetCore.Mvc.Controllers;
 
 namespace PromiseModelOnline.Auth.Filters;
 
@@ -20,6 +21,11 @@ public class InputSanitizationFilter(IHtmlInputSanitizer sanitizer) : IAsyncActi
             if (arg is string str)
             {
                 var key = context.ActionArguments.First(kvp => kvp.Value == arg).Key;
+                var paramDescriptor = context.ActionDescriptor.Parameters
+                    .OfType<ControllerParameterDescriptor>()
+                    .FirstOrDefault(p => p.Name == key);
+                if (paramDescriptor?.ParameterInfo.GetCustomAttributes(typeof(DoNotSanitizeAttribute), false).Length > 0)
+                    continue;
                 context.ActionArguments[key] = sanitizer.Sanitize(str);
             }
             else if (arg is not null)
