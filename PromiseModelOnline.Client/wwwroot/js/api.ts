@@ -1,4 +1,5 @@
 import { authStore } from './stores/auth.ts';
+import { captureNetworkError } from './utils/console-capture.ts';
 
 /**
  * Perform a GET request and parse JSON response.
@@ -78,14 +79,21 @@ export async function apiPatch<T = unknown>(url: string, body: unknown): Promise
  * @throws {Error} If the server returns 401 (redirects to login).
  */
 export async function apiFetch(url: string, options: Record<string, unknown> = {}): Promise<Response> {
-    const response = await fetch(url, {
-        ...options,
-        credentials: 'include',
-        headers: {
-            'Accept': 'application/json',
-            ...options.headers as Record<string, string>,
-        }
-    });
+    const method = (options.method as string | undefined) ?? 'GET';
+    let response: Response;
+    try {
+        response = await fetch(url, {
+            ...options,
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                ...options.headers as Record<string, string>,
+            }
+        });
+    } catch (error) {
+        captureNetworkError(method, url, error instanceof Error ? error.message : String(error));
+        throw error;
+    }
 
     if (response.status === 401) {
         authStore.set({ isAuthenticated: false, username: undefined, userId: undefined });
@@ -93,6 +101,10 @@ export async function apiFetch(url: string, options: Record<string, unknown> = {
             location.assign('/login');
         }
         throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+        captureNetworkError(method, url, response.status);
     }
 
     return response;

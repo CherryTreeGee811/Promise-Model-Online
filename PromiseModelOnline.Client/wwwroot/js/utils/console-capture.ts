@@ -33,8 +33,20 @@ function capture(level: string, originalArguments: unknown[]): void {
 }
 
 /**
- * Initialize console log capture by wrapping native console methods.
- * Idempotent — safe to call multiple times.
+ * Record a failed network request into the ring buffer.
+ * @param {string} method - The HTTP method used for the request.
+ * @param {string} url - The requested URL.
+ * @param {number | string} status - The HTTP status code or error description.
+ */
+export function captureNetworkError(method: string, url: string, status: number | string): void {
+    capture('error', [`${method} ${url} → ${status}`]);
+}
+
+/**
+ * Initialize browser log capture so the buffer mirrors the DevTools console:
+ * wraps the native console methods and hooks window error events for uncaught
+ * exceptions, unhandled promise rejections, failed resource loads, and CSP
+ * violations. Idempotent — safe to call multiple times.
  */
 export function initConsoleCapture(): void {
     if (state.isInitialized) return;
@@ -51,6 +63,26 @@ export function initConsoleCapture(): void {
     console.error = (...arguments_: unknown[]) => { capture('error', arguments_); origError(...arguments_); };
     console.info = (...arguments_: unknown[]) => { capture('info', arguments_); origInfo(...arguments_); };
     console.debug = (...arguments_: unknown[]) => { capture('debug', arguments_); origDebug(...arguments_); };
+
+    window.addEventListener('error', (event) => {
+        const target = event.target;
+        if (target && target !== window) {
+            const element = target as { tagName?: string; src?: string; href?: string };
+            capture('error', [`Failed to load resource: ${element.src ?? element.href ?? element.tagName ?? String(target)}`]);
+        } else if (event.error instanceof Error) {
+            capture('error', [event.error]);
+        } else {
+            capture('error', [`Uncaught ${event.message}`]);
+        }
+    }, true);
+
+    window.addEventListener('unhandledrejection', (event) => {
+        capture('error', ['Unhandled promise rejection:', event.reason]);
+    });
+
+    window.addEventListener('securitypolicyviolation', (event) => {
+        capture('warn', [`CSP violation (${event.violatedDirective}): ${event.blockedURI}`]);
+    });
 }
 
 /**
