@@ -91,6 +91,6 @@
     }
 
     <p class="auth-link">
-        Already have an account? <a href="/account/login?returnUrl=@Context.Request.Query["returnUrl"]">Sign in here</a>
+        Already have an account? <a href="/account/login?returnUrl=@Uri.EscapeDataString(Context.Request.Query["returnUrl"].ToString())">Sign in here</a>
     </p>
 </div>

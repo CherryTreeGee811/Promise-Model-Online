@@ -15,7 +15,7 @@ systemctl is-active --quiet libvirtd || {
 }
 
 echo "  Checking default network..."
-virsh -c qemu:///system net-info default 2>/dev/null | grep -q 'Active.*yes' || {
+virsh -c qemu:///system net-info default 2>/dev/null | grep 'Active.*yes' >/dev/null || {
   echo "FATAL: Default libvirt network is not active."
   echo "  Define and start it:"
   echo "    sudo cat /etc/libvirt/qemu/networks/default.xml \\"

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using PromiseModelOnline.Auth.Attributes;
 
 namespace PromiseModelOnline.Auth.Controllers;
 
@@ -28,7 +29,7 @@ public class ExternalLoginController(
     [AllowAnonymous]
     [HttpPost("challenge")]
     [ValidateAntiForgeryToken]
-    public IActionResult Challenge(string provider, string returnUrl)
+    public IActionResult Challenge(string provider, [DoNotSanitize] string returnUrl)
     {
         if (string.IsNullOrWhiteSpace(provider))
             return BadRequest();
@@ -45,7 +46,7 @@ public class ExternalLoginController(
     /// <returns>A redirect to the BFF login endpoint or an error page.</returns>
     [AllowAnonymous]
     [HttpGet("callback")]
-    public async Task<IActionResult> Callback(string? returnUrl = null, string? remoteError = null)
+    public async Task<IActionResult> Callback([DoNotSanitize] string? returnUrl = null, string? remoteError = null)
     {
         returnUrl ??= Url.Content("~/");
 

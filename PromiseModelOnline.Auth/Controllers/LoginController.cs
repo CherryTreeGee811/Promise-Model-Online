@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PromiseModelOnline.Auth.Models;
 using PromiseModelOnline.Auth.ViewModels;
+using PromiseModelOnline.Auth.Attributes;
 using PromiseModelOnline.Auth.Common;
 using System.Security.Claims;
 using OpenIddict.Abstractions;
@@ -38,7 +39,7 @@ public class LoginController(
     /// <returns>The login view.</returns>
     [AllowAnonymous]
     [HttpGet("")]
-    public IActionResult Index(string? returnUrl, string? error = null,
+    public IActionResult Index([DoNotSanitize] string? returnUrl, string? error = null,
         [FromQuery] bool registered = false, [FromQuery] bool verified = false)
     {
         if (!ModelState.IsValid)

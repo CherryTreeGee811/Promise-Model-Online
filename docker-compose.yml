@@ -1,5 +1,5 @@
 services:
-  promisemodelonline.proxy:
+  promisemodelonline-proxy:
     image: ${DOCKER_REGISTRY-}promisemodelonlineproxy
     container_name: promisemodelonlineproxy
     hostname: localhost
@@ -9,9 +9,9 @@ services:
       - ./keys/client/cert.pem:/etc/nginx/cert.pem:ro
       - ./keys/client/key.pem:/etc/nginx/key.pem:ro
     depends_on:
-      promisemodelonline.client:
+      promisemodelonline-client:
         condition: service_started
-      promisemodelonline.bff:
+      promisemodelonline-bff:
         condition: service_started
     networks:
       - promisemodelonline-net
@@ -24,7 +24,7 @@ services:
       timeout: 5s
       retries: 3
 
-  promisemodelonline.client:
+  promisemodelonline-client:
     image: ${DOCKER_REGISTRY-}promisemodelonlineclient
     container_name: promisemodelonlineclient
     networks:
@@ -38,7 +38,7 @@ services:
       timeout: 5s
       retries: 3
 
-  promisemodelonline.bff:
+  promisemodelonline-bff:
     image: ${DOCKER_REGISTRY-}promisemodelonlinebff
     container_name: promisemodelonlinebff
     ports:
@@ -56,9 +56,9 @@ services:
       - ./keys/bff/cert.pem:/app/cert.pem:ro
       - ./keys/bff/key.pem:/app/key.pem:ro
     depends_on:
-      promisemodelonline.api:
+      promisemodelonline-api:
         condition: service_healthy
-      promisemodelonline.auth:
+      promisemodelonline-auth:
         condition: service_healthy
     networks:
       - promisemodelonline-net
@@ -80,7 +80,7 @@ services:
           cpus: '1'
           memory: 512M
 
-  promisemodelonline.api:
+  promisemodelonline-api:
     image: ${DOCKER_REGISTRY-}promisemodelonlineapi
     container_name: promisemodelonlineapi
     environment:
@@ -90,8 +90,8 @@ services:
       - JwtSettings__Audience=promisemodelonline.api
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
-      - ConnectionStrings__AuthDB=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__AuthDB=Server=promisemodelonline-db,1433;Database=PromiseModelOnlineAuth;User Id=${PMO_AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
       - GitHub__Token_FILE=/run/secrets/github_token
       - App__BaseUrl=${APP_BASE_URL}
@@ -102,9 +102,9 @@ services:
       - sendgrid_api_key
       - github_token
     depends_on:
-      promisemodelonline.auth:
+      promisemodelonline-auth:
         condition: service_started
-      promisemodelonline.db-init:
+      promisemodelonline-db-init:
         condition: service_completed_successfully
     networks:
       - promisemodelonline-net
@@ -118,7 +118,7 @@ services:
       timeout: 5s
       retries: 3
     
-  promisemodelonline.auth:
+  promisemodelonline-auth:
     image: ${DOCKER_REGISTRY-}promisemodelonlineauth
     container_name: promisemodelonlineauth
     environment:
@@ -126,9 +126,10 @@ services:
       - ASPNETCORE_URLS=https://+:8060
       - APP_BASE_URL=${APP_BASE_URL}
       - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - Auth__AccessTokenAudience=promisemodelonline.api
       - Certificates__Password_FILE=/run/secrets/cert_password
       - DATA_PROTECTION_KEYS_PATH=${DATA_PROTECTION_KEYS_PATH}
-      - ConnectionStrings__MSSQL=Server=promisemodelonline.db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
+      - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
       - Authentication__Google__ClientId=${AUTH_GOOGLE_CLIENT_ID}
       - Authentication__Google__ClientSecret_FILE=/run/secrets/google_client_secret
       - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
@@ -143,7 +144,7 @@ services:
       - google_client_secret
       - sendgrid_api_key
     depends_on:
-      promisemodelonline.db-init:
+      promisemodelonline-db-init:
         condition: service_completed_successfully
     networks:
       - promisemodelonline-net
@@ -156,7 +157,7 @@ services:
       timeout: 5s
       retries: 3
 
-  promisemodelonline.db:
+  promisemodelonline-db:
     image: mcr.microsoft.com/mssql/server:2025-latest
     container_name: promisemodelonlinedb
     networks:
@@ -171,11 +172,11 @@ services:
     volumes:
       - mssql-data:/var/opt/mssql
 
-  promisemodelonline.db-init:
+  promisemodelonline-db-init:
     image: mcr.microsoft.com/mssql-tools
     container_name: promisemodelonlinedbinit
     depends_on:
-      - promisemodelonline.db
+      - promisemodelonline-db
     networks:
       - promisemodelonline-net
     secrets:

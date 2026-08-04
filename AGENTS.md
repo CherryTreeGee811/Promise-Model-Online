@@ -100,3 +100,34 @@ All FK columns have indexes (auto-created by EF Core). Additional covering index
 - Changed `WaitUntilState.Load → DOMContentLoaded` so GotoAsync returns before the SPA's async redirect
 - Widened all `catch (PlaywrightException ex) when (...)` to `catch (PlaywrightException)` for both initial and validation navigations
 - `E2ETestBase.cs:158-164`, `181-187`, `213-218`
+
+## OIDC Audience Mismatch (2026-07-24)
+
+### Problem
+Login flow succeeded (OIDC callback returns 302, BFF session cookie set) but `/api/users/me` returned 401 with:
+```
+www-authenticate: Bearer error="invalid_token", error_description="The audience '(null)' is invalid"
+```
+
+### Root Cause
+The auth service hardcoded `promisemodelonline.api` (dot) as the access token audience via `SetResources()` in `AuthorizationController.cs:100`, but the production API expects `promisemodelonline-api` (dash). The audience claim in the issued token didn't match the API's `ValidAudience`.
+
+### Fix
+1. **`PromiseModelOnline.Auth/Controllers/AuthorizationController.cs:102-106`** — Audience is now read from `configuration["Auth:AccessTokenAudience"]` with fallback to `"promisemodelonline.api"` for backward compatibility. `IConfiguration` injected via primary constructor.
+2. **`deploy/docker-stack.yml:149`** — Added `Auth__AccessTokenAudience=promisemodelonline-api` to auth service env vars to match the API's `JwtSettings__Audience=promisemodelonline-api`.
+3. **`deploy/docker-compose.yml:131`** — Same change for Compose-based production deployment.
+4. **`docker-compose.yml:131`** — Dev compose uses `promisemodelonline.api` (matching dev API audience).
+
+### Deploy
+Rebuild auth image, push to DockerHub, then update stack:
+```bash
+docker push cherrytree811/promisemodelonlineauth
+docker service update --image cherrytree811/promisemodelonlineauth promisemodelonline_promisemodelonline-auth
+```
+
+### Verification
+Run full login flow via curl/Python and check `/api/users/me` returns 200 with user data:
+```python
+# Follow /login -> authorize -> login form POST -> signin-oidc callback
+# Then GET /api/users/me with session cookies
+```

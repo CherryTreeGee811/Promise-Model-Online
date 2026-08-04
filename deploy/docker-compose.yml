@@ -128,6 +128,7 @@ services:
       - ASPNETCORE_URLS=https://+:8060
       - APP_BASE_URL=${APP_BASE_URL}
       - AUTH_PUBLIC_ISSUER=${AUTH_PUBLIC_ISSUER}
+      - Auth__AccessTokenAudience=promisemodelonline-api
       - Certificates__Password_FILE=/run/secrets/cert_password
       - DATA_PROTECTION_KEYS_PATH=${DATA_PROTECTION_KEYS_PATH}
       - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnlineAuth;User Id=${AUTH_DB_USER};Password_FILE=/run/secrets/auth_db_password;TrustServerCertificate=true;
@@ -237,7 +238,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       apk add --no-cache apache2-utils > /dev/null 2>&1 &&
-      /init/umami-init.sh
+      sh /init/umami-init.sh
       "
     environment:
       WEBSITE_ID: ${UMAMI_WEBSITE_ID:-813ea5c6-8576-44d0-b702-923f5ba331cd}

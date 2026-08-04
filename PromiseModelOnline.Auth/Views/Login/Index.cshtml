@@ -84,6 +84,6 @@
     }
 
     <p class="auth-link">
-        Don't have an account? <a href="/account/register?returnUrl=@Model.ReturnUrl">Create one here</a>
+        Don't have an account? <a href="/account/register?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "")">Create one here</a>
     </p>
 </div>

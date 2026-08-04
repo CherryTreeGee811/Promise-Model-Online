@@ -18,12 +18,15 @@ namespace PromiseModelOnline.Auth.Controllers;
 ///   assigning scopes and resources, and returning a SignIn result with OpenIddict identity claims.
 ///   Unauthenticated users are redirected to the login page.
 /// </remarks>
-/// <remarks>Initializes the controller with logging for OIDC authorization audit events.</remarks>
+/// <remarks>Initializes the controller with logging and configuration for OIDC authorization audit events.</remarks>
 /// <param name="logger">The logger for authorization and PKCE validation events.</param>
+/// <param name="configuration">The application configuration for audience settings.</param>
 [ApiController]
 [Route("connect/authorize")]
 [AllowAnonymous]
-public class AuthorizationController(ILogger<AuthorizationController> logger) : ControllerBase
+public class AuthorizationController(
+    ILogger<AuthorizationController> logger,
+    IConfiguration configuration) : ControllerBase
 {
     private readonly ILogger<AuthorizationController> _logger = logger;
 
@@ -97,7 +100,10 @@ public class AuthorizationController(ILogger<AuthorizationController> logger) : 
         }
 
         if (scopes.Contains("projects.read") || scopes.Contains("projects.write"))
-            principal.SetResources("promisemodelonline.api");
+        {
+            var audience = configuration["Auth:AccessTokenAudience"] ?? "promisemodelonline.api";
+            principal.SetResources(audience);
+        }
 
         var subClaim = new Claim(OpenIddictConstants.Claims.Subject, subject);
         subClaim.SetDestinations(
