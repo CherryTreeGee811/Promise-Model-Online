@@ -1,9 +1,9 @@
 services:
-  promisemodelonline.auth:
+  promisemodelonline-auth:
     environment:
       - SendGrid__ApiKey=
       - SendGrid__ApiKey_FILE=/dev/null
 
-  promisemodelonline.proxy:
+  promisemodelonline-proxy:
     volumes:
       - ./infrastructure/tests/proxy-e2e.conf:/etc/nginx/conf.d/default.conf

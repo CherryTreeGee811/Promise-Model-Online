@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MvcSignInResult = Microsoft.AspNetCore.Mvc.SignInResult;
@@ -26,7 +27,7 @@ public class AuthorizationControllerUnitTests
     public void SetUp()
     {
         _loggerMock = new Mock<ILogger<AuthorizationController>>();
-        _controller = new AuthorizationController(_loggerMock.Object);
+        _controller = new AuthorizationController(_loggerMock.Object, new Mock<IConfiguration>().Object);
     }
 
     /// <summary>Configure the HTTP context with authentication state, OpenIddict request, and user claims for the authorize endpoint.</summary>

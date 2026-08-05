@@ -71,7 +71,7 @@ public class AuthWebApplicationFactory : IAsyncDisposable
             {
                 options.AddPolicy("SPA", policy =>
                 {
-                    policy.WithOrigins(AppUrls.BaseUrl, "https://promisemodelonline.bff:8010")
+                    policy.WithOrigins(AppUrls.BaseUrl, "https://promisemodelonline-bff:8010")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();

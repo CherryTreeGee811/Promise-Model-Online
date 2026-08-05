@@ -24,9 +24,9 @@ sql_escape_literal() {
 API_PASSWORD_SQL=$(sql_escape_literal "$API_PASSWORD")
 AUTH_PASSWORD_SQL=$(sql_escape_literal "$AUTH_PASSWORD")
 
-until "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
+until "$SQLCMD" -S promisemodelonline-db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
   # Check if failure is due to SA being disabled
-  if "$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" 2>&1 | grep -qi "account is disabled"; then
+  if "$SQLCMD" -S promisemodelonline-db,1433 -U sa -P "$SA_PASSWORD" -Q "SELECT 1" 2>&1 | grep -qi "account is disabled"; then
     echo "SA account disabled. Assuming already initialized."
     exit 0
   fi
@@ -99,11 +99,11 @@ END
 GO
 EOF
 
-"$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql
+"$SQLCMD" -S promisemodelonline-db,1433 -U sa -P "$SA_PASSWORD" -i /tmp/create-app-accounts.generated.sql
 
 # Explicitly verify initialization
 echo "Verifying database initialization..."
-"$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "
+"$SQLCMD" -S promisemodelonline-db,1433 -U sa -P "$SA_PASSWORD" -Q "
 IF DB_ID(N'PromiseModelOnline') IS NULL OR DB_ID(N'PromiseModelOnlineAuth') IS NULL
 BEGIN
   RAISERROR('Database initialization failed.', 16, 1);
@@ -115,6 +115,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Disable SA after verification
-"$SQLCMD" -S promisemodelonline.db,1433 -U sa -P "$SA_PASSWORD" -Q "ALTER LOGIN sa DISABLE;"
+"$SQLCMD" -S promisemodelonline-db,1433 -U sa -P "$SA_PASSWORD" -Q "ALTER LOGIN sa DISABLE;"
 
 echo 'Database application accounts created, SA disabled, and initialization verified.'

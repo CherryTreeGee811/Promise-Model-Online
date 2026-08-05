@@ -52,7 +52,7 @@ builder.Services.AddCors(options =>
             .Select(o => new Uri(o.Trim()).GetLeftPart(UriPartial.Authority));
 
         policy.WithOrigins(
-            [AppUrls.BaseUrl, "https://promisemodelonline.bff:8010", .. extraOrigins])
+            [AppUrls.BaseUrl, "https://promisemodelonline-bff:8010", .. extraOrigins])
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
