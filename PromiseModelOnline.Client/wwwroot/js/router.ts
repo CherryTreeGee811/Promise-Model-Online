@@ -12,8 +12,6 @@ import { initTheme, toggleTheme } from './stores/theme.ts';
 import { initTelemetry } from './telemetry.ts';
 import { initConsoleCapture } from './utils/console-capture.ts';
 
-initConsoleCapture();
-
 /**
  * @typedef {{ allowed: true } | { allowed: false; redirect?: string }} GuardResult
  */
@@ -175,6 +173,7 @@ async function initApp(): Promise<true> {
   await checkSession();
 
   initTelemetry();
+  initConsoleCapture();
   initTheme();
 
   document.querySelector('#theme-toggle')?.addEventListener('click', toggleTheme);

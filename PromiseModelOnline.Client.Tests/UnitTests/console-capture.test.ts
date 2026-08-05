@@ -118,9 +118,10 @@ describe('console-capture', () => {
         clearConsoleLogs();
         // Act
         window.dispatchEvent(new ErrorEvent('error', { message: 'once', error: new Error('once') }));
-        // Assert
+        // Assert: exactly one captured entry (not the stack-trace line, which
+        // also contains "Error: once" and would double-count a single capture).
         const logs = getFormattedConsoleLogs();
-        const matches = logs.split('\n').filter(line => line.includes('Error: once'));
+        const matches = logs.split('\n').filter(line => line.includes('[error] Error: once'));
         expect(matches).toHaveLength(1);
     });
 

@@ -64,9 +64,15 @@ export function initConsoleCapture(): void {
     console.info = (...arguments_: unknown[]) => { capture('info', arguments_); origInfo(...arguments_); };
     console.debug = (...arguments_: unknown[]) => { capture('debug', arguments_); origDebug(...arguments_); };
 
+    // `window` (not `globalThis`) is required here: the jsdom test environment
+    // keeps them distinct, and these listeners must fire for `window.dispatchEvent`.
+    // eslint-disable-next-line unicorn/prefer-global-this
     window.addEventListener('error', (event) => {
         const target = event.target;
-        if (target && target !== window) {
+        // Resource-load failures set target to an Element; window-level uncaught
+        // exceptions target the Window (a WindowProxy that is not identical to
+        // `window`/`globalThis` in jsdom), so discriminate via Element.
+        if (target instanceof Element) {
             const element = target as { tagName?: string; src?: string; href?: string };
             capture('error', [`Failed to load resource: ${element.src ?? element.href ?? element.tagName ?? String(target)}`]);
         } else if (event.error instanceof Error) {
@@ -74,12 +80,14 @@ export function initConsoleCapture(): void {
         } else {
             capture('error', [`Uncaught ${event.message}`]);
         }
-    }, true);
+    }, { capture: true });
 
+    // eslint-disable-next-line unicorn/prefer-global-this
     window.addEventListener('unhandledrejection', (event) => {
         capture('error', ['Unhandled promise rejection:', event.reason]);
     });
 
+    // eslint-disable-next-line unicorn/prefer-global-this
     window.addEventListener('securitypolicyviolation', (event) => {
         capture('warn', [`CSP violation (${event.violatedDirective}): ${event.blockedURI}`]);
     });
