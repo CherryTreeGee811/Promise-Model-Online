@@ -62,4 +62,50 @@ public class AuthUserLookupService(
 
         return null;
     }
+
+    /// <summary>Search the auth DB by normalized Email only (exact match).</summary>
+    public async Task<AuthUserInfo?> FindByEmailAsync(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return null;
+
+        if (string.IsNullOrEmpty(_connectionString))
+        {
+            _logger.LogWarning("AuthDB connection string not configured; skipping auth user lookup");
+            return null;
+        }
+
+        var normalized = email.ToUpperInvariant();
+
+        try
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            const string sql = """
+                SELECT TOP 1 [UserName], [Email]
+                FROM [dbo].[AspNetUsers]
+                WHERE [NormalizedEmail] = @normalized
+                """;
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@normalized", normalized);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new AuthUserInfo
+                {
+                    UserName = reader.GetString(reader.GetOrdinal("UserName")),
+                    Email = reader.GetString(reader.GetOrdinal("Email"))
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Auth user lookup failed for '{Email}'", email);
+        }
+
+        return null;
+    }
 }

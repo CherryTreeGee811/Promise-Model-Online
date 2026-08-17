@@ -20,10 +20,14 @@ namespace PromiseModelOnline.Api.DAL;
 public class UserRepository(PromiseModelOnlineContext context) : GenericRepository<User>(context), IUserRepository
 {
 
-    /// <summary>Find users by exact display name match.</summary>
-    /// <param name="name">The display name to match. Not null.</param>
-    /// <returns>Users whose name matches exactly.</returns>
-    public async Task<IEnumerable<User>> GetUsersByNameAsync(string name) => await FindAsync(u => u.Name.ToLower() == name.ToLower());
+    /// <summary>Find users by exact display name or username match.</summary>
+    /// <param name="name">The display name or username to match. Not null.</param>
+    /// <returns>Users whose name or username matches exactly.</returns>
+    public async Task<IEnumerable<User>> GetUsersByNameAsync(string name)
+    {
+        var lower = name.ToLower();
+        return await FindAsync(u => u.Name.ToLower() == lower || (u.Username != null && u.Username.ToLower() == lower));
+    }
 
     /// <summary>Find users by exact email address match.</summary>
     /// <param name="email">The email address to look up. Not null.</param>
@@ -120,9 +124,9 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
         return user;
     }
 
-    /// <summary>Search users who are members of a specific project by partial name match.</summary>
+    /// <summary>Search users who are members of a specific project by partial name or username match.</summary>
     /// <param name="projectId">The project ID to search within. Must be greater than zero.</param>
-    /// <param name="searchTerm">Partial display name to match (case-insensitive). Not null.</param>
+    /// <param name="searchTerm">Partial display name or username to match (case-insensitive). Not null.</param>
     /// <param name="maxResults">Maximum results to return, range [1, 50]. Default is 5.</param>
     /// <returns>Matching project members.</returns>
     public async Task<IEnumerable<User>> SearchUsersByProjectAsync(int projectId, string searchTerm, int maxResults = 5)
@@ -142,8 +146,11 @@ public class UserRepository(PromiseModelOnlineContext context) : GenericReposito
         if (ownerId.HasValue && !userIds.Contains(ownerId.Value))
             userIds.Add(ownerId.Value);
 
+        var lower = searchTerm.ToLower();
         return await _dbSet
-            .Where(u => userIds.Contains(u.Id) && u.Name.ToLower().Contains(searchTerm.ToLower()))
+            .Where(u => userIds.Contains(u.Id)
+                && (u.Name.ToLower().Contains(lower)
+                    || (u.Username != null && u.Username.ToLower().Contains(lower))))
             .Take(maxResults)
             .ToListAsync();
     }

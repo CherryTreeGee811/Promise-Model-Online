@@ -58,6 +58,7 @@ public class ProjectMomentsController(
             return NotFound();
 
         var moment = await _context.Moments
+            .Include(m => m.Tasks)
             .FirstOrDefaultAsync(m => m.SequenceNumber == seq && m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && (flowId == 0 || m.FlowId == flowId));
 
         if (moment is null)
@@ -82,6 +83,7 @@ public class ProjectMomentsController(
             return NotFound();
 
         var moment = await _context.Moments
+            .Include(m => m.Tasks)
             .FirstOrDefaultAsync(m => m.Flow.Journey.Epic.ProductPromise.ProjectId == projectEntity.Id && m.Id == id);
 
         if (moment is null)

@@ -1,6 +1,8 @@
 import { showToast } from '../ui/toast.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
 
+import { navigate } from '../router.ts';
+
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.ts';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.ts';
 
@@ -60,7 +62,7 @@ function markRowRead(row: HTMLElement) {
 }
 
 /**
- * @typedef {{ id: number, message: string, type: string, createdAt: string, isRead: boolean }} Notification
+ * @typedef {{ id: number, message: string, type: string, createdAt: string, isRead: boolean, link?: string | null }} Notification
  */
 
 /**
@@ -68,7 +70,7 @@ function markRowRead(row: HTMLElement) {
  * @param {HTMLElement} listDiv - The container element to render into.
  * @param {Notification[]} notifications - Array of notification objects.
  */
-function renderNotificationsInto(listDiv: HTMLElement, notifications: { id: number; message: string; type: string; createdAt: string; isRead: boolean }[]) {
+function renderNotificationsInto(listDiv: HTMLElement, notifications: { id: number; message: string; type: string; createdAt: string; isRead: boolean; link?: string | null }[]) {
     if (!listDiv) return;
 
     if (!notifications || notifications.length === 0) {
@@ -112,7 +114,20 @@ function renderNotificationsInto(listDiv: HTMLElement, notifications: { id: numb
         tr.dataset.notificationId = String(n.id);
 
         const messageTd = document.createElement('td');
-        messageTd.textContent = n.message;
+        if (n.link) {
+            const link = document.createElement('a');
+            link.href = n.link;
+            link.dataset.notificationNavigate = 'true';
+            link.textContent = n.message;
+            link.className = 'notification-link';
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                void navigate(n.link!, document.querySelector('#main-menu') as HTMLElement, document.querySelector('#content') as HTMLElement);
+            });
+            messageTd.append(link);
+        } else {
+            messageTd.textContent = n.message;
+        }
         tr.append(messageTd);
 
         const typeTd = document.createElement('td');

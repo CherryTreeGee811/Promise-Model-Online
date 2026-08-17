@@ -64,6 +64,18 @@ public interface ICommentRepository
     /// <exception cref="System.ArgumentException"><paramref name="parentType"/> is invalid or an ancestor cannot be found.</exception>
     Task<int> ResolveProjectIdAsync(string parentType, int parentId);
 
+    /// <summary>Resolve the client-side detail route for any commentable entity.</summary>
+    /// <remarks>
+    ///   Walks the ancestor chain to find the owning project and builds a route of the form
+    ///   <c>/{ownerSlug}/{projectSlug}/{pluralType}/{sequenceNumber}</c> (e.g.
+    ///   <c>/johndoe/my-project/moments/3</c>). Returns <c>null</c> if the entity or any
+    ///   ancestor cannot be found.
+    /// </remarks>
+    /// <param name="parentType">Entity type discriminator (same values as <see cref="GetCommentsForEntityAsync"/>).</param>
+    /// <param name="parentId">The entity's integer ID.</param>
+    /// <returns>The client detail route, or <c>null</c> if unresolvable.</returns>
+    Task<string?> ResolveEntityRouteAsync(string parentType, int parentId);
+
     /// <summary>Load all promises in a project.</summary>
     /// <param name="projectId">The project ID. Must be greater than zero.</param>
     /// <returns>All promises belonging to the project.</returns>

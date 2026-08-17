@@ -9,6 +9,8 @@ public class PermissionDto
     public int UserId { get; set; }
     /// <summary>Display name of the user.</summary>
     public string UserName { get; set; } = string.Empty;
+    /// <summary>Email address of the user.</summary>
+    public string Email { get; set; } = string.Empty;
     /// <summary>ID of the project.</summary>
     public int ProjectId { get; set; }
     /// <summary>Access level permission.</summary>

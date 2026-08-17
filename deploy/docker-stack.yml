@@ -102,6 +102,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:8000
+      - APP_BASE_URL=${APP_BASE_URL}
       - JwtSettings__Issuer=${AUTH_PUBLIC_ISSUER}
       - JwtSettings__Audience=promisemodelonline-api
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
@@ -110,6 +111,7 @@ services:
       - GitHub__Owner=CherryTreeGee811
       - GitHub__Repo=Promise-Model-Online
       - GitHub__Token_FILE=/run/secrets/github_token
+      - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
     secrets:
       - source: pmo_api_db_password
         target: api_db_password
@@ -119,6 +121,9 @@ services:
         mode: 0444
       - source: pmo_github_token
         target: github_token
+        mode: 0444
+      - source: pmo_sendgrid_api_key
+        target: sendgrid_api_key
         mode: 0444
     networks:
       - promisemodelonline-net

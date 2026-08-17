@@ -10,11 +10,16 @@ public class AuthUserInfo
     public required string Email { get; set; }
 }
 
-/// <summary>Service for looking up users registered in the auth system (PromiseModelOnlineAuth) by username or email.</summary>
+/// <summary>Service for looking up users registered in the auth system (PromiseModelOnlineAuth) by email.</summary>
 public interface IAuthUserLookupService
 {
     /// <summary>Search the auth DB by username or email (case-insensitive exact match on normalized values).</summary>
     /// <param name="searchTerm">Username or email to search for.</param>
     /// <returns>The matching auth user, or <c>null</c> if not found.</returns>
     Task<AuthUserInfo?> FindByUsernameOrEmailAsync(string searchTerm);
+
+    /// <summary>Search the auth DB by email only (case-insensitive exact match on the normalized email).</summary>
+    /// <param name="email">Email address to search for.</param>
+    /// <returns>The matching auth user, or <c>null</c> if not found.</returns>
+    Task<AuthUserInfo?> FindByEmailAsync(string email);
 }

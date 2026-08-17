@@ -364,4 +364,96 @@ public class CommentRepository(PromiseModelOnlineContext context) : ICommentRepo
 
         throw new ArgumentException($"Invalid parent type: {parentType}");
     }
+
+    /// <summary>Resolve the client-side detail route for any commentable entity.</summary>
+    /// <remarks>
+    ///   Walks the ancestor chain to the owning project and builds a route of the form
+    ///   <c>/{ownerSlug}/{projectSlug}/{pluralType}/{sequenceNumber}</c>. Returns <c>null</c>
+    ///   if the entity or any ancestor cannot be found.
+    /// </remarks>
+    /// <param name="parentType">Entity type discriminator (same values as <see cref="GetCommentsForEntityAsync"/>).</param>
+    /// <param name="parentId">The entity's integer ID.</param>
+    /// <returns>The client detail route, or <c>null</c> if unresolvable.</returns>
+    public async Task<string?> ResolveEntityRouteAsync(string parentType, int parentId)
+    {
+        var normalizedType = parentType.ToLower();
+        var pluralType = normalizedType switch
+        {
+            "promise" => "promises",
+            "epic" => "epics",
+            "journey" => "journeys",
+            "flow" => "flows",
+            "moment" => "moments",
+            _ => null
+        };
+        if (pluralType is null)
+            return null;
+
+        Promise? promise = null;
+        int? sequenceNumber = null;
+
+        if (normalizedType == "promise")
+        {
+            promise = await _context.Set<Promise>().FindAsync(parentId);
+            if (promise is null) return null;
+            sequenceNumber = promise.SequenceNumber;
+        }
+        else if (normalizedType == "epic")
+        {
+            var epic = await _context.Set<Epic>().FindAsync(parentId);
+            if (epic is null) return null;
+            promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            if (promise is null) return null;
+            sequenceNumber = epic.SequenceNumber;
+        }
+        else if (normalizedType == "journey")
+        {
+            var journey = await _context.Set<Journey>().FindAsync(parentId);
+            if (journey is null) return null;
+            var epic = await _context.Set<Epic>().FindAsync(journey.EpicId);
+            if (epic is null) return null;
+            promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            if (promise is null) return null;
+            sequenceNumber = journey.SequenceNumber;
+        }
+        else if (normalizedType == "flow")
+        {
+            var flow = await _context.Set<Flow>().FindAsync(parentId);
+            if (flow is null) return null;
+            var journey = await _context.Set<Journey>().FindAsync(flow.JourneyId);
+            if (journey is null) return null;
+            var epic = await _context.Set<Epic>().FindAsync(journey.EpicId);
+            if (epic is null) return null;
+            promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            if (promise is null) return null;
+            sequenceNumber = flow.SequenceNumber;
+        }
+        else if (normalizedType == "moment")
+        {
+            var moment = await _context.Set<Moment>().FindAsync(parentId);
+            if (moment is null) return null;
+            var flow = await _context.Set<Flow>().FindAsync(moment.FlowId);
+            if (flow is null) return null;
+            var journey = await _context.Set<Journey>().FindAsync(flow.JourneyId);
+            if (journey is null) return null;
+            var epic = await _context.Set<Epic>().FindAsync(journey.EpicId);
+            if (epic is null) return null;
+            promise = await _context.Set<Promise>().FindAsync(epic.ProductPromiseId);
+            if (promise is null) return null;
+            sequenceNumber = moment.SequenceNumber;
+        }
+
+        if (promise is null || sequenceNumber is null)
+            return null;
+
+        var project = await _context.Set<Project>().FindAsync(promise.ProjectId);
+        if (project is null)
+            return null;
+
+        var owner = await _context.Set<User>().FindAsync(project.OwnerId);
+        if (owner is null)
+            return null;
+
+        return $"/{owner.Slug}/{project.Slug}/{pluralType}/{sequenceNumber}";
+    }
 }

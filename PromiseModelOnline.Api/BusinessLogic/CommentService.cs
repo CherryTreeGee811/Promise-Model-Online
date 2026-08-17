@@ -97,7 +97,7 @@ public class CommentService(
                     mentionedUser.Id,
                     NotificationType.Mention,
                     $"You were mentioned in a comment by {currentUserName}",
-                    $"/moments/{dto.ParentId}?type={dto.ParentType}"
+                    await _commentRepo.ResolveEntityRouteAsync(dto.ParentType, dto.ParentId)
                 );
             }
         }

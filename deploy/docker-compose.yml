@@ -97,15 +97,19 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:8000
+      - App__BaseUrl=${APP_BASE_URL}
       - JwtSettings__Issuer=${AUTH_PUBLIC_ISSUER}
       - JwtSettings__Audience=promisemodelonline-api
       - JwtSettings__MetadataAddress=${AUTH_METADATA_ADDRESS}
       - Auth__RegistrationKey_FILE=/run/secrets/auth_registration_key
       - ConnectionStrings__MSSQL=Server=promisemodelonline-db,1433;Database=PromiseModelOnline;User Id=${PMO_API_DB_USER};Password_FILE=/run/secrets/api_db_password;TrustServerCertificate=true;
+      - SendGrid__ApiKey_FILE=/run/secrets/sendgrid_api_key
     secrets:
       - source: api_db_password
         mode: 0444
       - source: auth_registration_key
+        mode: 0444
+      - source: sendgrid_api_key
         mode: 0444
     depends_on:
       promisemodelonline-auth:

@@ -53,9 +53,8 @@ public class ForgotPasswordController(
         }
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var encodedToken = Uri.EscapeDataString(token);
         var resetLink = Url.Action("Index", "ResetPassword",
-            new { email = model.Email, token = encodedToken },
+            new { email = model.Email, token },
             Request.Scheme);
 
         if (resetLink is null)

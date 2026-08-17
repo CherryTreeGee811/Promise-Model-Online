@@ -4,6 +4,8 @@ import { searchUsers, searchPromises } from './autocomplete.api.ts';
 
 interface AutocompleteItem {
   name?: string;
+  username?: string;
+  email?: string;
   entityType?: string;
   sequenceNumber?: number;
   id?: number | string;
@@ -189,7 +191,7 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
       element.role = 'option';
       element.ariaSelected = String(index === state.highlightedIndex);
 
-      element.textContent = state.trigger === '@' ? item.name ?? '' : getStatusIcon(item.statusColor ?? '') + '  #' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '') + ' \u{2014} ' + (item.statement ?? '');
+      element.textContent = state.trigger === '@' ? (item.username ?? item.name ?? '') : getStatusIcon(item.statusColor ?? '') + '  #' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '') + ' \u{2014} ' + (item.statement ?? '');
 
       element.dataset.index = String(index);
       element.addEventListener('mousedown', function (event) {
@@ -233,7 +235,7 @@ export function createCommentAutocomplete(textarea: HTMLTextAreaElement, parentT
       return;
     }
 
-    const insertText = (state.trigger === '@' ? '@' + (item.name ?? '') : '#' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '')) + ' ';
+    const insertText = (state.trigger === '@' ? '@' + (item.username ?? item.name ?? '') : '#' + (item.entityType ?? '') + '-' + (item.sequenceNumber ?? item.id ?? '')) + ' ';
 
     const cursorEnd = textarea.selectionStart;
     const before = textarea.value.slice(0, Math.max(0, state.triggerStart));

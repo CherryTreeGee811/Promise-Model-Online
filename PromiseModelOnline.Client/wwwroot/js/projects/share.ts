@@ -83,7 +83,7 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
             element.className = 'comment-autocomplete__item' + (index === acState.highlightedIndex ? ' comment-autocomplete__item--highlight' : '');
             element.role = 'option';
             element.ariaSelected = String(index === acState.highlightedIndex);
-            element.textContent = item.name + ' (' + item.email + ')';
+            element.textContent = item.email + (item.name ? ' (' + item.name + ')' : '');
             element.dataset.index = String(index);
             element.addEventListener('mousedown', (event) => {
                 event.preventDefault();
@@ -231,8 +231,8 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
                             </div>
                             <div class="modal-body">
                                 <div class="mb-3 position-relative">
-                                    <label class="form-label" for="invite-email">Email or username</label>
-                                    <input type="text" id="invite-email" class="form-control" placeholder="Enter name or email" required autocomplete="off">
+                                    <label class="form-label" for="invite-email">Email</label>
+                                    <input type="email" id="invite-email" class="form-control" placeholder="Enter user's email" required autocomplete="off" inputmode="email">
                                     <div id="invite-autocomplete" class="comment-autocomplete" role="listbox" style="display:none;"></div>
                                 </div>
                                 <div class="mb-3">
@@ -293,6 +293,11 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
             event.preventDefault();
             const email = liveEmailInput.value.trim();
             if (!email) return;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                liveErrorElement.textContent = 'Please enter a valid email address.';
+                liveErrorElement.classList.remove('d-none');
+                return;
+            }
 
             const level = liveLevelSelect.value;
 
@@ -344,12 +349,12 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
 
     /**
      * Build the permissions table body with rows for each permission or an empty state.
-     * @param {Array<{id: string; userName: string; level: string; status: string}> | null | undefined} permissions - The list of permissions.
+     * @param {Array<{id: string; userName: string; email?: string; level: string; status: string}> | null | undefined} permissions - The list of permissions.
      * @param {boolean} isOwner - Whether the current user is the project owner.
      * @returns {HTMLTableSectionElement} The table body element.
      */
     function buildPermissionsTableBody(
-        permissions: Array<{ id: string; userName: string; level: string; status: string }> | null | undefined,
+        permissions: Array<{ id: string; userName: string; email?: string; level: string; status: string }> | null | undefined,
         isOwner: boolean
     ): HTMLTableSectionElement {
         const tbody = document.createElement('tbody');
@@ -372,11 +377,22 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
 
                 const actionsTd = document.createElement('td');
                 if (isOwner) {
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'd-inline-flex flex-wrap gap-2 align-items-center';
+                    const changeLevelButton = document.createElement('button');
+                    changeLevelButton.className = 'btn btn-outline-primary btn-sm change-level-btn';
+                    changeLevelButton.dataset.permissionId = p.id;
+                    changeLevelButton.dataset.userName = p.userName;
+                    changeLevelButton.dataset.userEmail = p.email ?? '';
+                    changeLevelButton.dataset.currentLevel = p.level;
+                    changeLevelButton.textContent = 'Change Level';
+                    actionsDiv.append(changeLevelButton);
                     const revokeButton = document.createElement('button');
                     revokeButton.className = 'btn btn-outline-danger btn-sm revoke-btn';
                     revokeButton.dataset.permissionId = p.id;
                     revokeButton.textContent = 'Revoke';
-                    actionsTd.append(revokeButton);
+                    actionsDiv.append(revokeButton);
+                    actionsTd.append(actionsDiv);
                 } else {
                     actionsTd.textContent = '-';
                 }
@@ -465,6 +481,9 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
             for (const button of document.querySelectorAll('.revoke-btn')) {
                 bindRevokeButton(button as HTMLElement);
             }
+            for (const button of document.querySelectorAll('.change-level-btn')) {
+                bindChangeLevelButton(button as HTMLElement, owner, project);
+            }
 
             const topInviteButton = document.querySelector('#invite-btn-top');
             topInviteButton?.addEventListener('click', () => {
@@ -481,6 +500,84 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
                 errorElement.classList.remove('d-none');
             }
         }
+    }
+
+    /**
+     * Bind click handler to a change-level button.
+     * Changing a permission level requires revoking the current access and re-inviting
+     * with the new level — enforced via a confirmation modal.
+     * @param {HTMLElement} button - The change-level button element.
+     * @param {string} owner - The project owner's slug.
+     * @param {string} project - The project's slug.
+     */
+    function bindChangeLevelButton(button: HTMLElement, owner: string, project: string): void {
+        if (!button || button.dataset.bound === '1') return;
+        button.dataset.bound = '1';
+        button.addEventListener('click', () => {
+            const permissionId = Number(button.dataset.permissionId!);
+            const userName = button.dataset.userName ?? '';
+            const userEmail = button.dataset.userEmail ?? '';
+            const currentLevel = button.dataset.currentLevel ?? '';
+            if (!Number.isFinite(permissionId) || !userEmail) return;
+
+            const modalElement = ensureModal('change-level-modal', `
+                <div class="modal fade" id="change-level-modal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Change Permission Level</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-2">Changing <strong>${userName}</strong>'s permission from <strong>${currentLevel}</strong> requires revoking their current access and re-inviting with the new level.</p>
+                                <label class="form-label" for="change-level-select">New Level</label>
+                                <select id="change-level-select" class="form-select">
+                                    <option value="View">View</option>
+                                    <option value="Comment">Comment</option>
+                                    <option value="Edit">Edit</option>
+                                </select>
+                                <div id="change-level-error" class="text-danger small d-none mt-2"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="change-level-confirm">Revoke & Re-invite</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            const confirmButton = modalElement?.querySelector('#change-level-confirm') as HTMLButtonElement | null;
+            const levelSelect = modalElement?.querySelector('#change-level-select') as HTMLSelectElement | null;
+            const errorElement = modalElement?.querySelector('#change-level-error') as HTMLElement | null;
+            if (!confirmButton || !levelSelect || !errorElement) return;
+
+            confirmButton.replaceWith(confirmButton.cloneNode(true));
+            const nextConfirm = modalElement!.querySelector('#change-level-confirm') as HTMLButtonElement;
+
+            nextConfirm.addEventListener('click', async () => {
+                nextConfirm.disabled = true;
+                errorElement.classList.add('d-none');
+                try {
+                    await removePermission(owner, project, permissionId);
+                    await inviteUser(owner, project, { email: userEmail, level: levelSelect.value });
+                    bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.hide();
+                    if (successElement) {
+                        successElement.textContent = 'Permission level changed.';
+                        successElement.classList.remove('d-none');
+                    }
+                    await refreshPermissions();
+                } catch (error) {
+                    errorElement.textContent = 'Failed to change permission level.';
+                    errorElement.classList.remove('d-none');
+                    console.error(error);
+                } finally {
+                    nextConfirm.disabled = false;
+                }
+            }, { once: true });
+
+            bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
+        });
     }
 
     /**

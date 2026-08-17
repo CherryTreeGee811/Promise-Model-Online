@@ -57,6 +57,50 @@ public class UserRepositoryUnitTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task REQ_FUN_001_GetUsersByNameAsync_MatchesUsername()
+    {
+        // Arrange
+        Context.Users.AddRange(
+            new User { Id = 1, Name = "Alice Wonder", Email = "alice@example.com", Username = "alice_w" },
+            new User { Id = 2, Name = "Bob", Email = "bob@example.com" }
+        );
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _repo.GetUsersByNameAsync("alice_w");
+        var list = result.ToList();
+
+        // Assert
+        Assert.That(list.Count, Is.EqualTo(1));
+        Assert.That(list[0].Id, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task REQ_FUN_001_SearchUsersByProjectAsync_MatchesUsername()
+    {
+        // Arrange
+        var owner = new User { Id = 1, Name = "Owner Name", Email = "owner@example.com", Username = "owner_user" };
+        var userB = new User { Id = 2, Name = "Bob Smith", Email = "bob@example.com", Username = "bsmith" };
+        Context.Users.AddRange(owner, userB);
+
+        var project = new Project { Id = 1, Name = "Proj", OwnerId = 1 };
+        project.Permissions = new List<Permission>
+            {
+                new Permission { UserId = 2, Level = PermissionLevel.Edit, Status = PermissionStatus.Active },
+            };
+        Context.Projects.Add(project);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _repo.SearchUsersByProjectAsync(1, "bsm", 5);
+        var list = result.ToList();
+
+        // Assert
+        Assert.That(list.Count, Is.EqualTo(1));
+        Assert.That(list[0].Id, Is.EqualTo(2));
+    }
+
+    [Test]
     public async Task REQ_FUN_001_FindByEmailAsync_ReturnsMatchingUsers()
     {
         // Arrange

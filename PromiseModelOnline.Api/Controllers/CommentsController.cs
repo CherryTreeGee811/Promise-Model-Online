@@ -131,7 +131,7 @@ public class CommentsController(ICommentService commentService,
         {
             var projectId = await _commentRepository.ResolveProjectIdAsync(parentType, parentId);
             var users = await _userRepository.SearchUsersByProjectAsync(projectId, search);
-            return Ok(users.Select(u => new { u.Id, u.Name }));
+            return Ok(users.Select(u => new { u.Id, u.Name, u.Username }));
         }
         catch (ArgumentException ex)
         {

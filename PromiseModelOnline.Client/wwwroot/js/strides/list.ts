@@ -611,6 +611,7 @@ function promptMoveConfirm(_momentId: number | string, modalPrefix: string, mess
  * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
  */
 function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise<unknown>): void {
+    createConfirmModal('move-to-backlog-modal', 'Move to Backlog?', 'Move', 'btn-primary');
     promptMoveConfirm(momentId, 'move-to-backlog-modal', 'Move ' + truncateMomentStatement(momentId) + ' to the Backlog?', onConfirm);
 }
 
@@ -620,6 +621,7 @@ function promptMoveToBacklog(momentId: number | string, onConfirm: () => Promise
  * @param {() => Promise<unknown>} onConfirm - The async callback to execute on confirmation.
  */
 function promptMoveToStride(momentId: number | string, onConfirm: () => Promise<unknown>): void {
+    createConfirmModal('move-to-stride-modal', 'Move to Stride?', 'Move', 'btn-primary');
     promptMoveConfirm(momentId, 'move-to-stride-modal', 'Move ' + truncateMomentStatement(momentId) + ' to the selected stride?', onConfirm);
 }
 
@@ -738,7 +740,7 @@ async function handleOwnerChange(select: HTMLSelectElement, owner: string, proje
     try {
         let newOwnerId: number | undefined;
         if (select.value) newOwnerId = Number(select.value);
-        const updated = await updateMomentOwner(owner, project, momentId, newOwnerId ?? 0, flowId) as Record<string, unknown>;
+        const updated = await updateMomentOwner(owner, project, momentId, newOwnerId ?? undefined, flowId) as Record<string, unknown>;
         restoreSelect.value = String(updated.ownerId ?? '');
     } catch {
         restoreSelect.value = previous;
@@ -935,7 +937,7 @@ function ensureBacklogTbody(): HTMLElement | undefined {
     card.append(boardHeaderHtml('Backlog', true));
     const contentDiv = document.createElement('div');
     contentDiv.className = 'stride-moments backlog-content hidden';
-    const table = createHeaderedTable(['Statement', 'Type', 'Status', 'Effort', 'Actions']);
+    const table = createHeaderedTable(['Statement', 'Type', 'Status', 'Effort', 'Owner', 'Actions']);
     contentDiv.append(table);
     card.append(contentDiv);
     backlogSection.append(card);
@@ -961,15 +963,22 @@ function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
     tr.append(tdType);
 
     const tdStatus = document.createElement('td');
-    const statusBadge = document.createElement('span');
-    statusBadge.className = `status-badge status-${((moment.status as string) || '').toLowerCase()}`;
-    statusBadge.textContent = moment.status as string;
-    tdStatus.append(statusBadge);
+    const statusSelect = statusDropdownHtml(moment.sequenceNumber as number | string, moment.status as string | null);
+    populateStatusSelect(statusSelect);
+    tdStatus.append(statusSelect);
     tr.append(tdStatus);
 
     const tdEffort = document.createElement('td');
-    tdEffort.textContent = (moment.effortEstimate as string) ?? '–';
+    const effortSelect = estimateDropdownHtml(moment.sequenceNumber as number | string, moment.effortEstimate as string | null);
+    populateEstimateSelect(effortSelect);
+    tdEffort.append(effortSelect);
     tr.append(tdEffort);
+
+    const tdOwner = document.createElement('td');
+    const ownerSelect = ownerDropdownHtml(moment.sequenceNumber as number | string, moment.ownerId as number | string | null);
+    populateOwnerSelect(ownerSelect);
+    tdOwner.append(ownerSelect);
+    tr.append(tdOwner);
 
     const tdActions = document.createElement('td');
     const actionsDiv = document.createElement('div');
@@ -1072,6 +1081,16 @@ function createStrideRow(moment: Record<string, unknown>): HTMLElement {
     backlogButton.type = 'button';
     backlogButton.textContent = 'Backlog';
     actionsDiv.append(backlogButton);
+    const moveToStrideButton = document.createElement('button');
+    moveToStrideButton.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
+    moveToStrideButton.dataset.momentId = String(moment.sequenceNumber);
+    moveToStrideButton.type = 'button';
+    moveToStrideButton.textContent = 'Move to Stride';
+    actionsDiv.append(moveToStrideButton);
+    const moveTargetSelect = document.createElement('select');
+    moveTargetSelect.className = 'backlog-target-stride form-select form-select-sm';
+    moveTargetSelect.dataset.momentId = String(moment.sequenceNumber);
+    actionsDiv.append(moveTargetSelect);
     const graphLink = momentGraphLinkHtml(moment.sequenceNumber as number | string);
     if (graphLink) actionsDiv.append(graphLink);
     const viewLink = document.createElement('a');
@@ -1093,6 +1112,7 @@ function createStrideRow(moment: Record<string, unknown>): HTMLElement {
     if (ownerSelect) {
         populateOwnerSelect(ownerSelect);
     }
+    if (moveTargetSelect) populateBacklogStrideSelect(moveTargetSelect);
     return tr;
 }
 
@@ -1370,6 +1390,16 @@ function renderMomentRow(
     blButton.type = 'button';
     blButton.textContent = 'Backlog';
     aDiv.append(blButton);
+    const mvTargetSel = document.createElement('select');
+    mvTargetSel.className = 'backlog-target-stride form-select form-select-sm';
+    mvTargetSel.dataset.momentId = String(m.sequenceNumber);
+    aDiv.append(mvTargetSel);
+    const mvStrideBtn = document.createElement('button');
+    mvStrideBtn.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
+    mvStrideBtn.dataset.momentId = String(m.sequenceNumber);
+    mvStrideBtn.type = 'button';
+    mvStrideBtn.textContent = 'Move to Stride';
+    aDiv.append(mvStrideBtn);
     const graphLink = momentGraphLinkHtml(m.sequenceNumber as number | string);
     if (graphLink) aDiv.append(graphLink);
     const vLink = document.createElement('a');

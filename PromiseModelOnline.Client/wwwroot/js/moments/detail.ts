@@ -7,7 +7,7 @@ import {
 } from '../projects/detail-stack-graph.ts';
 import { buildGraphViewHref, getOwnerProjectFromPath, upsertGraphViewButton } from '../projects/graph-link.ts';
 import { navigate } from '../router.ts';
-import { getStrides } from '../strides/api.ts';
+import { getStrides, getProjectMembers } from '../strides/api.ts';
 import { showToast } from '../ui/toast.ts';
 import { initBackLink, loadCommentsAndReactions, buildInlineEditUI, createDateRow } from '../utils/detail-common.ts';
 import { formatCommentText, loadEntityLookupMap } from '../utils/entity-reference.ts';
@@ -17,7 +17,7 @@ import { insertRowBeforeAddRow, removeInlineEmptyRow, renderTableWithInlineAddRo
 import { isAtLeast } from '../utils/permissions.ts';
 import { createHelpTooltip } from '../utils/tooltip.ts';
 
-import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType } from './api.ts';
+import { getMoment, createTask, updateTaskCompletion, updateMomentDescription, updateMomentEstimate, updateMomentStatus, assignMomentToStride, updateMomentType, updateMomentOwner } from './api.ts';
 
 interface MomentTask {
     id: number;
@@ -36,6 +36,7 @@ interface Moment {
     status: string;
     statusColor?: string;
     effortEstimate?: string;
+    ownerId?: number;
     assignedStrideId?: number;
     createdAt: string;
     completedAt?: string;
@@ -154,6 +155,28 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
         estRow.append(estTd);
         table.append(estRow);
 
+        // Owner row
+        const ownerRow = document.createElement('tr');
+        const ownerTh = document.createElement('th');
+        ownerTh.scope = 'row';
+        const ownerLabel = document.createElement('label');
+        ownerLabel.htmlFor = 'moment-owner-select';
+        ownerLabel.textContent = 'Owner';
+        createHelpTooltip(ownerTh, 'Owner', 'The user responsible for this moment. Unassigned moments sit in the backlog.', 'right');
+        ownerTh.append(ownerLabel);
+        ownerRow.append(ownerTh);
+        const ownerTd = document.createElement('td');
+        const ownerSelect = document.createElement('select');
+        ownerSelect.id = 'moment-owner-select';
+        ownerSelect.className = 'form-select form-select-sm';
+        const unassignedOpt = document.createElement('option');
+        unassignedOpt.value = '';
+        unassignedOpt.textContent = 'Unassigned';
+        ownerSelect.append(unassignedOpt);
+        ownerTd.append(ownerSelect);
+        ownerRow.append(ownerTd);
+        table.append(ownerRow);
+
         // Assigned Stride row
         const strideRow = document.createElement('tr');
         const strideTh = document.createElement('th');
@@ -224,10 +247,12 @@ function gateMomentDetailControls(permission: Record<string, unknown>): void {
         const statusSelect = document.querySelector('#moment-status-select') as HTMLSelectElement | null;
         const estSelect = document.querySelector('#moment-estimate-select') as HTMLSelectElement | null;
         const strideSelect = document.querySelector('#moment-stride-select') as HTMLSelectElement | null;
+        const ownerSelect = document.querySelector('#moment-owner-select') as HTMLSelectElement | null;
         if (typeSelect) { typeSelect.disabled = true; typeSelect.title = 'Requires Edit permission.'; }
         if (statusSelect) { statusSelect.disabled = true; statusSelect.title = 'Requires Edit permission.'; }
         if (estSelect) { estSelect.disabled = true; estSelect.title = 'Requires Edit permission.'; }
         if (strideSelect) { strideSelect.disabled = true; strideSelect.title = 'Requires Edit permission.'; }
+        if (ownerSelect) { ownerSelect.disabled = true; ownerSelect.title = 'Requires Edit permission.'; }
     }
 }
 
@@ -304,6 +329,36 @@ async function setupStrideHandler(owner: string, project: string, momentId: stri
             }
         } catch (error) { console.error('Failed to load strides', error); }
     }
+}
+
+/**
+ * @param {string} owner - The project owner
+ * @param {string} project - The project slug
+ * @param {string} momentId - The moment ID
+ * @param {Moment} moment - The moment data object
+ * @returns {Promise<void>}
+ */
+async function setupOwnerHandler(owner: string, project: string, momentId: string, moment: Record<string, unknown>): Promise<void> {
+    const ownerSelectElement = document.querySelector('#moment-owner-select') as HTMLSelectElement;
+    if (!ownerSelectElement) return;
+    try {
+        const members = await getProjectMembers(owner, project) as Record<string, unknown>[];
+        for (const member of members) {
+            const opt = document.createElement('option');
+            opt.value = String(member.userId);
+            opt.textContent = (member.userName as string) || 'User ' + member.userId;
+            if (String(member.userId) === String(moment.ownerId)) opt.selected = true;
+            ownerSelectElement.append(opt);
+        }
+        ownerSelectElement.addEventListener('change', async () => {
+            const value = ownerSelectElement.value === '' ? undefined : Number(ownerSelectElement.value);
+            try {
+                const updated = await updateMomentOwner(owner, project, momentId, value, (moment as Record<string, unknown>).flowId as number) as Record<string, unknown>;
+                moment.ownerId = updated.ownerId as number | undefined;
+                patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { ownerId: updated.ownerId });
+            } catch (error) { showToast('Failed to update owner', 'error'); console.error(error); }
+        });
+    } catch (error) { console.error('Failed to load project members', error); }
 }
 
 /**
@@ -536,6 +591,8 @@ async function setupMomentInteractions(
 
   await setupStrideHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
 
+  await setupOwnerHandler(owner, project, momentId, moment as unknown as Record<string, unknown>);
+
   const statusSelectElement = document.querySelector('#moment-status-select') as HTMLSelectElement;
   const completedCell = detailDiv.querySelector(':scope tr:nth-last-child(1) td') as HTMLElement | null;
   if (statusSelectElement) {
@@ -643,6 +700,7 @@ async function handleTaskAddClick(
     taskCompletedInput: HTMLInputElement,
     taskSubmitButton: HTMLButtonElement,
     taskMessageElement: HTMLElement,
+    permission: Record<string, unknown>,
 ): Promise<void> {
     taskMessageElement.textContent = '';
     const name = taskNameInput.value.trim();
@@ -700,7 +758,7 @@ async function handleTaskAddClick(
             if (!Array.isArray(moment.tasks)) moment.tasks = [];
             moment.tasks.push(created);
             syncMomentTasksToStackGraph(momentId, moment);
-            bindMomentTaskCompletionToggle(tbody, momentId, moment, {}, owner, project);
+            bindMomentTaskCompletionToggle(tbody, momentId, moment, permission, owner, project);
         }
     } catch (error) {
         taskMessageElement.textContent = 'Failed to add task.';
@@ -781,7 +839,7 @@ function renderMomentTasks(container: HTMLElement, momentId: string, tasks: Mome
         taskSubmitButton.addEventListener('click', () => handleTaskAddClick(
             tbody, momentId, moment, owner, project,
             taskNameInput, taskDescriptionInput, taskCompletedInput,
-            taskSubmitButton, taskMessageElement,
+            taskSubmitButton, taskMessageElement, permission,
         ));
     }
 
@@ -808,7 +866,7 @@ function syncMomentTasksToStackGraph(_momentId: string, moment: Moment): void {
  */
 async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, project: string, momentId: string, moment: Moment): Promise<void> {
     const taskId = Math.trunc(Number(checkbox.dataset.momentTaskId ?? ''));
-    const label = checkbox.closest('tr')?.querySelector(':scope > .moment-task-completion span') as HTMLElement | null;
+    const label = checkbox.closest('tr')?.querySelector('.moment-task-completion span') as HTMLElement | null;
     const isPreviousChecked = !checkbox.checked;
     checkbox.disabled = true;
     try {

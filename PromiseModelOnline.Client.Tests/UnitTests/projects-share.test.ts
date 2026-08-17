@@ -372,7 +372,7 @@ describe('loadSharePage', () => {
             expect(mockSearchUsers).toHaveBeenCalledWith('ali');
             const items = document.querySelectorAll('.comment-autocomplete__item');
             expect(items.length).toBe(1);
-            expect(items[0].textContent).toBe('Alice (alice@test.com)');
+            expect(items[0].textContent).toBe('alice@test.com (Alice)');
             const dropdown = document.querySelector('#invite-autocomplete')!;
             expect(dropdown.classList.contains('d-none')).toBe(false);
         });

@@ -186,10 +186,7 @@ public class PermissionServiceUnitTests
 
         _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
         _userRepoMock.Setup(r => r.FindByEmailAsync("nonexistent")).ReturnsAsync(Enumerable.Empty<User>());
-        _userRepoMock.Setup(r => r.GetUsersByNameAsync("nonexistent")).ReturnsAsync(Enumerable.Empty<User>());
-        _userRepoMock.Setup(r => r.GetBySlugAsync("nonexistent")).ReturnsAsync((User?)null);
-        _userRepoMock.Setup(r => r.SearchUsersAsync("nonexistent", 1)).ReturnsAsync(Enumerable.Empty<User>());
-        _authLookupMock.Setup(l => l.FindByUsernameOrEmailAsync("nonexistent")).ReturnsAsync((AuthUserInfo?)null);
+        _authLookupMock.Setup(l => l.FindByEmailAsync("nonexistent")).ReturnsAsync((AuthUserInfo?)null);
 
         // Act
         var request = new CreatePermissionRequestDto { Email = "nonexistent", Level = PermissionLevel.View };
@@ -210,11 +207,8 @@ public class PermissionServiceUnitTests
         var invitedUser = new User { Id = 300, Email = authUser.Email, Name = authUser.UserName };
 
         _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
-        _userRepoMock.Setup(r => r.FindByEmailAsync("jon")).ReturnsAsync(Enumerable.Empty<User>());
-        _userRepoMock.Setup(r => r.GetUsersByNameAsync("jon")).ReturnsAsync(Enumerable.Empty<User>());
-        _userRepoMock.Setup(r => r.GetBySlugAsync("jon")).ReturnsAsync((User?)null);
-        _userRepoMock.Setup(r => r.SearchUsersAsync("jon", 1)).ReturnsAsync(Enumerable.Empty<User>());
-        _authLookupMock.Setup(l => l.FindByUsernameOrEmailAsync("jon")).ReturnsAsync(authUser);
+        _userRepoMock.Setup(r => r.FindByEmailAsync("leafpad@protonmail.com")).ReturnsAsync(Enumerable.Empty<User>());
+        _authLookupMock.Setup(l => l.FindByEmailAsync("leafpad@protonmail.com")).ReturnsAsync(authUser);
         _userRepoMock.Setup(r => r.GetOrCreateUserByEmailAsync(authUser.Email, authUser.UserName)).ReturnsAsync(invitedUser);
         _permRepoMock.Setup(r => r.GetByUserAndProjectAsync(300, 10)).ReturnsAsync((Permission?)null);
         _permRepoMock.Setup(r => r.AddAsync(It.IsAny<Permission>())).Returns(Task.CompletedTask);
@@ -224,21 +218,21 @@ public class PermissionServiceUnitTests
         _permRepoMock.Setup(r => r.GetByIdAsync(0)).ReturnsAsync(createdPermission);
         _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDto { Id = 0, Level = "View" });
 
-        var request = new CreatePermissionRequestDto { Email = "jon", Level = PermissionLevel.View };
+        var request = new CreatePermissionRequestDto { Email = "leafpad@protonmail.com", Level = PermissionLevel.View };
 
         // Act
         var result = await _service.InviteUserAsync(10, request.Email, request.Level, ownerId);
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        _authLookupMock.Verify(l => l.FindByUsernameOrEmailAsync("jon"), Times.Once);
+        _authLookupMock.Verify(l => l.FindByEmailAsync("leafpad@protonmail.com"), Times.Once);
         _userRepoMock.Verify(r => r.GetOrCreateUserByEmailAsync(authUser.Email, authUser.UserName), Times.Once);
         _permRepoMock.Verify(r => r.AddAsync(It.Is<Permission>(p => p.UserId == 300)), Times.Once);
         _invitationEmailMock.Verify(e => e.SendInvitationEmailAsync("leafpad@protonmail.com", It.IsAny<string>(), "Demo"), Times.Once);
     }
 
     [Test]
-    public async Task REQ_FUN_013_InviteUserAsync_Success_WhenFoundByName()
+    public void REQ_FUN_013_InviteUserAsync_DoesNotResolveByUsername()
     {
         // Arrange
         var ownerId = 100;
@@ -247,26 +241,15 @@ public class PermissionServiceUnitTests
 
         _projectRepoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(project);
         _userRepoMock.Setup(r => r.FindByEmailAsync("someuser")).ReturnsAsync(Enumerable.Empty<User>());
-        _userRepoMock.Setup(r => r.GetUsersByNameAsync("someuser")).ReturnsAsync(new[] { invitedUser });
-        _permRepoMock.Setup(r => r.GetByUserAndProjectAsync(300, 10)).ReturnsAsync((Permission?)null);
-        _permRepoMock.Setup(r => r.AddAsync(It.IsAny<Permission>())).Returns(Task.CompletedTask);
-        _permRepoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
-
-        var createdPermission = new Permission { Id = 0, UserId = 300, ProjectId = 10, Level = PermissionLevel.Edit, Status = PermissionStatus.Pending };
-        _permRepoMock.Setup(r => r.GetByIdAsync(0)).ReturnsAsync(createdPermission);
-
-        _mapperMock.Setup(m => m.Map(createdPermission, null!)).Returns(new PermissionDto { Id = 0, Level = "Edit" });
+        _authLookupMock.Setup(l => l.FindByEmailAsync("someuser")).ReturnsAsync((AuthUserInfo?)null);
 
         var request = new CreatePermissionRequestDto { Email = "someuser", Level = PermissionLevel.Edit };
 
-        // Act
-        var result = await _service.InviteUserAsync(10, request.Email, request.Level, ownerId);
-
-        // Assert
-        Assert.That(result, Is.Not.Null);
-        _permRepoMock.Verify(r => r.AddAsync(It.Is<Permission>(p => p.UserId == 300 && p.Level == PermissionLevel.Edit && p.Status == PermissionStatus.Pending)), Times.Once);
-        _notifServiceMock.Verify(n => n.CreateNotificationAsync(300, NotificationType.Invitation, It.Is<string>(s => s.Contains("Demo")), "/invitations"), Times.Once);
-        _invitationEmailMock.Verify(e => e.SendInvitationEmailAsync("found@test.com", It.IsAny<string>(), "Demo"), Times.Once);
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _service.InviteUserAsync(10, request.Email, request.Level, ownerId));
+        Assert.That(ex.Message, Does.Contain("not found"));
+        _permRepoMock.Verify(r => r.AddAsync(It.IsAny<Permission>()), Times.Never);
+        _invitationEmailMock.Verify(e => e.SendInvitationEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     #endregion

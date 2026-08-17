@@ -17,6 +17,7 @@ public class PermissionMapper : IGenericMapper<Permission, PermissionDto>
         Id = source.Id,
         UserId = source.UserId,
         UserName = source.User?.Name ?? source.User?.Username ?? source.User?.Slug ?? source.User?.Email ?? "Unknown",
+        Email = source.User?.Email ?? string.Empty,
         ProjectId = source.ProjectId,
         Level = source.Level.ToString(),
         Status = source.Status.ToString()

@@ -15,10 +15,13 @@ gen() {
 echo "=== Auto-generated secrets ==="
 gen auth_db_password.txt
 gen api_db_password.txt
-gen umami_db_password.txt
 gen umami_admin_password.txt
 gen cert_password.txt
 gen auth_registration_key.txt
+
+# umami DB password must be URL-safe (used inside DATABASE_URL)
+openssl rand -hex 24 | tr -d '\n' > secrets/umami_db_password.txt
+echo "  secrets/umami_db_password.txt  [generated]"
 
 # MSSQL SA password (special complexity requirements)
 python3 -c "

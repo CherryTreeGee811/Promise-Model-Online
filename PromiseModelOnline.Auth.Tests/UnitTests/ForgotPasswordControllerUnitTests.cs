@@ -9,6 +9,7 @@ using NUnit.Framework;
 using PromiseModelOnline.Auth.Controllers;
 using PromiseModelOnline.Auth.Services;
 using PromiseModelOnline.Auth.ViewModels;
+using Microsoft.AspNetCore.Routing;
 using System.Threading.Tasks;
 
 namespace PromiseModelOnline.Auth.Tests;
@@ -134,6 +135,35 @@ public class ForgotPasswordControllerUnitTests
         Assert.That(_controller.ViewBag.Sent, Is.True);
         _emailServiceMock.Verify(x => x.SendResetPasswordEmailAsync("google@example.com", "google-user", It.Is<string>(link => link.Contains("google-token"))), Times.Once);
         _loggerMock.VerifyLog(LogLevel.Information, "Password reset email sent");
+    }
+
+    [Test]
+    public async Task SendResetLink_TokenIsNotDoubleEncoded_PassesRawTokenToUrlHelper()
+    {
+        // Arrange
+        var model = new ForgotPasswordViewModel { Email = "user@example.com" };
+        var user = new IdentityUser { Id = "4", UserName = "testuser", Email = "user@example.com", EmailConfirmed = true };
+        var rawToken = "CfDJ8+b/y/===";
+        _userManagerMock.Setup(x => x.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
+        _userManagerMock.Setup(x => x.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
+        _userManagerMock.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync(rawToken);
+        UrlActionContext? capturedContext = null;
+        _urlHelperMock.Setup(x => x.Action(It.IsAny<UrlActionContext>()))
+            .Callback<UrlActionContext>(ctx => capturedContext = ctx)
+            .Returns("https://localhost/reset");
+
+        // Act
+        var result = await _controller.SendResetLink(model);
+
+        // Assert
+        Assert.That(result, Is.TypeOf<ViewResult>());
+        Assert.That(capturedContext, Is.Not.Null);
+        var tokenValue = capturedContext!.Values switch
+        {
+            RouteValueDictionary dict => dict["token"],
+            _ => capturedContext.Values?.GetType().GetProperty("token")?.GetValue(capturedContext.Values)
+        };
+        Assert.That(tokenValue, Is.EqualTo(rawToken));
     }
 
     [Test]

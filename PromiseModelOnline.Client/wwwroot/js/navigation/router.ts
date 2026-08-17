@@ -1,4 +1,5 @@
 import { isLoggedIn } from '../auth-state.ts';
+import { getUsername } from '../stores/auth.ts';
 import { startNotificationPolling } from '../notifications/badge.ts';
 import { navigate } from '../router.ts';
 import { openBugReportModal } from '../utils/bug-report-modal.ts';
@@ -61,7 +62,14 @@ export async function loadNavTemplate(navContentDiv: HTMLElement, _contentDiv: H
         const document_ = parser.parseFromString(html, 'text/html');
         navContentDiv.replaceChildren(...document_.body.childNodes);
         setActiveNavLink();
-        if (isLoggedIn()) void startNotificationPolling();
+        if (isLoggedIn()) {
+            const usernameElement = document.querySelector('#user-dropdown-name');
+            if (usernameElement) {
+                const username = getUsername();
+                usernameElement.textContent = username || '';
+            }
+            void startNotificationPolling();
+        }
     } catch (error: unknown) {
         if (navContentDiv) {
             navContentDiv.replaceChildren();

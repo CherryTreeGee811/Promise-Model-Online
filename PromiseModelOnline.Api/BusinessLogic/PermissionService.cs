@@ -116,6 +116,7 @@ public class PermissionService(
             Id = permission.Id,
             UserId = invitedUser.Id,
             UserName = invitedUser.Name ?? invitedUser.Username ?? "Unknown",
+            Email = invitedUser.Email ?? string.Empty,
             ProjectId = project.Id,
             Level = permission.Level.ToString(),
             Status = permission.Status.ToString()
@@ -196,34 +197,28 @@ public class PermissionService(
         return null;
     }
 
-    /// <summary>Find a user by email, display name, or slug for invitation resolution.</summary>
-    /// <param name="emailOrName">The email address, display name, or username slug to search for.</param>
+    /// <summary>Find a user by exact email address for invitation resolution.</summary>
+    /// <remarks>
+    ///   Invitations are sent by email only. The registered user is resolved by an exact,
+    ///   case-insensitive match on their email address in the app user table, falling back to
+    ///   the auth system's Identity database. Usernames, display names, and slugs are not
+    ///   accepted as invitation targets.
+    /// </remarks>
+    /// <param name="email">The registered email address of the user to invite.</param>
     /// <returns>The matching user, or <c>null</c> if not found.</returns>
-    private async Task<User?> FindInvitedUserAsync(string emailOrName)
+    private async Task<User?> FindInvitedUserAsync(string email)
     {
-        var users = await _userRepo.FindByEmailAsync(emailOrName);
+        if (string.IsNullOrWhiteSpace(email))
+            return null;
+
+        var users = await _userRepo.FindByEmailAsync(email);
         var user = users.FirstOrDefault();
         if (user != null) return user;
 
-        var nameMatches = await _userRepo.GetUsersByNameAsync(emailOrName);
-        user = nameMatches.FirstOrDefault();
-        if (user != null) return user;
-
-        var slugUser = await _userRepo.GetBySlugAsync(emailOrName);
-        if (slugUser != null) return slugUser;
-
-        var searchResults = await _userRepo.SearchUsersAsync(emailOrName, maxResults: 1);
-        user = searchResults.FirstOrDefault();
-        if (user != null)
-        {
-            _logger.LogInformation("Invited user '{EmailOrName}' resolved via partial search to user {UserId} ('{UserName}')", emailOrName, user.Id, user.Name);
-            return user;
-        }
-
-        var authUser = await _authUserLookup.FindByUsernameOrEmailAsync(emailOrName);
+        var authUser = await _authUserLookup.FindByEmailAsync(email);
         if (authUser is not null)
         {
-            _logger.LogInformation("Invited user '{EmailOrName}' resolved via auth DB lookup to '{UserName}' ({Email})", emailOrName, authUser.UserName, authUser.Email);
+            _logger.LogInformation("Invited user '{Email}' resolved via auth DB lookup to '{UserName}'", email, authUser.UserName);
             return await _userRepo.GetOrCreateUserByEmailAsync(authUser.Email, authUser.UserName);
         }
 
