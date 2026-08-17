@@ -2,7 +2,7 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
+USER 1654
 WORKDIR /app
 EXPOSE 8000/tcp
 
@@ -24,19 +24,19 @@ RUN dotnet publish "./PromiseModelOnline.Api.csproj" -c $BUILD_CONFIGURATION -o 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
-USER root
+USER 0
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
-USER app
+USER 1654
 COPY --from=publish /app/publish .
 # Copy CSV seed data into the runtime image so the seeder can find `pmo_pm`
 COPY --from=build /src/pmo_pm /app/pmo_pm
 # Ensure files are readable by the app user
-USER root
+USER 0
 RUN chown -R app:app /app/pmo_pm || true
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+  CMD ["curl", "-f", "http://localhost:8000/health"]
 
-USER app
+USER 1654
 ENTRYPOINT ["dotnet", "PromiseModelOnline.Api.dll"]

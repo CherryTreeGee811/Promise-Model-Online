@@ -12,7 +12,7 @@ COPY PromiseModelOnline.Client/mime.types /etc/nginx/mime.types
 COPY PromiseModelOnline.Proxy/nginx.conf /etc/nginx/nginx.conf
 COPY PromiseModelOnline.Proxy/default.conf /etc/nginx/conf.d/default.conf
 
-USER appuser
+USER 1000
 
 EXPOSE 9000/tcp
 

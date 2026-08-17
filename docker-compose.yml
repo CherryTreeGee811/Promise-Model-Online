@@ -160,17 +160,19 @@ services:
   promisemodelonline-db:
     image: mcr.microsoft.com/mssql/server:2025-latest
     container_name: promisemodelonlinedb
+    entrypoint: ["/bin/sh", "/init/db-entrypoint.sh"]
+    command: ["/opt/mssql/bin/sqlservr"]
     networks:
       - promisemodelonline-net
     ports:
       - "127.0.0.1:1433:1433/tcp"
     environment:
       ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD_FILE: /run/secrets/db_sa_password
     secrets:
       - db_sa_password
     volumes:
       - mssql-data:/var/opt/mssql
+      - ./scripts/db-entrypoint.sh:/init/db-entrypoint.sh:ro
 
   promisemodelonline-db-init:
     image: mcr.microsoft.com/mssql-tools

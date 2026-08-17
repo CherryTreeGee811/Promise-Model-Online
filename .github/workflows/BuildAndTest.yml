@@ -175,6 +175,8 @@ jobs:
 
       - name: Generate dev certs for volume mounts
         shell: bash
+        env:
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
         run: bash scripts/generate-dev-certs.sh
 
       - name: Write secrets from GitHub Secrets

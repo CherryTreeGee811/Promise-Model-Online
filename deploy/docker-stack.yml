@@ -199,13 +199,18 @@ services:
 
   promisemodelonline-db:
     image: mcr.microsoft.com/mssql/server:2025-latest
+    entrypoint: ["/bin/sh", "/init/db-entrypoint.sh"]
+    command: ["/opt/mssql/bin/sqlservr"]
     environment:
       ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD_FILE: /run/secrets/db_sa_password
     secrets:
       - source: pmo_db_sa_password
         target: db_sa_password
         mode: 0444
+    configs:
+      - source: pmo_db_entrypoint
+        target: /init/db-entrypoint.sh
+        mode: 0555
     volumes:
       - mssql-data:/var/opt/mssql
     networks:
@@ -414,5 +419,7 @@ configs:
     file: ./keys/auth/cert.pfx
   init_db_script:
     file: ./scripts/init-db.sh
+  pmo_db_entrypoint:
+    file: ./scripts/db-entrypoint.sh
   umami_init_script:
     file: ./scripts/umami-init.sh

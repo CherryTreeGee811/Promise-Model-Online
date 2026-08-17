@@ -5,6 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KEYS_DIR="$SCRIPT_DIR/../keys"
 CERT_PASSWORD="${CERT_PASSWORD:-lyo/UjXbYZakxsg3wfA5yQyqItqBjsX6pmHGL3Oabxc=}"
 
+mkdir -p "$SCRIPT_DIR/../secrets"
+printf '%s' "$CERT_PASSWORD" > "$SCRIPT_DIR/../secrets/cert_password.txt"
+
 mkdir -p "$KEYS_DIR/auth" "$KEYS_DIR/bff" "$KEYS_DIR/client"
 
 # Client cert (CN=promisemodel.online)

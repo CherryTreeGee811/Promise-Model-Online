@@ -16,20 +16,20 @@ RUN dotnet publish -c Release -o /app/publish
 # ===============================
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
-USER root
+USER 0
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
-USER app
+USER 1654
 COPY --from=build /app/publish .
 
-USER root
+USER 0
 RUN mkdir -p /app/dp-keys && chown app:app /app/dp-keys
-USER app
+USER 1654
 
 EXPOSE 8010
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
-  CMD curl -fk https://localhost:8010/health || exit 1
+  CMD ["curl", "-fk", "https://localhost:8010/health"]
 
 ENTRYPOINT ["dotnet", "PromiseModelOnline.BFF.dll"]

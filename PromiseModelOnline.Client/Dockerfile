@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -24,6 +24,6 @@ COPY PromiseModelOnline.Client/mime.types /etc/nginx/mime.types
 COPY PromiseModelOnline.Client/nginx.conf /etc/nginx/nginx.conf
 COPY PromiseModelOnline.Client/default.conf /etc/nginx/conf.d/default.conf
 
-USER appuser
+USER 1000
 
 CMD ["nginx", "-g", "daemon off;"]
