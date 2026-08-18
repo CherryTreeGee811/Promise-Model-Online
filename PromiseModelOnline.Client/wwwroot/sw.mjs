@@ -1,5 +1,5 @@
 /** @type {string} */
-const CACHE = 'pmo-v6';
+const CACHE = 'pmo-v7';
 
 const swSelf = /** @type {{ addEventListener: Function, skipWaiting: Function, clients: { claim: Function }, location: { origin: string } }} */ (/** @type {unknown} */ (self));
 
@@ -9,7 +9,7 @@ let _cacheReady = false;
 /** @type {string[]} */
 const PRECACHE = [
   '/dist/js/main.js',
-  '/css/site.css',
+  '/css/site.css?v=7',
   '/lib/css/bootstrap.min.css',
   '/lib/css/bootstrap-icons.min.css',
   '/lib/js/bootstrap.bundle.min.js',

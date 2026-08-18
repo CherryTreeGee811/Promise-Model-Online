@@ -117,7 +117,7 @@ public class PwaTests : PlaywrightTestBase
                 const cacheName = keys.find(k => k.startsWith('pmo-'));
                 if (!cacheName) return null;
                 const cache = await caches.open(cacheName);
-                const match = await cache.match('/css/site.css');
+                const match = await cache.match('/css/site.css?v=7');
                 return match ? new Uint8Array(await match.arrayBuffer()) : null;
             })");
 
@@ -244,7 +244,8 @@ public class PwaTests : PlaywrightTestBase
         var missing = new List<string>();
         foreach (var p in precacheEntries)
         {
-            if (!File.Exists(wwwroot + p))
+            var diskPath = p.Split('?')[0];
+            if (!File.Exists(wwwroot + diskPath))
                 missing.Add(p);
         }
 
@@ -282,12 +283,13 @@ public class PwaTests : PlaywrightTestBase
             var entries = new List<object[]>();
             foreach (var path in missing)
             {
-                var filePath = wwwroot + path;
+                var diskPath = path.Split('?')[0];
+                var filePath = wwwroot + diskPath;
                 if (!File.Exists(filePath)) continue;
-                var contentType = path.EndsWith(".svg") ? "image/svg+xml"
-                    : path.EndsWith(".png") ? "image/png"
-                    : path.EndsWith(".ico") ? "image/x-icon"
-                    : path.EndsWith(".html") ? "text/html"
+                var contentType = diskPath.EndsWith(".svg") ? "image/svg+xml"
+                    : diskPath.EndsWith(".png") ? "image/png"
+                    : diskPath.EndsWith(".ico") ? "image/x-icon"
+                    : diskPath.EndsWith(".html") ? "text/html"
                     : "application/octet-stream";
                 var base64 = Convert.ToBase64String(File.ReadAllBytes(filePath));
                 entries.Add([path, base64, contentType]);

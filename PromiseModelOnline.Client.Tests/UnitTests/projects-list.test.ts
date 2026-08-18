@@ -9,7 +9,7 @@ vi.mock('../../PromiseModelOnline.Client/wwwroot/js/projects/api.ts', () => ({ f
 describe('loadProjectList', () => {
     beforeEach(() => {
         document.body.innerHTML = `
-            <table><tbody id="project-list-table-body"></tbody></table>
+            <table><thead id="project-list-table-head" class="table-light"></thead><tbody id="project-list-table-body"></tbody></table>
             <span id="error-text"></span>
             <span id="success-text"></span>
             <a id="add-project-link" href="/projects/add">Add Project</a>
@@ -19,16 +19,16 @@ describe('loadProjectList', () => {
 
     it('renders projects in the table', async () => {
         // Arrange
-        mockFetchProjects.mockResolvedValue([
-            { name: 'Test Project', ownerSlug: 'owner1', slug: 'proj1' },
-        ]);
+        mockFetchProjects.mockResolvedValue([{ name: 'Test Project', ownerSlug: 'owner1', slug: 'proj1' }]);
         const { loadProjectList } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/list.ts');
         // Act
         await loadProjectList(document.createElement('div'), document.createElement('div'));
         // Assert
         const rows = document.querySelectorAll('#project-list-table-body tr');
+        const tableHead = document.querySelector('#project-list-table-head')!;
         expect(rows.length).toBe(1);
         expect(rows[0].textContent).toContain('Test Project');
+        expect(tableHead.classList.contains('d-none')).toBe(false);
     });
 
     it('renders multiple projects', async () => {
@@ -53,7 +53,9 @@ describe('loadProjectList', () => {
         await loadProjectList(document.createElement('div'), document.createElement('div'));
         // Assert
         const tbody = document.querySelector('#project-list-table-body')!;
+        const tableHead = document.querySelector('#project-list-table-head')!;
         expect(tbody.textContent).toContain('no projects yet');
+        expect(tableHead.classList.contains('d-none')).toBe(true);
     });
 
     it('shows empty state when projects is undefined', async () => {
@@ -64,7 +66,9 @@ describe('loadProjectList', () => {
         await loadProjectList(document.createElement('div'), document.createElement('div'));
         // Assert
         const tbody = document.querySelector('#project-list-table-body')!;
+        const tableHead = document.querySelector('#project-list-table-head')!;
         expect(tbody.textContent).toContain('no projects yet');
+        expect(tableHead.classList.contains('d-none')).toBe(true);
     });
 
     it('displays error text on 404', async () => {
@@ -102,9 +106,7 @@ describe('loadProjectList', () => {
 
     it('renders action buttons for each project', async () => {
         // Arrange
-        mockFetchProjects.mockResolvedValue([
-            { name: 'P1', ownerSlug: 'o', slug: 'p' },
-        ]);
+        mockFetchProjects.mockResolvedValue([{ name: 'P1', ownerSlug: 'o', slug: 'p' }]);
         const { loadProjectList } = await import('../../PromiseModelOnline.Client/wwwroot/js/projects/list.ts');
         // Act
         await loadProjectList(document.createElement('div'), document.createElement('div'));

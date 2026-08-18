@@ -297,7 +297,7 @@ button {
 /*********************************************
   9. Action Buttons (View, Edit, Delete)
 **********************************************/
-.view-btn, .edit-btn, .delete-btn, .graph-btn {
+.view-btn, .edit-btn, .delete-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -337,19 +337,6 @@ button {
 
 .delete-btn:hover, .delete-btn:focus-visible {
   background: #8e0000;
-}
-
-.graph-btn {
-  background: #2c3e50;
-}
-
-.graph-btn:hover, .graph-btn:focus-visible {
-  background: #1f2b38;
-}
-
-.graph-btn .bi {
-  font-size: 1.1em;
-  color: #fff;
 }
 
 .settings-btn, .share-btn, .audit-log-btn {
@@ -957,6 +944,14 @@ button {
 .empty-table-icon {
   font-size: 4rem;
   color: #adb5bd;
+}
+
+.inline-table-empty-row,
+.inline-table-empty-row > * {
+  --bs-table-bg: transparent !important;
+  --bs-table-bg-type: transparent !important;
+  --bs-table-bg-state: transparent !important;
+  background: transparent !important;
 }
 
 .graph-empty-state {
@@ -1835,19 +1830,6 @@ input, button, a, label, select, textarea {
 .comment-autocomplete__item--highlight:hover {
   background: #0b5ed7;
 }
-
-.share-btn {
-  background-color:#3498db;
-  color:#fff;
-  padding:6px 16px;
-  border-radius:6px;
-  font-size:0.85rem;
-  font-weight:600;
-  text-decoration:none;
-  display:inline-block;
-  margin-left:4px;
-}
-.share-btn:hover { background-color:#2980b9; }
 
 .revoke-btn {
   background:#c62828;
