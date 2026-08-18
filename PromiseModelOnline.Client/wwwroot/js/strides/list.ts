@@ -45,7 +45,7 @@ const _state: {
  */
 export function applyPermissionUI(canEdit: boolean): void {
     const controls = document.querySelectorAll(
-        '.status-dropdown, .estimate-dropdown, .owner-dropdown, .moment-type-dropdown, .backlog-target-stride, .move-to-backlog-btn, .move-to-stride-from-backlog-btn'
+        '.status-dropdown, .estimate-dropdown, .owner-dropdown, .moment-type-dropdown, .backlog-target-stride, .move-to-backlog-btn, .move-to-stride-from-backlog-btn, .move-to-current-stride-btn'
     );
 
     for (const element of controls) (element as HTMLInputElement).disabled = !canEdit;
@@ -89,6 +89,28 @@ function findNextStrideIdInIteration(currentStrideId: number | string): number |
     if (index === -1) return;
     const next = strides[index + 1];
     return next?.id as number | undefined;
+}
+
+/**
+ * Find the ID of the current (active) stride, falling back to the earliest by start date.
+ * @returns {number|undefined} The current stride ID, or undefined if none exist.
+ */
+function findCurrentStrideId(): number | undefined {
+    const strides = Array.isArray(_state.cachedAllStrides) ? [..._state.cachedAllStrides] : [];
+    const active = strides.find(s => (s as Record<string, unknown>).isActive === true);
+    if (active) return (active as Record<string, unknown>).id as number;
+    strides.sort((a, b) => getStrideStartDateValue(a) - getStrideStartDateValue(b));
+    return (strides[0] as Record<string, unknown> | undefined)?.id as number | undefined;
+}
+
+/**
+ * Compact a stride name for dropdown display, dropping any leading iteration prefix.
+ * @param {string} name - The stride name, e.g. "Iteration 1 - Stride 1".
+ * @returns {string} The compact name, e.g. "Stride 1".
+ */
+function compactStrideName(name: string): string {
+    const trimmed = (name ?? '').trim();
+    return trimmed.replace(/^Iteration\s*\d+\s*[-–—]?\s*/i, '').trim() || trimmed;
 }
 
 /**
@@ -807,7 +829,11 @@ export async function handleMoveToBacklog(button: HTMLElement, owner: string, pr
             const origCard = row?.closest('.stride-card') as HTMLElement | null;
             if (row) row.remove();
             const tbody = ensureBacklogTbody();
-            if (tbody) tbody.append(createBacklogRow(updated));
+            if (tbody) {
+                const newRow = renderBacklogRow(updated, owner, project);
+                tbody.append(newRow);
+                populateSelectsWithin(newRow);
+            }
             if (origCard) {
                 updateStrideTotalEffortFromDom(origCard);
                 ensureNoItemsPlaceholder(origCard);
@@ -817,7 +843,7 @@ export async function handleMoveToBacklog(button: HTMLElement, owner: string, pr
 }
 
 /**
- * Handle a click on the "Move to Stride" button, prompting for confirmation.
+ * Handle a click on the "Move to Stride" button, moving a backlog moment to the stride selected in the row.
  * @param {HTMLElement} button - The move-to-stride-from-backlog button element.
  * @param {string} owner - The owner (username or organization).
  * @param {string} project - The project slug.
@@ -831,6 +857,36 @@ export async function handleMoveToStride(button: HTMLElement, owner: string, pro
     let strideId: number | undefined;
     if (select) strideId = Number(select.value);
     if (!strideId) return;
+    promptMoveToStride(momentId, async () => {
+        const updated = await assignMomentToStride(owner, project, momentId, strideId, flowId) as Record<string, unknown>;
+        preserveScroll(() => {
+            findMomentRow(momentId)?.remove();
+            const tbody = ensureStrideTbody(strideId);
+            const targetCard = document.querySelector('.stride-card[data-stride-id="' + CSS.escape(String(strideId)) + '"]') as HTMLElement | null;
+            if (tbody) tbody.append(createStrideRow(updated));
+            if (targetCard) {
+                updateStrideTotalEffortFromDom(targetCard);
+                removeNoItemsPlaceholder(targetCard);
+            }
+        });
+    });
+}
+
+/**
+ * Handle a click on the "Current Stride" button, moving a backlog moment to the active stride.
+ * @param {HTMLElement} button - The move-to-current-stride button element.
+ * @param {string} owner - The owner (username or organization).
+ * @param {string} project - The project slug.
+ * @returns {Promise<void>}
+ */
+export async function handleMoveToCurrentStride(button: HTMLElement, owner: string, project: string): Promise<void> {
+    const momentId = Number(button.dataset.momentId!);
+    const flowId = Number((button.closest('[data-flow-id]') as HTMLElement | null)?.dataset.flowId) || undefined;
+    const strideId = findCurrentStrideId();
+    if (!strideId) {
+        showToast('No current stride available', 'error');
+        return;
+    }
     promptMoveToStride(momentId, async () => {
         const updated = await assignMomentToStride(owner, project, momentId, strideId, flowId) as Record<string, unknown>;
         preserveScroll(() => {
@@ -889,10 +945,12 @@ export async function handleProgressStride(button: HTMLElement, owner: string, p
  */
 async function handleStrideActions(event: MouseEvent, owner: string, project: string, navContentDiv: HTMLElement, contentDiv: HTMLElement): Promise<void> {
     if (await handleViewNav(event, navContentDiv, contentDiv)) return;
-    const button = (event.target as HTMLElement).closest('.move-to-backlog-btn, .move-to-stride-from-backlog-btn, .progress-stride-btn') as HTMLElement | null;
+    const button = (event.target as HTMLElement).closest('.move-to-backlog-btn, .move-to-stride-from-backlog-btn, .move-to-current-stride-btn, .progress-stride-btn') as HTMLElement | null;
     if (!button) return;
     if (button.classList.contains('move-to-backlog-btn')) {
         await handleMoveToBacklog(button, owner, project);
+    } else if (button.classList.contains('move-to-current-stride-btn')) {
+        await handleMoveToCurrentStride(button, owner, project);
     } else if (button.classList.contains('move-to-stride-from-backlog-btn')) {
         await handleMoveToStride(button, owner, project);
     } else if (button.classList.contains('progress-stride-btn')) {
@@ -945,70 +1003,6 @@ function ensureBacklogTbody(): HTMLElement | undefined {
     card.append(contentDiv);
     backlogSection.append(card);
     return backlogSection.querySelector(':scope .backlog-content table.promisemodel-table tbody') as HTMLElement | undefined;
-}
-
-/**
- * Create a table row element for a backlog moment.
- * @param {Record<string, unknown>} moment - The moment object with fields like sequenceNumber, statement, type, etc.
- * @returns {HTMLElement} The table row element.
- */
-function createBacklogRow(moment: Record<string, unknown>): HTMLElement {
-    const tr = document.createElement('tr');
-    tr.dataset.momentId = String(moment.sequenceNumber);
-    tr.dataset.flowId = String(moment.flowId ?? '');
-
-    const tdStatement = document.createElement('td');
-    tdStatement.textContent = moment.statement as string;
-    tr.append(tdStatement);
-
-    const tdType = document.createElement('td');
-    tdType.append(momentTypeDropdownHtml(moment.sequenceNumber as number | string, moment.type as string));
-    tr.append(tdType);
-
-    const tdStatus = document.createElement('td');
-    const statusSelect = statusDropdownHtml(moment.sequenceNumber as number | string, moment.status as string | null);
-    populateStatusSelect(statusSelect);
-    tdStatus.append(statusSelect);
-    tr.append(tdStatus);
-
-    const tdEffort = document.createElement('td');
-    const effortSelect = estimateDropdownHtml(moment.sequenceNumber as number | string, moment.effortEstimate as string | null);
-    populateEstimateSelect(effortSelect);
-    tdEffort.append(effortSelect);
-    tr.append(tdEffort);
-
-    const tdOwner = document.createElement('td');
-    const ownerSelect = ownerDropdownHtml(moment.sequenceNumber as number | string, moment.ownerId as number | string | null);
-    populateOwnerSelect(ownerSelect);
-    tdOwner.append(ownerSelect);
-    tr.append(tdOwner);
-
-    const tdActions = document.createElement('td');
-    const actionsDiv = document.createElement('div');
-    actionsDiv.className = 'd-inline-flex flex-wrap gap-2 align-items-center';
-    const targetSelect = document.createElement('select');
-    targetSelect.className = 'backlog-target-stride form-select form-select-sm';
-    targetSelect.dataset.momentId = String(moment.sequenceNumber);
-    actionsDiv.append(targetSelect);
-    const moveButton = document.createElement('button');
-    moveButton.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
-    moveButton.dataset.momentId = String(moment.sequenceNumber);
-    moveButton.type = 'button';
-    moveButton.textContent = 'Move';
-    actionsDiv.append(moveButton);
-    const graphLink = momentGraphLinkHtml(moment.sequenceNumber as number | string);
-    if (graphLink) actionsDiv.append(graphLink);
-    const viewLink = document.createElement('a');
-    viewLink.href = `/${_state.cachedOwner}/${_state.cachedProject}/moments/${moment.sequenceNumber as string}`;
-    viewLink.dataset.momentView = 'true';
-    viewLink.className = BTN_SM_CLASSES;
-    viewLink.textContent = 'View';
-    actionsDiv.append(viewLink);
-    tdActions.append(actionsDiv);
-    tr.append(tdActions);
-
-    if (targetSelect) populateBacklogStrideSelect(targetSelect);
-    return tr;
 }
 
 /**
@@ -1516,23 +1510,59 @@ function renderBacklogRow(
     tdStatus.append(sBadge);
     tr.append(tdStatus);
 
-    const tdEffort = document.createElement('td');
-    tdEffort.textContent = (m.effortEstimate as string) ?? '\u{2013}';
-    tr.append(tdEffort);
+    const tdEstimate = document.createElement('td');
+    const estSel = document.createElement('select');
+    estSel.className = 'estimate-dropdown';
+    estSel.dataset.momentId = String(m.sequenceNumber);
+    estSel.dataset.currentEstimate = (m.effortEstimate as string | null) ?? '';
+    estSel.setAttribute('aria-label', EFFORT_ESTIMATE_LABEL);
+    tdEstimate.append(estSel);
+    tr.append(tdEstimate);
+
+    const tdOwner = document.createElement('td');
+    const ownSel = document.createElement('select');
+    ownSel.className = 'owner-dropdown';
+    ownSel.dataset.momentId = String(m.sequenceNumber);
+    ownSel.dataset.ownerId = ((m.ownerId as string | null) ?? '');
+    ownSel.setAttribute('aria-label', 'Owner');
+    tdOwner.append(ownSel);
+    tr.append(tdOwner);
 
     const tdActions = document.createElement('td');
     const aDiv = document.createElement('div');
     aDiv.className = 'd-inline-flex flex-wrap gap-2 align-items-center';
-    const targetSelect = document.createElement('select');
-    targetSelect.className = 'backlog-target-stride form-select form-select-sm';
-    targetSelect.dataset.momentId = String(m.sequenceNumber);
-    aDiv.append(targetSelect);
-    const moveButton = document.createElement('button');
-    moveButton.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
-    moveButton.dataset.momentId = String(m.sequenceNumber);
-    moveButton.type = 'button';
-    moveButton.textContent = 'Move';
-    aDiv.append(moveButton);
+    const statusSel = document.createElement('select');
+    statusSel.className = 'status-dropdown form-select form-select-sm';
+    statusSel.dataset.momentId = String(m.sequenceNumber);
+    statusSel.dataset.currentStatus = (m.status as string | null) ?? '';
+    statusSel.setAttribute('aria-label', 'Status');
+    aDiv.append(statusSel);
+    const estMobile = document.createElement('select');
+    estMobile.className = 'estimate-dropdown-mobile form-select form-select-sm';
+    estMobile.dataset.momentId = String(m.sequenceNumber);
+    estMobile.dataset.currentEstimate = (m.effortEstimate as string | null) ?? '';
+    estMobile.setAttribute('aria-label', EFFORT_ESTIMATE_LABEL);
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = '\u{2013}';
+    estMobile.append(defaultOpt);
+    aDiv.append(estMobile);
+    const currentStrideButton = document.createElement('button');
+    currentStrideButton.className = 'move-to-current-stride-btn btn btn-outline-success btn-sm';
+    currentStrideButton.dataset.momentId = String(m.sequenceNumber);
+    currentStrideButton.type = 'button';
+    currentStrideButton.textContent = 'Current Stride';
+    aDiv.append(currentStrideButton);
+    const mvTargetSel = document.createElement('select');
+    mvTargetSel.className = 'backlog-target-stride form-select form-select-sm';
+    mvTargetSel.dataset.momentId = String(m.sequenceNumber);
+    aDiv.append(mvTargetSel);
+    const mvStrideButton = document.createElement('button');
+    mvStrideButton.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
+    mvStrideButton.dataset.momentId = String(m.sequenceNumber);
+    mvStrideButton.type = 'button';
+    mvStrideButton.textContent = 'Move to Stride';
+    aDiv.append(mvStrideButton);
     const graphLink = momentGraphLinkHtml(m.sequenceNumber as number | string);
     if (graphLink) aDiv.append(graphLink);
     const vLink = document.createElement('a');
@@ -1581,7 +1611,7 @@ function renderBacklogSection(
         table.className = 'promisemodel-table';
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
-        for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Actions']) {
+        for (const thText of ['Statement', 'Type', 'Status', 'Effort', 'Owner', 'Actions']) {
             const th = document.createElement('th');
             th.textContent = thText;
             headerRow.append(th);
@@ -1819,7 +1849,8 @@ function populateBacklogStrideSelect(select: HTMLSelectElement): void {
     select.replaceChildren();
     const allCachedStrides = _state.cachedAllStrides || [];
     for (const stride of allCachedStrides) {
-        select.append(createOption(String((stride as Record<string, unknown>).id), (stride as Record<string, unknown>).name as string, previous === String((stride as Record<string, unknown>).id)));
+        const name = compactStrideName((stride as Record<string, unknown>).name as string);
+        select.append(createOption(String((stride as Record<string, unknown>).id), name, previous === String((stride as Record<string, unknown>).id)));
     }
     if ([...select.options].every(o => o.value !== previous)) select.value = (select.options[0] && select.options[0].value) || '';
 }
