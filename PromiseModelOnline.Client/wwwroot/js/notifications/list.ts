@@ -1,7 +1,7 @@
+import { navigate } from '../router.ts';
 import { showToast } from '../ui/toast.ts';
 import { renderEmptyStateSection } from '../utils/empty-table.ts';
 
-import { navigate } from '../router.ts';
 
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from './api.ts';
 import { getUnreadNotificationsEventName, updateNotificationBadge } from './badge.ts';

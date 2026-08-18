@@ -15,6 +15,9 @@ const EFFORT_ESTIMATE_LABEL = 'Effort estimate';
 const IS_COLLAPSED = 'is-collapsed';
 const BTN_SM_CLASSES = 'btn btn-sm btn-outline-primary';
 
+type MomentSequence = number | string;
+type OptionalOwnerId = number | string | null;
+
 /* ---------- T‑shirt size to numeric mapping ---------- */
 const estimateValues: Record<string, number> = {
     XS: 1, S: 2, M: 3, L: 5, XL: 8, XXL: 13, XXXL: 21
@@ -215,7 +218,7 @@ function estimateDropdownHtml(momentSeq: number | string, currentEstimate: strin
  * @param {number | string | null} ownerId - Owner ID
  * @returns {HTMLSelectElement} The owner dropdown element
  */
-function ownerDropdownHtml(momentSeq: number | string, ownerId: number | string | null): HTMLSelectElement {
+function ownerDropdownHtml(momentSeq: MomentSequence, ownerId: OptionalOwnerId): HTMLSelectElement {
     const select = document.createElement('select');
     select.className = 'owner-dropdown';
     select.dataset.momentId = String(momentSeq);
@@ -1394,12 +1397,12 @@ function renderMomentRow(
     mvTargetSel.className = 'backlog-target-stride form-select form-select-sm';
     mvTargetSel.dataset.momentId = String(m.sequenceNumber);
     aDiv.append(mvTargetSel);
-    const mvStrideBtn = document.createElement('button');
-    mvStrideBtn.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
-    mvStrideBtn.dataset.momentId = String(m.sequenceNumber);
-    mvStrideBtn.type = 'button';
-    mvStrideBtn.textContent = 'Move to Stride';
-    aDiv.append(mvStrideBtn);
+    const mvStrideButton = document.createElement('button');
+    mvStrideButton.className = 'move-to-stride-from-backlog-btn btn btn-outline-primary btn-sm';
+    mvStrideButton.dataset.momentId = String(m.sequenceNumber);
+    mvStrideButton.type = 'button';
+    mvStrideButton.textContent = 'Move to Stride';
+    aDiv.append(mvStrideButton);
     const graphLink = momentGraphLinkHtml(m.sequenceNumber as number | string);
     if (graphLink) aDiv.append(graphLink);
     const vLink = document.createElement('a');

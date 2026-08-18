@@ -293,7 +293,7 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
             event.preventDefault();
             const email = liveEmailInput.value.trim();
             if (!email) return;
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            if (!/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(email)) {
                 liveErrorElement.textContent = 'Please enter a valid email address.';
                 liveErrorElement.classList.remove('d-none');
                 return;
@@ -515,10 +515,10 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
         button.dataset.bound = '1';
         button.addEventListener('click', () => {
             const permissionId = Number(button.dataset.permissionId!);
-            const userName = button.dataset.userName ?? '';
             const userEmail = button.dataset.userEmail ?? '';
-            const currentLevel = button.dataset.currentLevel ?? '';
             if (!Number.isFinite(permissionId) || !userEmail) return;
+            const username = button.dataset.userName ?? '';
+            const currentLevel = button.dataset.currentLevel ?? '';
 
             const modalElement = ensureModal('change-level-modal', `
                 <div class="modal fade" id="change-level-modal" tabindex="-1" aria-hidden="true">
@@ -529,7 +529,7 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-2">Changing <strong>${userName}</strong>'s permission from <strong>${currentLevel}</strong> requires revoking their current access and re-inviting with the new level.</p>
+                                <p class="mb-2">Changing <strong>${username}</strong>'s permission from <strong>${currentLevel}</strong> requires revoking their current access and re-inviting with the new level.</p>
                                 <label class="form-label" for="change-level-select">New Level</label>
                                 <select id="change-level-select" class="form-select">
                                     <option value="View">View</option>
@@ -551,13 +551,14 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
             const levelSelect = modalElement?.querySelector('#change-level-select') as HTMLSelectElement | null;
             const errorElement = modalElement?.querySelector('#change-level-error') as HTMLElement | null;
             if (!confirmButton || !levelSelect || !errorElement) return;
+            const errorDisplay: HTMLElement = errorElement;
 
             confirmButton.replaceWith(confirmButton.cloneNode(true));
             const nextConfirm = modalElement!.querySelector('#change-level-confirm') as HTMLButtonElement;
 
             nextConfirm.addEventListener('click', async () => {
                 nextConfirm.disabled = true;
-                errorElement.classList.add('d-none');
+                errorDisplay.classList.add('d-none');
                 try {
                     await removePermission(owner, project, permissionId);
                     await inviteUser(owner, project, { email: userEmail, level: levelSelect.value });
@@ -568,13 +569,20 @@ export function loadSharePage(owner: string, project: string, _contentDiv: HTMLE
                     }
                     await refreshPermissions();
                 } catch (error) {
-                    errorElement.textContent = 'Failed to change permission level.';
-                    errorElement.classList.remove('d-none');
+                    showChangeLevelError();
                     console.error(error);
                 } finally {
                     nextConfirm.disabled = false;
                 }
             }, { once: true });
+
+            /**
+             * Display the change-level failure message in the modal.
+             */
+            function showChangeLevelError(): void {
+                errorDisplay.textContent = 'Failed to change permission level.';
+                errorDisplay.classList.remove('d-none');
+            }
 
             bootstrap?.Modal?.getOrCreateInstance(modalElement!)?.show();
         });

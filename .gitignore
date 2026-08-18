@@ -28,6 +28,9 @@ deploy/keys/
 # act runner secrets (local CI)
 .secrets
 
+# Secret archives (tar backups of secrets/ — never commit)
+*.tar.gz
+
 # Rider / JetBrains cache files and solution user settings
 **/*.lscache
 **/*.sln.DotSettings.user

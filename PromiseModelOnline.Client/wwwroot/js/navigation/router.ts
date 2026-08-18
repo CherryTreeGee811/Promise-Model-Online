@@ -1,7 +1,7 @@
 import { isLoggedIn } from '../auth-state.ts';
-import { getUsername } from '../stores/auth.ts';
 import { startNotificationPolling } from '../notifications/badge.ts';
 import { navigate } from '../router.ts';
+import { getUsername } from '../stores/auth.ts';
 import { openBugReportModal } from '../utils/bug-report-modal.ts';
 
 /**

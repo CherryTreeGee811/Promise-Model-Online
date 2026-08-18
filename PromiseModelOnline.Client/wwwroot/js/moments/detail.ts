@@ -232,28 +232,35 @@ function buildMomentUI(moment: Record<string, unknown>, detailCard: HTMLElement,
 
 
 /**
+ * Disable a control and explain why via its title attribute.
+ * @param {HTMLElement | null} element - The control to disable.
+ */
+function gateControl(element: (HTMLInputElement | HTMLButtonElement | HTMLSelectElement | HTMLTextAreaElement) | null): void {
+    if (!element) return;
+    element.disabled = true;
+    element.title = 'Requires Edit permission.';
+}
+
+/**
+ * Disable moment detail editing controls when the user lacks Edit permission.
  * @param {Record<string, unknown>} permission - Permission object
  */
 function gateMomentDetailControls(permission: Record<string, unknown>): void {
-    const canEdit = isAtLeast(permission?.permission as string, 'Edit');
-    if (!canEdit) {
-        const editButton = document.querySelector('#moment-edit-desc-btn') as HTMLButtonElement | null;
-        const saveButton = document.querySelector('#moment-save-desc') as HTMLButtonElement | null;
-        const descInput = document.querySelector('#moment-description-input') as HTMLInputElement | null;
-        if (editButton) { editButton.disabled = true; editButton.title = 'Requires Edit permission.'; }
-        if (saveButton) { saveButton.disabled = true; saveButton.title = 'Requires Edit permission.'; }
-        if (descInput) descInput.disabled = true;
-        const typeSelect = document.querySelector('#moment-type-select') as HTMLSelectElement | null;
-        const statusSelect = document.querySelector('#moment-status-select') as HTMLSelectElement | null;
-        const estSelect = document.querySelector('#moment-estimate-select') as HTMLSelectElement | null;
-        const strideSelect = document.querySelector('#moment-stride-select') as HTMLSelectElement | null;
-        const ownerSelect = document.querySelector('#moment-owner-select') as HTMLSelectElement | null;
-        if (typeSelect) { typeSelect.disabled = true; typeSelect.title = 'Requires Edit permission.'; }
-        if (statusSelect) { statusSelect.disabled = true; statusSelect.title = 'Requires Edit permission.'; }
-        if (estSelect) { estSelect.disabled = true; estSelect.title = 'Requires Edit permission.'; }
-        if (strideSelect) { strideSelect.disabled = true; strideSelect.title = 'Requires Edit permission.'; }
-        if (ownerSelect) { ownerSelect.disabled = true; ownerSelect.title = 'Requires Edit permission.'; }
+    if (isAtLeast(permission?.permission as string, 'Edit')) return;
+    const gatedSelectors = [
+        '#moment-edit-desc-btn',
+        '#moment-save-desc',
+        '#moment-type-select',
+        '#moment-status-select',
+        '#moment-estimate-select',
+        '#moment-stride-select',
+        '#moment-owner-select',
+    ];
+    for (const selector of gatedSelectors) {
+        gateControl(document.querySelector(selector) as HTMLInputElement | HTMLButtonElement | HTMLSelectElement | null);
     }
+    const descInput = document.querySelector('#moment-description-input') as HTMLInputElement | null;
+    if (descInput) descInput.disabled = true;
 }
 
 
@@ -354,10 +361,18 @@ async function setupOwnerHandler(owner: string, project: string, momentId: strin
             const value = ownerSelectElement.value === '' ? undefined : Number(ownerSelectElement.value);
             try {
                 const updated = await updateMomentOwner(owner, project, momentId, value, (moment as Record<string, unknown>).flowId as number) as Record<string, unknown>;
-                moment.ownerId = updated.ownerId as number | undefined;
-                patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { ownerId: updated.ownerId });
+                applyOwnerResult(updated);
             } catch (error) { showToast('Failed to update owner', 'error'); console.error(error); }
         });
+
+        /**
+         * Applies the result of an owner assignment API call to the moment state and DOM.
+         * @param {Record<string, unknown>} updated - The updated moment data from the API response.
+         */
+        function applyOwnerResult(updated: Record<string, unknown>): void {
+            moment.ownerId = updated.ownerId as number | undefined;
+            patchDetailStackGraphNode('moment-' + moment.sequenceNumber, { ownerId: updated.ownerId });
+        }
     } catch (error) { console.error('Failed to load project members', error); }
 }
 
@@ -687,6 +702,7 @@ function gateTaskForm(permission: Record<string, unknown>, elements: { nameInput
  * @param {HTMLInputElement} taskCompletedInput - The task completed checkbox element
  * @param {HTMLButtonElement} taskSubmitButton - The task submit button element
  * @param {HTMLElement} taskMessageElement - The task message element
+ * @param {Record<string, unknown>} permission - The user's permission object
  * @returns {Promise<void>}
  */
 async function handleTaskAddClick(
@@ -866,7 +882,7 @@ function syncMomentTasksToStackGraph(_momentId: string, moment: Moment): void {
  */
 async function handleCheckToggle(checkbox: HTMLInputElement, owner: string, project: string, momentId: string, moment: Moment): Promise<void> {
     const taskId = Math.trunc(Number(checkbox.dataset.momentTaskId ?? ''));
-    const label = checkbox.closest('tr')?.querySelector('.moment-task-completion span') as HTMLElement | null;
+    const label = checkbox.closest('tr')?.querySelector(':scope .moment-task-completion span') as HTMLElement | null;
     const isPreviousChecked = !checkbox.checked;
     checkbox.disabled = true;
     try {

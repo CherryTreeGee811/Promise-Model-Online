@@ -9,11 +9,17 @@ Enterprise project-management SaaS platform built on ASP.NET Core 10 with OpenID
 ```mermaid
 graph TB
     subgraph Browser["Browser / SPA"]
-        SPA["Vanilla JS SPA<br/>(localhost:9000)"]
+        SPA["Vanilla JS SPA<br/>(served by client on :4000)"]
     end
 
     subgraph Docker["Docker Compose Network"]
-        NGINX["nginx (:9000)<br/>Static files + Reverse proxy"]
+        subgraph Edge["Edge"]
+            PROXY["nginx Reverse Proxy (:9000)<br/>TLS, rate limiting"]
+        end
+
+        subgraph Web["Web"]
+            CLIENT["nginx Static File Server<br/>(:4000, internal)"]
+        end
 
         subgraph BFF["Backend-for-Frontend"]
             BFF_SVC["YARP Reverse Proxy<br/>OIDC Client (cookie)<br/>(:8010)"]
@@ -29,27 +35,65 @@ graph TB
 
         subgraph Storage["Data Layer"]
             SQL["SQL Server 2025<br/>(:1433)"]
+            DBINIT["db-init<br/>(one-shot provisioning)"]
+        end
+
+        subgraph Analytics["Analytics (Optional)"]
+            UMAMI["Umami<br/>(:3000, SSH-only dashboard)"]
+            UMAMIDB["PostgreSQL 16<br/>(umami-db)"]
         end
     end
 
-    subgraph External["External Providers"]
-        GOOGLE["Google OAuth 2.1"]
+    subgraph Production["Production (Docker Swarm only)"]
+        CLOUDFLARE["cloudflared<br/>Cloudflare Tunnel"]
     end
 
-    SPA -- "static assets" --> NGINX
-    SPA -- "API calls /api/*" --> NGINX
-    NGINX -- "/api/ /hubs/" --> BFF_SVC
-    NGINX -- "/connect/* /.well-known/* /signin-google" --> AUTH_SVC
-    NGINX -- "/login /logout" --> BFF_SVC
+    subgraph External["External Providers"]
+        GOOGLE["Google OAuth"]
+    end
+
+    SPA -- "HTTPS (:9000)" --> PROXY
+    PROXY -- "static assets /" --> CLIENT
+    PROXY -- "/api/ /hubs/ /login /logout /signin-oidc" --> BFF_SVC
+    PROXY -- "/connect/* /.well-known/* /account/* /signin-google" --> AUTH_SVC
+    PROXY -- "/umami/*" --> UMAMI
     BFF_SVC -- "backchannel: metadata, token" --> AUTH_SVC
     BFF_SVC -- "Bearer token" --> API_SVC
     AUTH_SVC -- "EF Core" --> SQL
     API_SVC -- "EF Core" --> SQL
+    DBINIT -- "creates databases, logins, users" --> SQL
+    UMAMI -- "PostgreSQL" --> UMAMIDB
 
-    Browser -. "browser redirects to /connect/authorize" .-> NGINX
+    Browser -. "browser redirects to /connect/authorize" .-> PROXY
     Browser -. "browser redirects to Google" .-> GOOGLE
-    GOOGLE -. "browser redirects to /signin-google" .-> NGINX
+    GOOGLE -. "browser redirects to /signin-google" .-> PROXY
     AUTH_SVC -. "backchannel: token + userinfo" .-> GOOGLE
+    CLOUDFLARE -- "HTTPS ingress (production)" --> PROXY
+```
+
+### Data Model
+
+```mermaid
+graph LR
+    Project["Project"]
+    Promise["Promise"]
+    Epic["Epic"]
+    Journey["Journey"]
+    Flow["Flow"]
+    Moment["Moment"]
+    Task["MomentTask / BugReworkTask"]
+    Stride["Stride"]
+    Iteration["Iteration"]
+
+    Project --> Promise
+    Promise --> Epic
+    Epic --> Journey
+    Journey --> Flow
+    Flow --> Moment
+    Moment --> Task
+    Moment -->|"assigned to"| Stride
+    Stride --> Iteration
+    Iteration --> Project
 ```
 
 ---
@@ -59,7 +103,7 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant User as Browser
-    participant Nginx as nginx (:9000)
+    participant Nginx as nginx proxy (:9000)
     participant BFF as BFF (:8010)
     participant Auth as Auth Server (:8060)
     participant API as API Server (:8000)
@@ -97,7 +141,13 @@ sequenceDiagram
     Nginx->>Auth: proxy
     Auth->>Google: backchannel: code + secret → tokens + userinfo
     Auth->>Auth: Create/link IdentityUser
-    Auth->>User: 302 redirect to returnUrl
+    Auth->>User: 302 redirect to /login?returnUrl=...
+    User->>Nginx: GET /login?returnUrl=...
+    Nginx->>BFF: proxy
+    BFF->>User: 302 redirect to /connect/authorize (fresh OIDC challenge)
+    User->>Nginx: GET /connect/authorize
+    Nginx->>Auth: proxy
+    Auth->>User: 302 redirect with code
     User->>Nginx: GET /signin-oidc?code=...
     Nginx->>BFF: proxy
     BFF->>Auth: backchannel: code + PKCE → tokens
@@ -110,11 +160,17 @@ sequenceDiagram
 
 | Service | Container | Port | Framework | Purpose |
 |---|---|---|---|---|
-| **Client** | `promisemodelonlineclient` | `:9000` | nginx + Vanilla JS | SPA static file server, reverse proxy |
+| **Proxy** | `promisemodelonlineproxy` | `:9000` | nginx | Reverse proxy / ingress (TLS, rate limiting) |
+| **Client** | `promisemodelonlineclient` | `:4000` (internal) | nginx + Vanilla JS | SPA static file server |
 | **BFF** | `promisemodelonlinebff` | `:8010` | ASP.NET Core 10 + YARP | OIDC client + reverse proxy |
 | **Auth** | `promisemodelonlineauth` | `:8060` | ASP.NET Core 10 + OpenIddict | OIDC identity provider |
 | **API** | `promisemodelonlineapi` | `:8000` | ASP.NET Core 10 | Resource server |
 | **DB** | `promisemodelonlinedb` | `:1433` | SQL Server 2025 | Persistent storage |
+| **DB Init** | `promisemodelonlinedbinit` | — | mssql-tools | One-shot DB provisioning (run-once) |
+| **Umami** | `umami` | `:3000` (SSH-only) | Umami | Self-hosted analytics (optional) |
+| **Umami DB** | `umami-db` | — | PostgreSQL 16 | Umami storage |
+| **Umami Init** | `umami-init` | — | postgres:16-alpine | One-shot Umami setup (run-once) |
+| **Tunnel** | `cloudflared` | — | cloudflared | Cloudflare HTTPS ingress (production only) |
 
 ---
 
@@ -203,7 +259,7 @@ CSP `default-src 'none'` with hash-based allowance, HSTS, `X-Frame-Options: DENY
    -e '{"service_override":{"promisemodelonline-client":"abc1234","promisemodelonline-api":"def5678"}}'
  ```
  
- All services use `update_config.order: start-first` with health checks and 2 replicas — one replica updates at a time, new containers start before old ones stop. Both update and rollback are **zero-downtime**.
+ Each long-running service runs as a single replica and uses `update_config.order: start-first` with health checks — one replica updates at a time, new containers start before old ones stop (the `promisemodelonline-db` service uses `order: stop-first`, and the one-shot `db-init`/`umami-init` jobs run to completion). Both update and rollback are **zero-downtime**.
  
  ### 5. Deprovision the stack
  
@@ -446,40 +502,46 @@ act -W .github/workflows/BuildAndTest.yml --secret-file .secrets --pull=false
 
 ```
 Promise-Model-Online/
-├── PromiseModelOnline.Auth/        # OpenIddict identity provider
-│   ├── Controllers/                # Login, Authorization, ExternalLogin
-│   ├── Extensions/                 # OpenIddict config, connection string resolvers
-│   ├── Middleware/                 # Forwarded headers, security headers
-│   ├── Views/                      # Razor login/register pages
-│   └── wwwroot/                    # Auth server CSS/JS
-├── PromiseModelOnline.Api/         # REST API resource server
-│   ├── BusinessLogic/              # Domain services, automation
-│   ├── Controllers/                # API endpoints
-│   ├── DAL/                        # EF Core DbContext, repositories
-│   └── Extensions/                 # DI registration, seeders, connection string resolvers
-├── PromiseModelOnline.BFF/         # YARP reverse proxy + OIDC client
-├── PromiseModelOnline.Client/      # nginx + Vanilla JS SPA
+├── PromiseModelOnline.Auth/            # OpenIddict identity provider
+│   ├── Controllers/                    # Login, Authorization, ExternalLogin
+│   ├── Extensions/                     # OpenIddict config, connection string resolvers
+│   ├── Middleware/                     # Forwarded headers, security headers
+│   ├── Views/                          # Razor login/register pages
+│   └── wwwroot/                        # Auth server CSS/JS
+├── PromiseModelOnline.Api/             # REST API resource server
+│   ├── BusinessLogic/                  # Domain services, automation
+│   ├── Controllers/                    # API endpoints
+│   ├── DAL/                            # EF Core DbContext, repositories
+│   ├── Models/                         # Domain entities (Project → … → Task)
+│   └── Extensions/                     # DI registration, seeders, connection string resolvers
+├── PromiseModelOnline.BFF/             # YARP reverse proxy + OIDC client
+├── PromiseModelOnline.Proxy/           # nginx reverse proxy (ingress, :9000)
+├── PromiseModelOnline.Client/          # nginx + Vanilla JS SPA (static files, :4000)
 │   └── wwwroot/
 │       ├── css/
-│       ├── js/
-│       │   ├── strides/
-│       │   ├── navigation/
-│       │   └── utils/
+│       ├── js/                         # account, comments, epics, flows, iterations,
+│       │                               # journeys, moments, navigation, notifications,
+│       │                               # projects, promises, reactions, stores, strides,
+│       │                               # ui, utils, …
 │       └── templates/
-├── PromiseModelOnline.Auth.Tests/  # Auth server tests (NUnit + Playwright)
-├── PromiseModelOnline.Api.Tests/   # API tests (NUnit)
-├── PromiseModelOnline.Client.Tests/ # UI + Vitest unit tests (NUnit + Playwright + Vitest)
-├── db/init/                        # Database initialization scripts
-│   └── run-init.sh                 # Creates databases, logins, users
-├── secrets/                        # Local secret files (gitignored)
-├── keys/                           # Dev certs (gitignored, generated by scripts/generate-dev-certs.sh)
-├── deploy/                         # Production deployment (self-contained, no source)
-│   ├── .env                        # Production config (no secrets)
-│   ├── docker-compose.yml          # Production compose (pulls from Docker Hub)
-│   ├── ansible/                    # Ansible playbooks (provision, deploy, update, rollback)
-│   ├── scripts/                    # Init scripts (DB, Umami)
-│   └── secrets/                    # Production secrets (blank in repo, populated by bundle)
-├── .github/workflows/              # CI/CD pipelines
-├── docker-compose.yml              # Dev service orchestration
-└── .env                            # Dev environment config
+├── PromiseModelOnline.Auth.Tests/      # Auth server tests (NUnit + Playwright)
+├── PromiseModelOnline.Api.Tests/       # API tests (NUnit)
+├── PromiseModelOnline.BFF.Tests/       # BFF integration tests (NUnit)
+├── PromiseModelOnline.Client.Tests/    # UI + Vitest unit tests (NUnit + Playwright + Vitest)
+├── PromiseModelOnline.E2E.Tests/       # E2E tests (NUnit + Playwright)
+├── infrastructure/                     # CI test configs (compose overrides, nginx test configs)
+├── scripts/                            # Dev/CI scripts (init-db, db-entrypoint, umami-*, checks)
+├── pmo_pm/                             # CSV seed data (copied into the API image)
+├── secrets/                            # Local secret files (gitignored)
+├── keys/                               # Dev certs (gitignored, generated by scripts/generate-dev-certs.sh)
+├── deploy/                             # Production deployment (self-contained, no source)
+│   ├── ansible/                        # Ansible playbooks (provision, deploy, update, rollback)
+│   ├── scripts/                        # Init scripts (DB, Umami)
+│   └── secrets/                        # Production secrets (blank in repo, populated by bundle)
+├── .github/workflows/                  # CI/CD pipelines
+├── docker-compose.yml                  # Dev service orchestration
+├── docker-compose.dcproj               # Docker Compose project file
+├── Promise-Model-Online.sln            # .NET solution (legacy)
+├── PromiseModelOnline.slnx             # .NET solution (XML format)
+└── .env                                # Dev environment config
 ```
