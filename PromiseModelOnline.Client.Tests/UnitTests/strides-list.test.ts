@@ -380,6 +380,106 @@ describe('handleMoveToStride', () => {
     });
 });
 
+describe('handleMoveToCurrentStride', () => {
+    it('shows toast when no current stride available', async () => {
+        // Arrange
+        const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        const button = document.createElement('button');
+        button.dataset.momentId = '1';
+        button.className = 'move-to-current-stride-btn';
+        // Act
+        await mod.handleMoveToCurrentStride(button, 'owner1', 'proj1');
+        // Assert
+        expect(mockShowToast).toHaveBeenCalledWith('No current stride available', 'error');
+        expect(mockAssignMomentToStride).not.toHaveBeenCalled();
+    });
+
+    it('calls assignMomentToStride with the active stride on confirm', async () => {
+        // Arrange
+        mockGetProject.mockResolvedValue({ name: 'Test' });
+        mockGetIterations.mockResolvedValue([{ id: 1, name: 'S1', createdAt: '2024-06-01T00:00:00Z' }]);
+        mockGetStridesByIteration.mockResolvedValue([{ id: 10, name: 'Stride 1', isActive: true, startDate: '2024-06-01' }]);
+        mockGetMomentsByStride.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+        mockGetProjectMembers.mockResolvedValue([]);
+        mockGetMyPermission.mockResolvedValue('Edit');
+        mockAssignMomentToStride.mockResolvedValue({ sequenceNumber: 1, statement: 'Test', type: 'Story', status: 'Todo' });
+        mockBuildGraphViewHref.mockReturnValue('/graph/moment-1');
+
+        document.body.innerHTML = `
+            <div id="stride-board"></div>
+            <span id="error-text"></span>
+            <span id="project-title"></span>
+            <button id="create-stride-btn"><span id="create-stride-btn-label">New Stride</span></button>
+            <div class="stride-card" data-stride-id="10">
+                <table class="promisemodel-table"><tbody></tbody></table>
+                <span class="stride-total-effort">Total Effort: 0</span>
+            </div>
+        `;
+
+        const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        await mod.loadStridesList('owner1', 'proj1', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const button = document.createElement('button');
+        button.dataset.momentId = '1';
+        button.className = 'move-to-current-stride-btn';
+        document.body.append(button);
+
+        // Act
+        await mod.handleMoveToCurrentStride(button, 'owner1', 'proj1');
+
+        const confirmBtn = document.getElementById('move-to-stride-modal-confirm') as HTMLButtonElement;
+        confirmBtn.click();
+
+        // Assert
+        await vi.waitFor(() => expect(mockAssignMomentToStride).toHaveBeenCalledWith('owner1', 'proj1', 1, 10, undefined));
+    });
+
+    it('sends flowId when button inside data-flow-id', async () => {
+        // Arrange
+        mockGetProject.mockResolvedValue({ name: 'Test' });
+        mockGetIterations.mockResolvedValue([{ id: 1, name: 'S1', createdAt: '2024-06-01T00:00:00Z' }]);
+        mockGetStridesByIteration.mockResolvedValue([{ id: 10, name: 'Stride 1', isActive: true, startDate: '2024-06-01' }]);
+        mockGetMomentsByStride.mockResolvedValue([]);
+        mockGetMomentsByIteration.mockResolvedValue([]);
+        mockGetProjectMembers.mockResolvedValue([]);
+        mockGetMyPermission.mockResolvedValue('Edit');
+        mockAssignMomentToStride.mockResolvedValue({ sequenceNumber: 2, statement: 'Moment', type: 'Job', status: 'InProgress' });
+        mockBuildGraphViewHref.mockReturnValue('/graph/moment-2');
+
+        document.body.innerHTML = `
+            <div id="stride-board"></div>
+            <span id="error-text"></span>
+            <span id="project-title"></span>
+            <button id="create-stride-btn"><span id="create-stride-btn-label">New Stride</span></button>
+            <div class="stride-card" data-stride-id="10">
+                <table class="promisemodel-table"><tbody></tbody></table>
+                <span class="stride-total-effort">Total Effort: 0</span>
+            </div>
+        `;
+
+        const mod = await import('../../PromiseModelOnline.Client/wwwroot/js/strides/list.ts');
+        await mod.loadStridesList('owner1', 'proj1', document.createElement('div'), document.createElement('div'), { permission: 'Edit' });
+
+        const flowContainer = document.createElement('div');
+        flowContainer.dataset.flowId = '42';
+        const button = document.createElement('button');
+        button.dataset.momentId = '2';
+        button.className = 'move-to-current-stride-btn';
+        flowContainer.append(button);
+        document.body.append(flowContainer);
+
+        // Act
+        await mod.handleMoveToCurrentStride(button, 'owner1', 'proj1');
+
+        const confirmBtn = document.getElementById('move-to-stride-modal-confirm') as HTMLButtonElement;
+        confirmBtn.click();
+
+        // Assert
+        await vi.waitFor(() => expect(mockAssignMomentToStride).toHaveBeenCalledWith('owner1', 'proj1', 2, 10, 42));
+    });
+});
+
 describe('handleProgressStride', () => {
     beforeEach(() => {
         document.body.innerHTML = `
